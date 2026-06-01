@@ -6,7 +6,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_package(glfw3 REQUIRED)
 add_executable(IsometricGame
         glad/src/glad.c
-        main.cpp)
+        src/main.cpp)
 
 target_include_directories(
         IsometricGame
