@@ -4,14 +4,23 @@ project(IsometricGame)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_package(glfw3 REQUIRED)
-add_executable(IsometricGame
-        glad/src/glad.c
-        src/main.cpp)
+find_package(glm REQUIRED)
 
-target_include_directories(
+# i have GLM and GLFW handeled as system packages via pacman for now.
+
+add_executable(
         IsometricGame
-        PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/glad/include
+        src/main.cpp
+        external/glad/src/glad.c
 )
 
-target_link_libraries(IsometricGame glfw)
+target_include_directories(
+        IsometricGame PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+target_link_libraries(
+        IsometricGame 
+        glfw
+)
