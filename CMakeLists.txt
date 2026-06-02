@@ -15,6 +15,14 @@ add_executable(
         external/stb_image/stb_image.cpp
         src/Core/Window.cpp
         src/Core/Window.h
+        src/Core/Application.cpp
+        src/Core/Application.h
+        src/Graphics/Renderer.cpp
+        src/Graphics/Renderer.h
+        src/Graphics/Mesh.cpp
+        src/Graphics/Mesh.h
+        src/Graphics/Shader.cpp
+        src/Graphics/Shader.h
 )
 
 target_include_directories(
