@@ -34,11 +34,11 @@ public:
         return m_Window;
     }
 
-    void SetCamera(Camera* camera);
+    void SetCamera(Camera *camera);
 
 private:
     GLFWwindow *m_Window = nullptr;
-    Camera* m_Camera = nullptr;
+    Camera *m_Camera = nullptr;
 
     int m_Width = 0;
     int m_Height = 0;

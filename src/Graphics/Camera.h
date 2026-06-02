@@ -31,12 +31,12 @@ public:
     }
 
     // Smooth follow
-    void Follow(const glm::vec3& position, float speed = 0.1f) {
+    void Follow(const glm::vec3 &position, float speed = 0.1f) {
         target = glm::mix(target, position, speed);
     }
 
     // Hard snap
-    void SnapTo(const glm::vec3& position) {
+    void SnapTo(const glm::vec3 &position) {
         target = position;
     }
 

@@ -8,12 +8,10 @@
 #include <glm/glm.hpp>
 
 Application::Application()
-    : m_Window(1280, 720, "Window")
-{
+    : m_Window(1280, 720, "Window") {
 }
 
-void Application::Run()
-{
+void Application::Run() {
     Renderer renderer;
 
     Camera camera;
@@ -41,8 +39,7 @@ void Application::Run()
 
     float angle = 0.0f;
 
-    while (!m_Window.ShouldClose())
-    {
+    while (!m_Window.ShouldClose()) {
         angle += 0.01f;
 
         float radius = 500.0f;
@@ -63,5 +60,4 @@ void Application::Run()
         m_Window.SwapBuffers();
         m_Window.PollEvents();
     }
-
 }

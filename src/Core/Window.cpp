@@ -71,11 +71,10 @@ void Window::WindowResizeCallback(
     self->m_Height = height;
     glViewport(0, 0, width, height);
 
-    if (self -> m_Camera) {
-        float aspect = (float)width / (float)height;
+    if (self->m_Camera) {
+        float aspect = (float) width / (float) height;
         self->m_Camera->SetAspect(aspect);
     }
-
 }
 
 void Window::SetCamera(Camera *camera) {
