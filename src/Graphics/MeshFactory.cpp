@@ -33,8 +33,12 @@ Mesh MeshFactory::CreateTriangle() {
     return mesh;
 }
 
-Mesh MeshFactory::CreateFlatTopHex(float rad) {
+Mesh MeshFactory::CreateFlatTopHex(float spacing) {
     MeshData data;
+
+    // For flat-top hex with proper isometric tiling
+    // The circumradius should be 2/3 of the spacing for seamless tiling
+    float rad = spacing * 2.0f / 3.0f;
 
     data.vertices.push_back({0.0f, 0.0f, 0.5f, 0.5f}); // center
 
@@ -66,24 +70,19 @@ Mesh MeshFactory::CreateFlatTopHex(float rad) {
     return mesh;
 }
 
-
 Mesh MeshFactory::CreatePointTopHex(float rad) {
     MeshData data;
-
     data.vertices.push_back({0.0f, 0.0f, 0.5f, 0.5f}); // center
 
     for (int i = 0; i < 6; i++) {
-        float angle = glm::radians(60.0f * i);
+        float angle = glm::radians(60.0f * i + 30.0f); // <-- IMPORTANT
 
         float c = std::cos(angle);
         float s = std::sin(angle);
 
-        float x = rad * c;
-        float y = rad * s;
-
         data.vertices.push_back({
-            x,
-            y,
+            rad * c,
+            rad * s,
             0.5f + 0.5f * c,
             0.5f + 0.5f * s
         });
@@ -99,5 +98,6 @@ Mesh MeshFactory::CreatePointTopHex(float rad) {
     mesh.Upload(data);
     return mesh;
 }
+
 
 // stop this code duplicaiton shit later but 4 now this is fine

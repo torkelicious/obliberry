@@ -24,6 +24,10 @@ public:
 
     void SetUniformVec2(const std::string &name, const glm::vec2 &v);
 
+    void SetUniform1f(const std::string &name, float value);
+
+    void SetUniformVec4(const std::string &name, const glm::vec4 &v);
+
 private:
     GLuint m_ID;
     std::unordered_map<std::string, GLint> m_UniformCache;

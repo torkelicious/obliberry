@@ -48,7 +48,6 @@ private:
     GLuint m_VAO = 0;
     GLuint m_VBO = 0;
     GLuint m_IBO = 0;
-
     int m_IndexCount = 0;
 };
 

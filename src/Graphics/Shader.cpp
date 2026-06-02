@@ -35,6 +35,14 @@ void Shader::SetUniformVec2(const std::string &name, const glm::vec2 &v) {
     glUniform2f(GetUniformLocation(name), v.x, v.y);
 }
 
+void Shader::SetUniform1f(const std::string &name, float value) {
+    glUniform1f(GetUniformLocation(name), value);
+}
+
+void Shader::SetUniformVec4(const std::string &name, const glm::vec4 &v) {
+    glUniform4f(GetUniformLocation(name), v.x, v.y, v.z, v.w);
+}
+
 std::string Shader::LoadFile(const std::string &path) {
     std::ifstream file(path);
     if (!file.is_open()) {
@@ -66,6 +74,8 @@ GLuint Shader::Link(GLuint vert, GLuint frag) {
     GLuint program = glCreateProgram();
     glAttachShader(program, vert);
     glAttachShader(program, frag);
+    //glBindAttribLocation(program, 0, "a_Pos");
+    //glBindAttribLocation(program, 1, "a_TexCoord");
     glLinkProgram(program);
 
     GLint success;

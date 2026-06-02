@@ -29,6 +29,9 @@ add_executable(
         src/Graphics/Texture.h
         src/Graphics/Camera.cpp
         src/Graphics/Camera.h
+        src/Core/Entity.h
+        src/World/HexMap.cpp
+        src/World/HexMap.h
 )
 
 target_include_directories(
