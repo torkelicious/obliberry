@@ -12,6 +12,9 @@ add_executable(
         IsometricGame
         src/main.cpp
         external/glad/src/glad.c
+        external/stb_image/stb_image.cpp
+        src/Core/Window.cpp
+        src/Core/Window.h
 )
 
 target_include_directories(
