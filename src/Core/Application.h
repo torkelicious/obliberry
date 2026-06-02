@@ -6,7 +6,9 @@
 class Application {
 public:
     Application();
+
     void Run();
+
 private:
     // app window instantiated with class
     Window m_Window;

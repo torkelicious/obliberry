@@ -9,8 +9,9 @@
 class Renderer {
 public:
     //              vec4 curr for pos, pos, size, size
-    void Draw(const Mesh& mesh, Shader& shader, const Transform& transform);
+    void Draw(const Mesh &mesh, Shader &shader, const Transform &transform, const glm::mat4 &vp);
 
+    void Clear();
 };
 
 

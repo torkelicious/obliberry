@@ -1,13 +1,14 @@
 #version 330 core
-layout(location = 0) in vec2 a_Position;
-layout(location = 1) in vec2 a_UV;
 
-uniform mat4 u_Model;
-uniform mat4 u_ViewProjection; // projection matrix
+layout(location = 0) in vec4 pos;
+layout(location = 1) in vec2 texCoord;
 
-out vec2 v_UV;
+out vec2 v_TexCoord;
 
-void main() {
-    gl_Position = u_ViewProjection * u_Model * vec4(a_Position, 0.0, 1.0);
-    v_UV = a_UV;
+uniform mat4 u_MVP;
+
+void main()
+{
+    gl_Position = u_MVP * pos;
+    v_TexCoord = texCoord;
 }

@@ -1,0 +1,103 @@
+#include "MeshFactory.h"
+
+Mesh MeshFactory::CreateQuad() {
+    MeshData data;
+    data.vertices =
+    {
+        {0, 0, 0, 0},
+        {1, 0, 1, 0},
+        {1, 1, 1, 1},
+        {0, 1, 0, 1}
+    };
+
+    data.indices = {0, 1, 2, 2, 3, 0};
+    Mesh mesh;
+    mesh.Upload(data);
+    return mesh;
+}
+
+Mesh MeshFactory::CreateTriangle() {
+    MeshData data;
+
+    data.vertices =
+    {
+        {0.0f, 0.0f, 0.0f, 0.0f}, // bottom-left
+        {1.0f, 0.0f, 1.0f, 0.0f}, // bottom-right
+        {0.5f, 1.0f, 0.5f, 1.0f} // top
+    };
+
+    data.indices = {0, 1, 2};
+
+    Mesh mesh;
+    mesh.Upload(data);
+    return mesh;
+}
+
+Mesh MeshFactory::CreateFlatTopHex(float rad) {
+    MeshData data;
+
+    data.vertices.push_back({0.0f, 0.0f, 0.5f, 0.5f}); // center
+
+    for (int i = 0; i < 6; i++) {
+        float angle = glm::radians(60.0f * i + 30.0f); // flat-top hex
+
+        float c = std::cos(angle);
+        float s = std::sin(angle);
+
+        float x = rad * c;
+        float y = rad * s;
+
+        data.vertices.push_back({
+            x,
+            y,
+            0.5f + 0.5f * c,
+            0.5f + 0.5f * s
+        });
+    }
+
+    for (int i = 1; i <= 6; i++) {
+        data.indices.push_back(0);
+        data.indices.push_back(i);
+        data.indices.push_back((i % 6) + 1);
+    }
+
+    Mesh mesh;
+    mesh.Upload(data);
+    return mesh;
+}
+
+
+Mesh MeshFactory::CreatePointTopHex(float rad) {
+    MeshData data;
+
+    data.vertices.push_back({0.0f, 0.0f, 0.5f, 0.5f}); // center
+
+    for (int i = 0; i < 6; i++) {
+        float angle = glm::radians(60.0f * i);
+
+        float c = std::cos(angle);
+        float s = std::sin(angle);
+
+        float x = rad * c;
+        float y = rad * s;
+
+        data.vertices.push_back({
+            x,
+            y,
+            0.5f + 0.5f * c,
+            0.5f + 0.5f * s
+        });
+    }
+
+    for (int i = 1; i <= 6; i++) {
+        data.indices.push_back(0);
+        data.indices.push_back(i);
+        data.indices.push_back((i % 6) + 1);
+    }
+
+    Mesh mesh;
+    mesh.Upload(data);
+    return mesh;
+}
+
+// stop this code duplicaiton shit later but 4 now this is fine

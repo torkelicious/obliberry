@@ -3,6 +3,8 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include "Graphics/Camera.h"
+
 
 class Window {
 public:
@@ -32,8 +34,11 @@ public:
         return m_Window;
     }
 
+    void SetCamera(Camera* camera);
+
 private:
     GLFWwindow *m_Window = nullptr;
+    Camera* m_Camera = nullptr;
 
     int m_Width = 0;
     int m_Height = 0;
@@ -47,6 +52,7 @@ private:
         GLFWwindow *window,
         int width,
         int height);
+
 
     static void KeyCallback(
         GLFWwindow *window,

@@ -23,15 +23,22 @@ add_executable(
         src/Graphics/Mesh.h
         src/Graphics/Shader.cpp
         src/Graphics/Shader.h
+        src/Graphics/MeshFactory.cpp
+        src/Graphics/MeshFactory.h
+        src/Graphics/Texture.cpp
+        src/Graphics/Texture.h
+        src/Graphics/Camera.cpp
+        src/Graphics/Camera.h
 )
 
 target_include_directories(
         IsometricGame PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/stb_image
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
 target_link_libraries(
-        IsometricGame 
+        IsometricGame
         glfw
 )
