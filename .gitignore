@@ -40,8 +40,10 @@
 # *.iml
 # *.ipr
 
-# CMake
+# CMake / other builds
 cmake-build-*/
+build/
+out/
 
 # Mongo Explorer plugin
 .idea/**/mongoSettings.xml
