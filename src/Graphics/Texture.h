@@ -21,7 +21,11 @@ public:
 
     void Unbind() const;
 
+    static Texture *White();
+
 private:
+    Texture() = default;
+
     GLuint m_ID;
     std::string m_FilePath;
     unsigned char *m_ImgLocBuffer;

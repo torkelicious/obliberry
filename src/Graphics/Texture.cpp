@@ -17,11 +17,8 @@ Texture::Texture(
     glGenTextures(1, &m_ID);
     glBindTexture(GL_TEXTURE_2D, m_ID);
 
-    // filtering
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
-
-    // wrapping
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapS);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapT);
 
@@ -37,9 +34,8 @@ Texture::Texture(
                 minFilter == GL_NEAREST_MIPMAP_LINEAR ||
                 minFilter == GL_LINEAR_MIPMAP_LINEAR;
 
-        if (usesMipmaps) {
+        if (usesMipmaps)
             glGenerateMipmap(GL_TEXTURE_2D);
-        }
     } else {
         std::cerr << "Failed to load texture: " << path << std::endl;
     }
@@ -58,4 +54,20 @@ void Texture::Bind(unsigned int slot) const {
 
 void Texture::Unbind() const {
     glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+Texture *Texture::White() {
+    static Texture *instance = nullptr;
+    if (!instance) {
+        instance = new Texture();
+        glGenTextures(1, &instance->m_ID);
+        glBindTexture(GL_TEXTURE_2D, instance->m_ID);
+
+        uint32_t white = 0xFFFFFFFF;
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, &white);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    }
+    return instance;
 }

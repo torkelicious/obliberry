@@ -3,19 +3,29 @@
 #include <fstream>
 #include <sstream>
 
-
 Shader::Shader(const std::string &vertPath, const std::string &fragPath) {
     std::string vertexSrc = LoadFile(vertPath);
     std::string fragmentSrc = LoadFile(fragPath);
+
     GLuint vert = Compile(GL_VERTEX_SHADER, vertexSrc);
     GLuint frag = Compile(GL_FRAGMENT_SHADER, fragmentSrc);
     m_ID = Link(vert, frag);
+
+    if (m_ID == 0) {
+        std::cerr << "[Shader] Failed to create program from:\n  "
+                << vertPath << "\n  " << fragPath << "\n";
+    }
 }
 
 Shader::~Shader() {
+    if (m_ID != 0) {
+        glDeleteProgram(m_ID);
+        m_ID = 0;
+    }
 }
 
 void Shader::Bind() const {
+    if (m_ID == 0) return;
     glUseProgram(m_ID);
 }
 
@@ -23,31 +33,69 @@ void Shader::Unbind() const {
     glUseProgram(0);
 }
 
-void Shader::SetUniform1i(const std::string &name, const int value) {
-    glUniform1i(GetUniformLocation(name), value);
+bool Shader::EnsureBound() const {
+    if (m_ID == 0) return false;
+
+    GLint cur = 0;
+    glGetIntegerv(GL_CURRENT_PROGRAM, &cur);
+    if ((GLuint) cur != m_ID)
+        glUseProgram(m_ID);
+
+    return true;
 }
 
-void Shader::SetUniformMat4(const std::string &name, const glm::mat4 &mat) {
-    glUniformMatrix4fv(GetUniformLocation(name), 1, GL_FALSE, &mat[0][0]);
-}
-
-void Shader::SetUniformVec2(const std::string &name, const glm::vec2 &v) {
-    glUniform2f(GetUniformLocation(name), v.x, v.y);
+void Shader::SetUniform1i(const std::string &name, int value) {
+    if (!EnsureBound()) return;
+    GLint loc = GetUniformLocation(name);
+    if (loc == -1) return;
+    glUniform1i(loc, value);
 }
 
 void Shader::SetUniform1f(const std::string &name, float value) {
-    glUniform1f(GetUniformLocation(name), value);
+    if (!EnsureBound()) return;
+    GLint loc = GetUniformLocation(name);
+    if (loc == -1) return;
+    glUniform1f(loc, value);
+}
+
+void Shader::SetUniformVec2(const std::string &name, const glm::vec2 &v) {
+    if (!EnsureBound()) return;
+    GLint loc = GetUniformLocation(name);
+    if (loc == -1) return;
+    glUniform2f(loc, v.x, v.y);
 }
 
 void Shader::SetUniformVec4(const std::string &name, const glm::vec4 &v) {
-    glUniform4f(GetUniformLocation(name), v.x, v.y, v.z, v.w);
+    if (!EnsureBound()) return;
+    GLint loc = GetUniformLocation(name);
+    if (loc == -1) return;
+    glUniform4f(loc, v.x, v.y, v.z, v.w);
+}
+
+void Shader::SetUniformMat4(const std::string &name, const glm::mat4 &mat) {
+    if (!EnsureBound()) return;
+    GLint loc = GetUniformLocation(name);
+    if (loc == -1) return;
+    glUniformMatrix4fv(loc, 1, GL_FALSE, &mat[0][0]);
+}
+
+GLint Shader::GetUniformLocation(const std::string &name) {
+    if (m_ID == 0) return -1;
+
+    auto it = m_UniformCache.find(name);
+    if (it != m_UniformCache.end())
+        return it->second;
+
+    GLint location = glGetUniformLocation(m_ID, name.c_str());
+    m_UniformCache.emplace(name, location);
+    return location;
 }
 
 std::string Shader::LoadFile(const std::string &path) {
     std::ifstream file(path);
     if (!file.is_open()) {
-        std::cout << "Failed to open shader: " << path << std::endl;
-        return "";
+        std::cerr << "[Shader] Failed to open shader: " << path << "\n";
+        return {};
     }
     std::stringstream ss;
     ss << file.rdbuf();
@@ -55,48 +103,55 @@ std::string Shader::LoadFile(const std::string &path) {
 }
 
 GLuint Shader::Compile(GLenum type, const std::string &src) {
+    if (src.empty()) {
+        // Prevent confusing GLSL errors if file load failed.
+        return 0;
+    }
+
     GLuint shader = glCreateShader(type);
     const char *cstr = src.c_str();
     glShaderSource(shader, 1, &cstr, nullptr);
     glCompileShader(shader);
-    GLint success;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        char log[1024];
-        glGetShaderInfoLog(shader, 1024, nullptr, log);
-        std::cout << "Shader compile error:\n" << log << std::endl;
-        // maybe we should return something on failure but im not sure...
+
+    GLint ok = 0;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &ok);
+    if (!ok) {
+        char log[2048];
+        glGetShaderInfoLog(shader, 2048, nullptr, log);
+        std::cerr << "[Shader] Compile error:\n" << log << "\n";
+        glDeleteShader(shader);
+        return 0;
     }
+
     return shader;
 }
 
 GLuint Shader::Link(GLuint vert, GLuint frag) {
+    if (vert == 0 || frag == 0) {
+        if (vert)
+            glDeleteShader(vert);
+        if (frag)
+            glDeleteShader(frag);
+        return 0;
+    }
+
     GLuint program = glCreateProgram();
     glAttachShader(program, vert);
     glAttachShader(program, frag);
-    //glBindAttribLocation(program, 0, "a_Pos");
-    //glBindAttribLocation(program, 1, "a_TexCoord");
     glLinkProgram(program);
 
-    GLint success;
-    glGetProgramiv(program, GL_LINK_STATUS, &success);
-    if (!success) {
-        char log[1024];
-        glGetProgramInfoLog(program, 1024, nullptr, log);
-        std::cout << "Shader link error:\n" << log << std::endl;
-        // maybe we should return something on failure but im not sure...
+    GLint ok = 0;
+    glGetProgramiv(program, GL_LINK_STATUS, &ok);
+    if (!ok) {
+        char log[2048];
+        glGetProgramInfoLog(program, 2048, nullptr, log);
+        std::cerr << "[Shader] Link error:\n" << log << "\n";
+        glDeleteProgram(program);
+        program = 0;
     }
+
     glDeleteShader(vert);
     glDeleteShader(frag);
+
     return program;
-}
-
-GLint Shader::GetUniformLocation(const std::string &name) {
-    if (m_UniformCache.find(name) != m_UniformCache.end())
-        return m_UniformCache[name];
-
-    GLint location = glGetUniformLocation(m_ID, name.c_str());
-    m_UniformCache[name] = location;
-
-    return location;
 }

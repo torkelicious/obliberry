@@ -32,6 +32,11 @@ add_executable(
         src/Core/Entity.h
         src/World/HexMap.cpp
         src/World/HexMap.h
+        src/Graphics/GLDebug.cpp
+        src/Graphics/GLDebug.h
+        src/Graphics/Material.h
+        src/Core/InputManager.cpp
+        src/Core/InputManager.h
 )
 
 target_include_directories(

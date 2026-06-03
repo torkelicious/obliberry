@@ -11,5 +11,7 @@ void main()
 {
     vec4 texColor = texture(u_Texture, v_TexCoord);
     //color = texColor;
-    color = vec4(1,1,1,1);
+    //color = vec4(1,1,1,1);
+    color = texture(u_Texture, v_TexCoord)*u_Color;
+
 }
