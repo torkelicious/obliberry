@@ -1,5 +1,7 @@
 #include "MeshFactory.h"
 
+#include <cmath>
+
 Mesh MeshFactory::CreateQuad() {
     MeshData data;
     data.vertices =
@@ -33,49 +35,12 @@ Mesh MeshFactory::CreateTriangle() {
     return mesh;
 }
 
-Mesh MeshFactory::CreateFlatTopHex(float spacing) {
-    MeshData data;
-
-    // For flat-top hex with proper isometric tiling
-    // The circumradius should be 2/3 of the spacing for seamless tiling
-    float rad = spacing * 2.0f / 3.0f;
-
-    data.vertices.push_back({0.0f, 0.0f, 0.5f, 0.5f}); // center
-
-    for (int i = 0; i < 6; i++) {
-        float angle = glm::radians(60.0f * i + 30.0f); // flat-top hex
-
-        float c = std::cos(angle);
-        float s = std::sin(angle);
-
-        float x = rad * c;
-        float y = rad * s;
-
-        data.vertices.push_back({
-            x,
-            y,
-            0.5f + 0.5f * c,
-            0.5f + 0.5f * s
-        });
-    }
-
-    for (int i = 1; i <= 6; i++) {
-        data.indices.push_back(0);
-        data.indices.push_back(i);
-        data.indices.push_back((i % 6) + 1);
-    }
-
-    Mesh mesh;
-    mesh.Upload(data);
-    return mesh;
-}
-
 Mesh MeshFactory::CreatePointTopHex(float rad) {
     MeshData data;
     data.vertices.push_back({0.0f, 0.0f, 0.5f, 0.5f}); // center
 
     for (int i = 0; i < 6; i++) {
-        float angle = glm::radians(60.0f * i + 30.0f); // <-- IMPORTANT
+        float angle = glm::radians(60.0f * static_cast<float>(i) + 30.0f);
 
         float c = std::cos(angle);
         float s = std::sin(angle);

@@ -29,14 +29,17 @@ add_executable(
         src/Graphics/Texture.h
         src/Graphics/Camera.cpp
         src/Graphics/Camera.h
-        src/Core/Entity.h
-        src/World/HexMap.cpp
-        src/World/HexMap.h
+        src/Map/HexMap.cpp
+        src/Map/HexMap.h
         src/Graphics/GLDebug.cpp
         src/Graphics/GLDebug.h
         src/Graphics/Material.h
         src/Core/InputManager.cpp
         src/Core/InputManager.h
+        src/Game/GameWorld.cpp
+        src/Game/GameWorld.h
+        src/Game/Actor.cpp
+        src/Game/Actor.h
 )
 
 target_include_directories(

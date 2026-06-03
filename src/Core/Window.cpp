@@ -1,6 +1,8 @@
 #include "Window.h"
 #include <iostream>
 
+#include "Graphics/GLDebug.h"
+
 #include "InputManager.h" // include here (not in Window.h)
 
 Window::Window(unsigned int width, unsigned int height, const char *title, int GLDebug)

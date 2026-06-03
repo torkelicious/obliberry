@@ -13,11 +13,7 @@ void Renderer::Submit(
     const Mesh &mesh,
     const Material &material,
     const Transform &transform) {
-    m_Commands.push_back({
-        &mesh,
-        &material,
-        transform
-    });
+    m_Commands.emplace_back(&mesh, &material, transform);
 }
 
 void Renderer::Flush() {
@@ -27,30 +23,34 @@ void Renderer::Flush() {
         m_Commands.begin(),
         m_Commands.end(),
         [](const RenderCommand &a, const RenderCommand &b) {
-            if (a.material != b.material)
-                return a.material < b.material;
-            return a.mesh < b.mesh;
+            if (std::get < 1 > (a) != std::get < 1 > (b))
+                return std::get < 1 > (a) < std::get < 1 > (b);
+            return std::get < 0 > (a) < std::get < 0 > (b);
         });
 
     const Material *currentMaterial = nullptr;
     const Mesh *currentMesh = nullptr;
 
     for (const auto &cmd: m_Commands) {
-        if (cmd.material != currentMaterial) {
-            cmd.material->shader->Bind();
+        const auto *mesh = std::get < 0 > (cmd);
+        const auto *material = std::get < 1 > (cmd);
+        const auto &transform = std::get < 2 > (cmd);
 
-            auto *tex = cmd.material->texture ? cmd.material->texture : Texture::White();
+        if (material != currentMaterial) {
+            material->shader->Bind();
+
+            auto *tex = material->texture ? material->texture : Texture::White();
             tex->Bind(0);
 
-            cmd.material->shader->SetUniform1i("u_Texture", 0);
-            cmd.material->shader->SetUniformVec4("u_Color", cmd.material->color);
+            material->shader->SetUniform1i("u_Texture", 0);
+            material->shader->SetUniformVec4("u_Color", material->color);
 
-            currentMaterial = cmd.material;
+            currentMaterial = material;
         }
 
-        if (cmd.mesh != currentMesh) {
-            cmd.mesh->Bind();
-            currentMesh = cmd.mesh;
+        if (mesh != currentMesh) {
+            mesh->Bind();
+            currentMesh = mesh;
         }
 
         Execute(cmd);
@@ -60,15 +60,19 @@ void Renderer::Flush() {
 }
 
 void Renderer::Execute(const RenderCommand &cmd) {
+    const auto *mesh = std::get < 0 > (cmd);
+    const auto *material = std::get < 1 > (cmd);
+    const auto &transform = std::get < 2 > (cmd);
+
     const glm::mat4 mvp =
             m_Camera->GetVP() *
-            TransformToMatrix(cmd.transform);
+            TransformToMatrix(transform);
 
-    cmd.material->shader->SetUniformMat4("u_MVP", mvp);
+    material->shader->SetUniformMat4("u_MVP", mvp);
 
     glDrawElements(
         GL_TRIANGLES,
-        cmd.mesh->GetIndexCount(),
+        mesh->GetIndexCount(),
         GL_UNSIGNED_INT,
         nullptr
     );

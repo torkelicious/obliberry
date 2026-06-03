@@ -14,7 +14,7 @@ public:
         unsigned int width,
         unsigned int height,
         const char *title,
-        const int GLDebug = false
+        int GLDebug = false
     );
 
     ~Window();

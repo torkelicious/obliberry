@@ -6,6 +6,7 @@
 #include "glm/glm.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 #include <vector>
+#include "ECS/Components.h"
 
 
 struct Vertex {
@@ -16,12 +17,6 @@ struct Vertex {
 struct MeshData {
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
-};
-
-struct Transform {
-    glm::vec2 Position;
-    glm::vec2 Scale;
-    float rotation = 0.0f; // radians
 };
 
 inline glm::mat4 TransformToMatrix(const Transform &t) {

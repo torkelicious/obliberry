@@ -2,6 +2,7 @@
 #define ISOMETRICGAME_APPLICATION_H
 
 #include "Window.h"
+#include "Game/GameWorld.h"
 
 class Application {
 public:
@@ -10,8 +11,8 @@ public:
     void Run();
 
 private:
-    // app window instantiated with class
     Window m_Window;
+    GameWorld m_GameWorld;
 };
 
 #endif //ISOMETRICGAME_APPLICATION_H

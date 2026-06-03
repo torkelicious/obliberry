@@ -1,14 +1,12 @@
 #ifndef ISOMETRICGAME_RENDERER_H
 #define ISOMETRICGAME_RENDERER_H
+#include <tuple>
+#include <vector>
 #include "Camera.h"
 #include "Mesh.h"
 #include "Material.h"
 
-struct RenderCommand {
-    const Mesh *mesh;
-    const Material *material;
-    Transform transform;
-};
+using RenderCommand = std::tuple<const Mesh *, const Material *, Transform>;
 
 class Renderer {
 public:

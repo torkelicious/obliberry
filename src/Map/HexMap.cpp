@@ -1,6 +1,7 @@
 #include "HexMap.h"
 
 #include <algorithm>
+#include <cmath>
 #include <iostream>
 
 void HexMap::Generate(int radius) {
@@ -14,12 +15,12 @@ void HexMap::Generate(int radius) {
             int s = -q - r;
             if (std::abs(q) + std::abs(r) + std::abs(s) > radius * 2) continue;
 
-            HexTile tile;
+            HexTile tile{};
             tile.q = q;
             tile.r = r;
 
-            tile.WorldPos.x = size * std::sqrt(3.0f) * (q + r * 0.5f);
-            tile.WorldPos.y = size * 1.5f * r;
+            tile.WorldPos.x = size * std::sqrt(3.0f) * (static_cast<float>(q) + static_cast<float>(r) * 0.5f);
+            tile.WorldPos.y = size * 1.5f * static_cast<float>(r);
 
             tiles.push_back(tile);
         }
