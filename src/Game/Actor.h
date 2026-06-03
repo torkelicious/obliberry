@@ -6,10 +6,11 @@
 
 class Actor {
 public:
-   Position GridPosition; // add world pos later if we implement "world" map?
-   bool isPlayer;
+    Position GridPosition; // add world pos later if we implement "world" map?
+    bool isPlayer;
+
 private:
-   // TODO: movement grid stuff bla blah world pos blah blah
+    // TODO: movement grid stuff bla blah world pos blah blah
 };
 
 
