@@ -1,5 +1,6 @@
 #ifndef ISOMETRICGAME_COMPONENTS_H
 #define ISOMETRICGAME_COMPONENTS_H
+#include "glad/glad.h"
 #include "glm/glm.hpp"
 
 // Screen position / scale
@@ -22,7 +23,9 @@ struct Velocity {
 */
 
 struct Sprite {
-    GLuint textureID;
+    Transform SpriteTransform; // sprite local transform compared to model transform
+    GLuint TextureID; // m_ID in texture class?
+    // make sure to link m_ID to texture slot and id sorting for objects too ?
 };
 
 // collider , actor, stats, inv etc later?

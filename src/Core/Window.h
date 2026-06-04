@@ -36,6 +36,8 @@ public:
 
     void SetCamera(Camera *camera);
 
+    InputManager *GetInputManager() const {return m_InputManager;};
+
 private:
     GLFWwindow *m_Window = nullptr;
     Camera *m_Camera = nullptr;

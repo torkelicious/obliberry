@@ -7,8 +7,11 @@
 class Application {
 public:
     Application();
-
     void Run();
+
+    //GameWorld *GetGameWorld() {
+    //    return &m_GameWorld;
+    //};
 
 private:
     Window m_Window;

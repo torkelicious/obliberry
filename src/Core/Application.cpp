@@ -1,4 +1,6 @@
 #include "Application.h"
+
+#include "InputManager.h"
 #include "Graphics/Renderer.h"
 #include "Graphics/GLDebug.h"
 
@@ -15,6 +17,7 @@ void Application::Run() {
 
     Renderer renderer;
     m_Window.SetCamera(&m_GameWorld.GetCamera());
+    m_Window.GetInputManager()->SetGameWorld(m_GameWorld);
 
     while (!m_Window.ShouldClose()) {
         m_GameWorld.Render(renderer);
