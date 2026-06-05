@@ -88,3 +88,5 @@ http-client.private.env.json
 .idea/ 
 # no  need for me
 
+/assets/textures/snorkel_berry.png
+/.idea
