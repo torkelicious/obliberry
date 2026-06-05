@@ -7,7 +7,7 @@
 void HexMap::Generate(int radius) {
     tiles.clear();
 
-    float size = HEX_SPACING;
+    // float size = HEX_SPACING;
 
     for (int q = -radius; q <= radius; q++) {
         for (int r = -radius; r <= radius; r++) {
@@ -24,18 +24,14 @@ void HexMap::Generate(int radius) {
             tiles.push_back(tile);
         }
     }
-
-    std::sort(tiles.begin(), tiles.end(),
-              [](const HexTile &a, const HexTile &b) { return a.WorldPos.y > b.WorldPos.y; });
 }
 
-glm::vec2 HexMap::HexToWorld(int q, int r) {
-    {
-        float size = HexMap::HEX_SPACING;
+glm::vec3 HexMap::HexToWorld(int q, int r) {
+    float size = HexMap::HEX_SPACING;
 
-        return {
-            size * std::sqrt(3.0f) * (q + r * 0.5f),
-            size * 1.5f * r
-        };
-    }
+    return glm::vec3(
+        size * std::sqrt(3.0f) * (q + r * 0.5f),
+        size * 1.5f * r,
+        0.0f
+    );
 }

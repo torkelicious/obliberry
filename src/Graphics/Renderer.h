@@ -6,7 +6,11 @@
 #include "Mesh.h"
 #include "Material.h"
 
-using RenderCommand = std::tuple<const Mesh *, const Material *, Transform>;
+struct RenderCommand {
+    const Mesh *mesh;
+    const Material *material;
+    Transform transform;
+};
 
 class Renderer {
 public:
@@ -18,6 +22,7 @@ public:
 
 private:
     const Camera *m_Camera = nullptr;
+    glm::mat4 m_VPMatrix{1.0f};
     std::vector<RenderCommand> m_Commands;
 
     void Execute(const RenderCommand &cmd);

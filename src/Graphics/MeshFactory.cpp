@@ -5,12 +5,14 @@
 
 MeshData MeshFactory::CreateQuad() {
     MeshData data;
+    // Centered quad: positions in [-0.5, 0.5] so the transform position is the visual center.
+    // UVs remain in [0, 1].
     data.vertices =
     {
-        {0, 0, 0, 0},
-        {1, 0, 1, 0},
-        {1, 1, 1, 1},
-        {0, 1, 0, 1}
+        {-0.5f, -0.5f, 0.0f, 0.0f},
+        {0.5f, -0.5f, 1.0f, 0.0f},
+        {0.5f, 0.5f, 1.0f, 1.0f},
+        {-0.5f, 0.5f, 0.0f, 1.0f}
     };
 
     data.indices = {0, 1, 2, 2, 3, 0};

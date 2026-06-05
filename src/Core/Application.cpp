@@ -7,14 +7,12 @@
 
 Application::Application()
     : m_Window(1280, 720, "Window", true, this),
-      m_GameWorld() {
+      m_GameWorld(m_InputManager) {
     m_Window.SetInputManager(&m_InputManager);
 }
 
 void Application::Run() {
     GLDebug::InitDebug();
-    //glDisable(GL_DEPTH_TEST);
-    glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 

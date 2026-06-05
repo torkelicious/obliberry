@@ -5,9 +5,9 @@
 
 // Screen position / scale
 struct Transform : public Component {
-    glm::vec3 Position{1.0f, 1.0f, 1.0f};
-    glm::vec2 Scale{1.0f, 1.0f};
-    float rotation = 0.0f; // radians
+    glm::vec3 Position{0.0f, 0.0f, 0.0f};
+    glm::vec3 Scale{1.0f, 1.0f, 1.0f};
+    glm::vec3 Rotation{0.0f, 0.0f, 0.0f};
 };
 
 #endif //ISOMETRICGAME_TRANSFORMCOMPONENT_H

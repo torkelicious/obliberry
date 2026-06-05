@@ -3,7 +3,6 @@
 
 #include <cmath>
 #include <glm/glm.hpp>
-
 #include "Core/InputManager.h"
 #include "ECS/ECS.h"
 #include "ECS/Components/PlayerInputComponent.h"
@@ -27,6 +26,11 @@ public:
         if (!playerInput || !velocity) return;
 
         glm::vec2 movement{0.0f, 0.0f};
+
+        glm::vec2 scroll = {
+            m_InputManager->scrollX,
+            m_InputManager->scrollY
+        };
 
         if (m_InputManager->IsKeyDown(playerInput->Up)) {
             movement.y += 1.0f;

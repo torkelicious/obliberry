@@ -1,20 +1,21 @@
 #include "Renderer.h"
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 #include "Camera.h"
 
 void Renderer::BeginFrame(const Camera &camera) {
     m_Camera = &camera;
+    m_VPMatrix = camera.GetProjection() * camera.GetView();
     m_Commands.clear();
-    //glClear(GL_COLOR_BUFFER_BIT);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT);
 }
 
 void Renderer::Submit(
     const Mesh &mesh,
     const Material &material,
     const Transform &transform) {
-    m_Commands.emplace_back(&mesh, &material, transform);
+    m_Commands.push_back({&mesh, &material, transform});
 }
 
 void Renderer::Flush() {
@@ -24,18 +25,33 @@ void Renderer::Flush() {
         m_Commands.begin(),
         m_Commands.end(),
         [](const RenderCommand &a, const RenderCommand &b) {
-            if (std::get < 1 > (a) != std::get < 1 > (b))
-                return std::get < 1 > (a) < std::get < 1 > (b);
-            return std::get < 0 > (a) < std::get < 0 > (b);
+            // Primary Z-layer
+            const int zA = static_cast<int>(std::lround(a.transform.Position.z * 100.0f));
+            const int zB = static_cast<int>(std::lround(b.transform.Position.z * 100.0f));
+            if (zA != zB)
+                return zA < zB;
+
+            // Secondary Y depth
+            const int yA = static_cast<int>(std::lround(a.transform.Position.y * 100.0f));
+            const int yB = static_cast<int>(std::lround(b.transform.Position.y * 100.0f));
+            if (yA != yB)
+                return yA > yB;
+
+            //  material batching
+            if (a.material != b.material)
+                return a.material < b.material;
+
+            //  mesh batching
+            return a.mesh < b.mesh;
         });
 
     const Material *currentMaterial = nullptr;
     const Mesh *currentMesh = nullptr;
 
     for (const auto &cmd: m_Commands) {
-        const auto *mesh = std::get < 0 > (cmd);
-        const auto *material = std::get < 1 > (cmd);
-        const auto &transform = std::get < 2 > (cmd);
+        const auto *mesh = cmd.mesh;
+        const auto *material = cmd.material;
+        const auto &transform = cmd.transform;
 
         if (material != currentMaterial) {
             material->shader->Bind();
@@ -61,19 +77,12 @@ void Renderer::Flush() {
 }
 
 void Renderer::Execute(const RenderCommand &cmd) {
-    const auto *mesh = std::get < 0 > (cmd);
-    const auto *material = std::get < 1 > (cmd);
-    const auto &transform = std::get < 2 > (cmd);
-
-    const glm::mat4 mvp =
-            m_Camera->GetVP() *
-            TransformToMatrix(transform);
-
-    material->shader->SetUniformMat4("u_MVP", mvp);
+    const glm::mat4 mvp = m_VPMatrix * TransformToMatrix(cmd.transform);
+    cmd.material->shader->SetUniformMat4("u_MVP", mvp);
 
     glDrawElements(
         GL_TRIANGLES,
-        mesh->GetIndexCount(),
+        cmd.mesh->GetIndexCount(),
         GL_UNSIGNED_INT,
         nullptr
     );

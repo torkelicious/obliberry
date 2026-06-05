@@ -8,6 +8,11 @@ public:
 
     void HandleKeyEvent(int key, int action);
 
+    void HandleScrollEvent(double xOffset, double yOffset);
+
+    double scrollX = 0.0;
+    double scrollY = 0.0;
+
     [[nodiscard]] bool IsKeyDown(int key) const;
 
     [[nodiscard]] bool IsKeyPressed(int key) const;

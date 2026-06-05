@@ -21,9 +21,11 @@ struct MeshData {
 
 inline glm::mat4 TransformToMatrix(const Transform &t) {
     auto model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(t.Position));
-    model = glm::rotate(model, t.rotation, glm::vec3(0.0f, 0.0f, 1.0f));
-    model = glm::scale(model, glm::vec3(t.Scale, 1.0f));
+    model = glm::translate(model, t.Position);
+    model = glm::rotate(model, t.Rotation.z, glm::vec3(0.0f, 0.0f, 1.0f));
+    model = glm::rotate(model, t.Rotation.y, glm::vec3(0.0f, 1.0f, 0.0f));
+    model = glm::rotate(model, t.Rotation.x, glm::vec3(1.0f, 0.0f, 0.0f));
+    model = glm::scale(model, t.Scale);
     return model;
 }
 

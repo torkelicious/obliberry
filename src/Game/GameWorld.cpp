@@ -1,5 +1,7 @@
 #include "GameWorld.h"
 
+#include <iostream>
+
 #include "Core/ResourceManager.h"
 #include "ECS/Components.h"
 #include "ECS/Components/MaterialComponent.h"
@@ -7,7 +9,6 @@
 #include "ECS/Components/PlayerInputComponent.h"
 #include "ECS/Components/SpriteComponent.h"
 #include "ECS/Components/VelocityComponent.h"
-
 #include "Graphics/MeshFactory.h"
 #include "Graphics/Renderer.h"
 #include "Graphics/Texture.h"
@@ -15,16 +16,13 @@
 #include "Graphics/Shader.h"
 #include "Graphics/Mesh.h"
 
-// TODO:
-//  Fix rendering order (currently relying on depth buffer which breaks in ortho)
-//  Decide final layering system .-. either Y-sorting (recommended, and most probable) or Z-layers (0 = tiles, 0.1 = player, 1 = UI) ???????
-//  Ensure all objects use a single consistent world space (i be mixing hex/grid transforms in render because i dum dum)
-//  Verify shader stuffs
-//  reosurcemanager seems 2 be done ;:))))
-// make gaem
+// Rendering order is handled by the Renderer via hybrid Z-layer + Y-sorting:
+//   Z = 0.0 -> ground (hex tiles), Z = 0.1 -> entities (player), Z = 1.0 -> UI.
+//   Within a Z-layer, larger Y is drawn first (back-to-front for isometric view). ?? something i guess
 
 
-GameWorld::GameWorld() {
+GameWorld::GameWorld(InputManager &input) {
+    m_Input = &input;
     m_HexMesh = ResourceManager::Load<Mesh>("hex_mesh");
 
     m_Shader = ResourceManager::Load<Shader>(
@@ -65,8 +63,9 @@ GameWorld::GameWorld() {
 
     m_Player.AddComponent<Transform>();
     auto *transform = m_Player.GetComponent<Transform>();
-    transform->Scale = {35, 70};
-    transform->Position = {0, 0, 0.1f};
+    transform->Scale = {35.0f, 70.0f, 1.0f};
+    transform->Position = {0.0f, 0.0f, 35.0f + 0.1f};
+    transform->Rotation = {glm::radians(90.0f), 0.0f, 0.0f};
 
     m_Player.AddComponent<MeshComponent>();
     m_Player.GetComponent<MeshComponent>()->mesh = playerMesh;
@@ -84,7 +83,8 @@ GameWorld::GameWorld() {
     m_Material.texture = m_HexTexture;
 
     m_Camera.target = {0.0f, 0.0f, 0.0f};
-    m_Camera.offset = {0.0f, 50.0f, 50.0f};
+    m_Camera.offset = {0.0f, -100.0f, 100.0f};
+    m_Camera.isometric = true;
 }
 
 
@@ -107,6 +107,22 @@ void GameWorld::Update(float dt) {
         transform->Position.y,
         0.0f
     };
+
+    //   glm::vec2 scroll = m_Player.GetComponent<PlayerInput>().
+
+    m_Camera.AddZoom(m_Input->scrollY * 0.1f);
+    //std::cout << "scrolly:" << m_Input->scrollY << std::endl;
+    m_Input->scrollY = 0;
+
+    bool isMoving =
+            std::abs(velocity->Value.x) > 0.001f ||
+            std::abs(velocity->Value.y) > 0.001f;
+
+    if (!isMoving) {
+        transform->Position = GetClosestHexPosition(*transform);
+    }
+    transform->Position.z = 0.1f;
+    // idk wat im doing
 }
 
 
@@ -116,8 +132,8 @@ void GameWorld::Render(Renderer &renderer) {
     for (const auto &tile: m_Map.tiles) {
         Transform t;
         t.Position = {tile.WorldPos.x, tile.WorldPos.y, 0.0f};
-        t.Scale = {1.0f, 1.0f};
-        t.rotation = 0.0f;
+        t.Scale = {1.0f, 1.0f, 1.0f};
+        t.Rotation = {0.0f, 0.0f, 0.0f};
 
         renderer.Submit(*m_HexMesh, m_Material, t);
     }
@@ -131,4 +147,23 @@ void GameWorld::Render(Renderer &renderer) {
 
 void GameWorld::Shutdown() {
     ResourceManager::Shutdown();
+}
+
+glm::vec3 GameWorld::GetClosestHexPosition(const Transform &t) {
+    if (m_Map.tiles.empty())
+        return t.Position;
+
+    const glm::vec3 *closest = &m_Map.tiles[0].WorldPos;
+    float bestDist = glm::length(*closest - t.Position);
+
+    for (const auto &tile: m_Map.tiles) {
+        float dist = glm::length(tile.WorldPos - t.Position);
+
+        if (dist < bestDist) {
+            bestDist = dist;
+            closest = &tile.WorldPos;
+        }
+    }
+
+    return *closest;
 }

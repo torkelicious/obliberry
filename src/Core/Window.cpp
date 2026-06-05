@@ -59,6 +59,7 @@ bool Window::Init(unsigned int width, unsigned int height, const char *title) {
 
     glfwSetKeyCallback(m_Window, KeyCallback);
     glfwSetCursorPosCallback(m_Window, CursorPosCallback);
+    glfwSetScrollCallback(m_Window, ScrollCallback);
 
     return true;
 }
@@ -105,6 +106,12 @@ void Window::KeyCallback(GLFWwindow *window, int key, int scancode, int action, 
 
 void Window::CursorPosCallback(GLFWwindow *window, double xpos, double ypos) {
     // TODO: implement
+}
+
+void Window::ScrollCallback(GLFWwindow *window, double xoffset, double yoffset) {
+    auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
+    if (!self) return;
+    self->m_InputManager->HandleScrollEvent(xoffset, yoffset);
 }
 
 
