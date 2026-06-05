@@ -6,7 +6,8 @@
 void Renderer::BeginFrame(const Camera &camera) {
     m_Camera = &camera;
     m_Commands.clear();
-    glClear(GL_COLOR_BUFFER_BIT);
+    //glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void Renderer::Submit(

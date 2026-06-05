@@ -3,14 +3,13 @@
 #include <stb_image.h>
 
 Texture::Texture(
-    const GLuint ID,
     const std::string &path,
     GLuint minFilter,
     GLuint magFilter,
     GLuint wrapS,
     GLuint wrapT
 )
-    : m_ID(ID), m_FilePath(path), m_ImgLocBuffer(nullptr), m_Width(0), m_Height(0), m_BPP(0) {
+    : m_ID(0), m_FilePath(path), m_ImgLocBuffer(nullptr), m_Width(0), m_Height(0), m_BPP(0) {
     stbi_set_flip_vertically_on_load(1);
 
     m_ImgLocBuffer = stbi_load(path.c_str(), &m_Width, &m_Height, &m_BPP, 4);
@@ -45,7 +44,11 @@ Texture::Texture(
 }
 
 Texture::~Texture() {
-    glDeleteTextures(1, &m_ID);
+    Unbind();
+    if (m_ID != 0) {
+        glDeleteTextures(1, &m_ID);
+        m_ID = 0;
+    }
 }
 
 void Texture::Bind(unsigned int slot) const {

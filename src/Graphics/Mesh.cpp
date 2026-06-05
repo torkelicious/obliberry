@@ -44,7 +44,7 @@ void Mesh::Upload(const MeshData &data) {
         GL_FLOAT,
         GL_FALSE,
         sizeof(Vertex),
-        (void *) 0);
+        static_cast<void *>(nullptr));
 
     glEnableVertexAttribArray(0);
 

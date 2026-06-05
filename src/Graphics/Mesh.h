@@ -20,8 +20,8 @@ struct MeshData {
 };
 
 inline glm::mat4 TransformToMatrix(const Transform &t) {
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(t.Position, 0.0f));
+    auto model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(t.Position));
     model = glm::rotate(model, t.rotation, glm::vec3(0.0f, 0.0f, 1.0f));
     model = glm::scale(model, glm::vec3(t.Scale, 1.0f));
     return model;
@@ -32,6 +32,14 @@ public:
     Mesh() = default;
 
     ~Mesh();
+
+    Mesh(const Mesh &) = delete;
+
+    Mesh &operator=(const Mesh &) = delete;
+
+    Mesh(Mesh &&other) noexcept;
+
+    Mesh &operator=(Mesh &&other) noexcept;
 
     void Upload(const MeshData &data);
 
@@ -45,5 +53,6 @@ private:
     GLuint m_IBO = 0;
     int m_IndexCount = 0;
 };
+
 
 #endif //ISOMETRICGAME_MESH_H

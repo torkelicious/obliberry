@@ -11,6 +11,6 @@ public:
                                        GLenum severity, GLsizei length,
                                        const char *message, const void *userParam);
 
-    static int initDbg();
+    static int InitDebug();
 };
 #endif //ISOMETRICGAME_DEBUG_H

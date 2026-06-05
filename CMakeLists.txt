@@ -38,8 +38,20 @@ add_executable(
         src/Core/InputManager.h
         src/Game/GameWorld.cpp
         src/Game/GameWorld.h
-        src/Game/Actor.cpp
-        src/Game/Actor.h
+        src/ECS/ECS.h
+        src/ECS/ECS.cpp
+        src/ECS/Components.h
+        src/ECS/Components/TransformComponent.h
+        src/ECS/Components/PlayerInputComponent.h
+        src/ECS/Components/VelocityComponent.h
+        src/ECS/Components/SpriteComponent.h
+        src/ECS/Systems/InputSystem.h
+        src/ECS/Components/SpriteComponent.cpp
+        src/ECS/Components/MeshComponent.h
+        src/ECS/Components/MaterialComponent.h
+        src/ECS/Components/HexPositionComponent.h
+        src/Core/ResourceManager.cpp
+        src/Core/ResourceManager.h
 )
 
 target_include_directories(

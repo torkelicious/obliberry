@@ -6,7 +6,7 @@
 #include "Graphics/Mesh.h"
 #include "Graphics/Shader.h"
 #include "Graphics/Texture.h"
-#include "Actor.h"
+#include "ECS/ECS.h"
 #include "Map/HexMap.h"
 
 class Renderer;
@@ -15,24 +15,33 @@ class GameWorld {
 public:
     GameWorld();
 
+    ~GameWorld() {
+        Shutdown();
+    }
+
+    void Update(float dt);
+
     void Render(Renderer &renderer);
 
-    Camera &GetCamera() { return m_Camera; }
-    const Camera &GetCamera() const { return m_Camera; }
+    void Shutdown();
 
-    Actor &GetPlayer() { return m_Player; }
-    const Actor &GetPlayer() const { return m_Player; }
+    Camera &GetCamera() { return m_Camera; }
+
+    Entity &GetPlayer() { return m_Player; }
+
+    //const Actor &GetPlayer() const { return m_Player; }
 
 private:
     Camera m_Camera;
-    Mesh m_HexMesh;
-    Mesh m_PlayerMesh;
-    Shader m_Shader;
+    Mesh *m_HexMesh = nullptr;
+    //    Mesh m_PlayerMesh;
+    Shader *m_Shader = nullptr;
     Material m_Material;
-    Material m_PlayerMaterial;
-    Texture m_PlayerTexture;
+    //   Material m_PlayerMaterial;
+    Texture *m_HexTexture = nullptr;
+    //  Texture m_PlayerTexture;
     HexMap m_Map;
-    Actor m_Player;
+    Entity m_Player;
 };
 
 #endif //ISOMETRICGAME_GAMEWORLD_H

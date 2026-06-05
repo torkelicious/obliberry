@@ -8,11 +8,11 @@
 
 class MeshFactory {
 public:
-    static Mesh CreateQuad();
+    static MeshData CreateQuad();
 
-    static Mesh CreatePointTopHex(float rad = 1.0f);
+    static MeshData CreatePointTopHex(float rad = 1.0f);
 
-    static Mesh CreateTriangle();
+    static MeshData CreateTriangle();
 
     // todo: add cachiong later
 };

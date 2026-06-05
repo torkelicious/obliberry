@@ -1,29 +1,24 @@
 #ifndef ISOMETRICGAME_INPUTMANAGER_H
 #define ISOMETRICGAME_INPUTMANAGER_H
-#include "Game/GameWorld.h"
-
-struct GLFWwindow; // forward declaration (from GLFW)
-
-struct GLFWKeyPress {
-    int key;
-    int scancode;
-    int action;
-    int mods;
-};
+#include <GLFW/glfw3.h>
 
 class InputManager {
 public:
-    void HandleKey(const GLFWKeyPress &input, GLFWwindow *win);
+    void BeginFrame();
 
-    void HandleMouseMove(const double xpos, const double ypos, GLFWwindow *win);
+    void HandleKeyEvent(int key, int action);
 
-    void SetGameWorld(GameWorld& gameWorld) {
-        m_GameWorld = &gameWorld;
-    }
+    [[nodiscard]] bool IsKeyDown(int key) const;
+
+    [[nodiscard]] bool IsKeyPressed(int key) const;
+
+    [[nodiscard]] bool IsKeyReleased(int key) const;
 
 private:
-    GameWorld* m_GameWorld = nullptr;
-    void MovePlayer(glm::vec2 mov);
+    bool keys[GLFW_KEY_LAST + 1]{};
+    bool previousKeys[GLFW_KEY_LAST + 1]{};
+
+    static bool IsValidKey(int key);
 };
 
 #endif //ISOMETRICGAME_INPUTMANAGER_H

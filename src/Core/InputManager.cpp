@@ -1,36 +1,28 @@
 #include "InputManager.h"
 
-#include <iostream>
-#include <GLFW/glfw3.h>
+#include <algorithm>
 
-void InputManager::HandleKey(const GLFWKeyPress &input, GLFWwindow *win) {
-    switch (input.key) {
-        case GLFW_KEY_ESCAPE:
-            if (input.action == GLFW_PRESS)glfwSetWindowShouldClose(win, GLFW_TRUE);
-            break;
-        case GLFW_KEY_W:
-        case GLFW_KEY_UP:
-            MovePlayer({0,0.5});
-            break;
-        case GLFW_KEY_S:
-        case GLFW_KEY_DOWN:
-            MovePlayer({0,-0.5});
-            break;
-        case GLFW_KEY_A:
-        case GLFW_KEY_LEFT:
-            MovePlayer({-0.5,0});
-            break;
-        case GLFW_KEY_D:
-        case GLFW_KEY_RIGHT:
-            MovePlayer({0.5,0});
-            break;
-    }
+void InputManager::BeginFrame() {
+    std::copy_n(keys, GLFW_KEY_LAST + 1, previousKeys);
 }
 
-void InputManager::HandleMouseMove(const double xpos, const double ypos, GLFWwindow *win) {
-    //std::cout << "Mouse: " << "X: " << xpos << " Y: " << ypos << std::endl;
+bool InputManager::IsValidKey(int key) {
+    return key >= 0 && key <= GLFW_KEY_LAST;
 }
 
-void InputManager::MovePlayer(glm::vec2 mov) {
-    m_GameWorld->GetPlayer().move(mov);
+void InputManager::HandleKeyEvent(int key, int action) {
+    if (!IsValidKey(key)) return;
+    keys[key] = action != GLFW_RELEASE;
+}
+
+bool InputManager::IsKeyDown(int key) const {
+    return IsValidKey(key) && keys[key];
+}
+
+bool InputManager::IsKeyPressed(int key) const {
+    return IsValidKey(key) && keys[key] && !previousKeys[key];
+}
+
+bool InputManager::IsKeyReleased(int key) const {
+    return IsValidKey(key) && !keys[key] && previousKeys[key];
 }

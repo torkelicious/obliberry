@@ -1,25 +1,20 @@
-#include "Window.h"
 #include <iostream>
+#include <stdexcept>
+#include "Window.h"
+#include "Application.h"
 
-#include "Graphics/GLDebug.h"
 
-#include "InputManager.h" // include here (not in Window.h)
-
-Window::Window(unsigned int width, unsigned int height, const char *title, int GLDebug)
+Window::Window(unsigned int width, unsigned int height, const char *title, int GLDebug, Application *app)
     : EnableDebug(GLDebug) {
     if (!Init(width, height, title)) {
         throw std::runtime_error("Failed to initialize window");
     }
+    m_App = app;
 }
 
 Window::~Window() {
-    delete m_InputManager;
-    m_InputManager = nullptr;
-
-    if (m_Window) {
-        glfwDestroyWindow(m_Window);
-        m_Window = nullptr;
-    }
+    glfwDestroyWindow(m_Window);
+    m_Window = nullptr;
     glfwTerminate();
 }
 
@@ -32,8 +27,8 @@ void Window::SwapBuffers() {
 }
 
 bool Window::Init(unsigned int width, unsigned int height, const char *title) {
-    m_Width = width;
-    m_Height = height;
+    m_Width = static_cast<int>(width);
+    m_Height = static_cast<int>(height);
 
     if (!glfwInit()) return false;
 
@@ -62,7 +57,6 @@ bool Window::Init(unsigned int width, unsigned int height, const char *title) {
 
     glfwSetFramebufferSizeCallback(m_Window, WindowResizeCallback);
 
-    m_InputManager = new InputManager();
     glfwSetKeyCallback(m_Window, KeyCallback);
     glfwSetCursorPosCallback(m_Window, CursorPosCallback);
 
@@ -87,16 +81,38 @@ void Window::SetCamera(Camera *camera) {
     m_Camera = camera;
 }
 
+void Window::SetInputManager(InputManager *inputManager) {
+    m_InputManager = inputManager;
+}
+
+
 void Window::KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
+    (void) scancode;
+    (void) mods;
+
     auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
-    if (!self || !self->m_InputManager) return;
-    GLFWKeyPress input{key, scancode, action, mods};
-    self->m_InputManager->HandleKey(input, window);
+    if (!self) return;
+
+    if (self->m_InputManager) {
+        self->m_InputManager->HandleKeyEvent(key, action);
+    }
+
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+        //        glfwSetWindowShouldClose(window, GLFW_TRUE);
+        self->m_App->Shutdown();
+    }
 }
 
 void Window::CursorPosCallback(GLFWwindow *window, double xpos, double ypos) {
-    auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
-    if (!self || !self->m_InputManager) return;
+    // TODO: implement
+}
 
-    self->m_InputManager->HandleMouseMove(xpos, ypos, window);
+
+void Window::Shutdown() {
+    if (m_Window) {
+        glfwSetWindowShouldClose(m_Window, GLFW_TRUE);
+        //glfwDestroyWindow(m_Window);
+        //m_Window = nullptr;
+    }
+    //glfwTerminate();
 }

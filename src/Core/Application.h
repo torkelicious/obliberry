@@ -3,17 +3,18 @@
 
 #include "Window.h"
 #include "Game/GameWorld.h"
+#include "InputManager.h"
 
 class Application {
 public:
     Application();
+
     void Run();
 
-    //GameWorld *GetGameWorld() {
-    //    return &m_GameWorld;
-    //};
+    void Shutdown();
 
 private:
+    InputManager m_InputManager;
     Window m_Window;
     GameWorld m_GameWorld;
 };

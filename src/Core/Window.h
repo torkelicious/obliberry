@@ -4,18 +4,13 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include "Graphics/Camera.h"
-
-class InputManager; // forward declaration
+class Application;
+class Camera;
+class InputManager;
 
 class Window {
 public:
-    explicit Window(
-        unsigned int width,
-        unsigned int height,
-        const char *title,
-        int GLDebug = false
-    );
+    Window(unsigned int width, unsigned int height, const char *title, int GLDebug, Application *app);
 
     ~Window();
 
@@ -36,12 +31,15 @@ public:
 
     void SetCamera(Camera *camera);
 
-    InputManager *GetInputManager() const {return m_InputManager;};
+    void SetInputManager(InputManager *inputManager);
+
+    void Shutdown();
 
 private:
     GLFWwindow *m_Window = nullptr;
     Camera *m_Camera = nullptr;
     InputManager *m_InputManager = nullptr;
+    Application *m_App = nullptr;
 
     int m_Width = 0;
     int m_Height = 0;
@@ -51,6 +49,7 @@ private:
     static void WindowResizeCallback(GLFWwindow *window, int width, int height);
 
     static void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
+
 
     static void CursorPosCallback(GLFWwindow *window, double xpos, double ypos);
 

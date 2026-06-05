@@ -85,7 +85,7 @@ void APIENTRY GLDebug::glDebugOutput(GLenum source, GLenum type,
     std::cout << std::endl;
 }
 
-int GLDebug::initDbg() {
+int GLDebug::InitDebug() {
     // Print info
     std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
     std::cout << "Renderer: " << glGetString(GL_RENDERER) << std::endl;

@@ -19,8 +19,7 @@ void HexMap::Generate(int radius) {
             tile.q = q;
             tile.r = r;
 
-            tile.WorldPos.x = size * std::sqrt(3.0f) * (static_cast<float>(q) + static_cast<float>(r) * 0.5f);
-            tile.WorldPos.y = size * 1.5f * static_cast<float>(r);
+            tile.WorldPos = HexToWorld(q, r);
 
             tiles.push_back(tile);
         }
@@ -28,4 +27,15 @@ void HexMap::Generate(int radius) {
 
     std::sort(tiles.begin(), tiles.end(),
               [](const HexTile &a, const HexTile &b) { return a.WorldPos.y > b.WorldPos.y; });
+}
+
+glm::vec2 HexMap::HexToWorld(int q, int r) {
+    {
+        float size = HexMap::HEX_SPACING;
+
+        return {
+            size * std::sqrt(3.0f) * (q + r * 0.5f),
+            size * 1.5f * r
+        };
+    }
 }

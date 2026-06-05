@@ -17,6 +17,8 @@ public:
     static constexpr float HEX_SPACING = 25.0f;
     std::vector<HexTile> tiles;
 
+    glm::vec2 HexToWorld(int q, int r);
+
     void Generate(int radius);
 };
 

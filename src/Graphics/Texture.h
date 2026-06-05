@@ -8,7 +8,6 @@
 class Texture {
 public:
     Texture(
-        const GLuint ID,
         const std::string &path,
         GLuint minFilter = GL_LINEAR,
         GLuint magFilter = GL_LINEAR,
