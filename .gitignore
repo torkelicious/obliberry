@@ -87,12 +87,12 @@ http-client.private.env.json
 .idea/**/copilot.data.migration.*.xml
 
 # no  need for me
-
 /assets/textures/snkl_berry.png
-/.idea
+.idea/
 
 
 ## Dear ImGui artifacts
 imgui.ini
 imgui*.ini
+
 dc.txt
