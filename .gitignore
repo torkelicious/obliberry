@@ -96,3 +96,4 @@ imgui.ini
 imgui*.ini
 
 dc.txt
+compile_commands.json
