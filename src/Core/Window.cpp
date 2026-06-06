@@ -1,15 +1,11 @@
 #include <iostream>
 #include <stdexcept>
 #include "Window.h"
-#include "Application.h"
 
-
-Window::Window(unsigned int width, unsigned int height, const char *title, int GLDebug, Application *app)
-    : EnableDebug(GLDebug) {
+Window::Window(unsigned int width, unsigned int height, const char *title) {
     if (!Init(width, height, title)) {
         throw std::runtime_error("Failed to initialize window");
     }
-    m_App = app;
 }
 
 Window::~Window() {
@@ -27,15 +23,15 @@ void Window::SwapBuffers() {
 }
 
 bool Window::Init(unsigned int width, unsigned int height, const char *title) {
-    m_Width = static_cast<int>(width);
-    m_Height = static_cast<int>(height);
+    m_Width = static_cast<float>(width);
+    m_Height = static_cast<float>(height);
 
     if (!glfwInit()) return false;
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, EnableDebug);
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
 
     m_Window = glfwCreateWindow(width, height, title, nullptr, nullptr);
     if (!m_Window) {
@@ -47,7 +43,7 @@ bool Window::Init(unsigned int width, unsigned int height, const char *title) {
 
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
         std::cerr << "failed to init glad" << std::endl;
-        return false; // don't return -1 from a bool function
+        return false;
     }
 
     glViewport(0, 0, width, height);
@@ -59,6 +55,7 @@ bool Window::Init(unsigned int width, unsigned int height, const char *title) {
 
     glfwSetKeyCallback(m_Window, KeyCallback);
     glfwSetCursorPosCallback(m_Window, CursorPosCallback);
+    glfwSetMouseButtonCallback(m_Window, MouseButtonCallback);
     glfwSetScrollCallback(m_Window, ScrollCallback);
 
     return true;
@@ -66,31 +63,37 @@ bool Window::Init(unsigned int width, unsigned int height, const char *title) {
 
 void Window::WindowResizeCallback(GLFWwindow *window, int width, int height) {
     auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
-    if (!self) return;
-
-    self->m_Width = width;
-    self->m_Height = height;
-    glViewport(0, 0, width, height);
-
-    if (self->m_Camera) {
-        float aspect = (float) width / (float) height;
-        self->m_Camera->SetAspect(aspect);
+    if (self) {
+        self->m_Width = static_cast<float>(width);
+        self->m_Height = static_cast<float>(height);
     }
-}
 
-void Window::SetCamera(Camera *camera) {
-    m_Camera = camera;
+    float targetAspect = 16.0f / 9.0f;
+    float windowAspect = (float) width / height;
+    int viewportWidth;
+    int viewportHeight;
+    int viewportX;
+    int viewportY;
+
+    if (windowAspect > targetAspect) {
+        viewportHeight = height;
+        viewportWidth = (int) (height * targetAspect);
+        viewportX = (width - viewportWidth) / 2;
+        viewportY = 0;
+    } else {
+        viewportWidth = width;
+        viewportHeight = (int) (width / targetAspect);
+        viewportX = 0;
+        viewportY = (height - viewportHeight) / 2;
+    }
+    glViewport(viewportX, viewportY, viewportWidth, viewportHeight);
 }
 
 void Window::SetInputManager(InputManager *inputManager) {
     m_InputManager = inputManager;
 }
 
-
 void Window::KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
-    (void) scancode;
-    (void) mods;
-
     auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
     if (!self) return;
 
@@ -99,27 +102,30 @@ void Window::KeyCallback(GLFWwindow *window, int key, int scancode, int action, 
     }
 
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-        //        glfwSetWindowShouldClose(window, GLFW_TRUE);
-        self->m_App->Shutdown();
+        glfwSetWindowShouldClose(window, GLFW_TRUE);
     }
 }
 
 void Window::CursorPosCallback(GLFWwindow *window, double xpos, double ypos) {
-    // TODO: implement
+    auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
+    if (!self) return;
+
+    if (self->m_InputManager) {
+        self->m_InputManager->SetMousePos(xpos, ypos);
+    }
+}
+
+void Window::MouseButtonCallback(GLFWwindow *window, int button, int action, int mods) {
+    auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
+    if (!self) return;
+
+    if (self->m_InputManager) {
+        self->m_InputManager->HandleClickEvent(button, action, mods);
+    }
 }
 
 void Window::ScrollCallback(GLFWwindow *window, double xoffset, double yoffset) {
     auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
     if (!self) return;
     self->m_InputManager->HandleScrollEvent(xoffset, yoffset);
-}
-
-
-void Window::Shutdown() {
-    if (m_Window) {
-        glfwSetWindowShouldClose(m_Window, GLFW_TRUE);
-        //glfwDestroyWindow(m_Window);
-        //m_Window = nullptr;
-    }
-    //glfwTerminate();
 }

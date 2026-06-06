@@ -1,5 +1,5 @@
-#ifndef ISOMETRICGAME_RESOURCEMANAGER_H
-#define ISOMETRICGAME_RESOURCEMANAGER_H
+#ifndef OBLIBERRY_RESOURCEMANAGER_H
+#define OBLIBERRY_RESOURCEMANAGER_H
 #include <functional>
 #include <vector>
 #include <memory>
@@ -22,18 +22,13 @@ public:
     template<typename T, typename... Args>
     static T *Load(const std::string &key, Args &&... args) {
         auto &storage = GetStorage<T>();
-
         auto it = storage.find(key);
         if (it != storage.end())
             return it->second.get();
-
         auto resource =
                 std::make_unique<T>(std::forward<Args>(args)...);
-
         T *ptr = resource.get();
-
         storage[key] = std::move(resource);
-
         return ptr;
     }
 
@@ -44,6 +39,23 @@ public:
         return obj;
     }
 
+    template<typename T, typename Func>
+    static T *LoadFromFactory(const std::string &key, Func &&factory) {
+        auto &storage = GetStorage<T>();
+
+        auto it = storage.find(key);
+        if (it != storage.end())
+            return it->second.get();
+
+        auto resource = factory(); // returns std::unique_ptr<T>
+
+        T *ptr = resource.get();
+
+        storage[key] = std::move(resource);
+
+        return ptr;
+    }
+
 private:
     template<typename T>
     static std::unordered_map<std::string, std::unique_ptr<T> > &GetStorage() {
@@ -52,8 +64,8 @@ private:
             std::unique_ptr<T>
         > storage;
 
-        static bool registered = []() {
-            CleanupList().push_back([]() {
+        static bool registered = [] {
+            CleanupList().push_back([] {
                 storage.clear();
             });
 
@@ -72,4 +84,4 @@ private:
 };
 
 
-#endif //ISOMETRICGAME_RESOURCEMANAGER_H
+#endif //OBLIBERRY_RESOURCEMANAGER_H

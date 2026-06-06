@@ -1,22 +1,24 @@
-#ifndef ISOMETRICGAME_APPLICATION_H
-#define ISOMETRICGAME_APPLICATION_H
-
+#ifndef OBLIBERRY_APPLICATION_H
+#define OBLIBERRY_APPLICATION_H
 #include "Window.h"
-#include "Game/GameWorld.h"
-#include "InputManager.h"
+
 
 class Application {
 public:
     Application();
+
+    ~Application() {
+        Shutdown();
+    }
 
     void Run();
 
     void Shutdown();
 
 private:
-    InputManager m_InputManager;
     Window m_Window;
-    GameWorld m_GameWorld;
+    InputManager m_InputManager;
 };
 
-#endif //ISOMETRICGAME_APPLICATION_H
+
+#endif //OBLIBERRY_APPLICATION_H

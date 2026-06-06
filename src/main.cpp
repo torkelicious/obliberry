@@ -1,7 +1,8 @@
+#include <iostream>
 #include "Core/Application.h"
 
 int main() {
-    Application application;
-    application.Run();
+    Application app;
+    app.Run();
     return 0;
 }

@@ -1,16 +1,14 @@
-#ifndef ISOMETRICGAME_WINDOW_H
-#define ISOMETRICGAME_WINDOW_H
-
+#ifndef OBLIBERRY_WINDOW_H
+#define OBLIBERRY_WINDOW_H
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-class Application;
-class Camera;
-class InputManager;
+#include "InputManager.h"
+#include "Renderer/Camera.h"
 
 class Window {
 public:
-    Window(unsigned int width, unsigned int height, const char *title, int GLDebug, Application *app);
+    Window(unsigned int width, unsigned int height, const char *title);
 
     ~Window();
 
@@ -29,20 +27,14 @@ public:
 
     GLFWwindow *GetNativeWindow() const { return m_Window; }
 
-    void SetCamera(Camera *camera);
 
     void SetInputManager(InputManager *inputManager);
 
-    void Shutdown();
-
 private:
     GLFWwindow *m_Window = nullptr;
-    Camera *m_Camera = nullptr;
     InputManager *m_InputManager = nullptr;
-    Application *m_App = nullptr;
-
-    int m_Width = 0;
-    int m_Height = 0;
+    float m_Width = 0;
+    float m_Height = 0;
 
     bool Init(unsigned int width, unsigned int height, const char *title);
 
@@ -52,9 +44,10 @@ private:
 
     static void CursorPosCallback(GLFWwindow *window, double xpos, double ypos);
 
-    static void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset);
+    static void MouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
 
-    const int EnableDebug;
+    static void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset);
 };
 
-#endif //ISOMETRICGAME_WINDOW_H
+
+#endif //OBLIBERRY_WINDOW_H

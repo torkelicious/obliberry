@@ -1,5 +1,5 @@
-#ifndef ISOMETRICGAME_ECS_H
-#define ISOMETRICGAME_ECS_H
+#ifndef OBLIBERRY_ECS_H
+#define OBLIBERRY_ECS_H
 #include <memory>
 #include <type_traits>
 #include <utility>
@@ -26,9 +26,9 @@ public:
 
 class Entity {
 public:
-    Entity();
+    Entity() = default;
 
-    ~Entity();
+    ~Entity() = default;
 
     template<typename T, typename... Args>
     T *AddComponent(Args &&... args) {
@@ -39,7 +39,7 @@ public:
     }
 
     template<typename T>
-    T *GetComponent() {
+    T *GetComponent() const {
         static_assert(std::is_base_of_v<Component, T>, "T must derive from Component");
         for (const auto &componentPtr: m_Components) {
             if (dynamic_cast<T *>(componentPtr.get())) {
@@ -49,15 +49,44 @@ public:
         return nullptr;
     }
 
-    // Implement systems later for stuff i guess
-    void Update(float dt);
+    template<typename T>
+    bool HasComponent() const {
+        static_assert(std::is_base_of_v<Component, T>, "T must derive from Component");
+        for (const auto &componentPtr: m_Components) {
+            if (dynamic_cast<T *>(componentPtr.get())) {
+                return true;
+            }
+        }
+        return false;
+    }
 
-    // find all render methods in our components ig
-    void Render();
+    template<typename T>
+    void RemoveComponent() {
+        static_assert(std::is_base_of_v<Component, T>, "T must derive from Component");
+        for (auto it = m_Components.begin(); it != m_Components.end(); ++it) {
+            if (dynamic_cast<T *>(it->get())) {
+                m_Components.erase(it);
+                return;
+            }
+        }
+    }
+
+    // Loop through all components and call their update methods
+    void Update(float dt) {
+        for (auto &componentPtr: m_Components) {
+            componentPtr->UpdateComponent(dt, *this);
+        }
+    }
+
+    // Loop through all components and call their render methods
+    void Render() {
+        for (auto &componentPtr: m_Components) {
+            componentPtr->Render();
+        }
+    }
 
 private:
     std::vector<std::unique_ptr<Component> > m_Components;
 };
 
-
-#endif //ISOMETRICGAME_ECS_H
+#endif //OBLIBERRY_ECS_H

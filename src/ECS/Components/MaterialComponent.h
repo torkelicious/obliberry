@@ -1,12 +1,12 @@
 
 
-#ifndef ISOMETRICGAME_MATERIALCOMPONENT_H
-#define ISOMETRICGAME_MATERIALCOMPONENT_H
-#include "ECS/Components.h"
-#include "Graphics/Material.h"
+#ifndef OBLIBERRY_MATERIALCOMPONENT_H
+#define OBLIBERRY_MATERIALCOMPONENT_H
+#include "Renderer/Material.h"
 
 struct MaterialComponent : public Component {
-    Material *material = nullptr;
+    // material is small so im not gonna bother with using pointers
+    Material material;
 };
 
-#endif //ISOMETRICGAME_MATERIALCOMPONENT_H
+#endif //OBLIBERRY_MATERIALCOMPONENT_H
