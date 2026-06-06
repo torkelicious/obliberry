@@ -42,8 +42,9 @@
 
 # CMake / other builds
 cmake-build-*/
-build/
+build*/
 out/
+.cache
 
 # Mongo Explorer plugin
 .idea/**/mongoSettings.xml
@@ -85,8 +86,13 @@ http-client.private.env.json
 # Github Copilot persisted session migrations, see: https://github.com/microsoft/copilot-intellij-feedback/issues/712#issuecomment-3322062215
 .idea/**/copilot.data.migration.*.xml
 
-.idea/ 
 # no  need for me
 
-/assets/textures/snorkel_berry.png
+/assets/textures/snkl_berry.png
 /.idea
+
+
+## Dear ImGui artifacts
+imgui.ini
+imgui*.ini
+dc.txt
