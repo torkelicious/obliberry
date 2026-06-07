@@ -12,12 +12,13 @@
 #include "HexMath.h"
 
 
+// migrated to hexcoords murmurhash3
 // hash for unordered_map / set
-struct HexCoordsHash {
-    std::size_t operator()(const HexCoords &h) const noexcept {
-        return std::hash<int>()(h.q) ^ (std::hash<int>()(h.r) << 1);
-    }
-};
+//struct HexCoordsHash {
+//    std::size_t operator()(const HexCoords &h) const noexcept {
+//        return std::hash<int>()(h.q) ^ (std::hash<int>()(h.r) << 1);
+//    }
+//};
 
 // tile types
 // currently used for textures but i'll figure something out
@@ -27,8 +28,8 @@ enum class TileType : uint8_t {
 };
 
 struct Tile {
-    TileType type;
-    HexCoords position;
+    HexCoords position; // 2x int16_t
+    TileType type; // uint_8t
     bool walkable;
 };
 
@@ -40,34 +41,33 @@ public:
     TileMap tiles;
 
     bool HasTile(const HexCoords &pos) const {
-        return tiles.find(pos) != tiles.end();
+        return tiles.contains(pos);
     }
 
     Tile *Get(const HexCoords &pos) {
-        auto it = tiles.find(pos);
+        const auto it = tiles.find(pos);
         return (it != tiles.end()) ? &it->second : nullptr;
     }
 
     const Tile *Get(const HexCoords &pos) const {
-        auto it = tiles.find(pos);
+        const auto it = tiles.find(pos);
         return (it != tiles.end()) ? &it->second : nullptr;
     }
 
     Tile &EmplaceTile(const HexCoords &pos, TileType type, bool walkable = true) {
-        return tiles.emplace(pos, Tile{type, pos, walkable}).first->second;
+        return tiles.emplace(pos, Tile{pos, type, walkable}).first->second;
     }
 
-    glm::vec2 GetWorldPos(const HexCoords &pos, float size = HEX_SIZE) const {
+    glm::vec2 GetWorldPos(const HexCoords &pos, const float size = HEX_SIZE) const {
         return HexMath::HexToWorld(pos, size);
     }
 
     // Performs A* Pathfinding from a start tile to a goal tile
     // Returns an ordered sequence of HexCoords from start to finish
-    std::vector<HexCoords> FindPath(HexCoords start, HexCoords goal) const {
+    std::vector<HexCoords> FindPath(HexCoords start, const HexCoords goal) const {
         std::vector<HexCoords> emptyPath;
 
-        const Tile *targetTile = Get(goal);
-        if (!targetTile || !targetTile->walkable)
+        if (const Tile *targetTile = Get(goal); !targetTile || !targetTile->walkable)
             return emptyPath;
 
         if (start == goal)
@@ -75,8 +75,8 @@ public:
 
         struct NodeRecord {
             HexCoords parent;
-            int gScore = 9999999;
-            int fScore = 9999999;
+            int gScore = P_INFINITY;
+            int fScore = P_INFINITY;
         };
 
         using PQElement = std::pair<int, HexCoords>;
@@ -104,7 +104,7 @@ public:
             openSet.pop();
 
             // ignore outdated entries
-            if (records.find(current) == records.end())
+            if (!records.contains(current))
                 continue;
 
             if (fScoreTop != records[current].fScore)
@@ -120,20 +120,20 @@ public:
                 std::vector<HexCoords> path;
                 HexCoords trace = goal;
 
-                while (!(trace == start)) {
+                while (trace != start) {
                     path.push_back(trace);
                     trace = records[trace].parent;
                 }
 
                 path.push_back(start);
-                std::reverse(path.begin(), path.end());
+                std::ranges::reverse(path);
                 return path;
             }
 
             // Loop through all neighbors of currently evaluating tile
             for (const auto &neighbor: HexMath::GetNeighbors(current)) {
-                const Tile *tile = Get(neighbor);
-                if (!tile || !tile->walkable) // pass it if nonwalkable or dosent exist
+                if (const Tile *tile = Get(neighbor); !tile || !tile->walkable)
+                    // pass it if nonwalkable or dosent exist
                     continue;
 
                 if (!records.contains(neighbor)) {
@@ -145,9 +145,8 @@ public:
                 }
 
                 // flat weight move cost calculation
-                int tentativeG = records[current].gScore + 1;
 
-                if (tentativeG < records[neighbor].gScore) {
+                if (const int tentativeG = records[current].gScore + 1; tentativeG < records[neighbor].gScore) {
                     // record an optimized path tracking choice
                     records[neighbor].parent = current;
                     records[neighbor].gScore = tentativeG;
