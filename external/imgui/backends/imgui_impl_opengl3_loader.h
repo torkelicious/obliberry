@@ -731,6 +731,7 @@ GL3W_API extern union ImGL3WProcs imgl3wProcs;
 extern "C" {
 
 
+
 #endif
 
 #include <stdlib.h>
@@ -811,6 +812,7 @@ static void close_libgl(void) {
 }
 
 static int is_library_loaded(const char *name, void **lib) {
+
 
 
 #if defined(__HAIKU__)

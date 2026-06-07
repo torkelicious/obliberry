@@ -15,7 +15,6 @@ Application::Application()
 }
 
 void Application::Run() {
-
     // move this to some sort of Init outside of Application
     glEnable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);

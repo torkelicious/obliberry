@@ -50,10 +50,13 @@ Index of this file:
 #pragma warning (disable: 4996)     // 'This function or variable may be unsafe': strcpy, strdup, sprintf, vsnprintf, sscanf, fopen
 
 
+
 #pragma warning (disable: 26451)    // [Static Analyzer] Arithmetic overflow : Using operator 'xxx' on a 4 byte value and then casting the result to a 8 byte value. Cast the value to the wider type before calling operator 'xxx' to avoid overflow(io.2).
 
 
+
 #pragma warning (disable: 26812)    // [Static Analyzer] The enum type 'xxx' is unscoped. Prefer 'enum class' over 'enum' (Enum.3).
+
 
 
 #endif
@@ -64,19 +67,24 @@ Index of this file:
 #pragma clang diagnostic ignored "-Wunknown-warning-option"         // warning: unknown warning group 'xxx'                      // not all warnings are known by all Clang versions and they tend to be rename-happy.. so ignoring warnings triggers new warnings on some configuration. Great!
 
 
+
 #endif
 #pragma clang diagnostic ignored "-Wunknown-pragmas"                // warning: unknown warning group 'xxx'
 #pragma clang diagnostic ignored "-Wold-style-cast"                 // warning: use of old-style cast                            // yes, they are more terse.
 
 
+
 #pragma clang diagnostic ignored "-Wfloat-equal"                    // warning: comparing floating point with == or != is unsafe // storing and comparing against same constants ok.
+
 
 
 #pragma clang diagnostic ignored "-Wglobal-constructors"            // warning: declaration requires a global destructor         // similar to above, not sure what the exact difference is.
 
 
+
 #pragma clang diagnostic ignored "-Wsign-conversion"                // warning: implicit conversion changes signedness
 #pragma clang diagnostic ignored "-Wzero-as-null-pointer-constant"  // warning: zero as null pointer constant                    // some standard header variations use #define NULL 0
+
 
 
 #pragma clang diagnostic ignored "-Wcomma"                          // warning: possible misuse of comma operator here
@@ -84,19 +92,25 @@ Index of this file:
 #pragma clang diagnostic ignored "-Wdouble-promotion"               // warning: implicit conversion from 'float' to 'double' when passing argument to function  // using printf() is a misery with this as C++ va_arg ellipsis changes float to double.
 
 
+
 #pragma clang diagnostic ignored "-Wimplicit-int-float-conversion"  // warning: implicit conversion from 'xxx' to 'float' may lose precision
+
 
 
 #pragma clang diagnostic ignored "-Wreserved-identifier"            // warning: identifier '_Xxx' is reserved because it starts with '_' followed by a capital letter
 
 
+
 #pragma clang diagnostic ignored "-Wunsafe-buffer-usage"            // warning: 'xxx' is an unsafe pointer used for buffer access
+
 
 
 #pragma clang diagnostic ignored "-Wnontrivial-memaccess"           // warning: first argument in call to 'memset' is a pointer to non-trivially copyable type
 
 
+
 #pragma clang diagnostic ignored "-Wcast-qual"                      // warning: cast from 'const xxxx *' to 'xxx *' drops const qualifier
+
 
 
 #pragma clang diagnostic ignored "-Wswitch-default"                 // warning: 'switch' missing 'default' label
@@ -104,29 +118,38 @@ Index of this file:
 #pragma GCC diagnostic ignored "-Wpragmas"                          // warning: unknown option after '#pragma GCC diagnostic' kind
 
 
+
 #pragma GCC diagnostic ignored "-Wunused-function"                  // warning: 'xxxx' defined but not used
 #pragma GCC diagnostic ignored "-Wfloat-equal"                      // warning: comparing floating-point with '==' or '!=' is unsafe
+
 
 
 #pragma GCC diagnostic ignored "-Wdouble-promotion"                 // warning: implicit conversion from 'float' to 'double' when passing argument to function
 
 
+
 #pragma GCC diagnostic ignored "-Wconversion"                       // warning: conversion to 'xxxx' from 'xxxx' may alter its value
+
 
 
 #pragma GCC diagnostic ignored "-Wstack-protector"                  // warning: stack protector not protecting local variables: variable length buffer
 
 
+
 #pragma GCC diagnostic ignored "-Wstrict-overflow"                  // warning: assuming signed overflow does not occur when simplifying division / ..when changing X +- C1 cmp C2 to X cmp C2 -+ C1
+
 
 
 #pragma GCC diagnostic ignored "-Wclass-memaccess"                  // [__GNUC__ >= 8] warning: 'memset/memcpy' clearing/writing an object of type 'xxxx' with no trivial copy-assignment; use assignment or value-initialization instead
 
 
+
 #pragma GCC diagnostic ignored "-Wcast-qual"                        // warning: cast from type 'const xxxx *' to type 'xxxx *' casts away qualifiers
 
 
+
 #pragma GCC diagnostic ignored "-Wsign-conversion"                  // warning: conversion to 'xxxx' from 'xxxx' may change the sign of the result
+
 
 
 #endif
@@ -146,6 +169,7 @@ Index of this file:
 namespace IMGUI_STB_NAMESPACE {
 
 
+
 #endif
 
 #ifdef _MSC_VER
@@ -155,10 +179,13 @@ namespace IMGUI_STB_NAMESPACE {
 #pragma warning (disable: 5262)                             // (stb_truetype) implicit fall-through occurs here; are you missing a break statement?
 
 
+
 #pragma warning (disable: 6385)                             // (stb_truetype) Reading invalid data from 'buffer':  the readable size is '_Old_3`kernel_width' bytes, but '3' bytes may be read.
 
 
+
 #pragma warning (disable: 28182)                            // (stb_rectpack) Dereferencing NULL pointer. 'cur' contains the same NULL value as 'cur->next' did.
+
 
 
 #endif
@@ -175,13 +202,16 @@ namespace IMGUI_STB_NAMESPACE {
 #pragma GCC diagnostic ignored "-Wtype-limits"              // warning: comparison is always true due to limited range of data type [-Wtype-limits]
 
 
+
 #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"     // warning: this statement may fall through
 #endif
 
 #ifndef STB_RECT_PACK_IMPLEMENTATION                        // in case the user already have an implementation in the _same_ compilation unit (e.g. unity builds)
 
 
+
 #ifndef IMGUI_DISABLE_STB_RECT_PACK_IMPLEMENTATION          // in case the user already have an implementation in another compilation unit
+
 
 
 #define STBRP_STATIC
@@ -200,7 +230,9 @@ namespace IMGUI_STB_NAMESPACE {
 #ifndef STB_TRUETYPE_IMPLEMENTATION                         // in case the user already have an implementation in the _same_ compilation unit (e.g. unity builds)
 
 
+
 #ifndef IMGUI_DISABLE_STB_TRUETYPE_IMPLEMENTATION           // in case the user already have an implementation in another compilation unit
+
 
 
 #define STBTT_malloc(x,u)   ((void)(u), IM_ALLOC(x))
@@ -619,7 +651,9 @@ void ImDrawList::AddCallback(ImDrawCallback callback, void *userdata, size_t use
 #define ImDrawCmd_HeaderCompare(CMD_LHS, CMD_RHS)       (memcmp(CMD_LHS, CMD_RHS, ImDrawCmd_HeaderSize))    // Compare ClipRect, TexRef, VtxOffset
 
 
+
 #define ImDrawCmd_HeaderCopy(CMD_DST, CMD_SRC)          (memcpy(CMD_DST, CMD_SRC, ImDrawCmd_HeaderSize))    // Copy ClipRect, TexRef, VtxOffset
+
 
 
 #define ImDrawCmd_AreSequentialIdxOffset(CMD_0, CMD_1)  (CMD_0->IdxOffset + CMD_0->ElemCount == CMD_1->IdxOffset)
@@ -2447,6 +2481,7 @@ void ImDrawData::DeIndexAllBuffers() {
     TotalVtxCount = TotalIdxCount = 0;
     for (ImDrawList * draw_list
 
+
     :
     CmdLists
     )
@@ -2467,6 +2502,7 @@ void ImDrawData::DeIndexAllBuffers() {
 // or if there is a difference between your window resolution and framebuffer resolution.
 void ImDrawData::ScaleClipRects(const ImVec2 &fb_scale) {
     for (ImDrawList * draw_list
+
 
     :
     CmdLists
@@ -2805,6 +2841,7 @@ void ImFontAtlas::ClearFonts() {
     TexIsBuilt = false;
     for (ImDrawListSharedData * shared_data
 
+
     :
     DrawListSharedDatas
     )
@@ -2819,6 +2856,7 @@ void ImFontAtlas::ClearInputData() {
     for (ImFont *font: Fonts)
         ImFontAtlasFontDestroyOutput(this, font);
     for (ImFontConfig & font_cfg
+
 
     :
     Sources
@@ -2856,6 +2894,7 @@ static void ImFontAtlasBuildUpdateRendererHasTexturesFromContext(ImFontAtlas *at
     // - Without this hack, we would have quite a pitfall as many legacy codebases have an early call to Build().
     //   Whereas conversely, the portion of people using ImDrawList without ImGui is expected to be pathologically rare.
     for (ImDrawListSharedData * shared_data
+
 
     :
     atlas->DrawListSharedDatas
@@ -3378,6 +3417,7 @@ ImFont *ImFontAtlas::AddFontFromMemoryCompressedBase85TTF(const char *compressed
 void ImFontAtlasBuildNotifySetFont(ImFontAtlas *atlas, ImFont *old_font, ImFont *new_font) {
     for (ImDrawListSharedData * shared_data
 
+
     :
     atlas->DrawListSharedDatas
     )
@@ -3413,6 +3453,7 @@ void ImFontAtlas::RemoveFont(ImFont *font) {
 
     ImFontAtlasFontDestroyOutput(this, font);
     for (ImFontConfig * src
+
 
     :
     font->Sources
@@ -3604,6 +3645,7 @@ void ImFontAtlasBuildSetupFontLoader(ImFontAtlas *atlas, const ImFontLoader *fon
     for (ImFont *font: atlas->Fonts)
         for (ImFontConfig * src
 
+
     :
     font->Sources
     )
@@ -3622,6 +3664,7 @@ void ImFontAtlasBuildLegacyPreloadAllGlyphRanges(ImFontAtlas *atlas) {
             baked->FindGlyph(font->EllipsisChar);
         for (ImFontConfig * src
 
+
         :
         font->Sources
         )
@@ -3639,6 +3682,7 @@ void ImFontAtlasBuildUpdatePointers(ImFontAtlas *atlas) {
     for (ImFont *font: atlas->Fonts)
         font->Sources.resize(0);
     for (ImFontConfig & src
+
 
     :
     atlas->Sources
@@ -3774,6 +3818,7 @@ bool ImFontAtlasFontInitOutput(ImFontAtlas *atlas, ImFont *font) {
     bool ret = true;
     for (ImFontConfig * src
 
+
     :
     font->Sources
     )
@@ -3788,6 +3833,7 @@ bool ImFontAtlasFontInitOutput(ImFontAtlas *atlas, ImFont *font) {
 void ImFontAtlasFontDestroyOutput(ImFontAtlas *atlas, ImFont *font) {
     font->ClearOutputData();
     for (ImFontConfig * src
+
 
     :
     font->Sources
@@ -3982,6 +4028,7 @@ ImFontBaked *ImFontAtlasBakedAdd(ImFontAtlas *atlas, ImFont *font, float font_si
     size_t loader_data_size = 0;
     for (ImFontConfig * src
 
+
     :
     font->Sources
     ) // Cannot easily be cached as we allow changing backend
@@ -3992,6 +4039,7 @@ ImFontBaked *ImFontAtlasBakedAdd(ImFontAtlas *atlas, ImFont *font, float font_si
     baked->FontLoaderDatas = (loader_data_size > 0) ? IM_ALLOC(loader_data_size) : NULL;
     char *loader_data_p = (char *) baked->FontLoaderDatas;
     for (ImFontConfig * src
+
 
     :
     font->Sources
@@ -4045,6 +4093,7 @@ void ImFontAtlasBakedDiscard(ImFontAtlas *atlas, ImFont *font, ImFontBaked *bake
 
     char *loader_data_p = (char *) baked->FontLoaderDatas;
     for (ImFontConfig * src
+
 
     :
     font->Sources
@@ -4107,6 +4156,7 @@ void ImFontAtlasRemoveDrawListSharedData(ImFontAtlas *atlas, ImDrawListSharedDat
 void ImFontAtlasUpdateDrawListsTextures(ImFontAtlas *atlas, ImTextureRef old_tex, ImTextureRef new_tex) {
     for (ImDrawListSharedData * shared_data
 
+
     :
     atlas->DrawListSharedDatas
     )
@@ -4116,6 +4166,7 @@ void ImFontAtlasUpdateDrawListsTextures(ImFontAtlas *atlas, ImTextureRef old_tex
             continue;
 
         for (ImDrawList * draw_list
+
 
         :
         shared_data->DrawLists
@@ -4139,6 +4190,7 @@ void ImFontAtlasUpdateDrawListsTextures(ImFontAtlas *atlas, ImTextureRef old_tex
 // FIXME-NEWATLAS FIXME-OPT: Doesn't seem necessary to update for all, only one bound to current context?
 void ImFontAtlasUpdateDrawListsSharedData(ImFontAtlas *atlas) {
     for (ImDrawListSharedData * shared_data
+
 
     :
     atlas->DrawListSharedDatas
@@ -4363,12 +4415,14 @@ void ImFontAtlasBuildClear(ImFontAtlas *atlas) {
     ImFontAtlasBuildInit(atlas);
     for (ImFontConfig & src
 
+
     :
     atlas->Sources
     )
     ImFontAtlasFontSourceInit(atlas, &src);
     for (ImFont *font: atlas->Fonts)
         for (ImFontConfig * src
+
 
     :
     font->Sources
@@ -4647,6 +4701,7 @@ static ImFontGlyph *ImFontBaked_BuildLoadGlyph(ImFontBaked *baked, ImWchar codep
     char *loader_user_data_p = (char *) baked->FontLoaderDatas;
     int src_n = 0;
     for (ImFontConfig * src
+
 
     :
     font->Sources
@@ -5473,6 +5528,7 @@ ImFontGlyph *ImFontBaked::FindGlyph(ImWchar c) {
             return &Glyphs.Data[i];
 
 
+
         }
     ImFontGlyph *glyph = ImFontBaked_BuildLoadGlyph(this, c, NULL);
     return glyph ? glyph : &Glyphs.Data[FallbackGlyphIndex];
@@ -5488,6 +5544,7 @@ ImFontGlyph *ImFontBaked::FindGlyphNoFallback(ImWchar c) {
             return NULL;
         if (i != IM_FONTGLYPH_INDEX_UNUSED)
             return &Glyphs.Data[i];
+
 
 
         }
@@ -5509,6 +5566,7 @@ bool ImFontBaked::IsGlyphLoaded(ImWchar c) {
             return true;
 
 
+
         }
     return false;
 }
@@ -5518,6 +5576,7 @@ bool ImFont::IsGlyphInFont(ImWchar c) {
     ImFontAtlas * atlas = OwnerAtlas;
     ImFontAtlas_FontHookRemapCodepoint(atlas, this, &c);
     for (ImFontConfig * src
+
 
     :
     Sources
@@ -5567,6 +5626,7 @@ ImFontBaked *ImFont::GetFontBaked(float size, float density) {
     if (density < 0.0f)
         density = CurrentRasterizerDensity;
     if (baked &&baked
+
 
     ->
     Size == size && baked->RasterizerDensity == density
