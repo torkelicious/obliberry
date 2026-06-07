@@ -76,6 +76,8 @@ add_executable(
         src/ECS/Components/TransformComponent.h
         src/ECS/Systems/Movement.h
         src/Renderer/Transform.h
+        src/Map/HexMath.h
+        src/Map/HexCoords.h
 )
 
 
