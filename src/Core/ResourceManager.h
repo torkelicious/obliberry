@@ -9,6 +9,11 @@
 
 class ResourceManager {
 public:
+    /* todo:
+     * implement proper handles stuff rather than this jank
+     */
+
+
     ResourceManager() = delete;
 
     ~ResourceManager() = delete;
@@ -54,6 +59,26 @@ public:
         storage[key] = std::move(resource);
 
         return ptr;
+    }
+
+    // unsafe
+    // will create dangling pointers if doing something like
+    /*
+      Texture *Tex = ResourceManager::Load<Texture>("Tex");
+      ResourceManager::Delete<Texture>("Tex")
+
+        // *Tex is now a dangling pointer :-P
+    */
+    template<typename T>
+    static bool Delete(const std::string &key) {
+        auto &storage = GetStorage<T>();
+
+        auto it = storage.find(key);
+        if (it == storage.end())
+            return false;
+
+        storage.erase(it);
+        return true;
     }
 
 private:

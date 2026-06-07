@@ -2,6 +2,8 @@
 #include <stdexcept>
 #include "Window.h"
 
+#include "Renderer/GLDebug.h"
+
 Window::Window(unsigned int width, unsigned int height, const char *title) {
     if (!Init(width, height, title)) {
         throw std::runtime_error("Failed to initialize window");
@@ -9,10 +11,15 @@ Window::Window(unsigned int width, unsigned int height, const char *title) {
 }
 
 Window::~Window() {
-    glfwDestroyWindow(m_Window);
-    m_Window = nullptr;
-    glfwTerminate();
+    if (m_Window) {
+        glfwDestroyWindow(m_Window);
+        m_Window = nullptr;
+    }
+    if (glfwGetCurrentContext()) {
+        glfwTerminate();
+    }
 }
+
 
 void Window::PollEvents() {
     glfwPollEvents();
@@ -41,10 +48,16 @@ bool Window::Init(unsigned int width, unsigned int height, const char *title) {
 
     glfwMakeContextCurrent(m_Window);
 
+
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
         std::cerr << "failed to init glad" << std::endl;
         return false;
     }
+
+    int dbg = GLDebug::InitDebug();
+    dbg == 0
+        ? std::cout << "Debug Enabled" << std::endl
+        : std::cout << "Debug unavailable" << std::endl;
 
     glViewport(0, 0, width, height);
     glfwSwapInterval(1);
