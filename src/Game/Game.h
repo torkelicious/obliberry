@@ -1,6 +1,7 @@
 #ifndef OBLIBERRY_GAME_H
 #define OBLIBERRY_GAME_H
 #include "Core/Window.h"
+#include "Map/Hex.h"
 #include "Renderer/Renderer.h"
 
 
@@ -25,7 +26,8 @@ public:
     void SetCamera(Camera *camera) { m_Camera = camera; }
 
     // actual game stuff.. i.e not generic class stuff.. will prolly break :)
-    void GenerateTiles(int size, int percent = 50);
+    HexGrid g_Grid;
+    void GenerateTiles(HexGrid &map,int size, int percent = 50);
 
     void MovePlayerToCenter();
 

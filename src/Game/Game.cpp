@@ -2,7 +2,6 @@
 
 #include "Core/Constants.h"
 #include "Core/ResourceManager.h"
-#include "Map/Hex.h"
 #include "Renderer/MeshFactory.h"
 
 #include <cstdlib>
@@ -26,7 +25,6 @@ namespace {
     Material g_SandMat;
     Material g_OutlineMat;
     Material g_PathToMat;
-    HexGrid g_Grid;
     HexCoords g_SelectedHex;
     HexCoords g_PathTo;
     bool g_HasSelection = false;
@@ -89,7 +87,7 @@ void Game::Start() {
     );
 
     InitMaterials();
-    GenerateTiles(20);
+    GenerateTiles(g_Grid,20);
 
     m_player->AddComponent<MeshComponent>()->mesh = playerMesh;
     m_player->AddComponent<MaterialComponent>()->material = Material{g_Shader, ptex};
@@ -245,19 +243,19 @@ void Game::Render(Renderer &renderer) {
 }
 
 // temp testing ig
-void Game::GenerateTiles(int size, int percent) {
+void Game::GenerateTiles(HexGrid &map, int size, const int percent) {
     // generate a size x size area centered around origin
     // regenerate
-    if (!g_Grid.tiles.empty()) {
-        g_Grid.tiles.clear();
+    if (!map.tiles.empty()) {
+        map.tiles.clear();
     }
     size = size / 2;
     for (int q = -size; q < size; q++) {
         for (int r = -size; r < size; r++) {
             HexCoords pos{q, r};
-            TileType type = (std::rand() % 100 < percent) ? TileType::Sand : TileType::Grass; // 10% sand chance
+            TileType type = (std::rand() % 100 < percent) ? TileType::Sand : TileType::Grass;
 
-            g_Grid.EmplaceTile(pos, type);
+            map.EmplaceTile(pos, type);
         }
     }
 }

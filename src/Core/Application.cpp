@@ -63,7 +63,7 @@ void Application::Run() {
         ImGui::SliderInt("Grid Sand percentage", &p, 0, 100);
         if (ImGui::Button("Regenerate Grid")) {
             game.MovePlayerToCenter(); // avoid break pathfinding
-            game.GenerateTiles(i, p);
+            game.GenerateTiles(game.g_Grid,i, p);
         }
         ImGui::End(); // declare end of this window
 
