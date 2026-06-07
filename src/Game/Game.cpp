@@ -90,7 +90,7 @@ void Game::Start() {
     m_player->AddComponent<MaterialComponent>()->material = Material{g_Shader, ptex};
     m_player->AddComponent<TransformComponent>();
 
-    auto* pTrans = m_player->GetComponent<TransformComponent>();
+    auto *pTrans = m_player->GetComponent<TransformComponent>();
     pTrans->transform.SetPosition({0.0f, 0.0f, 0.05f});
     pTrans->transform.SetRotation({glm::radians(0.0f), 0.0f, 0.0f});
     pTrans->transform.SetScale({1.0f, 1.0f, 1.0f});
@@ -221,7 +221,7 @@ void Game::Render(Renderer &renderer) {
     // draw player
     if (m_player->HasComponent<MeshComponent>() && m_player->HasComponent<MaterialComponent>()) {
         Mesh *pmesh = m_player->GetComponent<MeshComponent>()->mesh;
-        Material& pMat = m_player->GetComponent<MaterialComponent>()->material;
+        Material &pMat = m_player->GetComponent<MaterialComponent>()->material;
         Transform pt = m_player->GetComponent<TransformComponent>()->transform;
         renderer.Submit(*pmesh, pMat, pt);
     }
@@ -229,19 +229,14 @@ void Game::Render(Renderer &renderer) {
     renderer.Flush();
 }
 
-
-void Game::Shutdown() const {
-    ResourceManager::Shutdown();
-}
-
 // temp testing ig
-void Game::GenerateTiles(int size,int percent) {
+void Game::GenerateTiles(int size, int percent) {
     // generate a size x size area centered around origin
     // regenerate
     if (!g_Grid.tiles.empty()) {
         g_Grid.tiles.clear();
     }
-    size = size/2;
+    size = size / 2;
     for (int q = -size; q < size; q++) {
         for (int r = -size; r < size; r++) {
             HexCoords pos{q, r};
@@ -253,9 +248,13 @@ void Game::GenerateTiles(int size,int percent) {
 }
 
 void Game::MovePlayerToCenter() {
-    auto* transComp = m_player->GetComponent<TransformComponent>();
+    auto *transComp = m_player->GetComponent<TransformComponent>();
     glm::vec3 pos = transComp->transform.GetPosition();
     pos.x = 0.0f;
     pos.y = 0.0f;
     transComp->transform.SetPosition(pos);
+}
+
+void Game::Shutdown() const {
+    ResourceManager::Shutdown();
 }

@@ -22,7 +22,6 @@ void Renderer::Flush() {
         m_Commands.begin(),
         m_Commands.end(),
         [](const RenderCommand &a, const RenderCommand &b) {
-
             // i dont really think this layer sorting is ideal but whatevver it works for now :)
 
             // primary Z layer

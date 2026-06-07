@@ -11,11 +11,14 @@
 class VertexArray {
 public:
     // disable copying
-    VertexArray(const VertexArray&) = delete;
-    VertexArray& operator=(const VertexArray&) = delete;
+    VertexArray(const VertexArray &) = delete;
+
+    VertexArray &operator=(const VertexArray &) = delete;
+
     // allow moving
-    VertexArray(VertexArray&&) = default;
-    VertexArray& operator=(VertexArray&&) = default;
+    VertexArray(VertexArray &&) = default;
+
+    VertexArray &operator=(VertexArray &&) = default;
 
     VertexArray();
 

@@ -26,9 +26,8 @@ public:
 
     // actual game stuff.. i.e not generic class stuff.. will prolly break :)
     void GenerateTiles(int size, int percent = 50);
+
     void MovePlayerToCenter();
-
-
 
 private:
     void Shutdown() const;

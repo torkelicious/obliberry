@@ -41,14 +41,14 @@ struct VertexTraits<Vertex> {
 class Mesh {
 public:
     // disable copying
-    Mesh(const Mesh&) = delete;
-    Mesh& operator=(const Mesh&) = delete;
+    Mesh(const Mesh &) = delete;
+
+    Mesh &operator=(const Mesh &) = delete;
 
     // allow moving
-    Mesh(Mesh&&) = default;
-    Mesh& operator=(Mesh&&) = default;
+    Mesh(Mesh &&) = default;
 
-
+    Mesh &operator=(Mesh &&) = default;
 
 
     Mesh(const MeshData &data)

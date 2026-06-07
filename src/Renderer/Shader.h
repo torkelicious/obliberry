@@ -8,13 +8,15 @@
 
 class Shader {
 public:
-
     // disable copying
-    Shader(const Shader&) = delete;
-    Shader& operator=(const Shader&) = delete;
+    Shader(const Shader &) = delete;
+
+    Shader &operator=(const Shader &) = delete;
+
     // allow moving
-    Shader(Shader&&) = default;
-    Shader& operator=(Shader&&) = default;
+    Shader(Shader &&) = default;
+
+    Shader &operator=(Shader &&) = default;
 
     Shader(const std::string &vertPath, const std::string &fragPath);
 

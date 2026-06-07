@@ -8,26 +8,26 @@ class Transform {
 public:
     Transform() = default;
 
-    void SetPosition(const glm::vec3& position) {
+    void SetPosition(const glm::vec3 &position) {
         m_Position = position;
         m_IsDirty = true;
     }
 
-    void SetRotation(const glm::vec3& rotation) {
+    void SetRotation(const glm::vec3 &rotation) {
         m_Rotation = rotation;
         m_IsDirty = true;
     }
 
-    void SetScale(const glm::vec3& scale) {
+    void SetScale(const glm::vec3 &scale) {
         m_Scale = scale;
         m_IsDirty = true;
     }
 
-    const glm::vec3& GetPosition() const { return m_Position; }
-    const glm::vec3& GetRotation() const { return m_Rotation; }
-    const glm::vec3& GetScale() const    { return m_Scale; }
+    const glm::vec3 &GetPosition() const { return m_Position; }
+    const glm::vec3 &GetRotation() const { return m_Rotation; }
+    const glm::vec3 &GetScale() const { return m_Scale; }
 
-    const glm::mat4& GetMatrix() const {
+    const glm::mat4 &GetMatrix() const {
         if (m_IsDirty) {
             UpdateMatrix();
             m_IsDirty = false;

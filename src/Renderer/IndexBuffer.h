@@ -7,13 +7,15 @@
 
 class IndexBuffer {
 public:
+    // disable copying
+    IndexBuffer(const IndexBuffer &) = delete;
 
-     // disable copying
-    IndexBuffer(const IndexBuffer&) = delete;
-    IndexBuffer& operator=(const IndexBuffer&) = delete;
+    IndexBuffer &operator=(const IndexBuffer &) = delete;
+
     // allow moving
-    IndexBuffer(IndexBuffer&&) = default;
-    IndexBuffer& operator=(IndexBuffer&&) = default;
+    IndexBuffer(IndexBuffer &&) = default;
+
+    IndexBuffer &operator=(IndexBuffer &&) = default;
 
 
     IndexBuffer(const unsigned int *data, unsigned int count);

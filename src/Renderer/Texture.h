@@ -10,11 +10,14 @@
 class Texture {
 public:
     // disable copying
-    Texture(const Texture&) = delete;
-    Texture& operator=(const Texture&) = delete;
+    Texture(const Texture &) = delete;
+
+    Texture &operator=(const Texture &) = delete;
+
     // allow moving
-    Texture(Texture&&) = default;
-    Texture& operator=(Texture&&) = default;
+    Texture(Texture &&) = default;
+
+    Texture &operator=(Texture &&) = default;
 
     Texture(
         const std::string &path,

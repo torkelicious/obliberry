@@ -7,13 +7,15 @@
 
 class VertexBuffer {
 public:
-
     // disable copying
-    VertexBuffer(const VertexBuffer&) = delete;
-    VertexBuffer& operator=(const VertexBuffer&) = delete;
+    VertexBuffer(const VertexBuffer &) = delete;
+
+    VertexBuffer &operator=(const VertexBuffer &) = delete;
+
     // allow moving
-    VertexBuffer(VertexBuffer&&) = default;
-    VertexBuffer& operator=(VertexBuffer&&) = default;
+    VertexBuffer(VertexBuffer &&) = default;
+
+    VertexBuffer &operator=(VertexBuffer &&) = default;
 
 
     VertexBuffer(const void *data, unsigned int size);
