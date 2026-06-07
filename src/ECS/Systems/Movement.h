@@ -15,6 +15,13 @@ struct MovementComponent : public Component {
     float timePerStep = 0.15f;
 
     bool isMoving = false;
+
+    void Cancel() {
+        isMoving = false;
+        currentPathIndex = 0;
+        stepTimer = 0.0f;
+        currentPath.clear();
+    }
 };
 
 namespace MovementSystem {
@@ -27,8 +34,7 @@ namespace MovementSystem {
         }
 
         if (moveComp->currentPathIndex >= moveComp->currentPath.size()) {
-            moveComp->isMoving = false;
-            moveComp->currentPath.clear();
+            moveComp->Cancel();
             return;
         }
 
@@ -46,17 +52,18 @@ namespace MovementSystem {
 
             moveComp->currentPathIndex++;
             if (moveComp->currentPathIndex >= moveComp->currentPath.size()) {
-                moveComp->isMoving = false;
-                moveComp->currentPath.clear();
-                moveComp->stepTimer = 0.0f;
+                moveComp->Cancel();
             }
         }
     }
 
-    inline void SetPath(Entity &entity, const std::vector<HexCoords> &newPath) {
+    inline void SetPath(const Entity &entity, const std::vector<HexCoords> &newPath) {
         auto *moveComp = entity.GetComponent<MovementComponent>();
-        if (!moveComp || newPath.empty()) return;
-
+        if (!moveComp) return;
+        if (newPath.empty()) {
+            moveComp->Cancel();
+            return;
+        }
         moveComp->currentPath = newPath;
         moveComp->currentPathIndex = 0;
         moveComp->stepTimer = 0.0f;
