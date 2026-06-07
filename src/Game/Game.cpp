@@ -25,15 +25,20 @@ namespace {
     Material g_GrassMat;
     Material g_SandMat;
     Material g_OutlineMat;
+    Material g_PathToMat;
     HexGrid g_Grid;
     HexCoords g_SelectedHex;
+    HexCoords g_PathTo;
     bool g_HasSelection = false;
+    bool g_HasPathTo = false;
 
     void InitMaterials() {
-        g_GrassMat = {g_Shader, g_GrassTex, {1.f, 1.f, 1.f, 1.f}};
-        g_SandMat = {g_Shader, g_SandTex, {1.f, 1.f, 1.f, 1.f}};
+        g_GrassMat = {g_Shader, g_GrassTex, {1.0f, 1.0f, 1.0f, 1.f}};
+        g_SandMat = {g_Shader, g_SandTex, {1.0f, 1.0f, 1.0f, 1.0f}};
         // red outline material
-        g_OutlineMat = {g_Shader, g_SandTex, {1.0f, 0.f, 0.f, 0.5f}};
+        g_OutlineMat = {g_Shader, nullptr, {1.0f, 0.0f, 0.0f, 0.5f}};
+        // selected hex when pathing
+        g_PathToMat = {g_Shader, nullptr, {1.0f, 1.0f, 1.0f, 0.5f}};
     }
 
     inline HexCoords GetPlayerHex() {
@@ -163,27 +168,29 @@ void Game::Update(float dt) {
         g_HasSelection = true;
     }
 
+    auto *moveComp = m_player->GetComponent<MovementComponent>();
+
     // click to move
     if (m_InputManager->IsMousePressed(GLFW_MOUSE_BUTTON_LEFT) && g_HasSelection) {
         HexCoords startHex;
-        auto *moveComp = m_player->GetComponent<MovementComponent>();
 
         if (moveComp && moveComp->isMoving && moveComp->currentPathIndex < moveComp->currentPath.size()) {
             startHex = moveComp->currentPath[moveComp->currentPathIndex];
         } else {
             startHex = GetPlayerHex();
         }
-        //std::cout << "finding path from ("
-        //        << startHex.q << ", " << startHex.r << ") to ("
-        //        << g_SelectedHex.q << ", " << g_SelectedHex.r << ")" << std::endl;
+
         std::vector<HexCoords> path = g_Grid.FindPath(startHex, g_SelectedHex);
+
         if (!path.empty()) {
-            //std::cout << "path found. Waypoints: " << path.size() << std::endl;
+            g_PathTo = g_SelectedHex;
+            g_HasPathTo = true;
             MovementSystem::SetPath(*m_player, path);
         }
-        /* else {
-            std::cout << "destination is blocked or unreachable." << std::endl;
-        }*/
+    }
+
+    if (!moveComp->isMoving && g_HasPathTo) {
+        g_HasPathTo = false;
     }
 }
 
@@ -218,6 +225,14 @@ void Game::Render(Renderer &renderer) {
         renderer.Submit(*g_HexMesh, g_OutlineMat, t);
     }
 
+    if (g_HasPathTo) {
+        glm::vec2 worldPos = g_Grid.GetWorldPos(g_PathTo);
+        Transform t;
+        t.SetPosition({worldPos.x, worldPos.y, 0.01f});
+        t.SetScale({1.08f, 1.08f, 1.0f});
+        renderer.Submit(*g_HexMesh, g_PathToMat, t);
+    }
+
     // draw player
     if (m_player->HasComponent<MeshComponent>() && m_player->HasComponent<MaterialComponent>()) {
         Mesh *pmesh = m_player->GetComponent<MeshComponent>()->mesh;
@@ -249,6 +264,8 @@ void Game::GenerateTiles(int size, int percent) {
 
 void Game::MovePlayerToCenter() {
     auto *transComp = m_player->GetComponent<TransformComponent>();
+    auto *moveComp = m_player->GetComponent<MovementComponent>();
+    moveComp->Cancel();
     glm::vec3 pos = transComp->transform.GetPosition();
     pos.x = 0.0f;
     pos.y = 0.0f;
