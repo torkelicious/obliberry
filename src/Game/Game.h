@@ -27,9 +27,14 @@ public:
 
     // actual game stuff.. i.e not generic class stuff.. will prolly break :)
     HexGrid g_Grid;
-    void GenerateTiles(HexGrid &map,int size, int percent = 50);
+
+    void GenerateTiles(HexGrid &map, int size, int percent = 50);
 
     void MovePlayerToCenter();
+
+    bool TestFileWrite(const HexGrid &grid) const;
+
+    bool TestFileLoad(HexGrid &grid) const;
 
 private:
     void Shutdown() const;

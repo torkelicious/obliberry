@@ -1,11 +1,30 @@
 #ifndef OBLIBERRY_CONSTANTS_H
 #define OBLIBERRY_CONSTANTS_H
 #include <string>
+#include <string_view>
+
+// might feel a bit complicated but i feel it to be worth it..
+namespace PathUtils {
+    // accepts any number of string_views and joins them
+    inline std::string Join(std::string_view p1, std::string_view p2, std::string_view p3 = "") {
+        std::string result;
+        result.reserve(p1.size() + p2.size() + p3.size());
+        result += p1;
+        result += p2;
+        result += p3;
+        return result;
+    }
+}
 
 // filepaths
-const static std::string ASSET_PATH = "assets/";
-const static std::string SHADER_PATH = ASSET_PATH + "shaders/";
-const static std::string TEXTURE_PATH = ASSET_PATH + "textures/";
+constexpr std::string_view ASSET_PATH = "assets/";
+constexpr std::string_view SHADER_PATH = "assets/shaders/";
+constexpr std::string_view TEXTURE_PATH = "assets/textures/";
+constexpr std::string_view MAP_PATH = "assets/maps/";
+
+// fs extensions
+constexpr const char *MAP_FILE_EXTENSION = ".obmap";
+
 // window config
 static constexpr int WINDOW_WIDTH = 1280;
 static constexpr int WINDOW_HEIGHT = 720;

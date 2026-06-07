@@ -58,7 +58,7 @@ public:
         return tiles.emplace(pos, Tile{pos, type, walkable}).first->second;
     }
 
-    glm::vec2 GetWorldPos(const HexCoords &pos, const float size = HEX_SIZE) const {
+    static glm::vec2 GetWorldPos(const HexCoords &pos, const float size = HEX_SIZE) {
         return HexMath::HexToWorld(pos, size);
     }
 

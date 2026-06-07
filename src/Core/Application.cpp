@@ -42,10 +42,10 @@ void Application::Run() {
     game.Start();
 
     // tile gen number
-    int i = 20;
-    int p = 50;
+
     while (!m_Window.ShouldClose()) {
         // input
+
         m_InputManager.BeginFrame();
         // glfw
         m_Window.PollEvents();
@@ -54,18 +54,6 @@ void Application::Run() {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-
-        ImGui::Begin("obliberry"); // Create an imgui window
-        // append fps counter to window
-        ImGui::Text("average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-        // fun sliders...
-        ImGui::SliderInt("Hex Tiles", &i, 1, 100);
-        ImGui::SliderInt("Grid Sand percentage", &p, 0, 100);
-        if (ImGui::Button("Regenerate Grid")) {
-            game.MovePlayerToCenter(); // avoid break pathfinding
-            game.GenerateTiles(game.g_Grid,i, p);
-        }
-        ImGui::End(); // declare end of this window
 
         // game
         const auto currentTime = std::chrono::steady_clock::now();

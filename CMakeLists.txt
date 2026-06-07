@@ -78,6 +78,8 @@ add_executable(
         src/Renderer/Transform.h
         src/Map/HexMath.h
         src/Map/HexCoords.h
+        src/Map/MapSerialization.cpp
+        src/Map/MapSerialization.h
 )
 
 

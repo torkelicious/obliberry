@@ -1,5 +1,3 @@
-
-
 #ifndef OBLIBERRY_HEXCOORDS_H
 #define OBLIBERRY_HEXCOORDS_H
 
