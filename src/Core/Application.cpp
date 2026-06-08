@@ -10,7 +10,7 @@
 
 
 Application::Application()
-    : m_Window(WINDOW_WIDTH, WINDOW_HEIGHT, "Window") {
+    : m_Window(WINDOW_WIDTH, WINDOW_HEIGHT, "obliberry") {
     m_Window.SetInputManager(&m_InputManager);
 }
 

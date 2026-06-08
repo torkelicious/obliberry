@@ -12,6 +12,8 @@ public:
     static MeshData CreatePointTopHex(float size = 0.5f);
 
     static MeshData CreateTriangle();
+
+    static MeshData CreateStandingQuad(float width, float height);
 };
 
 

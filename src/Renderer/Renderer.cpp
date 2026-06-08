@@ -11,6 +11,8 @@ void Renderer::SetCamera(const Camera &camera, float width, float height) {
 void Renderer::BeginFrame() {
     m_Commands.clear();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    // for 2d
+    glDisable(GL_DEPTH_TEST);
 }
 
 void Renderer::Submit(const Mesh &mesh, const Material &material, const Transform &transform) {
@@ -22,27 +24,34 @@ void Renderer::Flush() {
         m_Commands.begin(),
         m_Commands.end(),
         [](const RenderCommand &a, const RenderCommand &b) {
-            // i dont really think this layer sorting is ideal but whatevver it works for now :)
+            const glm::vec3 &posA = a.transform.GetPosition();
+            const glm::vec3 &posB = b.transform.GetPosition();
 
-            // primary Z layer
-            const int zA = static_cast<int>(std::lround(a.transform.GetPosition().z * 100.0f));
-            const int zB = static_cast<int>(std::lround(b.transform.GetPosition().z * 100.0f));
-            if (zA != zB)
+            // sort by isometric depth (x + y)
+            const float keyA = posA.x + posA.y;
+            const float keyB = posB.x + posB.y;
+            // to integers
+            const int depthA = static_cast<int>(std::lround(keyA * 100.0f));
+            const int depthB = static_cast<int>(std::lround(keyB * 100.0f));
+            if (depthA != depthB) {
+                return depthA > depthB;
+            }
+
+            // height / layer layering (z)
+            // use world z as a tie-breaker.
+            const int zA = static_cast<int>(std::lround(posA.z * 100.0f));
+            const int zB = static_cast<int>(std::lround(posB.z * 100.0f));
+            if (zA != zB) {
                 return zA < zB;
-
-            // secondary Y depth
-            const int yA = static_cast<int>(std::lround(a.transform.GetPosition().y * 100.0f));
-            const int yB = static_cast<int>(std::lround(b.transform.GetPosition().y * 100.0f));
-            if (yA != yB)
-                return yA > yB;
-
-            //  material batching
+            }
+            // material batching fallback
             if (a.material != b.material)
                 return a.material < b.material;
 
-            //  mesh batching
+            // mesh batching fallback
             return a.mesh < b.mesh;
         });
+
 
     const Material *currentMaterial = nullptr;
     const Mesh *currentMesh = nullptr;
@@ -53,7 +62,7 @@ void Renderer::Flush() {
 
         if (material != currentMaterial) {
             material->shader->Bind();
-            auto *tex = material->texture ? material->texture : Texture::White();
+            const auto *tex = material->texture ? material->texture : Texture::White();
             tex->Bind(0);
             material->shader->SetUniform1i("u_Texture", 0);
             material->shader->SetUniformVec4("u_Color", material->color);
@@ -67,10 +76,11 @@ void Renderer::Flush() {
         Execute(cmd);
     }
     m_Commands.clear();
+    glEnable(GL_DEPTH_TEST);
 }
 
 void Renderer::Execute(const RenderCommand &cmd) {
-    glm::mat4 mvp = m_VP * cmd.transform.GetMatrix();
+    const glm::mat4 mvp = m_VP * cmd.transform.GetMatrix();
 
     cmd.material->shader->SetUniformMat4("u_MVP", mvp);
     glDrawElements(GL_TRIANGLES, cmd.mesh->GetIndexCount(), GL_UNSIGNED_INT, nullptr);

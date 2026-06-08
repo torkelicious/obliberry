@@ -4,7 +4,6 @@
 #include <iostream>
 
 namespace MapIO {
-
     // todo: add proper gaurding i.e isreading or whatever etc etc
     // im way to tired rn :)
 
