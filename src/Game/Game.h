@@ -1,14 +1,14 @@
 #ifndef OBLIBERRY_GAME_H
 #define OBLIBERRY_GAME_H
+#include <vector>
 #include "Core/Window.h"
+#include "ECS/ECS.h"
 #include "Map/Hex.h"
 #include "Renderer/Renderer.h"
 
-
 class Game {
 public:
-    Game() {
-    };
+    Game() = default;
 
     ~Game() { Shutdown(); }
 
@@ -18,23 +18,26 @@ public:
 
     void Render(Renderer &renderer);
 
-    Camera &GetCamera() { return *m_Camera; }
-
-
+    [[nodiscard]] Camera &GetCamera() const { return *m_Camera; }
     void SetWindow(Window *win) { m_Window = win; }
     void SetInputManager(InputManager *mgr) { m_InputManager = mgr; }
     void SetCamera(Camera *camera) { m_Camera = camera; }
 
-    // actual game stuff.. i.e not generic class stuff.. will prolly break :)
     HexGrid g_Grid;
+
+    // ECS
+    Registry m_Registry;
+    Entity m_player{};
+    Entity m_NPC{};
+    std::vector<Entity> m_ActiveEntities;
 
     void GenerateTiles(HexGrid &map, int size, int percent = 50);
 
     void MovePlayerToCenter();
 
-    bool TestFileWrite(const HexGrid &grid) const;
+    [[nodiscard]] bool TestFileWrite(const HexGrid &grid) const;
 
-    bool TestFileLoad(HexGrid &grid) const;
+    [[nodiscard]] bool TestFileLoad(HexGrid &grid) const;
 
 private:
     void Shutdown() const;
@@ -43,6 +46,5 @@ private:
     InputManager *m_InputManager = nullptr;
     Camera *m_Camera = nullptr;
 };
-
 
 #endif //OBLIBERRY_GAME_H

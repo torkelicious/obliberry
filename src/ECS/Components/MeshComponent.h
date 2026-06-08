@@ -2,7 +2,7 @@
 #define OBLIBERRY_MESHCOMPONENT_H
 
 // just a wrapper for now
-struct MeshComponent : Component {
+struct MeshComponent {
     Mesh *mesh = nullptr;
 };
 

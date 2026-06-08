@@ -63,7 +63,6 @@ add_executable(
         src/ECS/ECS.h
         src/ECS/Components/MaterialComponent.h
         src/ECS/Components/MeshComponent.h
-        src/ECS/Components/VelocityComponent.h
         src/Core/ResourceManager.h
         src/Game/Game.cpp
         src/Game/Game.h
@@ -80,6 +79,12 @@ add_executable(
         src/Map/HexCoords.h
         src/Map/MapSerialization.cpp
         src/Map/MapSerialization.h
+        src/ECS/Systems/RenderSystem.h
+        src/ECS/Types.h
+        src/ECS/IPool.h
+        src/ECS/ComponentPool.h
+        src/ECS/Registry.h
+        src/ECS/Entity.h
 )
 
 

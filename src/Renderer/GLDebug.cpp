@@ -132,3 +132,34 @@ int GLDebug::InitDebug() {
 
     return 0;
 }
+
+VRAMStats GLDebug::GetVRAMStats() {
+    VRAMStats stats;
+    const GLubyte *renderer = glGetString(GL_RENDERER);
+    if (!renderer) return stats;
+    std::string rendererStr(reinterpret_cast<const char *>(renderer));
+    // NVIDIA Path
+    if (rendererStr.find("NVIDIA") != std::string::npos) {
+        GLint totalKb = 0;
+        GLint currentAvailableKb = 0;
+        glGetIntegerv(GL_GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX, &totalKb);
+        glGetIntegerv(GL_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX, &currentAvailableKb);
+
+        if (totalKb > 0) {
+            stats.totalMB = static_cast<float>(totalKb) / 1024.0f;
+            stats.usedMB = static_cast<float>(totalKb - currentAvailableKb) / 1024.0f;
+            stats.isSupported = true;
+        }
+    }
+    // AMD only reports free memory blocks via OpenGL
+    else if (rendererStr.find("AMD") != std::string::npos || rendererStr.find("ATI") != std::string::npos) {
+        GLint freeMemKb[4];
+        glGetIntegerv(GL_VBO_FREE_MEMORY_ATI, freeMemKb);
+
+        // freeMemKb[0] is total free memory remaining in the pool
+        stats.usedMB = 0.0f;
+        stats.totalMB = static_cast<float>(freeMemKb[0]) / 1024.0f; // remaining pool total
+        stats.isSupported = true;
+    }
+    return stats;
+}
