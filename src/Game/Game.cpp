@@ -19,6 +19,38 @@
 #include "Map/MapSerialization.h"
 #include "Renderer/GLDebug.h"
 
+
+/*
+!!! THIS CLASS IS A MESS IT IS ONLY FOR TESTING RIGHT NOW!!!
+TODO:
+ * game architecture & level / scene management
+ *
+ *     The game operates on a single hardcoded grid (`g_Grid`) instantiated directly
+ *     in Game::Start()
+ *     level configuration parameters (g_GridSize, g_SandDensity) and state variables exist as fragile anon namespace globals
+ *
+ *     MapIO is only used for testing rn
+ *
+ IMPLEMENT:
+ *      proper game state gsm type thingy
+ *      get core loop logic out of monolithic Game::Update
+ *      maybe an enum-driven Game State ?
+ *      ensure player input and NPC wandering updates are gated behind the correct state in that case
+ *
+ *      level/scene manager/system
+ *      encapsulate .obmap into level/scene class or structure
+ *
+ *      Create a LevelManager for loading/unloading the current level state,
+ *      clearing the ECS reg entities & loading a new level w map & entities etc etc
+ *      implement .oblvl file format for levels
+ *      maybe yaml style or something, hold reference to an .obmap file, entities etc.
+ *
+ *      entity life
+ *      Establish rules for across level entity handling. (something like unity's DontDestroyOnLoad?)
+ *      Level-specific entiteis like wandering NPC must removed from the registry and re-allocated based on the incoming level's data
+ */
+// holy wall of text lol
+
 namespace {
     Mesh *g_HexMesh = nullptr;
     Shader *g_Shader = nullptr;
@@ -367,7 +399,7 @@ void Game::Update(float dt) {
     float windowWidth = static_cast<float>(m_Window->GetWidth());
     float windowHeight = static_cast<float>(m_Window->GetHeight());
 
-    // --- Camera Zoom & Pan ---
+    //  Camera Zoom & Pan 
     if (m_InputManager->scrollY != 0.0) {
         m_Camera->Zoom += static_cast<float>(m_InputManager->scrollY) * ZOOM_SPEED;
         if (m_Camera->Zoom < 0.5f) m_Camera->Zoom = 0.5f;
@@ -507,7 +539,6 @@ void Game::Update(float dt) {
         }
     }
 
-    // Systems now take Entities directly! No Registry required.
     InputSystem::Update(m_ActiveEntities, *m_InputManager);
     MovementSystem::Update(m_ActiveEntities, dt, g_Grid);
 }

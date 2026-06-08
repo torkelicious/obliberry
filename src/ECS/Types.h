@@ -1,5 +1,3 @@
-
-
 #ifndef OBLIBERRY_TYPES_H
 #define OBLIBERRY_TYPES_H
 #include <cstdint>

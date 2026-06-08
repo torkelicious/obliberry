@@ -30,6 +30,11 @@ void Window::SwapBuffers() {
 }
 
 bool Window::Init(unsigned int width, unsigned int height, const char *title) {
+    /*
+     * TODO: window resizing causes temporary stuttering/freezes
+     *   seems to occur specifically on NVIDIA (Proprietary Drivers) on KWin,
+    */
+
     m_Width = static_cast<float>(width);
     m_Height = static_cast<float>(height);
 
