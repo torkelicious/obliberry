@@ -88,6 +88,7 @@ add_executable(
         src/Core/Utils.h
         src/Scenes/SceneManager.h
         src/Scenes/SceneSerializer.h
+        src/Scenes/Scene.cpp
 )
 
 

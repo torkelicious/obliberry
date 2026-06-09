@@ -6,6 +6,21 @@
 namespace SceneIO {
     class SceneSerializer {
     public:
+        /*
+         * JSON or YAML style format probably?, text based atleast.
+         * scene files (.oblvl?) will hold:
+         * metadata:
+         * name, cam pos, etc whateber is added later
+         *
+         * A reference to .obmap file to load map (via MapIO)
+         *
+         * ECS Registry
+         * each entity declaration holds:
+         *  id, components list, its own metadata maybe?
+         *
+         *TODO: implement...
+         */
+
         SceneSerializer(Scene *scene) : m_Scene(scene) {
         }
 

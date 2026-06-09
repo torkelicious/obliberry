@@ -1,7 +1,7 @@
 #ifndef OBLIBERRY_SCENEMANAGER_H
 #define OBLIBERRY_SCENEMANAGER_H
-#include <memory>
 
+#include <memory>
 #include "Scene.h"
 
 class SceneManager {
@@ -22,11 +22,13 @@ public:
         }
     }
 
-    void Render() {
+    void Render(Renderer &renderer) {
         if (m_CurrentScene) {
-            m_CurrentScene->Render();
+            m_CurrentScene->Render(renderer);
         }
     }
+
+    Scene *GetCurrentScene() const { return m_CurrentScene.get(); }
 
 private:
     std::unique_ptr<Scene> m_CurrentScene = nullptr;

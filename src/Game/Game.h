@@ -1,12 +1,13 @@
 #ifndef OBLIBERRY_GAME_H
 #define OBLIBERRY_GAME_H
 
-#include <vector>
 #include "Core/ResourceManager.h"
 #include "Core/Window.h"
-#include "ECS/ECS.h"
-#include "Map/Hex.h"
 #include "Renderer/Renderer.h"
+#include "Scenes/SceneManager.h"
+#include "Map/Hex.h"
+
+enum class GameState { MainMenu, Gameplay, Paused, EditorMode }; // for later use im still planning things out
 
 class Game {
 public:
@@ -24,19 +25,7 @@ public:
     void SetWindow(Window *win) { m_Window = win; }
     void SetInputManager(InputManager *mgr) { m_InputManager = mgr; }
     void SetCamera(Camera *camera) { m_Camera = camera; }
-
-    HexGrid g_Grid;
-
-    // ECS
-    Registry m_Registry;
-    Entity m_player{};
-    Entity m_NPC{};
-
     void SetResourceManager(ResourceManager *rm) { m_ResourceManager = rm; }
-
-    void GenerateTiles(HexGrid &map, int size, int percent = 50);
-
-    void MovePlayerToCenter();
 
     [[nodiscard]] bool TestFileWrite(const HexGrid &grid) const;
 
@@ -44,6 +33,11 @@ public:
 
 private:
     void Shutdown() const;
+
+    void DrawInterface();
+
+    GameState m_CurrentState = GameState::Gameplay;
+    SceneManager m_SceneManager;
 
     Window *m_Window = nullptr;
     InputManager *m_InputManager = nullptr;
