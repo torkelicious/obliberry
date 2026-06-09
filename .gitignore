@@ -98,3 +98,4 @@ imgui*.ini
 dc.txt
 .directory/
 compile_commands.json
+.directory
