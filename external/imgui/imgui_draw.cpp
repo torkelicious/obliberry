@@ -2482,6 +2482,7 @@ void ImDrawData::DeIndexAllBuffers() {
     for (ImDrawList * draw_list
 
 
+
     :
     CmdLists
     )
@@ -2502,6 +2503,7 @@ void ImDrawData::DeIndexAllBuffers() {
 // or if there is a difference between your window resolution and framebuffer resolution.
 void ImDrawData::ScaleClipRects(const ImVec2 &fb_scale) {
     for (ImDrawList * draw_list
+
 
 
     :
@@ -2842,6 +2844,7 @@ void ImFontAtlas::ClearFonts() {
     for (ImDrawListSharedData * shared_data
 
 
+
     :
     DrawListSharedDatas
     )
@@ -2856,6 +2859,7 @@ void ImFontAtlas::ClearInputData() {
     for (ImFont *font: Fonts)
         ImFontAtlasFontDestroyOutput(this, font);
     for (ImFontConfig & font_cfg
+
 
 
     :
@@ -2894,6 +2898,7 @@ static void ImFontAtlasBuildUpdateRendererHasTexturesFromContext(ImFontAtlas *at
     // - Without this hack, we would have quite a pitfall as many legacy codebases have an early call to Build().
     //   Whereas conversely, the portion of people using ImDrawList without ImGui is expected to be pathologically rare.
     for (ImDrawListSharedData * shared_data
+
 
 
     :
@@ -3418,6 +3423,7 @@ void ImFontAtlasBuildNotifySetFont(ImFontAtlas *atlas, ImFont *old_font, ImFont 
     for (ImDrawListSharedData * shared_data
 
 
+
     :
     atlas->DrawListSharedDatas
     )
@@ -3453,6 +3459,7 @@ void ImFontAtlas::RemoveFont(ImFont *font) {
 
     ImFontAtlasFontDestroyOutput(this, font);
     for (ImFontConfig * src
+
 
 
     :
@@ -3646,6 +3653,7 @@ void ImFontAtlasBuildSetupFontLoader(ImFontAtlas *atlas, const ImFontLoader *fon
         for (ImFontConfig * src
 
 
+
     :
     font->Sources
     )
@@ -3665,6 +3673,7 @@ void ImFontAtlasBuildLegacyPreloadAllGlyphRanges(ImFontAtlas *atlas) {
         for (ImFontConfig * src
 
 
+
         :
         font->Sources
         )
@@ -3682,6 +3691,7 @@ void ImFontAtlasBuildUpdatePointers(ImFontAtlas *atlas) {
     for (ImFont *font: atlas->Fonts)
         font->Sources.resize(0);
     for (ImFontConfig & src
+
 
 
     :
@@ -3819,6 +3829,7 @@ bool ImFontAtlasFontInitOutput(ImFontAtlas *atlas, ImFont *font) {
     for (ImFontConfig * src
 
 
+
     :
     font->Sources
     )
@@ -3833,6 +3844,7 @@ bool ImFontAtlasFontInitOutput(ImFontAtlas *atlas, ImFont *font) {
 void ImFontAtlasFontDestroyOutput(ImFontAtlas *atlas, ImFont *font) {
     font->ClearOutputData();
     for (ImFontConfig * src
+
 
 
     :
@@ -4029,6 +4041,7 @@ ImFontBaked *ImFontAtlasBakedAdd(ImFontAtlas *atlas, ImFont *font, float font_si
     for (ImFontConfig * src
 
 
+
     :
     font->Sources
     ) // Cannot easily be cached as we allow changing backend
@@ -4039,6 +4052,7 @@ ImFontBaked *ImFontAtlasBakedAdd(ImFontAtlas *atlas, ImFont *font, float font_si
     baked->FontLoaderDatas = (loader_data_size > 0) ? IM_ALLOC(loader_data_size) : NULL;
     char *loader_data_p = (char *) baked->FontLoaderDatas;
     for (ImFontConfig * src
+
 
 
     :
@@ -4093,6 +4107,7 @@ void ImFontAtlasBakedDiscard(ImFontAtlas *atlas, ImFont *font, ImFontBaked *bake
 
     char *loader_data_p = (char *) baked->FontLoaderDatas;
     for (ImFontConfig * src
+
 
 
     :
@@ -4157,6 +4172,7 @@ void ImFontAtlasUpdateDrawListsTextures(ImFontAtlas *atlas, ImTextureRef old_tex
     for (ImDrawListSharedData * shared_data
 
 
+
     :
     atlas->DrawListSharedDatas
     )
@@ -4166,6 +4182,7 @@ void ImFontAtlasUpdateDrawListsTextures(ImFontAtlas *atlas, ImTextureRef old_tex
             continue;
 
         for (ImDrawList * draw_list
+
 
 
         :
@@ -4190,6 +4207,7 @@ void ImFontAtlasUpdateDrawListsTextures(ImFontAtlas *atlas, ImTextureRef old_tex
 // FIXME-NEWATLAS FIXME-OPT: Doesn't seem necessary to update for all, only one bound to current context?
 void ImFontAtlasUpdateDrawListsSharedData(ImFontAtlas *atlas) {
     for (ImDrawListSharedData * shared_data
+
 
 
     :
@@ -4416,12 +4434,14 @@ void ImFontAtlasBuildClear(ImFontAtlas *atlas) {
     for (ImFontConfig & src
 
 
+
     :
     atlas->Sources
     )
     ImFontAtlasFontSourceInit(atlas, &src);
     for (ImFont *font: atlas->Fonts)
         for (ImFontConfig * src
+
 
 
     :
@@ -4701,6 +4721,7 @@ static ImFontGlyph *ImFontBaked_BuildLoadGlyph(ImFontBaked *baked, ImWchar codep
     char *loader_user_data_p = (char *) baked->FontLoaderDatas;
     int src_n = 0;
     for (ImFontConfig * src
+
 
 
     :
@@ -5529,6 +5550,7 @@ ImFontGlyph *ImFontBaked::FindGlyph(ImWchar c) {
 
 
 
+
         }
     ImFontGlyph *glyph = ImFontBaked_BuildLoadGlyph(this, c, NULL);
     return glyph ? glyph : &Glyphs.Data[FallbackGlyphIndex];
@@ -5544,6 +5566,7 @@ ImFontGlyph *ImFontBaked::FindGlyphNoFallback(ImWchar c) {
             return NULL;
         if (i != IM_FONTGLYPH_INDEX_UNUSED)
             return &Glyphs.Data[i];
+
 
 
 
@@ -5567,6 +5590,7 @@ bool ImFontBaked::IsGlyphLoaded(ImWchar c) {
 
 
 
+
         }
     return false;
 }
@@ -5576,6 +5600,7 @@ bool ImFont::IsGlyphInFont(ImWchar c) {
     ImFontAtlas * atlas = OwnerAtlas;
     ImFontAtlas_FontHookRemapCodepoint(atlas, this, &c);
     for (ImFontConfig * src
+
 
 
     :
@@ -5626,6 +5651,7 @@ ImFontBaked *ImFont::GetFontBaked(float size, float density) {
     if (density < 0.0f)
         density = CurrentRasterizerDensity;
     if (baked &&baked
+
 
 
     ->

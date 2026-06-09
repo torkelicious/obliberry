@@ -8905,6 +8905,7 @@ bool ImGuiSelectionBasicStorage::GetNextSelectedItem(void **opaque_it, ImGuiID *
     if (PreserveOrder &&it
 
 
+
     ==
     NULL &&it_end
     !=

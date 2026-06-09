@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 4.2)
 project(obliberry)
 
-
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_package(glfw3 REQUIRED)
@@ -99,7 +98,6 @@ add_executable(
         src/ECS/Systems/MapRenderSystem.h
 )
 
-
 target_include_directories(
         obliberry PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/include
@@ -108,7 +106,6 @@ target_include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui/backends
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
-
 
 target_link_libraries(
         obliberry

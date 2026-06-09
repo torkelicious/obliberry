@@ -9290,6 +9290,7 @@ struct ExampleAppConsole {
     (
 
 
+
     2
     )
     {
@@ -9631,6 +9632,7 @@ struct ExampleAppLog {
     void AddLog(const char *fmt, ...) IM_FMTARGS
 
     (
+
 
 
     2

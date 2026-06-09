@@ -2129,6 +2129,7 @@ void ImGuiIO::AddMouseButtonEvent(int mouse_button, bool down) {
     if (ConfigMacOSXBehaviors &&mouse_button
 
 
+
     ==
     0 && MouseCtrlLeftAsRightClick
     )
@@ -2149,6 +2150,7 @@ void ImGuiIO::AddMouseButtonEvent(int mouse_button, bool down) {
     // - Note that this is actual physical Ctrl which is ImGuiMod_Super for us.
     // - At this point we want from !down to down, so this is handling the initial press.
     if (ConfigMacOSXBehaviors &&mouse_button
+
 
 
     ==
@@ -5493,6 +5495,7 @@ void ImGui::UpdateHoveredWindowAndCaptureFlags(const ImVec2 &mouse_pos) {
     if (modal_window &&g
 
 
+
     .
     HoveredWindow && !IsWindowWithinBeginStackOf(g.HoveredWindow->RootWindow, modal_window)
     )
@@ -5763,6 +5766,7 @@ void ImGui::NewFrame() {
     for (ImGuiWindow * window
 
 
+
     :
     g.Windows
     )
@@ -5903,6 +5907,7 @@ static void AddWindowToDrawData(ImGuiWindow *window, int layer) {
     // Merge if user forgot to merge back. Also required in Docking branch for ImGuiWindowFlags_DockNodeHost windows.
     ImGui::AddDrawListToDrawDataEx(&viewport->DrawDataP, viewport->DrawDataBuilder.Layers[layer], window->DrawList);
     for (ImGuiWindow * child
+
 
 
     :
@@ -6138,6 +6143,7 @@ void ImGui::EndFrame() {
     for (ImGuiWindow * window
 
 
+
     :
     g.Windows
     )
@@ -6203,6 +6209,7 @@ void ImGui::Render() {
                                         : NULL;
     windows_to_render_top_most[1] = (g.NavWindowingTarget ? g.NavWindowingListWindow : NULL);
     for (ImGuiWindow * window
+
 
 
     :
@@ -7551,6 +7558,7 @@ static void SetWindowActiveForSkipRefresh(ImGuiWindow *window) {
     for (ImGuiWindow * child
 
 
+
     :
     window->DC.ChildWindows
     )
@@ -8419,6 +8427,7 @@ bool ImGui::Begin(const char *name, bool *p_open, ImGuiWindowFlags flags) {
             if (parent_window && (parent_window->Collapsed || parent_window->HiddenFramesCanSkipItems > 0))
                 window->HiddenFramesCanSkipItems = 1;
             if (parent_window &&parent_window
+
 
 
             ->
@@ -13663,11 +13672,13 @@ static void ImGui::NavSaveLastChildNavWindowIntoParent(ImGuiWindow *nav_window) 
     while (parent &&parent
 
 
+
     ->
     RootWindow != parent && (parent->Flags & (ImGuiWindowFlags_Popup | ImGuiWindowFlags_ChildMenu)) == 0
     )
     parent = parent->ParentWindow;
     if (parent &&parent
+
 
 
     !=
@@ -14114,6 +14125,7 @@ void ImGui::NavUpdateCreateMoveRequest() {
     // FIXME-NAV: Consider enabling those keys even without the master ImGuiConfigFlags_NavEnableKeyboard flag?
     float scoring_page_offset_y = 0.0f;
     if (window &&g
+
 
 
     .
@@ -15754,6 +15766,7 @@ static void WindowSettingsHandler_ClearAll(ImGuiContext *ctx, ImGuiSettingsHandl
     for (ImGuiWindow * window
 
 
+
     :
     g.Windows
     )
@@ -15800,6 +15813,7 @@ static void WindowSettingsHandler_WriteAll(ImGuiContext *ctx, ImGuiSettingsHandl
     // (if a window wasn't opened in this session we preserve its settings)
     ImGuiContext & g = *ctx;
     for (ImGuiWindow * window
+
 
 
     :
@@ -15900,6 +15914,7 @@ static void ScaleWindow(ImGuiWindow *window, float scale) {
 void ImGui::ScaleWindowsInViewport(ImGuiViewportP *viewport, float scale) {
     ImGuiContext & g = *GImGui;
     for (ImGuiWindow * window
+
 
 
     :
@@ -16219,6 +16234,7 @@ void ImGui::DebugRenderViewportThumbnail(ImDrawList *draw_list, ImGuiViewportP *
     float alpha_mul = 1.0f;
     window->DrawList->AddRectFilled(bb.Min, bb.Max, GetColorU32(ImGuiCol_Border, alpha_mul * 0.40f));
     for (ImGuiWindow * thumb_window
+
 
 
     :
@@ -16854,6 +16870,7 @@ void ImGui::ShowMetricsWindow(bool *p_open) {
             for (ImGuiWindow * window
 
 
+
             :
             g.Windows
             )
@@ -17231,6 +17248,7 @@ void ImGui::ShowMetricsWindow(bool *p_open) {
     // Overlay: Display windows Rectangles and Begin Order
     if (cfg->ShowWindowsRects || cfg->ShowWindowsBeginOrder) {
         for (ImGuiWindow * window
+
 
 
         :

@@ -526,12 +526,14 @@ IMGUI_API int ImFormatString(char *buf, size_t buf_size, const char *fmt, ...) I
 (
 
 
+
 3
 );
 
 IMGUI_API int ImFormatStringV(char *buf, size_t buf_size, const char *fmt, va_list args) IM_FMTLIST
 
 (
+
 
 
 3
@@ -544,6 +546,7 @@ IM_FMTARGS
 (
 
 
+
 3
 );
 
@@ -551,6 +554,7 @@ IMGUI_API void ImFormatStringToTempBufferV(const char **out_buf, const char **ou
                                            va_list args) IM_FMTLIST
 
 (
+
 
 
 3
