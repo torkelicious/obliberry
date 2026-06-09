@@ -2,6 +2,7 @@
 #include <stdexcept>
 #include "Window.h"
 
+#include "imgui.h"
 #include "Renderer/GLDebug.h"
 
 Window::Window(unsigned int width, unsigned int height, const char *title) {
@@ -121,6 +122,7 @@ void Window::KeyCallback(GLFWwindow *window, int key, int scancode, int action, 
 }
 
 void Window::CursorPosCallback(GLFWwindow *window, double xpos, double ypos) {
+    if (ImGui::GetIO().WantCaptureMouse) return;
     auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
     if (!self) return;
 
@@ -130,6 +132,7 @@ void Window::CursorPosCallback(GLFWwindow *window, double xpos, double ypos) {
 }
 
 void Window::MouseButtonCallback(GLFWwindow *window, int button, int action, int mods) {
+    if (ImGui::GetIO().WantCaptureMouse) return;
     auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
     if (!self) return;
 
@@ -139,6 +142,7 @@ void Window::MouseButtonCallback(GLFWwindow *window, int button, int action, int
 }
 
 void Window::ScrollCallback(GLFWwindow *window, double xoffset, double yoffset) {
+    if (ImGui::GetIO().WantCaptureMouse) return;
     auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
     if (!self) return;
     self->m_InputManager->HandleScrollEvent(xoffset, yoffset);

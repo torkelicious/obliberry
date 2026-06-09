@@ -67,6 +67,11 @@ public:
         m_Data.pop_back();
     }
 
+    template<typename... Args>
+    T &Emplace(EntityID entity, Args &&... args) {
+        return Insert(entity, T(std::forward<Args>(args)...));
+    }
+
     // expose if needed l8r
     const std::vector<T> &GetDenseData() const { return m_Data; }
     const std::vector<EntityID> &GetDenseEntities() const { return m_IndexToEntity; }

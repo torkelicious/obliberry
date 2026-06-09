@@ -12,14 +12,6 @@
 #include "HexMath.h"
 
 
-// migrated to hexcoords murmurhash3
-// hash for unordered_map / set
-//struct HexCoordsHash {
-//    std::size_t operator()(const HexCoords &h) const noexcept {
-//        return std::hash<int>()(h.q) ^ (std::hash<int>()(h.r) << 1);
-//    }
-//};
-
 // tile types
 // currently used for textures but i'll figure something out
 enum class TileType : uint8_t {

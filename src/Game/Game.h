@@ -5,10 +5,12 @@
 #include "Core/Window.h"
 #include "Core/EngineContext.h"
 #include "Renderer/Renderer.h"
-#include "Scenes/SceneManager.h"
+#include "../IO/SceneManager.h"
 #include "Map/Hex.h"
 
-enum class GameState { MainMenu, Gameplay, Paused, EditorMode }; // for later use im still planning things out
+enum class GameState { MainMenu, Gameplay, Paused, EditorMode };
+
+// for later use im still planning things out, half of these are still not implemented lmao
 
 class Game {
 public:

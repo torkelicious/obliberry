@@ -2,7 +2,7 @@
 #define OBLIBERRY_SCENEMANAGER_H
 
 #include <memory>
-#include "Scene.h"
+#include "../Scenes/Scene.h"
 
 class SceneManager {
 public:

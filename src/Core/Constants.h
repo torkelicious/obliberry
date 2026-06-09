@@ -9,6 +9,7 @@ constexpr std::string_view ASSET_PATH = "assets/";
 constexpr std::string_view SHADER_PATH = "assets/shaders/";
 constexpr std::string_view TEXTURE_PATH = "assets/textures/";
 constexpr std::string_view MAP_PATH = "assets/maps/";
+constexpr std::string_view SCENE_PATH = "assets/scenes/";
 
 // fs extensions
 constexpr const char *MAP_FILE_EXTENSION = ".obmap";

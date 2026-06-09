@@ -53,8 +53,12 @@ public:
         m_LivingEntityCount--;
     }
 
-    template<typename T>
-    T &AddComponent(EntityID entity, T component) { return GetPool<T>()->Insert(entity, component); }
+    //template<typename T>
+    //T &AddComponent(EntityID entity, T component) { return GetPool<T>()->Insert(entity, component); }
+    template<typename T, typename... Args>
+    T &AddComponent(EntityID entity, Args &&... args) {
+        return GetPool<T>()->Emplace(entity, std::forward<Args>(args)...);
+    }
 
     template<typename T>
     T *GetComponent(EntityID entity) { return GetPool<T>()->Get(entity); }

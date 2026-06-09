@@ -7,56 +7,75 @@
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Components/MovementComponent.h"
 #include "ECS/Components/MaterialComponent.h"
+#include "ECS/Components/MapComponent.h"
 #include "ECS/Systems/MovementSystem.h"
 #include <array>
 #include <memory>
-#include <cstdlib>
+#include <random>
 
-// basic wandeering lmao
 namespace AISystem {
-    inline void Update(Registry &registry, HexGrid &grid, float playerSpeed,
-                       const std::array<std::shared_ptr<Texture>, 6> &textures) {
+    inline void Update(Registry &registry) {
+        MapComponent *map = nullptr;
+        registry.ForEach<MapComponent>([&](Entity, MapComponent *m) { map = m; });
+        if (!map) return;
+
+        HexCoords playerHex{0, 0};
+        registry.ForEach<PlayerInputComponent, TransformComponent>(
+            [&](Entity, PlayerInputComponent *, TransformComponent *pt) {
+                glm::vec3 pos = pt->transform.GetPosition();
+                playerHex = HexMath::PixelToHex({pos.x, pos.y});
+            }
+        );
+
         registry.ForEach<MovementComponent, TransformComponent, MaterialComponent>(
             [&](Entity entity, MovementComponent *move, TransformComponent *trans, MaterialComponent *mat) {
                 if (entity.HasComponent<PlayerInputComponent>()) return;
 
-                move->timePerStep = playerSpeed;
+                move->timePerStep = 0.15f;
 
-                if (!move->isMoving && !grid.tiles.empty()) {
+                if (!move->isMoving && !map->grid.tiles.empty()) {
                     HexCoords target;
-                    bool validTargetFound = false;
-                    int maxAttempts = 10;
+                    bool valid = false;
+                    int attempts = 10;
 
-                    HexCoords playerHex{0, 0};
-                    registry.ForEach<PlayerInputComponent, TransformComponent>(
-                        [&](Entity e, PlayerInputComponent *p, TransformComponent *pt) {
-                            playerHex = HexMath::PixelToHex({
-                                pt->transform.GetPosition().x, pt->transform.GetPosition().y
-                            });
-                        });
+                    std::mt19937 rng(std::random_device{}());
+                    std::uniform_int_distribution<size_t> dist(0, map->grid.tiles.size() - 1);
 
-                    while (!validTargetFound && maxAttempts-- > 0) {
-                        auto it = std::ranges::next(grid.tiles.begin(), std::rand() % grid.tiles.size());
+                    while (!valid && attempts-- > 0) {
+                        auto it = std::ranges::next(map->grid.tiles.begin(), dist(rng));
                         target = it->first;
-                        if (target != playerHex) validTargetFound = true;
+                        if (target != playerHex) valid = true;
                     }
 
-                    if (validTargetFound) {
-                        glm::vec3 npcPos = trans->transform.GetPosition();
-                        std::vector<HexCoords> npcPath = grid.FindPath(HexMath::PixelToHex({npcPos.x, npcPos.y}),
-                                                                       target);
-                        if (!npcPath.empty()) MovementSystem::SetPath(entity, npcPath);
+                    if (valid) {
+                        glm::vec3 pos3 = trans->transform.GetPosition();
+                        HexCoords startHex = HexMath::PixelToHex({pos3.x, pos3.y});
+                        auto path = map->grid.FindPath(startHex, target);
+
+                        if (!path.empty()) {
+                            MovementSystem::SetPath(entity, std::move(path));
+                        }
                     }
                 }
 
                 if (move->isMoving && move->currentPathIndex < move->currentPath.size()) {
-                    glm::vec2 nPos = glm::vec2(trans->transform.GetPosition());
-                    glm::vec2 targetDirW = HexMath::HexToWorld(move->currentPath[move->currentPathIndex]) - nPos;
+                    glm::vec3 pos3 = trans->transform.GetPosition();
+                    glm::vec2 pos(pos3.x, pos3.y);
+                    glm::vec2 targetPos = HexMath::HexToWorld(move->currentPath[move->currentPathIndex]);
+                    glm::vec2 dir = targetPos - pos;
 
-                    if (glm::length(targetDirW) > 0.01f) {
-                        float degrees = glm::degrees(glm::atan(targetDirW.y, targetDirW.x));
+                    float len = glm::length(dir);
+                    if (len > 0.001f) {
+                        float degrees = glm::degrees(std::atan2(dir.y, dir.x));
                         if (degrees < 0.0f) degrees += 360.0f;
-                        mat->material->texture = textures[static_cast<int>(std::lround(degrees / 60.0f)) % 6];
+                        int index = static_cast<int>(std::lround(degrees / 60.0f)) % 6;
+
+                        if (auto *dirComp = entity.GetComponent<DirectionalTextureComponent>()) {
+                            dirComp->index = index;
+                            if (mat->material && dirComp->textures[index]) {
+                                mat->material->texture = dirComp->textures[index];
+                            }
+                        }
                     }
                 }
             }

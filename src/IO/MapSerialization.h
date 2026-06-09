@@ -1,7 +1,7 @@
 #ifndef OBLIBERRY_MAPSERIALIZATION_H
 #define OBLIBERRY_MAPSERIALIZATION_H
 #include <cstdint>
-#include "Hex.h"
+#include "../Map/Hex.h"
 
 namespace MapIO {
     // #pragma pack stops the compiler stuffing invisible padding bytes :))

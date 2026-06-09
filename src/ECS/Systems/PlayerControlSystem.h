@@ -2,60 +2,73 @@
 #define OBLIBERRY_PLAYERCONTROLSYSTEM_H
 
 #include "Core/EngineContext.h"
-#include "Core/InputManager.h"
-#include "Core/Constants.h"
 #include "ECS/ECS.h"
-#include "Map/Hex.h"
 #include "ECS/Components/TransformComponent.h"
+#include "ECS/Components/MovementComponent.h"
 #include "ECS/Components/MaterialComponent.h"
-#include "ECS/Systems/MovementSystem.h"
-#include <array>
-#include <memory>
-#include "PlayerInputSystem.h"
+#include "ECS/Components/DirectionalTextureComponent.h"
 #include "ECS/Components/PlayerInputComponent.h"
+#include "ECS/Components/MapComponent.h"
+#include "ECS/Components/MapStateComponent.h"
+#include "ECS/Systems/MovementSystem.h"
 
 namespace PlayerControlSystem {
-    inline void Update(Registry &registry, const EngineContext &ctx, HexGrid &grid, glm::vec2 worldPos,
-                       float playerSpeed, const HexCoords &selectedHex, bool hasSelection, HexCoords &outPathTo,
-                       bool &outHasPathTo, const std::array<std::shared_ptr<Texture>, 6> &textures) {
+    inline void Update(Registry &registry, const EngineContext &ctx, glm::vec2 worldPos) {
+        MapComponent *map = nullptr;
+        MapStateComponent *state = nullptr;
+
+        registry.ForEach<MapComponent, MapStateComponent>([&](Entity, MapComponent *m, MapStateComponent *s) {
+            map = m;
+            state = s;
+        });
+
+        if (!map || !state) return;
+
         registry.ForEach<PlayerInputComponent, TransformComponent, MovementComponent, MaterialComponent>(
             [&](Entity entity, PlayerInputComponent *input, TransformComponent *trans, MovementComponent *move,
                 MaterialComponent *mat) {
-                move->timePerStep = playerSpeed;
-                glm::vec2 pPos = glm::vec2(trans->transform.GetPosition());
-
+                glm::vec2 pPos = trans->transform.GetPosition();
                 glm::vec2 targetDir;
-                bool hasTarget = false;
 
                 if (move->isMoving && move->currentPathIndex < move->currentPath.size()) {
                     HexCoords nextHex = move->currentPath[move->currentPathIndex];
                     targetDir = HexMath::HexToWorld(nextHex) - pPos;
-                    hasTarget = true;
                 } else {
                     targetDir = worldPos - pPos;
-                    if (glm::length(targetDir) > (HEX_SIZE - 0.005f)) hasTarget = true;
                 }
 
-                if (hasTarget) {
-                    float degrees = glm::degrees(glm::atan(targetDir.y, targetDir.x));
+                // temporary logic until i extract directional animation
+                float len = glm::length(targetDir);
+                if (len > 0.001f) {
+                    float degrees = glm::degrees(std::atan2(targetDir.y, targetDir.x));
                     if (degrees < 0.0f) degrees += 360.0f;
-                    mat->material->texture = textures[static_cast<int>(std::lround(degrees / 60.0f)) % 6];
+                    int index = static_cast<int>(std::lround(degrees / 60.0f)) % 6;
+
+                    if (auto *dir = entity.GetComponent<DirectionalTextureComponent>()) {
+                        dir->index = index;
+                        if (mat->material && dir->textures[index]) {
+                            mat->material->texture = dir->textures[index];
+                        }
+                    }
                 }
 
-                if (ctx.input->IsMousePressed(input->LeftClick) && hasSelection) {
+
+                if (ctx.input->IsMousePressed(input->LeftClick) && state->hasSelection) {
                     HexCoords startHex = (move->isMoving && move->currentPathIndex < move->currentPath.size())
                                              ? move->currentPath[move->currentPathIndex]
                                              : HexMath::PixelToHex({pPos.x, pPos.y});
 
-                    std::vector<HexCoords> path = grid.FindPath(startHex, selectedHex);
+                    auto path = map->grid.FindPath(startHex, state->selectedHex);
+
                     if (!path.empty()) {
-                        outPathTo = selectedHex;
-                        outHasPathTo = true;
+                        state->pathTo = state->selectedHex;
+                        state->hasPathTo = true;
                         MovementSystem::SetPath(entity, std::move(path));
                     }
                 }
 
-                if (!move->isMoving && outHasPathTo) outHasPathTo = false;
+                if (!move->isMoving && state->hasPathTo)
+                    state->hasPathTo = false;
             }
         );
     }

@@ -7,8 +7,8 @@
 #include <glm/glm.hpp>
 #include "ECS/ECS.h"
 #include "ECS/Components/MovementComponent.h"
-#include "Map/Hex.h"
 #include "ECS/Components/TransformComponent.h"
+#include "ECS/Components/MapComponent.h" // Added
 
 namespace MovementSystem {
     inline void CancelPath(MovementComponent *moveComp) {
@@ -34,12 +34,15 @@ namespace MovementSystem {
         moveComp->isMoving = true;
     }
 
-    inline void Update(Registry &registry, float dt, const HexGrid &grid) {
+    inline void Update(Registry &registry, float dt) {
+        MapComponent *map = nullptr;
+        registry.ForEach<MapComponent>([&](Entity, MapComponent *m) { map = m; });
+
+        if (!map) return;
+
         registry.ForEach<MovementComponent, TransformComponent>(
             [&](Entity entity, MovementComponent *moveComp, TransformComponent *transComp) {
-                if (!moveComp->isMoving) {
-                    return;
-                }
+                if (!moveComp->isMoving) return;
 
                 if (moveComp->currentPathIndex >= moveComp->currentPath.size()) {
                     CancelPath(moveComp);
@@ -50,7 +53,8 @@ namespace MovementSystem {
                 if (moveComp->stepTimer >= moveComp->timePerStep) {
                     moveComp->stepTimer -= moveComp->timePerStep;
                     HexCoords targetHex = moveComp->currentPath[moveComp->currentPathIndex];
-                    glm::vec2 targetWorldPos2D = grid.GetWorldPos(targetHex);
+
+                    glm::vec2 targetWorldPos2D = map->grid.GetWorldPos(targetHex);
 
                     transComp->transform.SetPosition(glm::vec3(
                         targetWorldPos2D.x,
@@ -65,6 +69,19 @@ namespace MovementSystem {
                 }
             }
         );
+    }
+
+    inline void MoveToCenter(Entity entity) {
+        auto *moveComp = entity.GetComponent<MovementComponent>();
+        auto *transComp = entity.GetComponent<TransformComponent>();
+
+        if (!moveComp || !transComp) return;
+
+        CancelPath(moveComp);
+
+        transComp->transform.SetPosition(glm::vec3(
+            0.0f, 0.0f, transComp->transform.GetPosition().z
+        ));
     }
 }
 

@@ -4,6 +4,8 @@
 
 // math
 namespace HexMath {
+    // note: maybe depreciate this soon because its getting more in the way than not
+    // i dont remember why i did this instead of a vec2 but whatever
     struct Point {
         float x;
         float y;
@@ -54,28 +56,6 @@ namespace HexMath {
         return {q, r, s};
     }
 
-
-    // rounding frac hex to int hex
-    /*
-    inline HexCoords HexRound(float q, float r, float s) {
-        int rq = std::lround(q);
-        int rr = std::lround(r);
-        int rs = std::lround(s);
-
-        float q_diff = std::abs(rq - q);
-        float r_diff = std::abs(rr - r);
-        float s_diff = std::abs(rs - s);
-
-        if (q_diff > r_diff && q_diff > s_diff) {
-            rq = -rr - rs;
-        } else if (r_diff > s_diff) {
-            rr = -rq - rs;
-        }
-
-        return {rq, rr};
-    }
-    */
-
     // pixel pos to hex
     inline HexCoords PixelToHex(const Point &p, float size = HEX_SIZE) {
         auto h = PixelToHexFractional(p, size);
@@ -100,7 +80,7 @@ namespace HexMath {
         return HexCoords(col, row);
     }
 
-    // alias type shi cuz i can :)
+    // alias cuz i can :)
     inline HexCoords GetClosestHex(const Point &p, float size = HEX_SIZE) {
         return PixelToHex(p, size);
     }

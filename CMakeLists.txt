@@ -77,8 +77,8 @@ add_executable(
         src/Renderer/Transform.h
         src/Map/HexMath.h
         src/Map/HexCoords.h
-        src/Map/MapSerialization.cpp
-        src/Map/MapSerialization.h
+        src/IO/MapSerialization.cpp
+        src/IO/MapSerialization.h
         src/ECS/Systems/RenderSystem.h
         src/ECS/Types.h
         src/ECS/IPool.h
@@ -87,8 +87,7 @@ add_executable(
         src/ECS/Entity.h
         src/Scenes/Scene.h
         src/Core/Utils.h
-        src/Scenes/SceneManager.h
-        src/Scenes/SceneSerializer.h
+        src/IO/SceneManager.h
         src/Scenes/Scene.cpp
         src/Core/EngineContext.h
         src/ECS/Systems/InteractionSystem.h
@@ -98,6 +97,15 @@ add_executable(
         src/ECS/Components/PlayerInputComponent.h
         src/ECS/Systems/SpriteBillboardSystem.h
         src/ECS/Systems/MapRenderSystem.h
+        src/IO/SceneSerializer.cpp
+        src/IO/SceneSerializer.h
+        src/IO/AssetLoader.cpp
+        src/IO/AssetLoader.h
+        src/ECS/Components/DirectionalTextureComponent.h
+        src/IO/EntityFactory.cpp
+        src/IO/EntityFactory.h
+        src/ECS/Components/MapComponent.h
+        src/ECS/Components/MapStateComponent.h
 )
 
 target_include_directories(
