@@ -47,21 +47,6 @@ TODO:
  */
 
 
-// !!! ALL OF THIS STUFF IS TEMPORARY AS I FIGURE THINGS OUT !!!
-namespace {
-    std::shared_ptr<Mesh> g_HexMesh = nullptr;
-    std::shared_ptr<Shader> g_Shader = nullptr;
-    std::array<std::shared_ptr<Texture>, 6> g_PlayerTextures{};
-
-    std::shared_ptr<Texture> g_GrassTex = nullptr;
-    std::shared_ptr<Texture> g_SandTex = nullptr;
-
-    Material g_GrassMat;
-    Material g_SandMat;
-    Material g_OutlineMat;
-    Material g_PathToMat;
-}
-
 Scene::Scene(const EngineContext &context)
     : m_Context(context) {
 }
@@ -74,6 +59,7 @@ Scene::Scene(const EngineContext &context)
  * a ton of work needs to be done ..
 */
 
+// ALOT OF THIS IS STILL TEMPORARY!!! :P
 void Scene::OnEnter() {
     m_PlayerTextures[0] = m_Context.resources->Load<Texture>(
         "p_east", PathUtils::Join(TEXTURE_PATH, "player/player_e.png"));

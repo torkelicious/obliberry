@@ -1,9 +1,6 @@
 #ifndef OBLIBERRY_UTILS_H
 #define OBLIBERRY_UTILS_H
 #include <string>
-#include <glm/glm.hpp>
-#include "Renderer/Camera.h"
-
 
 namespace PathUtils {
     // accepts any number of string_views and joins them
