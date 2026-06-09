@@ -84,9 +84,9 @@ add_executable(
         src/ECS/ComponentPool.h
         src/ECS/Registry.h
         src/ECS/Entity.h
-        src/Scenes/Scene.cpp
-        src/Scenes/Scene.h
+        src/Scenes/IScene.h
         src/Core/Utils.h
+        src/Scenes/SceneManager.h
 )
 
 

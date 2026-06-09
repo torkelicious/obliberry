@@ -8,7 +8,7 @@
  */
 
 
-class Scene {
+class IScene {
 };
 
 

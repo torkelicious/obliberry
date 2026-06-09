@@ -1,0 +1,7 @@
+#ifndef OBLIBERRY_SCENEMANAGER_H
+#define OBLIBERRY_SCENEMANAGER_H
+
+class SceneManager {
+};
+
+#endif //OBLIBERRY_SCENEMANAGER_H
