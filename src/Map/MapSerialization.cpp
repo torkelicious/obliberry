@@ -7,7 +7,7 @@ namespace MapIO {
     // todo: add proper gaurding i.e isreading or whatever etc etc
     // im way to tired rn :)
 
-    bool SaveMap(const std::string &path, const HexGrid &grid) {
+    bool Serialize(const std::string &path, const HexGrid &grid) {
         std::ofstream file(path, std::ios::binary);
         if (!file.is_open()) {
             std::cerr << "Failed to open file: " << path << "\n";
@@ -32,7 +32,7 @@ namespace MapIO {
         return true;
     }
 
-    bool LoadMap(const std::string &path, HexGrid &grid) {
+    bool Deserialize(const std::string &path, HexGrid &grid) {
         std::ifstream file(path, std::ios::binary);
         if (!file.is_open()) {
             std::cerr << "Failed to open file: " << path << "\n";

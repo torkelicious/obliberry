@@ -99,7 +99,7 @@ bool Game::TestFileWrite(const HexGrid &grid) const {
     size_t expectedBytes = MapIO::CalculateExpectedFileSize(grid.tiles.size());
     std::cout << "Expected Filesize is: " << expectedBytes << "\n";
 
-    MapIO::SaveMap(path, grid);
+    MapIO::Serialize(path, grid);
     size_t actualBytes = std::filesystem::file_size(path);
 
     if (actualBytes == expectedBytes) {
@@ -115,7 +115,7 @@ bool Game::TestFileLoad(HexGrid &grid) const {
     std::string path = PathUtils::Join(MAP_PATH, "test", MAP_FILE_EXTENSION);
     std::cout << "Attempting to load map from " << path << "\n";
 
-    if (MapIO::LoadMap(path, grid)) {
+    if (MapIO::Deserialize(path, grid)) {
         std::cout << "Map loaded successfully with: " << grid.tiles.size() << " tiles B)\n";
         return true;
     } else {
