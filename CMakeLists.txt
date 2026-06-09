@@ -55,7 +55,6 @@ add_executable(
         src/Renderer/Material.h
         src/Renderer/Shader.cpp
         src/Renderer/Shader.h
-        src/Renderer/Material.cpp
         src/Renderer/GLDebug.cpp
         src/Renderer/GLDebug.h
         src/Map/Hex.h
@@ -85,6 +84,9 @@ add_executable(
         src/ECS/ComponentPool.h
         src/ECS/Registry.h
         src/ECS/Entity.h
+        src/Scenes/Scene.cpp
+        src/Scenes/Scene.h
+        src/Core/Utils.h
 )
 
 

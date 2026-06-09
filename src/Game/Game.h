@@ -1,6 +1,8 @@
 #ifndef OBLIBERRY_GAME_H
 #define OBLIBERRY_GAME_H
+
 #include <vector>
+#include "Core/ResourceManager.h"
 #include "Core/Window.h"
 #include "ECS/ECS.h"
 #include "Map/Hex.h"
@@ -29,7 +31,8 @@ public:
     Registry m_Registry;
     Entity m_player{};
     Entity m_NPC{};
-    std::vector<Entity> m_ActiveEntities;
+
+    void SetResourceManager(ResourceManager *rm) { m_ResourceManager = rm; }
 
     void GenerateTiles(HexGrid &map, int size, int percent = 50);
 
@@ -45,6 +48,7 @@ private:
     Window *m_Window = nullptr;
     InputManager *m_InputManager = nullptr;
     Camera *m_Camera = nullptr;
+    ResourceManager *m_ResourceManager = nullptr;
 };
 
 #endif //OBLIBERRY_GAME_H

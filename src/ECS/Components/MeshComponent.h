@@ -3,7 +3,8 @@
 
 // just a wrapper for now
 struct MeshComponent {
-    Mesh *mesh = nullptr;
+    std::shared_ptr<Mesh> mesh;
+    //Mesh *mesh = nullptr;
 };
 
 #endif //OBLIBERRY_MESHCOMPONENT_H

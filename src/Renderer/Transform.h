@@ -11,16 +11,26 @@ public:
     void SetPosition(const glm::vec3 &position) {
         m_Position = position;
         m_IsDirty = true;
+        m_UseCustomMatrix = false;
     }
 
     void SetRotation(const glm::vec3 &rotation) {
         m_Rotation = rotation;
         m_IsDirty = true;
+        m_UseCustomMatrix = false;
     }
 
     void SetScale(const glm::vec3 &scale) {
         m_Scale = scale;
         m_IsDirty = true;
+        m_UseCustomMatrix = false;
+    }
+
+    // overrides TRS calculation
+    void SetCustomMatrix(const glm::mat4 &matrix) {
+        m_CachedMatrix = matrix;
+        m_UseCustomMatrix = true;
+        m_IsDirty = false;
     }
 
     const glm::vec3 &GetPosition() const { return m_Position; }
@@ -28,6 +38,10 @@ public:
     const glm::vec3 &GetScale() const { return m_Scale; }
 
     const glm::mat4 &GetMatrix() const {
+        if (m_UseCustomMatrix) {
+            return m_CachedMatrix;
+        }
+
         if (m_IsDirty) {
             UpdateMatrix();
             m_IsDirty = false;
@@ -54,6 +68,8 @@ private:
     // note2remember: mutable allows member to be changed inside a const function
     mutable glm::mat4 m_CachedMatrix{1.0f};
     mutable bool m_IsDirty{true};
+
+    bool m_UseCustomMatrix{false};
 };
 
 #endif //OBLIBERRY_TRANSFORM_H

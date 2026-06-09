@@ -8,18 +8,15 @@
 #include "Renderer/Renderer.h"
 
 namespace RenderSystem {
-    inline void Render(std::span<const Entity> entities, Renderer &renderer) {
-        for (const Entity entity: entities) {
-            auto *meshComp = entity.GetComponent<MeshComponent>();
-            auto *matComp = entity.GetComponent<MaterialComponent>();
-            auto *transComp = entity.GetComponent<TransformComponent>();
-
-            if (meshComp && meshComp->mesh && matComp && transComp) {
-                renderer.Submit(*(meshComp->mesh), matComp->material, transComp->transform);
+    inline void Render(Registry &registry, Renderer &renderer) {
+        registry.ForEach<MeshComponent, MaterialComponent, TransformComponent>(
+            [&](Entity entity, MeshComponent *meshComp, MaterialComponent *matComp, TransformComponent *transComp) {
+                if (meshComp->mesh) {
+                    renderer.Submit(*(meshComp->mesh), *matComp->material, transComp->transform);
+                }
             }
-        }
+        );
     }
 }
-
 
 #endif //OBLIBERRY_RENDERSYSTEM_H

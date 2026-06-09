@@ -1,5 +1,6 @@
 #ifndef OBLIBERRY_APPLICATION_H
 #define OBLIBERRY_APPLICATION_H
+#include "ResourceManager.h"
 #include "Window.h"
 
 
@@ -18,6 +19,7 @@ public:
 private:
     Window m_Window;
     InputManager m_InputManager;
+    ResourceManager m_ResourceManager;
 };
 
 

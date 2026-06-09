@@ -4,109 +4,89 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <typeindex>
 #include <unordered_map>
 #include <utility>
 
+class IResourceCache {
+public:
+    virtual ~IResourceCache() = default;
+};
+
+// cache per resource type
+template<typename T>
+class ResourceCache : public IResourceCache {
+public:
+    std::unordered_map<std::string, std::shared_ptr<T> > storage;
+};
+
 class ResourceManager {
 public:
-    /* todo:
-     * implement proper handles stuff rather than this jank
-     */
+    ResourceManager() = default;
 
+    ~ResourceManager() = default;
 
-    ResourceManager() = delete;
+    // prevent copying
+    ResourceManager(const ResourceManager &) = delete;
 
-    ~ResourceManager() = delete;
+    ResourceManager &operator=(const ResourceManager &) = delete;
 
-    static void Shutdown() {
-        for (auto &cleanup: CleanupList()) {
-            cleanup();
-        }
-    }
 
     template<typename T, typename... Args>
-    static T *Load(const std::string &key, Args &&... args) {
-        auto &storage = GetStorage<T>();
-        auto it = storage.find(key);
-        if (it != storage.end())
-            return it->second.get();
-        auto resource =
-                std::make_unique<T>(std::forward<Args>(args)...);
-        T *ptr = resource.get();
-        storage[key] = std::move(resource);
-        return ptr;
+    std::shared_ptr<T> Load(const std::string &key, Args &&... args) {
+        auto &cache = GetCache<T>();
+        auto it = cache.storage.find(key);
+        if (it != cache.storage.end()) {
+            return it->second;
+        }
+
+        auto resource = std::make_shared<T>(std::forward<Args>(args)...);
+        cache.storage[key] = resource;
+        return resource;
     }
 
     template<typename T, typename Func>
-    static T *LoadWithInit(const std::string &key, Func &&init) {
-        auto *obj = Load<T>(key);
-        init(obj);
-        return obj;
+    std::shared_ptr<T> LoadFromFactory(const std::string &key, Func &&factory) {
+        auto &cache = GetCache<T>();
+        auto it = cache.storage.find(key);
+        if (it != cache.storage.end()) {
+            return it->second;
+        }
+
+        // return a unique_ptr<T> or shared_ptr<T>
+        std::shared_ptr<T> resource = factory();
+        cache.storage[key] = resource;
+        return resource;
     }
 
-    template<typename T, typename Func>
-    static T *LoadFromFactory(const std::string &key, Func &&factory) {
-        auto &storage = GetStorage<T>();
-
-        auto it = storage.find(key);
-        if (it != storage.end())
-            return it->second.get();
-
-        auto resource = factory(); // returns std::unique_ptr<T>
-
-        T *ptr = resource.get();
-
-        storage[key] = std::move(resource);
-
-        return ptr;
-    }
-
-    // unsafe
-    // will create dangling pointers if doing something like
-    /*
-      Texture *Tex = ResourceManager::Load<Texture>("Tex");
-      ResourceManager::Delete<Texture>("Tex")
-
-        // *Tex is now a dangling pointer :-P
-    */
     template<typename T>
-    static bool Delete(const std::string &key) {
-        auto &storage = GetStorage<T>();
-
-        auto it = storage.find(key);
-        if (it == storage.end())
+    bool Unload(const std::string &key) {
+        auto &cache = GetCache<T>();
+        auto it = cache.storage.find(key);
+        if (it == cache.storage.end()) {
             return false;
-
-        storage.erase(it);
+        }
+        cache.storage.erase(it);
         return true;
+        // no longer dangly dangly :)
     }
 
 private:
+    // runtime type tracking
+    std::unordered_map<std::type_index, std::unique_ptr<IResourceCache> > m_Caches;
+
     template<typename T>
-    static std::unordered_map<std::string, std::unique_ptr<T> > &GetStorage() {
-        static std::unordered_map<
-            std::string,
-            std::unique_ptr<T>
-        > storage;
-
-        static bool registered = [] {
-            CleanupList().push_back([] {
-                storage.clear();
-            });
-
-            return true;
-        }();
-
-        (void) registered;
-
-        return storage;
-    }
-
-    static std::vector<std::function<void()> > &CleanupList() {
-        static std::vector<std::function<void()> > list;
-        return list;
+    ResourceCache<T> &GetCache() {
+        std::type_index typeIdx(typeid(T));
+        auto it = m_Caches.find(typeIdx);
+        if (it == m_Caches.end()) {
+            auto newCache = std::make_unique<ResourceCache<T> >();
+            auto *cachePtr = newCache.get();
+            m_Caches[typeIdx] = std::move(newCache);
+            return *cachePtr;
+        }
+        return *static_cast<ResourceCache<T> *>(it->second.get());
     }
 };
-
 
 #endif //OBLIBERRY_RESOURCEMANAGER_H

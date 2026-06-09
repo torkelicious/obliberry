@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <span>
+#include <utility>
 #include <glm/glm.hpp>
 #include "ECS/ECS.h"
 #include "Map/Hex.h"
@@ -25,7 +26,7 @@ namespace MovementSystem {
         moveComp->currentPath.clear();
     }
 
-    inline void SetPath(Entity entity, const std::vector<HexCoords> &newPath) {
+    inline void SetPath(Entity entity, std::vector<HexCoords> newPath) {
         auto *moveComp = entity.GetComponent<MovementComponent>();
         if (!moveComp) return;
 
@@ -34,46 +35,44 @@ namespace MovementSystem {
             return;
         }
 
-        moveComp->currentPath = newPath;
+        moveComp->currentPath = std::move(newPath);
         moveComp->currentPathIndex = 0;
         moveComp->stepTimer = 0.0f;
         moveComp->isMoving = true;
     }
 
-    inline void Update(std::span<const Entity> entities, float dt, const HexGrid &grid) {
-        for (const Entity entity: entities) {
-            auto *moveComp = entity.GetComponent<MovementComponent>();
-            auto *transComp = entity.GetComponent<TransformComponent>();
+    inline void Update(Registry &registry, float dt, const HexGrid &grid) {
+        registry.ForEach<MovementComponent, TransformComponent>(
+            [&](Entity entity, MovementComponent *moveComp, TransformComponent *transComp) {
+                if (!moveComp->isMoving) {
+                    return;
+                }
 
-            if (!moveComp || !transComp || !moveComp->isMoving) {
-                continue;
-            }
-
-            if (moveComp->currentPathIndex >= moveComp->currentPath.size()) {
-                CancelPath(moveComp);
-                continue;
-            }
-
-            moveComp->stepTimer += dt;
-            if (moveComp->stepTimer >= moveComp->timePerStep) {
-                moveComp->stepTimer -= moveComp->timePerStep;
-                HexCoords targetHex = moveComp->currentPath[moveComp->currentPathIndex];
-                glm::vec2 targetWorldPos2D = grid.GetWorldPos(targetHex);
-
-                transComp->transform.SetPosition(glm::vec3(
-                    targetWorldPos2D.x,
-                    targetWorldPos2D.y,
-                    transComp->transform.GetPosition().z
-                ));
-
-                moveComp->currentPathIndex++;
                 if (moveComp->currentPathIndex >= moveComp->currentPath.size()) {
                     CancelPath(moveComp);
+                    return;
+                }
+
+                moveComp->stepTimer += dt;
+                if (moveComp->stepTimer >= moveComp->timePerStep) {
+                    moveComp->stepTimer -= moveComp->timePerStep;
+                    HexCoords targetHex = moveComp->currentPath[moveComp->currentPathIndex];
+                    glm::vec2 targetWorldPos2D = grid.GetWorldPos(targetHex);
+
+                    transComp->transform.SetPosition(glm::vec3(
+                        targetWorldPos2D.x,
+                        targetWorldPos2D.y,
+                        transComp->transform.GetPosition().z
+                    ));
+
+                    moveComp->currentPathIndex++;
+                    if (moveComp->currentPathIndex >= moveComp->currentPath.size()) {
+                        CancelPath(moveComp);
+                    }
                 }
             }
-        }
+        );
     }
 }
-
 
 #endif //OBLIBERRY_MOVEMENT_H

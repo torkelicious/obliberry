@@ -17,15 +17,14 @@ struct PlayerInputComponent {
 };
 
 namespace InputSystem {
-    inline void Update(std::span<const Entity> entities, const InputManager &inputManager) {
-        for (const Entity entity: entities) {
-            auto *inputComp = entity.GetComponent<PlayerInputComponent>();
-            if (!inputComp) continue;
-
-            if (inputManager.IsMousePressed(inputComp->LeftClick)) {
-                std::cout << "system: mouse clicked\n";
+    inline void Update(Registry &registry, const InputManager &inputManager) {
+        registry.ForEach<PlayerInputComponent>(
+            [&](Entity entity, PlayerInputComponent *inputComp) {
+                if (inputManager.IsMousePressed(inputComp->LeftClick)) {
+                    std::cout << "system: mouse clicked\n";
+                }
             }
-        }
+        );
     }
 }
 

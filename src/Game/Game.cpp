@@ -9,6 +9,7 @@
 #include <span>
 #include <ranges>
 #include "imgui.h"
+#include "Core/Utils.h"
 #include "ECS/ECS.h"
 #include "ECS/Components/MaterialComponent.h"
 #include "ECS/Components/MeshComponent.h"
@@ -18,7 +19,6 @@
 #include "ECS/Systems/RenderSystem.h"
 #include "Map/MapSerialization.h"
 #include "Renderer/GLDebug.h"
-
 
 /*
 !!! THIS CLASS IS A MESS IT IS ONLY FOR TESTING RIGHT NOW!!!
@@ -52,14 +52,15 @@ TODO:
 // holy wall of text lol
 
 namespace {
-    Mesh *g_HexMesh = nullptr;
-    Shader *g_Shader = nullptr;
+    std::shared_ptr<Mesh> g_HexMesh = nullptr;
+    std::shared_ptr<Shader> g_Shader = nullptr;
 
-    std::array<Texture *, 6> g_PlayerTextures{};
+    std::array<std::shared_ptr<Texture>, 6> g_PlayerTextures{};
     int g_PlayerDirection = 0;
 
-    Texture *g_GrassTex = nullptr;
-    Texture *g_SandTex = nullptr;
+    std::shared_ptr<Texture> g_GrassTex = nullptr;
+    std::shared_ptr<Texture> g_SandTex = nullptr;
+
     Material g_GrassMat;
     Material g_SandMat;
     Material g_OutlineMat;
@@ -93,7 +94,6 @@ namespace {
     }
 }
 
-
 bool Game::TestFileWrite(const HexGrid &grid) const {
     std::string path = PathUtils::Join(MAP_PATH, "test", MAP_FILE_EXTENSION);
     size_t expectedBytes = MapIO::CalculateExpectedFileSize(grid.tiles.size());
@@ -125,67 +125,63 @@ bool Game::TestFileLoad(HexGrid &grid) const {
 }
 
 void Game::Start() {
-    g_PlayerTextures[0] = ResourceManager::Load<
-        Texture>("p_east", PathUtils::Join(TEXTURE_PATH, "player/player_e.png"));
-    g_PlayerTextures[1] = ResourceManager::Load<Texture>("p_north_east",
-                                                         PathUtils::Join(TEXTURE_PATH, "player/player_ne.png"));
-    g_PlayerTextures[2] = ResourceManager::Load<Texture>("p_north_west",
-                                                         PathUtils::Join(TEXTURE_PATH, "player/player_nw.png"));
-    g_PlayerTextures[3] = ResourceManager::Load<
-        Texture>("p_west", PathUtils::Join(TEXTURE_PATH, "player/player_w.png"));
-    g_PlayerTextures[4] = ResourceManager::Load<Texture>("p_south_west",
-                                                         PathUtils::Join(TEXTURE_PATH, "player/player_sw.png"));
-    g_PlayerTextures[5] = ResourceManager::Load<Texture>("p_south_east",
-                                                         PathUtils::Join(TEXTURE_PATH, "player/player_se.png"));
+    g_PlayerTextures[0] = m_ResourceManager->Load<Texture>(
+        "p_east", PathUtils::Join(TEXTURE_PATH, "player/player_e.png"));
+    g_PlayerTextures[1] = m_ResourceManager->Load<Texture>("p_north_east",
+                                                           PathUtils::Join(TEXTURE_PATH, "player/player_ne.png"));
+    g_PlayerTextures[2] = m_ResourceManager->Load<Texture>("p_north_west",
+                                                           PathUtils::Join(TEXTURE_PATH, "player/player_nw.png"));
+    g_PlayerTextures[3] = m_ResourceManager->Load<Texture>(
+        "p_west", PathUtils::Join(TEXTURE_PATH, "player/player_w.png"));
+    g_PlayerTextures[4] = m_ResourceManager->Load<Texture>("p_south_west",
+                                                           PathUtils::Join(TEXTURE_PATH, "player/player_sw.png"));
+    g_PlayerTextures[5] = m_ResourceManager->Load<Texture>("p_south_east",
+                                                           PathUtils::Join(TEXTURE_PATH, "player/player_se.png"));
 
-    g_Shader = ResourceManager::Load<Shader>(
-        "base_shader",
-        PathUtils::Join(SHADER_PATH, "base.vert"),
-        PathUtils::Join(SHADER_PATH, "base.frag")
-    );
+    g_Shader = m_ResourceManager->Load<Shader>("base_shader", PathUtils::Join(SHADER_PATH, "base.vert"),
+                                               PathUtils::Join(SHADER_PATH, "base.frag"));
+    g_GrassTex = m_ResourceManager->Load<Texture>("grass_tex", PathUtils::Join(TEXTURE_PATH, "HexGrass.png"));
+    g_SandTex = m_ResourceManager->Load<Texture>("sand_tex", PathUtils::Join(TEXTURE_PATH, "HexSand.png"));
+    m_ResourceManager->Load<Texture>("player_tex", PathUtils::Join(TEXTURE_PATH, "snkl_berry.png"));
 
-    g_GrassTex = ResourceManager::Load<Texture>("grass_tex", PathUtils::Join(TEXTURE_PATH, "HexGrass.png"));
-    g_SandTex = ResourceManager::Load<Texture>("sand_tex", PathUtils::Join(TEXTURE_PATH, "HexSand.png"));
-    ResourceManager::Load<Texture>("player_tex", PathUtils::Join(TEXTURE_PATH, "snkl_berry.png"));
-
-    Mesh *playerMesh = ResourceManager::LoadFromFactory<Mesh>("p_mesh", [] {
-        auto data = MeshFactory::CreateStandingQuad(0.5f, 1);
-        return std::make_unique<Mesh>(data.vertices, data.indices);
+    std::shared_ptr<Mesh> playerMesh = m_ResourceManager->LoadFromFactory<Mesh>("p_mesh", [] {
+        auto data = MeshFactory::CreateQuad();
+        return std::make_shared<Mesh>(data.vertices, data.indices);
     });
 
-    g_HexMesh = ResourceManager::LoadFromFactory<Mesh>("hex_mesh", [] {
+    g_HexMesh = m_ResourceManager->LoadFromFactory<Mesh>("hex_mesh", [] {
         auto data = MeshFactory::CreatePointTopHex(0.5f);
-        return std::make_unique<Mesh>(data.vertices, data.indices);
+        return std::make_shared<Mesh>(data.vertices, data.indices);
     });
 
     InitMaterials();
     GenerateTiles(g_Grid, g_GridSize);
 
-    // create player
+    // Create player
     m_player = Entity(m_Registry.CreateEntity(), &m_Registry);
     m_player.AddComponent<MeshComponent>(MeshComponent{playerMesh});
-    m_player.AddComponent<MaterialComponent>(MaterialComponent{Material{g_Shader, g_PlayerTextures[0]}});
+    m_player.AddComponent<MaterialComponent>(MaterialComponent{
+        std::make_shared<Material>(Material{g_Shader, g_PlayerTextures[0], {1.0f, 1.0f, 1.0f, 1.0f}})
+    });
     m_player.AddComponent<TransformComponent>(TransformComponent{});
     m_player.AddComponent<MovementComponent>(MovementComponent{});
     m_player.AddComponent<PlayerInputComponent>(PlayerInputComponent{});
-
-    m_ActiveEntities.push_back(m_player);
 
     auto *pTrans = m_player.GetComponent<TransformComponent>();
     if (pTrans) {
         pTrans->transform.SetPosition({0.0f, 0.0f, 0.05f});
         pTrans->transform.SetRotation({glm::radians(0.0f), 0.0f, 0.0f});
-        pTrans->transform.SetScale({1.0f, 1.0f, 1.0f});
+        pTrans->transform.SetScale({0.5f, 1.0f, 1.0f});
     }
 
-    // create NPC
+    // Create NPC
     m_NPC = Entity(m_Registry.CreateEntity(), &m_Registry);
     m_NPC.AddComponent<MeshComponent>(MeshComponent{playerMesh});
-    m_NPC.AddComponent<MaterialComponent>(MaterialComponent{Material{g_Shader, g_PlayerTextures[0], {1, 0.5, 0.5, 1}}});
+    m_NPC.AddComponent<MaterialComponent>(MaterialComponent{
+        std::make_shared<Material>(Material{g_Shader, g_PlayerTextures[0], {1.0f, 0.5f, 0.5f, 1.0f}})
+    });
     m_NPC.AddComponent<TransformComponent>(TransformComponent{});
     m_NPC.AddComponent<MovementComponent>(MovementComponent{});
-
-    m_ActiveEntities.push_back(m_NPC);
 
     auto *npcTrans = m_NPC.GetComponent<TransformComponent>();
     if (npcTrans) {
@@ -228,7 +224,7 @@ void Game::Update(float dt) {
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.8f, 0.5f, 1.0f));
 
         if (ImGui::Button("Regenerate Grid", ImVec2(-1, 0))) {
-            MovePlayerToCenter(); // Avoid breaking pathfinding
+            MovePlayerToCenter();
             GenerateTiles(g_Grid, g_GridSize, g_SandDensity);
         }
         ImGui::PopStyleColor(2);
@@ -287,29 +283,24 @@ void Game::Update(float dt) {
     }
 
     if (ImGui::CollapsingHeader("ECS Telemetry & Inspector", ImGuiTreeNodeFlags_DefaultOpen)) {
-        // registry stats
-        ImGui::Text("Active Handle Count: %zu", m_ActiveEntities.size());
+        const auto &livingEntities = m_Registry.GetLivingEntities();
+        ImGui::Text("Active Handle Count: %zu", livingEntities.size());
         ImGui::Separator();
 
         static int selectedEntityIdx = -1;
-
-        // reset selection if entities drop out or array shrinks out of bounds
-        if (selectedEntityIdx >= static_cast<int>(m_ActiveEntities.size())) {
+        if (selectedEntityIdx >= static_cast<int>(livingEntities.size())) {
             selectedEntityIdx = -1;
         }
 
-        // layout configuration
         float availableWidth = ImGui::GetContentRegionAvail().x;
-        // entity list
         ImGui::BeginChild("EntityListView", ImVec2(availableWidth * 0.4f, 220.0f), true);
         ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.7f, 1.0f), "Entities");
         ImGui::Separator();
 
-        for (size_t i = 0; i < m_ActiveEntities.size(); ++i) {
-            const auto &entity = m_ActiveEntities[i];
-            EntityID id = static_cast<EntityID>(entity);
+        for (size_t i = 0; i < livingEntities.size(); ++i) {
+            EntityID id = livingEntities[i];
+            Entity entity(id, &m_Registry);
 
-            // descriptive labels
             std::string label = "ID: " + std::to_string(id);
             if (entity == m_player) label += " [Player]";
             else if (entity == m_NPC) label += " [NPC]";
@@ -322,30 +313,36 @@ void Game::Update(float dt) {
 
         ImGui::SameLine();
 
-        // component inspector
         ImGui::BeginChild("ComponentInspectorView", ImVec2(0, 220.0f), true);
 
-        if (selectedEntityIdx >= 0 && selectedEntityIdx < static_cast<int>(m_ActiveEntities.size())) {
-            const auto &entity = m_ActiveEntities[selectedEntityIdx];
+        if (selectedEntityIdx >= 0 && selectedEntityIdx < static_cast<int>(livingEntities.size())) {
+            Entity entity(livingEntities[selectedEntityIdx], &m_Registry);
 
             ImGui::TextColored(ImVec4(0.2f, 0.8f, 1.0f, 1.0f), "Components");
             ImGui::Separator();
 
-            // TransformComponent Inspection
             if (auto *transComp = entity.GetComponent<TransformComponent>()) {
                 if (ImGui::TreeNodeEx("Transform Component", ImGuiTreeNodeFlags_DefaultOpen)) {
                     glm::vec3 pos = transComp->transform.GetPosition();
                     glm::vec3 rot = transComp->transform.GetRotation();
                     glm::vec3 scale = transComp->transform.GetScale();
 
-                    ImGui::Text(" Pos:   %.2f, %.2f, %.2f", pos.x, pos.y, pos.z);
-                    ImGui::Text(" Rot:   %.1f deg", glm::degrees(rot.x));
-                    ImGui::Text(" Scale: %.2f, %.2f, %.2f", scale.x, scale.y, scale.z);
+                    if (ImGui::DragFloat3("Position", &pos.x, 0.05f)) {
+                        transComp->transform.SetPosition(pos);
+                    }
+
+                    glm::vec3 rotDegrees = glm::degrees(rot);
+                    if (ImGui::DragFloat3("Rotation", &rotDegrees.x, 1.0f)) {
+                        transComp->transform.SetRotation(glm::radians(rotDegrees));
+                    }
+
+                    if (ImGui::DragFloat3("Scale", &scale.x, 0.05f)) {
+                        transComp->transform.SetScale(scale);
+                    }
                     ImGui::TreePop();
                 }
             }
 
-            // MovementComponent Inspection
             if (auto *moveComp = entity.GetComponent<MovementComponent>()) {
                 if (ImGui::TreeNodeEx("Movement Component", ImGuiTreeNodeFlags_DefaultOpen)) {
                     ImGui::Text(" State: %s", moveComp->isMoving ? "Moving" : "Idle");
@@ -355,27 +352,22 @@ void Game::Update(float dt) {
                 }
             }
 
-            // MaterialComponent Inspection
             if (auto *matComp = entity.GetComponent<MaterialComponent>()) {
                 if (ImGui::TreeNodeEx("Material Component")) {
-                    ImGui::Text(" Shader:  %p", static_cast<void *>(matComp->material.shader));
-                    ImGui::Text(" Texture: %p", static_cast<void *>(matComp->material.texture));
-
-                    // dynamic color modification via UI
-                    ImGui::ColorEdit4("Tint", &matComp->material.color.r, ImGuiColorEditFlags_NoInputs);
+                    ImGui::Text(" Shader:  %p", static_cast<void *>(matComp->material->shader.get()));
+                    ImGui::Text(" Texture: %p", static_cast<void *>(matComp->material->texture.get()));
+                    ImGui::ColorEdit4("Tint", &matComp->material->color.r, ImGuiColorEditFlags_NoInputs);
                     ImGui::TreePop();
                 }
             }
 
-            // MeshComponent Inspection
             if (auto *meshComp = entity.GetComponent<MeshComponent>()) {
                 if (ImGui::TreeNodeEx("Mesh Component")) {
-                    ImGui::Text(" Mesh Data Ref: %p", static_cast<void *>(meshComp->mesh));
+                    ImGui::Text(" Mesh Data Ref: %p", static_cast<void *>(meshComp->mesh.get()));
                     ImGui::TreePop();
                 }
             }
 
-            // PlayerInputComponent Inspection
             if (auto *inputComp = entity.GetComponent<PlayerInputComponent>()) {
                 if (ImGui::TreeNodeEx("Player Input Component")) {
                     ImGui::Text(" Click Bindings: Left(%d), Right(%d)", inputComp->LeftClick, inputComp->RightClick);
@@ -389,7 +381,6 @@ void Game::Update(float dt) {
 
         ImGui::EndChild();
     }
-
     ImGui::End();
 
     if (auto *pMove = m_player.GetComponent<MovementComponent>()) {
@@ -399,7 +390,6 @@ void Game::Update(float dt) {
     float windowWidth = static_cast<float>(m_Window->GetWidth());
     float windowHeight = static_cast<float>(m_Window->GetHeight());
 
-    //  Camera Zoom & Pan 
     if (m_InputManager->scrollY != 0.0) {
         m_Camera->Zoom += static_cast<float>(m_InputManager->scrollY) * ZOOM_SPEED;
         if (m_Camera->Zoom < 0.5f) m_Camera->Zoom = 0.5f;
@@ -426,7 +416,6 @@ void Game::Update(float dt) {
         m_Camera->Position += glm::vec2(worldPan.x, worldPan.y) * PAN_SPEED * dt * (1.0f / m_Camera->Zoom);
     }
 
-    // mouse & Player Rotation
     glm::vec2 worldPos = m_Camera->MouseToWorld(mousePos.x, mousePos.y, windowWidth, windowHeight);
     auto *pTrans = m_player.GetComponent<TransformComponent>();
     glm::vec2 pPos = pTrans ? glm::vec2(pTrans->transform.GetPosition()) : glm::vec2(0.0f);
@@ -449,17 +438,15 @@ void Game::Update(float dt) {
     if (hasTarget) {
         float radians = glm::atan(targetDir.y, targetDir.x);
         float degrees = glm::degrees(radians);
-
         if (degrees < 0.0f) degrees += 360.0f;
 
         g_PlayerDirection = static_cast<int>(std::lround(degrees / 60.0f)) % 6;
 
         if (auto *matComp = m_player.GetComponent<MaterialComponent>()) {
-            matComp->material.texture = g_PlayerTextures[g_PlayerDirection];
+            matComp->material->texture = g_PlayerTextures[g_PlayerDirection];
         }
     }
 
-    // tile selection & pathing
     HexCoords hexPosOnMpos = HexMath::PixelToHex({worldPos.x, worldPos.y});
     if (Tile *tileAtMouse = g_Grid.Get(hexPosOnMpos); !tileAtMouse) {
         g_HasSelection = false;
@@ -480,7 +467,7 @@ void Game::Update(float dt) {
         if (!path.empty()) {
             g_PathTo = g_SelectedHex;
             g_HasPathTo = true;
-            MovementSystem::SetPath(m_player, path);
+            MovementSystem::SetPath(m_player, std::move(path));
         }
     }
 
@@ -488,7 +475,6 @@ void Game::Update(float dt) {
         g_HasPathTo = false;
     }
 
-    // funny npc wandering
     auto *npcMove = m_NPC.GetComponent<MovementComponent>();
     auto *npcTrans = m_NPC.GetComponent<TransformComponent>();
 
@@ -533,14 +519,14 @@ void Game::Update(float dt) {
                 int npcDirection = static_cast<int>(std::lround(degrees / 60.0f)) % 6;
 
                 if (auto *matComp = m_NPC.GetComponent<MaterialComponent>()) {
-                    matComp->material.texture = g_PlayerTextures[npcDirection];
+                    matComp->material->texture = g_PlayerTextures[npcDirection];
                 }
             }
         }
     }
 
-    InputSystem::Update(m_ActiveEntities, *m_InputManager);
-    MovementSystem::Update(m_ActiveEntities, dt, g_Grid);
+    InputSystem::Update(m_Registry, *m_InputManager);
+    MovementSystem::Update(m_Registry, dt, g_Grid);
 }
 
 void Game::Render(Renderer &renderer) {
@@ -576,8 +562,18 @@ void Game::Render(Renderer &renderer) {
         renderer.Submit(*g_HexMesh, g_PathToMat, t);
     }
 
-    RenderSystem::Render(m_ActiveEntities, renderer);
+    if (m_Camera != nullptr) {
+        m_Registry.ForEach<TransformComponent>([&](Entity entity, TransformComponent *transComp) {
+            glm::vec3 pos = transComp->transform.GetPosition();
+            glm::vec3 scale = transComp->transform.GetScale();
+            transComp->transform.SetPosition(pos);
 
+            glm::mat4 billboard = GetBillboardMatrix(pos, scale.x, scale.y, *m_Camera);
+            transComp->transform.SetCustomMatrix(billboard);
+        });
+    }
+
+    RenderSystem::Render(m_Registry, renderer);
     renderer.Flush();
 }
 
@@ -610,5 +606,4 @@ void Game::MovePlayerToCenter() {
 }
 
 void Game::Shutdown() const {
-    ResourceManager::Shutdown();
 }

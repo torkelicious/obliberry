@@ -26,7 +26,6 @@ void Renderer::Flush() {
         [](const RenderCommand &a, const RenderCommand &b) {
             const glm::vec3 &posA = a.transform.GetPosition();
             const glm::vec3 &posB = b.transform.GetPosition();
-
             // sort by isometric depth (x + y)
             const float keyA = posA.x + posA.y;
             const float keyB = posB.x + posB.y;
@@ -52,17 +51,17 @@ void Renderer::Flush() {
             return a.mesh < b.mesh;
         });
 
-
     const Material *currentMaterial = nullptr;
     const Mesh *currentMesh = nullptr;
 
     for (const auto &cmd: m_Commands) {
         const auto *mesh = cmd.mesh;
         const auto *material = cmd.material;
-
         if (material != currentMaterial) {
             material->shader->Bind();
-            const auto *tex = material->texture ? material->texture : Texture::White();
+            // view projection matrix once per shader switch rather than per object
+            material->shader->SetUniformMat4("u_VP", m_VP);
+            const auto *tex = material->texture ? material->texture.get() : Texture::White();
             tex->Bind(0);
             material->shader->SetUniform1i("u_Texture", 0);
             material->shader->SetUniformVec4("u_Color", material->color);
@@ -73,15 +72,15 @@ void Renderer::Flush() {
             mesh->Bind();
             currentMesh = mesh;
         }
+
         Execute(cmd);
     }
+
     m_Commands.clear();
     glEnable(GL_DEPTH_TEST);
 }
 
 void Renderer::Execute(const RenderCommand &cmd) {
-    const glm::mat4 mvp = m_VP * cmd.transform.GetMatrix();
-
-    cmd.material->shader->SetUniformMat4("u_MVP", mvp);
+    cmd.material->shader->SetUniformMat4("u_Model", cmd.transform.GetMatrix());
     glDrawElements(GL_TRIANGLES, cmd.mesh->GetIndexCount(), GL_UNSIGNED_INT, nullptr);
 }

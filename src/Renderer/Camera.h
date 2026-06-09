@@ -99,6 +99,16 @@ public:
 
         return {intersection.x, intersection.y};
     }
+
+    glm::vec3 GetRightVector() const {
+        glm::mat4 invRot = glm::inverse(GetRotation());
+        return glm::vec3(invRot[0]); // local Right
+    }
+
+    glm::vec3 GetUpVector() const {
+        glm::mat4 invRot = glm::inverse(GetRotation());
+        return glm::vec3(invRot[1]); // local Up
+    }
 };
 
 #endif

@@ -35,8 +35,8 @@ void Application::Run() {
     game.SetWindow(&m_Window);
     game.SetInputManager(&m_InputManager);
     game.SetCamera(&camera);
+    game.SetResourceManager(&m_ResourceManager);
     renderer.SetCamera(camera, WINDOW_WIDTH, WINDOW_HEIGHT);
-
 
     auto previousTime = std::chrono::steady_clock::now();
     game.Start();

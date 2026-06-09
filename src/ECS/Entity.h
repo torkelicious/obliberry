@@ -2,8 +2,9 @@
 #define OBLIBERRY_ENTITY_H
 
 #include "Types.h"
-#include "Registry.h"
 #include <utility>
+
+class Registry;
 
 class Entity {
 public:
@@ -14,29 +15,19 @@ public:
     }
 
     template<typename T, typename... Args>
-    T &AddComponent(Args &&... args) {
-        return m_Registry->AddComponent<T>(m_EntityHandle, std::forward<Args>(args)...);
-    }
+    T &AddComponent(Args &&... args);
 
     template<typename T>
-    T *GetComponent() const {
-        return m_Registry->GetComponent<T>(m_EntityHandle);
-    }
+    T *GetComponent() const;
 
     template<typename T>
-    [[nodiscard]] bool HasComponent() const {
-        return m_Registry->HasComponent<T>(m_EntityHandle);
-    }
+    [[nodiscard]] bool HasComponent() const;
 
-    // comp ops
     bool operator==(const Entity &other) const {
         return m_EntityHandle == other.m_EntityHandle && m_Registry == other.m_Registry;
     }
 
-    bool operator!=(const Entity &other) const {
-        return !(*this == other);
-    }
-
+    bool operator!=(const Entity &other) const { return !(*this == other); }
     operator bool() const { return m_EntityHandle != 0; }
     operator EntityID() const { return m_EntityHandle; }
 

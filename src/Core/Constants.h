@@ -3,18 +3,6 @@
 #include <string>
 #include <string_view>
 
-// might feel a bit complicated but i feel it to be worth it..
-namespace PathUtils {
-    // accepts any number of string_views and joins them
-    inline std::string Join(std::string_view p1, std::string_view p2, std::string_view p3 = "") {
-        std::string result;
-        result.reserve(p1.size() + p2.size() + p3.size());
-        result += p1;
-        result += p2;
-        result += p3;
-        return result;
-    }
-}
 
 // filepaths
 constexpr std::string_view ASSET_PATH = "assets/";

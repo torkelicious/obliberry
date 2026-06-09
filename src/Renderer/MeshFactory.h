@@ -13,7 +13,7 @@ public:
 
     static MeshData CreateTriangle();
 
-    static MeshData CreateStandingQuad(float width, float height);
+    //static MeshData CreateStandingQuad(float width, float height);
 };
 
 

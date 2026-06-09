@@ -33,47 +33,44 @@ void Shader::Unbind() const {
     glUseProgram(0);
 }
 
-bool Shader::EnsureBound() const {
-    if (m_ID == 0) return false;
-
-    GLint cur = 0;
-    glGetIntegerv(GL_CURRENT_PROGRAM, &cur);
-    if ((GLuint) cur != m_ID)
-        glUseProgram(m_ID);
-
-    return true;
-}
+// only for debugging purpouces
+// dont use uynless u want crazy stutter :)
+//bool Shader::EnsureBound() const {
+//    if (m_ID == 0) return false;
+//
+//    GLint cur = 0;
+//    glGetIntegerv(GL_CURRENT_PROGRAM, &cur);
+//    if ((GLuint) cur != m_ID)
+//        glUseProgram(m_ID);
+//
+//    return true;
+//}
 
 void Shader::SetUniform1i(const std::string &name, int value) {
-    if (!EnsureBound()) return;
     GLint loc = GetUniformLocation(name);
     if (loc == -1) return;
     glUniform1i(loc, value);
 }
 
 void Shader::SetUniform1f(const std::string &name, float value) {
-    if (!EnsureBound()) return;
     GLint loc = GetUniformLocation(name);
     if (loc == -1) return;
     glUniform1f(loc, value);
 }
 
 void Shader::SetUniformVec2(const std::string &name, const glm::vec2 &v) {
-    if (!EnsureBound()) return;
     GLint loc = GetUniformLocation(name);
     if (loc == -1) return;
     glUniform2f(loc, v.x, v.y);
 }
 
 void Shader::SetUniformVec4(const std::string &name, const glm::vec4 &v) {
-    if (!EnsureBound()) return;
     GLint loc = GetUniformLocation(name);
     if (loc == -1) return;
     glUniform4f(loc, v.x, v.y, v.z, v.w);
 }
 
 void Shader::SetUniformMat4(const std::string &name, const glm::mat4 &mat) {
-    if (!EnsureBound()) return;
     GLint loc = GetUniformLocation(name);
     if (loc == -1) return;
     glUniformMatrix4fv(loc, 1, GL_FALSE, &mat[0][0]);

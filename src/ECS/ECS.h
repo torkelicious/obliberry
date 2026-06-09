@@ -2,7 +2,7 @@
 #define OBLIBERRY_ECS_H
 
 /*
-refs:
+refs/inspo:
 https://en.cppreference.com/cpp/container/unordered_map
 https://www.geeksforgeeks.org/dsa/sparse-set/
 https://austinmorlan.com/posts/entity_component_system/

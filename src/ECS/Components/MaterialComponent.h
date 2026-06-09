@@ -4,7 +4,7 @@
 
 // material is small so im not gonna bother with using pointers
 struct MaterialComponent {
-    Material material{};
+    std::shared_ptr<Material> material;
 };
 
 #endif //OBLIBERRY_MATERIALCOMPONENT_H
