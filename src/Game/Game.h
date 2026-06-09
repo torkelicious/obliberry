@@ -3,6 +3,7 @@
 
 #include "Core/ResourceManager.h"
 #include "Core/Window.h"
+#include "Core/EngineContext.h"
 #include "Renderer/Renderer.h"
 #include "Scenes/SceneManager.h"
 #include "Map/Hex.h"
@@ -21,11 +22,8 @@ public:
 
     void Render(Renderer &renderer);
 
-    [[nodiscard]] Camera &GetCamera() const { return *m_Camera; }
-    void SetWindow(Window *win) { m_Window = win; }
-    void SetInputManager(InputManager *mgr) { m_InputManager = mgr; }
-    void SetCamera(Camera *camera) { m_Camera = camera; }
-    void SetResourceManager(ResourceManager *rm) { m_ResourceManager = rm; }
+    [[nodiscard]] Camera &GetCamera() const { return *m_Context.camera; }
+    void SetContext(const EngineContext &context) { m_Context = context; }
 
     [[nodiscard]] bool TestFileWrite(const HexGrid &grid) const;
 
@@ -39,10 +37,7 @@ private:
     GameState m_CurrentState = GameState::Gameplay;
     SceneManager m_SceneManager;
 
-    Window *m_Window = nullptr;
-    InputManager *m_InputManager = nullptr;
-    Camera *m_Camera = nullptr;
-    ResourceManager *m_ResourceManager = nullptr;
+    EngineContext m_Context;
 };
 
 #endif //OBLIBERRY_GAME_H

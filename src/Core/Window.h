@@ -22,6 +22,8 @@ public:
 
     bool ShouldClose() const { return glfwWindowShouldClose(m_Window); }
 
+    void Close() const { glfwSetWindowShouldClose(m_Window, true); }
+
     int GetWidth() const { return m_Width; }
     int GetHeight() const { return m_Height; }
 

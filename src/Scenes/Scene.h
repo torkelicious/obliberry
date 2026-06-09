@@ -1,6 +1,7 @@
 #ifndef OBLIBERRY_SCENE_H
 #define OBLIBERRY_SCENE_H
 
+#include "Core/EngineContext.h"
 #include "ECS/ECS.h"
 #include "Map/Hex.h"
 #include "Renderer/Renderer.h"
@@ -20,7 +21,7 @@ class Camera;
 
 class Scene {
 public:
-    Scene(Window *window, InputManager *input, ResourceManager *resources, Camera *camera);
+    Scene(const EngineContext &context);
 
     ~Scene() = default;
 
@@ -51,10 +52,18 @@ private:
     Registry m_Registry;
     HexGrid m_Grid;
 
-    Window *m_Window = nullptr;
-    InputManager *m_InputManager = nullptr;
-    ResourceManager *m_ResourceManager = nullptr;
-    Camera *m_Camera = nullptr;
+    EngineContext m_Context;
+
+    // still tmp
+    std::shared_ptr<Mesh> m_HexMesh = nullptr;
+    std::shared_ptr<Shader> m_Shader = nullptr;
+    std::array<std::shared_ptr<Texture>, 6> m_PlayerTextures{};
+    std::shared_ptr<Texture> m_GrassTex = nullptr;
+    std::shared_ptr<Texture> m_SandTex = nullptr;
+    Material m_GrassMat;
+    Material m_SandMat;
+    Material m_OutlineMat;
+    Material m_PathToMat;
 };
 
 #endif //OBLIBERRY_SCENE_H

@@ -118,10 +118,6 @@ void Window::KeyCallback(GLFWwindow *window, int key, int scancode, int action, 
     if (self->m_InputManager) {
         self->m_InputManager->HandleKeyEvent(key, action);
     }
-
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
-    }
 }
 
 void Window::CursorPosCallback(GLFWwindow *window, double xpos, double ypos) {

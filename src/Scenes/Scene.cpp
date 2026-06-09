@@ -6,30 +6,31 @@
 #include "ECS/Components/MaterialComponent.h"
 #include "ECS/Components/MeshComponent.h"
 #include "ECS/Components/TransformComponent.h"
-#include "ECS/Systems/Movement.h"
-#include "ECS/Systems/PlayerInput.h"
+#include "ECS/Systems/MovementSystem.h"
+#include "ECS/Systems/PlayerInputSystem.h"
 #include "ECS/Systems/RenderSystem.h"
 #include <array>
 #include <cstdlib>
+#include "ECS/Systems/InteractionSystem.h"
+#include "ECS/Systems/PlayerControlSystem.h"
+#include "ECS/Systems/AISystem.h"
+#include "ECS/Systems/MapRenderSystem.h"
+#include "ECS/Systems/SpriteBillboardSystem.h"
 
 /*
 !!! GET LOGIC OUT OF SCENE BEFORE IT BECOMES A MESS !!!
 TODO:
  * decouple systems & cleanup dependencies
  *      create an EngineContext struct (window, input, resources, camera, dt) to stop passing raw pointers everywhere
- *      get camera panning & zoom math out of Scene::Update
- *      extract mouse-to-world hex selection into an interaction system?
+ *      get camera panning & zoom math out of Scene::Update - kinda its a system now
  *      implement a ComponentRegistry to map component names to ImGui editors & serializers blah blah
  *      turn entities into data-driven "Prototypes" (stats/visual data loaded from disk instead of hardcoded)
  *
  IMPLEMENT:
- *      proper standalone systems
- *      move player input registry loop into some sort of PlayerControlSystem?
- *      move NPC random wandering / pathing into AISystem or something
- *      get map rendering & billboard loops out of Scene::Render into a system
+ *      proper standalone systems - pretty muich done
  *
  BEHAVIOURS?
- *      create some sort of Logic/Script Component that just holds a string IDs
+ *      create some sort of Logic/Script Component that just holds a string IDs?? still planning iomplemetnatoin of this..
  *      bind gameplay functions to those string IDs in a central behavior manager map
  *      make engine systems trigger hardcoded procedures
  *      allows changing logic via editor dropdowns without dealing with custom compilers or whatever
@@ -61,8 +62,8 @@ namespace {
     Material g_PathToMat;
 }
 
-Scene::Scene(Window *window, InputManager *input, ResourceManager *resources, Camera *camera)
-    : m_Window(window), m_InputManager(input), m_ResourceManager(resources), m_Camera(camera) {
+Scene::Scene(const EngineContext &context)
+    : m_Context(context) {
 }
 
 /*
@@ -74,48 +75,46 @@ Scene::Scene(Window *window, InputManager *input, ResourceManager *resources, Ca
 */
 
 void Scene::OnEnter() {
-    // load Assets
-    g_PlayerTextures[0] = m_ResourceManager->Load<Texture>(
+    m_PlayerTextures[0] = m_Context.resources->Load<Texture>(
         "p_east", PathUtils::Join(TEXTURE_PATH, "player/player_e.png"));
-    g_PlayerTextures[1] = m_ResourceManager->Load<Texture>("p_north_east",
-                                                           PathUtils::Join(TEXTURE_PATH, "player/player_ne.png"));
-    g_PlayerTextures[2] = m_ResourceManager->Load<Texture>("p_north_west",
-                                                           PathUtils::Join(TEXTURE_PATH, "player/player_nw.png"));
-    g_PlayerTextures[3] = m_ResourceManager->Load<Texture>(
+    m_PlayerTextures[1] = m_Context.resources->Load<Texture>("p_north_east",
+                                                             PathUtils::Join(TEXTURE_PATH, "player/player_ne.png"));
+    m_PlayerTextures[2] = m_Context.resources->Load<Texture>("p_north_west",
+                                                             PathUtils::Join(TEXTURE_PATH, "player/player_nw.png"));
+    m_PlayerTextures[3] = m_Context.resources->Load<Texture>(
         "p_west", PathUtils::Join(TEXTURE_PATH, "player/player_w.png"));
-    g_PlayerTextures[4] = m_ResourceManager->Load<Texture>("p_south_west",
-                                                           PathUtils::Join(TEXTURE_PATH, "player/player_sw.png"));
-    g_PlayerTextures[5] = m_ResourceManager->Load<Texture>("p_south_east",
-                                                           PathUtils::Join(TEXTURE_PATH, "player/player_se.png"));
+    m_PlayerTextures[4] = m_Context.resources->Load<Texture>("p_south_west",
+                                                             PathUtils::Join(TEXTURE_PATH, "player/player_sw.png"));
+    m_PlayerTextures[5] = m_Context.resources->Load<Texture>("p_south_east",
+                                                             PathUtils::Join(TEXTURE_PATH, "player/player_se.png"));
 
-    g_Shader = m_ResourceManager->Load<Shader>("base_shader", PathUtils::Join(SHADER_PATH, "base.vert"),
-                                               PathUtils::Join(SHADER_PATH, "base.frag"));
-    g_GrassTex = m_ResourceManager->Load<Texture>("grass_tex", PathUtils::Join(TEXTURE_PATH, "HexGrass.png"));
-    g_SandTex = m_ResourceManager->Load<Texture>("sand_tex", PathUtils::Join(TEXTURE_PATH, "HexSand.png"));
+    m_Shader = m_Context.resources->Load<Shader>("base_shader", PathUtils::Join(SHADER_PATH, "base.vert"),
+                                                 PathUtils::Join(SHADER_PATH, "base.frag"));
+    m_GrassTex = m_Context.resources->Load<Texture>("grass_tex", PathUtils::Join(TEXTURE_PATH, "HexGrass.png"));
+    m_SandTex = m_Context.resources->Load<Texture>("sand_tex", PathUtils::Join(TEXTURE_PATH, "HexSand.png"));
 
-    std::shared_ptr<Mesh> playerMesh = m_ResourceManager->LoadFromFactory<Mesh>("p_mesh", [] {
+    std::shared_ptr<Mesh> playerMesh = m_Context.resources->LoadFromFactory<Mesh>("p_mesh", [] {
         auto data = MeshFactory::CreateQuad();
         return std::make_shared<Mesh>(data.vertices, data.indices);
     });
 
-    g_HexMesh = m_ResourceManager->LoadFromFactory<Mesh>("hex_mesh", [] {
+    m_HexMesh = m_Context.resources->LoadFromFactory<Mesh>("hex_mesh", [] {
         auto data = MeshFactory::CreatePointTopHex(0.5f);
         return std::make_shared<Mesh>(data.vertices, data.indices);
     });
 
-    g_GrassMat = {g_Shader, g_GrassTex, {1.0f, 1.0f, 1.0f, 1.f}};
-    g_SandMat = {g_Shader, g_SandTex, {1.0f, 1.0f, 1.0f, 1.0f}};
-    g_OutlineMat = {g_Shader, nullptr, {1.0f, 0.0f, 0.0f, 0.5f}};
-    g_PathToMat = {g_Shader, nullptr, {1.0f, 1.0f, 1.0f, 0.5f}};
+    m_GrassMat = {m_Shader, m_GrassTex, {1.0f, 1.0f, 1.0f, 1.f}};
+    m_SandMat = {m_Shader, m_SandTex, {1.0f, 1.0f, 1.0f, 1.0f}};
+    m_OutlineMat = {m_Shader, nullptr, {1.0f, 0.0f, 0.0f, 0.5f}};
+    m_PathToMat = {m_Shader, nullptr, {1.0f, 1.0f, 1.0f, 0.5f}};
 
-    // generate map
     GenerateTiles(20, 50);
 
-    // spawn entities using scene registry
+    // Spawn Player
     Entity player = Entity(m_Registry.CreateEntity(), &m_Registry);
     player.AddComponent<MeshComponent>(MeshComponent{playerMesh});
     player.AddComponent<MaterialComponent>(MaterialComponent{
-        std::make_shared<Material>(Material{g_Shader, g_PlayerTextures[0], {1.0f, 1.0f, 1.0f, 1.0f}})
+        std::make_shared<Material>(Material{m_Shader, m_PlayerTextures[0], {1.0f, 1.0f, 1.0f, 1.0f}})
     });
     player.AddComponent<TransformComponent>(TransformComponent{});
     player.AddComponent<MovementComponent>(MovementComponent{});
@@ -126,10 +125,11 @@ void Scene::OnEnter() {
         pTrans->transform.SetScale({0.5f, 1.0f, 1.0f});
     }
 
+    // Spawn NPC
     Entity npc = Entity(m_Registry.CreateEntity(), &m_Registry);
     npc.AddComponent<MeshComponent>(MeshComponent{playerMesh});
     npc.AddComponent<MaterialComponent>(MaterialComponent{
-        std::make_shared<Material>(Material{g_Shader, g_PlayerTextures[0], {1.0f, 0.5f, 0.5f, 1.0f}})
+        std::make_shared<Material>(Material{m_Shader, m_PlayerTextures[0], {1.0f, 0.5f, 0.5f, 1.0f}})
     });
     npc.AddComponent<TransformComponent>(TransformComponent{});
     npc.AddComponent<MovementComponent>(MovementComponent{});
@@ -141,167 +141,48 @@ void Scene::OnEnter() {
 }
 
 void Scene::Update(float dt) {
-    float windowWidth = static_cast<float>(m_Window->GetWidth());
-    float windowHeight = static_cast<float>(m_Window->GetHeight());
-
-    // Camera Panning
-    if (m_InputManager->scrollY != 0.0) {
-        m_Camera->Zoom += static_cast<float>(m_InputManager->scrollY) * ZOOM_SPEED;
-        m_Camera->Zoom = std::clamp(m_Camera->Zoom, 0.5f, 5.0f);
-    }
-
-    float edgeMargin = 20.0f;
-    glm::vec2 screenPan(0.0f);
-    HexMath::Point mousePos = {
-        static_cast<float>(m_InputManager->mousePosX), static_cast<float>(m_InputManager->mousePosY)
-    };
-
-    if (mousePos.x <= edgeMargin) screenPan.x -= 1.0f;
-    else if (mousePos.x >= windowWidth - edgeMargin) screenPan.x += 1.0f;
-    if (mousePos.y <= edgeMargin) screenPan.y += 1.0f;
-    else if (mousePos.y >= windowHeight - edgeMargin) screenPan.y -= 1.0f;
-
-    if (glm::length(screenPan) > 0.0f) {
-        screenPan = glm::normalize(screenPan);
-        glm::mat4 invRot = glm::inverse(m_Camera->GetRotation());
-        glm::vec4 worldPan = invRot * glm::vec4(screenPan.x, screenPan.y, 0.0f, 0.0f);
-        m_Camera->Position += glm::vec2(worldPan.x, worldPan.y) * PAN_SPEED * dt * (1.0f / m_Camera->Zoom);
-    }
-
-    glm::vec2 worldPos = m_Camera->MouseToWorld(mousePos.x, mousePos.y, windowWidth, windowHeight);
-
-    // Global Hex Selection
-    HexCoords hexPosOnMpos = HexMath::PixelToHex({worldPos.x, worldPos.y});
-    if (m_Grid.Get(hexPosOnMpos) == nullptr) {
-        m_HasSelection = false;
-    } else {
-        m_SelectedHex = hexPosOnMpos;
-        m_HasSelection = true;
-    }
-
-    // Player Input
-    m_Registry.ForEach<PlayerInputComponent, TransformComponent, MovementComponent, MaterialComponent>(
-        [&](Entity entity, PlayerInputComponent *input, TransformComponent *trans, MovementComponent *move,
-            MaterialComponent *mat) {
-            move->timePerStep = m_PlayerSpeed;
-            glm::vec2 pPos = glm::vec2(trans->transform.GetPosition());
-
-            glm::vec2 targetDir;
-            bool hasTarget = false;
-
-            if (move->isMoving && move->currentPathIndex < move->currentPath.size()) {
-                HexCoords nextHex = move->currentPath[move->currentPathIndex];
-                targetDir = HexMath::HexToWorld(nextHex) - pPos;
-                hasTarget = true;
-            } else {
-                targetDir = worldPos - pPos;
-                if (glm::length(targetDir) > (HEX_SIZE - 0.005f)) hasTarget = true;
-            }
-
-            if (hasTarget) {
-                float degrees = glm::degrees(glm::atan(targetDir.y, targetDir.x));
-                if (degrees < 0.0f) degrees += 360.0f;
-                mat->material->texture = g_PlayerTextures[static_cast<int>(std::lround(degrees / 60.0f)) % 6];
-            }
-
-            if (m_InputManager->IsMousePressed(GLFW_MOUSE_BUTTON_LEFT) && m_HasSelection) {
-                HexCoords startHex = (move->isMoving && move->currentPathIndex < move->currentPath.size())
-                                         ? move->currentPath[move->currentPathIndex]
-                                         : HexMath::PixelToHex({pPos.x, pPos.y});
-
-                std::vector<HexCoords> path = m_Grid.FindPath(startHex, m_SelectedHex);
-                if (!path.empty()) {
-                    m_PathTo = m_SelectedHex;
-                    m_HasPathTo = true;
-                    MovementSystem::SetPath(entity, std::move(path));
-                }
-            }
-
-            if (!move->isMoving && m_HasPathTo) m_HasPathTo = false;
-        }
+    m_Context.deltaTime = dt;
+    glm::vec2 worldPos = InteractionSystem::Update(
+        m_Registry,
+        m_Context,
+        m_Grid,
+        m_SelectedHex,
+        m_HasSelection
     );
 
-    // NPC
-    m_Registry.ForEach<MovementComponent, TransformComponent, MaterialComponent>(
-        [&](Entity entity, MovementComponent *move, TransformComponent *trans, MaterialComponent *mat) {
-            if (entity.HasComponent<PlayerInputComponent>()) return;
-
-            move->timePerStep = m_PlayerSpeed;
-
-            if (!move->isMoving && !m_Grid.tiles.empty()) {
-                HexCoords target;
-                bool validTargetFound = false;
-                int maxAttempts = 10;
-
-                HexCoords playerHex{0, 0};
-                m_Registry.ForEach<PlayerInputComponent, TransformComponent>(
-                    [&](Entity e, PlayerInputComponent *p, TransformComponent *pt) {
-                        playerHex = HexMath::PixelToHex({pt->transform.GetPosition().x, pt->transform.GetPosition().y});
-                    });
-
-                while (!validTargetFound && maxAttempts-- > 0) {
-                    auto it = std::ranges::next(m_Grid.tiles.begin(), std::rand() % m_Grid.tiles.size());
-                    target = it->first;
-                    if (target != playerHex) validTargetFound = true;
-                }
-
-                if (validTargetFound) {
-                    glm::vec3 npcPos = trans->transform.GetPosition();
-                    std::vector<HexCoords> npcPath = m_Grid.FindPath(HexMath::PixelToHex({npcPos.x, npcPos.y}), target);
-                    if (!npcPath.empty()) MovementSystem::SetPath(entity, npcPath);
-                }
-            }
-
-            if (move->isMoving && move->currentPathIndex < move->currentPath.size()) {
-                glm::vec2 nPos = glm::vec2(trans->transform.GetPosition());
-                glm::vec2 targetDirW = HexMath::HexToWorld(move->currentPath[move->currentPathIndex]) - nPos;
-
-                if (glm::length(targetDirW) > 0.01f) {
-                    float degrees = glm::degrees(glm::atan(targetDirW.y, targetDirW.x));
-                    if (degrees < 0.0f) degrees += 360.0f;
-                    mat->material->texture = g_PlayerTextures[static_cast<int>(std::lround(degrees / 60.0f)) % 6];
-                }
-            }
-        }
-    );
-
-    InputSystem::Update(m_Registry, *m_InputManager);
+    PlayerControlSystem::Update(m_Registry, m_Context, m_Grid, worldPos, m_PlayerSpeed, m_SelectedHex, m_HasSelection,
+                                m_PathTo, m_HasPathTo, m_PlayerTextures);
+    AISystem::Update(m_Registry, m_Grid, m_PlayerSpeed, m_PlayerTextures);
+    InputSystem::Update(m_Registry, *m_Context.input);
     MovementSystem::Update(m_Registry, dt, m_Grid);
 }
 
+
 void Scene::Render(Renderer &renderer) {
-    for (const auto &[pos, tile]: m_Grid.tiles) {
-        const Material &mat = (tile.type == TileType::Grass) ? g_GrassMat : g_SandMat;
-        glm::vec2 worldPos = m_Grid.GetWorldPos(pos);
-        Transform t;
-        t.SetPosition({worldPos.x, worldPos.y, 0.0f});
-        renderer.Submit(*g_HexMesh, mat, t);
-    }
+    MapRenderSystem::Render(
+        renderer,
+        m_Grid,
+        m_GrassMat,
+        m_SandMat,
+        m_OutlineMat,
+        m_PathToMat,
+        m_HexMesh,
+        m_SelectedHex,
+        m_HasSelection,
+        m_PathTo,
+        m_HasPathTo
+    );
 
-    if (m_HasSelection) {
-        glm::vec2 worldPos = m_Grid.GetWorldPos(m_SelectedHex);
-        Transform t;
-        t.SetPosition({worldPos.x, worldPos.y, 0.01f});
-        t.SetScale({1.08f, 1.08f, 1.0f});
-        renderer.Submit(*g_HexMesh, g_OutlineMat, t);
-    }
-
-    if (m_HasPathTo) {
-        glm::vec2 worldPos = m_Grid.GetWorldPos(m_PathTo);
-        Transform t;
-        t.SetPosition({worldPos.x, worldPos.y, 0.01f});
-        t.SetScale({1.08f, 1.08f, 1.0f});
-        renderer.Submit(*g_HexMesh, g_PathToMat, t);
-    }
-
-    if (m_Camera != nullptr) {
+    if (m_Context.camera != nullptr) {
         m_Registry.ForEach<TransformComponent>([&](Entity entity, TransformComponent *transComp) {
             glm::vec3 pos = transComp->transform.GetPosition();
             glm::vec3 scale = transComp->transform.GetScale();
-            transComp->transform.SetCustomMatrix(GetBillboardMatrix(pos, scale.x, scale.y, *m_Camera));
+            transComp->transform.SetCustomMatrix(
+                SpriteBillboardSystem::GetBillboardMatrix(pos, scale.x, scale.y, *m_Context.camera));
         });
     }
 
+    // all normal entities
     RenderSystem::Render(m_Registry, renderer);
 }
 

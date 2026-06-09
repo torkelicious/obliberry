@@ -68,11 +68,11 @@ add_executable(
         src/Core/Constants.h
         src/Renderer/MeshFactory.cpp
         src/Renderer/MeshFactory.h
-        src/ECS/Systems/PlayerInput.h
+        src/ECS/Systems/PlayerInputSystem.h
         src/Core/InputManager.cpp
         src/Core/InputManager.h
         src/ECS/Components/TransformComponent.h
-        src/ECS/Systems/Movement.h
+        src/ECS/Systems/MovementSystem.h
         src/Renderer/Transform.h
         src/Map/HexMath.h
         src/Map/HexCoords.h
@@ -89,6 +89,14 @@ add_executable(
         src/Scenes/SceneManager.h
         src/Scenes/SceneSerializer.h
         src/Scenes/Scene.cpp
+        src/Core/EngineContext.h
+        src/ECS/Systems/InteractionSystem.h
+        src/ECS/Systems/PlayerControlSystem.h
+        src/ECS/Systems/AISystem.h
+        src/ECS/Components/MovementComponent.h
+        src/ECS/Components/PlayerInputComponent.h
+        src/ECS/Systems/SpriteBillboardSystem.h
+        src/ECS/Systems/MapRenderSystem.h
 )
 
 

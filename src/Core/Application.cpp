@@ -4,10 +4,10 @@
 #include "Constants.h"
 #include "Game/Game.h"
 #include "Renderer/Renderer.h"
+#include "Core/EngineContext.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
-
 
 Application::Application()
     : m_Window(WINDOW_WIDTH, WINDOW_HEIGHT, "obliberry") {
@@ -15,13 +15,11 @@ Application::Application()
 }
 
 void Application::Run() {
-    // move this to some sort of Init outside of Application
     glEnable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glfwSwapInterval(1);
 
-    // gui
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
@@ -31,31 +29,30 @@ void Application::Run() {
 
     Renderer renderer;
     Camera camera;
+
+    EngineContext context;
+    context.window = &m_Window;
+    context.input = &m_InputManager;
+    context.resources = &m_ResourceManager;
+    context.camera = &camera;
+    context.deltaTime = 0.0f;
+
     Game game;
-    game.SetWindow(&m_Window);
-    game.SetInputManager(&m_InputManager);
-    game.SetCamera(&camera);
-    game.SetResourceManager(&m_ResourceManager);
+    game.SetContext(context);
+
     renderer.SetCamera(camera, WINDOW_WIDTH, WINDOW_HEIGHT);
 
     auto previousTime = std::chrono::steady_clock::now();
     game.Start();
 
-    // tile gen number
-
     while (!m_Window.ShouldClose()) {
-        // input
-
         m_InputManager.BeginFrame();
-        // glfw
         m_Window.PollEvents();
 
-        // gui
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        // game
         const auto currentTime = std::chrono::steady_clock::now();
         const std::chrono::duration<float> delta = currentTime - previousTime;
         previousTime = currentTime;
@@ -63,11 +60,9 @@ void Application::Run() {
         game.Update(delta.count());
         game.Render(renderer);
 
-        // gui
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-        // glfw
         m_Window.SwapBuffers();
     }
 }

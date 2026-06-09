@@ -4,9 +4,10 @@
 #include "imgui.h"
 #include <filesystem>
 #include "Core/Utils.h"
+#include "ECS/Components/PlayerInputComponent.h"
 #include "ECS/Components/TransformComponent.h"
-#include "ECS/Systems/Movement.h"
-#include "ECS/Systems/PlayerInput.h"
+#include "ECS/Systems/MovementSystem.h"
+#include "ECS/Systems/PlayerInputSystem.h"
 
 // CLEANER BUT STILL  A MESS 4 NOW :)
 
@@ -34,11 +35,13 @@ bool Game::TestFileLoad(HexGrid &grid) const {
 }
 
 void Game::Start() {
-    auto initialScene = std::make_unique<Scene>(m_Window, m_InputManager, m_ResourceManager, m_Camera);
+    auto initialScene = std::make_unique<Scene>(m_Context);
     m_SceneManager.LoadScene(std::move(initialScene));
 }
 
 void Game::Update(float dt) {
+    m_Context.deltaTime = dt;
+
     DrawInterface();
     if (m_CurrentState == GameState::Gameplay) {
         m_SceneManager.Update(dt);
@@ -46,8 +49,8 @@ void Game::Update(float dt) {
 }
 
 void Game::Render(Renderer &renderer) {
-    if (m_Camera != nullptr) {
-        renderer.SetCamera(*m_Camera, m_Window->GetWidth(), m_Window->GetHeight());
+    if (m_Context.camera != nullptr) {
+        renderer.SetCamera(*m_Context.camera, m_Context.window->GetWidth(), m_Context.window->GetHeight());
     }
     renderer.BeginFrame();
     m_SceneManager.Render(renderer);
@@ -72,9 +75,8 @@ void Game::DrawInterface() {
     Scene *activeScene = m_SceneManager.GetCurrentScene();
     if (!activeScene) return;
 
-    ImGui::Begin("obliberry Editor");
+    ImGui::Begin("obliberry");
 
-    // State Controls
     ImGui::Text("Current State:");
     ImGui::SameLine();
     if (m_CurrentState == GameState::Gameplay) ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "GAMEPLAY");
@@ -206,6 +208,7 @@ void Game::DrawInterface() {
         ImGui::EndChild();
     }
     ImGui::End();
+    // removed some stuff cuz ill readd it later in another ui thingy :)
 }
 
 void Game::Shutdown() const {

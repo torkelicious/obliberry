@@ -6,16 +6,9 @@
 #include <utility>
 #include <glm/glm.hpp>
 #include "ECS/ECS.h"
+#include "ECS/Components/MovementComponent.h"
 #include "Map/Hex.h"
 #include "ECS/Components/TransformComponent.h"
-
-struct MovementComponent {
-    std::vector<HexCoords> currentPath{};
-    size_t currentPathIndex = 0;
-    float stepTimer = 0.0f;
-    float timePerStep = 0.15f;
-    bool isMoving = false;
-};
 
 namespace MovementSystem {
     inline void CancelPath(MovementComponent *moveComp) {
