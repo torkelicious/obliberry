@@ -31,7 +31,9 @@ add_executable(
         external/imgui/imstb_rectpack.h
         external/imgui/imstb_textedit.h
         external/imgui/imstb_truetype.h
-        # imgui
+        # nlohmann/json
+        external/nlohmann/json.hpp
+        external/nlohmann/json_fwd.hpp
         # External
 
         src/main.cpp
@@ -104,6 +106,7 @@ target_include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/external/stb_image
         ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui
         ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui/backends
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/nlohmann/
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
