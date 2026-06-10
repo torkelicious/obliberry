@@ -1,16 +1,10 @@
 #ifndef OBLIBERRY_HEXMATH_H
 #define OBLIBERRY_HEXMATH_H
 #include "Core/Constants.h"
+#include <glm/glm.hpp>
 
 // math
 namespace HexMath {
-    // note: maybe depreciate this soon because its getting more in the way than not
-    // i dont remember why i did this instead of a vec2 but whatever
-    struct Point {
-        float x;
-        float y;
-    };
-
     struct FractionalHex {
         float q, r, s;
 
@@ -49,7 +43,7 @@ namespace HexMath {
 
 
     // pixel to fractional hex
-    inline FractionalHex PixelToHexFractional(const Point &p, float size = HEX_SIZE) {
+    inline FractionalHex PixelToHexFractional(glm::vec2 p, float size = HEX_SIZE) {
         float q = (HEX_INV_MAT_Q_X * p.x + HEX_INV_MAT_Q_Y * p.y) / size;
         float r = (HEX_INV_MAT_R_Y * p.y) / size;
         float s = -q - r;
@@ -57,7 +51,7 @@ namespace HexMath {
     }
 
     // pixel pos to hex
-    inline HexCoords PixelToHex(const Point &p, float size = HEX_SIZE) {
+    inline HexCoords PixelToHex(glm::vec2 p, float size = HEX_SIZE) {
         auto h = PixelToHexFractional(p, size);
 
         // cast to int32_t & round
@@ -81,7 +75,7 @@ namespace HexMath {
     }
 
     // alias cuz i can :)
-    inline HexCoords GetClosestHex(const Point &p, float size = HEX_SIZE) {
+    inline HexCoords GetClosestHex(glm::vec2 p, float size = HEX_SIZE) {
         return PixelToHex(p, size);
     }
 

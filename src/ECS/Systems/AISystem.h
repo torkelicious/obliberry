@@ -9,6 +9,7 @@
 #include "ECS/Components/MaterialComponent.h"
 #include "ECS/Components/MapComponent.h"
 #include "ECS/Systems/MovementSystem.h"
+#include "ECS/Systems/DirectionalAnimationSystem.h"
 #include <array>
 #include <memory>
 #include <random>
@@ -62,24 +63,10 @@ namespace AISystem {
                 }
 
                 if (move->isMoving && move->currentPathIndex < move->currentPath.size()) {
-                    glm::vec3 pos3 = trans->transform.GetPosition();
-                    glm::vec2 pos(pos3.x, pos3.y);
-                    glm::vec2 targetPos = HexMath::HexToWorld(move->currentPath[move->currentPathIndex]);
-                    glm::vec2 dir = targetPos - pos;
-
-                    float len = glm::length(dir);
-                    if (len > 0.001f) {
-                        float degrees = glm::degrees(std::atan2(dir.y, dir.x));
-                        if (degrees < 0.0f) degrees += 360.0f;
-                        int index = static_cast<int>(std::lround(degrees / 60.0f)) % 6;
-
-                        if (auto *dirComp = entity.GetComponent<DirectionalTextureComponent>()) {
-                            dirComp->index = index;
-                            if (mat->material && dirComp->textures[index]) {
-                                mat->material->texture = dirComp->textures[index];
-                            }
-                        }
-                    }
+                    const glm::vec3 pos3 = trans->transform.GetPosition();
+                    const glm::vec2 pos{pos3.x, pos3.y};
+                    const glm::vec2 target = HexMath::HexToWorld(move->currentPath[move->currentPathIndex]);
+                    DirectionalAnimation::UpdateFacing(entity, target - pos, mat);
                 }
             }
         );

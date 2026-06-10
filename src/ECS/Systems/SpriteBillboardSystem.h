@@ -1,6 +1,7 @@
 #ifndef OBLIBERRY_SPRITEBILLBOARDSYSTEM_H
 #define OBLIBERRY_SPRITEBILLBOARDSYSTEM_H
 #include "../Components/TransformComponent.h"
+#include "ECS/Components/BillboardComponent.h"
 #include "ECS/Registry.h"
 #include "Renderer/Camera.h"
 
@@ -21,13 +22,12 @@ namespace SpriteBillboardSystem {
     inline void Update(Registry &registry, const Camera *camera) {
         if (!camera) return;
 
-        registry.ForEach<TransformComponent>([&](Entity entity, TransformComponent *transComp) {
-            glm::vec3 pos = transComp->transform.GetPosition();
-            glm::vec3 scale = transComp->transform.GetScale();
-
-            // Move the custom matrix math out of Scene::Render
-            transComp->transform.SetCustomMatrix(GetBillboardMatrix(pos, scale.x, scale.y, *camera));
-        });
+        registry.ForEach<BillboardComponent, TransformComponent>(
+            [&](Entity, BillboardComponent *, TransformComponent *transComp) {
+                const glm::vec3 pos = transComp->transform.GetPosition();
+                const glm::vec3 scale = transComp->transform.GetScale();
+                transComp->transform.SetCustomMatrix(GetBillboardMatrix(pos, scale.x, scale.y, *camera));
+            });
     }
 }
 

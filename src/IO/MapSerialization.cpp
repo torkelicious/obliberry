@@ -4,9 +4,6 @@
 #include <iostream>
 
 namespace MapIO {
-    // todo: add proper gaurding i.e isreading or whatever etc etc
-    // im way to tired rn :)
-
     bool Serialize(const std::string &path, const HexGrid &grid) {
         std::ofstream file(path, std::ios::binary);
         if (!file.is_open()) {

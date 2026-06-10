@@ -21,9 +21,9 @@ namespace MapIO {
 #pragma pack(pop)
 
     // return true if sucessfull, false if not.
-    bool Serialize(const std::string &path, const HexGrid &grid);
+    [[nodiscard]] bool Serialize(const std::string &path, const HexGrid &grid);
 
-    bool Deserialize(const std::string &path, HexGrid &grid);
+    [[nodiscard]] bool Deserialize(const std::string &path, HexGrid &grid);
 
     bool CheckHeader(const MapFileHeader &header, const std::string &expected);
 

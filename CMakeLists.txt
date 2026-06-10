@@ -66,6 +66,7 @@ add_executable(
         src/Core/ResourceManager.h
         src/Game/Game.cpp
         src/Game/Game.h
+        src/Game/GameUI.cpp
         src/Core/Constants.h
         src/Renderer/MeshFactory.cpp
         src/Renderer/MeshFactory.h
@@ -96,8 +97,9 @@ add_executable(
         src/ECS/Components/PlayerInputComponent.h
         src/ECS/Systems/SpriteBillboardSystem.h
         src/ECS/Systems/MapRenderSystem.h
-        src/IO/SceneSerializer.cpp
-        src/IO/SceneSerializer.h
+        src/ECS/Components/BillboardComponent.h
+        src/ECS/Systems/DirectionalAnimationSystem.h
+        src/ECS/Systems/MapRuntimeSystem.h
         src/IO/AssetLoader.cpp
         src/IO/AssetLoader.h
         src/ECS/Components/DirectionalTextureComponent.h
@@ -105,6 +107,8 @@ add_executable(
         src/IO/EntityFactory.h
         src/ECS/Components/MapComponent.h
         src/ECS/Components/MapStateComponent.h
+        src/IO/SceneSerialization.cpp
+        src/IO/SceneSerialization.h
 )
 
 target_include_directories(

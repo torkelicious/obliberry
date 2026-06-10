@@ -1,5 +1,6 @@
 #ifndef OBLIBERRY_CONSTANTS_H
 #define OBLIBERRY_CONSTANTS_H
+#include <limits>
 #include <string>
 #include <string_view>
 
@@ -34,7 +35,6 @@ constexpr float HEX_HEIGHT_MULTIPLIER = 2.0f; // total height is 2 * size
 constexpr float HEX_HEIGHT_SPACING_RATIO = 0.75f; // vertical step is 75% of total height
 
 constexpr float HEX_ODD_ROW_OFFSET = 0.5f;
-// big int for pathfinding :)
-constexpr int P_INFINITY = 9999999;
+constexpr int P_INFINITY = std::numeric_limits<int>::max() / 2;
 
 #endif //OBLIBERRY_CONSTANTS_H

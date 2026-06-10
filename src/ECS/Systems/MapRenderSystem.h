@@ -40,7 +40,7 @@ namespace MapRenderSystem {
 
     inline void RenderTiles(Registry &registry, Renderer &renderer) {
         registry.ForEach<MapComponent, MapStateComponent>(
-            [&](Entity entity, MapComponent *mapComp, MapStateComponent *stateComp) {
+            [&](Entity, MapComponent *mapComp, MapStateComponent *stateComp) {
                 // rebuild combined meshes if dirty
                 if (mapComp->needsMeshUpdate) {
                     MeshData grassData =
@@ -78,7 +78,7 @@ namespace MapRenderSystem {
 
     inline void RenderOverlays(Registry &registry, Renderer &renderer) {
         registry.ForEach<MapComponent, MapStateComponent>(
-            [&](Entity entity, MapComponent *mapComp, MapStateComponent *stateComp) {
+            [&](Entity, MapComponent *mapComp, MapStateComponent *stateComp) {
                 // mouse selection outline
                 if (!mapComp->hexMesh || !mapComp->outlineMat.shader ||
                     !mapComp->pathToMat.shader) {

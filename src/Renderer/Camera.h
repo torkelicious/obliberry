@@ -1,6 +1,7 @@
 #ifndef OBLIBERRY_CAMERA_H
 #define OBLIBERRY_CAMERA_H
 
+#include <limits>
 #include <glm/glm.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
@@ -44,9 +45,13 @@ public:
     }
 
     glm::mat4 GetVP(float aspect = TARGET_ASPECT) const {
-        return GetProjectionMatrix(aspect)
-               * GetRotation()
-               * GetViewMatrix();
+        if (Position != m_CachePos || Zoom != m_CacheZoom || aspect != m_CacheAspect) {
+            m_CachedVP = GetProjectionMatrix(aspect) * GetRotation() * GetViewMatrix();
+            m_CachePos = Position;
+            m_CacheZoom = Zoom;
+            m_CacheAspect = aspect;
+        }
+        return m_CachedVP;
     }
 
     glm::vec2 MouseToWorld(double mx, double my, float windowWidth, float windowHeight) const {
@@ -109,6 +114,15 @@ public:
         glm::mat4 invRot = glm::inverse(GetRotation());
         return glm::vec3(invRot[1]); // local Up
     }
+
+private:
+    mutable glm::vec2 m_CachePos{
+        std::numeric_limits<float>::max(),
+        std::numeric_limits<float>::max()
+    };
+    mutable float m_CacheZoom{-1.0f};
+    mutable float m_CacheAspect{-1.0f};
+    mutable glm::mat4 m_CachedVP{1.0f};
 };
 
 #endif

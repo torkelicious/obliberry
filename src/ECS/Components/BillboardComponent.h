@@ -1,0 +1,8 @@
+#ifndef OBLIBERRY_BILLBOARDCOMPONENT_H
+#define OBLIBERRY_BILLBOARDCOMPONENT_H
+
+// tag component
+struct BillboardComponent {
+};
+
+#endif // OBLIBERRY_BILLBOARDCOMPONENT_H

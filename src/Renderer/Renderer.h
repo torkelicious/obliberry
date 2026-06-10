@@ -29,6 +29,8 @@ public:
 
     void Flush();
 
+    [[nodiscard]] uint32_t GetLastDrawCallCount() const { return m_LastDrawCallCount; }
+
 private:
     void Execute(const RenderCommand &cmd);
 
@@ -36,6 +38,8 @@ private:
     std::vector<RenderCommand> m_Commands;
     const Camera *m_Camera = nullptr;
     glm::mat4 m_VP;
+    uint32_t m_DrawCallCount = 0;
+    uint32_t m_LastDrawCallCount = 0;
 };
 
 

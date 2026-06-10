@@ -1,7 +1,6 @@
-#include "SceneSerializer.h"
+#include "SceneSerialization.h"
 #include <fstream>
 #include <iostream>
-
 #include "json.hpp"
 #include "MapSerialization.h"
 #include "Core/Utils.h"
@@ -107,7 +106,9 @@ namespace SceneIO {
                                       ? PathUtils::Join(MAP_PATH, "unknown", MAP_FILE_EXTENSION)
                                       : mapComp->mapFilePath;
             j["grid"]["map_file"] = mapFile;
-            MapIO::Serialize(mapFile, mapComp->grid);
+            if (!MapIO::Serialize(mapFile, mapComp->grid)) {
+                std::cerr << "SceneSerializer: Failed to write map file: " << mapFile << "\n";
+            }
 
             if (mapComp->hexMesh) {
                 j["grid"]["mesh_id"] = resources.GetKey<Mesh>(mapComp->hexMesh);

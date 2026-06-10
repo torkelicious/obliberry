@@ -6,19 +6,19 @@
 #include "ECS/Systems/AISystem.h"
 #include "ECS/Systems/MapRenderSystem.h"
 #include "ECS/Systems/SpriteBillboardSystem.h"
-#include "IO/SceneSerializer.h"
+#include "IO/SceneSerialization.h"
 #include "IO/EntityFactory.h"
 #include <iostream>
 
-Scene::Scene(const EngineContext &context) : m_Context(context) {
+Scene::Scene(const EngineContext &context, std::string scenePath)
+    : m_Context(context), m_ScenePath(std::move(scenePath)) {
 }
 
 void Scene::OnEnter() {
     EntityFactory::RegisterDeserializers();
     EntityFactory::RegisterSerializers();
-    if (!SceneIO::Deserialize("assets/scenes/level01.json", *this)) {
-        std::cerr << "Scene: Failed to load scene file!\n";
-        return;
+    if (!SceneIO::Deserialize(m_ScenePath, *this)) {
+        std::cerr << "Scene: Failed to load scene file: " << m_ScenePath << "\n";
     }
 }
 

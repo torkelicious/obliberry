@@ -8,6 +8,7 @@
 #include "ECS/Components/MeshComponent.h"
 #include "ECS/Components/MaterialComponent.h"
 #include "ECS/Components/DirectionalTextureComponent.h"
+#include "ECS/Components/BillboardComponent.h"
 #include "Renderer/Mesh.h"
 
 std::unordered_map<std::string, ComponentDeserializer> EntityFactory::s_Deserializers;
@@ -79,6 +80,10 @@ void EntityFactory::RegisterDeserializers() {
             if (!matComp.material) std::cerr << "EntityFactory: Failed to find Material ID '" << matID << "'\n";
         }
         entity.AddComponent<MaterialComponent>(matComp);
+    };
+
+    s_Deserializers["BillboardComponent"] = [](Entity &entity, const nlohmann::json &, ResourceManager &) {
+        entity.AddComponent<BillboardComponent>();
     };
 
     // DIRECTIONAL TEXTURE COMPONENT
@@ -159,6 +164,12 @@ void EntityFactory::RegisterSerializers() {
                     data["MaterialComponent"]["material_id"] = id;
                 }
             }
+        }
+    };
+
+    s_Serializers["BillboardComponent"] = [](Entity &entity, nlohmann::json &data, ResourceManager &) {
+        if (entity.HasComponent<BillboardComponent>()) {
+            data["BillboardComponent"] = nlohmann::json::object();
         }
     };
 

@@ -1,6 +1,8 @@
 #ifndef OBLIBERRY_ENGINECONTEXT_H
 #define OBLIBERRY_ENGINECONTEXT_H
 
+#include <cstdint>
+
 class Window;
 class InputManager;
 class ResourceManager;
@@ -12,6 +14,7 @@ struct EngineContext {
     ResourceManager *resources = nullptr;
     Camera *camera = nullptr;
     float deltaTime = 0.0f;
+    uint32_t lastDrawCallCount = 0;
 };
 
 

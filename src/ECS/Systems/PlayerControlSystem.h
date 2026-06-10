@@ -11,6 +11,7 @@
 #include "ECS/Components/MapComponent.h"
 #include "ECS/Components/MapStateComponent.h"
 #include "ECS/Systems/MovementSystem.h"
+#include "ECS/Systems/DirectionalAnimationSystem.h"
 
 namespace PlayerControlSystem {
     inline void Update(Registry &registry, const EngineContext &ctx, glm::vec2 worldPos) {
@@ -37,20 +38,7 @@ namespace PlayerControlSystem {
                     targetDir = worldPos - pPos;
                 }
 
-                // temporary logic until i extract directional animation
-                float len = glm::length(targetDir);
-                if (len > 0.001f) {
-                    float degrees = glm::degrees(std::atan2(targetDir.y, targetDir.x));
-                    if (degrees < 0.0f) degrees += 360.0f;
-                    int index = static_cast<int>(std::lround(degrees / 60.0f)) % 6;
-
-                    if (auto *dir = entity.GetComponent<DirectionalTextureComponent>()) {
-                        dir->index = index;
-                        if (mat->material && dir->textures[index]) {
-                            mat->material->texture = dir->textures[index];
-                        }
-                    }
-                }
+                DirectionalAnimation::UpdateFacing(entity, targetDir, mat);
 
 
                 if (ctx.input->IsMousePressed(input->LeftClick) && state->hasSelection) {

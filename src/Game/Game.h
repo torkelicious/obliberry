@@ -1,6 +1,8 @@
 #ifndef OBLIBERRY_GAME_H
 #define OBLIBERRY_GAME_H
 
+#include <optional>
+#include <string>
 #include "Core/ResourceManager.h"
 #include "Core/Window.h"
 #include "Core/EngineContext.h"
@@ -10,7 +12,6 @@
 
 enum class GameState { MainMenu, Gameplay, Paused, EditorMode };
 
-// for later use im still planning things out, half of these are still not implemented lmao
 
 class Game {
 public:
@@ -27,9 +28,9 @@ public:
     [[nodiscard]] Camera &GetCamera() const { return *m_Context.camera; }
     void SetContext(const EngineContext &context) { m_Context = context; }
 
-    [[nodiscard]] bool TestFileWrite(const HexGrid &grid) const;
+    [[nodiscard]] bool TestFileWrite(const HexGrid &grid, const std::string &path) const;
 
-    [[nodiscard]] bool TestFileLoad(HexGrid &grid) const;
+    [[nodiscard]] bool TestFileLoad(HexGrid &grid, const std::string &path) const;
 
 private:
     void Shutdown() const;
@@ -40,6 +41,7 @@ private:
     SceneManager m_SceneManager;
 
     EngineContext m_Context;
+    std::optional<std::string> m_PendingSceneLoad;
 };
 
 #endif //OBLIBERRY_GAME_H
