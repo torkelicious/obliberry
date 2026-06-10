@@ -118,6 +118,8 @@
             "p_south_west",
             "p_south_east"
           ]
+        },
+        "BillboardComponent": {
         }
       }
     },
@@ -154,6 +156,8 @@
             "p_south_west",
             "p_south_east"
           ]
+        },
+        "BillboardComponent": {
         }
       }
     }

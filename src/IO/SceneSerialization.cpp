@@ -124,6 +124,9 @@ namespace SceneIO {
             }
         });
 
+        // TODO: SERIALIZE ASSETS!!!!!!!!!!!!
+        // have to start with saving paths somewhere?
+
         // ENTITIES
         j["entities"] = json::array();
         const auto &livingEntities = scene.GetRegistry().GetLivingEntities();
@@ -150,3 +153,4 @@ namespace SceneIO {
         return true;
     }
 }
+
