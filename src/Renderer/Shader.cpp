@@ -3,7 +3,9 @@
 #include <fstream>
 #include <sstream>
 
-Shader::Shader(const std::string &vertPath, const std::string &fragPath) {
+Shader::Shader(const std::string &vertPath, const std::string &fragPath)
+    : m_vertPath(vertPath), m_fragPath(fragPath) // copied but its ok
+{
     std::string vertexSrc = LoadFile(vertPath);
     std::string fragmentSrc = LoadFile(fragPath);
 

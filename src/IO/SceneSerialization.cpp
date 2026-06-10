@@ -15,6 +15,19 @@
 namespace SceneIO {
     using json = nlohmann::json;
 
+    void RoundJsonFloats(json &j, int decimals = 3) {
+        float factor = std::pow(10.f, decimals);
+        if (j.is_number_float()) {
+            j = std::round(j.get<float>() * factor) / factor;
+        } else if (j.is_array()) {
+            for (auto &el: j)
+                RoundJsonFloats(el, decimals);
+        } else if (j.is_object()) {
+            for (auto &[k, v]: j.items())
+                RoundJsonFloats(v, decimals);
+        }
+    }
+
     bool Deserialize(const std::string &path, Scene &scene) {
         std::ifstream file(path);
 
@@ -124,8 +137,66 @@ namespace SceneIO {
             }
         });
 
-        // TODO: SERIALIZE ASSETS!!!!!!!!!!!!
-        // have to start with saving paths somewhere?
+        // ASSETS
+        j["assets"]["textures"] = json::array();
+        j["assets"]["shaders"] = json::array();
+        j["assets"]["meshes"] = json::array();
+        j["assets"]["materials"] = json::array();
+
+        SerializeAssets(
+            j["assets"]["textures"],
+            resources.GetAll<Texture>(),
+            [](const std::string &id, const std::shared_ptr<Texture> &tex) {
+                return json{
+                    {"id", id},
+                    {"path", tex->GetPath()}
+                };
+            }
+        );
+
+        SerializeAssets(
+            j["assets"]["shaders"],
+            resources.GetAll<Shader>(),
+            [](const std::string &id, const std::shared_ptr<Shader> &shad) {
+                return json{
+                    {"id", id},
+                    {"vertex", shad->GetVertexPath()},
+                    {"fragment", shad->GetFragmentPath()}
+                };
+            }
+        );
+
+        SerializeAssets(
+            j["assets"]["meshes"],
+            resources.GetAll<Mesh>(),
+            [](const std::string &id, const std::shared_ptr<Mesh> &mesh) {
+                return json{
+                    {"id", id},
+                    {"factory", mesh->GetFactoryId()}
+                };
+            }
+        );
+
+        SerializeAssets(
+            j["assets"]["materials"],
+            resources.GetAll<Material>(),
+            [&](const std::string &id, const std::shared_ptr<Material> &mat) {
+                return json{
+                    {"id", id},
+                    {"shader", resources.GetKey(mat->shader)},
+                    {"texture", resources.GetKey(mat->texture)},
+                    {
+                        "color", {
+                            mat->color.r,
+                            mat->color.g,
+                            mat->color.b,
+                            mat->color.a
+                        }
+                    }
+                };
+            }
+        );
+
 
         // ENTITIES
         j["entities"] = json::array();
@@ -146,11 +217,10 @@ namespace SceneIO {
             }
         }
 
+        RoundJsonFloats(j, 3);
         std::ofstream file(path);
         if (!file.is_open()) return false;
-
         file << j.dump(4);
         return true;
     }
 }
-

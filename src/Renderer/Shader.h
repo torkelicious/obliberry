@@ -40,7 +40,13 @@ public:
 
     void SetUniformMat4(const std::string &name, const glm::mat4 &mat);
 
+    std::string &GetVertexPath() { return m_vertPath; }
+    std::string &GetFragmentPath() { return m_fragPath; }
+
 private:
+    std::string m_vertPath;
+    std::string m_fragPath;
+
     GLuint m_ID = 0;
     std::unordered_map<std::string, GLint> m_UniformCache;
 

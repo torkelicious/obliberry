@@ -84,7 +84,7 @@ void Game::DrawInterface() {
     ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.7f, 1.0f), "perf");
     ImGui::Separator();
     const float frameMs = m_Context.deltaTime * 1000.0f;
-    ImGui::Text("FPS:   %.1f", ImGui::GetIO().Framerate);
+    ImGui::Text("FPS:    %.1f", ImGui::GetIO().Framerate);
     ImGui::TextColored(ThresholdColour(frameMs, 20.0f, 33.0f), "Delta: %.2f ms", frameMs);
     ImGui::Text("Draws: %u", m_Context.lastDrawCallCount);
     ImGui::End();
@@ -139,6 +139,13 @@ void Game::DrawInterface() {
 
         static bool s_SceneSaved = false;
         static bool s_SceneSaveTried = false;
+        static std::string s_LastInputScenePath;
+
+        if (scenePath != s_LastInputScenePath) {
+            s_SceneSaveTried = false;
+            s_SceneSaved = false;
+            s_LastInputScenePath = scenePath;
+        }
 
         const ImVec4 saveCol = !s_SceneSaveTried
                                    ? ImVec4(0.4f, 0.4f, 0.4f, 1.0f)
@@ -162,7 +169,9 @@ void Game::DrawInterface() {
         if (mapComp) {
             static int s_Grass = 0, s_Sand = 0, s_Walkable = 0;
             static bool s_StatsValid = false;
-            if (!s_StatsValid || mapComp->needsMeshUpdate) {
+            static const MapComponent *s_LastMapComp = nullptr;
+
+            if (!s_StatsValid || mapComp->needsMeshUpdate || s_LastMapComp != mapComp) {
                 s_Grass = s_Sand = s_Walkable = 0;
                 for (const auto &[c, t]: mapComp->grid.tiles) {
                     if (t.type == TileType::Grass) ++s_Grass;
@@ -170,6 +179,7 @@ void Game::DrawInterface() {
                     if (t.walkable) ++s_Walkable;
                 }
                 s_StatsValid = true;
+                s_LastMapComp = mapComp;
             }
 
             ImGui::TextColored(ImVec4(0.5f, 0.8f, 1.0f, 1.0f),
@@ -205,7 +215,6 @@ void Game::DrawInterface() {
         ImGui::Spacing();
         ImGui::Text("Map I/O:");
 
-        // sync the filename input from the component bound path whenever it
         static char s_MapFilename[128]{};
         static std::string s_LastMapPath;
         if (mapComp && mapComp->mapFilePath != s_LastMapPath) {
@@ -221,6 +230,15 @@ void Game::DrawInterface() {
             MAP_PATH, MAP_FILE_EXTENSION,
             s_MapFilename, sizeof(s_MapFilename), "##mapfilename");
         ImGui::Spacing();
+
+        static std::string s_LastInputMapPath;
+        if (mapPath != s_LastInputMapPath) {
+            g_HasTestedSave = false;
+            g_HasTestedLoad = false;
+            g_SaveOk = false;
+            g_LoadOk = false;
+            s_LastInputMapPath = mapPath;
+        }
 
         const ImVec4 colorSave = !g_HasTestedSave
                                      ? ImVec4(0.4f, 0.4f, 0.4f, 1.0f)
@@ -295,12 +313,9 @@ void Game::DrawInterface() {
                            "Active Entities: %zu", livingEntities.size());
         ImGui::Separator();
 
-        static int s_SelectedIdx = -1;
-        static int s_LastSelectedIdx = -1;
+        static EntityID s_SelectedEntityID = static_cast<EntityID>(-1);
+        static EntityID s_LastSelectedEntityID = static_cast<EntityID>(-1);
         static std::string s_CachedJson;
-
-        if (s_SelectedIdx >= static_cast<int>(livingEntities.size()))
-            s_SelectedIdx = -1;
 
         ImGui::BeginChild("EntityList",
                           ImVec2(ImGui::GetContentRegionAvail().x * 0.35f, 380.0f), true);
@@ -316,8 +331,8 @@ void Game::DrawInterface() {
             else if (entity.HasComponent<MovementComponent>()) label += " [NPC]";
             else if (entity.HasComponent<MapComponent>()) label += " [Map]";
 
-            if (ImGui::Selectable(label.c_str(), s_SelectedIdx == static_cast<int>(i)))
-                s_SelectedIdx = static_cast<int>(i);
+            if (ImGui::Selectable(label.c_str(), s_SelectedEntityID == id))
+                s_SelectedEntityID = id;
         }
         ImGui::EndChild();
 
@@ -325,8 +340,11 @@ void Game::DrawInterface() {
 
         ImGui::BeginChild("ComponentInspector", ImVec2(0, 380.0f), true);
 
-        if (s_SelectedIdx >= 0 && s_SelectedIdx < static_cast<int>(livingEntities.size())) {
-            Entity entity(livingEntities[s_SelectedIdx], &reg);
+        bool isSelectedAlive = std::find(livingEntities.begin(), livingEntities.end(), s_SelectedEntityID) !=
+                               livingEntities.end();
+
+        if (s_SelectedEntityID != static_cast<EntityID>(-1) && isSelectedAlive) {
+            Entity entity(s_SelectedEntityID, &reg);
 
             if (ImGui::BeginTabBar("EntityTabs")) {
                 if (ImGui::BeginTabItem("Components")) {
@@ -417,16 +435,17 @@ void Game::DrawInterface() {
                     ImGui::Spacing();
                     ImGui::TextWrapped("Serialized JSON this entity produces on save.");
 
-                    if (s_SelectedIdx != s_LastSelectedIdx || ImGui::Button("Refresh")) {
+                    if (s_SelectedEntityID != s_LastSelectedEntityID || ImGui::Button("Refresh")) {
                         nlohmann::json j;
                         EntityFactory::SerializeEntity(entity, j, *m_Context.resources);
                         s_CachedJson = j.dump(4);
-                        s_LastSelectedIdx = s_SelectedIdx;
+                        s_LastSelectedEntityID = s_SelectedEntityID;
                     }
 
                     ImGui::InputTextMultiline(
-                        "##json", s_CachedJson.data(), s_CachedJson.size() + 1,
+                        "##json", const_cast<char *>(s_CachedJson.c_str()), s_CachedJson.capacity() + 1,
                         ImVec2(-1, -1), ImGuiInputTextFlags_ReadOnly);
+
                     ImGui::EndTabItem();
                 }
 
@@ -434,6 +453,7 @@ void Game::DrawInterface() {
             }
         } else {
             ImGui::TextDisabled("\n  Select an entity to inspect.");
+            if (!isSelectedAlive) s_SelectedEntityID = static_cast<EntityID>(-1);
         }
 
         ImGui::EndChild();

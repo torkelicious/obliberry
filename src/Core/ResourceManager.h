@@ -66,6 +66,12 @@ public:
         return "";
     }
 
+    template<typename T>
+    const std::unordered_map<std::string, std::shared_ptr<T> > &GetAll() {
+        return GetCache<T>().storage;
+    }
+
+
     template<typename T, typename Func>
     std::shared_ptr<T> LoadFromFactory(const std::string &key, Func &&factory) {
         auto &cache = GetCache<T>();

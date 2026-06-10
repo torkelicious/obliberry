@@ -1,5 +1,3 @@
-
-
 #ifndef OBLIBERRY_TEXTURE_H
 #define OBLIBERRY_TEXTURE_H
 #include <string>
@@ -32,6 +30,8 @@ public:
     void Bind(unsigned int slot = 0) const;
 
     void Unbind() const;
+
+    std::string &GetPath() { return m_FilePath; }
 
     static Texture *White();
 

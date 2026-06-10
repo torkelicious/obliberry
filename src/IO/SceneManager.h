@@ -16,6 +16,9 @@ public:
         }
     }
 
+    // TODO: fix segfault on scene switching
+    // prob related to old render queue?
+
     void Update(float dt) {
         if (m_CurrentScene) {
             m_CurrentScene->Update(dt);

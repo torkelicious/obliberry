@@ -95,23 +95,21 @@ void AssetLoader::LoadMeshes(
     const json &meshes,
     ResourceManager &resources) {
     for (const auto &mesh: meshes) {
-        const std::string id =
-                mesh.at("id").get<std::string>();
-
-        const std::string factoryName =
-                mesh.at("factory").get<std::string>();
+        const std::string id = mesh.at("id").get<std::string>();
+        const std::string factoryName = mesh.at("factory").get<std::string>();
 
         auto it = s_MeshFactories.find(factoryName);
-
         if (it == s_MeshFactories.end()) {
             throw std::runtime_error(
-                "AssetLoader: Unknown mesh factory '" +
-                factoryName + "'");
+                "AssetLoader: Unknown mesh factory '" + factoryName + "'");
         }
-
         resources.LoadFromFactory<Mesh>(
             id,
-            it->second
+            [factory = it->second, factoryName]() {
+                auto mesh = factory();
+                mesh->SetFactoryId(factoryName);
+                return mesh;
+            }
         );
     }
 }

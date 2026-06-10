@@ -1,6 +1,7 @@
 #ifndef OBLIBERRY_MESH_H
 #define OBLIBERRY_MESH_H
 
+#include <string>
 #include <vector>
 #include <cstdint>
 
@@ -56,7 +57,7 @@ public:
             data.vertices.data(),
             static_cast<uint32_t>(data.vertices.size() * sizeof(Vertex))
         ) {
-        const auto layout = VertexTraits<Vertex>::GetLayout();
+        const auto &layout = VertexTraits<Vertex>::GetLayout();
         m_VAO.Bind();
         m_VBO.Bind();
         m_VAO.AddBuffer(m_VBO, layout);
@@ -89,11 +90,15 @@ public:
         m_VAO.Bind();
     }
 
-    uint32_t GetIndexCount() const {
+    [[nodiscard]] uint32_t GetIndexCount() const {
         return m_IBO.GetCount();
     }
 
+    std::string &GetFactoryId() { return m_FactoryId; }
+    void SetFactoryId(const std::string &facid) { m_FactoryId = facid; }
+
 private:
+    std::string m_FactoryId; // for serialization
     VertexArray m_VAO;
     VertexBuffer m_VBO;
     IndexBuffer m_IBO;

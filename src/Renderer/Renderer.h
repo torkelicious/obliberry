@@ -29,6 +29,8 @@ public:
 
     void Flush();
 
+    void Clean();
+
     [[nodiscard]] uint32_t GetLastDrawCallCount() const { return m_LastDrawCallCount; }
 
 private:
