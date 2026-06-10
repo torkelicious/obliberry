@@ -48,7 +48,7 @@ namespace MapIO {
             return false;
         }
 
-        grid.tiles.clear();
+        grid.Clear();
         for (uint32_t i = 0; i < header.tileCount; i++) {
             SerializedTile sTile;
             file.read(reinterpret_cast<char *>(&sTile), sizeof(SerializedTile));

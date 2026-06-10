@@ -12,7 +12,7 @@
 #include "ECS/Components/MovementComponent.h"
 #include "ECS/Components/MapComponent.h"
 #include "ECS/Components/MapStateComponent.h"
-#include "ECS/Systems/MovementSystem.h"
+#include "ECS/Systems/MapRuntimeSystem.h"
 #include "IO/EntityFactory.h"
 #include "Renderer/MeshFactory.h"
 
@@ -23,7 +23,6 @@ namespace {
     bool hasTestedSave = false;
     bool loadOk = false;
     bool hasTestedLoad = false;
-    float g_PlayerSpeed = 0.15f; // local state for UI
 }
 
 bool Game::TestFileWrite(const HexGrid &grid) const {
@@ -71,11 +70,10 @@ void Game::Update(float dt) {
 
 void Game::Render(Renderer &renderer) {
     if (m_Context.camera != nullptr) {
-        renderer.SetCamera(*m_Context.camera, m_Context.window->GetWidth(), m_Context.window->GetHeight());
+        renderer.SetCamera(*m_Context.camera);
     }
     renderer.BeginFrame();
     m_SceneManager.Render(renderer);
-    renderer.Flush();
 }
 
 void Game::DrawInterface() {
@@ -109,12 +107,6 @@ void Game::DrawInterface() {
         stateComp = s;
     });
 
-    auto resetEntitiesToCenter = [&reg]() {
-        reg.ForEach<MovementComponent>([&](Entity e, MovementComponent *) {
-            MovementSystem::MoveToCenter(e);
-        });
-    };
-
     ImGui::Begin("obliberry");
 
     ImGui::Text("State:");
@@ -139,7 +131,7 @@ void Game::DrawInterface() {
 
         if (ImGui::Button("Regenerate Grid", ImVec2(-1, 0))) {
             if (mapComp) {
-                mapComp->grid.tiles.clear();
+                mapComp->grid.Clear();
                 std::mt19937 rng(std::random_device{}());
                 std::uniform_int_distribution<int> dist(0, 99);
                 for (int q = -g_GridSize; q < g_GridSize; q++) {
@@ -148,7 +140,7 @@ void Game::DrawInterface() {
                             {q, r}, (dist(rng) < g_SandDensity) ? TileType::Sand : TileType::Grass);
                     }
                 }
-                resetEntitiesToCenter();
+                MapRuntimeSystem::OnMapChanged(reg, *mapComp, stateComp);
             }
         }
 
@@ -175,7 +167,9 @@ void Game::DrawInterface() {
             if (mapComp) {
                 loadOk = TestFileLoad(mapComp->grid);
                 hasTestedLoad = true;
-                resetEntitiesToCenter();
+                if (loadOk) {
+                    MapRuntimeSystem::OnMapChanged(reg, *mapComp, stateComp);
+                }
             }
         }
         ImGui::PopStyleColor(1);
@@ -208,6 +202,9 @@ void Game::DrawInterface() {
         ImGui::Separator();
 
         static int selectedEntityIdx = -1;
+        static int lastSelectedEntityIdx = -1;
+        static std::string cachedJsonStr = "";
+
         if (selectedEntityIdx >= static_cast<int>(livingEntities.size())) selectedEntityIdx = -1;
 
         ImGui::BeginChild("EntityListView", ImVec2(ImGui::GetContentRegionAvail().x * 0.35f, 350.0f), true);
@@ -287,10 +284,15 @@ void Game::DrawInterface() {
                     ImGui::Spacing();
                     ImGui::TextWrapped(
                         "the JSON structure this entity generates when the SceneSerializer requests a save :D");
-                    nlohmann::json entityJson;
-                    EntityFactory::SerializeEntity(entity, entityJson, *m_Context.resources);
-                    std::string jsonStr = entityJson.dump(4);
-                    ImGui::InputTextMultiline("##json_preview", jsonStr.data(), jsonStr.size(),
+
+                    if (selectedEntityIdx != lastSelectedEntityIdx || ImGui::Button("Refresh Preview")) {
+                        nlohmann::json entityJson;
+                        EntityFactory::SerializeEntity(entity, entityJson, *m_Context.resources);
+                        cachedJsonStr = entityJson.dump(4);
+                        lastSelectedEntityIdx = selectedEntityIdx;
+                    }
+
+                    ImGui::InputTextMultiline("##json_preview", cachedJsonStr.data(), cachedJsonStr.size() + 1,
                                               ImVec2(-1, -1), ImGuiInputTextFlags_ReadOnly);
                     ImGui::EndTabItem();
                 }

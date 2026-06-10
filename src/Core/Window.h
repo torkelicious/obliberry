@@ -4,7 +4,6 @@
 #include <GLFW/glfw3.h>
 
 #include "InputManager.h"
-#include "Renderer/Camera.h"
 
 class Window {
 public:
@@ -29,14 +28,13 @@ public:
 
     GLFWwindow *GetNativeWindow() const { return m_Window; }
 
-
     void SetInputManager(InputManager *inputManager);
 
 private:
     GLFWwindow *m_Window = nullptr;
     InputManager *m_InputManager = nullptr;
-    float m_Width = 0;
-    float m_Height = 0;
+    int m_Width = 0;
+    int m_Height = 0;
 
     bool Init(unsigned int width, unsigned int height, const char *title);
 

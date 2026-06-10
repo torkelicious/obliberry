@@ -36,8 +36,8 @@ bool Window::Init(unsigned int width, unsigned int height, const char *title) {
      *   seems to occur specifically on NVIDIA (Proprietary Drivers) on KWin,
     */
 
-    m_Width = static_cast<float>(width);
-    m_Height = static_cast<float>(height);
+    m_Width = static_cast<int>(width);
+    m_Height = static_cast<int>(height);
 
     if (!glfwInit()) return false;
 
@@ -83,8 +83,8 @@ bool Window::Init(unsigned int width, unsigned int height, const char *title) {
 void Window::WindowResizeCallback(GLFWwindow *window, int width, int height) {
     auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
     if (self) {
-        self->m_Width = static_cast<float>(width);
-        self->m_Height = static_cast<float>(height);
+        self->m_Width = width;
+        self->m_Height = height;
     }
 
     float targetAspect = 16.0f / 9.0f;

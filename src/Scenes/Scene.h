@@ -20,8 +20,12 @@ public:
 
     void Render(Renderer &renderer);
 
-    Registry &GetRegistry() { return m_Registry; }
+    [[nodiscard]] Registry &GetRegistry() { return m_Registry; }
+    [[nodiscard]] const Registry &GetRegistry() const { return m_Registry; }
+    [[nodiscard]] EngineContext &GetContext() { return m_Context; }
+    [[nodiscard]] const EngineContext &GetContext() const { return m_Context; }
 
+private:
     EngineContext m_Context;
     Registry m_Registry;
 };

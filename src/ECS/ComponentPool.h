@@ -40,29 +40,31 @@ public:
         return &m_Data[m_EntityToIndex[entity]];
     }
 
-    bool Has(EntityID entity) {
+    const T *Get(EntityID entity) const {
+        if (entity >= m_EntityToIndex.size() || m_EntityToIndex[entity] == INVALID_INDEX) {
+            return nullptr;
+        }
+        return &m_Data[m_EntityToIndex[entity]];
+    }
+
+    bool Has(EntityID entity) const {
         return entity < m_EntityToIndex.size() && m_EntityToIndex[entity] != INVALID_INDEX;
     }
 
     void EntityDestroyed(EntityID entity) override {
         if (!Has(entity)) return;
 
-        // swap-and-pop
-        size_t indexOfRemoved = m_EntityToIndex[entity];
-        size_t indexOfLastEl = m_Data.size() - 1;
+        const size_t indexOfRemoved = m_EntityToIndex[entity];
+        const size_t indexOfLast = m_Data.size() - 1;
 
-        // move the last component into the deleted component's spot
-        m_Data[indexOfRemoved] = std::move(m_Data[indexOfLastEl]);
+        if (indexOfRemoved != indexOfLast) {
+            m_Data[indexOfRemoved] = std::move(m_Data[indexOfLast]);
+            EntityID entityOfLast = m_IndexToEntity[indexOfLast];
+            m_IndexToEntity[indexOfRemoved] = entityOfLast;
+            m_EntityToIndex[entityOfLast] = indexOfRemoved;
+        }
 
-        // update the arrays to reflect the swap
-        EntityID entityOfLastEl = m_IndexToEntity[indexOfLastEl];
-        m_IndexToEntity[indexOfRemoved] = entityOfLastEl;
-        m_EntityToIndex[entityOfLastEl] = indexOfRemoved;
-
-        // invalidate the removed entity's index
         m_EntityToIndex[entity] = INVALID_INDEX;
-
-        // clean up the back
         m_IndexToEntity.pop_back();
         m_Data.pop_back();
     }

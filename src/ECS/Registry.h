@@ -14,17 +14,17 @@
 class Registry {
 private:
     std::queue<EntityID> m_AvailableEntities;
-    uint32_t m_LivingEntityCount = 0;
     std::unordered_map<std::type_index, std::unique_ptr<IPool> > m_ComponentPools;
     std::vector<EntityID> m_LivingEntities;
 
     template<typename T>
     ComponentPool<T> *GetPool() {
-        auto type = std::type_index(typeid(T));
-        if (m_ComponentPools.find(type) == m_ComponentPools.end()) {
-            m_ComponentPools[type] = std::make_unique<ComponentPool<T> >();
+        const auto type = std::type_index(typeid(T));
+        auto [it, inserted] = m_ComponentPools.try_emplace(type);
+        if (inserted) {
+            it->second = std::make_unique<ComponentPool<T> >();
         }
-        return static_cast<ComponentPool<T> *>(m_ComponentPools[type].get());
+        return static_cast<ComponentPool<T> *>(it->second.get());
     }
 
 public:
@@ -35,10 +35,9 @@ public:
     }
 
     EntityID CreateEntity() {
-        assert(m_LivingEntityCount < MAX_ENTITIES && "Too many entities");
+        assert(m_LivingEntities.size() < MAX_ENTITIES && "Too many entities");
         EntityID id = m_AvailableEntities.front();
         m_AvailableEntities.pop();
-        m_LivingEntityCount++;
         m_LivingEntities.push_back(id);
         return id;
     }
@@ -50,11 +49,8 @@ public:
         std::erase(m_LivingEntities, entity);
 
         m_AvailableEntities.push(entity);
-        m_LivingEntityCount--;
     }
 
-    //template<typename T>
-    //T &AddComponent(EntityID entity, T component) { return GetPool<T>()->Insert(entity, component); }
     template<typename T, typename... Args>
     T &AddComponent(EntityID entity, Args &&... args) {
         return GetPool<T>()->Emplace(entity, std::forward<Args>(args)...);

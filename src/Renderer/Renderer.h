@@ -13,11 +13,13 @@ struct RenderCommand {
     const Mesh *mesh;
     const Material *material;
     Transform transform;
+    int sortKeyDepth;
+    int sortKeyZ;
 };
 
 class Renderer {
 public:
-    void SetCamera(const Camera &camera, float width, float height);
+    void SetCamera(const Camera &camera);
 
     void BeginFrame();
 

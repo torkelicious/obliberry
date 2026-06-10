@@ -77,7 +77,11 @@
     ]
   },
   "grid": {
-    "map_file": "assets/maps/level_1.obmap"
+    "map_file": "assets/maps/level01.obmap",
+    "mesh_id": "hex_mesh",
+    "shader_id": "base_shader",
+    "grass_tex_id": "grass_tex",
+    "sand_tex_id": "sand_tex"
   },
   "entities": [
     {

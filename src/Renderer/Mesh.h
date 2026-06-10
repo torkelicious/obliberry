@@ -53,18 +53,16 @@ public:
 
     Mesh(const MeshData &data)
         : m_VBO(
-              data.vertices.data(),
-              static_cast<uint32_t>(data.vertices.size() * sizeof(Vertex))
-          ),
-          m_IBO(
-              data.indices.data(),
-              static_cast<uint32_t>(data.indices.size())
-          ) {
+            data.vertices.data(),
+            static_cast<uint32_t>(data.vertices.size() * sizeof(Vertex))
+        ) {
         const auto layout = VertexTraits<Vertex>::GetLayout();
         m_VAO.Bind();
         m_VBO.Bind();
         m_VAO.AddBuffer(m_VBO, layout);
-        m_IBO.Bind();
+        // IBO is initialized here, after m_VAO is bound, so the element
+        // array buffer binding is stored in this VAO and no other.
+        m_IBO.SetData(data.indices.data(), static_cast<uint32_t>(data.indices.size()));
     }
 
     template<typename TVertex>
@@ -72,25 +70,18 @@ public:
         const std::vector<TVertex> &vertices,
         const std::vector<uint32_t> &indices)
         : m_VBO(
-              vertices.data(),
-              static_cast<uint32_t>(vertices.size() * sizeof(TVertex))
-          ),
-          m_IBO(
-              indices.data(),
-              static_cast<uint32_t>(indices.size())
-          ) {
+            vertices.data(),
+            static_cast<uint32_t>(vertices.size() * sizeof(TVertex))
+        ) {
         const auto layout = VertexTraits<TVertex>::GetLayout();
         m_VAO.Bind();
         m_VBO.Bind();
         m_VAO.AddBuffer(m_VBO, layout);
-        m_IBO.Bind();
+        m_IBO.SetData(indices.data(), static_cast<uint32_t>(indices.size()));
     }
 
     void Upload(const MeshData &data) {
-        m_VAO.Bind();
-        m_VBO.Bind();
         m_VBO.SetData(data.vertices.data(), static_cast<uint32_t>(data.vertices.size() * sizeof(Vertex)));
-        m_IBO.Bind();
         m_IBO.SetData(data.indices.data(), static_cast<uint32_t>(data.indices.size()));
     }
 

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 4.2)
+tcmake_minimum_required(VERSION 4.2)
 project(obliberry)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -69,7 +69,6 @@ add_executable(
         src/Core/Constants.h
         src/Renderer/MeshFactory.cpp
         src/Renderer/MeshFactory.h
-        src/ECS/Systems/PlayerInputSystem.h
         src/Core/InputManager.cpp
         src/Core/InputManager.h
         src/ECS/Components/TransformComponent.h

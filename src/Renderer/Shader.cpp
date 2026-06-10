@@ -33,18 +33,6 @@ void Shader::Unbind() const {
     glUseProgram(0);
 }
 
-// only for debugging purpouces
-// dont use uynless u want crazy stutter :)
-//bool Shader::EnsureBound() const {
-//    if (m_ID == 0) return false;
-//
-//    GLint cur = 0;
-//    glGetIntegerv(GL_CURRENT_PROGRAM, &cur);
-//    if ((GLuint) cur != m_ID)
-//        glUseProgram(m_ID);
-//
-//    return true;
-//}
 
 void Shader::SetUniform1i(const std::string &name, int value) {
     GLint loc = GetUniformLocation(name);

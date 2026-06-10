@@ -22,7 +22,6 @@ void Application::Run() {
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO &io = ImGui::GetIO();
     ImGui_ImplGlfw_InitForOpenGL(m_Window.GetNativeWindow(), true);
     ImGui_ImplOpenGL3_Init();
     ImGui::StyleColorsDark();
@@ -40,7 +39,7 @@ void Application::Run() {
     Game game;
     game.SetContext(context);
 
-    renderer.SetCamera(camera, WINDOW_WIDTH, WINDOW_HEIGHT);
+    renderer.SetCamera(camera);
 
     auto previousTime = std::chrono::steady_clock::now();
     game.Start();

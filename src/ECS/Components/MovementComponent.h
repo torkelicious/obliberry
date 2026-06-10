@@ -10,6 +10,7 @@ struct MovementComponent {
     float stepTimer = 0.0f;
     float timePerStep = 0.15f;
     bool isMoving = false;
+    float idleTimer = 0.0f;
 };
 
 #endif //OBLIBERRY_MOVEMENTCOMPONENT_H

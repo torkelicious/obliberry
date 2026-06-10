@@ -17,6 +17,7 @@ public:
 
     IndexBuffer &operator=(IndexBuffer &&) = default;
 
+    IndexBuffer();
 
     IndexBuffer(const unsigned int *data, unsigned int count);
 

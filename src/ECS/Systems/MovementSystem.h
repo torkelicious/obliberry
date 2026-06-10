@@ -8,7 +8,7 @@
 #include "ECS/ECS.h"
 #include "ECS/Components/MovementComponent.h"
 #include "ECS/Components/TransformComponent.h"
-#include "ECS/Components/MapComponent.h" // Added
+#include "ECS/Components/MapComponent.h"
 
 namespace MovementSystem {
     inline void CancelPath(MovementComponent *moveComp) {

@@ -21,11 +21,9 @@ namespace RenderSystem {
 
                 auto &mat = matComp->material;
 
-                if (auto *dir = entity.GetComponent<DirectionalTextureComponent>()) {
+                if (const auto *dir = entity.GetComponent<DirectionalTextureComponent>()) {
                     if (!dir->textures.empty()) {
-                        size_t idx = static_cast<size_t>(dir->index % dir->textures.size());
-
-                        if (dir->textures[idx]) {
+                        if (auto idx = static_cast<size_t>(dir->index % dir->textures.size()); dir->textures[idx]) {
                             mat->texture = dir->textures[idx];
                         }
                     }

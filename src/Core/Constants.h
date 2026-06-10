@@ -13,10 +13,10 @@ constexpr std::string_view SCENE_PATH = "assets/scenes/";
 
 // fs extensions
 constexpr const char *MAP_FILE_EXTENSION = ".obmap";
-
+constexpr const char *SCENE_FILE_EXTENSION = ".json";
 // window config
-static constexpr int WINDOW_WIDTH = 1280;
-static constexpr int WINDOW_HEIGHT = 720;
+constexpr int WINDOW_WIDTH = 1280;
+constexpr int WINDOW_HEIGHT = 720;
 constexpr float TARGET_ASPECT = 16.0f / 9.0f;
 // self explanitory
 constexpr float ZOOM_SPEED = 0.2f;
@@ -32,7 +32,7 @@ constexpr float HEX_INV_MAT_R_Y = 0.666666667f; // 2.0 / 3.0
 // coord math stuff
 constexpr float HEX_HEIGHT_MULTIPLIER = 2.0f; // total height is 2 * size
 constexpr float HEX_HEIGHT_SPACING_RATIO = 0.75f; // vertical step is 75% of total height
-constexpr float HEX_RADIUS_SPACING_MULTIPLIER = 1.5f; // vertical step is 1.5 * size
+
 constexpr float HEX_ODD_ROW_OFFSET = 0.5f;
 // big int for pathfinding :)
 constexpr int P_INFINITY = 9999999;

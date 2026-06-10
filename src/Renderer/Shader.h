@@ -51,8 +51,6 @@ private:
     GLuint Link(GLuint vert, GLuint frag) const;
 
     GLint GetUniformLocation(const std::string &name);
-
-    bool EnsureBound() const;
 };
 
 #endif //OBLIBERRY_SHADER_H

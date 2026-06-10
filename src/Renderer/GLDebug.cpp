@@ -85,25 +85,6 @@ void APIENTRY GLDebug::glDebugOutput(GLenum source, GLenum type,
     std::cout << std::endl;
 }
 
-//int GLDebug::InitDebug() {
-//    // Print info
-//    std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
-//    std::cout << "Renderer: " << glGetString(GL_RENDERER) << std::endl;
-//    std::cout << "Vendor: " << glGetString(GL_VENDOR) << std::endl;
-//
-//    int flags;
-//    glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
-//    if (flags & GL_CONTEXT_FLAG_DEBUG_BIT) {
-//        // initialize debug output
-//        glEnable(GL_DEBUG_OUTPUT);
-//        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-//        glDebugMessageCallback(glDebugOutput, nullptr);
-//        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr,
-//                              GL_TRUE);
-//        return 0;
-//    }
-//    return -1;
-//}
 
 int GLDebug::InitDebug() {
     std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;

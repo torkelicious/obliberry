@@ -1,18 +1,14 @@
 #include "InputManager.h"
 #include <algorithm>
-#include <iostream>
 
-// FRAME UPDATE
 
 void InputManager::BeginFrame() {
     std::copy_n(keys, GLFW_KEY_LAST + 1, previousKeys);
     std::copy_n(mouseButtons, GLFW_MOUSE_BUTTON_LAST + 1, previousMouseButtons);
 
-    scrollX = 0.0;
-    scrollY = 0.0;
+    m_ScrollX = 0.0;
+    m_ScrollY = 0.0;
 }
-
-// KEY INPUT
 
 bool InputManager::IsValidKey(int key) {
     return key >= 0 && key <= GLFW_KEY_LAST;
@@ -34,8 +30,6 @@ bool InputManager::IsKeyPressed(int key) const {
 bool InputManager::IsKeyReleased(int key) const {
     return IsValidKey(key) && !keys[key] && previousKeys[key];
 }
-
-// MOUSE INPUT
 
 bool InputManager::IsValidMouseButton(int button) {
     return button >= 0 && button <= GLFW_MOUSE_BUTTON_LAST;
@@ -62,16 +56,12 @@ bool InputManager::IsMouseReleased(int button) const {
            previousMouseButtons[button];
 }
 
-// MOUSE POSITION
-
 void InputManager::SetMousePos(double xPos, double yPos) {
-    mousePosX = xPos;
-    mousePosY = yPos;
+    m_MousePosX = xPos;
+    m_MousePosY = yPos;
 }
 
-// SCROLL
-
 void InputManager::HandleScrollEvent(double xOffset, double yOffset) {
-    scrollX += xOffset;
-    scrollY += yOffset;
+    m_ScrollX += xOffset;
+    m_ScrollY += yOffset;
 }

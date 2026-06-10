@@ -31,6 +31,12 @@ public:
     using TileMap = std::unordered_map<HexCoords, Tile, HexCoordsHash>;
 
     TileMap tiles;
+    std::vector<HexCoords> walkableTiles;
+
+    void Clear() {
+        tiles.clear();
+        walkableTiles.clear();
+    }
 
     bool HasTile(const HexCoords &pos) const {
         return tiles.contains(pos);
@@ -47,7 +53,11 @@ public:
     }
 
     Tile &EmplaceTile(const HexCoords &pos, TileType type, bool walkable = true) {
-        return tiles.emplace(pos, Tile{pos, type, walkable}).first->second;
+        auto &tile = tiles.emplace(pos, Tile{pos, type, walkable}).first->second;
+        if (walkable) {
+            walkableTiles.push_back(pos);
+        }
+        return tile;
     }
 
     static glm::vec2 GetWorldPos(const HexCoords &pos, const float size = HEX_SIZE) {
@@ -73,14 +83,19 @@ public:
 
         using PQElement = std::pair<int, HexCoords>;
 
-        std::priority_queue<
+        static thread_local std::priority_queue<
             PQElement,
             std::vector<PQElement>,
             std::greater<PQElement>
         > openSet;
+        // ensure queue is empty before starting
+        while (!openSet.empty()) openSet.pop();
 
-        std::unordered_map<HexCoords, NodeRecord, HexCoordsHash> records;
-        std::unordered_set<HexCoords, HexCoordsHash> closed;
+        static thread_local std::unordered_map<HexCoords, NodeRecord, HexCoordsHash> records;
+        records.clear();
+
+        static thread_local std::unordered_set<HexCoords, HexCoordsHash> closed;
+        closed.clear();
 
         // init start node
         records[start] = NodeRecord{
@@ -131,8 +146,8 @@ public:
                 if (!records.contains(neighbor)) {
                     records[neighbor] = NodeRecord{
                         current,
-                        9999999,
-                        9999999
+                        P_INFINITY,
+                        P_INFINITY
                     };
                 }
 

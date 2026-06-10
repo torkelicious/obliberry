@@ -15,11 +15,10 @@ public:
 
     void SetMousePos(double xPos, double yPos);
 
-    double mousePosX = 0.0;
-    double mousePosY = 0.0;
-
-    double scrollX = 0.0;
-    double scrollY = 0.0;
+    [[nodiscard]] double MousePosX() const noexcept { return m_MousePosX; }
+    [[nodiscard]] double MousePosY() const noexcept { return m_MousePosY; }
+    [[nodiscard]] double ScrollX() const noexcept { return m_ScrollX; }
+    [[nodiscard]] double ScrollY() const noexcept { return m_ScrollY; }
 
     bool IsKeyDown(int key) const;
 
@@ -43,6 +42,12 @@ private:
     static bool IsValidKey(int key);
 
     static bool IsValidMouseButton(int button);
+
+    double m_MousePosX = 0.0;
+    double m_MousePosY = 0.0;
+
+    double m_ScrollX = 0.0;
+    double m_ScrollY = 0.0;
 };
 
 #endif //OBLIBERRY_INPUTMANAGER_H
