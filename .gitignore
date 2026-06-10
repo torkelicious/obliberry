@@ -96,6 +96,7 @@ imgui.ini
 imgui*.ini
 
 dc.txt
+todo.txt
 .directory/
 compile_commands.json
 .directory
