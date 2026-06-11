@@ -36,4 +36,7 @@ constexpr float HEX_HEIGHT_SPACING_RATIO = 0.75f; // vertical step is 75% of tot
 constexpr float HEX_ODD_ROW_OFFSET = 0.5f;
 constexpr int P_INFINITY = std::numeric_limits<int>::max() / 2;
 
+// map rendering
+constexpr float CHUNK_SIZE = 20.0f;
+
 #endif //OBLIBERRY_CONSTANTS_H

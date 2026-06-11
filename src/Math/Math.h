@@ -1,6 +1,7 @@
 #ifndef OBLIBERRY_MATH_H
 #define OBLIBERRY_MATH_H
 #include <glm/glm.hpp>
+#include "Renderer/Camera.h"
 
 namespace Math::Projection {
     struct AABB {
@@ -43,7 +44,7 @@ namespace Math::Projection {
         bounds.Expand(UnprojectToGround(invVP, -1.0f, 1.0f)); // Top-Left
 
         // padding buffer
-        const float padding = HEX_SIZE * 4.0f;
+        constexpr float padding = HEX_SIZE * 2;
         bounds.min -= glm::vec2(padding);
         bounds.max += glm::vec2(padding);
 
