@@ -4,7 +4,6 @@
 #include <string>
 #include "Core/EngineContext.h"
 #include "ECS/ECS.h"
-#include "Renderer/Renderer.h"
 
 class Scene {
 public:

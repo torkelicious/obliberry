@@ -4,7 +4,7 @@
 
 namespace PathUtils {
     // accepts any number of string_views and joins them
-    inline std::string Join(std::string_view p1, std::string_view p2, std::string_view p3 = "") {
+    inline std::string Join(const std::string_view p1, const std::string_view p2, const std::string_view p3 = "") {
         std::string result;
         result.reserve(p1.size() + p2.size() + p3.size());
         result += p1;

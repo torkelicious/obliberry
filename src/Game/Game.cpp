@@ -4,32 +4,34 @@
 #include "Renderer/MeshFactory.h"
 #include <filesystem>
 
+#include "Renderer/Renderer.h"
 
-bool Game::TestFileWrite(const HexGrid &grid, const std::string &path) const {
+
+bool Game::TestFileWrite(const HexGrid &grid, const std::string &path) {
     const size_t expectedBytes = MapIO::CalculateExpectedFileSize(grid.tiles.size());
     if (!MapIO::Serialize(path, grid)) return false;
     return std::filesystem::file_size(path) == expectedBytes;
 }
 
-bool Game::TestFileLoad(HexGrid &grid, const std::string &path) const {
+bool Game::TestFileLoad(HexGrid &grid, const std::string &path) {
     return MapIO::Deserialize(path, grid);
 }
 
 void Game::Start() {
     AssetLoader::RegisterMeshFactory("Quad", []() -> std::shared_ptr<Mesh> {
-        auto data = MeshFactory::CreateQuad();
-        return std::make_shared<Mesh>(data.vertices, data.indices);
+        auto [vertices, indices] = MeshFactory::CreateQuad();
+        return std::make_shared<Mesh>(vertices, indices);
     });
     AssetLoader::RegisterMeshFactory("PointTopHex", []() -> std::shared_ptr<Mesh> {
-        auto data = MeshFactory::CreatePointTopHex(0.5f);
-        return std::make_shared<Mesh>(data.vertices, data.indices);
+        auto [vertices, indices] = MeshFactory::CreatePointTopHex(0.5f);
+        return std::make_shared<Mesh>(vertices, indices);
     });
 
     m_SceneManager.LoadScene(
         std::make_unique<Scene>(m_Context, "assets/scenes/level01.json"));
 }
 
-void Game::Update(float dt) {
+void Game::Update(const float dt) {
     m_Context.deltaTime = dt;
 
     if (m_PendingSceneLoad.has_value()) {

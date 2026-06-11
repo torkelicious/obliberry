@@ -1,5 +1,3 @@
-
-
 #ifndef OBLIBERRY_VERTEXBUFFERLAYOUT_H
 #define OBLIBERRY_VERTEXBUFFERLAYOUT_H
 
@@ -11,7 +9,7 @@ struct VertexBufferElement {
     unsigned int count;
     unsigned int normalized;
 
-    static unsigned int GetSizeOfType(unsigned int type) {
+    static unsigned int GetSizeOfType(const unsigned int type) {
         switch (type) {
             case GL_FLOAT:
                 return 4;
@@ -33,15 +31,13 @@ public:
     VertexBufferLayout() : m_Stride(0) {
     }
 
-    void Push(unsigned int type, unsigned int count) {
+    void Push(const unsigned int type, const unsigned int count) {
         m_Elements.push_back({type, count, GL_FALSE});
         m_Stride += count * VertexBufferElement::GetSizeOfType(type);
     }
 
-    const std::vector<VertexBufferElement> &GetElements() const {
-        return m_Elements;
-    };
-    unsigned int GetStride() const { return m_Stride; };
+    const std::vector<VertexBufferElement> &GetElements() const { return m_Elements; }
+    unsigned int GetStride() const { return m_Stride; }
 };
 
 #endif //OBLIBERRY_VERTEXBUFFERLAYOUT_H

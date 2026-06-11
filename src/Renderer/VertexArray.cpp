@@ -10,26 +10,26 @@ VertexArray::~VertexArray() {
     glDeleteVertexArrays(1, &m_ID);
 }
 
-void VertexArray::AddBuffer(const VertexBuffer &vb, const VertexBufferLayout &layout) {
+void VertexArray::AddBuffer(const VertexBuffer &vb, const VertexBufferLayout &layout) const {
     Bind();
     vb.Bind();
     const auto &elements = layout.GetElements();
     unsigned int offset = 0;
 
     for (unsigned int i = 0; i < elements.size(); i++) {
-        const auto &element = elements[i];
+        const auto &[type, count, normalized] = elements[i];
         glEnableVertexAttribArray(i);
-        glVertexAttribPointer(i, element.count, element.type, element.normalized,
+        glVertexAttribPointer(i, count, type, normalized,
                               layout.GetStride(), reinterpret_cast<const void *>(offset));
-        offset += element.count * VertexBufferElement::GetSizeOfType(element.type);
+        offset += count * VertexBufferElement::GetSizeOfType(type);
     }
 }
 
-void VertexArray::AddInstancedBuffer(const VertexBuffer &vb, unsigned int attributeStartLoc) const {
+void VertexArray::AddInstancedBuffer(const VertexBuffer &vb, const unsigned int attributeStartLoc) const {
     Bind();
     vb.Bind();
-    std::size_t vec4size = sizeof(glm::vec4);
-    std::size_t stride = sizeof(glm::mat4);
+    const std::size_t vec4size = sizeof(glm::vec4);
+    const std::size_t stride = sizeof(glm::mat4);
 
     for (unsigned int i = 0; i < 4; i++) {
         glEnableVertexAttribArray(attributeStartLoc + i);
@@ -37,7 +37,7 @@ void VertexArray::AddInstancedBuffer(const VertexBuffer &vb, unsigned int attrib
                               GL_FLOAT,
                               GL_FALSE,
                               stride,
-                              (const void *) (i * vec4size));
+                              reinterpret_cast<const void *>(i * vec4size));
         glVertexAttribDivisor(attributeStartLoc + i, 1);
     }
 }

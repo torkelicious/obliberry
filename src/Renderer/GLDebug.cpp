@@ -3,8 +3,8 @@
 
 // I don't remember from where but this code is from somewhere online
 
-void APIENTRY GLDebug::glDebugOutput(GLenum source, GLenum type,
-                                     unsigned int id, GLenum severity,
+void APIENTRY GLDebug::glDebugOutput(const GLenum source, const GLenum type,
+                                     const unsigned int id, const GLenum severity,
                                      GLsizei length, const char *message,
                                      const void *userParam) {
     // ignore non-significant error/warning codes
@@ -118,7 +118,7 @@ VRAMStats GLDebug::GetVRAMStats() {
     VRAMStats stats;
     const GLubyte *renderer = glGetString(GL_RENDERER);
     if (!renderer) return stats;
-    std::string rendererStr(reinterpret_cast<const char *>(renderer));
+    const std::string rendererStr(reinterpret_cast<const char *>(renderer));
     // NVIDIA Path
     if (rendererStr.find("NVIDIA") != std::string::npos) {
         GLint totalKb = 0;

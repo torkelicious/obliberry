@@ -1,7 +1,7 @@
 #ifndef OBLIBERRY_RENDERER_H
 #define OBLIBERRY_RENDERER_H
 
-#include <unordered_set>
+#include <unordered_map>
 
 #include "Camera.h"
 #include "Material.h"
@@ -21,13 +21,11 @@ struct InstancedRenderCommand {
     std::shared_ptr<const Mesh> mesh;
     std::shared_ptr<const Material> material;
     const std::vector<glm::mat4> *transforms;
+    bool isDirty;
 };
-
 
 class Renderer {
 public:
-    Renderer();
-
     void SetCamera(const Camera &camera);
 
     const Camera *GetCamera() {
@@ -36,15 +34,14 @@ public:
 
     void BeginFrame();
 
-    void Submit(std::shared_ptr<const Mesh> mesh,
-                std::shared_ptr<const Material> material,
+    void Submit(const std::shared_ptr<const Mesh> &mesh,
+                const std::shared_ptr<const Material> &material,
                 const Transform &transform);
 
-    // instanced calls
-    void Submit(std::shared_ptr<const Mesh> mesh,
-                std::shared_ptr<const Material> material,
-                const std::vector<glm::mat4> *transforms);
-
+    void Submit(const std::shared_ptr<const Mesh> &mesh,
+                const std::shared_ptr<const Material> &material,
+                const std::vector<glm::mat4> *transforms,
+                bool isDirty = true);
 
     void Flush();
 
@@ -58,11 +55,17 @@ private:
 private:
     std::vector<RenderCommand> m_Commands;
     std::vector<InstancedRenderCommand> m_InstancedCommands;
-    std::unordered_set<GLuint> m_ConfiguredInstancedVAOs;
-    std::shared_ptr<VertexBuffer> m_InstanceBuffer;
+    std::unordered_map<const void *, std::shared_ptr<VertexBuffer> > m_InstanceBuffers;
+
+    struct InstancedGroup {
+        std::shared_ptr<VertexBuffer> vbo;
+        std::shared_ptr<VertexArray> vao;
+    };
+
+    std::unordered_map<const void *, InstancedGroup> m_InstanceGroups;
+
     const Camera *m_Camera = nullptr;
     glm::mat4 m_VP;
 };
-
 
 #endif //OBLIBERRY_RENDERER_H

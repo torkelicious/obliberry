@@ -9,7 +9,8 @@
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Registry.h"
 #include "ECS/Systems/MovementSystem.h"
-#include "Map/HexMath.h"
+#include "../../Math/HexMath.h"
+#include "Renderer/Renderer.h"
 
 namespace MapRuntimeSystem {
     inline void ResetInteractionState(MapStateComponent &state) {
@@ -42,16 +43,16 @@ namespace MapRuntimeSystem {
 
     inline bool IsEntityPositionValidForMap(const HexGrid &grid, const TransformComponent &transform) {
         const glm::vec3 worldPosition = transform.transform.GetPosition();
-        const HexCoords entityHex = HexMath::PixelToHex({worldPosition.x, worldPosition.y});
+        const HexCoords entityHex = Math::HexMath::PixelToHex({worldPosition.x, worldPosition.y});
         const Tile *tile = grid.Get(entityHex);
         return tile != nullptr && tile->walkable;
     }
 
     inline void ResetMovementEntities(Registry &registry, const HexGrid &grid) {
-        const std::optional<HexCoords> preferredSpawn = FindPreferredSpawnHex(grid);
+        [[maybe_unused]] const std::optional<HexCoords> preferredSpawn = FindPreferredSpawnHex(grid);
 
         registry.ForEach<MovementComponent, TransformComponent>(
-            [&](Entity e, MovementComponent *movement, TransformComponent *transform) {
+            [&](const Entity e, MovementComponent *movement, TransformComponent *transform) {
                 MovementSystem::MoveToCenter(e);
                 //if (preferredSpawn.has_value() && !IsEntityPositionValidForMap(grid, *transform)) {
                 //    const glm::vec2 spawnWorldPosition = HexGrid::GetWorldPos(*preferredSpawn);
@@ -63,7 +64,7 @@ namespace MapRuntimeSystem {
     }
 
     inline void OnMapChanged(Registry &registry, MapComponent &map, MapStateComponent *state,
-                             EngineContext &ctx) {
+                             const EngineContext &ctx) {
         ctx.renderer->Clean();
         map.needsMeshUpdate = true;
 

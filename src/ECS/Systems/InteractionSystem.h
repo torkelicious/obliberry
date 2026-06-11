@@ -14,8 +14,8 @@
 
 namespace InteractionSystem {
     inline glm::vec2 Update(Registry &registry, const EngineContext &ctx) {
-        float windowWidth = static_cast<float>(ctx.window->GetWidth());
-        float windowHeight = static_cast<float>(ctx.window->GetHeight());
+        const float windowWidth = static_cast<float>(ctx.window->GetWidth());
+        const float windowHeight = static_cast<float>(ctx.window->GetHeight());
 
         if (ctx.input->ScrollY() != 0.0) {
             ctx.camera->Zoom += static_cast<float>(ctx.input->ScrollY()) * ZOOM_SPEED;
@@ -39,7 +39,7 @@ namespace InteractionSystem {
             screenPan.y -= 1.0f;
 
         registry.ForEach<PlayerInputComponent>(
-            [&](Entity entity, PlayerInputComponent *inputComp) {
+            [&](Entity entity, const PlayerInputComponent *inputComp) {
                 if (ctx.input->IsKeyDown(inputComp->Left))
                     screenPan.x -= 1.0f;
                 if (ctx.input->IsKeyDown(inputComp->Right))
@@ -56,8 +56,8 @@ namespace InteractionSystem {
             screenPan = glm::normalize(screenPan);
             constexpr float VERTICAL_COMPENSATION = 1.4f;
             screenPan.y *= VERTICAL_COMPENSATION;
-            glm::mat4 invRot = glm::inverse(ctx.camera->GetRotation());
-            glm::vec4 worldPan =
+            const glm::mat4 invRot = glm::inverse(ctx.camera->GetRotation());
+            const glm::vec4 worldPan =
                     invRot * glm::vec4(screenPan.x, screenPan.y, 0.0f, 0.0f);
             ctx.camera->Position += glm::vec3(worldPan.x, worldPan.y, 0.0f) * PAN_SPEED *
                     ctx.deltaTime * (1.0f / ctx.camera->Zoom);
@@ -65,11 +65,11 @@ namespace InteractionSystem {
 
         glm::vec2 worldPos = ctx.camera->MouseToWorld(mousePos.x, mousePos.y,
                                                       windowWidth, windowHeight);
-        HexCoords hexPosOnMpos = HexMath::PixelToHex({worldPos.x, worldPos.y});
+        const HexCoords hexPosOnMpos = Math::HexMath::PixelToHex({worldPos.x, worldPos.y});
 
         registry.ForEach<MapComponent, MapStateComponent>(
             [&](Entity, MapComponent *mapComp, MapStateComponent *stateComp) {
-                auto *tile = mapComp->grid.Get(hexPosOnMpos);
+                const auto *tile = mapComp->grid.Get(hexPosOnMpos);
                 if (tile == nullptr) {
                     stateComp->hasSelection = false;
                 } else {

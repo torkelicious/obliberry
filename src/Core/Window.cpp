@@ -1,3 +1,5 @@
+#include "glad/glad.h"
+#include "GLFW/glfw3.h"
 #include <iostream>
 #include <stdexcept>
 #include "Window.h"
@@ -5,7 +7,7 @@
 #include "imgui.h"
 #include "Renderer/GLDebug.h"
 
-Window::Window(unsigned int width, unsigned int height, const char *title) {
+Window::Window(const unsigned int width, const unsigned int height, const char *title) {
     if (!Init(width, height, title)) {
         throw std::runtime_error("Failed to initialize window");
     }
@@ -26,11 +28,11 @@ void Window::PollEvents() {
     glfwPollEvents();
 }
 
-void Window::SwapBuffers() {
+void Window::SwapBuffers() const {
     glfwSwapBuffers(m_Window);
 }
 
-bool Window::Init(unsigned int width, unsigned int height, const char *title) {
+bool Window::Init(const unsigned int width, const unsigned int height, const char *title) {
     /*
      * TODO: window resizing causes temporary stuttering/freezes
      *   seems to occur specifically on NVIDIA (Proprietary Drivers) on KWin,
@@ -55,12 +57,12 @@ bool Window::Init(unsigned int width, unsigned int height, const char *title) {
     glfwMakeContextCurrent(m_Window);
 
 
-    if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
+    if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
         std::cerr << "failed to init glad" << std::endl;
         return false;
     }
 
-    int dbg = GLDebug::InitDebug();
+    const int dbg = GLDebug::InitDebug();
     dbg == 0
         ? std::cout << "Debug Enabled" << std::endl
         : std::cout << "Debug unavailable" << std::endl;
@@ -79,15 +81,15 @@ bool Window::Init(unsigned int width, unsigned int height, const char *title) {
     return true;
 }
 
-void Window::WindowResizeCallback(GLFWwindow *window, int width, int height) {
+void Window::WindowResizeCallback(GLFWwindow *window, const int width, const int height) {
     auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
     if (self) {
         self->m_Width = width;
         self->m_Height = height;
     }
 
-    float targetAspect = 16.0f / 9.0f;
-    float windowAspect = (float) width / height;
+    const float targetAspect = 16.0f / 9.0f;
+    const float windowAspect = static_cast<float>(width) / height;
     int viewportWidth;
     int viewportHeight;
     int viewportX;
@@ -95,12 +97,12 @@ void Window::WindowResizeCallback(GLFWwindow *window, int width, int height) {
 
     if (windowAspect > targetAspect) {
         viewportHeight = height;
-        viewportWidth = (int) (height * targetAspect);
+        viewportWidth = static_cast<int>(height * targetAspect);
         viewportX = (width - viewportWidth) / 2;
         viewportY = 0;
     } else {
         viewportWidth = width;
-        viewportHeight = (int) (width / targetAspect);
+        viewportHeight = static_cast<int>(width / targetAspect);
         viewportX = 0;
         viewportY = (height - viewportHeight) / 2;
     }
@@ -111,8 +113,8 @@ void Window::SetInputManager(InputManager *inputManager) {
     m_InputManager = inputManager;
 }
 
-void Window::KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
-    auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
+void Window::KeyCallback(GLFWwindow *window, const int key, int scancode, const int action, int mods) {
+    const auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
     if (!self) return;
 
     if (self->m_InputManager) {
@@ -120,9 +122,9 @@ void Window::KeyCallback(GLFWwindow *window, int key, int scancode, int action, 
     }
 }
 
-void Window::CursorPosCallback(GLFWwindow *window, double xpos, double ypos) {
+void Window::CursorPosCallback(GLFWwindow *window, const double xpos, const double ypos) {
     if (ImGui::GetIO().WantCaptureMouse) return;
-    auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
+    const auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
     if (!self) return;
 
     if (self->m_InputManager) {
@@ -130,9 +132,9 @@ void Window::CursorPosCallback(GLFWwindow *window, double xpos, double ypos) {
     }
 }
 
-void Window::MouseButtonCallback(GLFWwindow *window, int button, int action, int mods) {
+void Window::MouseButtonCallback(GLFWwindow *window, const int button, const int action, const int mods) {
     if (ImGui::GetIO().WantCaptureMouse) return;
-    auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
+    const auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
     if (!self) return;
 
     if (self->m_InputManager) {
@@ -140,9 +142,9 @@ void Window::MouseButtonCallback(GLFWwindow *window, int button, int action, int
     }
 }
 
-void Window::ScrollCallback(GLFWwindow *window, double xoffset, double yoffset) {
+void Window::ScrollCallback(GLFWwindow *window, const double xoffset, const double yoffset) {
     if (ImGui::GetIO().WantCaptureMouse) return;
-    auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
+    const auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
     if (!self) return;
     self->m_InputManager->HandleScrollEvent(xoffset, yoffset);
 }

@@ -1,6 +1,5 @@
 #ifndef OBLIBERRY_WINDOW_H
 #define OBLIBERRY_WINDOW_H
-#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 #include "InputManager.h"
@@ -17,7 +16,7 @@ public:
 
     void PollEvents();
 
-    void SwapBuffers();
+    void SwapBuffers() const;
 
     bool ShouldClose() const { return glfwWindowShouldClose(m_Window); }
 

@@ -24,7 +24,7 @@ public:
 
     ~VertexArray();
 
-    void AddBuffer(const VertexBuffer &vb, const VertexBufferLayout &layout);
+    void AddBuffer(const VertexBuffer &vb, const VertexBufferLayout &layout) const;
 
     void AddInstancedBuffer(const VertexBuffer &vb, unsigned int attributeStartLoc) const;
 

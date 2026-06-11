@@ -2,8 +2,6 @@
 #define OBLIBERRY_SCENESERIALIZER_H
 #include <string>
 
-#include <string>
-
 #include "json.hpp"
 
 class Scene;

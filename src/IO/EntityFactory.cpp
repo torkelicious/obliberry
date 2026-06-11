@@ -64,7 +64,7 @@ void EntityFactory::RegisterDeserializers() {
     s_Deserializers["MeshComponent"] = [](Entity &entity, const nlohmann::json &data, ResourceManager &resources) {
         MeshComponent mc;
         if (data.contains("mesh_id")) {
-            std::string meshId = data["mesh_id"].get<std::string>();
+            const std::string meshId = data["mesh_id"].get<std::string>();
             mc.mesh = resources.Get<Mesh>(meshId);
             if (!mc.mesh) std::cerr << "EntityFactory: Failed to find Mesh ID '" << meshId << "'\n";
         }
@@ -75,7 +75,7 @@ void EntityFactory::RegisterDeserializers() {
     s_Deserializers["MaterialComponent"] = [](Entity &entity, const nlohmann::json &data, ResourceManager &resources) {
         MaterialComponent matComp;
         if (data.contains("material_id")) {
-            std::string matID = data["material_id"].get<std::string>();
+            const std::string matID = data["material_id"].get<std::string>();
             matComp.material = resources.Get<Material>(matID);
             if (!matComp.material) std::cerr << "EntityFactory: Failed to find Material ID '" << matID << "'\n";
         }
@@ -93,7 +93,7 @@ void EntityFactory::RegisterDeserializers() {
         if (data.contains("textures") && data["textures"].is_array()) {
             auto &texArray = data["textures"];
             for (size_t i = 0; i < 6 && i < texArray.size(); ++i) {
-                std::string texID = texArray[i].get<std::string>();
+                auto texID = texArray[i].get<std::string>();
                 dirTex.textures[i] = resources.Get<Texture>(texID);
             }
         }
@@ -108,9 +108,9 @@ void EntityFactory::RegisterSerializers() {
     if (!s_Serializers.empty()) return;
 
     // TRANSFORM COMPONENT
-    s_Serializers["TransformComponent"] = [](Entity &entity, nlohmann::json &data, ResourceManager &resources) {
+    s_Serializers["TransformComponent"] = [](const Entity &entity, nlohmann::json &data, ResourceManager &resources) {
         if (entity.HasComponent<TransformComponent>()) {
-            auto *tc = entity.GetComponent<TransformComponent>();
+            const auto *tc = entity.GetComponent<TransformComponent>();
             auto pos = tc->transform.GetPosition();
             auto scale = tc->transform.GetScale();
             data["TransformComponent"]["position"] = {pos.x, pos.y, pos.z};
@@ -119,7 +119,7 @@ void EntityFactory::RegisterSerializers() {
     };
 
     // MOVEMENT COMPONENT
-    s_Serializers["MovementComponent"] = [](Entity &entity, nlohmann::json &data, ResourceManager &resources) {
+    s_Serializers["MovementComponent"] = [](const Entity &entity, nlohmann::json &data, ResourceManager &resources) {
         if (entity.HasComponent<MovementComponent>()) {
             auto *mc = entity.GetComponent<MovementComponent>();
             data["MovementComponent"]["timePerStep"] = mc->timePerStep;
@@ -128,7 +128,7 @@ void EntityFactory::RegisterSerializers() {
     };
 
     // PLAYER INPUT COMPONENT
-    s_Serializers["PlayerInputComponent"] = [](Entity &entity, nlohmann::json &data, ResourceManager &resources) {
+    s_Serializers["PlayerInputComponent"] = [](const Entity &entity, nlohmann::json &data, ResourceManager &resources) {
         if (entity.HasComponent<PlayerInputComponent>()) {
             auto *pic = entity.GetComponent<PlayerInputComponent>();
             data["PlayerInputComponent"]["LeftClick"] = pic->LeftClick;
@@ -142,9 +142,9 @@ void EntityFactory::RegisterSerializers() {
     };
 
     // MESH COMPONENT
-    s_Serializers["MeshComponent"] = [](Entity &entity, nlohmann::json &data, ResourceManager &resources) {
+    s_Serializers["MeshComponent"] = [](const Entity &entity, nlohmann::json &data, ResourceManager &resources) {
         if (entity.HasComponent<MeshComponent>()) {
-            auto *mc = entity.GetComponent<MeshComponent>();
+            const auto *mc = entity.GetComponent<MeshComponent>();
             if (mc->mesh) {
                 std::string id = resources.GetKey<Mesh>(mc->mesh);
                 if (!id.empty()) {
@@ -155,9 +155,9 @@ void EntityFactory::RegisterSerializers() {
     };
 
     // MATERIAL COMPONENT
-    s_Serializers["MaterialComponent"] = [](Entity &entity, nlohmann::json &data, ResourceManager &resources) {
+    s_Serializers["MaterialComponent"] = [](const Entity &entity, nlohmann::json &data, ResourceManager &resources) {
         if (entity.HasComponent<MaterialComponent>()) {
-            auto *mat = entity.GetComponent<MaterialComponent>();
+            const auto *mat = entity.GetComponent<MaterialComponent>();
             if (mat->material) {
                 std::string id = resources.GetKey<Material>(mat->material);
                 if (!id.empty()) {
@@ -167,7 +167,7 @@ void EntityFactory::RegisterSerializers() {
         }
     };
 
-    s_Serializers["BillboardComponent"] = [](Entity &entity, nlohmann::json &data, ResourceManager &) {
+    s_Serializers["BillboardComponent"] = [](const Entity &entity, nlohmann::json &data, ResourceManager &) {
         if (entity.HasComponent<BillboardComponent>()) {
             data["BillboardComponent"] = nlohmann::json::object();
         }
@@ -175,7 +175,7 @@ void EntityFactory::RegisterSerializers() {
 
     // DIRECTIONAL TEXTURE COMPONENT
     s_Serializers["DirectionalTextureComponent"] = [
-            ](Entity &entity, nlohmann::json &data, ResourceManager &resources) {
+            ](const Entity &entity, nlohmann::json &data, ResourceManager &resources) {
                 if (entity.HasComponent<DirectionalTextureComponent>()) {
                     auto *dt = entity.GetComponent<DirectionalTextureComponent>();
                     data["DirectionalTextureComponent"]["index"] = dt->index;
@@ -208,7 +208,7 @@ void EntityFactory::DeserializeEntity(Entity &entity, const nlohmann::json &enti
 void EntityFactory::SerializeEntity(Entity &entity, nlohmann::json &outEntityData, ResourceManager &resources) {
     nlohmann::json componentsData;
 
-    for (const auto &[compName, serializeFunc]: s_Serializers) {
+    for (const auto &serializeFunc: s_Serializers | std::views::values) {
         serializeFunc(entity, componentsData, resources);
     }
 

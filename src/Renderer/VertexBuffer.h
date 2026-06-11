@@ -26,9 +26,9 @@ public:
 
     void Unbind() const;
 
-    void SetData(const void *data, unsigned int size);
+    void SetData(const void *data, unsigned int size) const;
 
-    void SetSubData(const void *data, unsigned int size, unsigned int offset = 0);
+    void SetSubData(const void *data, unsigned int size, unsigned int offset = 0) const;
 
 private:
     GLuint m_ID;

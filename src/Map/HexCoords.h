@@ -10,7 +10,7 @@ struct HexCoords {
     HexCoords() : q(0), r(0) {
     }
 
-    HexCoords(int32_t q_, int32_t r_) : q(static_cast<int16_t>(q_)), r(static_cast<int16_t>(r_)) {
+    HexCoords(const int32_t q_, const int32_t r_) : q(static_cast<int16_t>(q_)), r(static_cast<int16_t>(r_)) {
     }
 
     bool operator==(const HexCoords &other) const {
@@ -26,8 +26,8 @@ struct HexCoords {
 // hash for 16-bit coordinates to avoid collision
 struct HexCoordsHash {
     std::size_t operator()(const HexCoords &h) const noexcept {
-        uint32_t packed = (static_cast<uint32_t>(static_cast<uint16_t>(h.q)) << 16) |
-                          static_cast<uint16_t>(h.r);
+        const uint32_t packed = static_cast<uint32_t>(static_cast<uint16_t>(h.q)) << 16 |
+                                static_cast<uint16_t>(h.r);
 
         // MurmurHash3 finalizer scramble to spread bits evenly
         // found this somewhere online
@@ -37,7 +37,7 @@ struct HexCoordsHash {
         x ^= x >> 27;
         x *= 0x94d049bb133111ebULL;
         x ^= x >> 31;
-        return static_cast<std::size_t>(x);
+        return x;
     }
 };
 

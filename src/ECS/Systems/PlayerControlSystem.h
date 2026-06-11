@@ -6,7 +6,6 @@
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Components/MovementComponent.h"
 #include "ECS/Components/MaterialComponent.h"
-#include "ECS/Components/DirectionalTextureComponent.h"
 #include "ECS/Components/PlayerInputComponent.h"
 #include "ECS/Components/MapComponent.h"
 #include "ECS/Components/MapStateComponent.h"
@@ -14,11 +13,11 @@
 #include "ECS/Systems/DirectionalAnimationSystem.h"
 
 namespace PlayerControlSystem {
-    inline void Update(Registry &registry, const EngineContext &ctx, glm::vec2 worldPos) {
-        MapComponent *map = nullptr;
+    inline void Update(Registry &registry, const EngineContext &ctx, const glm::vec2 worldPos) {
+        const MapComponent *map = nullptr;
         MapStateComponent *state = nullptr;
 
-        registry.ForEach<MapComponent, MapStateComponent>([&](Entity, MapComponent *m, MapStateComponent *s) {
+        registry.ForEach<MapComponent, MapStateComponent>([&](Entity, const MapComponent *m, MapStateComponent *s) {
             map = m;
             state = s;
         });
@@ -26,14 +25,15 @@ namespace PlayerControlSystem {
         if (!map || !state) return;
 
         registry.ForEach<PlayerInputComponent, TransformComponent, MovementComponent, MaterialComponent>(
-            [&](Entity entity, PlayerInputComponent *input, TransformComponent *trans, MovementComponent *move,
-                MaterialComponent *mat) {
+            [&](const Entity entity, const PlayerInputComponent *input, const TransformComponent *trans,
+                const MovementComponent *move,
+                const MaterialComponent *mat) {
                 glm::vec2 pPos = trans->transform.GetPosition();
                 glm::vec2 targetDir;
 
                 if (move->isMoving && move->currentPathIndex < move->currentPath.size()) {
-                    HexCoords nextHex = move->currentPath[move->currentPathIndex];
-                    targetDir = HexMath::HexToWorld(nextHex) - pPos;
+                    const HexCoords nextHex = move->currentPath[move->currentPathIndex];
+                    targetDir = Math::HexMath::HexToWorld(nextHex) - pPos;
                 } else {
                     targetDir = worldPos - pPos;
                 }
@@ -42,9 +42,9 @@ namespace PlayerControlSystem {
 
 
                 if (ctx.input->IsMousePressed(input->LeftClick) && state->hasSelection) {
-                    HexCoords startHex = (move->isMoving && move->currentPathIndex < move->currentPath.size())
-                                             ? move->currentPath[move->currentPathIndex]
-                                             : HexMath::PixelToHex({pPos.x, pPos.y});
+                    const HexCoords startHex = move->isMoving && move->currentPathIndex < move->currentPath.size()
+                                                   ? move->currentPath[move->currentPathIndex]
+                                                   : Math::HexMath::PixelToHex({pPos.x, pPos.y});
 
                     auto path = map->grid.FindPath(startHex, state->selectedHex);
 

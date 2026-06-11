@@ -1,7 +1,5 @@
 #ifndef OBLIBERRY_RESOURCEMANAGER_H
 #define OBLIBERRY_RESOURCEMANAGER_H
-#include <functional>
-#include <vector>
 #include <memory>
 #include <string>
 #include <typeindex>

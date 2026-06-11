@@ -1,18 +1,20 @@
 #include "MeshFactory.h"
 
-MeshData MeshFactory::CreatePointTopHex(float size) {
+#include <cmath>
+
+MeshData MeshFactory::CreatePointTopHex(const float size) {
     MeshData data;
 
     data.vertices.push_back({{0.0f, 0.0f, 0.0f}, {0.5f, 0.5f}});
 
     for (int i = 0; i < 6; i++) {
         constexpr float PI = 3.14159265359f;
-        float angle = (i * 60.0f - 90.0f) * PI / 180.0f;
+        const float angle = (i * 60.0f - 90.0f) * PI / 180.0f;
 
-        float x = cos(angle) * size;
+        float x = std::cos(angle) * size;
         float y = sin(angle) * size;
 
-        glm::vec2 uv = glm::vec2(x, y) * 0.5f + 0.5f;
+        const glm::vec2 uv = glm::vec2(x, y) * 0.5f + 0.5f;
 
         data.vertices.push_back({{x, y, 0.0f}, uv});
     }

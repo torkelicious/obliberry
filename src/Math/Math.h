@@ -1,0 +1,55 @@
+#ifndef OBLIBERRY_MATH_H
+#define OBLIBERRY_MATH_H
+#include <glm/glm.hpp>
+
+namespace Math::Projection {
+    struct AABB {
+        glm::vec2 min{std::numeric_limits<float>::max(), std::numeric_limits<float>::max()};
+        glm::vec2 max{std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest()};
+
+        void Expand(const glm::vec2 &p) {
+            min = glm::min(min, p);
+            max = glm::max(max, p);
+        }
+
+        bool Intersects(const AABB &other) const {
+            return (min.x <= other.max.x && max.x >= other.min.x) &&
+                   (min.y <= other.max.y && max.y >= other.min.y);
+        }
+    };
+
+    inline glm::vec2 UnprojectToGround(const glm::mat4 &invVP, float ndcX, float ndcY) {
+        glm::vec4 nearWorld = invVP * glm::vec4(ndcX, ndcY, -1.0f, 1.0f);
+        glm::vec4 farWorld = invVP * glm::vec4(ndcX, ndcY, 1.0f, 1.0f);
+        nearWorld /= nearWorld.w;
+        farWorld /= farWorld.w;
+
+        glm::vec3 rayDir = glm::vec3(farWorld) - glm::vec3(nearWorld);
+        if (std::abs(rayDir.z) < 0.0001f) return {nearWorld.x, nearWorld.y};
+
+        float t = -nearWorld.z / rayDir.z;
+        glm::vec3 hit = glm::vec3(nearWorld) + t * rayDir;
+        return {hit.x, hit.y};
+    }
+
+    inline AABB GetCameraGroundAABB(const Camera *camera, float aspect) {
+        AABB bounds;
+        glm::mat4 invVP = glm::inverse(camera->GetVP(aspect));
+
+        // unproject the corners of the screen down to the z0 grid
+        bounds.Expand(UnprojectToGround(invVP, -1.0f, -1.0f)); // Bottom-Left
+        bounds.Expand(UnprojectToGround(invVP, 1.0f, -1.0f)); // Bottom-Right
+        bounds.Expand(UnprojectToGround(invVP, 1.0f, 1.0f)); // Top-Right
+        bounds.Expand(UnprojectToGround(invVP, -1.0f, 1.0f)); // Top-Left
+
+        // padding buffer
+        const float padding = HEX_SIZE * 4.0f;
+        bounds.min -= glm::vec2(padding);
+        bounds.max += glm::vec2(padding);
+
+        return bounds;
+    }
+}
+
+
+#endif //OBLIBERRY_MATH_H

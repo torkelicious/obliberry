@@ -11,7 +11,7 @@
 #include "IO/EntityFactory.h"
 #include "IO/SceneSerialization.h"
 #include "Map/Hex.h"
-#include "Map/HexMath.h"
+#include "../Math/HexMath.h"
 #include "imgui.h"
 #include <algorithm>
 #include <random>
@@ -27,16 +27,16 @@ namespace {
     bool g_HasTestedLoad = false;
 
     [[nodiscard]] std::string ExtractFilename(std::string_view fullPath,
-                                              std::string_view prefix,
-                                              std::string_view extension) {
+                                              const std::string_view prefix,
+                                              const std::string_view extension) {
         if (fullPath.starts_with(prefix)) fullPath.remove_prefix(prefix.size());
         if (fullPath.ends_with(extension)) fullPath.remove_suffix(extension.size());
         return std::string(fullPath);
     }
 
-    [[nodiscard]] std::string FilenameInputLine(std::string_view prefix,
-                                                std::string_view extension,
-                                                char *buf, size_t bufSize,
+    [[nodiscard]] std::string FilenameInputLine(const std::string_view prefix,
+                                                const std::string_view extension,
+                                                char *buf, const size_t bufSize,
                                                 const char *widgetId) {
         const float avail = ImGui::GetContentRegionAvail().x;
         const float preW = ImGui::CalcTextSize(prefix.data(),
@@ -45,12 +45,12 @@ namespace {
                                                extension.data() + extension.size()).x;
         const float inpW = std::max(avail - preW - extW - 4.0f, 40.0f);
 
-        ImGui::TextDisabled("%.*s", (int) prefix.size(), prefix.data());
+        ImGui::TextDisabled("%.*s", static_cast<int>(prefix.size()), prefix.data());
         ImGui::SameLine(0.0f, 0.0f);
         ImGui::SetNextItemWidth(inpW);
         ImGui::InputText(widgetId, buf, bufSize);
         ImGui::SameLine(0.0f, 0.0f);
-        ImGui::TextDisabled("%.*s", (int) extension.size(), extension.data());
+        ImGui::TextDisabled("%.*s", static_cast<int>(extension.size()), extension.data());
 
         std::string result;
         result.reserve(prefix.size() + std::string_view(buf).size() + extension.size());
@@ -60,7 +60,7 @@ namespace {
         return result;
     }
 
-    [[nodiscard]] ImVec4 ThresholdColour(float value, float warn, float crit) {
+    [[nodiscard]] ImVec4 ThresholdColour(const float value, const float warn, const float crit) {
         if (value >= crit) return {1.0f, 0.3f, 0.3f, 1.0f};
         if (value >= warn) return {1.0f, 0.8f, 0.2f, 1.0f};
         return {0.4f, 1.0f, 0.4f, 1.0f};
@@ -72,7 +72,7 @@ void Game::DrawInterface() {
     const ImGuiViewport *viewport = ImGui::GetMainViewport();
 
     ImGui::SetNextWindowPos(
-        ImVec2((viewport->WorkPos.x + viewport->WorkSize.x) - PADDING,
+        ImVec2(viewport->WorkPos.x + viewport->WorkSize.x - PADDING,
                viewport->WorkPos.y + PADDING),
         ImGuiCond_Always, ImVec2(1.0f, 0.0f));
     ImGui::SetNextWindowBgAlpha(0.40f);
@@ -112,7 +112,7 @@ void Game::DrawInterface() {
 
     if (ImGui::Button(m_CurrentState == GameState::Gameplay ? "Pause" : "Resume",
                       ImVec2(-1, 0))) {
-        m_CurrentState = (m_CurrentState == GameState::Gameplay)
+        m_CurrentState = m_CurrentState == GameState::Gameplay
                              ? GameState::Paused
                              : GameState::Gameplay;
     }
@@ -148,9 +148,9 @@ void Game::DrawInterface() {
 
         const ImVec4 saveCol = !s_SceneSaveTried
                                    ? ImVec4(0.4f, 0.4f, 0.4f, 1.0f)
-                                   : (s_SceneSaved
-                                          ? ImVec4(0.0f, 0.6f, 0.0f, 1.0f)
-                                          : ImVec4(0.6f, 0.0f, 0.0f, 1.0f));
+                                   : s_SceneSaved
+                                         ? ImVec4(0.0f, 0.6f, 0.0f, 1.0f)
+                                         : ImVec4(0.6f, 0.0f, 0.0f, 1.0f);
         ImGui::PushStyleColor(ImGuiCol_Button, saveCol);
         if (ImGui::Button("Save Scene",
                           ImVec2(ImGui::GetContentRegionAvail().x * 0.5f - 4.0f, 0))) {
@@ -172,7 +172,7 @@ void Game::DrawInterface() {
 
             if (!s_StatsValid || mapComp->needsMeshUpdate || s_LastMapComp != mapComp) {
                 s_Grass = s_Sand = s_Walkable = 0;
-                for (const auto &[c, t]: mapComp->grid.tiles) {
+                for (const auto &t: mapComp->grid.tiles | std::views::values) {
                     if (t.type == TileType::Grass) ++s_Grass;
                     else ++s_Sand;
                     if (t.walkable) ++s_Walkable;
@@ -201,7 +201,7 @@ void Game::DrawInterface() {
             if (mapComp) {
                 mapComp->grid.Clear();
                 std::mt19937 rng(std::random_device{}());
-                std::uniform_int_distribution<int> dist(0, 99);
+                std::uniform_int_distribution dist(0, 99);
                 for (int q = -g_GridSize; q < g_GridSize; ++q)
                     for (int r = -g_GridSize; r < g_GridSize; ++r)
                         mapComp->grid.EmplaceTile(
@@ -241,7 +241,9 @@ void Game::DrawInterface() {
 
         const ImVec4 colorSave = !g_HasTestedSave
                                      ? ImVec4(0.4f, 0.4f, 0.4f, 1.0f)
-                                     : (g_SaveOk ? ImVec4(0.0f, 0.6f, 0.0f, 1.0f) : ImVec4(0.6f, 0.0f, 0.0f, 1.0f));
+                                     : g_SaveOk
+                                           ? ImVec4(0.0f, 0.6f, 0.0f, 1.0f)
+                                           : ImVec4(0.6f, 0.0f, 0.0f, 1.0f);
         ImGui::PushStyleColor(ImGuiCol_Button, colorSave);
         if (ImGui::Button("Save Map",
                           ImVec2(ImGui::GetContentRegionAvail().x * 0.5f - 4.0f, 0))) {
@@ -259,7 +261,9 @@ void Game::DrawInterface() {
 
         const ImVec4 colorLoad = !g_HasTestedLoad
                                      ? ImVec4(0.4f, 0.4f, 0.4f, 1.0f)
-                                     : (g_LoadOk ? ImVec4(0.0f, 0.6f, 0.0f, 1.0f) : ImVec4(0.6f, 0.0f, 0.0f, 1.0f));
+                                     : g_LoadOk
+                                           ? ImVec4(0.0f, 0.6f, 0.0f, 1.0f)
+                                           : ImVec4(0.6f, 0.0f, 0.0f, 1.0f);
         ImGui::PushStyleColor(ImGuiCol_Button, colorLoad);
         if (ImGui::Button("Load Map", ImVec2(-1, 0))) {
             if (mapComp) {
@@ -312,7 +316,7 @@ void Game::DrawInterface() {
                            "Active Entities: %zu", livingEntities.size());
         ImGui::Separator();
 
-        static EntityID s_SelectedEntityID = static_cast<EntityID>(-1);
+        static auto s_SelectedEntityID = static_cast<EntityID>(-1);
         static EntityID s_LastSelectedEntityID = static_cast<EntityID>(-1);
         static std::string s_CachedJson;
 
@@ -339,7 +343,7 @@ void Game::DrawInterface() {
 
         ImGui::BeginChild("ComponentInspector", ImVec2(0, 380.0f), true);
 
-        bool isSelectedAlive = std::find(livingEntities.begin(), livingEntities.end(), s_SelectedEntityID) !=
+        bool isSelectedAlive = std::ranges::find(livingEntities, s_SelectedEntityID) !=
                                livingEntities.end();
 
         if (s_SelectedEntityID != static_cast<EntityID>(-1) && isSelectedAlive) {
@@ -353,7 +357,7 @@ void Game::DrawInterface() {
                         if (ImGui::TreeNodeEx("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
                             const glm::vec3 pos = tc->transform.GetPosition();
                             ImGui::Text("  World: [%.2f, %.2f, %.2f]", pos.x, pos.y, pos.z);
-                            const HexCoords hc = HexMath::PixelToHex({pos.x, pos.y});
+                            const HexCoords hc = Math::HexMath::PixelToHex({pos.x, pos.y});
                             ImGui::Text("  Hex:   [Q:%d, R:%d]", hc.q, hc.r);
                             ImGui::TreePop();
                         }

@@ -1,7 +1,7 @@
 #include "VertexBuffer.h"
 
 
-VertexBuffer::VertexBuffer(const void *data, unsigned int size, GLenum usage) {
+VertexBuffer::VertexBuffer(const void *data, const unsigned int size, const GLenum usage) {
     glGenBuffers(1, &m_ID);
     glBindBuffer(GL_ARRAY_BUFFER, m_ID);
     glBufferData(GL_ARRAY_BUFFER, size, data, usage);
@@ -19,12 +19,12 @@ void VertexBuffer::Unbind() const {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void VertexBuffer::SetData(const void *data, unsigned int size) {
+void VertexBuffer::SetData(const void *data, const unsigned int size) const {
     glBindBuffer(GL_ARRAY_BUFFER, m_ID);
     glBufferData(GL_ARRAY_BUFFER, size, data, GL_DYNAMIC_DRAW);
 }
 
-void VertexBuffer::SetSubData(const void *data, unsigned int size, unsigned int offset) {
+void VertexBuffer::SetSubData(const void *data, const unsigned int size, const unsigned int offset) const {
     glBindBuffer(GL_ARRAY_BUFFER, m_ID);
     // modify existing memory instead of reallocating
     glBufferSubData(GL_ARRAY_BUFFER, offset, size, data);

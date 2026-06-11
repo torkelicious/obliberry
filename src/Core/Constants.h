@@ -1,7 +1,6 @@
 #ifndef OBLIBERRY_CONSTANTS_H
 #define OBLIBERRY_CONSTANTS_H
 #include <limits>
-#include <string>
 #include <string_view>
 
 
@@ -13,8 +12,8 @@ constexpr std::string_view MAP_PATH = "assets/maps/";
 constexpr std::string_view SCENE_PATH = "assets/scenes/";
 
 // fs extensions
-constexpr const char *MAP_FILE_EXTENSION = ".obmap";
-constexpr const char *SCENE_FILE_EXTENSION = ".json";
+constexpr auto MAP_FILE_EXTENSION = ".obmap";
+constexpr auto SCENE_FILE_EXTENSION = ".json";
 // window config
 constexpr int WINDOW_WIDTH = 1280;
 constexpr int WINDOW_HEIGHT = 720;

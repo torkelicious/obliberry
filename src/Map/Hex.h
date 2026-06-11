@@ -9,7 +9,7 @@
 #include <unordered_set>
 #include "HexCoords.h"
 #include "Core/Constants.h"
-#include "HexMath.h"
+#include "../Math/HexMath.h"
 
 
 // tile types
@@ -24,6 +24,7 @@ struct Tile {
     HexCoords position; // 2x int16_t
     TileType type; // uint_8t
     bool walkable;
+    glm::vec2 worldPos; // not serialized, only for caching!!!
 };
 
 // hex grid management
@@ -45,24 +46,25 @@ public:
 
     Tile *Get(const HexCoords &pos) {
         const auto it = tiles.find(pos);
-        return (it != tiles.end()) ? &it->second : nullptr;
+        return it != tiles.end() ? &it->second : nullptr;
     }
 
     const Tile *Get(const HexCoords &pos) const {
         const auto it = tiles.find(pos);
-        return (it != tiles.end()) ? &it->second : nullptr;
+        return it != tiles.end() ? &it->second : nullptr;
     }
 
-    Tile &EmplaceTile(const HexCoords &pos, TileType type, bool walkable = true) {
+    Tile &EmplaceTile(const HexCoords &pos, const TileType type, const bool walkable = true) {
         auto &tile = tiles.emplace(pos, Tile{pos, type, walkable}).first->second;
         if (walkable) {
             walkableTiles.push_back(pos);
         }
+        tile.worldPos = GetWorldPos(pos);
         return tile;
     }
 
     static glm::vec2 GetWorldPos(const HexCoords &pos, const float size = HEX_SIZE) {
-        return HexMath::HexToWorld(pos, size);
+        return Math::HexMath::HexToWorld(pos, size);
     }
 
     // Performs A* Pathfinding from a start tile to a goal tile
@@ -84,25 +86,25 @@ public:
 
         using PQElement = std::pair<int, HexCoords>;
 
-        static thread_local std::priority_queue<
+        thread_local std::priority_queue<
             PQElement,
             std::vector<PQElement>,
-            std::greater<PQElement>
+            std::greater<>
         > openSet;
         // ensure queue is empty before starting
         while (!openSet.empty()) openSet.pop();
 
-        static thread_local std::unordered_map<HexCoords, NodeRecord, HexCoordsHash> records;
+        thread_local std::unordered_map<HexCoords, NodeRecord, HexCoordsHash> records;
         records.clear();
 
-        static thread_local std::unordered_set<HexCoords, HexCoordsHash> closed;
+        thread_local std::unordered_set<HexCoords, HexCoordsHash> closed;
         closed.clear();
 
         // init start node
         records[start] = NodeRecord{
             start,
             0,
-            HexMath::Distance(start, goal)
+            Math::HexMath::Distance(start, goal)
         };
 
         openSet.push({records[start].fScore, start});
@@ -139,7 +141,7 @@ public:
             }
 
             // Loop through all neighbors of currently evaluating tile
-            for (const auto &neighbor: HexMath::GetNeighbors(current)) {
+            for (const auto &neighbor: Math::HexMath::GetNeighbors(current)) {
                 if (const Tile *tile = Get(neighbor); !tile || !tile->walkable)
                     // pass it if nonwalkable or dosent exist
                     continue;
@@ -159,7 +161,7 @@ public:
                     records[neighbor].parent = current;
                     records[neighbor].gScore = tentativeG;
                     records[neighbor].fScore =
-                            tentativeG + HexMath::Distance(neighbor, goal);
+                            tentativeG + Math::HexMath::Distance(neighbor, goal);
 
                     openSet.push({records[neighbor].fScore, neighbor});
                 }

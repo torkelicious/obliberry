@@ -1,6 +1,5 @@
 #include "AssetLoader.h"
 
-#include <iostream>
 #include <stdexcept>
 #include "Renderer/Mesh.h"
 #include "Renderer/Shader.h"

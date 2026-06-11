@@ -2,7 +2,6 @@
 #define OBLIBERRY_MOVEMENT_H
 
 #include <vector>
-#include <span>
 #include <utility>
 #include <glm/glm.hpp>
 #include "ECS/ECS.h"
@@ -19,7 +18,7 @@ namespace MovementSystem {
         moveComp->currentPath.clear();
     }
 
-    inline void SetPath(Entity entity, std::vector<HexCoords> newPath) {
+    inline void SetPath(const Entity entity, std::vector<HexCoords> newPath) {
         auto *moveComp = entity.GetComponent<MovementComponent>();
         if (!moveComp) return;
 
@@ -34,9 +33,9 @@ namespace MovementSystem {
         moveComp->isMoving = true;
     }
 
-    inline void Update(Registry &registry, float dt) {
-        MapComponent *map = nullptr;
-        registry.ForEach<MapComponent>([&](Entity, MapComponent *m) { map = m; });
+    inline void Update(Registry &registry, const float dt) {
+        const MapComponent *map = nullptr;
+        registry.ForEach<MapComponent>([&](Entity, const MapComponent *m) { map = m; });
 
         if (!map) return;
 
@@ -52,9 +51,9 @@ namespace MovementSystem {
                 moveComp->stepTimer += dt;
                 if (moveComp->stepTimer >= moveComp->timePerStep) {
                     moveComp->stepTimer -= moveComp->timePerStep;
-                    HexCoords targetHex = moveComp->currentPath[moveComp->currentPathIndex];
+                    const HexCoords targetHex = moveComp->currentPath[moveComp->currentPathIndex];
 
-                    glm::vec2 targetWorldPos2D = map->grid.GetWorldPos(targetHex);
+                    const glm::vec2 targetWorldPos2D = HexGrid::GetWorldPos(targetHex);
 
                     transComp->transform.SetPosition(glm::vec3(
                         targetWorldPos2D.x,
@@ -71,7 +70,7 @@ namespace MovementSystem {
         );
     }
 
-    inline void MoveToCenter(Entity entity) {
+    inline void MoveToCenter(const Entity entity) {
         auto *moveComp = entity.GetComponent<MovementComponent>();
         auto *transComp = entity.GetComponent<TransformComponent>();
 

@@ -29,7 +29,7 @@ public:
 
     void SetData(const unsigned int *data, unsigned int count);
 
-    unsigned int GetCount() const { return m_Count; }
+    [[nodiscard]] unsigned int GetCount() const { return m_Count; }
 
 private:
     GLuint m_ID;

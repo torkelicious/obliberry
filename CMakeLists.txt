@@ -75,7 +75,7 @@ add_executable(
         src/ECS/Components/TransformComponent.h
         src/ECS/Systems/MovementSystem.h
         src/Renderer/Transform.h
-        src/Map/HexMath.h
+        src/Math/HexMath.h
         src/Map/HexCoords.h
         src/IO/MapSerialization.cpp
         src/IO/MapSerialization.h
@@ -109,6 +109,7 @@ add_executable(
         src/ECS/Components/MapStateComponent.h
         src/IO/SceneSerialization.cpp
         src/IO/SceneSerialization.h
+        src/Math/Math.h
 )
 
 target_include_directories(

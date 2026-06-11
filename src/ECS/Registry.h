@@ -8,6 +8,7 @@
 #include <memory>
 #include <typeindex>
 #include <cassert>
+#include <ranges>
 
 #include "Entity.h"
 
@@ -36,14 +37,14 @@ public:
 
     EntityID CreateEntity() {
         assert(m_LivingEntities.size() < MAX_ENTITIES && "Too many entities");
-        EntityID id = m_AvailableEntities.front();
+        const EntityID id = m_AvailableEntities.front();
         m_AvailableEntities.pop();
         m_LivingEntities.push_back(id);
         return id;
     }
 
-    void DestroyEntity(EntityID entity) {
-        for (auto const &[type, pool]: m_ComponentPools) {
+    void DestroyEntity(const EntityID entity) {
+        for (const auto &pool: m_ComponentPools | std::views::values) {
             pool->EntityDestroyed(entity);
         }
         std::erase(m_LivingEntities, entity);

@@ -2,7 +2,6 @@
 #define OBLIBERRY_ENTITY_H
 
 #include "Types.h"
-#include <utility>
 
 class Registry;
 
@@ -10,7 +9,7 @@ class Entity {
 public:
     Entity() = default;
 
-    Entity(EntityID handle, Registry *registry)
+    Entity(const EntityID handle, Registry *registry)
         : m_EntityHandle(handle), m_Registry(registry) {
     }
 
@@ -28,8 +27,8 @@ public:
     }
 
     bool operator!=(const Entity &other) const { return !(*this == other); }
-    operator bool() const { return m_EntityHandle != 0; }
-    operator EntityID() const { return m_EntityHandle; }
+    explicit operator bool() const { return m_EntityHandle != 0; }
+    explicit operator EntityID() const { return m_EntityHandle; }
 
 private:
     EntityID m_EntityHandle = 0;

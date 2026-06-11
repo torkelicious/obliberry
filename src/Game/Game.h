@@ -3,10 +3,7 @@
 
 #include <optional>
 #include <string>
-#include "Core/ResourceManager.h"
-#include "Core/Window.h"
 #include "Core/EngineContext.h"
-#include "Renderer/Renderer.h"
 #include "../Scenes/SceneManager.h"
 #include "Map/Hex.h"
 
@@ -28,9 +25,9 @@ public:
     [[nodiscard]] Camera &GetCamera() const { return *m_Context.camera; }
     void SetContext(const EngineContext &context) { m_Context = context; }
 
-    [[nodiscard]] bool TestFileWrite(const HexGrid &grid, const std::string &path) const;
+    [[nodiscard]] bool TestFileWrite(const HexGrid &grid, const std::string &path);
 
-    [[nodiscard]] bool TestFileLoad(HexGrid &grid, const std::string &path) const;
+    [[nodiscard]] bool TestFileLoad(HexGrid &grid, const std::string &path);
 
 private:
     void Shutdown() const;

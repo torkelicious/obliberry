@@ -1,8 +1,6 @@
 #ifndef OBLIBERRY_ENGINECONTEXT_H
 #define OBLIBERRY_ENGINECONTEXT_H
 
-#include <cstdint>
-
 class Window;
 class InputManager;
 class ResourceManager;

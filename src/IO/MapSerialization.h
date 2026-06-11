@@ -29,8 +29,8 @@ namespace MapIO {
 
     // testing
     inline size_t CalculateExpectedFileSize(const size_t tileCount) {
-        size_t headerSize = sizeof(MapFileHeader);
-        size_t payloadSize = tileCount * sizeof(SerializedTile);
+        constexpr size_t headerSize = sizeof(MapFileHeader);
+        const size_t payloadSize = tileCount * sizeof(SerializedTile);
         return headerSize + payloadSize;
     }
 }

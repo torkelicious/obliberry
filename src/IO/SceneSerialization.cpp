@@ -15,8 +15,8 @@
 namespace SceneIO {
     using json = nlohmann::json;
 
-    void RoundJsonFloats(json &j, int decimals = 3) {
-        float factor = std::pow(10.f, decimals);
+    void RoundJsonFloats(json &j, const int decimals = 3) {
+        const float factor = std::pow(10.f, decimals);
         if (j.is_number_float()) {
             j = std::round(j.get<float>() * factor) / factor;
         } else if (j.is_array()) {
@@ -41,13 +41,13 @@ namespace SceneIO {
 
         // register once before loading !!!
         AssetLoader::RegisterMeshFactory("Quad", []() {
-            auto data = MeshFactory::CreateQuad();
-            return std::make_shared<Mesh>(data.vertices, data.indices);
+            auto [vertices, indices] = MeshFactory::CreateQuad();
+            return std::make_shared<Mesh>(vertices, indices);
         });
 
         AssetLoader::RegisterMeshFactory("PointTopHex", []() {
-            auto data = MeshFactory::CreatePointTopHex(0.5f);
-            return std::make_shared<Mesh>(data.vertices, data.indices);
+            auto [vertices, indices] = MeshFactory::CreatePointTopHex(0.5f);
+            return std::make_shared<Mesh>(vertices, indices);
         });
 
         //  ASSETS
@@ -56,7 +56,7 @@ namespace SceneIO {
         }
 
         if (j.contains("grid") && j["grid"].contains("map_file")) {
-            std::string mapPath = j["grid"]["map_file"].get<std::string>();
+            auto mapPath = j["grid"]["map_file"].get<std::string>();
 
             // map entity via ECS
             Entity mapEntity(scene.GetRegistry().CreateEntity(), &scene.GetRegistry());
@@ -115,7 +115,7 @@ namespace SceneIO {
         auto &resources = *scene.GetContext().resources;
 
         // ecs query to save grid
-        scene.GetRegistry().ForEach<MapComponent>([&](Entity, MapComponent *mapComp) {
+        scene.GetRegistry().ForEach<MapComponent>([&](Entity, const MapComponent *mapComp) {
             std::string mapFile = mapComp->mapFilePath.empty()
                                       ? PathUtils::Join(MAP_PATH, "unknown", MAP_FILE_EXTENSION)
                                       : mapComp->mapFilePath;

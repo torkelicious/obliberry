@@ -52,7 +52,7 @@ public:
     Mesh &operator=(Mesh &&) = default;
 
 
-    Mesh(const MeshData &data)
+    explicit Mesh(const MeshData &data)
         : m_VBO(
             data.vertices.data(),
             static_cast<uint32_t>(data.vertices.size() * sizeof(Vertex))
@@ -98,9 +98,9 @@ public:
     }
 
 
-    const VertexArray *GetVertexArray() const {
-        return &m_VAO;
-    }
+    [[nodiscard]] const VertexArray &GetVertexArray() const { return m_VAO; }
+    [[nodiscard]] const VertexBuffer &GetVBO() const { return m_VBO; }
+    [[nodiscard]] const IndexBuffer &GetIBO() const { return m_IBO; }
 
     [[nodiscard]] uint32_t GetIndexCount() const {
         return m_IBO.GetCount();

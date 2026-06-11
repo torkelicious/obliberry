@@ -1,4 +1,3 @@
-#include <iostream>
 #include "Core/Application.h"
 
 int main() {

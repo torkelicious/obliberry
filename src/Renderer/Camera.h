@@ -17,15 +17,15 @@ public:
     float AngleZ = 45.0f; // rotate world
 
     glm::mat4 GetViewMatrix() const {
-        glm::mat4 view = glm::mat4(1.0f);
+        auto view = glm::mat4(1.0f);
         // camera pan
         view = glm::translate(view, glm::vec3(-Position.x, -Position.y, 0.0f));
         return view;
     }
 
-    glm::mat4 GetProjectionMatrix(float aspect) const {
-        float viewHeight = 20.0f / Zoom;
-        float viewWidth = viewHeight * aspect;
+    glm::mat4 GetProjectionMatrix(const float aspect) const {
+        const float viewHeight = 20.0f / Zoom;
+        const float viewWidth = viewHeight * aspect;
 
         return glm::ortho(
             -viewWidth * 0.5f, viewWidth * 0.5f,
@@ -35,7 +35,7 @@ public:
     }
 
     glm::mat4 GetRotation() const {
-        glm::mat4 rot = glm::mat4(1.0f);
+        auto rot = glm::mat4(1.0f);
         // tilt down
         rot = glm::rotate(rot, glm::radians(AngleX), glm::vec3(1, 0, 0));
         // rotate
@@ -44,7 +44,7 @@ public:
         return rot;
     }
 
-    glm::mat4 GetVP(float aspect = TARGET_ASPECT) const {
+    glm::mat4 GetVP(const float aspect = TARGET_ASPECT) const {
         if (Position != m_CachePos || Zoom != m_CacheZoom || aspect != m_CacheAspect) {
             m_CachedVP = GetProjectionMatrix(aspect) * GetRotation() * GetViewMatrix();
             m_CachePos = Position;
@@ -77,8 +77,8 @@ public:
         float adjustedMy = my - viewY;
 
         // convert mouse pixels to NDC
-        float x = (2.0f * adjustedMx) / viewWidth - 1.0f;
-        float y = 1.0f - (2.0f * adjustedMy) / viewHeight;
+        float x = 2.0f * adjustedMx / viewWidth - 1.0f;
+        float y = 1.0f - 2.0f * adjustedMy / viewHeight;
 
         glm::vec4 nearClip(x, y, -1.0f, 1.0f);
         glm::vec4 farClip(x, y, 1.0f, 1.0f);

@@ -20,17 +20,17 @@ public:
     [[nodiscard]] double ScrollX() const noexcept { return m_ScrollX; }
     [[nodiscard]] double ScrollY() const noexcept { return m_ScrollY; }
 
-    bool IsKeyDown(int key) const;
+    [[nodiscard]] bool IsKeyDown(int key) const;
 
-    bool IsKeyPressed(int key) const;
+    [[nodiscard]] bool IsKeyPressed(int key) const;
 
-    bool IsKeyReleased(int key) const;
+    [[nodiscard]] bool IsKeyReleased(int key) const;
 
-    bool IsMouseDown(int button) const;
+    [[nodiscard]] bool IsMouseDown(int button) const;
 
-    bool IsMousePressed(int button) const;
+    [[nodiscard]] bool IsMousePressed(int button) const;
 
-    bool IsMouseReleased(int button) const;
+    [[nodiscard]] bool IsMouseReleased(int button) const;
 
 private:
     bool keys[GLFW_KEY_LAST + 1]{};

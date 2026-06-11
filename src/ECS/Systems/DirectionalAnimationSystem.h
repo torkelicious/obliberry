@@ -9,7 +9,7 @@
 
 // used by both PlayerControlSystem and AISystem.
 namespace DirectionalAnimation {
-    inline void UpdateFacing(Entity entity, const glm::vec2 &direction, MaterialComponent *mat) {
+    inline void UpdateFacing(const Entity entity, const glm::vec2 &direction, const MaterialComponent *mat) {
         if (glm::length(direction) <= 0.001f) return;
 
         float degrees = glm::degrees(std::atan2(direction.y, direction.x));

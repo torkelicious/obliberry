@@ -6,11 +6,11 @@
 Shader::Shader(const std::string &vertPath, const std::string &fragPath)
     : m_vertPath(vertPath), m_fragPath(fragPath) // copied but its ok
 {
-    std::string vertexSrc = LoadFile(vertPath);
-    std::string fragmentSrc = LoadFile(fragPath);
+    const std::string vertexSrc = LoadFile(vertPath);
+    const std::string fragmentSrc = LoadFile(fragPath);
 
-    GLuint vert = Compile(GL_VERTEX_SHADER, vertexSrc);
-    GLuint frag = Compile(GL_FRAGMENT_SHADER, fragmentSrc);
+    const GLuint vert = Compile(GL_VERTEX_SHADER, vertexSrc);
+    const GLuint frag = Compile(GL_FRAGMENT_SHADER, fragmentSrc);
     m_ID = Link(vert, frag);
 
     if (m_ID == 0) {
@@ -36,32 +36,32 @@ void Shader::Unbind() const {
 }
 
 
-void Shader::SetUniform1i(const std::string &name, int value) {
-    GLint loc = GetUniformLocation(name);
+void Shader::SetUniform1i(const std::string &name, const int value) {
+    const GLint loc = GetUniformLocation(name);
     if (loc == -1) return;
     glUniform1i(loc, value);
 }
 
-void Shader::SetUniform1f(const std::string &name, float value) {
-    GLint loc = GetUniformLocation(name);
+void Shader::SetUniform1f(const std::string &name, const float value) {
+    const GLint loc = GetUniformLocation(name);
     if (loc == -1) return;
     glUniform1f(loc, value);
 }
 
 void Shader::SetUniformVec2(const std::string &name, const glm::vec2 &v) {
-    GLint loc = GetUniformLocation(name);
+    const GLint loc = GetUniformLocation(name);
     if (loc == -1) return;
     glUniform2f(loc, v.x, v.y);
 }
 
 void Shader::SetUniformVec4(const std::string &name, const glm::vec4 &v) {
-    GLint loc = GetUniformLocation(name);
+    const GLint loc = GetUniformLocation(name);
     if (loc == -1) return;
     glUniform4f(loc, v.x, v.y, v.z, v.w);
 }
 
 void Shader::SetUniformMat4(const std::string &name, const glm::mat4 &mat) {
-    GLint loc = GetUniformLocation(name);
+    const GLint loc = GetUniformLocation(name);
     if (loc == -1) return;
     glUniformMatrix4fv(loc, 1, GL_FALSE, &mat[0][0]);
 }
@@ -69,7 +69,7 @@ void Shader::SetUniformMat4(const std::string &name, const glm::mat4 &mat) {
 GLint Shader::GetUniformLocation(const std::string &name) {
     if (m_ID == 0) return -1;
 
-    auto it = m_UniformCache.find(name);
+    const auto it = m_UniformCache.find(name);
     if (it != m_UniformCache.end())
         return it->second;
 
@@ -89,13 +89,13 @@ std::string Shader::LoadFile(const std::string &path) {
     return ss.str();
 }
 
-GLuint Shader::Compile(GLenum type, const std::string &src) const {
+GLuint Shader::Compile(const GLenum type, const std::string &src) const {
     if (src.empty()) {
         // Prevent confusing GLSL errors if file load failed.
         return 0;
     }
 
-    GLuint shader = glCreateShader(type);
+    const GLuint shader = glCreateShader(type);
     const char *cstr = src.c_str();
     glShaderSource(shader, 1, &cstr, nullptr);
     glCompileShader(shader);
@@ -113,7 +113,7 @@ GLuint Shader::Compile(GLenum type, const std::string &src) const {
     return shader;
 }
 
-GLuint Shader::Link(GLuint vert, GLuint frag) const {
+GLuint Shader::Link(const GLuint vert, const GLuint frag) const {
     if (vert == 0 || frag == 0) {
         if (vert)
             glDeleteShader(vert);

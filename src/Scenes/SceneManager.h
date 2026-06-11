@@ -16,19 +16,19 @@ public:
         }
     }
 
-    void Update(float dt) {
+    void Update(const float dt) const {
         if (m_CurrentScene) {
             m_CurrentScene->Update(dt);
         }
     }
 
-    void Render() {
+    void Render() const {
         if (m_CurrentScene) {
             m_CurrentScene->Render();
         }
     }
 
-    Scene *GetCurrentScene() const { return m_CurrentScene.get(); }
+    [[nodiscard]] Scene *GetCurrentScene() const { return m_CurrentScene.get(); }
 
 private:
     std::unique_ptr<Scene> m_CurrentScene = nullptr;

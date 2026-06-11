@@ -11,19 +11,19 @@
 namespace RenderSystem {
     inline void Render(Registry &registry, Renderer &renderer) {
         registry.ForEach<MeshComponent, MaterialComponent, TransformComponent>(
-            [&](Entity entity,
-                MeshComponent *meshComp,
-                MaterialComponent *matComp,
-                TransformComponent *transComp) {
+            [&](const Entity entity,
+                const MeshComponent *meshComp,
+                const MaterialComponent *matComp,
+                const TransformComponent *transComp) {
                 if (!meshComp || !meshComp->mesh) return;
                 if (!matComp || !matComp->material) return;
                 if (!transComp) return;
 
-                auto &mat = matComp->material;
+                const auto &mat = matComp->material;
 
                 if (const auto *dir = entity.GetComponent<DirectionalTextureComponent>()) {
                     if (!dir->textures.empty()) {
-                        if (auto idx = static_cast<size_t>(dir->index % dir->textures.size()); dir->textures[idx]) {
+                        if (const auto idx = dir->index % dir->textures.size(); dir->textures[idx]) {
                             mat->texture = dir->textures[idx];
                         }
                     }

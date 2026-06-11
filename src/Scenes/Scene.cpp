@@ -10,8 +10,6 @@
 #include "IO/EntityFactory.h"
 #include <iostream>
 
-#include "ECS/Systems/MapRuntimeSystem.h"
-
 Scene::Scene(const EngineContext &context, std::string scenePath)
     : m_Context(context), m_ScenePath(std::move(scenePath)) {
 }
@@ -28,9 +26,9 @@ void Scene::OnEnter() {
     }
 }
 
-void Scene::Update(float dt) {
+void Scene::Update(const float dt) {
     m_Context.deltaTime = dt;
-    glm::vec2 worldPos = InteractionSystem::Update(m_Registry, m_Context);
+    const glm::vec2 worldPos = InteractionSystem::Update(m_Registry, m_Context);
     PlayerControlSystem::Update(m_Registry, m_Context, worldPos);
     AISystem::Update(m_Registry, dt);
     MovementSystem::Update(m_Registry, dt);

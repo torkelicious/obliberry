@@ -4,10 +4,10 @@
 
 Texture::Texture(
     const std::string &path,
-    GLuint minFilter,
-    GLuint magFilter,
-    GLuint wrapS,
-    GLuint wrapT
+    const GLuint minFilter,
+    const GLuint magFilter,
+    const GLuint wrapS,
+    const GLuint wrapT
 )
     : m_ID(0), m_FilePath(path), m_ImgLocBuffer(nullptr), m_Width(0), m_Height(0), m_BPP(0) {
     std::cout << "Loading: " << path << "\n";
@@ -29,7 +29,7 @@ Texture::Texture(
                      GL_RGBA, GL_UNSIGNED_BYTE,
                      m_ImgLocBuffer);
 
-        bool usesMipmaps =
+        const bool usesMipmaps =
                 minFilter == GL_NEAREST_MIPMAP_NEAREST ||
                 minFilter == GL_LINEAR_MIPMAP_NEAREST ||
                 minFilter == GL_NEAREST_MIPMAP_LINEAR ||
@@ -52,7 +52,7 @@ Texture::~Texture() {
     }
 }
 
-void Texture::Bind(unsigned int slot) const {
+void Texture::Bind(const unsigned int slot) const {
     glActiveTexture(GL_TEXTURE0 + slot);
     glBindTexture(GL_TEXTURE_2D, m_ID);
 }
@@ -70,7 +70,7 @@ Texture *Texture::White() {
         glGenTextures(1, &instance->m_ID);
         glBindTexture(GL_TEXTURE_2D, instance->m_ID);
 
-        uint32_t white = 0xFFFFFFFF;
+        const uint32_t white = 0xFFFFFFFF;
 
         glTexImage2D(
             GL_TEXTURE_2D,

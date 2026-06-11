@@ -17,7 +17,7 @@ public:
 
     Texture &operator=(Texture &&) = default;
 
-    Texture(
+    explicit Texture(
         const std::string &path,
         GLuint minFilter = GL_NEAREST_MIPMAP_NEAREST,
         GLuint magFilter = GL_NEAREST,

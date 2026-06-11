@@ -1,6 +1,8 @@
 #ifndef OBLIBERRY_MAPRENDERSYSTEM_H
 #define OBLIBERRY_MAPRENDERSYSTEM_H
 
+#include <ranges>
+
 #include "ECS/Components/MapComponent.h"
 #include "ECS/Components/MapStateComponent.h"
 #include "ECS/Registry.h"
@@ -14,7 +16,7 @@ namespace MapRenderSystem {
         size_t grassCount = 0;
         size_t sandCount = 0;
 
-        for (const auto &[pos, tile]: grid.tiles) {
+        for (const auto &tile: grid.tiles | std::views::values) {
             if (tile.type == TileType::Grass) {
                 grassCount++;
             } else if (tile.type == TileType::Sand) {
@@ -25,10 +27,9 @@ namespace MapRenderSystem {
         grassOut.reserve(grassCount);
         sandOut.reserve(sandCount);
 
-        for (const auto &[pos, tile]: grid.tiles) {
-            const glm::vec2 worldPos = HexGrid::GetWorldPos(pos);
+        for (const auto &tile: grid.tiles | std::views::values) {
+            const glm::vec2 &worldPos = tile.worldPos;
             glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(worldPos.x, worldPos.y, 0.0f));
-
             if (tile.type == TileType::Grass) {
                 grassOut.push_back(translationMatrix);
             } else if (tile.type == TileType::Sand) {
@@ -44,6 +45,7 @@ namespace MapRenderSystem {
                     mapComp->hexMesh = std::make_shared<Mesh>(MeshFactory::CreatePointTopHex(HEX_SIZE));
                 }
 
+                const bool isDirty = mapComp->needsMeshUpdate;
                 if (mapComp->needsMeshUpdate) {
                     mapComp->grassTransforms.clear();
                     mapComp->sandTransforms.clear();
@@ -54,11 +56,11 @@ namespace MapRenderSystem {
                 }
 
                 if (!mapComp->grassTransforms.empty()) {
-                    renderer.Submit(mapComp->hexMesh, mapComp->grassMat, &mapComp->grassTransforms);
+                    renderer.Submit(mapComp->hexMesh, mapComp->grassMat, &mapComp->grassTransforms, isDirty);
                 }
 
                 if (!mapComp->sandTransforms.empty()) {
-                    renderer.Submit(mapComp->hexMesh, mapComp->sandMat, &mapComp->sandTransforms);
+                    renderer.Submit(mapComp->hexMesh, mapComp->sandMat, &mapComp->sandTransforms, isDirty);
                 }
             });
     }
@@ -73,7 +75,7 @@ namespace MapRenderSystem {
                 }
 
                 if (stateComp->hasSelection) {
-                    const glm::vec2 worldPos = mapComp->grid.GetWorldPos(stateComp->selectedHex);
+                    const glm::vec2 worldPos = HexGrid::GetWorldPos(stateComp->selectedHex);
 
                     Transform t;
                     t.SetPosition({worldPos.x, worldPos.y, 0.01f});
@@ -83,7 +85,7 @@ namespace MapRenderSystem {
                 }
 
                 if (stateComp->hasPathTo) {
-                    const glm::vec2 worldPos = mapComp->grid.GetWorldPos(stateComp->pathTo);
+                    const glm::vec2 worldPos = HexGrid::GetWorldPos(stateComp->pathTo);
 
                     Transform t;
                     t.SetPosition({worldPos.x, worldPos.y, 0.01f});

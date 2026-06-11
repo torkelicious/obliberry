@@ -21,10 +21,10 @@ public:
         m_EntityToIndex.resize(MAX_ENTITIES, INVALID_INDEX);
     }
 
-    T &Insert(EntityID entity, T component) {
+    T &Insert(const EntityID entity, T component) {
         assert(entity < MAX_ENTITIES && "Entity ID exceeds maximum limit!");
 
-        size_t newIndex = m_Data.size();
+        const size_t newIndex = m_Data.size();
         m_EntityToIndex[entity] = newIndex;
         m_IndexToEntity.push_back(entity);
         m_Data.push_back(std::move(component));
@@ -32,7 +32,7 @@ public:
         return m_Data.back();
     }
 
-    T *Get(EntityID entity) {
+    T *Get(const EntityID entity) {
         if (entity >= m_EntityToIndex.size() || m_EntityToIndex[entity] == INVALID_INDEX) {
             return nullptr;
         }
@@ -40,18 +40,18 @@ public:
         return &m_Data[m_EntityToIndex[entity]];
     }
 
-    const T *Get(EntityID entity) const {
+    const T *Get(const EntityID entity) const {
         if (entity >= m_EntityToIndex.size() || m_EntityToIndex[entity] == INVALID_INDEX) {
             return nullptr;
         }
         return &m_Data[m_EntityToIndex[entity]];
     }
 
-    bool Has(EntityID entity) const {
+    [[nodiscard]] bool Has(const EntityID entity) const {
         return entity < m_EntityToIndex.size() && m_EntityToIndex[entity] != INVALID_INDEX;
     }
 
-    void EntityDestroyed(EntityID entity) override {
+    void EntityDestroyed(const EntityID entity) override {
         if (!Has(entity)) return;
 
         const size_t indexOfRemoved = m_EntityToIndex[entity];
@@ -59,7 +59,7 @@ public:
 
         if (indexOfRemoved != indexOfLast) {
             m_Data[indexOfRemoved] = std::move(m_Data[indexOfLast]);
-            EntityID entityOfLast = m_IndexToEntity[indexOfLast];
+            const EntityID entityOfLast = m_IndexToEntity[indexOfLast];
             m_IndexToEntity[indexOfRemoved] = entityOfLast;
             m_EntityToIndex[entityOfLast] = indexOfRemoved;
         }
@@ -70,7 +70,7 @@ public:
     }
 
     template<typename... Args>
-    T &Emplace(EntityID entity, Args &&... args) {
+    T &Emplace(const EntityID entity, Args &&... args) {
         return Insert(entity, T(std::forward<Args>(args)...));
     }
 

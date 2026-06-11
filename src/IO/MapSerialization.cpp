@@ -47,7 +47,7 @@ namespace MapIO {
 
         grid.Clear();
         for (uint32_t i = 0; i < header.tileCount; i++) {
-            SerializedTile sTile;
+            SerializedTile sTile{};
             file.read(reinterpret_cast<char *>(&sTile), sizeof(SerializedTile));
             HexCoords coords{sTile.q, sTile.r};
             grid.EmplaceTile(coords, sTile.type, sTile.walkable);
@@ -58,7 +58,7 @@ namespace MapIO {
     }
 
     bool CheckHeader(const MapFileHeader &header, const std::string &expected) {
-        std::string magicBytes(header.magic, 8);
+        const std::string magicBytes(header.magic, 8);
         return magicBytes == expected;
     }
 }
