@@ -6,15 +6,16 @@
 class Window;
 class InputManager;
 class ResourceManager;
+class Renderer;
 class Camera;
 
 struct EngineContext {
     Window *window = nullptr;
     InputManager *input = nullptr;
     ResourceManager *resources = nullptr;
+    Renderer *renderer = nullptr;
     Camera *camera = nullptr;
     float deltaTime = 0.0f;
-    uint32_t lastDrawCallCount = 0;
 };
 
 

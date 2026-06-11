@@ -81,13 +81,14 @@ namespace SceneIO {
 
             mapComp.hexMesh = hexMesh;
             if (shader && grassTex && sandTex && hexMesh) {
-                mapComp.grassMat = {shader, grassTex, {1, 1, 1, 1}};
-                mapComp.sandMat = {shader, sandTex, {1, 1, 1, 1}};
-                mapComp.outlineMat = {shader, nullptr, {1, 0, 0, 0.5f}};
-                mapComp.pathToMat = {shader, nullptr, {1, 1, 1, 0.5f}};
+                mapComp.grassMat = std::make_shared<Material>(Material{shader, grassTex, {1, 1, 1, 1}});
+                mapComp.sandMat = std::make_shared<Material>(Material{shader, sandTex, {1, 1, 1, 1}});
+                mapComp.outlineMat = std::make_shared<Material>(Material{shader, nullptr, {1, 0, 0, 0.5f}});
+                mapComp.pathToMat = std::make_shared<Material>(Material{shader, nullptr, {1, 1, 1, 0.5f}});
             } else {
                 std::cerr << "SceneSerializer: Missing map visual assets!\n";
             }
+
             mapComp.needsMeshUpdate = true;
             mapEntity.AddComponent<MapComponent>(mapComp);
             mapEntity.AddComponent<MapStateComponent>();
@@ -105,7 +106,7 @@ namespace SceneIO {
             }
         }
 
-        MapRuntimeSystem::OnMapChanged(scene.GetRegistry());
+        MapRuntimeSystem::OnMapChanged(scene.GetRegistry(), scene.GetContext());
         return true;
     }
 
@@ -126,14 +127,14 @@ namespace SceneIO {
             if (mapComp->hexMesh) {
                 j["grid"]["mesh_id"] = resources.GetKey<Mesh>(mapComp->hexMesh);
             }
-            if (mapComp->grassMat.shader) {
-                j["grid"]["shader_id"] = resources.GetKey<Shader>(mapComp->grassMat.shader);
+            if (mapComp->grassMat && mapComp->grassMat->shader) {
+                j["grid"]["shader_id"] = resources.GetKey<Shader>(mapComp->grassMat->shader);
             }
-            if (mapComp->grassMat.texture) {
-                j["grid"]["grass_tex_id"] = resources.GetKey<Texture>(mapComp->grassMat.texture);
+            if (mapComp->grassMat && mapComp->grassMat->texture) {
+                j["grid"]["grass_tex_id"] = resources.GetKey<Texture>(mapComp->grassMat->texture);
             }
-            if (mapComp->sandMat.texture) {
-                j["grid"]["sand_tex_id"] = resources.GetKey<Texture>(mapComp->sandMat.texture);
+            if (mapComp->sandMat && mapComp->sandMat->texture) {
+                j["grid"]["sand_tex_id"] = resources.GetKey<Texture>(mapComp->sandMat->texture);
             }
         });
 

@@ -87,7 +87,7 @@ add_executable(
         src/ECS/Entity.h
         src/Scenes/Scene.h
         src/Core/Utils.h
-        src/IO/SceneManager.h
+        src/Scenes/SceneManager.h
         src/Scenes/Scene.cpp
         src/Core/EngineContext.h
         src/ECS/Systems/InteractionSystem.h

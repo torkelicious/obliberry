@@ -31,7 +31,7 @@ namespace RenderSystem {
 
                 if (!mat->shader) return;
 
-                renderer.Submit(*meshComp->mesh, *mat, transComp->transform);
+                renderer.Submit(meshComp->mesh, mat, transComp->transform);
             }
         );
     }

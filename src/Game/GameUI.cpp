@@ -86,7 +86,6 @@ void Game::DrawInterface() {
     const float frameMs = m_Context.deltaTime * 1000.0f;
     ImGui::Text("FPS:    %.1f", ImGui::GetIO().Framerate);
     ImGui::TextColored(ThresholdColour(frameMs, 20.0f, 33.0f), "Delta: %.2f ms", frameMs);
-    ImGui::Text("Draws: %u", m_Context.lastDrawCallCount);
     ImGui::End();
 
     Scene *activeScene = m_SceneManager.GetCurrentScene();
@@ -208,7 +207,7 @@ void Game::DrawInterface() {
                         mapComp->grid.EmplaceTile(
                             {q, r},
                             dist(rng) < g_SandDensity ? TileType::Sand : TileType::Grass);
-                MapRuntimeSystem::OnMapChanged(reg, *mapComp, stateComp);
+                MapRuntimeSystem::OnMapChanged(reg, *mapComp, stateComp, m_Context);
             }
         }
 
@@ -269,7 +268,7 @@ void Game::DrawInterface() {
                 if (g_LoadOk) {
                     mapComp->mapFilePath = mapPath;
                     s_LastMapPath = mapPath;
-                    MapRuntimeSystem::OnMapChanged(reg, *mapComp, stateComp);
+                    MapRuntimeSystem::OnMapChanged(reg, *mapComp, stateComp, m_Context);
                 }
             }
         }

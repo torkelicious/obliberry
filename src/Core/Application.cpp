@@ -33,6 +33,7 @@ void Application::Run() {
     context.window = &m_Window;
     context.input = &m_InputManager;
     context.resources = &m_ResourceManager;
+    context.renderer = &renderer;
     context.camera = &camera;
     context.deltaTime = 0.0f;
 
@@ -57,7 +58,7 @@ void Application::Run() {
         previousTime = currentTime;
 
         game.Update(delta.count());
-        game.Render(renderer);
+        game.Render();
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

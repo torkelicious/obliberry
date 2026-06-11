@@ -10,7 +10,7 @@
                 ],
                 "id": "npc_mat",
                 "shader": "base_shader",
-                "texture": "p_south_west"
+                "texture": "p_north_east"
             },
             {
                 "color": [
@@ -21,7 +21,7 @@
                 ],
                 "id": "player_mat",
                 "shader": "base_shader",
-                "texture": "p_north_east"
+                "texture": "p_north_west"
             }
         ],
         "meshes": [
@@ -81,7 +81,7 @@
             "components": {
                 "BillboardComponent": {},
                 "DirectionalTextureComponent": {
-                    "index": 1,
+                    "index": 2,
                     "textures": [
                         "p_east",
                         "p_north_east",
@@ -127,7 +127,7 @@
             "components": {
                 "BillboardComponent": {},
                 "DirectionalTextureComponent": {
-                    "index": 4,
+                    "index": 1,
                     "textures": [
                         "p_east",
                         "p_north_east",
@@ -148,8 +148,8 @@
                 },
                 "TransformComponent": {
                     "position": [
-                        4.329999923706055,
-                        -6.0,
+                        0.0,
+                        1.5,
                         0.05000000074505806
                     ],
                     "scale": [

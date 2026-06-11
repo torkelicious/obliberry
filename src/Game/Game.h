@@ -7,7 +7,7 @@
 #include "Core/Window.h"
 #include "Core/EngineContext.h"
 #include "Renderer/Renderer.h"
-#include "../IO/SceneManager.h"
+#include "../Scenes/SceneManager.h"
 #include "Map/Hex.h"
 
 enum class GameState { MainMenu, Gameplay, Paused, EditorMode };
@@ -23,7 +23,7 @@ public:
 
     void Update(float dt);
 
-    void Render(Renderer &renderer);
+    void Render();
 
     [[nodiscard]] Camera &GetCamera() const { return *m_Context.camera; }
     void SetContext(const EngineContext &context) { m_Context = context; }

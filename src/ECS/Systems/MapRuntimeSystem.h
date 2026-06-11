@@ -63,7 +63,9 @@ namespace MapRuntimeSystem {
         );
     }
 
-    inline void OnMapChanged(Registry &registry, MapComponent &map, MapStateComponent *state) {
+    inline void OnMapChanged(Registry &registry, MapComponent &map, MapStateComponent *state,
+                             EngineContext &ctx) {
+        ctx.renderer->Clean();
         map.needsMeshUpdate = true;
 
         if (state != nullptr) {
@@ -73,7 +75,7 @@ namespace MapRuntimeSystem {
         ResetMovementEntities(registry, map.grid);
     }
 
-    inline void OnMapChanged(Registry &registry) {
+    inline void OnMapChanged(Registry &registry, EngineContext &ctx) {
         MapComponent *map = nullptr;
         MapStateComponent *state = nullptr;
 
@@ -89,7 +91,7 @@ namespace MapRuntimeSystem {
             return;
         }
 
-        OnMapChanged(registry, *map, state);
+        OnMapChanged(registry, *map, state, ctx);
     }
 }
 

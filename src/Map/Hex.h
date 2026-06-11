@@ -14,6 +14,7 @@
 
 // tile types
 // currently used for textures but i'll figure something out
+// todo: not have this hardcoded, use id system maybe
 enum class TileType : uint8_t {
     Grass,
     Sand

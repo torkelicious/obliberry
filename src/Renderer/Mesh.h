@@ -64,6 +64,8 @@ public:
         // IBO is initialized here, after m_VAO is bound, so the element
         // array buffer binding is stored in this VAO and no other.
         m_IBO.SetData(data.indices.data(), static_cast<uint32_t>(data.indices.size()));
+        // uinbind vao bc polluiton cuasing sefgfault
+        glBindVertexArray(0);
     }
 
     template<typename TVertex>
@@ -79,11 +81,16 @@ public:
         m_VBO.Bind();
         m_VAO.AddBuffer(m_VBO, layout);
         m_IBO.SetData(indices.data(), static_cast<uint32_t>(indices.size()));
+        // unbind to avoid polluteed state
+        glBindVertexArray(0);
     }
 
     void Upload(const MeshData &data) {
+        m_VAO.Bind();
         m_VBO.SetData(data.vertices.data(), static_cast<uint32_t>(data.vertices.size() * sizeof(Vertex)));
         m_IBO.SetData(data.indices.data(), static_cast<uint32_t>(data.indices.size()));
+        // unbind to avoid polluted state
+        glBindVertexArray(0);
     }
 
     void Bind() const {

@@ -36,7 +36,6 @@ void Game::Update(float dt) {
         m_SceneManager.LoadScene(
             std::make_unique<Scene>(m_Context, std::move(*m_PendingSceneLoad)));
         m_PendingSceneLoad.reset();
-        return;
     }
 
     DrawInterface();
@@ -45,13 +44,12 @@ void Game::Update(float dt) {
     }
 }
 
-void Game::Render(Renderer &renderer) {
+void Game::Render() {
     if (m_Context.camera) {
-        renderer.SetCamera(*m_Context.camera);
+        m_Context.renderer->SetCamera(*m_Context.camera);
     }
-    renderer.BeginFrame();
-    m_SceneManager.Render(renderer);
-    m_Context.lastDrawCallCount = renderer.GetLastDrawCallCount();
+    m_Context.renderer->BeginFrame();
+    m_SceneManager.Render();
 }
 
 void Game::Shutdown() const {

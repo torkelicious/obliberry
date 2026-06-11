@@ -2,7 +2,7 @@
 #define OBLIBERRY_SCENEMANAGER_H
 
 #include <memory>
-#include "../Scenes/Scene.h"
+#include "Scene.h"
 
 class SceneManager {
 public:
@@ -16,18 +16,15 @@ public:
         }
     }
 
-    // TODO: fix segfault on scene switching
-    // prob related to old render queue?
-
     void Update(float dt) {
         if (m_CurrentScene) {
             m_CurrentScene->Update(dt);
         }
     }
 
-    void Render(Renderer &renderer) {
+    void Render() {
         if (m_CurrentScene) {
-            m_CurrentScene->Render(renderer);
+            m_CurrentScene->Render();
         }
     }
 

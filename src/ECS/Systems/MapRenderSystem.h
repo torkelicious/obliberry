@@ -66,11 +66,11 @@ namespace MapRenderSystem {
                 // draw combined tiles
                 Transform defaultTransform;
                 if (mapComp->grassMesh && mapComp->grassMesh->GetIndexCount() > 0) {
-                    renderer.Submit(*mapComp->grassMesh, mapComp->grassMat,
+                    renderer.Submit(mapComp->grassMesh, mapComp->grassMat,
                                     defaultTransform);
                 }
                 if (mapComp->sandMesh && mapComp->sandMesh->GetIndexCount() > 0) {
-                    renderer.Submit(*mapComp->sandMesh, mapComp->sandMat,
+                    renderer.Submit(mapComp->sandMesh, mapComp->sandMat,
                                     defaultTransform);
                 }
             });
@@ -80,8 +80,8 @@ namespace MapRenderSystem {
         registry.ForEach<MapComponent, MapStateComponent>(
             [&](Entity, MapComponent *mapComp, MapStateComponent *stateComp) {
                 // mouse selection outline
-                if (!mapComp->hexMesh || !mapComp->outlineMat.shader ||
-                    !mapComp->pathToMat.shader) {
+                if (!mapComp->hexMesh || !mapComp->outlineMat->shader ||
+                    !mapComp->pathToMat->shader) {
                     return;
                 }
 
@@ -91,7 +91,7 @@ namespace MapRenderSystem {
                     Transform t;
                     t.SetPosition({worldPos.x, worldPos.y, 0.01f});
                     t.SetScale({1.08f, 1.08f, 1.0f});
-                    renderer.Submit(*mapComp->hexMesh, mapComp->outlineMat, t);
+                    renderer.Submit(mapComp->hexMesh, mapComp->outlineMat, t);
                 }
 
                 // movement destination highlight
@@ -100,7 +100,7 @@ namespace MapRenderSystem {
                     Transform t;
                     t.SetPosition({worldPos.x, worldPos.y, 0.01f});
                     t.SetScale({1.08f, 1.08f, 1.0f});
-                    renderer.Submit(*mapComp->hexMesh, mapComp->pathToMat, t);
+                    renderer.Submit(mapComp->hexMesh, mapComp->pathToMat, t);
                 }
             });
     }

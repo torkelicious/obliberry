@@ -15,6 +15,10 @@ Scene::Scene(const EngineContext &context, std::string scenePath)
 }
 
 void Scene::OnEnter() {
+    if (m_Context.renderer) {
+        m_Context.renderer->Clean();
+    }
+
     EntityFactory::RegisterDeserializers();
     EntityFactory::RegisterSerializers();
     if (!SceneIO::Deserialize(m_ScenePath, *this)) {
@@ -30,12 +34,12 @@ void Scene::Update(float dt) {
     MovementSystem::Update(m_Registry, dt);
 }
 
-void Scene::Render(Renderer &renderer) {
-    MapRenderSystem::RenderTiles(m_Registry, renderer);
-    MapRenderSystem::RenderOverlays(m_Registry, renderer);
+void Scene::Render() {
+    MapRenderSystem::RenderTiles(m_Registry, *m_Context.renderer);
+    MapRenderSystem::RenderOverlays(m_Registry, *m_Context.renderer);
     if (m_Context.camera) {
         SpriteBillboardSystem::Update(m_Registry, m_Context.camera);
     }
-    RenderSystem::Render(m_Registry, renderer);
-    renderer.Flush();
+    RenderSystem::Render(m_Registry, *m_Context.renderer);
+    m_Context.renderer->Flush();
 }

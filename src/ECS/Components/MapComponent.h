@@ -13,10 +13,11 @@ struct MapComponent {
     std::string mapFilePath = PathUtils::Join(MAP_PATH, "default", MAP_FILE_EXTENSION);
     // visual assets
     std::shared_ptr<Mesh> hexMesh;
-    Material grassMat;
-    Material sandMat;
-    Material outlineMat;
-    Material pathToMat;
+
+    std::shared_ptr<Material> grassMat;
+    std::shared_ptr<Material> sandMat;
+    std::shared_ptr<Material> outlineMat;
+    std::shared_ptr<Material> pathToMat;
 
     // batched meshes
     std::shared_ptr<Mesh> grassMesh;
