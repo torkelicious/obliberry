@@ -70,7 +70,7 @@ Texture *Texture::White() {
         glGenTextures(1, &instance->m_ID);
         glBindTexture(GL_TEXTURE_2D, instance->m_ID);
 
-        const uint32_t white = 0xFFFFFFFF;
+        constexpr uint32_t white = 0xFFFFFFFF;
 
         glTexImage2D(
             GL_TEXTURE_2D,

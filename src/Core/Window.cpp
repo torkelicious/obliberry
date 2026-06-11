@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include "Window.h"
 
+#include "Constants.h"
 #include "imgui.h"
 #include "Renderer/GLDebug.h"
 
@@ -88,21 +89,20 @@ void Window::WindowResizeCallback(GLFWwindow *window, const int width, const int
         self->m_Height = height;
     }
 
-    const float targetAspect = 16.0f / 9.0f;
     const float windowAspect = static_cast<float>(width) / height;
     int viewportWidth;
     int viewportHeight;
     int viewportX;
     int viewportY;
 
-    if (windowAspect > targetAspect) {
+    if (windowAspect > TARGET_ASPECT) {
         viewportHeight = height;
-        viewportWidth = static_cast<int>(height * targetAspect);
+        viewportWidth = static_cast<int>(height * TARGET_ASPECT);
         viewportX = (width - viewportWidth) / 2;
         viewportY = 0;
     } else {
         viewportWidth = width;
-        viewportHeight = static_cast<int>(width / targetAspect);
+        viewportHeight = static_cast<int>(width / TARGET_ASPECT);
         viewportX = 0;
         viewportY = (height - viewportHeight) / 2;
     }

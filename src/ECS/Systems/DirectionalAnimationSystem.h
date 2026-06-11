@@ -9,7 +9,7 @@
 
 // used by both PlayerControlSystem and AISystem.
 namespace DirectionalAnimation {
-    inline void UpdateFacing(const Entity entity, const glm::vec2 &direction, const MaterialComponent *mat) {
+    inline void UpdateFacing(const Entity entity, const glm::vec2 direction, const MaterialComponent *) noexcept {
         if (glm::length(direction) <= 0.001f) return;
 
         float degrees = glm::degrees(std::atan2(direction.y, direction.x));
@@ -20,9 +20,6 @@ namespace DirectionalAnimation {
         if (!dir) return;
 
         dir->index = index;
-        if (mat && mat->material && dir->textures[index]) {
-            mat->material->texture = dir->textures[index];
-        }
     }
 }
 

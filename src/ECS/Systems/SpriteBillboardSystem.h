@@ -6,8 +6,8 @@
 #include "Renderer/Camera.h"
 
 namespace SpriteBillboardSystem {
-    inline glm::mat4 GetBillboardMatrix(const glm::vec3 &position, const float width, const float height,
-                                        const Camera &camera) {
+    [[nodiscard]] inline glm::mat4 GetBillboardMatrix(const glm::vec3 &position, const float width, const float height,
+                                                      const Camera &camera) noexcept {
         const glm::vec3 right = camera.GetRightVector();
         const glm::vec3 up = camera.GetUpVector();
         const glm::vec3 forward = glm::cross(right, up);
@@ -20,7 +20,7 @@ namespace SpriteBillboardSystem {
         return model;
     }
 
-    inline void Update(Registry &registry, const Camera *camera) {
+    inline void Update(Registry &registry, const Camera *camera) noexcept {
         if (!camera) return;
 
         registry.ForEach<BillboardComponent, TransformComponent>(

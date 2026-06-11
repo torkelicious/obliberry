@@ -81,7 +81,7 @@ void AssetLoader::LoadMaterials(
 
         resources.LoadFromFactory<Material>(
             id,
-            [shader, texture, color]() {
+            [shader, texture, color] {
                 return std::make_shared<Material>(
                     Material{shader, texture, color}
                 );
@@ -104,7 +104,7 @@ void AssetLoader::LoadMeshes(
         }
         resources.LoadFromFactory<Mesh>(
             id,
-            [factory = it->second, factoryName]() {
+            [factory = it->second, factoryName] {
                 auto mesh = factory();
                 mesh->SetFactoryId(factoryName);
                 return mesh;

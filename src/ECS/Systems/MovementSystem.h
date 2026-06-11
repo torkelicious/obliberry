@@ -2,7 +2,6 @@
 #define OBLIBERRY_MOVEMENT_H
 
 #include <vector>
-#include <utility>
 #include <glm/glm.hpp>
 #include "ECS/ECS.h"
 #include "ECS/Components/MovementComponent.h"
@@ -10,7 +9,7 @@
 #include "ECS/Components/MapComponent.h"
 
 namespace MovementSystem {
-    inline void CancelPath(MovementComponent *moveComp) {
+    inline void CancelPath(MovementComponent *moveComp) noexcept {
         if (!moveComp) return;
         moveComp->isMoving = false;
         moveComp->currentPathIndex = 0;
@@ -18,29 +17,28 @@ namespace MovementSystem {
         moveComp->currentPath.clear();
     }
 
-    inline void SetPath(const Entity entity, std::vector<HexCoords> newPath) {
+    inline void StartPath(const Entity entity) noexcept {
         auto *moveComp = entity.GetComponent<MovementComponent>();
         if (!moveComp) return;
 
-        if (newPath.empty()) {
+        if (moveComp->currentPath.empty()) {
             CancelPath(moveComp);
             return;
         }
 
-        moveComp->currentPath = std::move(newPath);
         moveComp->currentPathIndex = 0;
         moveComp->stepTimer = 0.0f;
         moveComp->isMoving = true;
     }
 
-    inline void Update(Registry &registry, const float dt) {
+    inline void Update(Registry &registry, const float dt) noexcept {
         const MapComponent *map = nullptr;
         registry.ForEach<MapComponent>([&](Entity, const MapComponent *m) { map = m; });
 
         if (!map) return;
 
         registry.ForEach<MovementComponent, TransformComponent>(
-            [&](Entity entity, MovementComponent *moveComp, TransformComponent *transComp) {
+            [&](const Entity entity, MovementComponent *moveComp, TransformComponent *transComp) {
                 if (!moveComp->isMoving) return;
 
                 if (moveComp->currentPathIndex >= moveComp->currentPath.size()) {
@@ -70,7 +68,7 @@ namespace MovementSystem {
         );
     }
 
-    inline void MoveToCenter(const Entity entity) {
+    inline void MoveToCenter(const Entity entity) noexcept {
         auto *moveComp = entity.GetComponent<MovementComponent>();
         auto *transComp = entity.GetComponent<TransformComponent>();
 

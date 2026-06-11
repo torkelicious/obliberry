@@ -82,14 +82,14 @@ namespace Math::HexMath {
     // get 6 neighbors (for odd-r grid!!!)
     inline std::array<HexCoords, HEX_NEIGHBOR_COUNT> GetNeighbors(const HexCoords hex) {
         const int32_t parity = hex.r & 1;
-        const int32_t q_diff[2][HEX_NEIGHBOR_COUNT] = {
-            {1, 0, -1, -1, -1, 0},
-            {1, 1, 0, -1, 0, 1}
-        };
-        const int32_t r_diff[HEX_NEIGHBOR_COUNT] = {0, 1, 1, 0, -1, -1};
 
         std::array<HexCoords, HEX_NEIGHBOR_COUNT> neighbors;
         for (std::size_t i = 0; i < HEX_NEIGHBOR_COUNT; i++) {
+            const int32_t r_diff[HEX_NEIGHBOR_COUNT] = {0, 1, 1, 0, -1, -1};
+            const int32_t q_diff[2][HEX_NEIGHBOR_COUNT] = {
+                {1, 0, -1, -1, -1, 0},
+                {1, 1, 0, -1, 0, 1}
+            };
             neighbors[i] = HexCoords(
                 hex.q + q_diff[parity][i],
                 hex.r + r_diff[i]

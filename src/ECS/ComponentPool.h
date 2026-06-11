@@ -76,7 +76,7 @@ public:
 
     // expose if needed l8r
     const std::vector<T> &GetDenseData() const { return m_Data; }
-    const std::vector<EntityID> &GetDenseEntities() const { return m_IndexToEntity; }
+    [[nodiscard]] const std::vector<EntityID> &GetDenseEntities() const { return m_IndexToEntity; }
 };
 
 #endif //OBLIBERRY_COMPONENTPOOL_H

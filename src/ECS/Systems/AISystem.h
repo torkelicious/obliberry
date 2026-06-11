@@ -13,7 +13,7 @@
 #include <random>
 
 namespace AISystem {
-    inline void Update(Registry &registry, const float dt) {
+    inline void Update(Registry &registry, const float dt) noexcept {
         const MapComponent *map = nullptr;
         registry.ForEach<MapComponent>([&](Entity, const MapComponent *m) { map = m; });
         if (!map) return;
@@ -21,10 +21,14 @@ namespace AISystem {
         HexCoords playerHex{0, 0};
         registry.ForEach<PlayerInputComponent, TransformComponent>(
             [&](Entity, PlayerInputComponent *, const TransformComponent *pt) {
-                glm::vec3 pos = pt->transform.GetPosition();
+                const glm::vec3 pos = pt->transform.GetPosition();
                 playerHex = Math::HexMath::PixelToHex({pos.x, pos.y});
             }
         );
+
+        thread_local std::mt19937 rng(std::random_device{}());
+        std::uniform_int_distribution<size_t> dist(0, map->grid.walkableTiles.size() - 1);
+        std::uniform_real_distribution timeDist(1.0f, 3.0f);
 
         registry.ForEach<MovementComponent, TransformComponent, MaterialComponent>(
             [&](const Entity entity, MovementComponent *move, const TransformComponent *trans,
@@ -38,24 +42,21 @@ namespace AISystem {
                         bool valid = false;
                         int attempts = 10;
 
-                        thread_local std::mt19937 rng(std::random_device{}());
-                        std::uniform_int_distribution<size_t> dist(0, map->grid.walkableTiles.size() - 1);
-
                         while (!valid && attempts-- > 0) {
                             target = map->grid.walkableTiles[dist(rng)];
                             if (target != playerHex) valid = true;
                         }
 
                         if (valid) {
-                            glm::vec3 pos3 = trans->transform.GetPosition();
+                            const glm::vec3 pos3 = trans->transform.GetPosition();
                             const HexCoords startHex = Math::HexMath::PixelToHex({pos3.x, pos3.y});
-                            auto path = map->grid.FindPath(startHex, target);
 
-                            if (!path.empty()) {
-                                MovementSystem::SetPath(entity, std::move(path));
+                            map->grid.FindPath(startHex, target, move->currentPath);
+
+                            if (!move->currentPath.empty()) {
+                                MovementSystem::StartPath(entity);
                             }
 
-                            std::uniform_real_distribution timeDist(1.0f, 3.0f);
                             move->idleTimer = timeDist(rng);
                         }
                     }

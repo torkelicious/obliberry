@@ -317,7 +317,7 @@ void Game::DrawInterface() {
         ImGui::Separator();
 
         static auto s_SelectedEntityID = static_cast<EntityID>(-1);
-        static EntityID s_LastSelectedEntityID = static_cast<EntityID>(-1);
+        static auto s_LastSelectedEntityID = static_cast<EntityID>(-1);
         static std::string s_CachedJson;
 
         ImGui::BeginChild("EntityList",

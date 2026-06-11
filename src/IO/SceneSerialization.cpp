@@ -40,12 +40,12 @@ namespace SceneIO {
         auto &resources = *scene.GetContext().resources;
 
         // register once before loading !!!
-        AssetLoader::RegisterMeshFactory("Quad", []() {
+        AssetLoader::RegisterMeshFactory("Quad", [] {
             auto [vertices, indices] = MeshFactory::CreateQuad();
             return std::make_shared<Mesh>(vertices, indices);
         });
 
-        AssetLoader::RegisterMeshFactory("PointTopHex", []() {
+        AssetLoader::RegisterMeshFactory("PointTopHex", [] {
             auto [vertices, indices] = MeshFactory::CreatePointTopHex(0.5f);
             return std::make_shared<Mesh>(vertices, indices);
         });

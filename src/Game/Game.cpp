@@ -46,7 +46,7 @@ void Game::Update(const float dt) {
     }
 }
 
-void Game::Render() {
+void Game::Render() const {
     if (m_Context.camera) {
         m_Context.renderer->SetCamera(*m_Context.camera);
     }

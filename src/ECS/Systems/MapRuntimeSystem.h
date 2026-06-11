@@ -75,7 +75,7 @@ namespace MapRuntimeSystem {
         ResetMovementEntities(registry, map.grid);
     }
 
-    inline void OnMapChanged(Registry &registry, EngineContext &ctx) {
+    inline void OnMapChanged(Registry &registry, const EngineContext &ctx) {
         MapComponent *map = nullptr;
         MapStateComponent *state = nullptr;
 

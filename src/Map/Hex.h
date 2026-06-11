@@ -68,15 +68,17 @@ public:
     }
 
     // Performs A* Pathfinding from a start tile to a goal tile
-    // Returns an ordered sequence of HexCoords from start to finish
-    std::vector<HexCoords> FindPath(HexCoords start, const HexCoords goal) const {
-        std::vector<HexCoords> emptyPath;
+    // Populates an ordered sequence of HexCoords from start to finish
+    void FindPath(const HexCoords start, const HexCoords goal, std::vector<HexCoords> &outPath) const noexcept {
+        outPath.clear();
 
         if (const Tile *targetTile = Get(goal); !targetTile || !targetTile->walkable)
-            return emptyPath;
+            return;
 
-        if (start == goal)
-            return {start};
+        if (start == goal) {
+            outPath.push_back(start);
+            return;
+        }
 
         struct NodeRecord {
             HexCoords parent;
@@ -127,17 +129,16 @@ public:
 
             // reached goal
             if (current == goal) {
-                std::vector<HexCoords> path;
                 HexCoords trace = goal;
 
                 while (trace != start) {
-                    path.push_back(trace);
+                    outPath.push_back(trace);
                     trace = records[trace].parent;
                 }
 
-                path.push_back(start);
-                std::ranges::reverse(path);
-                return path;
+                outPath.push_back(start);
+                std::ranges::reverse(outPath);
+                return;
             }
 
             // Loop through all neighbors of currently evaluating tile
@@ -167,7 +168,6 @@ public:
                 }
             }
         }
-        return emptyPath;
     }
 };
 

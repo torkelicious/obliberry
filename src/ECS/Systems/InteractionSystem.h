@@ -13,7 +13,7 @@
 #include "Renderer/Camera.h"
 
 namespace InteractionSystem {
-    inline glm::vec2 Update(Registry &registry, const EngineContext &ctx) {
+    [[nodiscard]] inline glm::vec2 Update(Registry &registry, const EngineContext &ctx) noexcept {
         const float windowWidth = static_cast<float>(ctx.window->GetWidth());
         const float windowHeight = static_cast<float>(ctx.window->GetHeight());
 

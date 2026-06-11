@@ -36,7 +36,7 @@ public:
         m_Stride += count * VertexBufferElement::GetSizeOfType(type);
     }
 
-    const std::vector<VertexBufferElement> &GetElements() const { return m_Elements; }
+    [[nodiscard]] const std::vector<VertexBufferElement> &GetElements() const { return m_Elements; }
     unsigned int GetStride() const { return m_Stride; }
 };
 

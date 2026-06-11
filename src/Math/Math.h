@@ -14,28 +14,28 @@ namespace Math::Projection {
         }
 
         bool Intersects(const AABB &other) const {
-            return (min.x <= other.max.x && max.x >= other.min.x) &&
-                   (min.y <= other.max.y && max.y >= other.min.y);
+            return min.x <= other.max.x && max.x >= other.min.x &&
+                   min.y <= other.max.y && max.y >= other.min.y;
         }
     };
 
-    inline glm::vec2 UnprojectToGround(const glm::mat4 &invVP, float ndcX, float ndcY) {
+    inline glm::vec2 UnprojectToGround(const glm::mat4 &invVP, const float ndcX, const float ndcY) {
         glm::vec4 nearWorld = invVP * glm::vec4(ndcX, ndcY, -1.0f, 1.0f);
         glm::vec4 farWorld = invVP * glm::vec4(ndcX, ndcY, 1.0f, 1.0f);
         nearWorld /= nearWorld.w;
         farWorld /= farWorld.w;
 
-        glm::vec3 rayDir = glm::vec3(farWorld) - glm::vec3(nearWorld);
+        const glm::vec3 rayDir = glm::vec3(farWorld) - glm::vec3(nearWorld);
         if (std::abs(rayDir.z) < 0.0001f) return {nearWorld.x, nearWorld.y};
 
-        float t = -nearWorld.z / rayDir.z;
+        const float t = -nearWorld.z / rayDir.z;
         glm::vec3 hit = glm::vec3(nearWorld) + t * rayDir;
         return {hit.x, hit.y};
     }
 
-    inline AABB GetCameraGroundAABB(const Camera *camera, float aspect) {
+    inline AABB GetCameraGroundAABB(const Camera *camera, const float aspect) {
         AABB bounds;
-        glm::mat4 invVP = glm::inverse(camera->GetVP(aspect));
+        const glm::mat4 invVP = glm::inverse(camera->GetVP(aspect));
 
         // unproject the corners of the screen down to the z0 grid
         bounds.Expand(UnprojectToGround(invVP, -1.0f, -1.0f)); // Bottom-Left

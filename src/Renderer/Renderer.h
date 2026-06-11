@@ -10,16 +10,17 @@
 #include "glm/glm.hpp"
 
 struct RenderCommand {
-    std::shared_ptr<const Mesh> mesh;
-    std::shared_ptr<const Material> material;
+    const Mesh *mesh;
+    const Material *material;
     Transform transform;
+    const Texture *textureOverride;
     int sortKeyDepth;
     int sortKeyZ;
 };
 
 struct InstancedRenderCommand {
-    std::shared_ptr<const Mesh> mesh;
-    std::shared_ptr<const Material> material;
+    const Mesh *mesh;
+    const Material *material;
     const std::vector<glm::mat4> *transforms;
     bool isDirty;
 };
@@ -28,18 +29,19 @@ class Renderer {
 public:
     void SetCamera(const Camera &camera);
 
-    const Camera *GetCamera() {
+    [[nodiscard]] const Camera *GetCamera() const noexcept {
         return m_Camera;
     }
 
     void BeginFrame();
 
-    void Submit(const std::shared_ptr<const Mesh> &mesh,
-                const std::shared_ptr<const Material> &material,
-                const Transform &transform);
+    void Submit(const Mesh *mesh,
+                const Material *material,
+                const Transform &transform,
+                const Texture *textureOverride = nullptr);
 
-    void Submit(const std::shared_ptr<const Mesh> &mesh,
-                const std::shared_ptr<const Material> &material,
+    void Submit(const Mesh *mesh,
+                const Material *material,
                 const std::vector<glm::mat4> *transforms,
                 bool isDirty = true);
 

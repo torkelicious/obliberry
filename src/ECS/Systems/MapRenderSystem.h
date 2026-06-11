@@ -1,7 +1,6 @@
 #ifndef OBLIBERRY_MAPRENDERSYSTEM_H
 #define OBLIBERRY_MAPRENDERSYSTEM_H
 
-#include <ranges>
 #include <algorithm>
 #include "ECS/Components/MapComponent.h"
 #include "ECS/Components/MapStateComponent.h"
@@ -86,18 +85,20 @@ namespace MapRenderSystem {
                 }
 
                 if (!mapComp->visibleGrass.empty()) {
-                    renderer.Submit(mapComp->hexMesh, mapComp->grassMat, &mapComp->visibleGrass, shouldUpdateBuffers);
+                    renderer.Submit(mapComp->hexMesh.get(), mapComp->grassMat.get(), &mapComp->visibleGrass,
+                                    shouldUpdateBuffers);
                 }
 
                 if (!mapComp->visibleSand.empty()) {
-                    renderer.Submit(mapComp->hexMesh, mapComp->sandMat, &mapComp->visibleSand, shouldUpdateBuffers);
+                    renderer.Submit(mapComp->hexMesh.get(), mapComp->sandMat.get(), &mapComp->visibleSand,
+                                    shouldUpdateBuffers);
                 }
             });
     }
 
     inline void RenderOverlays(Registry &registry, Renderer &renderer) {
         registry.ForEach<MapComponent, MapStateComponent>(
-            [&](Entity, MapComponent *mapComp, MapStateComponent *stateComp) {
+            [&](Entity, MapComponent *mapComp, const MapStateComponent *stateComp) {
                 if (!mapComp->hexMesh ||
                     !mapComp->outlineMat->shader ||
                     !mapComp->pathToMat->shader) {
@@ -109,7 +110,7 @@ namespace MapRenderSystem {
                     Transform t;
                     t.SetPosition({worldPos.x, worldPos.y, 0.01f});
                     t.SetScale({1.08f, 1.08f, 1.0f});
-                    renderer.Submit(mapComp->hexMesh, mapComp->outlineMat, t);
+                    renderer.Submit(mapComp->hexMesh.get(), mapComp->outlineMat.get(), t);
                 }
 
                 if (stateComp->hasPathTo) {
@@ -117,7 +118,7 @@ namespace MapRenderSystem {
                     Transform t;
                     t.SetPosition({worldPos.x, worldPos.y, 0.01f});
                     t.SetScale({1.08f, 1.08f, 1.0f});
-                    renderer.Submit(mapComp->hexMesh, mapComp->pathToMat, t);
+                    renderer.Submit(mapComp->hexMesh.get(), mapComp->pathToMat.get(), t);
                 }
             });
     }

@@ -69,8 +69,7 @@ void Shader::SetUniformMat4(const std::string &name, const glm::mat4 &mat) {
 GLint Shader::GetUniformLocation(const std::string &name) {
     if (m_ID == 0) return -1;
 
-    const auto it = m_UniformCache.find(name);
-    if (it != m_UniformCache.end())
+    if (const auto it = m_UniformCache.find(name); it != m_UniformCache.end())
         return it->second;
 
     GLint location = glGetUniformLocation(m_ID, name.c_str());

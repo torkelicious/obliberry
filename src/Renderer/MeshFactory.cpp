@@ -12,7 +12,7 @@ MeshData MeshFactory::CreatePointTopHex(const float size) {
         const float angle = (i * 60.0f - 90.0f) * PI / 180.0f;
 
         float x = std::cos(angle) * size;
-        float y = sin(angle) * size;
+        float y = std::sin(angle) * size;
 
         const glm::vec2 uv = glm::vec2(x, y) * 0.5f + 0.5f;
 

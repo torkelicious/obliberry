@@ -28,10 +28,10 @@ void VertexArray::AddBuffer(const VertexBuffer &vb, const VertexBufferLayout &la
 void VertexArray::AddInstancedBuffer(const VertexBuffer &vb, const unsigned int attributeStartLoc) const {
     Bind();
     vb.Bind();
-    const std::size_t vec4size = sizeof(glm::vec4);
-    const std::size_t stride = sizeof(glm::mat4);
 
     for (unsigned int i = 0; i < 4; i++) {
+        constexpr std::size_t stride = sizeof(glm::mat4);
+        constexpr std::size_t vec4size = sizeof(glm::vec4);
         glEnableVertexAttribArray(attributeStartLoc + i);
         glVertexAttribPointer(attributeStartLoc + i, 4,
                               GL_FLOAT,

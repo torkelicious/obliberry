@@ -20,7 +20,7 @@ public:
 
     void Update(float dt);
 
-    void Render();
+    void Render() const;
 
     [[nodiscard]] Camera &GetCamera() const { return *m_Context.camera; }
     void SetContext(const EngineContext &context) { m_Context = context; }

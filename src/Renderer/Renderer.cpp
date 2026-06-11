@@ -17,18 +17,19 @@ void Renderer::BeginFrame() {
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void Renderer::Submit(const std::shared_ptr<const Mesh> &mesh,
-                      const std::shared_ptr<const Material> &material,
-                      const Transform &transform) {
+void Renderer::Submit(const Mesh *mesh,
+                      const Material *material,
+                      const Transform &transform,
+                      const Texture *textureOverride) {
     const glm::vec3 &pos = transform.GetPosition();
     const int depth = static_cast<int>(std::lround((pos.x + pos.y) * 100.0f));
     const int z = static_cast<int>(std::lround(pos.z * 100.0f));
-    m_Commands.push_back({mesh, material, transform, depth, z});
+    m_Commands.push_back({mesh, material, transform, textureOverride, depth, z});
 }
 
 // instanced calls
-void Renderer::Submit(const std::shared_ptr<const Mesh> &mesh,
-                      const std::shared_ptr<const Material> &material,
+void Renderer::Submit(const Mesh *mesh,
+                      const Material *material,
                       const std::vector<glm::mat4> *transforms,
                       const bool isDirty) {
     if (!transforms || transforms->empty()) return;
@@ -39,24 +40,36 @@ void Renderer::Flush() {
     std::ranges::sort(m_Commands, [](const RenderCommand &a, const RenderCommand &b) {
         if (a.sortKeyZ != b.sortKeyZ) return a.sortKeyZ < b.sortKeyZ;
         if (a.sortKeyDepth != b.sortKeyDepth) return a.sortKeyDepth > b.sortKeyDepth;
-        if (a.material.get() != b.material.get()) return a.material.get() < b.material.get();
-        return a.mesh.get() < b.mesh.get();
+        if (a.material != b.material) return a.material < b.material;
+        if (a.textureOverride != b.textureOverride) return a.textureOverride < b.textureOverride;
+        return a.mesh < b.mesh;
     });
 
-    std::shared_ptr<const Material> currentMaterial = nullptr;
-    std::shared_ptr<const Mesh> currentMesh = nullptr;
+    const Material *currentMaterial = nullptr;
+    const Texture *currentTexture = nullptr;
+    const Mesh *currentMesh = nullptr;
 
     for (const auto &cmd: m_Commands) {
         if (cmd.material != currentMaterial) {
             cmd.material->shader->Bind();
             cmd.material->shader->SetUniformMat4("u_VP", m_VP);
-            const auto *tex =
-                    cmd.material->texture ? cmd.material->texture.get() : Texture::White();
-            tex->Bind(0);
-            cmd.material->shader->SetUniform1i("u_Texture", 0);
             cmd.material->shader->SetUniformVec4("u_Color", cmd.material->color);
             currentMaterial = cmd.material;
+            currentTexture = nullptr;
         }
+
+        const Texture *texToBind = cmd.textureOverride
+                                       ? cmd.textureOverride
+                                       : cmd.material->texture
+                                             ? cmd.material->texture.get()
+                                             : Texture::White();
+
+        if (texToBind != currentTexture) {
+            texToBind->Bind(0);
+            cmd.material->shader->SetUniform1i("u_Texture", 0);
+            currentTexture = texToBind;
+        }
+
         if (cmd.mesh != currentMesh) {
             cmd.mesh->Bind();
             currentMesh = cmd.mesh;
@@ -69,11 +82,10 @@ void Renderer::Flush() {
 
 void Renderer::InstancedFlush() {
     std::ranges::sort(m_InstancedCommands, [](const InstancedRenderCommand &a, const InstancedRenderCommand &b) {
-        if (a.material.get() != b.material.get()) return a.material.get() < b.material.get();
-        return a.mesh.get() < b.mesh.get();
+        if (a.material != b.material) return a.material < b.material;
+        return a.mesh < b.mesh;
     });
-
-    std::shared_ptr<const Material> currentMaterial = nullptr;
+    const Material *currentMaterial = nullptr;
 
     for (const auto &[mesh, material, transforms, isDirty]: m_InstancedCommands) {
         if (transforms->empty()) { continue; }
@@ -89,7 +101,7 @@ void Renderer::InstancedFlush() {
 
         size_t instanceCount = transforms->size();
         if (instanceCount > MAX_INSTANCES) {
-            std::cerr << "Warning: Exceeded MAX_INSTANCES! Truncating to " << MAX_INSTANCES << ".\n";
+            std::cerr << "Exceeded MAX_INSTANCES Truncating to " << MAX_INSTANCES << ".\n";
             instanceCount = MAX_INSTANCES;
         }
 

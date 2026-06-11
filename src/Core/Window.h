@@ -18,7 +18,7 @@ public:
 
     void SwapBuffers() const;
 
-    bool ShouldClose() const { return glfwWindowShouldClose(m_Window); }
+    [[nodiscard]] bool ShouldClose() const { return glfwWindowShouldClose(m_Window); }
 
     void Close() const { glfwSetWindowShouldClose(m_Window, true); }
 

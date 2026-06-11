@@ -13,7 +13,7 @@
 #include "ECS/Systems/DirectionalAnimationSystem.h"
 
 namespace PlayerControlSystem {
-    inline void Update(Registry &registry, const EngineContext &ctx, const glm::vec2 worldPos) {
+    inline void Update(Registry &registry, const EngineContext &ctx, const glm::vec2 worldPos) noexcept {
         const MapComponent *map = nullptr;
         MapStateComponent *state = nullptr;
 
@@ -26,9 +26,9 @@ namespace PlayerControlSystem {
 
         registry.ForEach<PlayerInputComponent, TransformComponent, MovementComponent, MaterialComponent>(
             [&](const Entity entity, const PlayerInputComponent *input, const TransformComponent *trans,
-                const MovementComponent *move,
+                MovementComponent *move,
                 const MaterialComponent *mat) {
-                glm::vec2 pPos = trans->transform.GetPosition();
+                const glm::vec2 pPos = trans->transform.GetPosition();
                 glm::vec2 targetDir;
 
                 if (move->isMoving && move->currentPathIndex < move->currentPath.size()) {
@@ -46,12 +46,12 @@ namespace PlayerControlSystem {
                                                    ? move->currentPath[move->currentPathIndex]
                                                    : Math::HexMath::PixelToHex({pPos.x, pPos.y});
 
-                    auto path = map->grid.FindPath(startHex, state->selectedHex);
+                    map->grid.FindPath(startHex, state->selectedHex, move->currentPath);
 
-                    if (!path.empty()) {
+                    if (!move->currentPath.empty()) {
                         state->pathTo = state->selectedHex;
                         state->hasPathTo = true;
-                        MovementSystem::SetPath(entity, std::move(path));
+                        MovementSystem::StartPath(entity);
                     }
                 }
 
