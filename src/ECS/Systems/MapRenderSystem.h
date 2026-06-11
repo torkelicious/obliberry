@@ -2,7 +2,7 @@
 #define OBLIBERRY_MAPRENDERSYSTEM_H
 
 #include <ranges>
-
+#include <algorithm>
 #include "ECS/Components/MapComponent.h"
 #include "ECS/Components/MapStateComponent.h"
 #include "ECS/Registry.h"
@@ -12,77 +12,85 @@
 #include "Math/Math.h"
 
 namespace MapRenderSystem {
-    inline void GenerateMapChunks(const HexGrid &grid, std::unordered_map<glm::ivec2, MapChunk> &chunks) {
-        for (auto &chunk: chunks | std::views::values) {
-            chunk.grassTransforms.clear();
-            chunk.sandTransforms.clear();
-            chunk.bounds = Math::Projection::AABB();
-        }
+    [[nodiscard]] inline bool Contains(const Math::Projection::AABB &outer,
+                                       const Math::Projection::AABB &inner) noexcept {
+        return outer.min.x <= inner.min.x && outer.max.x >= inner.max.x &&
+               outer.min.y <= inner.min.y && outer.max.y >= inner.max.y;
+    }
 
-        for (const auto &tile: grid.tiles | std::views::values) {
-            const glm::vec2 &worldPos = tile.worldPos;
+    [[nodiscard]] inline Math::Projection::AABB CalculateBufferedAABB(const Math::Projection::AABB &viewAABB,
+                                                                      const float bufferSize = HEX_SIZE * 4.0f)
+        noexcept {
+        Math::Projection::AABB buffered = viewAABB;
+        buffered.min -= glm::vec2(bufferSize);
+        buffered.max += glm::vec2(bufferSize);
+        return buffered;
+    }
 
-            glm::ivec2 chunkIdx = {
-                static_cast<int>(std::floor(worldPos.x / CHUNK_SIZE)),
-                static_cast<int>(std::floor(worldPos.y / CHUNK_SIZE))
-            };
+    struct GridBounds {
+        int minQ, maxQ;
+        int minR, maxR;
+    };
 
-            auto &chunk = chunks[chunkIdx];
-            chunk.bounds.Expand(worldPos);
+    [[nodiscard]] inline GridBounds GetGridBoundsForAABB(const Math::Projection::AABB &aabb) noexcept {
+        const HexCoords tl = Math::HexMath::PixelToHex({aabb.min.x, aabb.max.y});
+        const HexCoords tr = Math::HexMath::PixelToHex({aabb.max.x, aabb.max.y});
+        const HexCoords bl = Math::HexMath::PixelToHex({aabb.min.x, aabb.min.y});
+        const HexCoords br = Math::HexMath::PixelToHex({aabb.max.x, aabb.min.y});
 
-            glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(worldPos.x, worldPos.y, 0.0f));
-            if (tile.type == TileType::Grass) {
-                chunk.grassTransforms.push_back(translationMatrix);
-            } else if (tile.type == TileType::Sand) {
-                chunk.sandTransforms.push_back(translationMatrix);
-            }
-        }
+        const int minQ = std::min({tl.q, tr.q, bl.q, br.q});
+        const int maxQ = std::max({tl.q, tr.q, bl.q, br.q});
+        const int minR = std::min({tl.r, tr.r, bl.r, br.r});
+        const int maxR = std::max({tl.r, tr.r, bl.r, br.r});
+
+        return {minQ - 1, maxQ + 1, minR - 1, maxR + 1};
     }
 
     inline void RenderTiles(Registry &registry, Renderer &renderer, EngineContext &ctx) {
-        Math::Projection::AABB cameraBounds =
+        const Math::Projection::AABB cameraBounds =
                 Math::Projection::GetCameraGroundAABB(renderer.GetCamera(), TARGET_ASPECT);
 
         registry.ForEach<MapComponent, MapStateComponent>(
-            [&](Entity, MapComponent *mapComp, MapStateComponent *stateComp) {
+            [&](Entity, MapComponent *mapComp, const MapStateComponent *stateComp) {
                 if (!mapComp->hexMesh) {
                     mapComp->hexMesh = std::make_shared<Mesh>(MeshFactory::CreatePointTopHex(HEX_SIZE));
                 }
 
-                if (mapComp->needsMeshUpdate) {
-                    GenerateMapChunks(mapComp->grid, mapComp->chunks);
-                }
-
-                bool cameraMoved = (cameraBounds.min != mapComp->lastViewBounds.min ||
-                                    cameraBounds.max != mapComp->lastViewBounds.max);
-                bool shouldUpdateBuffers = mapComp->needsMeshUpdate || cameraMoved;
+                const bool isContained = Contains(mapComp->bufferedRenderAABB, cameraBounds);
+                const bool shouldUpdateBuffers = mapComp->needsMeshUpdate || !isContained;
 
                 if (shouldUpdateBuffers) {
-                    mapComp->activeGrass.clear();
-                    mapComp->activeSand.clear();
+                    mapComp->bufferedRenderAABB = CalculateBufferedAABB(cameraBounds);
 
-                    for (auto &[idx, chunk]: mapComp->chunks) {
-                        if (!cameraBounds.Intersects(chunk.bounds)) {
-                            continue;
+                    mapComp->visibleGrass.clear();
+                    mapComp->visibleSand.clear();
+
+                    const GridBounds bounds = GetGridBoundsForAABB(mapComp->bufferedRenderAABB);
+
+                    for (int r = bounds.minR; r <= bounds.maxR; ++r) {
+                        for (int q = bounds.minQ; q <= bounds.maxQ; ++q) {
+                            if (const Tile *tile = mapComp->grid.Get(HexCoords(q, r))) {
+                                const glm::mat4 translationMatrix = glm::translate(
+                                    glm::mat4(1.0f), glm::vec3(tile->worldPos.x, tile->worldPos.y, 0.0f));
+
+                                if (tile->type == TileType::Grass) {
+                                    mapComp->visibleGrass.push_back(translationMatrix);
+                                } else if (tile->type == TileType::Sand) {
+                                    mapComp->visibleSand.push_back(translationMatrix);
+                                }
+                            }
                         }
-
-                        mapComp->activeGrass.insert(mapComp->activeGrass.end(), chunk.grassTransforms.begin(),
-                                                    chunk.grassTransforms.end());
-                        mapComp->activeSand.insert(mapComp->activeSand.end(), chunk.sandTransforms.begin(),
-                                                   chunk.sandTransforms.end());
                     }
 
-                    mapComp->lastViewBounds = cameraBounds;
                     mapComp->needsMeshUpdate = false;
                 }
 
-                // prevent desync
-                if (!mapComp->activeGrass.empty()) {
-                    renderer.Submit(mapComp->hexMesh, mapComp->grassMat, &mapComp->activeGrass, shouldUpdateBuffers);
+                if (!mapComp->visibleGrass.empty()) {
+                    renderer.Submit(mapComp->hexMesh, mapComp->grassMat, &mapComp->visibleGrass, shouldUpdateBuffers);
                 }
 
-                if (!mapComp->activeSand.empty()) {
-                    renderer.Submit(mapComp->hexMesh, mapComp->sandMat, &mapComp->activeSand, shouldUpdateBuffers);
+                if (!mapComp->visibleSand.empty()) {
+                    renderer.Submit(mapComp->hexMesh, mapComp->sandMat, &mapComp->visibleSand, shouldUpdateBuffers);
                 }
             });
     }

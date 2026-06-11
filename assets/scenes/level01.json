@@ -1,165 +1,171 @@
 {
-  "assets": {
-    "textures": [
-      {
-        "id": "p_east",
-        "path": "assets/textures/player/player_e.png"
-      },
-      {
-        "id": "p_north_east",
-        "path": "assets/textures/player/player_ne.png"
-      },
-      {
-        "id": "p_north_west",
-        "path": "assets/textures/player/player_nw.png"
-      },
-      {
-        "id": "p_west",
-        "path": "assets/textures/player/player_w.png"
-      },
-      {
-        "id": "p_south_west",
-        "path": "assets/textures/player/player_sw.png"
-      },
-      {
-        "id": "p_south_east",
-        "path": "assets/textures/player/player_se.png"
-      },
-      {
-        "id": "grass_tex",
-        "path": "assets/textures/HexGrass.png"
-      },
-      {
-        "id": "sand_tex",
-        "path": "assets/textures/HexSand.png"
-      }
-    ],
-    "shaders": [
-      {
-        "id": "base_shader",
-        "vertex": "assets/shaders/base.vert",
-        "fragment": "assets/shaders/base.frag"
-      }
-    ],
-    "meshes": [
-      {
-        "id": "p_mesh",
-        "factory": "Quad"
-      },
-      {
-        "id": "hex_mesh",
-        "factory": "PointTopHex"
-      }
-    ],
-    "materials": [
-      {
-        "id": "player_mat",
-        "shader": "base_shader",
-        "texture": "p_east",
-        "color": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
+    "assets": {
+        "materials": [
+            {
+                "color": [
+                    1.0,
+                    0.5,
+                    0.5,
+                    1.0
+                ],
+                "id": "npc_mat",
+                "shader": "base_shader",
+                "texture": "p_north_east"
+            },
+            {
+                "color": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "id": "player_mat",
+                "shader": "base_shader",
+                "texture": "p_north_east"
+            }
+        ],
+        "meshes": [
+            {
+                "factory": "PointTopHex",
+                "id": "hex_mesh"
+            },
+            {
+                "factory": "Quad",
+                "id": "p_mesh"
+            }
+        ],
+        "shaders": [
+            {
+                "fragment": "assets/shaders/base.frag",
+                "id": "base_shader",
+                "vertex": "assets/shaders/base.vert"
+            }
+        ],
+        "textures": [
+            {
+                "id": "sand_tex",
+                "path": "assets/textures/HexSand.png"
+            },
+            {
+                "id": "grass_tex",
+                "path": "assets/textures/HexGrass.png"
+            },
+            {
+                "id": "p_south_east",
+                "path": "assets/textures/player/player_se.png"
+            },
+            {
+                "id": "p_south_west",
+                "path": "assets/textures/player/player_sw.png"
+            },
+            {
+                "id": "p_west",
+                "path": "assets/textures/player/player_w.png"
+            },
+            {
+                "id": "p_north_west",
+                "path": "assets/textures/player/player_nw.png"
+            },
+            {
+                "id": "p_north_east",
+                "path": "assets/textures/player/player_ne.png"
+            },
+            {
+                "id": "p_east",
+                "path": "assets/textures/player/player_e.png"
+            }
         ]
-      },
-      {
-        "id": "npc_mat",
-        "shader": "base_shader",
-        "texture": "p_east",
-        "color": [
-          1.0,
-          0.5,
-          0.5,
-          1.0
-        ]
-      }
-    ]
-  },
-  "grid": {
-    "map_file": "assets/maps/level01.obmap",
-    "mesh_id": "hex_mesh",
-    "shader_id": "base_shader",
-    "grass_tex_id": "grass_tex",
-    "sand_tex_id": "sand_tex"
-  },
-  "entities": [
-    {
-      "name": "Player",
-      "components": {
-        "TransformComponent": {
-          "position": [
-            0.0,
-            0.0,
-            0.05
-          ],
-          "scale": [
-            0.5,
-            1.0,
-            1.0
-          ]
-        },
-        "MeshComponent": {
-          "mesh_id": "p_mesh"
-        },
-        "MaterialComponent": {
-          "material_id": "player_mat"
-        },
-        "MovementComponent": {
-          "timePerStep": 0.15
-        },
-        "PlayerInputComponent": {},
-        "DirectionalTextureComponent": {
-          "textures": [
-            "p_east",
-            "p_north_east",
-            "p_north_west",
-            "p_west",
-            "p_south_west",
-            "p_south_east"
-          ]
-        },
-        "BillboardComponent": {
-        }
-      }
     },
-    {
-      "name": "NPC",
-      "components": {
-        "TransformComponent": {
-          "position": [
-            2.0,
-            2.0,
-            0.05
-          ],
-          "scale": [
-            1.0,
-            1.0,
-            1.0
-          ]
+    "entities": [
+        {
+            "components": {
+                "BillboardComponent": {},
+                "DirectionalTextureComponent": {
+                    "index": 1,
+                    "textures": [
+                        "p_east",
+                        "p_north_east",
+                        "p_north_west",
+                        "p_west",
+                        "p_south_west",
+                        "p_south_east"
+                    ]
+                },
+                "MaterialComponent": {
+                    "material_id": "player_mat"
+                },
+                "MeshComponent": {
+                    "mesh_id": "p_mesh"
+                },
+                "MovementComponent": {
+                    "timePerStep": 0.15000000596046448
+                },
+                "PlayerInputComponent": {
+                    "Down": 83,
+                    "Left": 65,
+                    "LeftClick": 0,
+                    "Quit": 256,
+                    "Right": 68,
+                    "RightClick": 1,
+                    "Up": 87
+                },
+                "TransformComponent": {
+                    "position": [
+                        0.0,
+                        0.0,
+                        0.05000000074505806
+                    ],
+                    "scale": [
+                        0.5,
+                        1.0,
+                        1.0
+                    ]
+                }
+            }
         },
-        "MeshComponent": {
-          "mesh_id": "p_mesh"
-        },
-        "MaterialComponent": {
-          "material_id": "npc_mat"
-        },
-        "MovementComponent": {
-          "timePerStep": 0.15
-        },
-        "DirectionalTextureComponent": {
-          "textures": [
-            "p_east",
-            "p_north_east",
-            "p_north_west",
-            "p_west",
-            "p_south_west",
-            "p_south_east"
-          ]
-        },
-        "BillboardComponent": {
+        {
+            "components": {
+                "BillboardComponent": {},
+                "DirectionalTextureComponent": {
+                    "index": 1,
+                    "textures": [
+                        "p_east",
+                        "p_north_east",
+                        "p_north_west",
+                        "p_west",
+                        "p_south_west",
+                        "p_south_east"
+                    ]
+                },
+                "MaterialComponent": {
+                    "material_id": "npc_mat"
+                },
+                "MeshComponent": {
+                    "mesh_id": "p_mesh"
+                },
+                "MovementComponent": {
+                    "timePerStep": 0.15000000596046448
+                },
+                "TransformComponent": {
+                    "position": [
+                        3.4639999866485596,
+                        6.0,
+                        0.05000000074505806
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                }
+            }
         }
-      }
+    ],
+    "grid": {
+        "grass_tex_id": "grass_tex",
+        "map_file": "assets/maps/level01.obmap",
+        "mesh_id": "hex_mesh",
+        "sand_tex_id": "sand_tex",
+        "shader_id": "base_shader"
     }
-  ]
 }
