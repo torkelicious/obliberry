@@ -109,6 +109,7 @@ add_executable(
         src/ECS/Components/MapStateComponent.h
         src/IO/SceneSerialization.cpp
         src/IO/SceneSerialization.h
+        src/Map/HexCulling.h
 )
 
 target_include_directories(

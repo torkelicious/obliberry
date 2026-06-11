@@ -35,8 +35,7 @@ void Scene::Update(float dt) {
 }
 
 void Scene::Render() {
-    MapRenderSystem::RenderTiles(m_Registry, *m_Context.renderer);
-    MapRenderSystem::RenderOverlays(m_Registry, *m_Context.renderer);
+    MapRenderSystem::RenderAll(m_Registry, m_Context);
     if (m_Context.camera) {
         SpriteBillboardSystem::Update(m_Registry, m_Context.camera);
     }

@@ -10,7 +10,7 @@
 
 class Camera {
 public:
-    glm::vec2 Position = {0.0f, 0.0f};
+    glm::vec3 Position = {0.0f, 0.0f, 0.0f};
     float Zoom = 1.5f;
 
     float AngleX = 55.0f; // tilt down
@@ -116,7 +116,8 @@ public:
     }
 
 private:
-    mutable glm::vec2 m_CachePos{
+    mutable glm::vec3 m_CachePos{
+        std::numeric_limits<float>::max(),
         std::numeric_limits<float>::max(),
         std::numeric_limits<float>::max()
     };

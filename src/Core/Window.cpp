@@ -66,7 +66,6 @@ bool Window::Init(unsigned int width, unsigned int height, const char *title) {
         : std::cout << "Debug unavailable" << std::endl;
 
     glViewport(0, 0, width, height);
-    glfwSwapInterval(1);
 
     glfwSetWindowUserPointer(m_Window, this);
 

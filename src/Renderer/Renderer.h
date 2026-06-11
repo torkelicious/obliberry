@@ -7,8 +7,6 @@
 #include "Transform.h"
 #include "glm/glm.hpp"
 
-glm::mat4 TransformToMatrix(const Transform &t);
-
 struct RenderCommand {
     std::shared_ptr<const Mesh> mesh;
     std::shared_ptr<const Material> material;
@@ -20,6 +18,10 @@ struct RenderCommand {
 class Renderer {
 public:
     void SetCamera(const Camera &camera);
+
+    const Camera *GetCamera() {
+        return m_Camera;
+    }
 
     void BeginFrame();
 

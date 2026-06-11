@@ -59,7 +59,7 @@ namespace InteractionSystem {
             glm::mat4 invRot = glm::inverse(ctx.camera->GetRotation());
             glm::vec4 worldPan =
                     invRot * glm::vec4(screenPan.x, screenPan.y, 0.0f, 0.0f);
-            ctx.camera->Position += glm::vec2(worldPan.x, worldPan.y) * PAN_SPEED *
+            ctx.camera->Position += glm::vec3(worldPan.x, worldPan.y, 0.0f) * PAN_SPEED *
                     ctx.deltaTime * (1.0f / ctx.camera->Zoom);
         }
 
