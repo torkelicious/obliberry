@@ -10,6 +10,8 @@
 #include "IO/EntityFactory.h"
 #include <iostream>
 
+#include "ECS/Systems/MapRuntimeSystem.h"
+
 Scene::Scene(const EngineContext &context, std::string scenePath)
     : m_Context(context), m_ScenePath(std::move(scenePath)) {
 }

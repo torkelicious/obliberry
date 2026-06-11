@@ -51,14 +51,13 @@ namespace MapRuntimeSystem {
         const std::optional<HexCoords> preferredSpawn = FindPreferredSpawnHex(grid);
 
         registry.ForEach<MovementComponent, TransformComponent>(
-            [&](Entity, MovementComponent *movement, TransformComponent *transform) {
-                MovementSystem::CancelPath(movement);
-
-                if (preferredSpawn.has_value() && !IsEntityPositionValidForMap(grid, *transform)) {
-                    const glm::vec2 spawnWorldPosition = HexGrid::GetWorldPos(*preferredSpawn);
-                    const glm::vec3 currentPosition = transform->transform.GetPosition();
-                    transform->transform.SetPosition({spawnWorldPosition.x, spawnWorldPosition.y, currentPosition.z});
-                }
+            [&](Entity e, MovementComponent *movement, TransformComponent *transform) {
+                MovementSystem::MoveToCenter(e);
+                //if (preferredSpawn.has_value() && !IsEntityPositionValidForMap(grid, *transform)) {
+                //    const glm::vec2 spawnWorldPosition = HexGrid::GetWorldPos(*preferredSpawn);
+                //    const glm::vec3 currentPosition = transform->transform.GetPosition();
+                //    transform->transform.SetPosition({spawnWorldPosition.x, spawnWorldPosition.y, currentPosition.z});
+                //}
             }
         );
     }

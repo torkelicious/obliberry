@@ -4,78 +4,72 @@
 #include "ECS/Components/MapComponent.h"
 #include "ECS/Components/MapStateComponent.h"
 #include "ECS/Registry.h"
-#include "Map/HexCulling.h"
 #include "Renderer/MeshFactory.h"
 #include "Renderer/Renderer.h"
 
 namespace MapRenderSystem {
-    inline MeshData CreateCombinedMapMesh(
-        const HexGrid &grid,
-        TileType type,
-        const VisibleHexRange &range) {
-        MeshData combined;
+    inline void GenerateMapMeshes(const HexGrid &grid, MeshData &grassOut, MeshData &sandOut) {
         const MeshData hex = MeshFactory::CreatePointTopHex(HEX_SIZE);
+        const size_t hexVertCount = hex.vertices.size();
+        const size_t hexIdxCount = hex.indices.size();
 
-        size_t tileCount = 0;
+        size_t grassCount = 0;
+        size_t sandCount = 0;
 
+        // combined counting pass for all tile types
         for (const auto &[pos, tile]: grid.tiles) {
-            if (tile.type != type)
-                continue;
-
-            if (pos.q < range.minQ || pos.q > range.maxQ ||
-                pos.r < range.minR || pos.r > range.maxR)
-                continue;
-
-            tileCount++;
-        }
-
-        combined.vertices.reserve(tileCount * hex.vertices.size());
-        combined.indices.reserve(tileCount * hex.indices.size());
-
-        for (const auto &[pos, tile]: grid.tiles) {
-            if (tile.type != type)
-                continue;
-
-            if (pos.q < range.minQ || pos.q > range.maxQ ||
-                pos.r < range.minR || pos.r > range.maxR)
-                continue;
-
-            glm::vec2 worldPos = HexGrid::GetWorldPos(pos);
-            uint32_t vertexOffset = static_cast<uint32_t>(combined.vertices.size());
-
-            for (auto v: hex.vertices) {
-                v.Position.x += worldPos.x;
-                v.Position.y += worldPos.y;
-                combined.vertices.push_back(v);
-            }
-
-            for (uint32_t idx: hex.indices) {
-                combined.indices.push_back(idx + vertexOffset);
+            if (tile.type == TileType::Grass) {
+                grassCount++;
+            } else if (tile.type == TileType::Sand) {
+                sandCount++;
             }
         }
 
-        return combined;
+        // memory allocation up front to prevent array resizing overhead
+        grassOut.vertices.reserve(grassCount * hexVertCount);
+        grassOut.indices.reserve(grassCount * hexIdxCount);
+        sandOut.vertices.reserve(sandCount * hexVertCount);
+        sandOut.indices.reserve(sandCount * hexIdxCount);
+
+        // combined mesh building pass
+        for (const auto &[pos, tile]: grid.tiles) {
+            MeshData *targetMesh = nullptr;
+
+            if (tile.type == TileType::Grass) {
+                targetMesh = &grassOut;
+            } else if (tile.type == TileType::Sand) {
+                targetMesh = &sandOut;
+            } else {
+                continue;
+            }
+
+            const glm::vec2 worldPos = HexGrid::GetWorldPos(pos);
+            const uint32_t vertexOffset = static_cast<uint32_t>(targetMesh->vertices.size());
+
+            // append vertices with local world offsets
+            for (const auto &v: hex.vertices) {
+                auto mutatedV = v;
+                mutatedV.Position.x += worldPos.x;
+                mutatedV.Position.y += worldPos.y;
+                targetMesh->vertices.push_back(mutatedV);
+            }
+
+            // append indices with offset shifts
+            for (const uint32_t idx: hex.indices) {
+                targetMesh->indices.push_back(idx + vertexOffset);
+            }
+        }
     }
-
 
     inline void RenderTiles(Registry &registry, Renderer &renderer, EngineContext &ctx) {
         registry.ForEach<MapComponent, MapStateComponent>(
             [&](Entity, MapComponent *mapComp, MapStateComponent *stateComp) {
-                // render only visible
-                VisibleHexRange range =
-                        VisibleHexRange::Calculate(
-                            *ctx.camera,
-                            ctx.window->GetWidth(),
-                            ctx.window->GetHeight()
-                        );
-
                 // rebuild meshes only when data changes
                 if (mapComp->needsMeshUpdate) {
-                    MeshData grassData =
-                            CreateCombinedMapMesh(mapComp->grid, TileType::Grass, range);
+                    MeshData grassData;
+                    MeshData sandData;
 
-                    MeshData sandData =
-                            CreateCombinedMapMesh(mapComp->grid, TileType::Sand, range);
+                    GenerateMapMeshes(mapComp->grid, grassData, sandData);
 
                     if (!mapComp->grassMesh)
                         mapComp->grassMesh = std::make_shared<Mesh>(grassData);
@@ -112,8 +106,7 @@ namespace MapRenderSystem {
                 }
 
                 if (stateComp->hasSelection) {
-                    glm::vec2 worldPos =
-                            mapComp->grid.GetWorldPos(stateComp->selectedHex);
+                    const glm::vec2 worldPos = mapComp->grid.GetWorldPos(stateComp->selectedHex);
 
                     Transform t;
                     t.SetPosition({worldPos.x, worldPos.y, 0.01f});
@@ -123,8 +116,7 @@ namespace MapRenderSystem {
                 }
 
                 if (stateComp->hasPathTo) {
-                    glm::vec2 worldPos =
-                            mapComp->grid.GetWorldPos(stateComp->pathTo);
+                    const glm::vec2 worldPos = mapComp->grid.GetWorldPos(stateComp->pathTo);
 
                     Transform t;
                     t.SetPosition({worldPos.x, worldPos.y, 0.01f});
