@@ -1,6 +1,6 @@
-
-
 #include "VertexArray.h"
+
+#include <glm/glm.hpp>
 
 VertexArray::VertexArray() {
     glGenVertexArrays(1, &m_ID);
@@ -22,6 +22,23 @@ void VertexArray::AddBuffer(const VertexBuffer &vb, const VertexBufferLayout &la
         glVertexAttribPointer(i, element.count, element.type, element.normalized,
                               layout.GetStride(), reinterpret_cast<const void *>(offset));
         offset += element.count * VertexBufferElement::GetSizeOfType(element.type);
+    }
+}
+
+void VertexArray::AddInstancedBuffer(const VertexBuffer &vb, unsigned int attributeStartLoc) const {
+    Bind();
+    vb.Bind();
+    std::size_t vec4size = sizeof(glm::vec4);
+    std::size_t stride = sizeof(glm::mat4);
+
+    for (unsigned int i = 0; i < 4; i++) {
+        glEnableVertexAttribArray(attributeStartLoc + i);
+        glVertexAttribPointer(attributeStartLoc + i, 4,
+                              GL_FLOAT,
+                              GL_FALSE,
+                              stride,
+                              (const void *) (i * vec4size));
+        glVertexAttribDivisor(attributeStartLoc + i, 1);
     }
 }
 

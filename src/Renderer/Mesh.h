@@ -97,6 +97,11 @@ public:
         m_VAO.Bind();
     }
 
+
+    const VertexArray *GetVertexArray() const {
+        return &m_VAO;
+    }
+
     [[nodiscard]] uint32_t GetIndexCount() const {
         return m_IBO.GetCount();
     }

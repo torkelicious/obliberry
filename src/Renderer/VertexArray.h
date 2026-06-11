@@ -26,11 +26,15 @@ public:
 
     void AddBuffer(const VertexBuffer &vb, const VertexBufferLayout &layout);
 
+    void AddInstancedBuffer(const VertexBuffer &vb, unsigned int attributeStartLoc) const;
+
     void SetIndexBuffer(const IndexBuffer &ibo) const;
 
     void Bind() const;
 
     void Unbind() const;
+
+    [[nodiscard]] GLuint GetID() const { return m_ID; }
 
 private:
     GLuint m_ID;

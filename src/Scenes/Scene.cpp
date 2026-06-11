@@ -42,5 +42,6 @@ void Scene::Render() {
         SpriteBillboardSystem::Update(m_Registry, m_Context.camera);
     }
     RenderSystem::Render(m_Registry, *m_Context.renderer);
+    m_Context.renderer->InstancedFlush();
     m_Context.renderer->Flush();
 }

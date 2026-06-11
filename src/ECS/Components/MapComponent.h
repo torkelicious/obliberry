@@ -3,6 +3,9 @@
 #include "Map/Hex.h"
 #include <memory>
 #include <string>
+#include <vector>
+
+#include <glm/glm.hpp>
 
 #include "Core/Utils.h"
 #include "Renderer/Mesh.h"
@@ -11,6 +14,7 @@
 struct MapComponent {
     HexGrid grid;
     std::string mapFilePath = PathUtils::Join(MAP_PATH, "default", MAP_FILE_EXTENSION);
+
     // visual assets
     std::shared_ptr<Mesh> hexMesh;
 
@@ -19,9 +23,9 @@ struct MapComponent {
     std::shared_ptr<Material> outlineMat;
     std::shared_ptr<Material> pathToMat;
 
-    // batched meshes
-    std::shared_ptr<Mesh> grassMesh;
-    std::shared_ptr<Mesh> sandMesh;
+    // instanced transforms
+    std::vector<glm::mat4> grassTransforms;
+    std::vector<glm::mat4> sandTransforms;
     bool needsMeshUpdate = true;
 };
 

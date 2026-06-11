@@ -18,7 +18,7 @@ public:
     VertexBuffer &operator=(VertexBuffer &&) = default;
 
 
-    VertexBuffer(const void *data, unsigned int size);
+    VertexBuffer(const void *data, unsigned int size, GLenum usage = GL_STATIC_DRAW);
 
     ~VertexBuffer();
 
@@ -27,6 +27,8 @@ public:
     void Unbind() const;
 
     void SetData(const void *data, unsigned int size);
+
+    void SetSubData(const void *data, unsigned int size, unsigned int offset = 0);
 
 private:
     GLuint m_ID;
