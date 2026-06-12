@@ -4,7 +4,6 @@
 #include "json.hpp"
 #include "MapSerialization.h"
 #include "Core/Utils.h"
-#include "Renderer/MeshFactory.h"
 #include "IO/AssetLoader.h"
 #include "IO/EntityFactory.h"
 #include "Scenes/Scene.h"
@@ -30,26 +29,37 @@ namespace SceneIO {
 
     bool Deserialize(const std::string &path, Scene &scene) {
         std::ifstream file(path);
-
         if (!file.is_open())
             return false;
+
+        auto &SceneProps = scene.GetProperties();
+        SceneProps.ScenePath = path;
 
         json j;
         file >> j;
 
+        if (j.contains("properties")) {
+            auto &properties = j["properties"];
+            if (properties.contains("name")) {
+                SceneProps.Name = properties["name"].get<std::string>();
+            }
+            if (properties.contains("clear_color")) {
+                auto &c = properties["clear_color"];
+                if (c.is_array() && c.size() >= 4) {
+                    SceneProps.BackgroundClearColor = {
+                        c[0].get<float>(),
+                        c[1].get<float>(),
+                        c[2].get<float>(),
+                        c[3].get<float>()
+                    };
+                } else {
+                    std::cerr << "SceneSerializer Warning: 'clear_color' is malformed. Defaulting to black.\n";
+                }
+            }
+        }
+
         auto &resources = *scene.GetContext().resources;
-
-        // register once before loading !!!
-        AssetLoader::RegisterMeshFactory("Quad", [] {
-            auto [vertices, indices] = MeshFactory::CreateQuad();
-            return std::make_shared<Mesh>(vertices, indices);
-        });
-
-        AssetLoader::RegisterMeshFactory("PointTopHex", [] {
-            auto [vertices, indices] = MeshFactory::CreatePointTopHex(0.5f);
-            return std::make_shared<Mesh>(vertices, indices);
-        });
-
+        // factories must be registered before this point!
         //  ASSETS
         if (j.contains("assets")) {
             AssetLoader::LoadAssets(j["assets"], resources);
@@ -71,24 +81,42 @@ namespace SceneIO {
             auto &gridJson = j["grid"];
             std::string meshId = gridJson.value("mesh_id", "hex_mesh");
             std::string shaderId = gridJson.value("shader_id", "base_shader");
-            std::string grassTexId = gridJson.value("grass_tex_id", "grass_tex");
-            std::string sandTexId = gridJson.value("sand_tex_id", "sand_tex");
+
 
             auto hexMesh = resources.Get<Mesh>(meshId);
             auto shader = resources.Get<Shader>(shaderId);
-            auto grassTex = resources.Get<Texture>(grassTexId);
-            auto sandTex = resources.Get<Texture>(sandTexId);
-
             mapComp.hexMesh = hexMesh;
-            if (shader && grassTex && sandTex && hexMesh) {
-                mapComp.grassMat = std::make_shared<Material>(Material{shader, grassTex, {1, 1, 1, 1}});
-                mapComp.sandMat = std::make_shared<Material>(Material{shader, sandTex, {1, 1, 1, 1}});
+
+            if (gridJson.contains("types")) {
+                auto &gridtypes = gridJson["types"];
+                for (auto &typeElement: gridtypes) {
+                    uint8_t id = typeElement.value("id", static_cast<uint8_t>(1));
+                    std::string textureId = typeElement.value("texture", "hex_tex");
+
+                    auto typeTexture = resources.Get<Texture>(textureId);
+
+                    glm::vec4 color(1.0f);
+                    if (typeElement.contains("color")) {
+                        auto &c = typeElement["color"];
+                        color = {c[0], c[1], c[2], c[3]};
+                    }
+
+                    Material typeMat{
+                        shader,
+                        typeTexture,
+                        color
+                    };
+
+                    mapComp.typeMats.emplace(id, typeMat);
+                }
+            }
+
+            if (shader) {
                 mapComp.outlineMat = std::make_shared<Material>(Material{shader, nullptr, {1, 0, 0, 0.5f}});
                 mapComp.pathToMat = std::make_shared<Material>(Material{shader, nullptr, {1, 1, 1, 0.5f}});
             } else {
                 std::cerr << "SceneSerializer: Missing map visual assets!\n";
             }
-
             mapComp.needsMeshUpdate = true;
             mapEntity.AddComponent<MapComponent>(mapComp);
             mapEntity.AddComponent<MapStateComponent>();
@@ -114,11 +142,23 @@ namespace SceneIO {
         json j;
         auto &resources = *scene.GetContext().resources;
 
+        // props
+        auto &sceneProps = scene.GetProperties();
+        j["properties"]["name"] = sceneProps.Name;
+        glm::vec4 c = sceneProps.BackgroundClearColor;
+        j["properties"]["clear_color"] = {
+            c[0],
+            c[1],
+            c[2],
+            c[3]
+        };
+
         // ecs query to save grid
         scene.GetRegistry().ForEach<MapComponent>([&](Entity, const MapComponent *mapComp) {
             std::string mapFile = mapComp->mapFilePath.empty()
                                       ? PathUtils::Join(MAP_PATH, "unknown", MAP_FILE_EXTENSION)
                                       : mapComp->mapFilePath;
+
             j["grid"]["map_file"] = mapFile;
             if (!MapIO::Serialize(mapFile, mapComp->grid)) {
                 std::cerr << "SceneSerializer: Failed to write map file: " << mapFile << "\n";
@@ -127,14 +167,33 @@ namespace SceneIO {
             if (mapComp->hexMesh) {
                 j["grid"]["mesh_id"] = resources.GetKey<Mesh>(mapComp->hexMesh);
             }
-            if (mapComp->grassMat && mapComp->grassMat->shader) {
-                j["grid"]["shader_id"] = resources.GetKey<Shader>(mapComp->grassMat->shader);
-            }
-            if (mapComp->grassMat && mapComp->grassMat->texture) {
-                j["grid"]["grass_tex_id"] = resources.GetKey<Texture>(mapComp->grassMat->texture);
-            }
-            if (mapComp->sandMat && mapComp->sandMat->texture) {
-                j["grid"]["sand_tex_id"] = resources.GetKey<Texture>(mapComp->sandMat->texture);
+
+            if (!mapComp->typeMats.empty()) {
+                j["grid"]["types"] = json::array();
+
+                std::vector<uint8_t> keys;
+                for (const auto &key: mapComp->typeMats | std::views::keys) keys.push_back(key);
+                std::ranges::sort(keys);
+
+                for (uint8_t id: keys) {
+                    const auto &material = mapComp->typeMats.at(id);
+                    json typeJson;
+                    typeJson["id"] = id;
+
+                    if (material.texture) {
+                        typeJson["texture"] = resources.GetKey(material.texture);
+                    }
+
+                    if (material.color != glm::vec4(1.0f)) {
+                        typeJson["color"] = {
+                            material.color.r,
+                            material.color.g,
+                            material.color.b,
+                            material.color.a
+                        };
+                    }
+                    j["grid"]["types"].push_back(typeJson);
+                }
             }
         });
 

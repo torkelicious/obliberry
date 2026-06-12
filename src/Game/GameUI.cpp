@@ -14,6 +14,7 @@
 #include "../Math/HexMath.h"
 #include "imgui.h"
 #include <algorithm>
+#include <map>
 #include <random>
 #include <string_view>
 
@@ -160,21 +161,22 @@ void Game::DrawInterface() {
         ImGui::PopStyleColor();
         ImGui::SameLine();
         if (ImGui::Button("Reload Scene", ImVec2(-1, 0)))
-            m_PendingSceneLoad = scenePath;
+            m_PendingSceneLoad = SceneProperties{.ScenePath = scenePath};
     }
     ImGui::Spacing();
 
     if (ImGui::CollapsingHeader("World & Data", ImGuiTreeNodeFlags_DefaultOpen)) {
         if (mapComp) {
-            static int s_Grass = 0, s_Sand = 0, s_Walkable = 0;
+            static std::map<uint8_t, int> s_TypeCounts;
+            static int s_Walkable = 0;
             static bool s_StatsValid = false;
             static const MapComponent *s_LastMapComp = nullptr;
 
             if (!s_StatsValid || mapComp->needsMeshUpdate || s_LastMapComp != mapComp) {
-                s_Grass = s_Sand = s_Walkable = 0;
+                s_TypeCounts.clear();
+                s_Walkable = 0;
                 for (const auto &t: mapComp->grid.tiles | std::views::values) {
-                    if (t.type == TileType::Grass) ++s_Grass;
-                    else ++s_Sand;
+                    s_TypeCounts[t.type]++;
                     if (t.walkable) ++s_Walkable;
                 }
                 s_StatsValid = true;
@@ -184,8 +186,9 @@ void Game::DrawInterface() {
             ImGui::TextColored(ImVec4(0.5f, 0.8f, 1.0f, 1.0f),
                                "Grid: %zu tiles", mapComp->grid.tiles.size());
             ImGui::Indent(8.0f);
-            ImGui::TextColored(ImVec4(0.4f, 0.9f, 0.4f, 1.0f), "Grass:    %d", s_Grass);
-            ImGui::TextColored(ImVec4(0.9f, 0.8f, 0.3f, 1.0f), "Sand:     %d", s_Sand);
+            for (const auto &[typeId, count]: s_TypeCounts) {
+                ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1.0f), "Type %d:    %d", typeId, count);
+            }
             ImGui::TextColored(ImVec4(0.5f, 1.0f, 0.7f, 1.0f), "Walkable: %d / %zu",
                                s_Walkable, mapComp->grid.tiles.size());
             ImGui::Unindent(8.0f);
@@ -202,11 +205,13 @@ void Game::DrawInterface() {
                 mapComp->grid.Clear();
                 std::mt19937 rng(std::random_device{}());
                 std::uniform_int_distribution dist(0, 99);
-                for (int q = -g_GridSize; q < g_GridSize; ++q)
-                    for (int r = -g_GridSize; r < g_GridSize; ++r)
+                for (int q = -g_GridSize; q < g_GridSize; ++q) {
+                    for (int r = -g_GridSize; r < g_GridSize; ++r) {
                         mapComp->grid.EmplaceTile(
                             {q, r},
-                            dist(rng) < g_SandDensity ? TileType::Sand : TileType::Grass);
+                            dist(rng) < g_SandDensity ? static_cast<uint8_t>(2) : static_cast<uint8_t>(1));
+                    }
+                }
                 MapRuntimeSystem::OnMapChanged(reg, *mapComp, stateComp, m_Context);
             }
         }
@@ -282,7 +287,7 @@ void Game::DrawInterface() {
 
     if (ImGui::CollapsingHeader("Camera & Input", ImGuiTreeNodeFlags_DefaultOpen)) {
         if (m_Context.camera) {
-            ImGui::Text("Pos:  [%.2f, %.2f]",
+            ImGui::Text("Pos:   [%.2f, %.2f]",
                         m_Context.camera->Position.x, m_Context.camera->Position.y);
             ImGui::Text("Zoom: %.2fx", m_Context.camera->Zoom);
             ImGui::Separator();
@@ -293,8 +298,8 @@ void Game::DrawInterface() {
             ImGui::TextColored(ImVec4(0.2f, 0.8f, 1.0f, 1.0f), "  Hex [Q:%d, R:%d]",
                                stateComp->selectedHex.q, stateComp->selectedHex.r);
             if (mapComp && mapComp->grid.HasTile(stateComp->selectedHex)) {
-                const TileType type = mapComp->grid.Get(stateComp->selectedHex)->type;
-                ImGui::Text("  Type: %s", type == TileType::Grass ? "Grass" : "Sand");
+                const uint8_t type = mapComp->grid.Get(stateComp->selectedHex)->type;
+                ImGui::Text("  Type ID: %d", type);
             } else {
                 ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f), "  (void)");
             }
@@ -374,7 +379,7 @@ void Game::DrawInterface() {
                                 for (size_t p = mc->currentPathIndex;
                                      p < mc->currentPath.size(); ++p) {
                                     ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f),
-                                                       "    [%d, %d]",
+                                                       "     [%d, %d]",
                                                        mc->currentPath[p].q,
                                                        mc->currentPath[p].r);
                                 }

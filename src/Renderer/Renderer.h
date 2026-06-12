@@ -51,6 +51,8 @@ public:
 
     void Clean();
 
+    void SetClearColor(glm::vec4 color) const;
+
 private:
     void Execute(const RenderCommand &cmd);
 
@@ -68,6 +70,7 @@ private:
 
     const Camera *m_Camera = nullptr;
     glm::mat4 m_VP;
+    glm::vec4 m_ClearColor = {0.0f, 0.0f, 0.0f, 1.0f};
 };
 
 #endif //OBLIBERRY_RENDERER_H

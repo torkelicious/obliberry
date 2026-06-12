@@ -8,7 +8,9 @@ namespace MapIO {
 #pragma pack(push, 1)
     struct MapFileHeader {
         char magic[8] = {'O', 'B', 'L', 'I', 'H', 'E', 'X', 'M'}; // identifier
-        uint16_t version = 1; // format may change so good to have
+        uint16_t version = 2; // format may change so good to have
+        // even though the format itself didn't change, it is interpreted
+        // differently so i still updated the version number (v2)!!
         uint32_t tileCount = 0;
     };
 

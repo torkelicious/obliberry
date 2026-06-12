@@ -1,8 +1,8 @@
 #ifndef OBLIBERRY_CONSTANTS_H
 #define OBLIBERRY_CONSTANTS_H
 #include <limits>
+#include <string>
 #include <string_view>
-
 
 // filepaths
 constexpr std::string_view ASSET_PATH = "assets/";
@@ -14,6 +14,8 @@ constexpr std::string_view SCENE_PATH = "assets/scenes/";
 // fs extensions
 constexpr auto MAP_FILE_EXTENSION = ".obmap";
 constexpr auto SCENE_FILE_EXTENSION = ".json";
+// misc file stuff
+constexpr std::string MAP_FILE_MAGIC_STR = "OBLIHEXM";
 // window config
 constexpr int WINDOW_WIDTH = 1280;
 constexpr int WINDOW_HEIGHT = 720;
@@ -22,6 +24,7 @@ constexpr float TARGET_ASPECT = 16.0f / 9.0f;
 constexpr float ZOOM_SPEED = 0.2f;
 constexpr float PAN_SPEED = 12.f;
 
+// hex stuff
 // point top hexes
 constexpr float HEX_SIZE = 0.5f;
 constexpr std::size_t HEX_NEIGHBOR_COUNT = 6;
@@ -32,11 +35,12 @@ constexpr float HEX_INV_MAT_R_Y = 0.666666667f; // 2.0 / 3.0
 // coord math stuff
 constexpr float HEX_HEIGHT_MULTIPLIER = 2.0f; // total height is 2 * size
 constexpr float HEX_HEIGHT_SPACING_RATIO = 0.75f; // vertical step is 75% of total height
-
 constexpr float HEX_ODD_ROW_OFFSET = 0.5f;
 constexpr int P_INFINITY = std::numeric_limits<int>::max() / 2;
-
 // map rendering
 constexpr float CHUNK_SIZE = 20.0f;
+// misc math
+constexpr float PI = 3.14159265359f;
+
 
 #endif //OBLIBERRY_CONSTANTS_H

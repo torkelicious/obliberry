@@ -10,19 +10,21 @@
 #include "IO/EntityFactory.h"
 #include <iostream>
 
-Scene::Scene(const EngineContext &context, std::string scenePath)
-    : m_Context(context), m_ScenePath(std::move(scenePath)) {
+Scene::Scene(const EngineContext &context, SceneProperties props)
+    : m_Context(context), m_Properties(std::move(props)) {
 }
 
 void Scene::OnEnter() {
-    if (m_Context.renderer) {
-        m_Context.renderer->Clean();
-    }
-
     EntityFactory::RegisterDeserializers();
     EntityFactory::RegisterSerializers();
-    if (!SceneIO::Deserialize(m_ScenePath, *this)) {
-        std::cerr << "Scene: Failed to load scene file: " << m_ScenePath << "\n";
+
+    if (!SceneIO::Deserialize(m_Properties.ScenePath, *this)) {
+        std::cerr << "Scene: Failed to load scene file: " << m_Properties.ScenePath << "\n";
+    }
+
+    if (m_Context.renderer) {
+        m_Context.renderer->Clean();
+        m_Context.renderer->SetClearColor(m_Properties.BackgroundClearColor);
     }
 }
 
@@ -42,4 +44,11 @@ void Scene::Render() {
     RenderSystem::Render(m_Registry, *m_Context.renderer);
     m_Context.renderer->InstancedFlush();
     m_Context.renderer->Flush();
+}
+
+void Scene::OnExit() {
+    if (m_Context.renderer) {
+        m_Context.renderer->Clean();
+    }
+    std::cout << "Exiting Scene " << m_Properties.ScenePath << "\n";
 }

@@ -38,7 +38,7 @@ private:
     SceneManager m_SceneManager;
 
     EngineContext m_Context;
-    std::optional<std::string> m_PendingSceneLoad;
+    std::optional<SceneProperties> m_PendingSceneLoad;
 };
 
 #endif //OBLIBERRY_GAME_H

@@ -29,6 +29,8 @@ public:
 
     void SetInputManager(InputManager *inputManager);
 
+    void SetWindowTitle(const std::string &title);
+
 private:
     GLFWwindow *m_Window = nullptr;
     InputManager *m_InputManager = nullptr;

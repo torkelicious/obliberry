@@ -60,9 +60,9 @@ namespace MapRenderSystem {
 
                 if (shouldUpdateBuffers) {
                     mapComp->bufferedRenderAABB = CalculateBufferedAABB(cameraBounds);
-
-                    mapComp->visibleGrass.clear();
-                    mapComp->visibleSand.clear();
+                    for (auto &[typeId, transforms]: mapComp->visibles) {
+                        transforms.clear();
+                    }
 
                     const GridBounds bounds = GetGridBoundsForAABB(mapComp->bufferedRenderAABB);
 
@@ -72,11 +72,8 @@ namespace MapRenderSystem {
                                 const glm::mat4 translationMatrix = glm::translate(
                                     glm::mat4(1.0f), glm::vec3(tile->worldPos.x, tile->worldPos.y, 0.0f));
 
-                                if (tile->type == TileType::Grass) {
-                                    mapComp->visibleGrass.push_back(translationMatrix);
-                                } else if (tile->type == TileType::Sand) {
-                                    mapComp->visibleSand.push_back(translationMatrix);
-                                }
+                                // push the matrix instance into the vector for this specific tile type
+                                mapComp->visibles[tile->type].push_back(translationMatrix);
                             }
                         }
                     }
@@ -84,14 +81,14 @@ namespace MapRenderSystem {
                     mapComp->needsMeshUpdate = false;
                 }
 
-                if (!mapComp->visibleGrass.empty()) {
-                    renderer.Submit(mapComp->hexMesh.get(), mapComp->grassMat.get(), &mapComp->visibleGrass,
-                                    shouldUpdateBuffers);
-                }
+                // loop through all collected tile types and submit their instanced buffers
+                for (auto &[typeId, transforms]: mapComp->visibles) {
+                    if (transforms.empty()) continue;
 
-                if (!mapComp->visibleSand.empty()) {
-                    renderer.Submit(mapComp->hexMesh.get(), mapComp->sandMat.get(), &mapComp->visibleSand,
-                                    shouldUpdateBuffers);
+                    auto matIt = mapComp->typeMats.find(typeId);
+                    if (matIt != mapComp->typeMats.end()) {
+                        renderer.Submit(mapComp->hexMesh.get(), &matIt->second, &transforms, shouldUpdateBuffers);
+                    }
                 }
             });
     }

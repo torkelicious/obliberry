@@ -21,17 +21,15 @@ struct MapComponent {
 
     // visual assets
     std::shared_ptr<Mesh> hexMesh;
-
-    std::shared_ptr<Material> grassMat;
-    std::shared_ptr<Material> sandMat;
+    std::unordered_map<uint8_t, Material> typeMats;
     std::shared_ptr<Material> outlineMat;
     std::shared_ptr<Material> pathToMat;
 
     bool needsMeshUpdate = true;
 
-    // zero alloc buffers
-    std::vector<glm::mat4> visibleGrass;
-    std::vector<glm::mat4> visibleSand;
+    // monobuffers
+    //               // type            transforms
+    std::unordered_map<uint8_t, std::vector<glm::mat4> > visibles;
 
     // padding bounds
     Math::Projection::AABB bufferedRenderAABB;

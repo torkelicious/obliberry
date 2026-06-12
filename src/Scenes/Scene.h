@@ -2,19 +2,26 @@
 #define OBLIBERRY_SCENE_H
 
 #include <string>
+#include <glm/glm.hpp>
 #include "Core/EngineContext.h"
 #include "ECS/ECS.h"
 
+struct SceneProperties {
+    std::string ScenePath;
+    std::string Name; // unused 4 now
+    glm::vec4 BackgroundClearColor = {0, 0, 0, 1};
+    // todo: bg music
+};
+
 class Scene {
 public:
-    Scene(const EngineContext &context, std::string scenePath);
+    Scene(const EngineContext &context, SceneProperties props);
 
     ~Scene() = default;
 
     void OnEnter();
 
-    void OnExit() {
-    }
+    void OnExit();
 
     void Update(float dt);
 
@@ -24,12 +31,17 @@ public:
     [[nodiscard]] const Registry &GetRegistry() const { return m_Registry; }
     [[nodiscard]] EngineContext &GetContext() { return m_Context; }
     [[nodiscard]] const EngineContext &GetContext() const { return m_Context; }
-    [[nodiscard]] const std::string &GetScenePath() const { return m_ScenePath; }
+
+    [[nodiscard]] const std::string &GetScenePath() const {
+        return m_Properties.ScenePath;
+    }
+
+    SceneProperties &GetProperties() { return m_Properties; };
 
 private:
+    SceneProperties m_Properties;
     EngineContext m_Context;
     Registry m_Registry;
-    std::string m_ScenePath;
 };
 
 #endif //OBLIBERRY_SCENE_H

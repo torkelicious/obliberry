@@ -30,25 +30,39 @@ namespace MapIO {
     }
 
     bool Deserialize(const std::string &path, HexGrid &grid) {
-        std::ifstream file(path, std::ios::binary);
+        std::ifstream file(path, std::ios::binary | std::ios::ate);
         if (!file.is_open()) {
             std::cerr << "Failed to open file: " << path << "\n";
             return false;
         }
 
-        MapFileHeader header;
-        file.read(reinterpret_cast<char *>(&header), sizeof(MapFileHeader));
+        std::streamsize fileSize = file.tellg();
+        file.seekg(0, std::ios::beg);
 
-        if (!CheckHeader(header, "OBLIHEXM")) {
-            // maybe not put expected string here idk im tired
+        MapFileHeader header;
+        if (!file.read(reinterpret_cast<char *>(&header), sizeof(MapFileHeader))) {
+            std::cerr << "Failed to read header from: " << path << "\n";
+            return false;
+        }
+
+        if (!CheckHeader(header, MAP_FILE_MAGIC_STR)) {
             std::cerr << "Invalid map file format (header mismatch).\n";
+            return false;
+        }
+
+        size_t expectedSize = CalculateExpectedFileSize(header.tileCount);
+        if (expectedSize > static_cast<size_t>(fileSize)) {
+            std::cerr << "Map file truncated or corrupt.\n";
             return false;
         }
 
         grid.Clear();
         for (uint32_t i = 0; i < header.tileCount; i++) {
             SerializedTile sTile{};
-            file.read(reinterpret_cast<char *>(&sTile), sizeof(SerializedTile));
+            if (!file.read(reinterpret_cast<char *>(&sTile), sizeof(SerializedTile))) {
+                std::cerr << "Stream read error at tile " << i << "\n";
+                break;
+            }
             HexCoords coords{sTile.q, sTile.r};
             grid.EmplaceTile(coords, sTile.type, sTile.walkable);
         }

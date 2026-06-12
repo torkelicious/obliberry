@@ -18,17 +18,12 @@ bool Game::TestFileLoad(HexGrid &grid, const std::string &path) {
 }
 
 void Game::Start() {
-    AssetLoader::RegisterMeshFactory("Quad", []() -> std::shared_ptr<Mesh> {
-        auto [vertices, indices] = MeshFactory::CreateQuad();
-        return std::make_shared<Mesh>(vertices, indices);
-    });
-    AssetLoader::RegisterMeshFactory("PointTopHex", []() -> std::shared_ptr<Mesh> {
-        auto [vertices, indices] = MeshFactory::CreatePointTopHex(0.5f);
-        return std::make_shared<Mesh>(vertices, indices);
-    });
-
+    MeshFactory::RegisterAllMeshFactories();
     m_SceneManager.LoadScene(
-        std::make_unique<Scene>(m_Context, "assets/scenes/level01.json"));
+        std::make_unique<Scene>
+        (m_Context,
+         SceneProperties{.ScenePath = "assets/scenes/test1.json"}
+        ));
 }
 
 void Game::Update(const float dt) {
@@ -56,3 +51,4 @@ void Game::Render() const {
 
 void Game::Shutdown() const {
 }
+

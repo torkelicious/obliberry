@@ -113,6 +113,10 @@ void Window::SetInputManager(InputManager *inputManager) {
     m_InputManager = inputManager;
 }
 
+void Window::SetWindowTitle(const std::string &title) {
+    glfwSetWindowTitle(m_Window, title.c_str());
+}
+
 void Window::KeyCallback(GLFWwindow *window, const int key, int scancode, const int action, int mods) {
     const auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
     if (!self) return;

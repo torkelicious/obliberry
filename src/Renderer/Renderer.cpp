@@ -135,6 +135,10 @@ void Renderer::Clean() {
     m_InstancedCommands.clear();
 }
 
+void Renderer::SetClearColor(const glm::vec4 color) const {
+    glClearColor(color[0], color[1], color[2], color[3]);
+}
+
 void Renderer::Execute(const RenderCommand &cmd) {
     glm::mat4 model = cmd.transform.GetMatrix();
     for (int i = 0; i < 4; i++) {

@@ -15,15 +15,15 @@
 // tile types
 // currently used for textures but i'll figure something out
 // todo: not have this hardcoded, use id system maybe
-enum class TileType : uint8_t {
-    Grass,
-    Sand
-};
+
+using TileType = uint8_t;
 
 struct Tile {
+    // serialized fields
     HexCoords position; // 2x int16_t
     TileType type; // uint_8t
-    bool walkable;
+    bool walkable; // bool 1 byte
+    // serialized fields
     glm::vec2 worldPos; // not serialized, only for caching!!!
 };
 
@@ -84,6 +84,7 @@ public:
             HexCoords parent;
             int gScore = P_INFINITY;
             int fScore = P_INFINITY;
+            bool isClosed = false;
         };
 
         using PQElement = std::pair<int, HexCoords>;
@@ -94,19 +95,17 @@ public:
             std::greater<>
         > openSet;
         // ensure queue is empty before starting
-        while (!openSet.empty()) openSet.pop();
+        openSet = decltype(openSet)();
 
         thread_local std::unordered_map<HexCoords, NodeRecord, HexCoordsHash> records;
         records.clear();
-
-        thread_local std::unordered_set<HexCoords, HexCoordsHash> closed;
-        closed.clear();
 
         // init start node
         records[start] = NodeRecord{
             start,
             0,
-            Math::HexMath::Distance(start, goal)
+            Math::HexMath::Distance(start, goal),
+            false
         };
 
         openSet.push({records[start].fScore, start});
@@ -119,13 +118,15 @@ public:
             if (!records.contains(current))
                 continue;
 
-            if (fScoreTop != records[current].fScore)
+            auto &currentRecord = records[current];
+
+            if (currentRecord.isClosed)
                 continue;
 
-            if (closed.contains(current))
+            if (fScoreTop != currentRecord.fScore)
                 continue;
 
-            closed.insert(current);
+            currentRecord.isClosed = true;
 
             // reached goal
             if (current == goal) {
@@ -151,20 +152,25 @@ public:
                     records[neighbor] = NodeRecord{
                         current,
                         P_INFINITY,
-                        P_INFINITY
+                        P_INFINITY,
+                        false
                     };
                 }
 
+                auto &neighborRecord = records[neighbor];
+                if (neighborRecord.isClosed)
+                    continue;
+
                 // flat weight move cost calculation
 
-                if (const int tentativeG = records[current].gScore + 1; tentativeG < records[neighbor].gScore) {
+                if (const int tentativeG = currentRecord.gScore + 1; tentativeG < neighborRecord.gScore) {
                     // record an optimized path tracking choice
-                    records[neighbor].parent = current;
-                    records[neighbor].gScore = tentativeG;
-                    records[neighbor].fScore =
+                    neighborRecord.parent = current;
+                    neighborRecord.gScore = tentativeG;
+                    neighborRecord.fScore =
                             tentativeG + Math::HexMath::Distance(neighbor, goal);
 
-                    openSet.push({records[neighbor].fScore, neighbor});
+                    openSet.push({neighborRecord.fScore, neighbor});
                 }
             }
         }

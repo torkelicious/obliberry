@@ -1,5 +1,6 @@
 #include "AssetLoader.h"
 
+#include <iostream>
 #include <stdexcept>
 #include "Renderer/Mesh.h"
 #include "Renderer/Shader.h"
@@ -65,13 +66,13 @@ void AssetLoader::LoadMaterials(
         auto texture = resources.Get<Texture>(textureId);
 
         if (!shader)
-            throw std::runtime_error("Missing shader: " + shaderId);
+            std::cerr << "Missing shader: " + shaderId + "\n";
 
         if (!texture)
-            throw std::runtime_error("Missing texture: " + textureId);
+            texture = nullptr;
+        std::cerr << "Missing texture: " + textureId + " falling back to default.\n";
 
         glm::vec4 color(1.f);
-
         if (mat.contains("color")) {
             auto &c = mat["color"];
             color = {
