@@ -28,7 +28,7 @@ public:
     Texture(
         int width,
         int height,
-        unsigned char *data,
+        const unsigned char *data,
         GLuint minFilter = GL_NEAREST,
         GLuint magFilter = GL_NEAREST,
         GLuint wrapS = GL_CLAMP_TO_EDGE,
@@ -41,7 +41,7 @@ public:
 
     void Unbind() const;
 
-    void UpdateData(unsigned char *data, int width, int height);
+    void UpdateData(const unsigned char *data, int width, int height);
 
     std::string &GetPath() { return m_FilePath; }
 

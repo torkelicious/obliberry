@@ -56,14 +56,13 @@ namespace Math::HexMath {
 
         // cast to int32_t & round
         auto rq = static_cast<int32_t>(std::lround(h.q));
-        int32_t rr = static_cast<int32_t>(std::lround(h.r));
+        auto rr = static_cast<int32_t>(std::lround(h.r));
         const int32_t rs = static_cast<int32_t>(std::lround(h.s));
 
         const float q_diff = std::abs(rq - h.q);
         const float r_diff = std::abs(rr - h.r);
-        const float s_diff = std::abs(rs - h.s);
 
-        if (q_diff > r_diff && q_diff > s_diff) {
+        if (const float s_diff = std::abs(rs - h.s); q_diff > r_diff && q_diff > s_diff) {
             rq = -rr - rs;
         } else if (r_diff > s_diff) {
             rr = -rq - rs;
@@ -85,8 +84,8 @@ namespace Math::HexMath {
 
         std::array<HexCoords, HEX_NEIGHBOR_COUNT> neighbors;
         for (std::size_t i = 0; i < HEX_NEIGHBOR_COUNT; i++) {
-            const int32_t r_diff[HEX_NEIGHBOR_COUNT] = {0, 1, 1, 0, -1, -1};
-            const int32_t q_diff[2][HEX_NEIGHBOR_COUNT] = {
+            constexpr int32_t r_diff[HEX_NEIGHBOR_COUNT] = {0, 1, 1, 0, -1, -1};
+            constexpr int32_t q_diff[2][HEX_NEIGHBOR_COUNT] = {
                 {1, 0, -1, -1, -1, 0},
                 {1, 1, 0, -1, 0, 1}
             };

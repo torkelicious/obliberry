@@ -49,7 +49,7 @@ namespace MeshFactory {
         return data;
     }
 
-    MeshData CreateEquiTriangle(float height = 0.5) {
+    MeshData CreateEquiTriangle(const float height = 0.5) {
         MeshData data;
 
         data.vertices.push_back({{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f}});
@@ -83,7 +83,7 @@ namespace MeshFactory {
         });
 
         for (unsigned int i = 0; i < segments; i++) {
-            float theta = 2.0f * PI * i / segments;
+            const float theta = 2.0f * PI * i / segments;
 
             float x = radX * cosf(theta);
             float y = radY * sinf(theta);
@@ -99,7 +99,7 @@ namespace MeshFactory {
 
         for (unsigned int i = 0; i < segments; i++) {
             uint32_t curr = i + 1;
-            uint32_t next = ((i + 1) % segments) + 1;
+            uint32_t next = (i + 1) % segments + 1;
 
             data.indices.push_back(0);
             data.indices.push_back(curr);
@@ -110,8 +110,8 @@ namespace MeshFactory {
     }
 
     MeshData CreateRegularPolygon(
-        unsigned int sides,
-        float radius) {
+        const unsigned int sides,
+        const float radius) {
         MeshData data;
 
         if (sides < 3)
@@ -123,7 +123,7 @@ namespace MeshFactory {
         });
 
         for (unsigned int i = 0; i < sides; i++) {
-            float theta = 2.0f * PI * i / sides;
+            const float theta = 2.0f * PI * i / sides;
 
             float x = radius * cosf(theta);
             float y = radius * sinf(theta);
@@ -139,7 +139,7 @@ namespace MeshFactory {
 
         for (unsigned int i = 0; i < sides; i++) {
             uint32_t curr = i + 1;
-            uint32_t next = ((i + 1) % sides) + 1;
+            uint32_t next = (i + 1) % sides + 1;
 
             data.indices.push_back(0);
             data.indices.push_back(curr);
@@ -150,16 +150,16 @@ namespace MeshFactory {
     }
 
     MeshData CreateRing(
-        float innerRadius,
-        float outerRadius,
-        unsigned int segments) {
+        const float innerRadius,
+        const float outerRadius,
+        const unsigned int segments) {
         MeshData data;
 
         for (unsigned int i = 0; i < segments; i++) {
-            float theta = 2.0f * PI * i / segments;
+            const float theta = 2.0f * PI * i / segments;
 
-            float c = cosf(theta);
-            float s = sinf(theta);
+            const float c = cosf(theta);
+            const float s = sinf(theta);
 
             data.vertices.push_back({
                 {c * innerRadius, s * innerRadius, 0.0f},
@@ -173,7 +173,7 @@ namespace MeshFactory {
         }
 
         for (unsigned int i = 0; i < segments; i++) {
-            uint32_t next = (i + 1) % segments;
+            const uint32_t next = (i + 1) % segments;
 
             uint32_t i0 = i * 2;
             uint32_t i1 = i * 2 + 1;
@@ -192,10 +192,10 @@ namespace MeshFactory {
     }
 
     MeshData CreateSector(
-        float radius,
-        float startAngle,
-        float endAngle,
-        unsigned int segments) {
+        const float radius,
+        const float startAngle,
+        const float endAngle,
+        const unsigned int segments) {
         MeshData data;
 
         data.vertices.push_back({
@@ -258,7 +258,7 @@ namespace MeshFactory {
             src.vertices.begin(),
             src.vertices.end()
         );
-        for (uint32_t index: src.indices) {
+        for (const uint32_t index: src.indices) {
             dst.indices.push_back(index + vertexOffset);
         }
     }

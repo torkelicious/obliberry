@@ -32,7 +32,7 @@ public:
     [[nodiscard]] unsigned int GetCount() const { return m_Count; }
 
 private:
-    GLuint m_ID;
+    GLuint m_ID{};
     unsigned int m_Count;
 };
 

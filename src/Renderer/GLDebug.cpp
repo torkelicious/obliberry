@@ -11,8 +11,8 @@ void APIENTRY GLDebug::glDebugOutput(const GLenum source, const GLenum type,
     if (id == 131169 || id == 131185 || id == 131218 || id == 131204)
         return;
 
-    std::cout << "---------------" << std::endl;
-    std::cout << "Debug message (" << id << "): " << message << std::endl;
+    std::cout << "---------------" << "\n";
+    std::cout << "Debug message (" << id << "): " << message << "\n";
 
     switch (source) {
         case GL_DEBUG_SOURCE_API:
@@ -34,7 +34,7 @@ void APIENTRY GLDebug::glDebugOutput(const GLenum source, const GLenum type,
             std::cout << "Source: Other";
             break;
     }
-    std::cout << std::endl;
+    std::cout << "\n";
 
     switch (type) {
         case GL_DEBUG_TYPE_ERROR:
@@ -65,7 +65,7 @@ void APIENTRY GLDebug::glDebugOutput(const GLenum source, const GLenum type,
             std::cout << "Type: Other";
             break;
     }
-    std::cout << std::endl;
+    std::cout << "\n";
 
     switch (severity) {
         case GL_DEBUG_SEVERITY_HIGH:
@@ -81,15 +81,15 @@ void APIENTRY GLDebug::glDebugOutput(const GLenum source, const GLenum type,
             std::cout << "Severity: notification";
             break;
     }
-    std::cout << std::endl;
-    std::cout << std::endl;
+    std::cout << "\n";
+    std::cout << "\n";
 }
 
 
 int GLDebug::InitDebug() {
-    std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
-    std::cout << "Renderer: " << glGetString(GL_RENDERER) << std::endl;
-    std::cout << "Vendor: " << glGetString(GL_VENDOR) << std::endl;
+    std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << "\n";
+    std::cout << "Renderer: " << glGetString(GL_RENDERER) << "\n";
+    std::cout << "Vendor: " << glGetString(GL_VENDOR) << "\n";
     std::cout << "\n";
 
     if (!glDebugMessageCallback) {

@@ -60,14 +60,14 @@ namespace MapRenderSystem {
 
                 if (shouldUpdateBuffers) {
                     mapComp->bufferedRenderAABB = CalculateBufferedAABB(cameraBounds);
-                    for (auto &[typeId, transforms]: mapComp->visibles) {
+                    for (auto &transforms: mapComp->visibles | std::views::values) {
                         transforms.clear();
                     }
 
-                    const GridBounds bounds = GetGridBoundsForAABB(mapComp->bufferedRenderAABB);
+                    const auto [minQ, maxQ, minR, maxR] = GetGridBoundsForAABB(mapComp->bufferedRenderAABB);
 
-                    for (int r = bounds.minR; r <= bounds.maxR; ++r) {
-                        for (int q = bounds.minQ; q <= bounds.maxQ; ++q) {
+                    for (int r = minR; r <= maxR; ++r) {
+                        for (int q = minQ; q <= maxQ; ++q) {
                             if (const Tile *tile = mapComp->grid.Get(HexCoords(q, r))) {
                                 const glm::mat4 translationMatrix = glm::translate(
                                     glm::mat4(1.0f), glm::vec3(tile->worldPos.x, tile->worldPos.y, 0.0f));

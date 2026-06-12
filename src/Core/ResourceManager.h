@@ -55,8 +55,7 @@ public:
     std::string GetKey(std::shared_ptr<T> resource) {
         if (!resource) return "";
 
-        auto &cache = GetCache<T>();
-        for (const auto &[key, ptr]: cache.storage) {
+        for (auto &cache = GetCache<T>(); const auto &[key, ptr]: cache.storage) {
             if (ptr == resource) {
                 return key;
             }

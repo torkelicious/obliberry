@@ -108,7 +108,7 @@ public:
             false
         };
 
-        openSet.push({records[start].fScore, start});
+        openSet.emplace(records[start].fScore, start);
 
         while (!openSet.empty()) {
             auto [fScoreTop, current] = openSet.top();
@@ -157,20 +157,20 @@ public:
                     };
                 }
 
-                auto &neighborRecord = records[neighbor];
-                if (neighborRecord.isClosed)
+                auto &[parent, gScore, fScore, isClosed] = records[neighbor];
+                if (isClosed)
                     continue;
 
                 // flat weight move cost calculation
 
-                if (const int tentativeG = currentRecord.gScore + 1; tentativeG < neighborRecord.gScore) {
+                if (const int tentativeG = currentRecord.gScore + 1; tentativeG < gScore) {
                     // record an optimized path tracking choice
-                    neighborRecord.parent = current;
-                    neighborRecord.gScore = tentativeG;
-                    neighborRecord.fScore =
+                    parent = current;
+                    gScore = tentativeG;
+                    fScore =
                             tentativeG + Math::HexMath::Distance(neighbor, goal);
 
-                    openSet.push({neighborRecord.fScore, neighbor});
+                    openSet.push({fScore, neighbor});
                 }
             }
         }

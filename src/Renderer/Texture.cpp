@@ -38,7 +38,7 @@ Texture::Texture(
         if (usesMipmaps)
             glGenerateMipmap(GL_TEXTURE_2D);
     } else {
-        std::cerr << "Failed to load texture: " << path << std::endl;
+        std::cerr << "Failed to load texture: " << path << "\n";
     }
 
     stbi_image_free(m_ImgLocBuffer);
@@ -48,7 +48,7 @@ Texture::Texture(
 Texture::Texture(
     const int width,
     const int height,
-    unsigned char *data,
+    const unsigned char *data,
     const GLuint minFilter,
     const GLuint magFilter,
     const GLuint wrapS,
@@ -86,7 +86,7 @@ void Texture::Unbind() const {
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void Texture::UpdateData(unsigned char *data, int width, int height) {
+void Texture::UpdateData(const unsigned char *data, const int width, const int height) {
     Bind();
     if (width == m_Width && height == m_Height) {
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);

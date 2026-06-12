@@ -66,39 +66,38 @@ namespace LightingSystem {
             pixelBuffer.resize(pixelCount * 4, 255);
         }
 
-        std::fill(accumulationBuffer.begin(), accumulationBuffer.end(), glm::vec3(ambient));
+        std::ranges::fill(accumulationBuffer, glm::vec3(ambient));
 
         int lightCount = 0;
         reg.ForEach<PointLightComponent, TransformComponent>(
-            [&](Entity, PointLightComponent *light, TransformComponent *transform) {
+            [&](Entity, const PointLightComponent *light, const TransformComponent *transform) {
                 lightCount++;
                 const glm::vec3 pos = transform->transform.GetPosition();
 
-                const float lx = ((pos.x - mapOffset.x) / mapSize.x) * texW;
-                const float ly = ((pos.y - mapOffset.y) / mapSize.y) * texH;
+                const float lx = (pos.x - mapOffset.x) / mapSize.x * texW;
+                const float ly = (pos.y - mapOffset.y) / mapSize.y * texH;
 
-                const float radiusPxX = (light->radius / mapSize.x) * texW;
-                const float radiusPxY = (light->radius / mapSize.y) * texH;
+                const float radiusPxX = light->radius / mapSize.x * texW;
+                const float radiusPxY = light->radius / mapSize.y * texH;
                 const float radiusPx = std::max(radiusPxX, radiusPxY);
                 const float radiusSq = radiusPx * radiusPx;
                 const float invRadiusSq = 1.0f / radiusSq;
 
-                int minX = std::max(0, static_cast<int>(lx - radiusPx));
-                int maxX = std::min(texW - 1, static_cast<int>(lx + radiusPx));
-                int minY = std::max(0, static_cast<int>(ly - radiusPx));
-                int maxY = std::min(texH - 1, static_cast<int>(ly + radiusPx));
+                const int minX = std::max(0, static_cast<int>(lx - radiusPx));
+                const int maxX = std::min(texW - 1, static_cast<int>(lx + radiusPx));
+                const int minY = std::max(0, static_cast<int>(ly - radiusPx));
+                const int maxY = std::min(texH - 1, static_cast<int>(ly + radiusPx));
 
                 for (int y = minY; y <= maxY; ++y) {
                     const float dy = static_cast<float>(y) - ly;
                     const float dySq = dy * dy;
-                    int rowIdx = y * texW;
+                    const int rowIdx = y * texW;
 
                     for (int x = minX; x <= maxX; ++x) {
                         const float dx = static_cast<float>(x) - lx;
-                        const float distSq = dx * dx + dySq;
 
-                        if (distSq <= radiusSq) {
-                            const float falloff = std::max(0.0f, 1.0f - (distSq * invRadiusSq));
+                        if (const float distSq = dx * dx + dySq; distSq <= radiusSq) {
+                            const float falloff = std::max(0.0f, 1.0f - distSq * invRadiusSq);
                             const float brightness = falloff * light->intensity;
                             accumulationBuffer[rowIdx + x] += light->color * brightness;
                         }

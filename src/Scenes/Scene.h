@@ -22,7 +22,7 @@ public:
 
     void OnEnter();
 
-    void OnExit();
+    void OnExit() const;
 
     void Update(float dt);
 

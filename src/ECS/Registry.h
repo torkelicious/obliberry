@@ -65,16 +65,15 @@ public:
     template<typename T>
     bool HasComponent(EntityID entity) { return GetPool<T>()->Has(entity); }
 
-    void SetEntityName(EntityID id, const std::string &name) {
+    void SetEntityName(const EntityID id, const std::string &name) {
         m_EntityNames[id] = name;
     }
 
-    const std::string &GetEntityName(EntityID id) const {
-        auto it = m_EntityNames.find(id);
-        if (it != m_EntityNames.end()) {
+    const std::string &GetEntityName(const EntityID id) const {
+        if (const auto it = m_EntityNames.find(id); it != m_EntityNames.end()) {
             return it->second;
         }
-        static std::string empty = "";
+        static std::string empty;
         return empty;
     }
 
@@ -82,8 +81,7 @@ public:
 
     template<typename Primary, typename... Rest, typename Func>
     void ForEach(Func &&func) {
-        auto *primaryPool = GetPool<Primary>();
-        for (EntityID id: primaryPool->GetDenseEntities()) {
+        for (auto *primaryPool = GetPool<Primary>(); EntityID id: primaryPool->GetDenseEntities()) {
             if ((HasComponent<Rest>(id) && ...)) {
                 func(Entity(id, this), primaryPool->Get(id), GetComponent<Rest>(id)...);
             }
@@ -106,7 +104,7 @@ bool Entity::HasComponent() const {
     return m_Registry->HasComponent<T>(m_EntityHandle);
 }
 
-inline void Entity::SetName(const std::string &name) {
+inline void Entity::SetName(const std::string &name) const {
     m_Registry->SetEntityName(m_EntityHandle, name);
 }
 

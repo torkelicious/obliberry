@@ -59,14 +59,14 @@ bool Window::Init(const unsigned int width, const unsigned int height, const cha
 
 
     if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
-        std::cerr << "failed to init glad" << std::endl;
+        std::cerr << "failed to init glad" << "\n";
         return false;
     }
 
     const int dbg = GLDebug::InitDebug();
     dbg == 0
         ? std::cout << "Debug Enabled" << std::endl
-        : std::cout << "Debug unavailable" << std::endl;
+        : std::cout << "Debug unavailable" << "\n";
 
     glViewport(0, 0, width, height);
 
@@ -83,8 +83,7 @@ bool Window::Init(const unsigned int width, const unsigned int height, const cha
 }
 
 void Window::WindowResizeCallback(GLFWwindow *window, const int width, const int height) {
-    auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
-    if (self) {
+    if (auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window))) {
         self->m_Width = width;
         self->m_Height = height;
     }
@@ -113,7 +112,7 @@ void Window::SetInputManager(InputManager *inputManager) {
     m_InputManager = inputManager;
 }
 
-void Window::SetWindowTitle(const std::string &title) {
+void Window::SetWindowTitle(const std::string &title) const {
     glfwSetWindowTitle(m_Window, title.c_str());
 }
 

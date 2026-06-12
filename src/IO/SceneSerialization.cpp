@@ -32,8 +32,8 @@ namespace SceneIO {
         if (!file.is_open())
             return false;
 
-        auto &SceneProps = scene.GetProperties();
-        SceneProps.ScenePath = path;
+        auto &[ScenePath, Name, BackgroundClearColor, AmbientLight] = scene.GetProperties();
+        ScenePath = path;
 
         json j;
         file >> j;
@@ -41,12 +41,11 @@ namespace SceneIO {
         if (j.contains("properties")) {
             auto &properties = j["properties"];
             if (properties.contains("name")) {
-                SceneProps.Name = properties["name"].get<std::string>();
+                Name = properties["name"].get<std::string>();
             }
             if (properties.contains("clear_color")) {
-                auto &c = properties["clear_color"];
-                if (c.is_array() && c.size() >= 4) {
-                    SceneProps.BackgroundClearColor = {
+                if (auto &c = properties["clear_color"]; c.is_array() && c.size() >= 4) {
+                    BackgroundClearColor = {
                         c[0].get<float>(),
                         c[1].get<float>(),
                         c[2].get<float>(),
@@ -58,7 +57,7 @@ namespace SceneIO {
             }
 
             if (properties.contains("ambient_light")) {
-                SceneProps.AmbientLight = properties["ambient_light"].get<float>();
+                AmbientLight = properties["ambient_light"].get<float>();
             }
         }
 
@@ -93,8 +92,7 @@ namespace SceneIO {
             mapComp.hexMesh = hexMesh;
 
             if (gridJson.contains("types")) {
-                auto &gridtypes = gridJson["types"];
-                for (auto &typeElement: gridtypes) {
+                for (auto &gridtypes = gridJson["types"]; auto &typeElement: gridtypes) {
                     uint8_t id = typeElement.value("id", static_cast<uint8_t>(1));
                     std::string textureId = typeElement.value("texture", "hex_tex");
 
@@ -123,7 +121,7 @@ namespace SceneIO {
                 std::cerr << "SceneSerializer: Missing map visual assets!\n";
             }
             mapComp.needsMeshUpdate = true;
-            mapComp.lightmap.ambient = SceneProps.AmbientLight;
+            mapComp.lightmap.ambient = AmbientLight;
             mapEntity.AddComponent<MapComponent>(mapComp);
             mapEntity.AddComponent<MapStateComponent>();
         }
@@ -271,9 +269,8 @@ namespace SceneIO {
 
         // ENTITIES
         j["entities"] = json::array();
-        const auto &livingEntities = scene.GetRegistry().GetLivingEntities();
 
-        for (EntityID entityID: livingEntities) {
+        for (const auto &livingEntities = scene.GetRegistry().GetLivingEntities(); EntityID entityID: livingEntities) {
             Entity entity(entityID, &scene.GetRegistry());
 
             if (entity.HasComponent<MapComponent>()) {

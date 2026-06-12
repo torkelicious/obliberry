@@ -45,7 +45,7 @@ void Game::DrawInterface() {
         constexpr float PADDING = 10.0f;
         const ImGuiViewport *viewport = ImGui::GetMainViewport();
 
-        float menuBarHeight = ImGui::GetFrameHeight();
+        const float menuBarHeight = ImGui::GetFrameHeight();
 
         ImGui::SetNextWindowPos(
             ImVec2(viewport->WorkPos.x + viewport->WorkSize.x - PADDING,
@@ -90,10 +90,10 @@ void Game::DrawInterface() {
         if (ImGui::Begin("Entity Inspector", &showEntityInspector)) {
             auto &registry = m_SceneManager.GetCurrentScene()->GetRegistry();
             const auto &livingEntities = registry.GetLivingEntities();
-            static EntityID selectedEntity = static_cast<EntityID>(-1);
+            static auto selectedEntity = static_cast<EntityID>(-1);
 
             ImGui::BeginChild("Entity List", ImVec2(150, 0), true);
-            for (EntityID id: livingEntities) {
+            for (const EntityID id: livingEntities) {
                 Entity entity(id, &registry);
                 std::string label = entity.GetName();
                 if (label.empty()) {
@@ -110,7 +110,7 @@ void Game::DrawInterface() {
             ImGui::SameLine();
             ImGui::BeginChild("Component View", ImVec2(0, 0), true);
             if (selectedEntity != static_cast<EntityID>(-1)) {
-                Entity entity(selectedEntity, &registry);
+                const Entity entity(selectedEntity, &registry);
                 std::string headerName = entity.GetName();
                 if (headerName.empty()) {
                     headerName = "Entity " + std::to_string(selectedEntity);
@@ -187,7 +187,7 @@ void Game::DrawInterface() {
                         ImGui::Text("Current Path Index: %zu", mov->currentPathIndex);
 
                         // progress bar
-                        float progress = (mov->timePerStep > 0.0f) ? (mov->stepTimer / mov->timePerStep) : 0.0f;
+                        const float progress = mov->timePerStep > 0.0f ? mov->stepTimer / mov->timePerStep : 0.0f;
                         ImGui::ProgressBar(progress, ImVec2(0.0f, 0.0f), "Step Progress");
                     }
                 }
@@ -195,7 +195,7 @@ void Game::DrawInterface() {
                 // MeshComponent
                 if (entity.HasComponent<MeshComponent>()) {
                     if (ImGui::CollapsingHeader("Mesh Component")) {
-                        auto *mc = entity.GetComponent<MeshComponent>();
+                        const auto *mc = entity.GetComponent<MeshComponent>();
                         ImGui::Text("Mesh Loaded: %s", mc->mesh ? "Yes" : "No");
                     }
                 }
@@ -203,7 +203,7 @@ void Game::DrawInterface() {
                 // MaterialComponent
                 if (entity.HasComponent<MaterialComponent>()) {
                     if (ImGui::CollapsingHeader("Material Component")) {
-                        auto *mat = entity.GetComponent<MaterialComponent>();
+                        const auto *mat = entity.GetComponent<MaterialComponent>();
                         ImGui::Text("Material Loaded: %s", mat->material ? "Yes" : "No");
                     }
                 }
@@ -241,7 +241,7 @@ void Game::DrawInterface() {
             }
             ImGui::SameLine();
             if (ImGui::Button("Save Scene") && m_SceneManager.GetCurrentScene()) {
-                std::string savePath = PathUtils::Join(SCENE_PATH, nameBuf, SCENE_FILE_EXTENSION);
+                const std::string savePath = PathUtils::Join(SCENE_PATH, nameBuf, SCENE_FILE_EXTENSION);
                 SceneIO::Serialize(savePath, *m_SceneManager.GetCurrentScene());
             }
 
@@ -249,7 +249,7 @@ void Game::DrawInterface() {
                 auto &scene = *m_SceneManager.GetCurrentScene();
                 auto &registry = scene.GetRegistry();
                 registry.ForEach<MapComponent>([&](Entity, MapComponent *mapComp) {
-                    std::string newPath = PathUtils::Join(MAP_PATH, nameBuf, MAP_FILE_EXTENSION);
+                    const std::string newPath = PathUtils::Join(MAP_PATH, nameBuf, MAP_FILE_EXTENSION);
                     mapComp->mapFilePath = newPath;
                     if (MapIO::Deserialize(newPath, mapComp->grid)) {
                         MapRuntimeSystem::OnMapChanged(registry, scene.GetContext());
@@ -261,10 +261,9 @@ void Game::DrawInterface() {
             if (ImGui::Button("Save Map") && m_SceneManager.GetCurrentScene()) {
                 auto &scene = *m_SceneManager.GetCurrentScene();
                 auto &registry = scene.GetRegistry();
-                registry.ForEach<MapComponent>([&](Entity, MapComponent *mapComp) {
-                    std::string newPath = PathUtils::Join(MAP_PATH, nameBuf, MAP_FILE_EXTENSION);
-                    bool ok = MapIO::Serialize(newPath, mapComp->grid);
-                    if (ok) {
+                registry.ForEach<MapComponent>([&](Entity, const MapComponent *mapComp) {
+                    const std::string newPath = PathUtils::Join(MAP_PATH, nameBuf, MAP_FILE_EXTENSION);
+                    if (const bool ok = MapIO::Serialize(newPath, mapComp->grid)) {
                         std::cout << "Saved!" << "\n";
                     }
                 });

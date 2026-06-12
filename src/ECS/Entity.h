@@ -32,9 +32,9 @@ public:
 
     // basically onlt for ui stuff / gameplay
     // all engine logic handles via ID handles.
-    void SetName(const std::string &name);
+    void SetName(const std::string &name) const;
 
-    const std::string &GetName() const;
+    [[nodiscard]] const std::string &GetName() const;
 
 private:
     EntityID m_EntityHandle = 0;

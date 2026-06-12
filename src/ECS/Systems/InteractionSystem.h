@@ -14,7 +14,7 @@
 
 namespace InteractionSystem {
     [[nodiscard]] inline glm::vec2 Update(Registry &registry, const EngineContext &ctx) noexcept {
-        const float windowWidth = static_cast<float>(ctx.window->GetWidth());
+        const auto windowWidth = static_cast<float>(ctx.window->GetWidth());
         const float windowHeight = static_cast<float>(ctx.window->GetHeight());
 
         if (ctx.input->ScrollY() != 0.0) {
@@ -69,8 +69,7 @@ namespace InteractionSystem {
 
         registry.ForEach<MapComponent, MapStateComponent>(
             [&](Entity, MapComponent *mapComp, MapStateComponent *stateComp) {
-                const auto *tile = mapComp->grid.Get(hexPosOnMpos);
-                if (tile == nullptr) {
+                if (const auto *tile = mapComp->grid.Get(hexPosOnMpos); tile == nullptr) {
                     stateComp->hasSelection = false;
                 } else {
                     stateComp->selectedHex = hexPosOnMpos;

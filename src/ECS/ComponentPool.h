@@ -40,7 +40,7 @@ public:
         return &m_Data[m_EntityToIndex[entity]];
     }
 
-    const T *Get(const EntityID entity) const {
+    [[nodiscard]] const T *Get(const EntityID entity) const {
         if (entity >= m_EntityToIndex.size() || m_EntityToIndex[entity] == INVALID_INDEX) {
             return nullptr;
         }

@@ -160,10 +160,8 @@ void EntityFactory::RegisterSerializers() {
     // MESH COMPONENT
     s_Serializers["MeshComponent"] = [](const Entity &entity, nlohmann::json &data, ResourceManager &resources) {
         if (entity.HasComponent<MeshComponent>()) {
-            const auto *mc = entity.GetComponent<MeshComponent>();
-            if (mc->mesh) {
-                std::string id = resources.GetKey<Mesh>(mc->mesh);
-                if (!id.empty()) {
+            if (const auto *mc = entity.GetComponent<MeshComponent>(); mc->mesh) {
+                if (std::string id = resources.GetKey<Mesh>(mc->mesh); !id.empty()) {
                     data["MeshComponent"]["mesh_id"] = id;
                 }
             }
@@ -173,10 +171,8 @@ void EntityFactory::RegisterSerializers() {
     // MATERIAL COMPONENT
     s_Serializers["MaterialComponent"] = [](const Entity &entity, nlohmann::json &data, ResourceManager &resources) {
         if (entity.HasComponent<MaterialComponent>()) {
-            const auto *mat = entity.GetComponent<MaterialComponent>();
-            if (mat->material) {
-                std::string id = resources.GetKey<Material>(mat->material);
-                if (!id.empty()) {
+            if (const auto *mat = entity.GetComponent<MaterialComponent>(); mat->material) {
+                if (std::string id = resources.GetKey<Material>(mat->material); !id.empty()) {
                     data["MaterialComponent"]["material_id"] = id;
                 }
             }
@@ -224,8 +220,7 @@ void EntityFactory::DeserializeEntity(Entity &entity, const nlohmann::json &enti
         entity.SetName(entityData["name"]);
     }
     for (const auto &[compName, compData]: entityData["components"].items()) {
-        auto it = s_Deserializers.find(compName);
-        if (it != s_Deserializers.end()) {
+        if (auto it = s_Deserializers.find(compName); it != s_Deserializers.end()) {
             it->second(entity, compData, resources);
         } else {
             std::cerr << "EntityFactory: No deserializer found for component '" << compName << "'\n";

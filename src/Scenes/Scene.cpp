@@ -49,7 +49,7 @@ void Scene::Render() {
     m_Context.renderer->Flush();
 }
 
-void Scene::OnExit() {
+void Scene::OnExit() const {
     if (m_Context.renderer) {
         m_Context.renderer->Clean();
     }

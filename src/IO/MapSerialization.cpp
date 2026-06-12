@@ -50,8 +50,8 @@ namespace MapIO {
             return false;
         }
 
-        size_t expectedSize = CalculateExpectedFileSize(header.tileCount);
-        if (expectedSize > static_cast<size_t>(fileSize)) {
+        if (size_t expectedSize = CalculateExpectedFileSize(header.tileCount);
+            expectedSize > static_cast<size_t>(fileSize)) {
             std::cerr << "Map file truncated or corrupt.\n";
             return false;
         }
