@@ -42,5 +42,8 @@ constexpr float CHUNK_SIZE = 20.0f;
 // misc math
 constexpr float PI = 3.14159265359f;
 
+// lighting
+constexpr int LIGHTMAP_TEXELS_PER_HEX = 2;
+
 
 #endif //OBLIBERRY_CONSTANTS_H

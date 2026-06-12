@@ -2,7 +2,9 @@
 #define OBLIBERRY_MAPRUNTIMESYSTEM_H
 
 #include <optional>
+#include <vector>
 
+#include "lightingSystem.h"
 #include "ECS/Components/MapComponent.h"
 #include "ECS/Components/MapStateComponent.h"
 #include "ECS/Components/MovementComponent.h"
@@ -37,7 +39,6 @@ namespace MapRuntimeSystem {
                 return coords;
             }
         }
-
         return std::nullopt;
     }
 
@@ -54,11 +55,6 @@ namespace MapRuntimeSystem {
         registry.ForEach<MovementComponent, TransformComponent>(
             [&](const Entity e, MovementComponent *movement, TransformComponent *transform) {
                 MovementSystem::MoveToCenter(e);
-                //if (preferredSpawn.has_value() && !IsEntityPositionValidForMap(grid, *transform)) {
-                //    const glm::vec2 spawnWorldPosition = HexGrid::GetWorldPos(*preferredSpawn);
-                //    const glm::vec3 currentPosition = transform->transform.GetPosition();
-                //    transform->transform.SetPosition({spawnWorldPosition.x, spawnWorldPosition.y, currentPosition.z});
-                //}
             }
         );
     }
@@ -71,8 +67,8 @@ namespace MapRuntimeSystem {
         if (state != nullptr) {
             ResetInteractionState(*state);
         }
-
         ResetMovementEntities(registry, map.grid);
+        LightingSystem::GenerateLightmap(map);
     }
 
     inline void OnMapChanged(Registry &registry, const EngineContext &ctx) {

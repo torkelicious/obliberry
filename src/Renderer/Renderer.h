@@ -4,6 +4,7 @@
 #include <unordered_map>
 
 #include "Camera.h"
+#include "Lightmap.h"
 #include "Material.h"
 #include "Mesh.h"
 #include "Transform.h"
@@ -51,10 +52,14 @@ public:
 
     void Clean();
 
+    void SetLightmap(const Lightmap *lightmap);
+
     void SetClearColor(glm::vec4 color) const;
 
 private:
     void Execute(const RenderCommand &cmd);
+
+    void BindLightmap(Shader *shader) const;
 
 private:
     std::vector<RenderCommand> m_Commands;
@@ -69,6 +74,7 @@ private:
     std::unordered_map<const void *, InstancedGroup> m_InstanceGroups;
 
     const Camera *m_Camera = nullptr;
+    const Lightmap *m_Lightmap = nullptr;
     glm::mat4 m_VP;
     glm::vec4 m_ClearColor = {0.0f, 0.0f, 0.0f, 1.0f};
 };

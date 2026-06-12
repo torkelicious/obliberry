@@ -25,13 +25,28 @@ public:
         GLuint wrapT = GL_CLAMP_TO_EDGE
     );
 
+    Texture(
+        int width,
+        int height,
+        unsigned char *data,
+        GLuint minFilter = GL_NEAREST,
+        GLuint magFilter = GL_NEAREST,
+        GLuint wrapS = GL_CLAMP_TO_EDGE,
+        GLuint wrapT = GL_CLAMP_TO_EDGE
+    );
+
     ~Texture();
 
     void Bind(unsigned int slot = 0) const;
 
     void Unbind() const;
 
+    void UpdateData(unsigned char *data, int width, int height);
+
     std::string &GetPath() { return m_FilePath; }
+
+    int GetWidth() const { return m_Width; }
+    int GetHeight() const { return m_Height; }
 
     static Texture *White();
 

@@ -6,12 +6,13 @@
 #include "ECS/Systems/AISystem.h"
 #include "ECS/Systems/MapRenderSystem.h"
 #include "ECS/Systems/SpriteBillboardSystem.h"
+#include "ECS/Systems/lightingSystem.h"
 #include "IO/SceneSerialization.h"
 #include "IO/EntityFactory.h"
 #include <iostream>
 
 Scene::Scene(const EngineContext &context, SceneProperties props)
-    : m_Context(context), m_Properties(std::move(props)) {
+    : m_Properties(std::move(props)), m_Context(context) {
 }
 
 void Scene::OnEnter() {
@@ -30,10 +31,12 @@ void Scene::OnEnter() {
 
 void Scene::Update(const float dt) {
     m_Context.deltaTime = dt;
+    // this looks stupid but is fine because Update checks for required component for system before running
     const glm::vec2 worldPos = InteractionSystem::Update(m_Registry, m_Context);
     PlayerControlSystem::Update(m_Registry, m_Context, worldPos);
     AISystem::Update(m_Registry, dt);
     MovementSystem::Update(m_Registry, dt);
+    LightingSystem::Update(m_Registry);
 }
 
 void Scene::Render() {

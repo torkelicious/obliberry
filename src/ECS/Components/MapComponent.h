@@ -13,6 +13,7 @@
 #include "Core/Utils.h"
 #include "Renderer/Mesh.h"
 #include "Renderer/Material.h"
+#include "Renderer/Lightmap.h"
 #include "Math/Math.h"
 
 struct MapComponent {
@@ -33,6 +34,9 @@ struct MapComponent {
 
     // padding bounds
     Math::Projection::AABB bufferedRenderAABB;
+
+    // lighting
+    Lightmap lightmap;
 };
 
 #endif //OBLIBERRY_MAPCOMPONENT_H

@@ -10,6 +10,7 @@
 #include "ECS/Components/DirectionalTextureComponent.h"
 #include "ECS/Components/BillboardComponent.h"
 #include "Renderer/Mesh.h"
+#include "ECS/Components/PointLightComponent.h"
 
 std::unordered_map<std::string, ComponentDeserializer> EntityFactory::s_Deserializers;
 std::unordered_map<std::string, ComponentSerializer> EntityFactory::s_Serializers;
@@ -102,6 +103,21 @@ void EntityFactory::RegisterDeserializers() {
         }
         entity.AddComponent<DirectionalTextureComponent>(dirTex);
     };
+
+    // POINT LIGHT COMPONENT
+    s_Deserializers["PointLightComponent"] = [](Entity &entity, const nlohmann::json &data, ResourceManager &) {
+        PointLightComponent plc;
+        if (data.contains("color")) {
+            plc.color = {data["color"][0], data["color"][1], data["color"][2]};
+        }
+        if (data.contains("radius")) {
+            plc.radius = data["radius"].get<float>();
+        }
+        if (data.contains("intensity")) {
+            plc.intensity = data["intensity"].get<float>();
+        }
+        entity.AddComponent<PointLightComponent>(plc);
+    };
 }
 
 void EntityFactory::RegisterSerializers() {
@@ -190,11 +206,23 @@ void EntityFactory::RegisterSerializers() {
                     }
                 }
             };
+
+    // POINT LIGHT COMPONENT
+    s_Serializers["PointLightComponent"] = [](const Entity &entity, nlohmann::json &data, ResourceManager &) {
+        if (entity.HasComponent<PointLightComponent>()) {
+            const auto *plc = entity.GetComponent<PointLightComponent>();
+            data["PointLightComponent"]["color"] = {plc->color.x, plc->color.y, plc->color.z};
+            data["PointLightComponent"]["radius"] = plc->radius;
+            data["PointLightComponent"]["intensity"] = plc->intensity;
+        }
+    };
 }
 
 void EntityFactory::DeserializeEntity(Entity &entity, const nlohmann::json &entityData, ResourceManager &resources) {
-    if (!entityData.contains("components")) return;
-
+    if (!entityData.contains("components")) { return; }
+    if (entityData.contains("name")) {
+        entity.SetName(entityData["name"]);
+    }
     for (const auto &[compName, compData]: entityData["components"].items()) {
         auto it = s_Deserializers.find(compName);
         if (it != s_Deserializers.end()) {
@@ -205,13 +233,17 @@ void EntityFactory::DeserializeEntity(Entity &entity, const nlohmann::json &enti
     }
 }
 
-void EntityFactory::SerializeEntity(Entity &entity, nlohmann::json &outEntityData, ResourceManager &resources) {
+void EntityFactory::SerializeEntity(
+    Entity &entity, nlohmann::json
+    &outEntityData,
+    ResourceManager &resources) {
+    if (!entity.GetName().empty()) {
+        outEntityData["name"] = entity.GetName();
+    }
     nlohmann::json componentsData;
-
     for (const auto &serializeFunc: s_Serializers | std::views::values) {
         serializeFunc(entity, componentsData, resources);
     }
-
     if (!componentsData.empty()) {
         outEntityData["components"] = componentsData;
     }

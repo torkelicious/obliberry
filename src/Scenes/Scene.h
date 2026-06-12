@@ -10,6 +10,7 @@ struct SceneProperties {
     std::string ScenePath;
     std::string Name; // unused 4 now
     glm::vec4 BackgroundClearColor = {0, 0, 0, 1};
+    float AmbientLight = 0.2f;
     // todo: bg music
 };
 

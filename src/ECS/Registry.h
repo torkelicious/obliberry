@@ -17,6 +17,7 @@ private:
     std::queue<EntityID> m_AvailableEntities;
     std::unordered_map<std::type_index, std::unique_ptr<IPool> > m_ComponentPools;
     std::vector<EntityID> m_LivingEntities;
+    std::unordered_map<EntityID, std::string> m_EntityNames;
 
     template<typename T>
     ComponentPool<T> *GetPool() {
@@ -48,6 +49,7 @@ public:
             pool->EntityDestroyed(entity);
         }
         std::erase(m_LivingEntities, entity);
+        m_EntityNames.erase(entity);
 
         m_AvailableEntities.push(entity);
     }
@@ -62,6 +64,19 @@ public:
 
     template<typename T>
     bool HasComponent(EntityID entity) { return GetPool<T>()->Has(entity); }
+
+    void SetEntityName(EntityID id, const std::string &name) {
+        m_EntityNames[id] = name;
+    }
+
+    const std::string &GetEntityName(EntityID id) const {
+        auto it = m_EntityNames.find(id);
+        if (it != m_EntityNames.end()) {
+            return it->second;
+        }
+        static std::string empty = "";
+        return empty;
+    }
 
     const std::vector<EntityID> &GetLivingEntities() const { return m_LivingEntities; }
 
@@ -91,5 +106,12 @@ bool Entity::HasComponent() const {
     return m_Registry->HasComponent<T>(m_EntityHandle);
 }
 
+inline void Entity::SetName(const std::string &name) {
+    m_Registry->SetEntityName(m_EntityHandle, name);
+}
+
+inline const std::string &Entity::GetName() const {
+    return m_Registry->GetEntityName(m_EntityHandle);
+}
 
 #endif //OBLIBERRY_REGISTRY_H

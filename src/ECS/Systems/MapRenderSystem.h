@@ -81,6 +81,7 @@ namespace MapRenderSystem {
                     mapComp->needsMeshUpdate = false;
                 }
 
+                renderer.SetLightmap(mapComp->lightmap.texture ? &mapComp->lightmap : nullptr);
                 // loop through all collected tile types and submit their instanced buffers
                 for (auto &[typeId, transforms]: mapComp->visibles) {
                     if (transforms.empty()) continue;

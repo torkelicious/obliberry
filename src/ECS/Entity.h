@@ -30,6 +30,12 @@ public:
     explicit operator bool() const { return m_EntityHandle != 0; }
     explicit operator EntityID() const { return m_EntityHandle; }
 
+    // basically onlt for ui stuff / gameplay
+    // all engine logic handles via ID handles.
+    void SetName(const std::string &name);
+
+    const std::string &GetName() const;
+
 private:
     EntityID m_EntityHandle = 0;
     Registry *m_Registry = nullptr;

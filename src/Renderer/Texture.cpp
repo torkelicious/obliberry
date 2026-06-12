@@ -44,6 +44,31 @@ Texture::Texture(
     stbi_image_free(m_ImgLocBuffer);
 }
 
+// lightmap
+Texture::Texture(
+    const int width,
+    const int height,
+    unsigned char *data,
+    const GLuint minFilter,
+    const GLuint magFilter,
+    const GLuint wrapS,
+    const GLuint wrapT
+)
+    : m_ID(0), m_FilePath(""), m_ImgLocBuffer(nullptr), m_Width(width), m_Height(height), m_BPP(4) {
+    glGenTextures(1, &m_ID);
+    glBindTexture(GL_TEXTURE_2D, m_ID);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapS);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapT);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
+                 m_Width, m_Height, 0,
+                 GL_RGBA, GL_UNSIGNED_BYTE,
+                 data);
+}
+
 Texture::~Texture() {
     Unbind();
     if (m_ID != 0) {
@@ -59,6 +84,20 @@ void Texture::Bind(const unsigned int slot) const {
 
 void Texture::Unbind() const {
     glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void Texture::UpdateData(unsigned char *data, int width, int height) {
+    Bind();
+    if (width == m_Width && height == m_Height) {
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    } else {
+        m_Width = width;
+        m_Height = height;
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
+                     m_Width, m_Height, 0,
+                     GL_RGBA, GL_UNSIGNED_BYTE,
+                     data);
+    }
 }
 
 Texture *Texture::White() {

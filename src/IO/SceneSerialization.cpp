@@ -56,6 +56,10 @@ namespace SceneIO {
                     std::cerr << "SceneSerializer Warning: 'clear_color' is malformed. Defaulting to black.\n";
                 }
             }
+
+            if (properties.contains("ambient_light")) {
+                SceneProps.AmbientLight = properties["ambient_light"].get<float>();
+            }
         }
 
         auto &resources = *scene.GetContext().resources;
@@ -70,6 +74,7 @@ namespace SceneIO {
 
             // map entity via ECS
             Entity mapEntity(scene.GetRegistry().CreateEntity(), &scene.GetRegistry());
+            mapEntity.SetName("MAP");
             MapComponent mapComp;
             mapComp.mapFilePath = mapPath;
 
@@ -118,6 +123,7 @@ namespace SceneIO {
                 std::cerr << "SceneSerializer: Missing map visual assets!\n";
             }
             mapComp.needsMeshUpdate = true;
+            mapComp.lightmap.ambient = SceneProps.AmbientLight;
             mapEntity.AddComponent<MapComponent>(mapComp);
             mapEntity.AddComponent<MapStateComponent>();
         }
@@ -138,6 +144,10 @@ namespace SceneIO {
         return true;
     }
 
+    //
+    // spacer here so i can more easily ending of deserialize into serialize
+    //
+
     bool Serialize(const std::string &path, Scene &scene) {
         json j;
         auto &resources = *scene.GetContext().resources;
@@ -152,6 +162,7 @@ namespace SceneIO {
             c[2],
             c[3]
         };
+        j["properties"]["ambient_light"] = sceneProps.AmbientLight;
 
         // ecs query to save grid
         scene.GetRegistry().ForEach<MapComponent>([&](Entity, const MapComponent *mapComp) {

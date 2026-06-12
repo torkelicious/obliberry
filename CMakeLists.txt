@@ -110,6 +110,8 @@ add_executable(
         src/IO/SceneSerialization.cpp
         src/IO/SceneSerialization.h
         src/Math/Math.h
+        src/ECS/Systems/lightingSystem.h
+        src/ECS/Components/PointLightComponent.h
 )
 
 target_include_directories(

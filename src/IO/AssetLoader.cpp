@@ -70,7 +70,6 @@ void AssetLoader::LoadMaterials(
 
         if (!texture)
             texture = nullptr;
-        std::cerr << "Missing texture: " + textureId + " falling back to default.\n";
 
         glm::vec4 color(1.f);
         if (mat.contains("color")) {

@@ -54,6 +54,7 @@ void Renderer::Flush() {
             cmd.material->shader->Bind();
             cmd.material->shader->SetUniformMat4("u_VP", m_VP);
             cmd.material->shader->SetUniformVec4("u_Color", cmd.material->color);
+            BindLightmap(cmd.material->shader.get());
             currentMaterial = cmd.material;
             currentTexture = nullptr;
         }
@@ -96,6 +97,7 @@ void Renderer::InstancedFlush() {
             tex->Bind(0);
             material->shader->SetUniform1i("u_Texture", 0);
             material->shader->SetUniformVec4("u_Color", material->color);
+            BindLightmap(material->shader.get());
             currentMaterial = material;
         }
 
@@ -133,6 +135,26 @@ void Renderer::InstancedFlush() {
 void Renderer::Clean() {
     m_Commands.clear();
     m_InstancedCommands.clear();
+}
+
+void Renderer::SetLightmap(const Lightmap *lightmap) {
+    m_Lightmap = lightmap;
+}
+
+void Renderer::BindLightmap(Shader *shader) const {
+    if (m_Lightmap &&m_Lightmap
+
+
+    ->
+    texture
+    )
+    {
+        m_Lightmap->texture->Bind(1);
+        shader->SetUniform1i("u_LightTexture", 1);
+        shader->SetUniformVec2("u_MapSize", m_Lightmap->mapSize);
+        shader->SetUniformVec2("u_MapOffset", m_Lightmap->mapOffset);
+        shader->SetUniform1f("u_Ambient", m_Lightmap->ambient);
+    }
 }
 
 void Renderer::SetClearColor(const glm::vec4 color) const {

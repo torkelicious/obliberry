@@ -1,21 +1,8 @@
 #include "Game.h"
 #include "IO/AssetLoader.h"
-#include "IO/MapSerialization.h"
 #include "Renderer/MeshFactory.h"
 #include <filesystem>
-
 #include "Renderer/Renderer.h"
-
-
-bool Game::TestFileWrite(const HexGrid &grid, const std::string &path) {
-    const size_t expectedBytes = MapIO::CalculateExpectedFileSize(grid.tiles.size());
-    if (!MapIO::Serialize(path, grid)) return false;
-    return std::filesystem::file_size(path) == expectedBytes;
-}
-
-bool Game::TestFileLoad(HexGrid &grid, const std::string &path) {
-    return MapIO::Deserialize(path, grid);
-}
 
 void Game::Start() {
     MeshFactory::RegisterAllMeshFactories();
@@ -51,4 +38,3 @@ void Game::Render() const {
 
 void Game::Shutdown() const {
 }
-

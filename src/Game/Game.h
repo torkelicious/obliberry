@@ -25,10 +25,6 @@ public:
     [[nodiscard]] Camera &GetCamera() const { return *m_Context.camera; }
     void SetContext(const EngineContext &context) { m_Context = context; }
 
-    [[nodiscard]] bool TestFileWrite(const HexGrid &grid, const std::string &path);
-
-    [[nodiscard]] bool TestFileLoad(HexGrid &grid, const std::string &path);
-
 private:
     void Shutdown() const;
 
