@@ -116,6 +116,9 @@ add_executable(
         src/Scripting/Lexer/Lexer.h
         src/Scripting/repl.h
         src/Scripting/repl.cpp
+        src/Scripting/Parser/ast.h
+        src/Scripting/Parser/Parser.cpp
+        src/Scripting/Parser/Parser.h
 )
 
 target_include_directories(

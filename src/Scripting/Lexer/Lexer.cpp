@@ -12,8 +12,7 @@ namespace Scripting {
         while (!is_at_end()) {
             skip_whitespace();
             if (is_at_end()) break;
-            char c = peek();
-            if (isdigit(c)) {
+            if (char c = peek(); isdigit(c)) {
                 tokens.push_back(read_num());
             } else if (isalpha(c) || c == '_') {
                 tokens.push_back(read_identifier_or_keyword());
@@ -142,9 +141,7 @@ namespace Scripting {
     Token Lexer::read_operator_or_symbol() {
         size_t start_col = column;
         size_t start_pos = current;
-        char c = advance();
-
-        switch (c) {
+        switch (char c = advance()) {
             case '+': return Token{
                     TokenType::PLUS, "+", line, static_cast<int>(start_col), static_cast<int>(start_pos),
                     static_cast<int>(current)
