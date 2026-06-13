@@ -1,5 +1,6 @@
 #include "Lexer.h"
 #include <cctype>
+#include <iostream>
 
 namespace Scripting {
     Lexer::Lexer(std::string_view source)
@@ -10,23 +11,30 @@ namespace Scripting {
         std::vector<Token> tokens;
         while (!is_at_end()) {
             skip_whitespace();
-
+            if (is_at_end()) break;
             char c = peek();
-
             if (isdigit(c)) {
                 tokens.push_back(read_num());
-            } else if (isalpha(c)) {
+            } else if (isalpha(c) || c == '_') {
                 tokens.push_back(read_identifier_or_keyword());
+            } else if (c == '"') {
+                tokens.push_back(read_string());
             } else {
                 tokens.push_back(read_operator_or_symbol());
             }
         }
-        tokens.push_back(Token(TokenType::EOF_, "", line, column));
+        tokens.push_back(Token{
+            TokenType::EOF_, "", line, column, static_cast<int>(current), static_cast<int>(current)
+        });
         return tokens;
     }
 
     char Lexer::peek() const {
         return is_at_end() ? '\0' : source[current];
+    }
+
+    char Lexer::peek_next() const {
+        return (current + 1 >= source.size()) ? '\0' : source[current + 1];
     }
 
     char Lexer::advance() {
@@ -41,14 +49,20 @@ namespace Scripting {
     }
 
     void Lexer::skip_whitespace() {
-        while (!is_at_end()) {
-            char chr = peek();
-            if (chr == ' ' || chr == '\t') {
+        while (true) {
+            char c = peek();
+            if (c == ' ' || c == '\t' || c == '\r') {
                 advance();
-            } else if (chr == '\n') {
+            } else if (c == '\n') {
                 advance();
                 ++line;
                 column = 1;
+            } else if (c == '/' && peek_next() == '/') {
+                advance();
+                advance();
+                while (peek() != '\n' && !is_at_end()) {
+                    advance();
+                }
             } else {
                 break;
             }
@@ -57,90 +71,183 @@ namespace Scripting {
 
     Token Lexer::read_num() {
         size_t number_start = current;
+        size_t start_col = column;
+
         while (isdigit(peek())) { advance(); }
+
         auto lexeme = source.substr(number_start, current - number_start);
-        return Token(TokenType::NUMBER, lexeme, line, column);
+        return Token{
+            TokenType::NUMBER, lexeme, line, static_cast<int>(start_col), static_cast<int>(number_start),
+            static_cast<int>(current)
+        };
     }
 
     Token Lexer::read_identifier_or_keyword() {
         size_t id_start = current;
+        size_t start_col = column;
+
         while (isalnum(peek()) || peek() == '_') { advance(); }
+
         auto text = source.substr(id_start, current - id_start);
-        if (text == "print") return Token(TokenType::PRINT, text, line, column);
-        if (text == "if") return Token(TokenType::IF, text, line, column);
-        if (text == "while") return Token(TokenType::WHILE, text, line, column);
-        return Token(TokenType::IDENTIFIER, text, line, column);
+        if (text == "print")
+            return Token{
+                TokenType::PRINT, text, line, static_cast<int>(start_col), static_cast<int>(id_start),
+                static_cast<int>(current)
+            };
+        if (text == "if")
+            return Token{
+                TokenType::IF, text, line, static_cast<int>(start_col), static_cast<int>(id_start),
+                static_cast<int>(current)
+            };
+        if (text == "while")
+            return Token{
+                TokenType::WHILE, text, line, static_cast<int>(start_col), static_cast<int>(id_start),
+                static_cast<int>(current)
+            };
+
+        return Token{
+            TokenType::IDENTIFIER, text, line, static_cast<int>(start_col), static_cast<int>(id_start),
+            static_cast<int>(current)
+        };
+    }
+
+    Token Lexer::read_string() {
+        size_t start_col = column;
+        size_t str_start = current;
+        advance();
+
+        while (peek() != '"' && !is_at_end()) {
+            if (peek() == '\n') {
+                line++;
+                column = 0;
+            }
+            advance();
+        }
+
+        if (is_at_end()) {
+            std::cerr << "line: " << line << " unterminated string at column: " << column << "\n";
+            return Token{
+                TokenType::EOF_, "", line, static_cast<int>(start_col), static_cast<int>(str_start),
+                static_cast<int>(current)
+            };
+        }
+        advance();
+        std::string_view value = source.substr(str_start + 1, current - str_start - 2);
+        return Token{
+            TokenType::STRING, value, line, static_cast<int>(start_col), static_cast<int>(str_start),
+            static_cast<int>(current)
+        };
     }
 
     Token Lexer::read_operator_or_symbol() {
+        size_t start_col = column;
+        size_t start_pos = current;
         char c = advance();
+
         switch (c) {
-            case '+':
-                return Token(TokenType::PLUS, source.substr(current - 1, 1), line, column);
-            case '-':
-                return Token(TokenType::MINUS, source.substr(current - 1, 1), line, column);
-            case '*':
-                return Token(TokenType::STAR, source.substr(current - 1, 1), line, column);
-            case '/':
-                return Token(TokenType::SLASH, source.substr(current - 1, 1), line, column);
-            // - - -
+            case '+': return Token{
+                    TokenType::PLUS, "+", line, static_cast<int>(start_col), static_cast<int>(start_pos),
+                    static_cast<int>(current)
+                };
+            case '-': return Token{
+                    TokenType::MINUS, "-", line, static_cast<int>(start_col), static_cast<int>(start_pos),
+                    static_cast<int>(current)
+                };
+            case '*': return Token{
+                    TokenType::STAR, "*", line, static_cast<int>(start_col), static_cast<int>(start_pos),
+                    static_cast<int>(current)
+                };
+            case '/': return Token{
+                    TokenType::SLASH, "/", line, static_cast<int>(start_col), static_cast<int>(start_pos),
+                    static_cast<int>(current)
+                };
+
             case '=':
-                return Token(TokenType::ASSIGN, source.substr(current - 1, 1), line, column);
-            case '(': return Token(TokenType::LEFT_PAREN, "(", line, column);
+                if (peek() == '=') {
+                    advance();
+                    return Token{
+                        TokenType::EQUAL_EQUAL, "==", line, static_cast<int>(start_col), static_cast<int>(start_pos),
+                        static_cast<int>(current)
+                    };
+                }
+                return Token{
+                    TokenType::ASSIGN, "=", line, static_cast<int>(start_col), static_cast<int>(start_pos),
+                    static_cast<int>(current)
+                };
 
-            case ')': return Token(TokenType::RIGHT_PAREN, ")", line, column);
+            case '!':
+                if (peek() == '=') {
+                    advance();
+                    return Token{
+                        TokenType::BANG_EQUAL, "!=", line, static_cast<int>(start_col), static_cast<int>(start_pos),
+                        static_cast<int>(current)
+                    };
+                }
+                return Token{
+                    TokenType::BANG, "!", line, static_cast<int>(start_col), static_cast<int>(start_pos),
+                    static_cast<int>(current)
+                };
 
-            case '{': return Token(TokenType::LEFT_BRACE, "{", line, column);
-            case '}': return Token(TokenType::RIGHT_BRACE, "}", line, column);
-            case ';': return Token(TokenType::SEMICOLON, ";", line, column);
+            case '<':
+                if (peek() == '=') {
+                    advance();
+                    return Token{
+                        TokenType::LESS_EQUAL, "<=", line, static_cast<int>(start_col), static_cast<int>(start_pos),
+                        static_cast<int>(current)
+                    };
+                }
+                return Token{
+                    TokenType::LESS, "<", line, static_cast<int>(start_col), static_cast<int>(start_pos),
+                    static_cast<int>(current)
+                };
+
+            case '>':
+                if (peek() == '=') {
+                    advance();
+                    return Token{
+                        TokenType::GREATER_EQUAL, ">=", line, static_cast<int>(start_col), static_cast<int>(start_pos),
+                        static_cast<int>(current)
+                    };
+                }
+                return Token{
+                    TokenType::GREATER, ">", line, static_cast<int>(start_col), static_cast<int>(start_pos),
+                    static_cast<int>(current)
+                };
+
+            case '(': return Token{
+                    TokenType::LEFT_PAREN, "(", line, static_cast<int>(start_col), static_cast<int>(start_pos),
+                    static_cast<int>(current)
+                };
+            case ')': return Token{
+                    TokenType::RIGHT_PAREN, ")", line, static_cast<int>(start_col), static_cast<int>(start_pos),
+                    static_cast<int>(current)
+                };
+            case '{': return Token{
+                    TokenType::LEFT_BRACE, "{", line, static_cast<int>(start_col), static_cast<int>(start_pos),
+                    static_cast<int>(current)
+                };
+            case '}': return Token{
+                    TokenType::RIGHT_BRACE, "}", line, static_cast<int>(start_col), static_cast<int>(start_pos),
+                    static_cast<int>(current)
+                };
+            case ';': return Token{
+                    TokenType::SEMICOLON, ";", line, static_cast<int>(start_col), static_cast<int>(start_pos),
+                    static_cast<int>(current)
+                };
+            case ',': return Token{
+                    TokenType::COMMA, ",", line, static_cast<int>(start_col), static_cast<int>(start_pos),
+                    static_cast<int>(current)
+                };
+            case '.': return Token{
+                    TokenType::DOT, ".", line, static_cast<int>(start_col), static_cast<int>(start_pos),
+                    static_cast<int>(current)
+                };
             default:
-                return Token(TokenType::UNKNOWN, source.substr(current - 1, 1), line, column);
+                return Token{
+                    TokenType::UNKNOWN, std::string_view(&source[start_pos], 1), line, static_cast<int>(start_col),
+                    static_cast<int>(start_pos),
+                    static_cast<int>(current)
+                };
         }
     }
-
-const char* Lexer::stringify(Scripting::TokenType type) {
-    switch (type) {
-        case Scripting::TokenType::LEFT_PAREN: return "LEFT_PAREN";
-        case Scripting::TokenType::RIGHT_PAREN: return "RIGHT_PAREN";
-        case Scripting::TokenType::LEFT_BRACE: return "LEFT_BRACE";
-        case Scripting::TokenType::RIGHT_BRACE: return "RIGHT_BRACE";
-        case Scripting::TokenType::COMMA: return "COMMA";
-        case Scripting::TokenType::DOT: return "DOT";
-        case Scripting::TokenType::SEMICOLON: return "SEMICOLON";
-        case Scripting::TokenType::MINUS: return "MINUS";
-        case Scripting::TokenType::PLUS: return "PLUS";
-        case Scripting::TokenType::STAR: return "STAR";
-        case Scripting::TokenType::SLASH: return "SLASH";
-        case Scripting::TokenType::BANG: return "BANG";
-        case Scripting::TokenType::BANG_EQUAL: return "BANG_EQUAL";
-        case Scripting::TokenType::EQUAL_EQUAL: return "EQUAL_EQUAL";
-        case Scripting::TokenType::ASSIGN: return "ASSIGN";
-        case Scripting::TokenType::GREATER: return "GREATER";
-        case Scripting::TokenType::GREATER_EQUAL: return "GREATER_EQUAL";
-        case Scripting::TokenType::LESS: return "LESS";
-        case Scripting::TokenType::LESS_EQUAL: return "LESS_EQUAL";
-        case Scripting::TokenType::STRING: return "STRING";
-        case Scripting::TokenType::NUMBER: return "NUMBER";
-        case Scripting::TokenType::IDENTIFIER: return "IDENTIFIER";
-        case Scripting::TokenType::AND: return "AND";
-        case Scripting::TokenType::ELSE: return "ELSE";
-        case Scripting::TokenType::FALSE_: return "FALSE_";
-        case Scripting::TokenType::FOR: return "FOR";
-        case Scripting::TokenType::FUN: return "FUN";
-        case Scripting::TokenType::IF: return "IF";
-        case Scripting::TokenType::NULL_: return "NULL_";
-        case Scripting::TokenType::OR: return "OR";
-        case Scripting::TokenType::PRINT: return "PRINT";
-        case Scripting::TokenType::RETURN: return "RETURN";
-        case Scripting::TokenType::THIS: return "THIS";
-        case Scripting::TokenType::TRUE_: return "TRUE_";
-        case Scripting::TokenType::VAR: return "VAR";
-        case Scripting::TokenType::WHILE: return "WHILE";
-        case Scripting::TokenType::EOF_: return "EOF_";
-        case Scripting::TokenType::UNKNOWN: return "UNKNOWN";
-        default: return "UNKNOWN";
-    }
-}
-
-
 }

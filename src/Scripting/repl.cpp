@@ -6,23 +6,28 @@
 
 namespace Scripting {
     void print_tokens(const std::vector<Token> &tokens, Lexer &lex) {
-        for (const auto &token: tokens) {
-            std::cout << "Token{" << lex.stringify(token.type)
-                    << ", " << token.lexeme
-                    << ", line " << token.line
-                    << ", column " << token.column << "}\n";
+        for (const auto &[type, lexeme, line, column, start_pos, end_pos]: tokens) {
+            std::cout << "Token{"
+                    << "Type: " << static_cast<int>(type)
+                    << " | Lexeme: '" << lexeme << "'"
+                    << " | Line: " << line
+                    << ", Col: " << column
+                    << " | Span: [" << start_pos << " -> " << end_pos << "]}\n";
         }
     }
 
     void start_repl() {
         std::string line;
-        while (std::cout << "> " && std::getline(std::cin, line)) {
+        while (true) {
+            std::cout << "> ";
+            if (!std::getline(std::cin, line)) break;
+
             if (line == "exit") {
                 std::cout << "Goodbye!\n";
                 break;
             }
             Lexer lexer(line);
-            std::vector<Scripting::Token> tokens = lexer.tokenize();
+            std::vector<Token> tokens = lexer.tokenize();
             print_tokens(tokens, lexer);
         }
     }
