@@ -52,7 +52,13 @@ namespace Scripting {
 
         std::unique_ptr<Expr> parse_factor();
 
-        BlockStmt parse_block();
+        std::unique_ptr<Stmt> parse_block();
+
+        std::unique_ptr<Stmt> parse_if_statement();
+
+        std::unique_ptr<Stmt> parse_while_statement();
+
+        std::unique_ptr<Stmt> parse_return_statement();
     };
 }
 

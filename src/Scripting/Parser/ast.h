@@ -6,6 +6,17 @@
 #include <vector>
 #include "Scripting/Lexer/Lexer.h"
 
+//
+// todo:
+// for loops
+// variable declarations (var keyword)
+// logical operators (and / or)
+// function declarations and calls
+// env & variable scoping
+// the interpreter / evaluator (executing AST)
+//
+
+
 namespace Scripting {
     using Value = std::variant<
         std::monostate, // Represents Null / Nil / Void (im probably going to use "null")
@@ -102,6 +113,39 @@ namespace Scripting {
 
         explicit BlockStmt(std::vector<std::unique_ptr<Stmt> > stmts)
             : statements(std::move(stmts)) {
+        }
+    };
+
+    struct IfStmt : public Stmt {
+        std::unique_ptr<Expr> condition;
+        std::unique_ptr<Stmt> then_branch;
+        std::unique_ptr<Stmt> else_branch;
+
+        IfStmt(std::unique_ptr<Expr> condition,
+               std::unique_ptr<Stmt> then_branch,
+               std::unique_ptr<Stmt> else_branch)
+            : condition(std::move(condition)), then_branch(std::move(then_branch)),
+              else_branch(std::move(else_branch)) {
+        }
+    };
+
+    struct WhileStmt : public Stmt {
+        std::unique_ptr<Expr> condition;
+        std::unique_ptr<Stmt> body;
+
+        WhileStmt(std::unique_ptr<Expr> condition,
+                  std::unique_ptr<Stmt> body)
+            : condition(std::move(condition)),
+              body(std::move(body)) {
+        }
+    };
+
+    struct ReturnStmt : public Stmt {
+        Token keyword;
+        std::unique_ptr<Expr> value; // can be empty i.e nullptr
+        ReturnStmt(const Token &keyword,
+                   std::unique_ptr<Expr> value)
+            : keyword(keyword), value(std::move(value)) {
         }
     };
 }

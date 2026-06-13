@@ -22,6 +22,7 @@ namespace Scripting {
 
     void print_expr(const Expr *expr) {
         if (!expr) return;
+
         if (const auto e = dynamic_cast<const LiteralExpr *>(expr)) {
             std::visit(ValuePrinter{}, e->value);
         } else if (const auto e = dynamic_cast<const BinaryExpr *>(expr)) {
@@ -65,6 +66,28 @@ namespace Scripting {
                 print_stmt(inner_stmt.get());
             }
             std::cout << "}]\n";
+        } else if (const auto s = dynamic_cast<const IfStmt *>(stmt)) {
+            std::cout << "[IfStmt: (if ";
+            print_expr(s->condition.get());
+            std::cout << "\n  then: ";
+            print_stmt(s->then_branch.get());
+            if (s->else_branch) {
+                std::cout << "  else: ";
+                print_stmt(s->else_branch.get());
+            }
+            std::cout << ")]\n";
+        } else if (const auto s = dynamic_cast<const WhileStmt *>(stmt)) {
+            std::cout << "[WhileStmt: (while ";
+            print_expr(s->condition.get());
+            std::cout << "\n  body: ";
+            print_stmt(s->body.get());
+            std::cout << ")]\n";
+        } else if (const auto s = dynamic_cast<const ReturnStmt *>(stmt)) {
+            std::cout << "[ReturnStmt: (return ";
+            if (s->value) {
+                print_expr(s->value.get()); // nullptr for empty returs
+            }
+            std::cout << ")]\n";
         }
     }
 

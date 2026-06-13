@@ -15,6 +15,12 @@ namespace Scripting {
     }
 
     std::unique_ptr<Stmt> Parser::parse_statement() {
+        if (match({TokenType::IF})) return parse_if_statement();
+        if (match({TokenType::WHILE})) return parse_while_statement();
+        if (match({TokenType::RETURN})) return parse_return_statement();
+
+        if (match({TokenType::LEFT_BRACE})) return parse_block();
+
         if (match({TokenType::PRINT})) {
             Token keyword = previous();
             auto value = parse_expression();
@@ -130,18 +136,50 @@ namespace Scripting {
         throw std::runtime_error("Expect expression.");
     }
 
-    BlockStmt Parser::parse_block() {
-        if (!check(TokenType::LEFT_BRACE)) {
-            throw std::runtime_error("Expected '{' to start block");
-        }
+    std::unique_ptr<Stmt> Parser::parse_block() {
         std::vector<std::unique_ptr<Stmt> > stmts;
-        while (check(TokenType::RIGHT_BRACE) && is_at_end()) {
+        while (!check(TokenType::RIGHT_BRACE) && !is_at_end()) {
             stmts.push_back(parse_statement());
         }
-        if (!match(TokenType::RIGHT_BRACE)) {
-            throw std::runtime_error("Expected '}' to close block");
+        consume(TokenType::RIGHT_BRACE, "Expect '}' to close block.");
+        return std::make_unique<BlockStmt>(std::move(stmts));
+    }
+
+    std::unique_ptr<Stmt> Parser::parse_if_statement() {
+        consume(TokenType::LEFT_PAREN, "Expect '(' after 'if'.");
+        auto condition = parse_expression();
+        consume(TokenType::RIGHT_PAREN, "Expect ')' after if condition.");
+        auto then_branch = parse_statement();
+        std::unique_ptr<Stmt> else_branch = nullptr;
+        if (match({TokenType::ELSE})) {
+            else_branch = parse_statement();
         }
-        return BlockStmt(std::move(stmts));
+        return std::make_unique<IfStmt>(
+            std::move(condition),
+            std::move(then_branch),
+            std::move(else_branch)
+        );
+    }
+
+    std::unique_ptr<Stmt> Parser::parse_while_statement() {
+        consume(TokenType::LEFT_PAREN, "Expect '(' after 'while'.");
+        auto condition = parse_expression();
+        consume(TokenType::RIGHT_PAREN, "Expect ')' after while condition.");
+        auto body = parse_statement();
+        return std::make_unique<WhileStmt>(
+            std::move(condition),
+            std::move(body)
+        );
+    }
+
+    std::unique_ptr<Stmt> Parser::parse_return_statement() {
+        Token keyword = previous();
+        std::unique_ptr<Expr> value = nullptr;
+        if (!check(TokenType::SEMICOLON)) {
+            value = parse_expression();
+        }
+        consume(TokenType::SEMICOLON, "Expect ';' after return value.");
+        return std::make_unique<ReturnStmt>(keyword, std::move(value));
     }
 
     Token Parser::peek() const {

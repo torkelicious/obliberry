@@ -78,11 +78,11 @@ namespace Scripting {
 
         [[nodiscard]] char peek() const;
 
-        char peek_next() const;
+        [[nodiscard]] char peek_next() const;
 
         char advance();
 
-        bool is_at_end() const;
+        [[nodiscard]] bool is_at_end() const;
 
         void skip_whitespace();
 
