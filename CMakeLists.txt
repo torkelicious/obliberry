@@ -119,6 +119,7 @@ add_executable(
         src/Scripting/Parser/ast.h
         src/Scripting/Parser/Parser.cpp
         src/Scripting/Parser/Parser.h
+        src/Scripting/Tokens.h
 )
 
 target_include_directories(
