@@ -1,9 +1,9 @@
 #ifndef OBLIBERRY_AST_H
 #define OBLIBERRY_AST_H
-
 #include <memory>
 #include <variant>
 #include <string_view>
+#include <vector>
 #include "Scripting/Lexer/Lexer.h"
 
 namespace Scripting {
@@ -18,7 +18,6 @@ namespace Scripting {
     struct Expr {
         virtual ~Expr() = default;
     };
-
 
     struct LiteralExpr : public Expr {
         Token token;
@@ -53,6 +52,23 @@ namespace Scripting {
 
         UnaryExpr(const Token &oprt, std::unique_ptr<Expr> right)
             : oprt(oprt), right(std::move(right)) {
+        }
+    };
+
+    struct VariableExpr : public Expr {
+        Token name;
+
+        explicit VariableExpr(const Token &name)
+            : name(name) {
+        }
+    };
+
+    struct AssignmentExpr : public Expr {
+        Token name;
+        std::unique_ptr<Expr> value;
+
+        AssignmentExpr(const Token &name, std::unique_ptr<Expr> value)
+            : name(name), value(std::move(value)) {
         }
     };
 

@@ -1,8 +1,7 @@
 #ifndef OBLIBERRY_LEXER_H
 #define OBLIBERRY_LEXER_H
-#include <string>
-#include <variant>
 #include <vector>
+#include <string_view>
 
 namespace Scripting {
     enum class TokenType {
@@ -16,6 +15,7 @@ namespace Scripting {
         SEMICOLON,
 
         // Operators
+        OPERATOR,
         MINUS,
         PLUS,
         STAR,
@@ -53,14 +53,12 @@ namespace Scripting {
         // Special
         EOF_,
         UNKNOWN
-        // todo: add ecs and game tokens once basic interpreting is done!!!
     };
-
 
     struct Token {
         TokenType type;
         std::string_view lexeme;
-        int line; // maybe use uint32 or size_t later on if i dont need to do weird maths with this
+        int line;
         int column;
         int start_pos;
         int end_pos;
@@ -68,18 +66,17 @@ namespace Scripting {
 
     class Lexer {
     public:
-        Lexer(std::string_view source);
+        explicit Lexer(std::string_view source);
 
         std::vector<Token> tokenize();
 
     private:
         std::string_view source;
-        //size_t start = 0; // unused for now but will pop up later
         size_t current = 0;
         int line = 1;
         int column = 1;
 
-        char peek() const;
+        [[nodiscard]] char peek() const;
 
         char peek_next() const;
 

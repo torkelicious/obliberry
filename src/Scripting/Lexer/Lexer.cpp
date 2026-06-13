@@ -1,9 +1,10 @@
 #include "Lexer.h"
 #include <cctype>
 #include <iostream>
+#include <unordered_map>
 
 namespace Scripting {
-    Lexer::Lexer(std::string_view source)
+    Lexer::Lexer(const std::string_view source)
         : source(source) {
     }
 
@@ -12,7 +13,7 @@ namespace Scripting {
         while (!is_at_end()) {
             skip_whitespace();
             if (is_at_end()) break;
-            if (char c = peek(); isdigit(c)) {
+            if (const char c = peek(); isdigit(c)) {
                 tokens.push_back(read_num());
             } else if (isalpha(c) || c == '_') {
                 tokens.push_back(read_identifier_or_keyword());
@@ -37,7 +38,7 @@ namespace Scripting {
     }
 
     char Lexer::advance() {
-        char chr = peek();
+        const char chr = peek();
         ++current;
         ++column;
         return chr;
@@ -49,8 +50,7 @@ namespace Scripting {
 
     void Lexer::skip_whitespace() {
         while (true) {
-            char c = peek();
-            if (c == ' ' || c == '\t' || c == '\r') {
+            if (const char c = peek(); c == ' ' || c == '\t' || c == '\r') {
                 advance();
             } else if (c == '\n') {
                 advance();
@@ -69,12 +69,12 @@ namespace Scripting {
     }
 
     Token Lexer::read_num() {
-        size_t number_start = current;
-        size_t start_col = column;
+        const size_t number_start = current;
+        const size_t start_col = column;
 
         while (isdigit(peek())) { advance(); }
 
-        auto lexeme = source.substr(number_start, current - number_start);
+        const auto lexeme = source.substr(number_start, current - number_start);
         return Token{
             TokenType::NUMBER, lexeme, line, static_cast<int>(start_col), static_cast<int>(number_start),
             static_cast<int>(current)
@@ -82,37 +82,34 @@ namespace Scripting {
     }
 
     Token Lexer::read_identifier_or_keyword() {
-        size_t id_start = current;
-        size_t start_col = column;
+        const size_t id_start = current;
+        const size_t start_col = column;
 
         while (isalnum(peek()) || peek() == '_') { advance(); }
 
-        auto text = source.substr(id_start, current - id_start);
-        if (text == "print")
-            return Token{
-                TokenType::PRINT, text, line, static_cast<int>(start_col), static_cast<int>(id_start),
-                static_cast<int>(current)
-            };
-        if (text == "if")
-            return Token{
-                TokenType::IF, text, line, static_cast<int>(start_col), static_cast<int>(id_start),
-                static_cast<int>(current)
-            };
-        if (text == "while")
-            return Token{
-                TokenType::WHILE, text, line, static_cast<int>(start_col), static_cast<int>(id_start),
-                static_cast<int>(current)
-            };
+        const auto text = source.substr(id_start, current - id_start);
+
+        static const std::unordered_map<std::string_view, TokenType> keywords = {
+            {"print", TokenType::PRINT},
+            {"if", TokenType::IF},
+            {"while", TokenType::WHILE},
+            {"true", TokenType::TRUE_},
+            {"false", TokenType::FALSE_},
+            {"null", TokenType::NULL_}
+        };
+
+        const auto it = keywords.find(text);
+        const TokenType type = (it != keywords.end()) ? it->second : TokenType::IDENTIFIER;
 
         return Token{
-            TokenType::IDENTIFIER, text, line, static_cast<int>(start_col), static_cast<int>(id_start),
+            type, text, line, static_cast<int>(start_col), static_cast<int>(id_start),
             static_cast<int>(current)
         };
     }
 
     Token Lexer::read_string() {
-        size_t start_col = column;
-        size_t str_start = current;
+        const size_t start_col = column;
+        const size_t str_start = current;
         advance();
 
         while (peek() != '"' && !is_at_end()) {
@@ -131,7 +128,7 @@ namespace Scripting {
             };
         }
         advance();
-        std::string_view value = source.substr(str_start + 1, current - str_start - 2);
+        const std::string_view value = source.substr(str_start + 1, current - str_start - 2);
         return Token{
             TokenType::STRING, value, line, static_cast<int>(start_col), static_cast<int>(str_start),
             static_cast<int>(current)
@@ -139,8 +136,8 @@ namespace Scripting {
     }
 
     Token Lexer::read_operator_or_symbol() {
-        size_t start_col = column;
-        size_t start_pos = current;
+        const size_t start_col = column;
+        const size_t start_pos = current;
         switch (char c = advance()) {
             case '+': return Token{
                     TokenType::PLUS, "+", line, static_cast<int>(start_col), static_cast<int>(start_pos),
@@ -242,8 +239,7 @@ namespace Scripting {
             default:
                 return Token{
                     TokenType::UNKNOWN, std::string_view(&source[start_pos], 1), line, static_cast<int>(start_col),
-                    static_cast<int>(start_pos),
-                    static_cast<int>(current)
+                    static_cast<int>(start_pos), static_cast<int>(current)
                 };
         }
     }
