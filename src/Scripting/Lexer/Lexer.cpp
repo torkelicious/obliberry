@@ -90,20 +90,21 @@ namespace ObSL {
         const auto text = source.substr(id_start, current - id_start);
 
         static const std::unordered_map<std::string_view, TokenType> keywords = {
-            {"print", TokenType::PRINT},
-            {"if", TokenType::IF},
-            {"while", TokenType::WHILE},
-            {"true", TokenType::TRUE_},
-            {"false", TokenType::FALSE_},
-            {"null", TokenType::NULL_},
-            {"var", TokenType::VAR},
-            {"return", TokenType::RETURN},
-            {"for", TokenType::FOR},
             {"and", TokenType::AND},
-            {"or", TokenType::OR},
-            {"fn", TokenType::FUN},
+            {"break", TokenType::BREAK},
             {"else", TokenType::ELSE},
-            {"this", TokenType::THIS}
+            {"false", TokenType::FALSE_},
+            {"fn", TokenType::FN},
+            {"for", TokenType::FOR},
+            {"if", TokenType::IF},
+            {"null", TokenType::NULL_},
+            {"or", TokenType::OR},
+            {"print", TokenType::PRINT},
+            {"return", TokenType::RETURN},
+            {"this", TokenType::THIS},
+            {"true", TokenType::TRUE_},
+            {"var", TokenType::VAR},
+            {"while", TokenType::WHILE}
         };
 
 

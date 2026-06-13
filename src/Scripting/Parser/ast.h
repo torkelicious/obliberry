@@ -218,6 +218,17 @@ namespace ObSL {
         }
     };
 
+    struct BreakStmt : public Stmt {
+        Token keyword;
+
+        explicit BreakStmt(const Token &keyword) : keyword(keyword) {
+        }
+
+        [[nodiscard]] std::string to_string() const override {
+            return "[BreakStmt]\n";
+        }
+    };
+
     struct VarStmt : public Stmt {
         Token name;
         std::unique_ptr<Expr> initializer;

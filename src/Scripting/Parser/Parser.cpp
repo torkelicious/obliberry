@@ -16,20 +16,18 @@ namespace ObSL {
 
     std::unique_ptr<Stmt> Parser::parse_statement() {
         if (match({TokenType::VAR})) return parse_var_statement();
-        if (match({TokenType::IF})) return parse_if_statement();
-        if (match({TokenType::FOR})) return parse_for_statement();
-        if (match({TokenType::WHILE})) return parse_while_statement();
-        if (match({TokenType::RETURN})) return parse_return_statement();
-
         if (match({TokenType::LEFT_BRACE})) return parse_block();
-
+        if (match({TokenType::IF})) return parse_if_statement();
         if (match({TokenType::PRINT})) {
             Token keyword = previous();
             auto value = parse_expression();
             consume(TokenType::SEMICOLON, "Expect ';' after value.");
             return std::make_unique<PrintStmt>(keyword, std::move(value));
         }
-
+        if (match({TokenType::FOR})) return parse_for_statement();
+        if (match({TokenType::WHILE})) return parse_while_statement();
+        if (match({TokenType::RETURN})) return parse_return_statement();
+        if (match({TokenType::BREAK})) return parse_break_statement();
         auto expr = parse_expression();
         consume(TokenType::SEMICOLON, "Expect ';' after expression.");
         return std::make_unique<ExpressionStmt>(std::move(expr));
@@ -202,6 +200,12 @@ namespace ObSL {
         }
         consume(TokenType::SEMICOLON, "Expect ';' after return value.");
         return std::make_unique<ReturnStmt>(keyword, std::move(value));
+    }
+
+    std::unique_ptr<Stmt> Parser::parse_break_statement() {
+        Token keyword = previous();
+        consume(TokenType::SEMICOLON, "Expect ';' after 'break'.");
+        return std::make_unique<BreakStmt>(keyword);
     }
 
     std::unique_ptr<Stmt> Parser::parse_var_statement() {

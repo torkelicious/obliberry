@@ -64,6 +64,8 @@ namespace ObSL {
 
         std::unique_ptr<Stmt> parse_return_statement();
 
+        std::unique_ptr<Stmt> parse_break_statement();
+
         std::unique_ptr<Stmt> parse_var_statement();
 
         std::unique_ptr<Stmt> parse_for_statement();
