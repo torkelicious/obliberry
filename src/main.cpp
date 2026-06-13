@@ -6,6 +6,6 @@ int main() {
     //Application app;
     //app.Run();
 
-    Scripting::start_repl();
+    ObSL::start_repl();
     return 0;
 }

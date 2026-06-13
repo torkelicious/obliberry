@@ -3,7 +3,7 @@
 #include <iostream>
 #include <unordered_map>
 
-namespace Scripting {
+namespace ObSL {
     Lexer::Lexer(const std::string_view source)
         : source(source) {
     }
@@ -34,7 +34,7 @@ namespace Scripting {
     }
 
     char Lexer::peek_next() const {
-        return (current + 1 >= source.size()) ? '\0' : source[current + 1];
+        return current + 1 >= source.size() ? '\0' : source[current + 1];
     }
 
     char Lexer::advance() {
@@ -95,11 +95,20 @@ namespace Scripting {
             {"while", TokenType::WHILE},
             {"true", TokenType::TRUE_},
             {"false", TokenType::FALSE_},
-            {"null", TokenType::NULL_}
+            {"null", TokenType::NULL_},
+            {"var", TokenType::VAR},
+            {"return", TokenType::RETURN},
+            {"for", TokenType::FOR},
+            {"and", TokenType::AND},
+            {"or", TokenType::OR},
+            {"fn", TokenType::FUN},
+            {"else", TokenType::ELSE},
+            {"this", TokenType::THIS}
         };
 
+
         const auto it = keywords.find(text);
-        const TokenType type = (it != keywords.end()) ? it->second : TokenType::IDENTIFIER;
+        const TokenType type = it != keywords.end() ? it->second : TokenType::IDENTIFIER;
 
         return Token{
             type, text, line, static_cast<int>(start_col), static_cast<int>(id_start),

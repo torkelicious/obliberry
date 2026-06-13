@@ -3,7 +3,7 @@
 #include <vector>
 #include <string_view>
 
-namespace Scripting {
+namespace ObSL {
     enum class TokenType {
         // Punctuation & Single character tokens
         LEFT_PAREN,

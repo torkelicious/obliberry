@@ -5,7 +5,7 @@
 #include "ast.h"
 #include "Scripting/Lexer/Lexer.h"
 
-namespace Scripting {
+namespace ObSL {
     class Parser {
     public:
         explicit Parser(std::vector<Token> tokens);
@@ -52,6 +52,10 @@ namespace Scripting {
 
         std::unique_ptr<Expr> parse_factor();
 
+        std::unique_ptr<Expr> parse_logical_or();
+
+        std::unique_ptr<Expr> parse_logical_and();
+
         std::unique_ptr<Stmt> parse_block();
 
         std::unique_ptr<Stmt> parse_if_statement();
@@ -59,6 +63,10 @@ namespace Scripting {
         std::unique_ptr<Stmt> parse_while_statement();
 
         std::unique_ptr<Stmt> parse_return_statement();
+
+        std::unique_ptr<Stmt> parse_var_statement();
+
+        std::unique_ptr<Stmt> parse_for_statement();
     };
 }
 
