@@ -8,6 +8,7 @@
 #include "ECS/ECS.h"
 #include "Map/Hex.h"
 #include <algorithm>
+#include <iostream>
 
 #include "Core/Window.h"
 #include "Renderer/Camera.h"
@@ -40,16 +41,24 @@ namespace InteractionSystem {
 
         registry.ForEach<PlayerInputComponent>(
             [&](Entity entity, const PlayerInputComponent *inputComp) {
-                if (ctx.input->IsKeyDown(inputComp->Left))
+                if (ctx.input->IsKeyDown(inputComp->Left)) {
                     screenPan.x -= 1.0f;
-                if (ctx.input->IsKeyDown(inputComp->Right))
+                }
+                if (ctx.input->IsKeyDown(inputComp->Right)) {
                     screenPan.x += 1.0f;
-                if (ctx.input->IsKeyDown(inputComp->Up))
+                }
+                if (ctx.input->IsKeyDown(inputComp->Up)) {
                     screenPan.y += 1.0f;
-                if (ctx.input->IsKeyDown(inputComp->Down))
+                }
+                if (ctx.input->IsKeyDown(inputComp->Down)) {
                     screenPan.y -= 1.0f;
-                if (ctx.input->IsKeyPressed(inputComp->Quit))
+                }
+                if (ctx.input->IsKeyPressed(inputComp->Quit)) {
                     ctx.window->Close();
+                }
+                if (ctx.input->IsKeyPressed(inputComp->Console)) {
+                    std::cout << "console\n";
+                }
             });
 
         if (glm::length(screenPan) > 0.0f) {

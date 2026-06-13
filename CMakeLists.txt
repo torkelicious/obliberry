@@ -112,6 +112,10 @@ add_executable(
         src/Math/Math.h
         src/ECS/Systems/lightingSystem.h
         src/ECS/Components/PointLightComponent.h
+        src/Scripting/Lexer/Lexer.cpp
+        src/Scripting/Lexer/Lexer.h
+        src/Scripting/repl.h
+        src/Scripting/repl.cpp
 )
 
 target_include_directories(
