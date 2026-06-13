@@ -8,7 +8,7 @@
 
 namespace Scripting {
     using Value = std::variant<
-        std::monostate, // Represents Null / Nil / Void
+        std::monostate, // Represents Null / Nil / Void (im probably going to use "null")
         bool, // true / false
         double, // Numbers
         std::string_view // strings
@@ -24,7 +24,7 @@ namespace Scripting {
         Token token;
         Value value;
 
-        explicit LiteralExpr(Token token, Value value)
+        explicit LiteralExpr(const Token &token, const Value &value)
             : token(token), value(value) {
         }
     };
@@ -34,7 +34,7 @@ namespace Scripting {
         Token oprt;
         std::unique_ptr<Expr> right;
 
-        BinaryExpr(std::unique_ptr<Expr> left, Token oprt, std::unique_ptr<Expr> right)
+        BinaryExpr(std::unique_ptr<Expr> left, const Token &oprt, std::unique_ptr<Expr> right)
             : left(std::move(left)), oprt(oprt), right(std::move(right)) {
         }
     };
@@ -51,8 +51,41 @@ namespace Scripting {
         Token oprt;
         std::unique_ptr<Expr> right;
 
-        UnaryExpr(Token oprt, std::unique_ptr<Expr> right)
+        UnaryExpr(const Token &oprt, std::unique_ptr<Expr> right)
             : oprt(oprt), right(std::move(right)) {
+        }
+    };
+
+    //
+    // statements
+    //
+
+    struct Stmt {
+        virtual ~Stmt() = default;
+    };
+
+    struct ExpressionStmt : public Stmt {
+        std::unique_ptr<Expr> expression;
+
+        explicit ExpressionStmt(std::unique_ptr<Expr> expr)
+            : expression(std::move(expr)) {
+        }
+    };
+
+    struct PrintStmt : public Stmt {
+        Token keyword;
+        std::unique_ptr<Expr> expression;
+
+        PrintStmt(const Token &keyword, std::unique_ptr<Expr> expr)
+            : keyword(keyword), expression(std::move(expr)) {
+        }
+    };
+
+    struct BlockStmt : public Stmt {
+        std::vector<std::unique_ptr<Stmt> > statements;
+
+        explicit BlockStmt(std::vector<std::unique_ptr<Stmt> > stmts)
+            : statements(std::move(stmts)) {
         }
     };
 }
