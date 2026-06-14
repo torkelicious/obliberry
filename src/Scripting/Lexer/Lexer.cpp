@@ -2,10 +2,10 @@
 #include <cctype>
 #include <iostream>
 #include <unordered_map>
+#include <format>
 
 namespace ObSL {
-    Lexer::Lexer(const std::string_view source)
-        : source(source) {
+    Lexer::Lexer(const std::string_view source) : source(source) {
     }
 
     std::vector<Token> Lexer::tokenize() {
@@ -13,9 +13,9 @@ namespace ObSL {
         while (!is_at_end()) {
             skip_whitespace();
             if (is_at_end()) break;
-            if (const char c = peek(); isdigit(c)) {
+            if (const char c = peek(); std::isdigit(static_cast<unsigned char>(c))) {
                 tokens.push_back(read_num());
-            } else if (isalpha(c) || c == '_') {
+            } else if (std::isalpha(static_cast<unsigned char>(c)) || c == '_') {
                 tokens.push_back(read_identifier_or_keyword());
             } else if (c == '"') {
                 tokens.push_back(read_string());
@@ -72,7 +72,7 @@ namespace ObSL {
         const size_t number_start = current;
         const size_t start_col = column;
 
-        while (isdigit(peek())) { advance(); }
+        while (std::isdigit(static_cast<unsigned char>(peek()))) { advance(); }
 
         const auto lexeme = source.substr(number_start, current - number_start);
         return Token{
@@ -85,35 +85,23 @@ namespace ObSL {
         const size_t id_start = current;
         const size_t start_col = column;
 
-        while (isalnum(peek()) || peek() == '_') { advance(); }
+        while (std::isalnum(static_cast<unsigned char>(peek())) || peek() == '_') { advance(); }
 
         const auto text = source.substr(id_start, current - id_start);
 
         static const std::unordered_map<std::string_view, TokenType> keywords = {
-            {"and", TokenType::AND},
-            {"break", TokenType::BREAK},
-            {"else", TokenType::ELSE},
-            {"false", TokenType::FALSE_},
-            {"fn", TokenType::FN},
-            {"for", TokenType::FOR},
-            {"if", TokenType::IF},
-            {"null", TokenType::NULL_},
-            {"or", TokenType::OR},
-            {"print", TokenType::PRINT},
-            {"return", TokenType::RETURN},
-            {"this", TokenType::THIS},
-            {"true", TokenType::TRUE_},
-            {"var", TokenType::VAR},
-            {"while", TokenType::WHILE}
+            {"and", TokenType::AND}, {"break", TokenType::BREAK}, {"else", TokenType::ELSE},
+            {"false", TokenType::FALSE_}, {"fn", TokenType::FN}, {"for", TokenType::FOR},
+            {"if", TokenType::IF}, {"null", TokenType::NULL_}, {"or", TokenType::OR},
+            {"print", TokenType::PRINT}, {"return", TokenType::RETURN}, {"this", TokenType::THIS},
+            {"true", TokenType::TRUE_}, {"var", TokenType::VAR}, {"while", TokenType::WHILE}
         };
-
 
         const auto it = keywords.find(text);
         const TokenType type = it != keywords.end() ? it->second : TokenType::IDENTIFIER;
 
         return Token{
-            type, text, line, static_cast<int>(start_col), static_cast<int>(id_start),
-            static_cast<int>(current)
+            type, text, line, static_cast<int>(start_col), static_cast<int>(id_start), static_cast<int>(current)
         };
     }
 
@@ -131,7 +119,7 @@ namespace ObSL {
         }
 
         if (is_at_end()) {
-            std::cerr << "line: " << line << " unterminated string at column: " << column << "\n";
+            std::cerr << std::format("line: {} unterminated string at column: {}\n", line, column);
             return Token{
                 TokenType::EOF_, "", line, static_cast<int>(start_col), static_cast<int>(str_start),
                 static_cast<int>(current)
@@ -148,7 +136,7 @@ namespace ObSL {
     Token Lexer::read_operator_or_symbol() {
         const size_t start_col = column;
         const size_t start_pos = current;
-        switch (char c = advance()) {
+        switch (advance()) {
             case '+':
                 if (peek() == '+') {
                     advance();
@@ -168,7 +156,6 @@ namespace ObSL {
                     TokenType::PLUS, "+", line, static_cast<int>(start_col), static_cast<int>(start_pos),
                     static_cast<int>(current)
                 };
-
             case '-':
                 if (peek() == '-') {
                     advance();
@@ -188,7 +175,6 @@ namespace ObSL {
                     TokenType::MINUS, "-", line, static_cast<int>(start_col), static_cast<int>(start_pos),
                     static_cast<int>(current)
                 };
-
             case '*':
                 if (peek() == '=') {
                     advance();
@@ -201,9 +187,7 @@ namespace ObSL {
                     TokenType::STAR, "*", line, static_cast<int>(start_col), static_cast<int>(start_pos),
                     static_cast<int>(current)
                 };
-
             case '/':
-                // skip_whitespace() already intercepts comments !!
                 if (peek() == '=') {
                     advance();
                     return Token{
@@ -239,7 +223,6 @@ namespace ObSL {
                     TokenType::ASSIGN, "=", line, static_cast<int>(start_col), static_cast<int>(start_pos),
                     static_cast<int>(current)
                 };
-
             case '!':
                 if (peek() == '=') {
                     advance();
@@ -252,7 +235,6 @@ namespace ObSL {
                     TokenType::BANG, "!", line, static_cast<int>(start_col), static_cast<int>(start_pos),
                     static_cast<int>(current)
                 };
-
             case '<':
                 if (peek() == '=') {
                     advance();
@@ -265,7 +247,6 @@ namespace ObSL {
                     TokenType::LESS, "<", line, static_cast<int>(start_col), static_cast<int>(start_pos),
                     static_cast<int>(current)
                 };
-
             case '>':
                 if (peek() == '=') {
                     advance();
@@ -278,7 +259,6 @@ namespace ObSL {
                     TokenType::GREATER, ">", line, static_cast<int>(start_col), static_cast<int>(start_pos),
                     static_cast<int>(current)
                 };
-
             case '(': return Token{
                     TokenType::LEFT_PAREN, "(", line, static_cast<int>(start_col), static_cast<int>(start_pos),
                     static_cast<int>(current)
@@ -314,4 +294,4 @@ namespace ObSL {
                 };
         }
     }
-}
+} // namespace ObSL

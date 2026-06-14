@@ -1,0 +1,101 @@
+print "DATA TYPES & OPERATORS";
+var num = 42;
+var str = "ObSL";
+var boolean = true;
+var empty = null;
+
+print "Variables:";
+print num;
+print str;
+print boolean;
+print empty;
+
+print "Arithmetic (Expect 14):";
+print (10 + 2 * 3) - (8 % 6);
+
+print "String Concatenation:";
+print "Welcome to " + str + "!";
+
+print "Prefix vs Postfix:";
+var counter = 10;
+print counter++; // Expected: 10
+print counter;   // Expected: 11
+print ++counter; // Expected: 12
+
+print "";
+print "SCOPING & SHADOWING";
+var scope_test = "global";
+{
+    var inner_assign = "local";
+    var scope_test = "shadowed";
+    print inner_assign; // Expected: local
+    print scope_test;   // Expected: shadowed
+}
+print scope_test;       // Expected: global
+
+print "";
+print "CONTROL FLOW";
+
+var x = 5;
+if (x > 10) {
+    print "Error: x is not greater than 10";
+} else {
+    print "Success: Else branch evaluated.";
+}
+
+print "While loop countdown:";
+var countdown = 3;
+while (countdown > 0) {
+    print countdown;
+    countdown--;
+}
+
+print "For loop with break evaluation:";
+for (var i = 0; i < 10; i++) {
+    if (i == 4) {
+        print "Breaking early at 4";
+        break;
+    }
+    print i;
+}
+
+print "";
+print "FUNCTIONS & RECURSION";
+
+fn add(a, b) {
+    return a + b;
+}
+
+print "Standard Call (Expect 15):";
+print add(7, 8);
+
+fn factorial(n) {
+    if (n <= 1) {
+        return 1;
+    }
+
+    return n * factorial(n - 1);
+}
+print "Recursive Call (Expect 120):";
+print factorial(5);
+
+print "";
+print "LEXICAL CLOSURES";
+
+fn generate_counter() {
+    var count = 0;
+    fn incrementer() {
+        count++;
+        return count;
+    }
+    return incrementer;
+}
+
+var ticket_system = generate_counter();
+print "Closure Call 1:";
+print ticket_system(); // Expected: 1
+print "Closure Call 2:";
+print ticket_system(); // Expected: 2
+
+print "";
+print "Done";

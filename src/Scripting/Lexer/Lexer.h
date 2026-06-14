@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_LEXER_H
-#define OBLIBERRY_LEXER_H
+#pragma once
+
 #include <vector>
 #include <string_view>
 #include "Scripting/Tokens.h"
@@ -35,6 +35,4 @@ namespace ObSL {
 
         Token read_operator_or_symbol();
     };
-}
-
-#endif //OBLIBERRY_LEXER_H
+} // namespace ObSL

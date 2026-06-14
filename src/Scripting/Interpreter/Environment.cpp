@@ -1,4 +1,6 @@
 #include "Environment.h"
+#include <stdexcept>
+#include <format>
 
 namespace ObSL {
     void Environment::define(const std::string &name, const Value &value) {
@@ -6,9 +8,8 @@ namespace ObSL {
     }
 
     Value Environment::get(const Token &name) {
-        std::string var_name = std::string(name.lexeme);
-        //  check in current scope
-        if (auto it = values.find(var_name); it != values.end()) {
+        const std::string var_name{name.lexeme};
+        if (const auto it = values.find(var_name); it != values.end()) {
             return it->second;
         }
         // check in enclosing scope
@@ -19,9 +20,8 @@ namespace ObSL {
     }
 
     void Environment::assign(const Token &name, const Value &value) {
-        std::string var_name = std::string(name.lexeme);
-        // check current scope
-        if (auto it = values.find(var_name); it != values.end()) {
+        const std::string var_name{name.lexeme};
+        if (const auto it = values.find(var_name); it != values.end()) {
             it->second = value;
             return;
         }
@@ -33,4 +33,4 @@ namespace ObSL {
         }
         throw std::runtime_error(std::format("Undefined variable '{}'.", var_name));
     }
-} // ObSL
+} // namespace ObSL

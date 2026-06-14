@@ -114,8 +114,6 @@ add_executable(
         src/ECS/Components/PointLightComponent.h
         src/Scripting/Lexer/Lexer.cpp
         src/Scripting/Lexer/Lexer.h
-        src/Scripting/repl.h
-        src/Scripting/repl.cpp
         src/Scripting/Parser/ast.h
         src/Scripting/Parser/Parser.cpp
         src/Scripting/Parser/Parser.h
@@ -124,6 +122,8 @@ add_executable(
         src/Scripting/Interpreter/Interpreter.h
         src/Scripting/Interpreter/Environment.cpp
         src/Scripting/Interpreter/Environment.h
+        src/Scripting/Entry.cpp
+        src/Scripting/Entry.h
 )
 
 target_include_directories(

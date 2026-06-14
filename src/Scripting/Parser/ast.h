@@ -1,5 +1,4 @@
-#ifndef OBLIBERRY_AST_H
-#define OBLIBERRY_AST_H
+#pragma once
 
 #include <memory>
 #include <utility>
@@ -11,14 +10,27 @@
 #include "Scripting/Lexer/Lexer.h"
 
 namespace ObSL {
+    class Interpreter;
+    struct ObSLCallable;
+
     using Value = std::variant<
-        std::monostate, // Represents Null
+        std::monostate,
         bool,
         double,
-        std::string
+        std::string,
+        std::shared_ptr<ObSLCallable>
     >;
 
-    // Base AST nodes
+    struct ObSLCallable {
+        virtual ~ObSLCallable() = default;
+
+        [[nodiscard]] virtual int arity() const = 0;
+
+        virtual Value call(Interpreter *interpreter, const std::vector<Value> &arguments) = 0;
+
+        [[nodiscard]] virtual std::string to_string() const { return "<callable>"; }
+    };
+
     struct Expr {
         virtual ~Expr() = default;
 
@@ -31,9 +43,24 @@ namespace ObSL {
         [[nodiscard]] virtual std::string to_string() const = 0;
     };
 
-    //
-    // Expressions
-    //
+    struct CallExpr : public Expr {
+        std::unique_ptr<Expr> callee;
+        Token paren;
+        std::vector<std::unique_ptr<Expr> > arguments;
+
+        CallExpr(std::unique_ptr<Expr> callee, const Token &paren, std::vector<std::unique_ptr<Expr> > arguments)
+            : callee(std::move(callee)), paren(paren), arguments(std::move(arguments)) {
+        }
+
+        [[nodiscard]] std::string to_string() const override {
+            std::string args;
+            for (size_t i = 0; i < arguments.size(); ++i) {
+                args += arguments[i]->to_string();
+                if (i < arguments.size() - 1) args += ", ";
+            }
+            return std::format("(call {} [{}])", callee->to_string(), args);
+        }
+    };
 
     struct LiteralExpr : public Expr {
         Token token;
@@ -50,6 +77,10 @@ namespace ObSL {
                 else if constexpr (std::is_same_v<T, bool>) return arg ? std::string("true") : std::string("false");
                 else if constexpr (std::is_same_v<T, double>) return std::format("{}", arg);
                 else if constexpr (std::is_same_v<T, std::string>) return std::format("\"{}\"", arg);
+                else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLCallable> >)
+                    return arg
+                               ? arg->to_string()
+                               : std::string("<callable>");
             }, value);
         }
     };
@@ -135,7 +166,7 @@ namespace ObSL {
         Token oprt;
         bool is_prefix;
 
-        UpdateExpr(const Token &name, const Token &oprt, bool is_prefix)
+        UpdateExpr(const Token &name, const Token &oprt, const bool is_prefix)
             : name(name), oprt(oprt), is_prefix(is_prefix) {
         }
 
@@ -145,9 +176,24 @@ namespace ObSL {
         }
     };
 
-    //
-    // Statements
-    //
+    struct FunctionStmt : public Stmt {
+        Token name;
+        std::vector<Token> params;
+        std::vector<std::unique_ptr<Stmt> > body;
+
+        FunctionStmt(const Token &name, std::vector<Token> params, std::vector<std::unique_ptr<Stmt> > body)
+            : name(name), params(std::move(params)), body(std::move(body)) {
+        }
+
+        [[nodiscard]] std::string to_string() const override {
+            std::string param_str;
+            for (size_t i = 0; i < params.size(); ++i) {
+                param_str += params[i].lexeme;
+                if (i < params.size() - 1) param_str += ", ";
+            }
+            return std::format("[FunctionStmt: (fn {}({}))]\n", name.lexeme, param_str);
+        }
+    };
 
     struct ExpressionStmt : public Stmt {
         std::unique_ptr<Expr> expression;
@@ -259,6 +305,4 @@ namespace ObSL {
             );
         }
     };
-}
-
-#endif //OBLIBERRY_AST_H
+} // namespace ObSL

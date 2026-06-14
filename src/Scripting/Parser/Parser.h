@@ -1,7 +1,9 @@
-#ifndef OBLIBERRY_PARSER_H
-#define OBLIBERRY_PARSER_H
-#include <vector>
+#pragma once
 
+#include <vector>
+#include <memory>
+#include <initializer_list>
+#include <string_view>
 #include "ast.h"
 #include "Scripting/Lexer/Lexer.h"
 
@@ -32,9 +34,13 @@ namespace ObSL {
 
         [[nodiscard]] bool is_at_end() const;
 
-        Token consume(TokenType type, const std::string &message);
+        Token consume(TokenType type, std::string_view message);
 
         std::unique_ptr<Stmt> parse_statement();
+
+        std::unique_ptr<Stmt> parse_function();
+
+        std::unique_ptr<Expr> parse_call();
 
         std::unique_ptr<Expr> parse_expression();
 
@@ -58,7 +64,7 @@ namespace ObSL {
 
         std::unique_ptr<Expr> parse_logical_and();
 
-        std::unique_ptr<Stmt> parse_block();
+        std::unique_ptr<BlockStmt> parse_block();
 
         std::unique_ptr<Stmt> parse_if_statement();
 
@@ -72,6 +78,4 @@ namespace ObSL {
 
         std::unique_ptr<Stmt> parse_for_statement();
     };
-}
-
-#endif //OBLIBERRY_PARSER_H
+} // namespace ObSL

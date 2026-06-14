@@ -1,5 +1,9 @@
-#ifndef OBLIBERRY_INTERPRETER_H
-#define OBLIBERRY_INTERPRETER_H
+#pragma once
+
+#include <vector>
+#include <memory>
+#include <stdexcept>
+#include <exception>
 #include "Scripting/Tokens.h"
 #include "Scripting/Parser/ast.h"
 #include "Scripting/Interpreter/Environment.h"
@@ -24,16 +28,17 @@ namespace ObSL {
 
     struct RuntimeError : public std::runtime_error {
         Token token;
-        RuntimeError(const Token &token, const std::string &msg) : std::runtime_error(msg), token(token) {
+
+        RuntimeError(const Token &token, const std::string &msg)
+            : std::runtime_error(msg), token(token) {
         }
     };
 
     class Interpreter {
     private:
-        // the global scope
         std::shared_ptr<Environment> globals;
-        // current scope being executed
         std::shared_ptr<Environment> environment;
+        std::vector<std::vector<std::unique_ptr<Stmt> > > ast_storage;
 
     public:
         Interpreter() {
@@ -41,15 +46,20 @@ namespace ObSL {
             environment = globals;
         }
 
-        // entry point
-        void interpret(const std::vector<std::unique_ptr<Stmt> > &statements);
+        void interpret(std::vector<std::unique_ptr<Stmt> > statements);
+
+        void execute_block(const std::vector<std::unique_ptr<Stmt> > &statements,
+                           std::shared_ptr<Environment> block_env);
 
     private:
-        void execute(Stmt *stmt);
+        void execute(const Stmt *stmt);
 
-        Value evaluate(Expr *expr);
+        Value evaluate(const Expr *expr);
 
-        // statement exec
+        void execute_function_stmt(const FunctionStmt *stmt);
+
+        Value evaluate_call(const CallExpr *expr);
+
         void execute_expression_stmt(const ExpressionStmt *stmt);
 
         void execute_print_stmt(const PrintStmt *stmt);
@@ -66,10 +76,9 @@ namespace ObSL {
 
         void execute_return_stmt(const ReturnStmt *stmt);
 
-        // expression eval
-        Value evaluate_literal(LiteralExpr *expr);
+        Value evaluate_literal(const LiteralExpr *expr);
 
-        Value evaluate_variable(const VariableExpr *expr);
+        Value evaluate_variable(const VariableExpr *expr) const;
 
         Value evaluate_binary(const BinaryExpr *expr);
 
@@ -83,19 +92,27 @@ namespace ObSL {
 
         Value evaluate_logical(const LogicalExpr *expr);
 
-        // helpers
         bool is_truthy(const Value &value);
 
         void check_number_operand(const Token &oprt, const Value &oprnd);
 
         void check_number_operands(const Token &oprt, const Value &lhs, const Value &rhs);
 
-        bool is_equal(const Value &a, const Value &b) const;
-
-        void execute_block(const std::vector<
-                               std::unique_ptr<Stmt> > &statements,
-                           std::shared_ptr<Environment> block_env);
+        [[nodiscard]] bool is_equal(const Value &a, const Value &b) const;
     };
-}
 
-#endif //OBLIBERRY_INTERPRETER_H
+    class ObSLFunction : public ObSLCallable {
+    private:
+        const FunctionStmt *declaration;
+        std::shared_ptr<Environment> closure;
+
+    public:
+        ObSLFunction(const FunctionStmt *declaration, std::shared_ptr<Environment> closure);
+
+        [[nodiscard]] int arity() const override;
+
+        Value call(Interpreter *interpreter, const std::vector<Value> &arguments) override;
+
+        [[nodiscard]] std::string to_string() const override;
+    };
+} // namespace ObSL

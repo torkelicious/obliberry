@@ -1,6 +1,7 @@
 #include "Parser.h"
 #include <stdexcept>
 #include <charconv>
+#include <format>
 
 namespace ObSL {
     Parser::Parser(std::vector<Token> tokens) : tokens(std::move(tokens)) {
@@ -15,6 +16,7 @@ namespace ObSL {
     }
 
     std::unique_ptr<Stmt> Parser::parse_statement() {
+        if (match({TokenType::FN})) return parse_function();
         if (match({TokenType::VAR})) return parse_var_statement();
         if (match({TokenType::LEFT_BRACE})) return parse_block();
         if (match({TokenType::IF})) return parse_if_statement();
@@ -40,12 +42,8 @@ namespace ObSL {
     std::unique_ptr<Expr> Parser::parse_assignment() {
         auto expr = parse_logical_or();
         if (match({
-            TokenType::ASSIGN,
-            TokenType::PLUS_EQUAL,
-            TokenType::MINUS_EQUAL,
-            TokenType::STAR_EQUAL,
-            TokenType::SLASH_EQUAL,
-            TokenType::PERCENT_EQUAL
+            TokenType::ASSIGN, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL,
+            TokenType::STAR_EQUAL, TokenType::SLASH_EQUAL, TokenType::PERCENT_EQUAL
         })) {
             const Token equals = previous();
             auto value = parse_assignment();
@@ -70,20 +68,55 @@ namespace ObSL {
                         binary_op = TokenType::PERCENT;
                         lexeme = "%";
                     }
+
                     Token op_token = {binary_op, lexeme, equals.line, equals.column, equals.start_pos, equals.end_pos};
                     auto left_var = std::make_unique<VariableExpr>(name);
                     value = std::make_unique<BinaryExpr>(std::move(left_var), op_token, std::move(value));
                 }
                 return std::make_unique<AssignmentExpr>(name, std::move(value));
             }
-            throw std::runtime_error("[Line " + std::to_string(equals.line) + "] Invalid assignment target.");
+            throw std::runtime_error(std::format("[Line {}] Invalid assignment target.", equals.line));
+        }
+        return expr;
+    }
+
+    std::unique_ptr<Stmt> Parser::parse_function() {
+        Token name = consume(TokenType::IDENTIFIER, "Expected function name.");
+        consume(TokenType::LEFT_PAREN, "Expect '(' after function name.");
+        std::vector<Token> parameters;
+        if (!check(TokenType::RIGHT_PAREN)) {
+            do {
+                parameters.push_back(consume(TokenType::IDENTIFIER, "Expected parameter name"));
+            } while (match({TokenType::COMMA}));
+        }
+
+        consume(TokenType::RIGHT_PAREN, "Expected ')' after function parameters.");
+        consume(TokenType::LEFT_BRACE, "Expect '{' before function body.");
+        const auto block = parse_block();
+        return std::make_unique<FunctionStmt>(name, std::move(parameters), std::move(block->statements));
+    }
+
+    std::unique_ptr<Expr> Parser::parse_call() {
+        auto expr = parse_primary();
+        while (true) {
+            if (match({TokenType::LEFT_PAREN})) {
+                std::vector<std::unique_ptr<Expr> > args;
+                if (!check(TokenType::RIGHT_PAREN)) {
+                    do {
+                        args.push_back(parse_expression());
+                    } while (match({TokenType::COMMA}));
+                }
+                Token paren = consume(TokenType::RIGHT_PAREN, "Expect ')' after arguments.");
+                expr = std::make_unique<CallExpr>(std::move(expr), paren, std::move(args));
+            } else {
+                break;
+            }
         }
         return expr;
     }
 
     std::unique_ptr<Expr> Parser::parse_equality() {
         auto expr = parse_comparison();
-
         while (match({TokenType::BANG_EQUAL, TokenType::EQUAL_EQUAL})) {
             Token op = previous();
             auto right = parse_comparison();
@@ -94,7 +127,6 @@ namespace ObSL {
 
     std::unique_ptr<Expr> Parser::parse_comparison() {
         auto expr = parse_term();
-
         while (match({TokenType::GREATER, TokenType::GREATER_EQUAL, TokenType::LESS, TokenType::LESS_EQUAL})) {
             Token op = previous();
             auto right = parse_term();
@@ -105,7 +137,6 @@ namespace ObSL {
 
     std::unique_ptr<Expr> Parser::parse_term() {
         auto expr = parse_factor();
-
         while (match({TokenType::PLUS, TokenType::MINUS})) {
             Token op = previous();
             auto right = parse_factor();
@@ -116,7 +147,6 @@ namespace ObSL {
 
     std::unique_ptr<Expr> Parser::parse_factor() {
         auto expr = parse_unary();
-
         while (match({TokenType::STAR, TokenType::SLASH, TokenType::PERCENT})) {
             Token op = previous();
             auto right = parse_unary();
@@ -151,7 +181,6 @@ namespace ObSL {
             auto right = parse_unary();
             return std::make_unique<UnaryExpr>(op, std::move(right));
         }
-
         if (match({TokenType::PLUS_PLUS, TokenType::MINUS_MINUS})) {
             Token op = previous();
             Token name = consume(TokenType::IDENTIFIER, "Expect variable name after prefix operator.");
@@ -161,13 +190,13 @@ namespace ObSL {
     }
 
     std::unique_ptr<Expr> Parser::parse_postfix() {
-        auto expr = parse_primary();
+        auto expr = parse_call();
         if (match({TokenType::PLUS_PLUS, TokenType::MINUS_MINUS})) {
             Token op = previous();
             if (const auto *var_expr = dynamic_cast<VariableExpr *>(expr.get())) {
                 return std::make_unique<UpdateExpr>(var_expr->name, op, false);
             }
-            throw std::runtime_error("[Line " + std::to_string(op.line) + " ] Invalid target for postfix operator.");
+            throw std::runtime_error(std::format("[Line {}] Invalid target for postfix operator.", op.line));
         }
         return expr;
     }
@@ -188,7 +217,8 @@ namespace ObSL {
         }
 
         if (match({TokenType::STRING})) {
-            return std::make_unique<LiteralExpr>(previous(), Value(std::string(previous().lexeme)));
+            const Token &tok = previous();
+            return std::make_unique<LiteralExpr>(tok, Value(std::string(tok.lexeme)));
         }
 
         if (match({TokenType::IDENTIFIER})) {
@@ -203,7 +233,7 @@ namespace ObSL {
         throw std::runtime_error("Expect expression.");
     }
 
-    std::unique_ptr<Stmt> Parser::parse_block() {
+    std::unique_ptr<BlockStmt> Parser::parse_block() {
         std::vector<std::unique_ptr<Stmt> > stmts;
         while (!check(TokenType::RIGHT_BRACE) && !is_at_end()) {
             stmts.push_back(parse_statement());
@@ -221,11 +251,7 @@ namespace ObSL {
         if (match({TokenType::ELSE})) {
             else_branch = parse_statement();
         }
-        return std::make_unique<IfStmt>(
-            std::move(condition),
-            std::move(then_branch),
-            std::move(else_branch)
-        );
+        return std::make_unique<IfStmt>(std::move(condition), std::move(then_branch), std::move(else_branch));
     }
 
     std::unique_ptr<Stmt> Parser::parse_while_statement() {
@@ -233,10 +259,7 @@ namespace ObSL {
         auto condition = parse_expression();
         consume(TokenType::RIGHT_PAREN, "Expect ')' after while condition.");
         auto body = parse_statement();
-        return std::make_unique<WhileStmt>(
-            std::move(condition),
-            std::move(body)
-        );
+        return std::make_unique<WhileStmt>(std::move(condition), std::move(body));
     }
 
     std::unique_ptr<Stmt> Parser::parse_return_statement() {
@@ -268,35 +291,31 @@ namespace ObSL {
     std::unique_ptr<Stmt> Parser::parse_for_statement() {
         consume(TokenType::LEFT_PAREN, "Expect '(' after 'for'.");
 
-        // initializer
         std::unique_ptr<Stmt> initializer;
         if (match({TokenType::SEMICOLON})) {
             initializer = nullptr;
         } else if (match({TokenType::VAR})) {
-            initializer = parse_var_statement(); // this will consume its own semicolon
+            initializer = parse_var_statement();
         } else {
             auto expr = parse_expression();
             consume(TokenType::SEMICOLON, "Expect ';' after loop initializer.");
             initializer = std::make_unique<ExpressionStmt>(std::move(expr));
         }
-        // conidition
+
         std::unique_ptr<Expr> condition = nullptr;
         if (!check(TokenType::SEMICOLON)) {
             condition = parse_expression();
         }
         consume(TokenType::SEMICOLON, "Expect ';' after loop condition");
 
-        // parse incriment
         std::unique_ptr<Expr> increment = nullptr;
         if (!check(TokenType::RIGHT_PAREN)) {
             increment = parse_expression();
         }
         consume(TokenType::RIGHT_PAREN, "Expect ')' after for clauses.");
 
-        // parse loop body
         std::unique_ptr<Stmt> body = parse_statement();
 
-        // unwrapping :)
         if (increment != nullptr) {
             std::vector<std::unique_ptr<Stmt> > body_stmts;
             body_stmts.push_back(std::move(body));
@@ -304,16 +323,13 @@ namespace ObSL {
             body = std::make_unique<BlockStmt>(std::move(body_stmts));
         }
 
-        // if no condition assume an infinite loop
         if (condition == nullptr) {
             Token true_token{TokenType::TRUE_, "true", previous().line, previous().column, 0, 0};
             condition = std::make_unique<LiteralExpr>(true_token, Value(true));
         }
 
-        // wrap in WhileStmt
         body = std::make_unique<WhileStmt>(std::move(condition), std::move(body));
 
-        // wrap in outer block
         if (initializer != nullptr) {
             std::vector<std::unique_ptr<Stmt> > for_stmts;
             for_stmts.push_back(std::move(initializer));
@@ -323,14 +339,8 @@ namespace ObSL {
         return body;
     }
 
-
-    Token Parser::peek() const {
-        return tokens[current];
-    }
-
-    Token Parser::previous() const {
-        return tokens[current - 1];
-    }
+    Token Parser::peek() const { return tokens[current]; }
+    Token Parser::previous() const { return tokens[current - 1]; }
 
     Token Parser::advance() {
         if (!is_at_end()) ++current;
@@ -361,8 +371,7 @@ namespace ObSL {
     }
 
     bool Parser::check_next(const TokenType type) const {
-        if (is_at_end()) return false;
-        if (current + 1 >= tokens.size()) return false;
+        if (is_at_end() || current + 1 >= tokens.size()) return false;
         return tokens[current + 1].type == type;
     }
 
@@ -371,8 +380,8 @@ namespace ObSL {
         return peek().type == TokenType::EOF_;
     }
 
-    Token Parser::consume(const TokenType type, const std::string &message) {
+    Token Parser::consume(const TokenType type, std::string_view message) {
         if (check(type)) return advance();
-        throw std::runtime_error("[Line " + std::to_string(peek().line) + "] " + message);
+        throw std::runtime_error(std::format("[Line {}] {}", peek().line, message));
     }
-}
+} // namespace ObSL
