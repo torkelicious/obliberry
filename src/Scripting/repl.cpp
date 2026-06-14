@@ -14,6 +14,8 @@
  * data types like list/arrays
  * some (limited) native funcs? stl? (later)
  * engine intergration (later later!!!)
+ * execute from file...
+ * ++ and -- operators
  */
 
 /* todo:
@@ -30,7 +32,7 @@
 namespace ObSL {
     void start_repl() {
         std::string line;
-        std::cout << "obsl REPL\nType 'exit' to quit.\n";
+        std::cout << "ObSL REPL\nType 'exit' to quit.\n";
         // global state is held in sesh
         Interpreter interpreter;
         while (true) {
