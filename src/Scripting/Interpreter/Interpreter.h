@@ -67,6 +67,8 @@ namespace ObSL {
 
         Value evaluate_unary(const UnaryExpr *expr);
 
+        Value evaluate_update(const UpdateExpr *expr);
+
         Value evaluate_assignment(const AssignmentExpr *expr);
 
         Value evaluate_logical(const LogicalExpr *expr);

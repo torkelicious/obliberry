@@ -130,6 +130,21 @@ namespace ObSL {
         }
     };
 
+    struct UpdateExpr : public Expr {
+        Token name;
+        Token oprt;
+        bool is_prefix;
+
+        UpdateExpr(const Token &name, const Token &oprt, bool is_prefix)
+            : name(name), oprt(oprt), is_prefix(is_prefix) {
+        }
+
+        [[nodiscard]] std::string to_string() const override {
+            if (is_prefix) return std::format("({}{})", oprt.lexeme, name.lexeme);
+            return std::format("({}{})", name.lexeme, oprt.lexeme);
+        }
+    };
+
     //
     // Statements
     //

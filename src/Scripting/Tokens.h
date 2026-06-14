@@ -3,8 +3,6 @@
 #include <string_view>
 
 namespace ObSL {
-
-
     enum class TokenType {
         // Punctuation & Single character tokens
         LEFT_PAREN,
@@ -20,10 +18,18 @@ namespace ObSL {
 
         // Operators
         OPERATOR,
+        PERCENT, // modulo
+        PERCENT_EQUAL,
         MINUS,
+        MINUS_MINUS,
+        MINUS_EQUAL,
         PLUS,
+        PLUS_PLUS,
+        PLUS_EQUAL,
         STAR,
+        STAR_EQUAL,
         SLASH,
+        SLASH_EQUAL,
         BANG,
         BANG_EQUAL,
         EQUAL_EQUAL,

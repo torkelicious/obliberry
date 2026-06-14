@@ -149,23 +149,84 @@ namespace ObSL {
         const size_t start_col = column;
         const size_t start_pos = current;
         switch (char c = advance()) {
-            case '+': return Token{
+            case '+':
+                if (peek() == '+') {
+                    advance();
+                    return Token{
+                        TokenType::PLUS_PLUS, "++", line, static_cast<int>(start_col), static_cast<int>(start_pos),
+                        static_cast<int>(current)
+                    };
+                }
+                if (peek() == '=') {
+                    advance();
+                    return Token{
+                        TokenType::PLUS_EQUAL, "+=", line, static_cast<int>(start_col), static_cast<int>(start_pos),
+                        static_cast<int>(current)
+                    };
+                }
+                return Token{
                     TokenType::PLUS, "+", line, static_cast<int>(start_col), static_cast<int>(start_pos),
                     static_cast<int>(current)
                 };
-            case '-': return Token{
+
+            case '-':
+                if (peek() == '-') {
+                    advance();
+                    return Token{
+                        TokenType::MINUS_MINUS, "--", line, static_cast<int>(start_col), static_cast<int>(start_pos),
+                        static_cast<int>(current)
+                    };
+                }
+                if (peek() == '=') {
+                    advance();
+                    return Token{
+                        TokenType::MINUS_EQUAL, "-=", line, static_cast<int>(start_col), static_cast<int>(start_pos),
+                        static_cast<int>(current)
+                    };
+                }
+                return Token{
                     TokenType::MINUS, "-", line, static_cast<int>(start_col), static_cast<int>(start_pos),
                     static_cast<int>(current)
                 };
-            case '*': return Token{
+
+            case '*':
+                if (peek() == '=') {
+                    advance();
+                    return Token{
+                        TokenType::STAR_EQUAL, "*=", line, static_cast<int>(start_col), static_cast<int>(start_pos),
+                        static_cast<int>(current)
+                    };
+                }
+                return Token{
                     TokenType::STAR, "*", line, static_cast<int>(start_col), static_cast<int>(start_pos),
                     static_cast<int>(current)
                 };
-            case '/': return Token{
+
+            case '/':
+                // skip_whitespace() already intercepts comments !!
+                if (peek() == '=') {
+                    advance();
+                    return Token{
+                        TokenType::SLASH_EQUAL, "/=", line, static_cast<int>(start_col), static_cast<int>(start_pos),
+                        static_cast<int>(current)
+                    };
+                }
+                return Token{
                     TokenType::SLASH, "/", line, static_cast<int>(start_col), static_cast<int>(start_pos),
                     static_cast<int>(current)
                 };
-
+            case '%':
+                if (peek() == '=') {
+                    advance();
+                    return Token{
+                        TokenType::PERCENT_EQUAL, "%=", line, static_cast<int>(start_col), static_cast<int>(start_pos),
+                        static_cast<int>(current)
+                    };
+                }
+                return Token{
+                    TokenType::PERCENT, "%", line, static_cast<int>(start_col), static_cast<int>(start_pos),
+                    static_cast<int>(current)
+                };
             case '=':
                 if (peek() == '=') {
                     advance();

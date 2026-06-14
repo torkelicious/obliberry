@@ -1,4 +1,6 @@
 #include "Interpreter.h"
+
+#include <cmath>
 #include <iostream>
 
 namespace ObSL {
@@ -35,10 +37,12 @@ namespace ObSL {
         if (const auto e = dynamic_cast<BinaryExpr *>(expr)) return evaluate_binary(e);
         if (const auto e = dynamic_cast<GroupingExpr *>(expr)) return evaluate_grouping(e);
         if (const auto e = dynamic_cast<UnaryExpr *>(expr)) return evaluate_unary(e);
+        if (const auto e = dynamic_cast<UpdateExpr *>(expr)) return evaluate_update(e);
         if (const auto e = dynamic_cast<AssignmentExpr *>(expr)) return evaluate_assignment(e);
         if (const auto e = dynamic_cast<LogicalExpr *>(expr)) return evaluate_logical(e);
         throw std::runtime_error("Unknown expression type in interpreter.");
     }
+
 
     //
     // statements
@@ -126,13 +130,17 @@ namespace ObSL {
                 check_number_operands(expr->oprt, lhs, rhs);
                 if (std::get<double>(rhs) == 0) throw RuntimeError(expr->oprt, "Division by zero.");
                 return std::get<double>(lhs) / std::get<double>(rhs);
+            case TokenType::PERCENT:
+                check_number_operands(expr->oprt, lhs, rhs);
+                if (std::get<double>(rhs) == 0) throw RuntimeError(expr->oprt, "Modulo by zero.");
+                return std::fmod(std::get<double>(lhs), std::get<double>(rhs));
+
             case TokenType::STAR:
                 check_number_operands(expr->oprt, lhs, rhs);
                 return std::get<double>(lhs) * std::get<double>(rhs);
             default:
                 break;
         }
-
         return std::monostate{};
     }
 
@@ -152,6 +160,19 @@ namespace ObSL {
                 break;
         }
         return std::monostate{};
+    }
+
+    Value Interpreter::evaluate_update(const UpdateExpr *expr) {
+        Value current_value = environment->get(expr->name);
+        check_number_operand(expr->oprt, current_value);
+        double num = std::get<double>(current_value);
+        double new_num = (
+                             expr->oprt.type ==
+                             TokenType::PLUS_PLUS)
+                             ? num + 1.0
+                             : num - 1.0;
+        environment->assign(expr->name, Value(new_num));
+        return expr->is_prefix ? Value(new_num) : Value(num);
     }
 
     Value Interpreter::evaluate_assignment(const AssignmentExpr *expr) {

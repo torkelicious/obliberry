@@ -12,10 +12,10 @@
  * switch statements
  * functions & closures
  * data types like list/arrays
+ * foreach
  * some (limited) native funcs? stl? (later)
  * engine intergration (later later!!!)
  * execute from file...
- * ++ and -- operators
  */
 
 /* todo:

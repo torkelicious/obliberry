@@ -46,6 +46,8 @@ namespace ObSL {
 
         std::unique_ptr<Expr> parse_unary();
 
+        std::unique_ptr<Expr> parse_postfix();
+
         std::unique_ptr<Expr> parse_primary();
 
         std::unique_ptr<Expr> parse_term();

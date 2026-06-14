@@ -39,12 +39,41 @@ namespace ObSL {
 
     std::unique_ptr<Expr> Parser::parse_assignment() {
         auto expr = parse_logical_or();
-
-        if (match({TokenType::ASSIGN})) {
+        if (match({
+            TokenType::ASSIGN,
+            TokenType::PLUS_EQUAL,
+            TokenType::MINUS_EQUAL,
+            TokenType::STAR_EQUAL,
+            TokenType::SLASH_EQUAL,
+            TokenType::PERCENT_EQUAL
+        })) {
             const Token equals = previous();
-            auto value = parse_assignment(); // recursively parse the right side
+            auto value = parse_assignment();
             if (const auto *var_expr = dynamic_cast<VariableExpr *>(expr.get())) {
                 Token name = var_expr->name;
+                if (equals.type != TokenType::ASSIGN) {
+                    TokenType binary_op;
+                    std::string_view lexeme;
+                    if (equals.type == TokenType::PLUS_EQUAL) {
+                        binary_op = TokenType::PLUS;
+                        lexeme = "+";
+                    } else if (equals.type == TokenType::MINUS_EQUAL) {
+                        binary_op = TokenType::MINUS;
+                        lexeme = "-";
+                    } else if (equals.type == TokenType::STAR_EQUAL) {
+                        binary_op = TokenType::STAR;
+                        lexeme = "*";
+                    } else if (equals.type == TokenType::SLASH_EQUAL) {
+                        binary_op = TokenType::SLASH;
+                        lexeme = "/";
+                    } else {
+                        binary_op = TokenType::PERCENT;
+                        lexeme = "%";
+                    }
+                    Token op_token = {binary_op, lexeme, equals.line, equals.column, equals.start_pos, equals.end_pos};
+                    auto left_var = std::make_unique<VariableExpr>(name);
+                    value = std::make_unique<BinaryExpr>(std::move(left_var), op_token, std::move(value));
+                }
                 return std::make_unique<AssignmentExpr>(name, std::move(value));
             }
             throw std::runtime_error("[Line " + std::to_string(equals.line) + "] Invalid assignment target.");
@@ -88,7 +117,7 @@ namespace ObSL {
     std::unique_ptr<Expr> Parser::parse_factor() {
         auto expr = parse_unary();
 
-        while (match({TokenType::STAR, TokenType::SLASH})) {
+        while (match({TokenType::STAR, TokenType::SLASH, TokenType::PERCENT})) {
             Token op = previous();
             auto right = parse_unary();
             expr = std::make_unique<BinaryExpr>(std::move(expr), op, std::move(right));
@@ -122,7 +151,25 @@ namespace ObSL {
             auto right = parse_unary();
             return std::make_unique<UnaryExpr>(op, std::move(right));
         }
-        return parse_primary();
+
+        if (match({TokenType::PLUS_PLUS, TokenType::MINUS_MINUS})) {
+            Token op = previous();
+            Token name = consume(TokenType::IDENTIFIER, "Expect variable name after prefix operator.");
+            return std::make_unique<UpdateExpr>(name, op, true);
+        }
+        return parse_postfix();
+    }
+
+    std::unique_ptr<Expr> Parser::parse_postfix() {
+        auto expr = parse_primary();
+        if (match({TokenType::PLUS_PLUS, TokenType::MINUS_MINUS})) {
+            Token op = previous();
+            if (const auto *var_expr = dynamic_cast<VariableExpr *>(expr.get())) {
+                return std::make_unique<UpdateExpr>(var_expr->name, op, false);
+            }
+            throw std::runtime_error("[Line " + std::to_string(op.line) + " ] Invalid target for postfix operator.");
+        }
+        return expr;
     }
 
     std::unique_ptr<Expr> Parser::parse_primary() {

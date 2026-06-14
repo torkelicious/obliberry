@@ -5,7 +5,6 @@
 #include "Scripting/Tokens.h"
 
 namespace ObSL {
-
     class Lexer {
     public:
         explicit Lexer(std::string_view source);
