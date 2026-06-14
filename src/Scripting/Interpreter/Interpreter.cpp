@@ -269,7 +269,10 @@ namespace ObSL {
     }
 
     void Interpreter::execute_return_stmt(const ReturnStmt *stmt) {
-        // TODO: implement return value propagation when functions are added
-        throw std::runtime_error("Return statement outside of function.");
+        Value value = std::monostate{};
+        if (stmt->value) {
+            value = evaluate(stmt->value.get());
+        }
+        throw ReturnException(value);
     }
 }

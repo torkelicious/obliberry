@@ -11,9 +11,19 @@ namespace ObSL {
         }
     };
 
+    struct ReturnException : public std::exception {
+        Value value;
+
+        explicit ReturnException(Value value) : value(std::move(value)) {
+        }
+
+        [[nodiscard]] const char *what() const noexcept override {
+            return "Return signal";
+        }
+    };
+
     struct RuntimeError : public std::runtime_error {
         Token token;
-
         RuntimeError(const Token &token, const std::string &msg) : std::runtime_error(msg), token(token) {
         }
     };
