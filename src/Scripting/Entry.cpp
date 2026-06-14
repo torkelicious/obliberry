@@ -1,4 +1,6 @@
 #include "Entry.h"
+
+#include <chrono>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -10,17 +12,17 @@
 /*
  * ObSL todo:
  * switch statements
- * collection types
- * foreach
+ * foreach loop
+ * proper in/out input buffers
  * limited native funcs & stl
  * engine intergration
+ * docs lol
  */
 
 /*
  todo:
  * TOKENS IN THE ENUM BUT NOT IMPLEMENTED
  * add token types to lexer:
- * l/r brackets
  * switch
  * colons
  * case
@@ -29,6 +31,24 @@
 
 
 namespace ObSL {
+    // this is just a test, move this to seperate file later and maybe make it more acessable...
+    void bind(Interpreter &m_interpreter) {
+        m_interpreter.define_native(
+            "clock",
+            std::make_shared<NativeFunction>(
+                0,
+                [](Interpreter */*interp*/, const std::vector<Value> &args) -> Value {
+                    const auto now = std::chrono::system_clock::now().time_since_epoch();
+                    return static_cast<double>(
+                               std::chrono::duration_cast<std::chrono::milliseconds>(now).
+                               count()
+                           ) / 1000.0;
+                },
+                "clock"
+            ));
+    }
+
+
     int Entry::exec(const int argc, char *argv[]) {
         if (argc > 2) {
             std::cout << "takes arg [script.obsl]\n";
@@ -43,6 +63,7 @@ namespace ObSL {
     }
 
     void Entry::runFile(const std::string &path) {
+        bind(m_interpreter);
         std::ifstream file(path);
         if (!file.is_open()) {
             std::cerr << "Error: Could not open file '" << path << "'\n";
@@ -54,6 +75,7 @@ namespace ObSL {
     }
 
     void Entry::runREPL() {
+        bind(m_interpreter);
         std::string line;
         std::cout << "ObSL REPL (type 'exit' to quit)\n> ";
         while (std::getline(std::cin, line)) {

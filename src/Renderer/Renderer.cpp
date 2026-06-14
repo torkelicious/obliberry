@@ -142,8 +142,11 @@ void Renderer::SetLightmap(const Lightmap *lightmap) {
 }
 
 void Renderer::BindLightmap(Shader *shader) const {
-    if (m_Lightmap && m_Lightmap->texture
-    ) {
+    if (m_Lightmap &&m_Lightmap
+    ->
+    texture
+    )
+    {
         m_Lightmap->texture->Bind(1);
         shader->SetUniform1i("u_LightTexture", 1);
         shader->SetUniformVec2("u_MapSize", m_Lightmap->mapSize);

@@ -12,5 +12,4 @@ int main(int argc, char *argv[]) {
     const std::string fp = PathUtils::Join(SCRIPT_PATH, "test.obsl");
     entry.runFile(fp);
     return 0;
-
 }

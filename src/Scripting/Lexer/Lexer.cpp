@@ -17,7 +17,7 @@ namespace ObSL {
                 tokens.push_back(read_num());
             } else if (std::isalpha(static_cast<unsigned char>(c)) || c == '_') {
                 tokens.push_back(read_identifier_or_keyword());
-            } else if (c == '"') {
+            } else if (c == '"' || c == '\'') {
                 tokens.push_back(read_string());
             } else {
                 tokens.push_back(read_operator_or_symbol());
@@ -71,9 +71,12 @@ namespace ObSL {
     Token Lexer::read_num() {
         const size_t number_start = current;
         const size_t start_col = column;
-
         while (std::isdigit(static_cast<unsigned char>(peek()))) { advance(); }
-
+        // look for a fractional part.
+        if (peek() == '.' && std::isdigit(static_cast<unsigned char>(peek_next()))) {
+            advance(); // Consume the "."
+            while (std::isdigit(static_cast<unsigned char>(peek()))) { advance(); }
+        }
         const auto lexeme = source.substr(number_start, current - number_start);
         return Token{
             TokenType::NUMBER, lexeme, line, static_cast<int>(start_col), static_cast<int>(number_start),
@@ -90,11 +93,22 @@ namespace ObSL {
         const auto text = source.substr(id_start, current - id_start);
 
         static const std::unordered_map<std::string_view, TokenType> keywords = {
-            {"and", TokenType::AND}, {"break", TokenType::BREAK}, {"else", TokenType::ELSE},
-            {"false", TokenType::FALSE_}, {"fn", TokenType::FN}, {"for", TokenType::FOR},
-            {"if", TokenType::IF}, {"null", TokenType::NULL_}, {"or", TokenType::OR},
-            {"print", TokenType::PRINT}, {"return", TokenType::RETURN}, {"this", TokenType::THIS},
-            {"true", TokenType::TRUE_}, {"var", TokenType::VAR}, {"while", TokenType::WHILE}
+            {"and", TokenType::AND},
+            {"break", TokenType::BREAK},
+            {"else", TokenType::ELSE},
+            {"false", TokenType::FALSE_},
+            {"fn", TokenType::FN},
+            {"for", TokenType::FOR},
+            {"if", TokenType::IF},
+            {"null", TokenType::NULL_},
+            {"or", TokenType::OR},
+            {"print", TokenType::PRINT},
+            {"println", TokenType::PRINTLN},
+            {"return", TokenType::RETURN},
+            {"this", TokenType::THIS},
+            {"true", TokenType::TRUE_},
+            {"var", TokenType::VAR},
+            {"while", TokenType::WHILE}
         };
 
         const auto it = keywords.find(text);
@@ -108,16 +122,15 @@ namespace ObSL {
     Token Lexer::read_string() {
         const size_t start_col = column;
         const size_t str_start = current;
-        advance();
-
-        while (peek() != '"' && !is_at_end()) {
+        // support ' or "
+        const char quote_type = advance();
+        while (peek() != quote_type && !is_at_end()) {
             if (peek() == '\n') {
                 line++;
                 column = 0;
             }
             advance();
         }
-
         if (is_at_end()) {
             std::cerr << std::format("line: {} unterminated string at column: {}\n", line, column);
             return Token{
@@ -125,7 +138,7 @@ namespace ObSL {
                 static_cast<int>(current)
             };
         }
-        advance();
+        advance(); // consume the closing quote
         const std::string_view value = source.substr(str_start + 1, current - str_start - 2);
         return Token{
             TokenType::STRING, value, line, static_cast<int>(start_col), static_cast<int>(str_start),
@@ -273,6 +286,14 @@ namespace ObSL {
                 };
             case '}': return Token{
                     TokenType::RIGHT_BRACE, "}", line, static_cast<int>(start_col), static_cast<int>(start_pos),
+                    static_cast<int>(current)
+                };
+            case '[': return Token{
+                    TokenType::LEFT_BRACKET, "[", line, static_cast<int>(start_col), static_cast<int>(start_pos),
+                    static_cast<int>(current)
+                };
+            case ']': return Token{
+                    TokenType::RIGHT_BRACKET, "]", line, static_cast<int>(start_col), static_cast<int>(start_pos),
                     static_cast<int>(current)
                 };
             case ';': return Token{

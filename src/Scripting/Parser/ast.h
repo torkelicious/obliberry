@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <memory>
 #include <utility>
 #include <variant>
@@ -12,14 +13,20 @@
 namespace ObSL {
     class Interpreter;
     struct ObSLCallable;
+    struct ObSLArray;
 
     using Value = std::variant<
         std::monostate,
         bool,
         double,
         std::string,
-        std::shared_ptr<ObSLCallable>
+        std::shared_ptr<ObSLCallable>,
+        std::shared_ptr<ObSLArray>
     >;
+
+    struct ObSLArray {
+        std::vector<Value> elements;
+    };
 
     struct ObSLCallable {
         virtual ~ObSLCallable() = default;
@@ -78,9 +85,9 @@ namespace ObSL {
                 else if constexpr (std::is_same_v<T, double>) return std::format("{}", arg);
                 else if constexpr (std::is_same_v<T, std::string>) return std::format("\"{}\"", arg);
                 else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLCallable> >)
-                    return arg
-                               ? arg->to_string()
-                               : std::string("<callable>");
+                    return arg ? arg->to_string() : std::string("<callable>");
+                else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLArray> >)
+                    return "[Array]";
             }, value);
         }
     };
@@ -176,6 +183,56 @@ namespace ObSL {
         }
     };
 
+    struct ArrayExpr : public Expr {
+        std::vector<std::unique_ptr<Expr> > elements;
+
+        explicit ArrayExpr(std::vector<std::unique_ptr<Expr> > elements)
+            : elements(std::move(elements)) {
+        }
+
+        [[nodiscard]] std::string to_string() const override {
+            std::string elems;
+            for (size_t i = 0; i < elements.size(); ++i) {
+                elems += elements[i]->to_string();
+                if (i < elements.size() - 1) elems += ", ";
+            }
+            return std::format("[{}]", elems);
+        }
+    };
+
+    struct IndexExpr : Expr {
+        std::unique_ptr<Expr> callee;
+        Token bracket;
+        std::unique_ptr<Expr> index;
+
+        IndexExpr(std::unique_ptr<Expr> callee, Token bracket, std::unique_ptr<Expr> index)
+            : callee(std::move(callee)), bracket(bracket), index(std::move(index)) {
+        }
+
+        [[nodiscard]] std::string to_string() const override {
+            return std::format("{}[{}]", callee->to_string(), index->to_string());
+        }
+    };
+
+    struct IndexAssignmentExpr : public Expr {
+        std::unique_ptr<Expr> callee;
+        Token bracket;
+        std::unique_ptr<Expr> index;
+        std::unique_ptr<Expr> value;
+
+        IndexAssignmentExpr(
+            std::unique_ptr<Expr> callee,
+            Token bracket,
+            std::unique_ptr<Expr> index,
+            std::unique_ptr<Expr> value)
+            : callee(std::move(callee)), bracket(bracket), index(std::move(index)), value(std::move(value)) {
+        }
+
+        [[nodiscard]] std::string to_string() const override {
+            return std::format("(= {}[{}] {})", callee->to_string(), index->to_string(), value->to_string());
+        }
+    };
+
     struct FunctionStmt : public Stmt {
         Token name;
         std::vector<Token> params;
@@ -218,6 +275,20 @@ namespace ObSL {
             return std::format("[PrintStmt: {}]\n", expression->to_string());
         }
     };
+
+    struct PrintlnStmt : public Stmt {
+        Token keyword;
+        std::unique_ptr<Expr> expression;
+
+        PrintlnStmt(const Token &keyword, std::unique_ptr<Expr> expr)
+            : keyword(keyword), expression(std::move(expr)) {
+        }
+
+        [[nodiscard]] std::string to_string() const override {
+            return std::format("[PrintlnStmt : {}]\n", expression->to_string());
+        }
+    };
+
 
     struct BlockStmt : public Stmt {
         std::vector<std::unique_ptr<Stmt> > statements;

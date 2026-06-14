@@ -56,11 +56,13 @@ namespace ObSL {
         NULL_,
         OR,
         PRINT,
+        PRINTLN,
         RETURN,
         SWITCH,
         BREAK,
         THIS,
         TRUE_,
+        USING, // imports
         VAR,
         WHILE,
 

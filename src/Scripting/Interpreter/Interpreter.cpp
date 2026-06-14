@@ -33,6 +33,7 @@ namespace ObSL {
     void Interpreter::execute(const Stmt *stmt) {
         if (const auto s = dynamic_cast<const ExpressionStmt *>(stmt)) return execute_expression_stmt(s);
         if (const auto s = dynamic_cast<const PrintStmt *>(stmt)) return execute_print_stmt(s);
+        if (const auto s = dynamic_cast<const PrintlnStmt *>(stmt)) return execute_print_ln_stmt(s);
         if (const auto s = dynamic_cast<const VarStmt *>(stmt)) return execute_var_stmt(s);
         if (const auto s = dynamic_cast<const BlockStmt *>(stmt)) return execute_block_stmt(s);
         if (const auto s = dynamic_cast<const IfStmt *>(stmt)) return execute_if_stmt(s);
@@ -52,6 +53,9 @@ namespace ObSL {
         if (const auto e = dynamic_cast<const UnaryExpr *>(expr)) return evaluate_unary(e);
         if (const auto e = dynamic_cast<const UpdateExpr *>(expr)) return evaluate_update(e);
         if (const auto e = dynamic_cast<const AssignmentExpr *>(expr)) return evaluate_assignment(e);
+        if (const auto e = dynamic_cast<const ArrayExpr *>(expr)) return evaluate_array(e);
+        if (const auto e = dynamic_cast<const IndexExpr *>(expr)) return evaluate_index(e);
+        if (const auto e = dynamic_cast<const IndexAssignmentExpr *>(expr)) return evaluate_index_assignment(e);
         if (const auto e = dynamic_cast<const LogicalExpr *>(expr)) return evaluate_logical(e);
         if (const auto e = dynamic_cast<const CallExpr *>(expr)) return evaluate_call(e);
         throw std::runtime_error("Unknown expression type in interpreter.");
@@ -88,13 +92,29 @@ namespace ObSL {
         Value value = evaluate(stmt->expression.get());
         std::visit([]<typename T0>(const T0 &arg) {
             using T = std::decay_t<T0>;
-            if constexpr (std::is_same_v<T, std::monostate>) std::cout << "null\n";
-            else if constexpr (std::is_same_v<T, bool>) std::cout << (arg ? "true\n" : "false\n");
-            else if constexpr (std::is_same_v<T, double>) std::cout << arg << "\n";
-            else if constexpr (std::is_same_v<T, std::string>) std::cout << arg << "\n";
-            else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLCallable> >) std::cout << arg->to_string() << "\n";
+            if constexpr (std::is_same_v<T, std::monostate>) std::cout << "null";
+            else if constexpr (std::is_same_v<T, bool>) std::cout << (arg ? "true" : "false");
+            else if constexpr (std::is_same_v<T, double>) std::cout << arg;
+            else if constexpr (std::is_same_v<T, std::string>) std::cout << arg;
+            else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLCallable> >) std::cout << arg->to_string();
+            else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLArray> >) std::cout << "[Array]";
         }, value);
     }
+
+    void Interpreter::execute_print_ln_stmt(const PrintlnStmt *stmt) {
+        Value value = evaluate(stmt->expression.get());
+        std::visit([]<typename T0>(const T0 &arg) {
+            using T = std::decay_t<T0>;
+            if constexpr (std::is_same_v<T, std::monostate>) std::cout << "null";
+            else if constexpr (std::is_same_v<T, bool>) std::cout << (arg ? "true" : "false");
+            else if constexpr (std::is_same_v<T, double>) std::cout << arg;
+            else if constexpr (std::is_same_v<T, std::string>) std::cout << arg;
+            else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLCallable> >) std::cout << arg->to_string();
+            else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLArray> >) std::cout << "[Array]";
+        }, value);
+        std::cout << "\n";
+    }
+
 
     void Interpreter::execute_var_stmt(const VarStmt *stmt) {
         Value value = std::monostate{};
@@ -110,6 +130,54 @@ namespace ObSL {
 
     Value Interpreter::evaluate_variable(const VariableExpr *expr) const {
         return environment->get(expr->name);
+    }
+
+    Value Interpreter::evaluate_array(const ArrayExpr *expr) {
+        auto array = std::make_shared<ObSLArray>();
+        array->elements.reserve(expr->elements.size());
+        for (const auto &item: expr->elements) {
+            array->elements.push_back(evaluate(item.get()));
+        }
+        return array;
+    }
+
+    Value Interpreter::evaluate_index(const IndexExpr *expr) {
+        const Value callee = evaluate(expr->callee.get());
+        const Value index_val = evaluate(expr->index.get());
+        if (std::holds_alternative<std::shared_ptr<ObSLArray> >(callee)) {
+            const auto array = std::get<std::shared_ptr<ObSLArray> >(callee);
+            if (!std::holds_alternative<double>(index_val)) {
+                throw RuntimeError(expr->bracket, "Array index must be a number.");
+            }
+            const int index = static_cast<int>(std::get<double>(index_val));
+            if (index < 0 || index >= array->elements.size()) {
+                throw RuntimeError(expr->bracket, "Array index out of bounds.");
+            }
+            return array->elements[index];
+        }
+        throw RuntimeError(expr->bracket, "Only arrays can be indexed.");
+    }
+
+    Value Interpreter::evaluate_index_assignment(const IndexAssignmentExpr *expr) {
+        Value callee = evaluate(expr->callee.get());
+        Value index_val = evaluate(expr->index.get());
+        Value value = evaluate(expr->value.get());
+        if (std::holds_alternative<std::shared_ptr<ObSLArray> >(callee)) {
+            auto array = std::get<std::shared_ptr<ObSLArray> >(callee);
+
+            if (!std::holds_alternative<double>(index_val)) {
+                throw RuntimeError(expr->bracket, "Array index must be a number.");
+            }
+
+            int index = static_cast<int>(std::get<double>(index_val));
+
+            if (index < 0 || index >= array->elements.size()) {
+                throw RuntimeError(expr->bracket, "Array index out of bounds.");
+            }
+            array->elements[index] = value;
+            return value;
+        }
+        throw RuntimeError(expr->bracket, "Only collections can be indexed for assignment.");
     }
 
     Value Interpreter::evaluate_binary(const BinaryExpr *expr) {

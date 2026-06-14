@@ -26,6 +26,12 @@ namespace ObSL {
             consume(TokenType::SEMICOLON, "Expect ';' after value.");
             return std::make_unique<PrintStmt>(keyword, std::move(value));
         }
+        if (match({TokenType::PRINTLN})) {
+            Token keyword = previous();
+            auto value = parse_expression();
+            consume(TokenType::SEMICOLON, "Expect ';' after value.");
+            return std::make_unique<PrintlnStmt>(keyword, std::move(value));
+        }
         if (match({TokenType::FOR})) return parse_for_statement();
         if (match({TokenType::WHILE})) return parse_while_statement();
         if (match({TokenType::RETURN})) return parse_return_statement();
@@ -75,6 +81,19 @@ namespace ObSL {
                 }
                 return std::make_unique<AssignmentExpr>(name, std::move(value));
             }
+            if (auto *index_expr = dynamic_cast<IndexExpr *>(expr.get())) {
+                if (equals.type != TokenType::ASSIGN) {
+                    throw std::runtime_error(std::format(
+                        "[Line {}] Compound assignment (+=, -=,etc) on arrays is not supported.", equals.line));
+                }
+                auto callee = std::move(index_expr->callee);
+                Token bracket = index_expr->bracket;
+                auto index = std::move(index_expr->index);
+
+                return std::make_unique<IndexAssignmentExpr>(
+                    std::move(callee), bracket, std::move(index), std::move(value)
+                );
+            }
             throw std::runtime_error(std::format("[Line {}] Invalid assignment target.", equals.line));
         }
         return expr;
@@ -108,6 +127,11 @@ namespace ObSL {
                 }
                 Token paren = consume(TokenType::RIGHT_PAREN, "Expect ')' after arguments.");
                 expr = std::make_unique<CallExpr>(std::move(expr), paren, std::move(args));
+            } else if (match({TokenType::LEFT_BRACKET})) {
+                Token bracket = previous();
+                auto index = parse_expression();
+                consume(TokenType::RIGHT_BRACKET, "Expect ']' after index.");
+                expr = std::make_unique<IndexExpr>(std::move(expr), bracket, std::move(index));
             } else {
                 break;
             }
@@ -218,8 +242,39 @@ namespace ObSL {
 
         if (match({TokenType::STRING})) {
             const Token &tok = previous();
-            return std::make_unique<LiteralExpr>(tok, Value(std::string(tok.lexeme)));
+            std::string processed_string;
+            processed_string.reserve(tok.lexeme.size());
+
+            for (size_t i = 0; i < tok.lexeme.size(); ++i) {
+                if (tok.lexeme[i] == '\\' && i + 1 < tok.lexeme.size()) {
+                    // escape chars
+                    switch (const char next = tok.lexeme[i + 1]) {
+                        case 'n': processed_string += '\n';
+                            break;
+                        case 't': processed_string += '\t';
+                            break;
+                        case 'r': processed_string += '\r';
+                            break;
+                        case '\\': processed_string += '\\';
+                            break;
+                        case '"': processed_string += '"';
+                            break;
+                        case '\'': processed_string += '\'';
+                            break;
+                        default:
+                            processed_string += '\\';
+                            processed_string += next;
+                            break;
+                    }
+                    ++i; // skip the escaped char
+                } else {
+                    // normal character
+                    processed_string += tok.lexeme[i];
+                }
+            }
+            return std::make_unique<LiteralExpr>(tok, Value(std::move(processed_string)));
         }
+
 
         if (match({TokenType::IDENTIFIER})) {
             return std::make_unique<VariableExpr>(previous());
@@ -230,6 +285,17 @@ namespace ObSL {
             consume(TokenType::RIGHT_PAREN, "Expect ')' after expression.");
             return std::make_unique<GroupingExpr>(std::move(expr));
         }
+        if (match({TokenType::LEFT_BRACKET})) {
+            std::vector<std::unique_ptr<Expr> > elements;
+            if (!check(TokenType::RIGHT_BRACKET)) {
+                do {
+                    elements.push_back(parse_expression());
+                } while (match({TokenType::COMMA}));
+            }
+            consume(TokenType::RIGHT_BRACKET, "Expect ']' after array elements");
+            return std::make_unique<ArrayExpr>(std::move(elements));
+        }
+
         throw std::runtime_error("Expect expression.");
     }
 
