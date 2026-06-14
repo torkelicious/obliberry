@@ -3,13 +3,18 @@
 #include <string_view>
 
 namespace ObSL {
+
+
     enum class TokenType {
         // Punctuation & Single character tokens
         LEFT_PAREN,
         RIGHT_PAREN,
         LEFT_BRACE,
         RIGHT_BRACE,
+        LEFT_BRACKET,
+        RIGHT_BRACKET,
         COMMA,
+        COLON,
         DOT,
         SEMICOLON,
 
@@ -35,6 +40,8 @@ namespace ObSL {
 
         // Keywords
         AND,
+        CASE,
+        DEFAULT,
         ELSE,
         FALSE_,
         FOR,
@@ -44,6 +51,7 @@ namespace ObSL {
         OR,
         PRINT,
         RETURN,
+        SWITCH,
         BREAK,
         THIS,
         TRUE_,

@@ -120,6 +120,10 @@ add_executable(
         src/Scripting/Parser/Parser.cpp
         src/Scripting/Parser/Parser.h
         src/Scripting/Tokens.h
+        src/Scripting/Interpreter/Interpreter.cpp
+        src/Scripting/Interpreter/Interpreter.h
+        src/Scripting/Interpreter/Environment.cpp
+        src/Scripting/Interpreter/Environment.h
 )
 
 target_include_directories(
