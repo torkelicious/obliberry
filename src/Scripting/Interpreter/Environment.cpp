@@ -12,9 +12,8 @@ namespace ObSL {
         if (const auto it = values.find(var_name); it != values.end()) {
             return it->second;
         }
-        // check in enclosing scope
-        if (enclosing != nullptr) {
-            return enclosing->get(name);
+        if (auto parent = enclosing.lock()) {
+            return parent->get(name);
         }
         throw std::runtime_error(std::format("Undefined variable '{}'.", var_name));
     }
@@ -26,9 +25,9 @@ namespace ObSL {
             return;
         }
 
-        // check enclosing scope
-        if (enclosing != nullptr) {
-            enclosing->assign(name, value);
+        // safely write to the parent scope
+        if (auto parent = enclosing.lock()) {
+            parent->assign(name, value);
             return;
         }
         throw std::runtime_error(std::format("Undefined variable '{}'.", var_name));

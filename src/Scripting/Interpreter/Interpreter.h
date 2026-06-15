@@ -11,10 +11,12 @@
 #include <unordered_set>
 #include <string_view>
 #include <format>
+#include <iostream>
 
 #include "Scripting/Tokens.h"
 #include "Scripting/Parser/ast.h"
 #include "Scripting/Interpreter/Environment.h"
+#include "Scripting/StdLib/StdLib.h"
 
 namespace ObSL {
     // forward declarations
@@ -55,9 +57,9 @@ namespace ObSL {
         if constexpr (std::is_same_v<T, bool>) return "bool";
         else if constexpr (std::is_same_v<T, double>) return "number";
         else if constexpr (std::is_same_v<T, std::string>) return "string";
-        else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLCallable>>) return "callable";
-        else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLArray>>) return "array";
-        else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLObject>>) return "object";
+        else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLCallable> >) return "callable";
+        else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLArray> >) return "array";
+        else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLObject> >) return "object";
         else if constexpr (std::is_same_v<T, std::monostate>) return "null";
         else return "unknown";
     }
@@ -90,25 +92,47 @@ namespace ObSL {
 
     // Interpreter
     class Interpreter {
-    private:
-        std::shared_ptr<Environment> globals;
-        std::shared_ptr<Environment> environment;
-        std::vector<std::vector<std::unique_ptr<Stmt> > > ast_storage;
-        std::vector<std::string> source_storage;
-
     public:
-        Interpreter() {
+        explicit Interpreter(std::ostream &out = std::cout, std::istream &in = std::cin)
+            : m_stdout(out), m_stdin(in) {
             globals = std::make_shared<Environment>();
+            register_environment(globals);
             environment = globals;
             globals->define("Object", std::make_shared<NativeObjectCreator>());
+
+            StdLib std_lib;
+            std_lib.register_modules(*this);
         }
+
+        ~Interpreter() {
+            if (globals) {
+                globals->clear();
+            }
+            // stop  leftover reference cycles trapped in closure scopes
+            for (auto &weak_env: all_environments) {
+                if (auto env = weak_env.lock()) {
+                    env->clear();
+                }
+            }
+        }
+
+        void register_environment(const std::shared_ptr<Environment> &env) {
+            // periodically prune expired pointers just incase
+            if (all_environments.size() > 1000) {
+                all_environments.erase(
+                    std::remove_if(all_environments.begin(), all_environments.end(),
+                                   [](const std::weak_ptr<Environment> &wp) { return wp.expired(); }),
+                    all_environments.end());
+            }
+            all_environments.push_back(env);
+        }
+
 
         void interpret(std::vector<std::unique_ptr<Stmt> > statements);
 
         void execute_block(const std::vector<std::unique_ptr<Stmt> > &statements,
                            std::shared_ptr<Environment> block_env);
 
-        // explicit fallback
         void define_native(const std::string &name, std::shared_ptr<ObSLCallable> function) const {
             globals->define(name, function);
         }
@@ -118,6 +142,13 @@ namespace ObSL {
         void define_native(std::string name, F &&body);
 
     private:
+        std::shared_ptr<Environment> globals;
+        std::shared_ptr<Environment> environment;
+        std::vector<std::vector<std::unique_ptr<Stmt> > > ast_storage;
+        std::vector<std::string> source_storage;
+        std::vector<std::weak_ptr<Environment> > all_environments;
+        std::ostream &m_stdout;
+        std::istream &m_stdin;
         std::unordered_map<std::string, std::shared_ptr<ObSLObject> > loaded_modules;
 
         void execute(const Stmt *stmt);
@@ -190,14 +221,14 @@ namespace ObSL {
         static Value call_native_helper(const F &body, const std::vector<Value> &args, std::index_sequence<Is...>) {
             using ArgsTuple = typename Traits::args_tuple;
             (
-                validate_native_arg<std::tuple_element_t<Is, ArgsTuple>>(args[Is], Is),
+                validate_native_arg<std::tuple_element_t<Is, ArgsTuple> >(args[Is], Is),
                 ...
             );
             if constexpr (std::is_void_v<typename Traits::return_type>) {
-                body(std::get<std::tuple_element_t<Is, ArgsTuple>>(args[Is])...);
+                body(std::get<std::tuple_element_t<Is, ArgsTuple> >(args[Is])...);
                 return std::monostate{};
             } else {
-                return body(std::get<std::tuple_element_t<Is, ArgsTuple>>(args[Is])...);
+                return body(std::get<std::tuple_element_t<Is, ArgsTuple> >(args[Is])...);
             }
         }
 
@@ -209,7 +240,7 @@ namespace ObSL {
                                 index,
                                 native_type_name<TargetType>(),
                                 std::visit([]<typename T>(const T &) -> std::string_view {
-                                    return native_type_name<std::decay_t<T>>();
+                                    return native_type_name<std::decay_t<T> >();
                                 }, arg))
                 );
             }
@@ -231,8 +262,11 @@ namespace ObSL {
 
         [[nodiscard]] std::string to_string() const override;
 
-        std::shared_ptr<ObSLFunction> bind(std::shared_ptr<ObSLObject> instance) {
+        std::shared_ptr<ObSLFunction> bind(std::shared_ptr<ObSLObject> instance, Interpreter *interpreter = nullptr) {
             auto enviroment = std::make_shared<Environment>(closure);
+            if (interpreter) {
+                interpreter->register_environment(enviroment);
+            }
             enviroment->define("this", instance);
             return std::make_shared<ObSLFunction>(declaration, enviroment);
         }

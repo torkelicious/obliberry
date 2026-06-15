@@ -124,6 +124,9 @@ add_executable(
         src/Scripting/Interpreter/Environment.h
         src/Scripting/Entry.cpp
         src/Scripting/Entry.h
+        src/Scripting/StdLib/StdLib.cpp
+        src/Scripting/StdLib/StdLib.h
+        src/Scripting/StdLib/StdModules.h
 )
 
 target_include_directories(

@@ -143,6 +143,7 @@ void Renderer::SetLightmap(const Lightmap *lightmap) {
 
 void Renderer::BindLightmap(Shader *shader) const {
     if (m_Lightmap &&m_Lightmap
+
     ->
     texture
     )

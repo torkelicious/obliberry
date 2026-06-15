@@ -100,31 +100,31 @@ namespace ObSL {
 
     void Interpreter::execute_print_stmt(const PrintStmt *stmt) {
         Value value = evaluate(stmt->expression.get());
-        std::visit([]<typename T0>(const T0 &arg) {
+        std::visit([this]<typename T0>(const T0 &arg) {
             using T = std::decay_t<T0>;
-            if constexpr (std::is_same_v<T, std::monostate>) std::cout << "null";
-            else if constexpr (std::is_same_v<T, bool>) std::cout << (arg ? "true" : "false");
-            else if constexpr (std::is_same_v<T, double>) std::cout << arg;
-            else if constexpr (std::is_same_v<T, std::string>) std::cout << arg;
-            else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLCallable> >) std::cout << arg->to_string();
-            else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLArray> >) std::cout << "[Array]";
-            else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLObject> >) std::cout << "[Object]";
+            if constexpr (std::is_same_v<T, std::monostate>) m_stdout << "null";
+            else if constexpr (std::is_same_v<T, bool>) m_stdout << (arg ? "true" : "false");
+            else if constexpr (std::is_same_v<T, double>) m_stdout << arg;
+            else if constexpr (std::is_same_v<T, std::string>) m_stdout << arg;
+            else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLCallable> >) m_stdout << arg->to_string();
+            else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLArray> >) m_stdout << "[Array]";
+            else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLObject> >) m_stdout << "[Object]";
         }, value);
     }
 
     void Interpreter::execute_print_ln_stmt(const PrintlnStmt *stmt) {
         Value value = evaluate(stmt->expression.get());
-        std::visit([]<typename T0>(const T0 &arg) {
+        std::visit([this]<typename T0>(const T0 &arg) {
             using T = std::decay_t<T0>;
-            if constexpr (std::is_same_v<T, std::monostate>) std::cout << "null";
-            else if constexpr (std::is_same_v<T, bool>) std::cout << (arg ? "true" : "false");
-            else if constexpr (std::is_same_v<T, double>) std::cout << arg;
-            else if constexpr (std::is_same_v<T, std::string>) std::cout << arg;
-            else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLCallable> >) std::cout << arg->to_string();
-            else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLArray> >) std::cout << "[Array]";
-            else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLObject> >) std::cout << "[Object]";
+            if constexpr (std::is_same_v<T, std::monostate>) m_stdout << "null";
+            else if constexpr (std::is_same_v<T, bool>) m_stdout << (arg ? "true" : "false");
+            else if constexpr (std::is_same_v<T, double>) m_stdout << arg;
+            else if constexpr (std::is_same_v<T, std::string>) m_stdout << arg;
+            else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLCallable> >) m_stdout << arg->to_string();
+            else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLArray> >) m_stdout << "[Array]";
+            else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLObject> >) m_stdout << "[Object]";
         }, value);
-        std::cout << "\n";
+        m_stdout << "\n";
     }
 
 
@@ -339,6 +339,7 @@ namespace ObSL {
         auto statements = parser.parse();
 
         auto module_env = std::make_shared<Environment>(globals);
+        register_environment(module_env);
         auto previous_env = environment;
 
         try {
@@ -373,6 +374,7 @@ namespace ObSL {
 
     void Interpreter::execute_block_stmt(const BlockStmt *stmt) {
         const auto block_env = std::make_shared<Environment>(environment);
+        register_environment(block_env);
         execute_block(stmt->statements, block_env);
     }
 
@@ -432,6 +434,7 @@ namespace ObSL {
             const auto array = std::get<std::shared_ptr<ObSLArray> >(iterable_val);
             for (const auto &item: array->elements) {
                 auto loop_env = std::make_shared<Environment>(environment);
+                register_environment(loop_env);
                 loop_env->define(std::string(stmt->loop_var.lexeme), item);
                 EnvironmentGuard guard(environment, environment);
                 environment = std::move(loop_env);
@@ -465,14 +468,14 @@ namespace ObSL {
             }
             throw RuntimeError(expr->name, std::format("Undefined property '{}' on Array.", expr->name.lexeme));
         }
-        // strings
-        if (std::holds_alternative<std::string>(obj)) {
-            const auto &str = std::get<std::string>(obj);
-            if (expr->name.lexeme == "len") {
-                return Value(static_cast<double>(str.length()));
-            }
-            throw RuntimeError(expr->name, std::format("Undefined property '{}' on String.", expr->name.lexeme));
-        }
+        //// strings
+        //if (std::holds_alternative<std::string>(obj)) {
+        //    const auto &str = std::get<std::string>(obj);
+        //    if (expr->name.lexeme == "len") {
+        //        return Value(static_cast<double>(str.length()));
+        //    }
+        //    throw RuntimeError(expr->name, std::format("Undefined property '{}' on String.", expr->name.lexeme));
+        //}
         // objects
         if (std::holds_alternative<std::shared_ptr<ObSLObject> >(obj)) {
             const auto instance = std::get<std::shared_ptr<ObSLObject> >(obj);
@@ -485,9 +488,8 @@ namespace ObSL {
 
                 if (std::holds_alternative<std::shared_ptr<ObSLCallable> >(val)) {
                     auto callable = std::get<std::shared_ptr<ObSLCallable> >(val);
-                    if (auto func =
-                            std::dynamic_pointer_cast<ObSLFunction>(callable)) {
-                        return func->bind(instance);
+                    if (auto func = std::dynamic_pointer_cast<ObSLFunction>(callable)) {
+                        return func->bind(instance, this);
                     }
                 }
                 return val;
@@ -519,6 +521,8 @@ namespace ObSL {
 
     Value ObSLFunction::call(Interpreter *interpreter, const std::vector<Value> &arguments) {
         const auto env = std::make_shared<Environment>(closure);
+        interpreter->register_environment(env); // Register newly allocated call environment
+
         for (size_t i = 0; i < declaration->params.size(); ++i) {
             env->define(std::string(declaration->params[i].lexeme), arguments[i]);
         }

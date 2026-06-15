@@ -1,19 +1,126 @@
-// main.obsl
-println "loading modules";
+println "obsl testing...";
+
+// modules
+using "assets/scripts/module_test.obsl";
+
+// Variables and Math
+var a = 10;
+var b = 20.5;
+a += 5;
+a++;
+b--;
+
+assert(a == 16, "Math assignment test failed");
+assert(b == 19.5, "Math decrement test failed");
+println "Variables & Math OK";
+
+// Control Flow
+var flowTest = false;
+if (a > 10) {
+    flowTest = true;
+} else {
+    flowTest = false;
+}
+assert(flowTest == true, "if/else test failed");
+
+var switchResult = 0;
+switch (2) {
+    case 1: switchResult = 1;
+    case 2: switchResult = 2;
+    case 3: switchResult = 3;
+}
+assert(switchResult == 2, "switch test failed");
+println "Control Flow OK";
+
+// Loops & Arrays
+var whileCount = 0;
+while (whileCount < 3) {
+    whileCount++;
+}
+assert(whileCount == 3, "While loop failed");
+
+var forSum = 0;
+for (var i = 1; i <= 4; i++) {
+    forSum += i;
+}
+assert(forSum == 10, "For loop failed");
+
+var arr = [10, 20, 30];
+assert(arr.len == 3, "Array length failed");
+
+var foreachSum = 0;
+foreach (var num in arr) {
+    foreachSum += num;
+}
+assert(foreachSum == 60, "Foreach loop failed");
+println "Loops & Arrays: OK";
+
+// Functions & Closures
+fn createAdder(baseAmount) {
+    fn adder(value) {
+        return value + baseAmount;
+    }
+    return adder;
+}
+var addFive = createAdder(5);
+assert(addFive(10) == 15, "closure test failed");
+println "Functions & Closures OK";
+
+// 5. Objects
+var obj = Object();
+obj.val = 42;
+
+fn getVal() {
+    return 42;
+}
+obj.method = getVal;
+
+assert(obj.val == 42, "Object property failed");
+assert(obj.method() == 42, "Object method failed");
+println "Objects OK";
+
+// StdLib: Conversion
+assert(to_string(12.5) == "12.500000", "to_string failed");
+assert(to_num("12.5") == 12.5, "to_num failed");
+println "StdLib Conversion OK";
+
+// StdLib: Math
+assert(sqrt(25.0) == 5.0, "sqrt failed");
+assert(pow(2.0, 4.0) == 16.0, "pow failed");
+assert(min(5.0, 10.0) == 5.0, "min failed");
+assert(max(5.0, 10.0) == 10.0, "max failed");
+assert(clamp(15.0, 0.0, 10.0) == 10.0, "clamp failed");
+assert(round(4.6) == 5.0, "round failed");
+assert(abs(-42.0) == 42.0, "abs failed");
+println "StdLib Math OK";
+
+// StdLib: String
+assert(len("ObSL") == 4.0, "len failed");
+assert(to_lower("TEST") == "test", "to_lower failed");
+assert(to_upper("test") == "TEST", "to_upper failed");
+assert(starts_with("hello world", "hello") == true, "starts_with failed");
+assert(contains("hello world", "world") == true, "contains failed");
+assert(substring("hello", 0.0, 4.0) == "hell", "substring failed");
+assert(trim("  hi  ") == "hi", "trim failed");
+assert(replace("a b a", "a", "c") == "c b c", "replace failed");
+println "StdLib String OK";
+
+// StdLib: System
+var tStart = clock();
+var testFile = "obsl_io_test.txt";
+
+// these work fine, i just dont to write to my disk more :)
+//write_file(testFile, "IO Test Data");
+//assert(file_exists(testFile) == true, "file_exists failed");
+//assert(get_file_ext(testFile) == ".txt", "get_file_ext failed");
+//assert(read_file(testFile) == "IO Test Data", "read_file failed");
+
+wait(0.05);
+var tEnd = clock();
+assert(tEnd > tStart, "clock/wait failed");
+println "StdLib System OK";
+
 println"";
+println "All core and stdlib tests completed successfully";
 
-using "assets/scripts/math.obsl";
-using "assets/scripts/math.obsl";
-// second one should hit the cache
-
-println "Modules loaded.";
-println "";
-
-println "Testing math.pi:";
-println math.pi;
-
-println "Testing math.add(10, 5):";
-println math.add(10, 5);
-
-println "Testing math.square(4):";
-println math.square(4);
+var asrtest = 1;

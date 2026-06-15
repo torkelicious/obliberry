@@ -9,14 +9,17 @@ namespace ObSL {
     class Environment {
     private:
         std::unordered_map<std::string, Value> values;
-        std::shared_ptr<Environment> enclosing;
+        std::weak_ptr<Environment> enclosing;
 
     public:
-        Environment() : enclosing(nullptr) {
+        Environment() = default;
+
+        explicit Environment(const std::shared_ptr<Environment> &enclosing)
+            : enclosing(enclosing) {
         }
 
-        explicit Environment(std::shared_ptr<Environment> enclosing)
-            : enclosing(std::move(enclosing)) {
+        void clear() {
+            values.clear();
         }
 
         const std::unordered_map<std::string, Value> &get_values() const { return values; }

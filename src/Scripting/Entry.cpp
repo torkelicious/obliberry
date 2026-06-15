@@ -11,25 +11,18 @@
 
 /*
  * ObSL todo:
- * proper in/out input buffers
- * limited native funcs & stdlib
+ * bitwise operators
+ * regex & networking?? (maybe)
+ * better error handling (try catch ?)
+ * structs
+ * function default args
+ * reflection
  * engine intergration
  * lsp
  * docs lol
- * wait(1s) native bind (use this_thread wait or whatever its called in chronoliterals)
  */
 
 namespace ObSL {
-    // this is just a test, move this to seperate file later and maybe make it more acessable...
-    // p.s i really hate cpp lambda syntax
-    void bind(Interpreter &m_interpreter) {
-        m_interpreter.define_native("clock", [] {
-            const auto now = std::chrono::system_clock::now().time_since_epoch();
-            return static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(now).count()) / 1000.0;
-        });
-    }
-
-
     int Entry::exec(const int argc, char *argv[]) {
         if (argc > 2) {
             std::cout << "takes arg [script.obsl]\n";
@@ -44,7 +37,6 @@ namespace ObSL {
     }
 
     void Entry::runFile(const std::string &path) {
-        bind(m_interpreter);
         std::ifstream file(path);
         if (!file.is_open()) {
             std::cerr << "Error: Could not open file '" << path << "'\n";
@@ -56,7 +48,6 @@ namespace ObSL {
     }
 
     void Entry::runREPL() {
-        bind(m_interpreter);
         std::string line;
         std::cout << "ObSL REPL (type 'exit' to quit)\n> ";
         while (std::getline(std::cin, line)) {
