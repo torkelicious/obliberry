@@ -37,6 +37,7 @@ namespace ObSL {
         if (const auto s = dynamic_cast<const VarStmt *>(stmt)) return execute_var_stmt(s);
         if (const auto s = dynamic_cast<const BlockStmt *>(stmt)) return execute_block_stmt(s);
         if (const auto s = dynamic_cast<const IfStmt *>(stmt)) return execute_if_stmt(s);
+        if (const auto s = dynamic_cast<const SwitchStmt *>(stmt)) return execute_switch_stmt(s);
         if (const auto s = dynamic_cast<const WhileStmt *>(stmt)) return execute_while_stmt(s);
         if (const auto s = dynamic_cast<const BreakStmt *>(stmt)) return execute_break_stmt(s);
         if (const auto s = dynamic_cast<const ReturnStmt *>(stmt)) return execute_return_stmt(s);
@@ -321,6 +322,39 @@ namespace ObSL {
             execute(stmt->else_branch.get());
         }
     }
+
+    void Interpreter::execute_switch_stmt(const SwitchStmt *stmt) {
+        // no fallthrough switch !!!
+        Value condition_val = evaluate(stmt->condition.get());
+        const CaseBranch *default_branch = nullptr;
+        try {
+            // look for a specific case match
+            for (const auto &case_branch: stmt->cases) {
+                if (case_branch.match_value == nullptr) {
+                    // save the default branch for later in case nothing
+                    default_branch = &case_branch;
+                    continue;
+                }
+                Value case_val = evaluate(case_branch.match_value.get());
+                // match
+                if (is_equal(condition_val, case_val)) {
+                    for (const auto &case_stmt: case_branch.statements) {
+                        execute(case_stmt.get());
+                    }
+                    return;
+                }
+            }
+            // no cases matched, run default
+            if (default_branch != nullptr) {
+                for (const auto &case_stmt: default_branch->statements) {
+                    execute(case_stmt.get());
+                }
+            }
+        } catch (const BreakException &) {
+            // still catch the BreakException here just in case someone writes 'break;' out of habit
+        }
+    }
+
 
     void Interpreter::execute_while_stmt(const WhileStmt *stmt) {
         while (is_truthy(evaluate(stmt->condition.get()))) {

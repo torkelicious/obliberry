@@ -20,6 +20,7 @@ namespace ObSL {
         if (match({TokenType::VAR})) return parse_var_statement();
         if (match({TokenType::LEFT_BRACE})) return parse_block();
         if (match({TokenType::IF})) return parse_if_statement();
+        if (match({TokenType::SWITCH})) return parse_switch_statement();
         if (match({TokenType::PRINT})) {
             Token keyword = previous();
             auto value = parse_expression();
@@ -342,6 +343,35 @@ namespace ObSL {
         Token keyword = previous();
         consume(TokenType::SEMICOLON, "Expect ';' after 'break'.");
         return std::make_unique<BreakStmt>(keyword);
+    }
+
+    std::unique_ptr<Stmt> Parser::parse_switch_statement() {
+        consume(TokenType::LEFT_PAREN, "Expect '(' after 'switch'.");
+        auto condition = parse_expression();
+        consume(TokenType::RIGHT_PAREN, "Expect ')' after switch condition.");
+        consume(TokenType::LEFT_BRACE, "Expect '{' before switch cases.");
+
+        std::vector<CaseBranch> cases;
+        while (!check(TokenType::RIGHT_BRACE) && !is_at_end()) {
+            std::unique_ptr<Expr> match_value = nullptr;
+            if (match({TokenType::CASE})) {
+                match_value = parse_expression();
+                consume(TokenType::COLON, "Expect ':' after case value.");
+            } else if (match({TokenType::DEFAULT})) {
+                consume(TokenType::COLON, "Expect ':' after default.");
+            } else {
+                throw std::runtime_error(std::format("[Line {}] Expect 'case' or 'default'.", peek().line));
+            }
+
+            std::vector<std::unique_ptr<Stmt> > statements;
+            while (!check(TokenType::CASE) && !check(TokenType::DEFAULT) && !check(TokenType::RIGHT_BRACE) && !
+                   is_at_end()) {
+                statements.push_back(parse_statement());
+            }
+            cases.emplace_back(std::move(match_value), std::move(statements));
+        }
+        consume(TokenType::RIGHT_BRACE, "Expect '}' to close switch block.");
+        return std::make_unique<SwitchStmt>(std::move(condition), std::move(cases));
     }
 
     std::unique_ptr<Stmt> Parser::parse_var_statement() {

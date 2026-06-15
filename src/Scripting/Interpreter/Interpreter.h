@@ -5,16 +5,30 @@
 #include <stdexcept>
 #include <exception>
 #include <functional>
+#include <tuple>
+#include <utility>
+#include <type_traits>
 #include "Scripting/Tokens.h"
 #include "Scripting/Parser/ast.h"
 #include "Scripting/Interpreter/Environment.h"
 
 namespace ObSL {
-
-    // forward decs
+    // forward declarations
     class NativeFunction;
-    class ObSLCallable;
+    struct ObSLCallable;
+    class Interpreter;
 
+    template<typename T>
+    struct native_fn_traits;
+
+    template<typename R, typename C, typename... Args>
+    struct native_fn_traits<R(C::*)(Args...) const> {
+        using return_type = R;
+        static constexpr int arity = sizeof...(Args);
+        using args_tuple = std::tuple<std::decay_t<Args>...>;
+    };
+
+    // runtime Exceptions
     struct BreakException : public std::exception {
         [[nodiscard]] const char *what() const noexcept override {
             return "Break signal";
@@ -40,6 +54,7 @@ namespace ObSL {
         }
     };
 
+    // Interpreter
     class Interpreter {
     private:
         std::shared_ptr<Environment> globals;
@@ -57,15 +72,14 @@ namespace ObSL {
         void execute_block(const std::vector<std::unique_ptr<Stmt> > &statements,
                            std::shared_ptr<Environment> block_env);
 
-        void define_native(const std::string &name,
-                           std::shared_ptr<ObSLCallable> function) const {
+        // explicit fallback
+        void define_native(const std::string &name, std::shared_ptr<ObSLCallable> function) const {
             globals->define(name, function);
         }
 
+        // registration wrapper
         template<typename F>
-        void define_native(std::string name, int arity, F &&body) {
-            globals->define(name, std::make_shared<NativeFunction>(arity, std::forward<F>(body), name));
-        }
+        void define_native(std::string name, F &&body);
 
     private:
         void execute(const Stmt *stmt);
@@ -87,6 +101,8 @@ namespace ObSL {
         void execute_block_stmt(const BlockStmt *stmt);
 
         void execute_if_stmt(const IfStmt *stmt);
+
+        void execute_switch_stmt(const SwitchStmt *switch_stmt);
 
         void execute_while_stmt(const WhileStmt *stmt);
 
@@ -123,8 +139,21 @@ namespace ObSL {
         void check_number_operands(const Token &oprt, const Value &lhs, const Value &rhs);
 
         [[nodiscard]] bool is_equal(const Value &a, const Value &b) const;
+
+        // automatically unpack into target lambda arguments
+        template<typename F, typename Traits, size_t... Is>
+        static Value call_native_helper(const F &body, const std::vector<Value> &args, std::index_sequence<Is...>) {
+            using ArgsTuple = typename Traits::args_tuple;
+            if constexpr (std::is_void_v<typename Traits::return_type>) {
+                body(std::get<std::tuple_element_t<Is, ArgsTuple> >(args[Is])...);
+                return std::monostate{};
+            } else {
+                return body(std::get<std::tuple_element_t<Is, ArgsTuple> >(args[Is])...);
+            }
+        }
     };
 
+    // user defined  functions
     class ObSLFunction : public ObSLCallable {
     private:
         const FunctionStmt *declaration;
@@ -140,7 +169,7 @@ namespace ObSL {
         [[nodiscard]] std::string to_string() const override;
     };
 
-    // for binding C++ lambdas / functions to ObSL callables
+    // native binds
     class NativeFunction : public ObSLCallable {
     private:
         int m_arity;
@@ -149,22 +178,31 @@ namespace ObSL {
 
     public:
         NativeFunction(const int arity,
-                       std::function<Value
-                           (Interpreter *, const std::vector<Value> &)> body,
+                       std::function<Value(Interpreter *, const std::vector<Value> &)> body,
                        std::string name = "native")
             : m_arity(arity), m_body(std::move(body)), m_name(std::move(name)) {
         }
 
-        [[nodiscard]] int arity() const override {
-            return m_arity;
-        }
+        [[nodiscard]] int arity() const override { return m_arity; }
 
         Value call(Interpreter *interpreter, const std::vector<Value> &arguments) override {
             return m_body(interpreter, arguments);
         }
 
         [[nodiscard]] std::string to_string() const override {
-            return std::format("<native fn{}>", m_name);
+            return std::format("<native fn {}>", m_name);
         }
     };
+
+    // more templating :DDDDD -.-
+    template<typename F>
+    void Interpreter::define_native(std::string name, F &&body) {
+        using Traits = native_fn_traits<decltype(&std::decay_t<F>::operator())>;
+
+        auto wrapped = [body = std::forward<F>(body)](Interpreter *, const std::vector<Value> &args) -> Value {
+            return call_native_helper<F, Traits>(body, args, std::make_index_sequence<Traits::arity>{});
+        };
+
+        globals->define(name, std::make_shared<NativeFunction>(Traits::arity, std::move(wrapped), name));
+    }
 } // namespace ObSL

@@ -95,6 +95,9 @@ namespace ObSL {
         static const std::unordered_map<std::string_view, TokenType> keywords = {
             {"and", TokenType::AND},
             {"break", TokenType::BREAK},
+            {"case", TokenType::CASE},
+            {"default", TokenType::DEFAULT},
+            {"switch", TokenType::SWITCH},
             {"else", TokenType::ELSE},
             {"false", TokenType::FALSE_},
             {"fn", TokenType::FN},
@@ -306,6 +309,10 @@ namespace ObSL {
                 };
             case '.': return Token{
                     TokenType::DOT, ".", line, static_cast<int>(start_col), static_cast<int>(start_pos),
+                    static_cast<int>(current)
+                };
+            case ':': return Token{
+                    TokenType::COLON, ":", line, static_cast<int>(start_col), static_cast<int>(start_pos),
                     static_cast<int>(current)
                 };
             default:

@@ -324,6 +324,31 @@ namespace ObSL {
         }
     };
 
+
+    struct CaseBranch {
+        std::unique_ptr<Expr> match_value;
+        std::vector<std::unique_ptr<Stmt> > statements;
+
+        CaseBranch(std::unique_ptr<Expr> match_value, std::vector<std::unique_ptr<Stmt> > statements)
+            : match_value(std::move(match_value)), statements(std::move(statements)) {
+        }
+    };
+
+    struct SwitchStmt : public Stmt {
+        std::unique_ptr<Expr> condition;
+        std::vector<CaseBranch> cases;
+
+        SwitchStmt(
+            std::unique_ptr<Expr> condition,
+            std::vector<CaseBranch> cases) : condition(std::move(condition)), cases(std::move(cases)) {
+        }
+
+        [[nodiscard]] std::string to_string() const override {
+            return std::format("[SwitchStmt: on {}]\n", condition->to_string());
+        }
+    };
+
+
     struct WhileStmt : public Stmt {
         std::unique_ptr<Expr> condition;
         std::unique_ptr<Stmt> body;

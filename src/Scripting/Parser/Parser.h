@@ -36,6 +36,7 @@ namespace ObSL {
 
         Token consume(TokenType type, std::string_view message);
 
+
         std::unique_ptr<Stmt> parse_statement();
 
         std::unique_ptr<Stmt> parse_function();
@@ -73,6 +74,8 @@ namespace ObSL {
         std::unique_ptr<Stmt> parse_return_statement();
 
         std::unique_ptr<Stmt> parse_break_statement();
+
+        std::unique_ptr<Stmt> parse_switch_statement();
 
         std::unique_ptr<Stmt> parse_var_statement();
 

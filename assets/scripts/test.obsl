@@ -82,6 +82,23 @@ for (var i = 0; i < 10; i++) {
 }
 
 println "";
+println "SWITCH";
+
+var s = "4";
+switch (s) {
+    case "1":
+        println "F";
+    case "2":
+        println "F (d)";
+    case "3":
+        println "F(t)";
+    case "4":
+        println "Expected";
+    default:
+        println "Unknown";
+}
+
+println "";
 println "FUNCTIONS & RECURSION";
 
 fn add(a, b) {

@@ -51,8 +51,10 @@ namespace ObSL {
         ELSE,
         FALSE_,
         FOR,
-        FN, // short for function if this is confusing 4 anyone... (i.e my forgetfull self)
+        FOREACH,
+        FN,
         IF,
+        IN,
         NULL_,
         OR,
         PRINT,
@@ -62,7 +64,7 @@ namespace ObSL {
         BREAK,
         THIS,
         TRUE_,
-        USING, // imports
+        USING, // todo: imports
         VAR,
         WHILE,
 
