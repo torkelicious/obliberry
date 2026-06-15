@@ -10,6 +10,7 @@ int main(int argc, char *argv[]) {
 
     ObSL::Entry entry;
     const std::string fp = PathUtils::Join(SCRIPT_PATH, "test.obsl");
-    entry.runFile(fp);
+    //entry.runFile(fp);
+    entry.runREPL();
     return 0;
 }

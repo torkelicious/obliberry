@@ -16,6 +16,7 @@
  * proper in/out input buffers
  * limited native funcs & stl
  * engine intergration
+ * lsp
  * docs lol
  */
 
@@ -32,20 +33,12 @@
 
 namespace ObSL {
     // this is just a test, move this to seperate file later and maybe make it more acessable...
+    // p.s i really hate cpp lambda syntax
     void bind(Interpreter &m_interpreter) {
-        m_interpreter.define_native(
-            "clock",
-            std::make_shared<NativeFunction>(
-                0,
-                [](Interpreter */*interp*/, const std::vector<Value> &args) -> Value {
-                    const auto now = std::chrono::system_clock::now().time_since_epoch();
-                    return static_cast<double>(
-                               std::chrono::duration_cast<std::chrono::milliseconds>(now).
-                               count()
-                           ) / 1000.0;
-                },
-                "clock"
-            ));
+        m_interpreter.define_native("clock", 0, [](auto *, auto &) {
+            const auto now = std::chrono::system_clock::now().time_since_epoch();
+            return static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(now).count()) / 1000.0;
+        });
     }
 
 
@@ -83,7 +76,7 @@ namespace ObSL {
             if (!line.empty()) {
                 run(line);
             }
-            std::cout << "> ";
+            std::cout << "\n> ";
         }
     }
 

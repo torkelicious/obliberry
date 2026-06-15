@@ -10,6 +10,11 @@
 #include "Scripting/Interpreter/Environment.h"
 
 namespace ObSL {
+
+    // forward decs
+    class NativeFunction;
+    class ObSLCallable;
+
     struct BreakException : public std::exception {
         [[nodiscard]] const char *what() const noexcept override {
             return "Break signal";
@@ -55,6 +60,11 @@ namespace ObSL {
         void define_native(const std::string &name,
                            std::shared_ptr<ObSLCallable> function) const {
             globals->define(name, function);
+        }
+
+        template<typename F>
+        void define_native(std::string name, int arity, F &&body) {
+            globals->define(name, std::make_shared<NativeFunction>(arity, std::forward<F>(body), name));
         }
 
     private:
