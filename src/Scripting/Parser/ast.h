@@ -256,6 +256,20 @@ namespace ObSL {
         }
     };
 
+    struct SetExpr : public Expr {
+        std::unique_ptr<Expr> obj;
+        Token name;
+        std::unique_ptr<Expr> value;
+
+        SetExpr(std::unique_ptr<Expr> obj, const Token &name, std::unique_ptr<Expr> value)
+            : obj(std::move(obj)), name(name), value(std::move(value)) {
+        }
+
+        [[nodiscard]] std::string to_string() const override {
+            return std::format("(. {} {} {})", obj->to_string(), name.lexeme, value->to_string());
+        }
+    };
+
 
     struct FunctionStmt : public Stmt {
         Token name;

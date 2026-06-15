@@ -54,6 +54,18 @@ namespace ObSL {
         }
     };
 
+    class NativeObjectCreator : public ObSLCallable {
+    public:
+        [[nodiscard]] int arity() const override { return 0; }
+
+        Value call(Interpreter *interpreter, const std::vector<Value> &arguments) override {
+            return std::make_shared<ObSLObject>();
+        }
+
+        [[nodiscard]] std::string to_string() const override { return "<native fn Object>"; }
+    };
+
+
     // Interpreter
     class Interpreter {
     private:
@@ -65,6 +77,7 @@ namespace ObSL {
         Interpreter() {
             globals = std::make_shared<Environment>();
             environment = globals;
+            globals->define("Object", std::make_shared<NativeObjectCreator>());
         }
 
         void interpret(std::vector<std::unique_ptr<Stmt> > statements);
@@ -113,6 +126,8 @@ namespace ObSL {
         void execute_return_stmt(const ReturnStmt *stmt);
 
         Value evaluate_get(const GetExpr *expr);
+
+        Value evaluate_set(const SetExpr *expr);
 
         Value evaluate_literal(const LiteralExpr *expr);
 
@@ -171,6 +186,12 @@ namespace ObSL {
         Value call(Interpreter *interpreter, const std::vector<Value> &arguments) override;
 
         [[nodiscard]] std::string to_string() const override;
+
+        std::shared_ptr<ObSLFunction> bind(std::shared_ptr<ObSLObject> instance) {
+            auto enviroment = std::make_shared<Environment>(closure);
+            enviroment->define("this", instance);
+            return std::make_shared<ObSLFunction>(declaration, enviroment);
+        }
     };
 
     // native binds

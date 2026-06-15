@@ -1,115 +1,79 @@
-// DATA TYPES & OPERATORS
-var num = 42;
+// Types, arithmetic, and strings
+var num = (10 + 2 * 3) - (8 % 6);
 var str = "ObSL";
-var boolean = true;
-var empty = null;
+println "Hello " + str + "! Result: " + num; // Expected: Hello ObSL! Result: 14
 
-println num;     // Expected: 42
-println str;     // Expected: ObSL
-println boolean; // Expected: true
-println empty;   // Expected: null
+// Prefix / Postfix
+var c = 0;
+println c++; // Expected: 0
+println ++c; // Expected: 2
 
-println (10 + 2 * 3) - (8 % 6); // Expected: 14
-println "Welcome to " + str + "!";
-
-// Prefix vs Postfix
-var counter = 10;
-println counter++; // Expected: 10
-println counter;   // Expected: 11
-println ++counter; // Expected: 12
-
-// ARRAYS & NEW FOREACH
-var my_arr = [10, 20, 30];
-println my_arr[1]; // Expected: 20
-
-my_arr[1] = 99;
-println my_arr[1]; // Expected: 99
-
-println "Testing foreach loop:";
-foreach (var item in my_arr) {
-    println item;
+// Arrays & Foreach
+var arr = [10, 20, 30];
+arr[1] = 99;
+foreach (var item in arr) {
+    println item; // Expected: 10, 99, 30
 }
 
-// SCOPING & SHADOWING
-var scope_test = "global";
+// Scoping
+var scope = "global";
 {
-    var inner_assign = "local";
-    var scope_test = "shadowed";
-    println inner_assign; // Expected: local
-    println scope_test;   // Expected: shadowed
+    var scope = "local";
 }
-println scope_test;       // Expected: global
+println scope; // Expected: global
 
-// CONTROL FLOW
-var x = 5;
-if (x > 10) {
-    println "Error";
-} else {
-    println "Success: If/Else works";
+// Control Flow (If, For, Switch)
+if (num == 14) println "If works";
+
+for (var i = 0; i < 3; i++) {
+    if (i == 1) break;
+    println i; // Expected: 0
 }
 
-var countdown = 3;
-while (countdown > 0) {
-    println countdown;
-    countdown--;
-}
-
-for (var i = 0; i < 10; i++) {
-    if (i == 4) {
-        println "Breaking early at 4";
-        break;
-    }
-    println i;
-}
-
-// SWITCH
-var s = "4";
-switch (s) {
-    case "4":
-        println "Switch Expected";
+switch ("match") {
+    case "match":
+        println "Switch works";
     default:
-        println "Unknown";
+        println "Miss";
 }
 
-// FUNCTIONS & RECURSION
-fn add(a, b) {
-    return a + b;
-}
-println add(7, 8); // Expected: 15
-
+// Functions, Recursion, & Closures
 fn factorial(n) {
     if (n <= 1) return 1;
     return n * factorial(n - 1);
 }
 println factorial(5); // Expected: 120
 
-// LEXICAL CLOSURES
-fn generate_counter() {
+fn make_counter() {
     var count = 0;
-    fn incrementer() {
-        count++;
-        return count;
-    }
-    return incrementer;
+    fn increment() { return ++count; }
+    return increment;
 }
-var ticket_system = generate_counter();
-println ticket_system(); // Expected: 1
-println ticket_system(); // Expected: 2
+var counter = make_counter();
+println counter(); // Expected: 1
 
-// STRING LITERALS & PROPERTIES
-print "No newline...";
-print ' single quote test\n';
+// Native Objects, Nested Structures, & Properties
+var obj = Object();
+obj.name = "Alice";
 
-var strtestlen = "12345678";
-print "Length (Expected 8): ";
-println strtestlen.len;
+var matrix = [[Object()]];
+matrix[0][0].id = 777;
 
-// BENCHMARK
-var start_time = clock();
-var bench_counter = 0;
-for (var i = 0; i < 10000; i++) {
-    bench_counter++;
+println obj.name;        // Expected: Alice
+println matrix[0][0].id; // Expected: 777
+println "string".len;    // Expected: 6
+
+// Logical Short-Circuiting
+var effect_run = false;
+fn effect() {
+    effect_run = true;
+    return true;
 }
-var end_time = clock();
-print "Benchmark elapsed: ";
-println end_time - start_time;
+var check = (false and effect()) or (true or effect());
+println effect_run; // Expected: false
+
+// Benchmark
+var start = clock();
+var loops = 0;
+while (loops < 10000) loops++;
+println clock() - start;

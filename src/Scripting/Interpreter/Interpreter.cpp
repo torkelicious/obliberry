@@ -60,6 +60,7 @@ namespace ObSL {
         if (const auto e = dynamic_cast<const LogicalExpr *>(expr)) return evaluate_logical(e);
         if (const auto e = dynamic_cast<const CallExpr *>(expr)) return evaluate_call(e);
         if (const auto e = dynamic_cast<const GetExpr *>(expr)) return evaluate_get(e);
+        if (const auto e = dynamic_cast<const SetExpr *>(expr)) return evaluate_set(e);
         throw std::runtime_error("Unknown expression type in interpreter.");
     }
 
@@ -100,6 +101,7 @@ namespace ObSL {
             else if constexpr (std::is_same_v<T, std::string>) std::cout << arg;
             else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLCallable> >) std::cout << arg->to_string();
             else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLArray> >) std::cout << "[Array]";
+            else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLObject> >) std::cout << "[Object]";
         }, value);
     }
 
@@ -113,6 +115,7 @@ namespace ObSL {
             else if constexpr (std::is_same_v<T, std::string>) std::cout << arg;
             else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLCallable> >) std::cout << arg->to_string();
             else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLArray> >) std::cout << "[Array]";
+            else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLObject> >) std::cout << "[Object]";
         }, value);
         std::cout << "\n";
     }
@@ -206,13 +209,19 @@ namespace ObSL {
                 check_number_operands(expr->oprt, lhs, rhs);
                 return std::get<double>(lhs) - std::get<double>(rhs);
             case TokenType::PLUS:
+                if (std::holds_alternative<std::string>(lhs) || std::holds_alternative<std::string>(rhs)) {
+                    auto stringify = [](const Value &val) -> std::string {
+                        if (std::holds_alternative<std::string>(val)) return std::get<std::string>(val);
+                        if (std::holds_alternative<double>(val)) return std::to_string(std::get<double>(val));
+                        if (std::holds_alternative<bool>(val)) return std::get<bool>(val) ? "true" : "false";
+                        return "null";
+                    };
+                    return stringify(lhs) + stringify(rhs);
+                }
                 if (std::holds_alternative<double>(lhs) && std::holds_alternative<double>(rhs)) {
                     return std::get<double>(lhs) + std::get<double>(rhs);
                 }
-                if (std::holds_alternative<std::string>(lhs) && std::holds_alternative<std::string>(rhs)) {
-                    return std::get<std::string>(lhs) + std::get<std::string>(rhs);
-                }
-                throw RuntimeError(expr->oprt, "Operands must be two numbers or two strings.");
+                throw RuntimeError(expr->oprt, "Operands must be numbers or strings.");
             case TokenType::SLASH:
                 check_number_operands(expr->oprt, lhs, rhs);
                 if (std::get<double>(rhs) == 0) throw RuntimeError(expr->oprt, "Division by zero.");
@@ -418,13 +427,36 @@ namespace ObSL {
             const auto instance = std::get<std::shared_ptr<ObSLObject> >(obj);
             // null terminated copy of property name
             const std::string prop_name(expr->name.lexeme);
+
             if (const auto it = instance->fields.find(prop_name); it != instance->fields.end()) {
-                return it->second;
+                //return it->second;
+                Value val = it->second;
+
+                if (std::holds_alternative<std::shared_ptr<ObSLCallable> >(val)) {
+                    auto callable = std::get<std::shared_ptr<ObSLCallable> >(val);
+                    if (auto func =
+                            std::dynamic_pointer_cast<ObSLFunction>(callable)) {
+                        return func->bind(instance);
+                    }
+                }
+                return val;
             }
             throw RuntimeError(expr->name, std::format("Undefined property '{}' on object.", expr->name.lexeme));
         }
         throw RuntimeError(expr->name, " does not contain property.");
     }
+
+    Value Interpreter::evaluate_set(const SetExpr *expr) {
+        Value obj = evaluate(expr->obj.get());
+        if (!std::holds_alternative<std::shared_ptr<ObSLObject> >(obj)) {
+            throw RuntimeError(expr->name, "Only objects can have fields assigned.");
+        }
+        auto instance = std::get<std::shared_ptr<ObSLObject> >(obj);
+        Value value = evaluate(expr->value.get());
+        instance->fields[std::string(expr->name.lexeme)] = value;
+        return value;
+    }
+
 
     ObSLFunction::ObSLFunction(const FunctionStmt *declaration, std::shared_ptr<Environment> closure)
         : declaration(declaration), closure(std::move(closure)) {

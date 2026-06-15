@@ -96,10 +96,18 @@ namespace ObSL {
                     std::move(callee), bracket, std::move(index), std::move(value)
                 );
             }
+            if (auto *get_expr = dynamic_cast<GetExpr *>(expr.get())) {
+                if (equals.type != TokenType::ASSIGN) {
+                    throw std::runtime_error(std::format(
+                        "[Line {}] Compound assignment on object properties is not supported.", equals.line));
+                }
+                return std::make_unique<SetExpr>(std::move(get_expr->obj), get_expr->name, std::move(value));
+            }
             throw std::runtime_error(std::format("[Line {}] Invalid assignment target.", equals.line));
         }
         return expr;
     }
+
 
     std::unique_ptr<Stmt> Parser::parse_function() {
         Token name = consume(TokenType::IDENTIFIER, "Expected function name.");
@@ -452,8 +460,13 @@ namespace ObSL {
         return body;
     }
 
-    Token Parser::peek() const { return tokens[current]; }
-    Token Parser::previous() const { return tokens[current - 1]; }
+    Token Parser::peek() const {
+        return tokens[current];
+    }
+
+    Token Parser::previous() const {
+        return tokens[current - 1];
+    }
 
     Token Parser::advance() {
         if (!is_at_end()) ++current;
