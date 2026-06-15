@@ -39,10 +39,10 @@ namespace ObSL {
         if (const auto s = dynamic_cast<const IfStmt *>(stmt)) return execute_if_stmt(s);
         if (const auto s = dynamic_cast<const SwitchStmt *>(stmt)) return execute_switch_stmt(s);
         if (const auto s = dynamic_cast<const WhileStmt *>(stmt)) return execute_while_stmt(s);
+        if (const auto s = dynamic_cast<const ForeachStmt *>(stmt)) return execute_foreach_stmt(s);
         if (const auto s = dynamic_cast<const BreakStmt *>(stmt)) return execute_break_stmt(s);
         if (const auto s = dynamic_cast<const ReturnStmt *>(stmt)) return execute_return_stmt(s);
         if (const auto s = dynamic_cast<const FunctionStmt *>(stmt)) return execute_function_stmt(s);
-
         throw std::runtime_error("Unknown statement type in interpreter.");
     }
 
@@ -59,6 +59,7 @@ namespace ObSL {
         if (const auto e = dynamic_cast<const IndexAssignmentExpr *>(expr)) return evaluate_index_assignment(e);
         if (const auto e = dynamic_cast<const LogicalExpr *>(expr)) return evaluate_logical(e);
         if (const auto e = dynamic_cast<const CallExpr *>(expr)) return evaluate_call(e);
+        if (const auto e = dynamic_cast<const GetExpr *>(expr)) return evaluate_get(e);
         throw std::runtime_error("Unknown expression type in interpreter.");
     }
 
@@ -325,9 +326,9 @@ namespace ObSL {
 
     void Interpreter::execute_switch_stmt(const SwitchStmt *stmt) {
         // no fallthrough switch !!!
-        Value condition_val = evaluate(stmt->condition.get());
-        const CaseBranch *default_branch = nullptr;
+        const Value condition_val = evaluate(stmt->condition.get());
         try {
+            const CaseBranch *default_branch = nullptr;
             // look for a specific case match
             for (const auto &case_branch: stmt->cases) {
                 if (case_branch.match_value == nullptr) {
@@ -335,9 +336,8 @@ namespace ObSL {
                     default_branch = &case_branch;
                     continue;
                 }
-                Value case_val = evaluate(case_branch.match_value.get());
                 // match
-                if (is_equal(condition_val, case_val)) {
+                if (Value case_val = evaluate(case_branch.match_value.get()); is_equal(condition_val, case_val)) {
                     for (const auto &case_stmt: case_branch.statements) {
                         execute(case_stmt.get());
                     }
@@ -366,6 +366,22 @@ namespace ObSL {
         }
     }
 
+    void Interpreter::execute_foreach_stmt(const ForeachStmt *stmt) {
+        if (const Value iterable_val = evaluate(stmt->iterable.get()); std::holds_alternative<std::shared_ptr<
+            ObSLArray> >(iterable_val)) {
+            const auto array = std::get<std::shared_ptr<ObSLArray> >(iterable_val);
+            for (const auto &item: array->elements) {
+                auto loop_env = std::make_shared<Environment>(environment);
+                loop_env->define(std::string(stmt->loop_var.lexeme), item);
+                EnvironmentGuard guard(environment, environment);
+                environment = std::move(loop_env);
+                try { execute(stmt->body.get()); } catch (const BreakException &) { break; }
+            }
+        } else {
+            throw RuntimeError(stmt->loop_var, "Object is not iterable. Expected an Array.");
+        }
+    }
+
     void Interpreter::execute_break_stmt(const BreakStmt *) {
         throw BreakException();
     }
@@ -376,6 +392,38 @@ namespace ObSL {
             value = evaluate(stmt->value.get());
         }
         throw ReturnException(value);
+    }
+
+    Value Interpreter::evaluate_get(const GetExpr *expr) {
+        const Value obj = evaluate(expr->obj.get());
+
+        // arrays
+        if (std::holds_alternative<std::shared_ptr<ObSLArray> >(obj)) {
+            const auto array = std::get<std::shared_ptr<ObSLArray> >(obj);
+            if (expr->name.lexeme == "len") {
+                return Value(static_cast<double>(array->elements.size()));
+            }
+            throw RuntimeError(expr->name, std::format("Undefined property '{}' on Array.", expr->name.lexeme));
+        }
+        // strings
+        if (std::holds_alternative<std::string>(obj)) {
+            const auto &str = std::get<std::string>(obj);
+            if (expr->name.lexeme == "len") {
+                return Value(static_cast<double>(str.length()));
+            }
+            throw RuntimeError(expr->name, std::format("Undefined property '{}' on String.", expr->name.lexeme));
+        }
+        // objects
+        if (std::holds_alternative<std::shared_ptr<ObSLObject> >(obj)) {
+            const auto instance = std::get<std::shared_ptr<ObSLObject> >(obj);
+            // null terminated copy of property name
+            const std::string prop_name(expr->name.lexeme);
+            if (const auto it = instance->fields.find(prop_name); it != instance->fields.end()) {
+                return it->second;
+            }
+            throw RuntimeError(expr->name, std::format("Undefined property '{}' on object.", expr->name.lexeme));
+        }
+        throw RuntimeError(expr->name, " does not contain property.");
     }
 
     ObSLFunction::ObSLFunction(const FunctionStmt *declaration, std::shared_ptr<Environment> closure)

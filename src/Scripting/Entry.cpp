@@ -11,31 +11,19 @@
 
 /*
  * ObSL todo:
- * switch statements
- * foreach loop
  * proper in/out input buffers
  * limited native funcs & stdlib
  * engine intergration
  * lsp
  * docs lol
+ * wait(1s) native bind (use this_thread wait or whatever its called in chronoliterals)
  */
-
-/*
- todo:
- * TOKENS IN THE ENUM BUT NOT IMPLEMENTED
- * add token types to lexer:
- * switch
- * colons
- * case
- * default
- */
-
 
 namespace ObSL {
     // this is just a test, move this to seperate file later and maybe make it more acessable...
     // p.s i really hate cpp lambda syntax
     void bind(Interpreter &m_interpreter) {
-        m_interpreter.define_native("clock", []() {
+        m_interpreter.define_native("clock", [] {
             const auto now = std::chrono::system_clock::now().time_since_epoch();
             return static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(now).count()) / 1000.0;
         });

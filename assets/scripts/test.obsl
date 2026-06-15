@@ -1,51 +1,36 @@
-// testing
-println "DATA TYPES & OPERATORS";
+// DATA TYPES & OPERATORS
 var num = 42;
 var str = "ObSL";
 var boolean = true;
 var empty = null;
 
-println "Variables:";
-println num;
-println str;
-println boolean;
-println empty;
+println num;     // Expected: 42
+println str;     // Expected: ObSL
+println boolean; // Expected: true
+println empty;   // Expected: null
 
-println "Arithmetic (Expect 14):";
-println (10 + 2 * 3) - (8 % 6);
-
-println "String Concatenation:";
+println (10 + 2 * 3) - (8 % 6); // Expected: 14
 println "Welcome to " + str + "!";
 
-println "Prefix vs Postfix:";
+// Prefix vs Postfix
 var counter = 10;
 println counter++; // Expected: 10
 println counter;   // Expected: 11
 println ++counter; // Expected: 12
 
-println "";
-println "ARRAYS";
+// ARRAYS & NEW FOREACH
 var my_arr = [10, 20, 30];
-println "Initial Array:";
-println my_arr;         // Expected: [Array]
+println my_arr[1]; // Expected: 20
 
-println "Read Index 1 (Expect 20):";
-println my_arr[1];
-
-println "Reassign Index 1 to 99...";
 my_arr[1] = 99;
-println my_arr[1];      // Expected: 99
+println my_arr[1]; // Expected: 99
 
-println "Array Iteration:";
-for (var i = 0; i < 3; i++) {
-    print "Index ";
-    print i;
-    print ": ";
-    println my_arr[i];
+println "Testing foreach loop:";
+foreach (var item in my_arr) {
+    println item;
 }
 
-println "";
-println "SCOPING & SHADOWING";
+// SCOPING & SHADOWING
 var scope_test = "global";
 {
     var inner_assign = "local";
@@ -55,24 +40,20 @@ var scope_test = "global";
 }
 println scope_test;       // Expected: global
 
-println "";
-println "CONTROL FLOW";
-
+// CONTROL FLOW
 var x = 5;
 if (x > 10) {
-    println "Error: x is not greater than 10";
+    println "Error";
 } else {
-    println "Success: Else branch evaluated.";
+    println "Success: If/Else works";
 }
 
-println "While loop countdown:";
 var countdown = 3;
 while (countdown > 0) {
     println countdown;
     countdown--;
 }
 
-println "For loop with break evaluation:";
 for (var i = 0; i < 10; i++) {
     if (i == 4) {
         println "Breaking early at 4";
@@ -81,46 +62,28 @@ for (var i = 0; i < 10; i++) {
     println i;
 }
 
-println "";
-println "SWITCH";
-
+// SWITCH
 var s = "4";
 switch (s) {
-    case "1":
-        println "F";
-    case "2":
-        println "F (d)";
-    case "3":
-        println "F(t)";
     case "4":
-        println "Expected";
+        println "Switch Expected";
     default:
         println "Unknown";
 }
 
-println "";
-println "FUNCTIONS & RECURSION";
-
+// FUNCTIONS & RECURSION
 fn add(a, b) {
     return a + b;
 }
-
-println "Standard Call (Expect 15):";
-println add(7, 8);
+println add(7, 8); // Expected: 15
 
 fn factorial(n) {
-    if (n <= 1) {
-        return 1;
-    }
-
+    if (n <= 1) return 1;
     return n * factorial(n - 1);
 }
-println "Recursive Call (Expect 120):";
-println factorial(5);
+println factorial(5); // Expected: 120
 
-println "";
-println "LEXICAL CLOSURES";
-
+// LEXICAL CLOSURES
 fn generate_counter() {
     var count = 0;
     fn incrementer() {
@@ -129,39 +92,24 @@ fn generate_counter() {
     }
     return incrementer;
 }
-
 var ticket_system = generate_counter();
-println "Closure Call 1:";
 println ticket_system(); // Expected: 1
-println "Closure Call 2:";
 println ticket_system(); // Expected: 2
 
-println "";
+// STRING LITERALS & PROPERTIES
+print "No newline...";
+print ' single quote test\n';
 
-println "print tests";
-print "this does not add a newline.";
-print " neither does this...";
+var strtestlen = "12345678";
+print "Length (Expected 8): ";
+println strtestlen.len;
 
-println "";
-
-print 'single qoute test';
-
-println "\n"; // two newlines!
-
-println "Done";
-
-println "Benchmarking ObSL...";
-
+// BENCHMARK
 var start_time = clock();
-
 var bench_counter = 0;
 for (var i = 0; i < 10000; i++) {
     bench_counter++;
 }
-
 var end_time = clock();
-
-println "Counted to:";
-println bench_counter;
-println "Time elapsed (in seconds):";
+print "Benchmark elapsed: ";
 println end_time - start_time;

@@ -102,13 +102,17 @@ namespace ObSL {
 
         void execute_if_stmt(const IfStmt *stmt);
 
-        void execute_switch_stmt(const SwitchStmt *switch_stmt);
+        void execute_switch_stmt(const SwitchStmt *stmt);
 
         void execute_while_stmt(const WhileStmt *stmt);
+
+        void execute_foreach_stmt(const ForeachStmt *stmt);
 
         void execute_break_stmt(const BreakStmt *stmt);
 
         void execute_return_stmt(const ReturnStmt *stmt);
+
+        Value evaluate_get(const GetExpr *expr);
 
         Value evaluate_literal(const LiteralExpr *expr);
 
@@ -143,7 +147,7 @@ namespace ObSL {
         // automatically unpack into target lambda arguments
         template<typename F, typename Traits, size_t... Is>
         static Value call_native_helper(const F &body, const std::vector<Value> &args, std::index_sequence<Is...>) {
-            using ArgsTuple = typename Traits::args_tuple;
+            using ArgsTuple = Traits::args_tuple;
             if constexpr (std::is_void_v<typename Traits::return_type>) {
                 body(std::get<std::tuple_element_t<Is, ArgsTuple> >(args[Is])...);
                 return std::monostate{};
@@ -200,7 +204,10 @@ namespace ObSL {
         using Traits = native_fn_traits<decltype(&std::decay_t<F>::operator())>;
 
         auto wrapped = [body = std::forward<F>(body)](Interpreter *, const std::vector<Value> &args) -> Value {
-            return call_native_helper<F, Traits>(body, args, std::make_index_sequence<Traits::arity>{});
+            return call_native_helper<F, Traits>(body, args, std::make_index_sequence<Traits::arity>
+                                                 {
+                                                 }
+            );
         };
 
         globals->define(name, std::make_shared<NativeFunction>(Traits::arity, std::move(wrapped), name));

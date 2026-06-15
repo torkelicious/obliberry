@@ -34,6 +34,7 @@ namespace ObSL {
             return std::make_unique<PrintlnStmt>(keyword, std::move(value));
         }
         if (match({TokenType::FOR})) return parse_for_statement();
+        if (match({TokenType::FOREACH})) return parse_foreach_statement();
         if (match({TokenType::WHILE})) return parse_while_statement();
         if (match({TokenType::RETURN})) return parse_return_statement();
         if (match({TokenType::BREAK})) return parse_break_statement();
@@ -133,6 +134,9 @@ namespace ObSL {
                 auto index = parse_expression();
                 consume(TokenType::RIGHT_BRACKET, "Expect ']' after index.");
                 expr = std::make_unique<IndexExpr>(std::move(expr), bracket, std::move(index));
+            } else if (match({TokenType::DOT})) {
+                Token name = consume(TokenType::IDENTIFIER, "Expect property name after '.'.");
+                expr = std::make_unique<GetExpr>(std::move(expr), name);
             } else {
                 break;
             }
@@ -328,6 +332,19 @@ namespace ObSL {
         auto body = parse_statement();
         return std::make_unique<WhileStmt>(std::move(condition), std::move(body));
     }
+
+    std::unique_ptr<Stmt> Parser::parse_foreach_statement() {
+        consume(TokenType::LEFT_PAREN, "Expect '(' after 'foreach'.");
+        // optional var keyword
+        match({TokenType::VAR});
+        Token loop_var = consume(TokenType::IDENTIFIER, "Expect variable name.");
+        consume(TokenType::IN, "Expect 'in' after variable name.");
+        auto iterable = parse_expression();
+        consume(TokenType::RIGHT_PAREN, "Expect ')' after foreach clauses.");
+        auto body = parse_statement();
+        return std::make_unique<ForeachStmt>(loop_var, std::move(iterable), std::move(body));
+    }
+
 
     std::unique_ptr<Stmt> Parser::parse_return_statement() {
         Token keyword = previous();

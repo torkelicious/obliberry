@@ -71,6 +71,8 @@ namespace ObSL {
 
         std::unique_ptr<Stmt> parse_while_statement();
 
+        std::unique_ptr<Stmt> parse_foreach_statement();
+
         std::unique_ptr<Stmt> parse_return_statement();
 
         std::unique_ptr<Stmt> parse_break_statement();

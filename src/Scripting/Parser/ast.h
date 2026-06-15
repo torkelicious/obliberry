@@ -8,12 +8,15 @@
 #include <string>
 #include <vector>
 #include <format>
+#include <unordered_map>
 #include "Scripting/Lexer/Lexer.h"
 
 namespace ObSL {
     class Interpreter;
     struct ObSLCallable;
     struct ObSLArray;
+    struct ObSLObject;
+
 
     using Value = std::variant<
         std::monostate,
@@ -21,8 +24,13 @@ namespace ObSL {
         double,
         std::string,
         std::shared_ptr<ObSLCallable>,
-        std::shared_ptr<ObSLArray>
+        std::shared_ptr<ObSLArray>,
+        std::shared_ptr<ObSLObject>
     >;
+
+    struct ObSLObject {
+        std::unordered_map<std::string, Value> fields;
+    };
 
     struct ObSLArray {
         std::vector<Value> elements;
@@ -88,6 +96,8 @@ namespace ObSL {
                     return arg ? arg->to_string() : std::string("<callable>");
                 else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLArray> >)
                     return "[Array]";
+                else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLObject> >)
+                    return "[Object]";
             }, value);
         }
     };
@@ -205,7 +215,7 @@ namespace ObSL {
         Token bracket;
         std::unique_ptr<Expr> index;
 
-        IndexExpr(std::unique_ptr<Expr> callee, Token bracket, std::unique_ptr<Expr> index)
+        IndexExpr(std::unique_ptr<Expr> callee, const Token &bracket, std::unique_ptr<Expr> index)
             : callee(std::move(callee)), bracket(bracket), index(std::move(index)) {
         }
 
@@ -222,7 +232,7 @@ namespace ObSL {
 
         IndexAssignmentExpr(
             std::unique_ptr<Expr> callee,
-            Token bracket,
+            const Token &bracket,
             std::unique_ptr<Expr> index,
             std::unique_ptr<Expr> value)
             : callee(std::move(callee)), bracket(bracket), index(std::move(index)), value(std::move(value)) {
@@ -232,6 +242,20 @@ namespace ObSL {
             return std::format("(= {}[{}] {})", callee->to_string(), index->to_string(), value->to_string());
         }
     };
+
+    struct GetExpr : public Expr {
+        std::unique_ptr<Expr> obj;
+        Token name;
+
+        GetExpr(std::unique_ptr<Expr> obj, const Token &name)
+            : obj(std::move(obj)), name(name) {
+        }
+
+        [[nodiscard]] std::string to_string() const override {
+            return std::format("(. {} {})", obj->to_string(), name.lexeme);
+        }
+    };
+
 
     struct FunctionStmt : public Stmt {
         Token name;
@@ -359,6 +383,21 @@ namespace ObSL {
 
         [[nodiscard]] std::string to_string() const override {
             return std::format("[WhileStmt: (while {}\n  body: {})]\n", condition->to_string(), body->to_string());
+        }
+    };
+
+    struct ForeachStmt : public Stmt {
+        Token loop_var;
+        std::unique_ptr<Expr> iterable;
+        std::unique_ptr<Stmt> body;
+
+        ForeachStmt(const Token &loop_var, std::unique_ptr<Expr> iterable, std::unique_ptr<Stmt> body)
+            : loop_var(loop_var), iterable(std::move(iterable)), body(std::move(body)) {
+        }
+
+        [[nodiscard]] std::string to_string() const override {
+            return std::format("[ForeachStmt: (foreach {} in {})\n  body: {}]\n",
+                               loop_var.lexeme, iterable->to_string(), body->to_string());
         }
     };
 
