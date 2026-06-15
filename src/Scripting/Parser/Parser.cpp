@@ -16,6 +16,12 @@ namespace ObSL {
     }
 
     std::unique_ptr<Stmt> Parser::parse_statement() {
+        if (match({TokenType::USING})) {
+            Token keyword = previous();
+            Token path_token = consume(TokenType::STRING, "Expect string literal for file path.");
+            consume(TokenType::SEMICOLON, "Expect ';' after using statement.");
+            return std::make_unique<UsingStmt>(keyword, std::string(path_token.lexeme));
+        }
         if (match({TokenType::FN})) return parse_function();
         if (match({TokenType::VAR})) return parse_var_statement();
         if (match({TokenType::LEFT_BRACE})) return parse_block();
@@ -319,6 +325,14 @@ namespace ObSL {
         }
         consume(TokenType::RIGHT_BRACE, "Expect '}' to close block.");
         return std::make_unique<BlockStmt>(std::move(stmts));
+    }
+
+    std::unique_ptr<Stmt> Parser::parse_using_statement() {
+        Token keyword = previous();
+        Token path_token = consume(TokenType::STRING, "Expected string literal for filepath");
+        consume(TokenType::SEMICOLON, "Expect ';' after using statement");
+        std::string path(path_token.lexeme); // strings are stripped in readstring already :))))
+        return std::make_unique<UsingStmt>(keyword, path);
     }
 
     std::unique_ptr<Stmt> Parser::parse_if_statement() {

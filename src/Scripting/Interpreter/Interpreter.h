@@ -8,6 +8,10 @@
 #include <tuple>
 #include <utility>
 #include <type_traits>
+#include <unordered_set>
+#include <string_view>
+#include <format>
+
 #include "Scripting/Tokens.h"
 #include "Scripting/Parser/ast.h"
 #include "Scripting/Interpreter/Environment.h"
@@ -46,11 +50,29 @@ namespace ObSL {
         }
     };
 
+    template<typename T>
+    consteval std::string_view native_type_name() {
+        if constexpr (std::is_same_v<T, bool>) return "bool";
+        else if constexpr (std::is_same_v<T, double>) return "number";
+        else if constexpr (std::is_same_v<T, std::string>) return "string";
+        else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLCallable>>) return "callable";
+        else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLArray>>) return "array";
+        else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLObject>>) return "object";
+        else if constexpr (std::is_same_v<T, std::monostate>) return "null";
+        else return "unknown";
+    }
+
     struct RuntimeError : public std::runtime_error {
         Token token;
 
         RuntimeError(const Token &token, const std::string &msg)
             : std::runtime_error(msg), token(token) {
+        }
+    };
+
+    struct NativeTypeError : public std::runtime_error {
+        explicit NativeTypeError(const std::string &msg)
+            : std::runtime_error(msg) {
         }
     };
 
@@ -72,6 +94,7 @@ namespace ObSL {
         std::shared_ptr<Environment> globals;
         std::shared_ptr<Environment> environment;
         std::vector<std::vector<std::unique_ptr<Stmt> > > ast_storage;
+        std::vector<std::string> source_storage;
 
     public:
         Interpreter() {
@@ -95,6 +118,8 @@ namespace ObSL {
         void define_native(std::string name, F &&body);
 
     private:
+        std::unordered_map<std::string, std::shared_ptr<ObSLObject> > loaded_modules;
+
         void execute(const Stmt *stmt);
 
         Value evaluate(const Expr *expr);
@@ -159,15 +184,34 @@ namespace ObSL {
 
         [[nodiscard]] bool is_equal(const Value &a, const Value &b) const;
 
-        // automatically unpack into target lambda arguments
+        void execute_using_stmt(const UsingStmt *stmt);
+
         template<typename F, typename Traits, size_t... Is>
         static Value call_native_helper(const F &body, const std::vector<Value> &args, std::index_sequence<Is...>) {
-            using ArgsTuple = Traits::args_tuple;
+            using ArgsTuple = typename Traits::args_tuple;
+            (
+                validate_native_arg<std::tuple_element_t<Is, ArgsTuple>>(args[Is], Is),
+                ...
+            );
             if constexpr (std::is_void_v<typename Traits::return_type>) {
-                body(std::get<std::tuple_element_t<Is, ArgsTuple> >(args[Is])...);
+                body(std::get<std::tuple_element_t<Is, ArgsTuple>>(args[Is])...);
                 return std::monostate{};
             } else {
-                return body(std::get<std::tuple_element_t<Is, ArgsTuple> >(args[Is])...);
+                return body(std::get<std::tuple_element_t<Is, ArgsTuple>>(args[Is])...);
+            }
+        }
+
+        template<typename TargetType>
+        static void validate_native_arg(const Value &arg, const size_t index) {
+            if (!std::holds_alternative<TargetType>(arg)) {
+                throw NativeTypeError(
+                    std::format("Argument {}: expected type '{}', got '{}'.",
+                                index,
+                                native_type_name<TargetType>(),
+                                std::visit([]<typename T>(const T &) -> std::string_view {
+                                    return native_type_name<std::decay_t<T>>();
+                                }, arg))
+                );
             }
         }
     };
@@ -211,9 +255,25 @@ namespace ObSL {
         [[nodiscard]] int arity() const override { return m_arity; }
 
         Value call(Interpreter *interpreter, const std::vector<Value> &arguments) override {
-            return m_body(interpreter, arguments);
+            try {
+                return m_body(interpreter, arguments);
+            } catch (const RuntimeError &) {
+                throw;
+            } catch (const BreakException &) {
+                throw;
+            } catch (const ReturnException &) {
+                throw;
+            } catch (const NativeTypeError &e) {
+                throw RuntimeError(m_dummy_token, e.what());
+            } catch (const std::exception &e) {
+                throw RuntimeError(m_dummy_token, std::format("Native function '{}': {}", m_name, e.what()));
+            }
         }
 
+    private:
+        static Token m_dummy_token;
+
+    public:
         [[nodiscard]] std::string to_string() const override {
             return std::format("<native fn {}>", m_name);
         }

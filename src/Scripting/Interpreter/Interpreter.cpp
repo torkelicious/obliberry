@@ -1,10 +1,16 @@
 #include "Interpreter.h"
 #include <cmath>
+#include <filesystem>
 #include <iostream>
 #include <format>
+#include <fstream>
 #include <type_traits>
 
+#include "Scripting/Parser/Parser.h"
+
 namespace ObSL {
+    Token NativeFunction::m_dummy_token{TokenType::EOF_, "<native>", 0, 0, 0, 0};
+
     struct EnvironmentGuard {
         std::shared_ptr<Environment> &current_env;
         std::shared_ptr<Environment> previous_env;
@@ -31,6 +37,7 @@ namespace ObSL {
     }
 
     void Interpreter::execute(const Stmt *stmt) {
+        if (const auto s = dynamic_cast<const UsingStmt *>(stmt)) return execute_using_stmt(s);
         if (const auto s = dynamic_cast<const ExpressionStmt *>(stmt)) return execute_expression_stmt(s);
         if (const auto s = dynamic_cast<const PrintStmt *>(stmt)) return execute_print_stmt(s);
         if (const auto s = dynamic_cast<const PrintlnStmt *>(stmt)) return execute_print_ln_stmt(s);
@@ -310,6 +317,50 @@ namespace ObSL {
             }
         }, a, b);
     }
+
+
+    void Interpreter::execute_using_stmt(const UsingStmt *stmt) {
+        std::string module_name = std::filesystem::path(stmt->path).stem().string();
+        if (loaded_modules.contains(stmt->path)) {
+            environment->define(module_name, loaded_modules[stmt->path]);
+            return;
+        }
+        std::ifstream file(stmt->path);
+        if (!file.is_open()) {
+            throw RuntimeError(stmt->keyword, std::format("Could not open module '{}'.", stmt->path));
+        }
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+        source_storage.push_back(buffer.str());
+        Lexer lexer(source_storage.back());
+        auto tokens = lexer.tokenize();
+
+        Parser parser(tokens);
+        auto statements = parser.parse();
+
+        auto module_env = std::make_shared<Environment>(globals);
+        auto previous_env = environment;
+
+        try {
+            environment = module_env;
+            for (const auto &module_stmt: statements) {
+                if (module_stmt) { execute(module_stmt.get()); }
+            }
+            environment = previous_env;
+        } catch (...) {
+            environment = previous_env;
+            throw;
+        }
+
+        auto module_obj = std::make_shared<ObSLObject>();
+        for (const auto &[name, val]: module_env->get_values()) {
+            module_obj->fields[name] = val;
+        }
+        loaded_modules[stmt->path] = module_obj;
+        environment->define(module_name, module_obj);
+        ast_storage.push_back(std::move(statements));
+    }
+
 
     void Interpreter::execute_block(const std::vector<std::unique_ptr<Stmt> > &statements,
                                     std::shared_ptr<Environment> block_env) {

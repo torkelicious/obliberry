@@ -270,6 +270,18 @@ namespace ObSL {
         }
     };
 
+    struct UsingStmt : public Stmt {
+        Token keyword;
+        std::string path;
+
+        UsingStmt(const Token &keyword, std::string path)
+            : keyword(keyword), path(std::move(path)) {
+        }
+
+        [[nodiscard]] std::string to_string() const override {
+            return std::format("[UsingStmt: {}]\n", path);
+        }
+    };
 
     struct FunctionStmt : public Stmt {
         Token name;

@@ -67,6 +67,8 @@ namespace ObSL {
 
         std::unique_ptr<BlockStmt> parse_block();
 
+        std::unique_ptr<Stmt> parse_using_statement();
+
         std::unique_ptr<Stmt> parse_if_statement();
 
         std::unique_ptr<Stmt> parse_while_statement();

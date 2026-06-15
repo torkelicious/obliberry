@@ -1,79 +1,19 @@
-// Types, arithmetic, and strings
-var num = (10 + 2 * 3) - (8 % 6);
-var str = "ObSL";
-println "Hello " + str + "! Result: " + num; // Expected: Hello ObSL! Result: 14
+// main.obsl
+println "loading modules";
+println"";
 
-// Prefix / Postfix
-var c = 0;
-println c++; // Expected: 0
-println ++c; // Expected: 2
+using "assets/scripts/math.obsl";
+using "assets/scripts/math.obsl";
+// second one should hit the cache
 
-// Arrays & Foreach
-var arr = [10, 20, 30];
-arr[1] = 99;
-foreach (var item in arr) {
-    println item; // Expected: 10, 99, 30
-}
+println "Modules loaded.";
+println "";
 
-// Scoping
-var scope = "global";
-{
-    var scope = "local";
-}
-println scope; // Expected: global
+println "Testing math.pi:";
+println math.pi;
 
-// Control Flow (If, For, Switch)
-if (num == 14) println "If works";
+println "Testing math.add(10, 5):";
+println math.add(10, 5);
 
-for (var i = 0; i < 3; i++) {
-    if (i == 1) break;
-    println i; // Expected: 0
-}
-
-switch ("match") {
-    case "match":
-        println "Switch works";
-    default:
-        println "Miss";
-}
-
-// Functions, Recursion, & Closures
-fn factorial(n) {
-    if (n <= 1) return 1;
-    return n * factorial(n - 1);
-}
-println factorial(5); // Expected: 120
-
-fn make_counter() {
-    var count = 0;
-    fn increment() { return ++count; }
-    return increment;
-}
-var counter = make_counter();
-println counter(); // Expected: 1
-
-// Native Objects, Nested Structures, & Properties
-var obj = Object();
-obj.name = "Alice";
-
-var matrix = [[Object()]];
-matrix[0][0].id = 777;
-
-println obj.name;        // Expected: Alice
-println matrix[0][0].id; // Expected: 777
-println "string".len;    // Expected: 6
-
-// Logical Short-Circuiting
-var effect_run = false;
-fn effect() {
-    effect_run = true;
-    return true;
-}
-var check = (false and effect()) or (true or effect());
-println effect_run; // Expected: false
-
-// Benchmark
-var start = clock();
-var loops = 0;
-while (loops < 10000) loops++;
-println clock() - start;
+println "Testing math.square(4):";
+println math.square(4);

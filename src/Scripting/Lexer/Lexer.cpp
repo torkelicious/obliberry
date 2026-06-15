@@ -112,8 +112,9 @@ namespace ObSL {
             {"return", TokenType::RETURN},
             {"this", TokenType::THIS},
             {"true", TokenType::TRUE_},
+            {"using", TokenType::USING},
             {"var", TokenType::VAR},
-            {"while", TokenType::WHILE}
+            {"while", TokenType::WHILE},
         };
 
         const auto it = keywords.find(text);
