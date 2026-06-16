@@ -350,7 +350,7 @@ namespace ObSL {
         std::vector<Param> params;
         std::unique_ptr<BlockStmt> body;
 
-        FunctionStmt(Token name, std::vector<Param> params, std::unique_ptr<BlockStmt> body)
+        FunctionStmt(const Token &name, std::vector<Param> params, std::unique_ptr<BlockStmt> body)
             : name(name), params(std::move(params)), body(std::move(body)) {
         }
 

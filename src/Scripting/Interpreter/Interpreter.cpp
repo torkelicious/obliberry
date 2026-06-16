@@ -244,36 +244,36 @@ namespace ObSL {
             case TokenType::AMPERSAND:
                 check_number_operands(expr->oprt, lhs, rhs);
                 {
-                    auto left = static_cast<int64_t>(std::get<double>(lhs));
-                    auto right = static_cast<int64_t>(std::get<double>(rhs));
+                    const auto left = static_cast<int64_t>(std::get<double>(lhs));
+                    const auto right = static_cast<int64_t>(std::get<double>(rhs));
                     return static_cast<double>(left & right);
                 }
             case TokenType::PIPE:
                 check_number_operands(expr->oprt, lhs, rhs);
                 {
-                    auto left = static_cast<int64_t>(std::get<double>(lhs));
-                    auto right = static_cast<int64_t>(std::get<double>(rhs));
+                    const auto left = static_cast<int64_t>(std::get<double>(lhs));
+                    const auto right = static_cast<int64_t>(std::get<double>(rhs));
                     return static_cast<double>(left | right);
                 }
             case TokenType::CARET:
                 check_number_operands(expr->oprt, lhs, rhs);
                 {
-                    auto left = static_cast<int64_t>(std::get<double>(lhs));
-                    auto right = static_cast<int64_t>(std::get<double>(rhs));
+                    const auto left = static_cast<int64_t>(std::get<double>(lhs));
+                    const auto right = static_cast<int64_t>(std::get<double>(rhs));
                     return static_cast<double>(left ^ right);
                 }
             case TokenType::LESS_LESS:
                 check_number_operands(expr->oprt, lhs, rhs);
                 {
-                    auto left = static_cast<int64_t>(std::get<double>(lhs));
-                    auto right = static_cast<int64_t>(std::get<double>(rhs));
+                    const auto left = static_cast<int64_t>(std::get<double>(lhs));
+                    const auto right = static_cast<int64_t>(std::get<double>(rhs));
                     return static_cast<double>(left << right);
                 }
             case TokenType::GREATER_GREATER:
                 check_number_operands(expr->oprt, lhs, rhs);
                 {
-                    auto left = static_cast<int64_t>(std::get<double>(lhs));
-                    auto right = static_cast<int64_t>(std::get<double>(rhs));
+                    const auto left = static_cast<int64_t>(std::get<double>(lhs));
+                    const auto right = static_cast<int64_t>(std::get<double>(rhs));
                     return static_cast<double>(left >> right);
                 }
             default:
@@ -296,7 +296,7 @@ namespace ObSL {
                 return !is_truthy(right);
             case TokenType::TILDE:
                 if (std::holds_alternative<double>(right)) {
-                    auto val = static_cast<int64_t>(std::get<double>(right));
+                    const auto val = static_cast<int64_t>(std::get<double>(right));
                     return static_cast<double>(~val);
                 }
                 throw RuntimeError(expr->oprt, "Operand must be a number.");
@@ -408,7 +408,7 @@ namespace ObSL {
         try {
             execute_block_stmt(stmt->try_body.get());
         } catch (const RuntimeError &error) {
-            auto catch_env = std::make_shared<Environment>(environment);
+            const auto catch_env = std::make_shared<Environment>(environment);
             register_environment(catch_env);
             catch_env->define(std::string(stmt->exception_var.lexeme), std::string(error.what()));
             execute_block(stmt->catch_body->statements, catch_env);
@@ -545,11 +545,11 @@ namespace ObSL {
     }
 
     Value Interpreter::evaluate_set(const SetExpr *expr) {
-        Value obj = evaluate(expr->obj.get());
+        const Value obj = evaluate(expr->obj.get());
         if (!std::holds_alternative<std::shared_ptr<ObSLObject> >(obj)) {
             throw RuntimeError(expr->name, "Only objects can have fields assigned.");
         }
-        auto instance = std::get<std::shared_ptr<ObSLObject> >(obj);
+        const auto instance = std::get<std::shared_ptr<ObSLObject> >(obj);
         Value value = evaluate(expr->value.get());
         instance->fields[std::string(expr->name.lexeme)] = value;
         return value;
@@ -566,8 +566,8 @@ namespace ObSL {
 
     int ObSLFunction::min_arity() const {
         int min_args = 0;
-        for (const auto &param: declaration->params) {
-            if (param.default_value == nullptr) {
+        for (const auto &[name, default_value]: declaration->params) {
+            if (default_value == nullptr) {
                 min_args++;
             }
         }
@@ -575,26 +575,26 @@ namespace ObSL {
     }
 
     Value ObSLFunction::call(Interpreter *interpreter, const std::vector<Value> &arguments, const Token &call_token) {
-        size_t max_arity = declaration->params.size();
+        const size_t max_arity = declaration->params.size();
         size_t min_arity_val = min_arity();
 
-        auto environment = std::make_shared<Environment>(closure);
+        const auto environment = std::make_shared<Environment>(closure);
         interpreter->register_environment(environment);
-        auto previous_env = interpreter->get_current_environment();
+        const auto previous_env = interpreter->get_current_environment();
 
         try {
             for (size_t i = 0; i < max_arity; ++i) {
-                const auto &param = declaration->params[i];
+                const auto &[name, default_value] = declaration->params[i];
                 Value final_val;
 
                 if (i < arguments.size()) {
                     final_val = arguments[i];
                 } else {
                     interpreter->set_current_environment(environment);
-                    final_val = interpreter->evaluate(param.default_value.get());
+                    final_val = interpreter->evaluate(default_value.get());
                 }
 
-                environment->define(std::string(param.name.lexeme), final_val);
+                environment->define(std::string(name.lexeme), final_val);
             }
 
             interpreter->set_current_environment(environment);

@@ -60,7 +60,7 @@ namespace ObSL {
             if (const auto *var_expr = dynamic_cast<VariableExpr *>(expr.get())) {
                 Token name = var_expr->name;
                 if (equals.type != TokenType::ASSIGN) {
-                    TokenType binary_op;
+                    TokenType binary_op = {};
                     std::string_view lexeme;
                     if (equals.type == TokenType::PLUS_EQUAL) {
                         binary_op = TokenType::PLUS;
@@ -129,13 +129,13 @@ namespace ObSL {
         Token name = consume(TokenType::IDENTIFIER, "Expect function name.");
         consume(TokenType::LEFT_PAREN, "Expect '(' after function name.");
         std::vector<Param> params;
-        bool has_default = false;
         if (!check(TokenType::RIGHT_PAREN)) {
+            bool has_default = false;
             do {
                 if (params.size() >= 255) {
                     throw RuntimeError(peek(), "Can't have more than 255 parameters.");
                 }
-                Token param_name = consume(TokenType::IDENTIFIER, "Expect parameter name.");
+                const Token param_name = consume(TokenType::IDENTIFIER, "Expect parameter name.");
                 std::unique_ptr<Expr> default_value = nullptr;
 
                 if (match(TokenType::ASSIGN)) {
@@ -353,7 +353,7 @@ namespace ObSL {
 
     std::unique_ptr<Stmt> Parser::parse_using_statement() {
         Token keyword = previous();
-        Token path_token = consume(TokenType::STRING, "Expected string literal for filepath");
+        const Token path_token = consume(TokenType::STRING, "Expected string literal for filepath");
         consume(TokenType::SEMICOLON, "Expect ';' after using statement");
 
         std::string processed_path;

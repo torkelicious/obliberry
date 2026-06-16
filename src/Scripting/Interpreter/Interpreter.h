@@ -129,7 +129,7 @@ namespace ObSL {
 
             // stop leftover reference cycles trapped in closure scopes
             for (auto &weak_env: all_environments) {
-                if (auto env = weak_env.lock()) {
+                if (const auto env = weak_env.lock()) {
                     env->clear();
                 }
             }
@@ -254,7 +254,7 @@ namespace ObSL {
         static void validate_native_arg(const Value &arg, const size_t index) {
             using DecayedTarget = std::decay_t<TargetType>;
             if constexpr (std::is_same_v<DecayedTarget, Value>) {
-                return; // A raw Value is always valid, skip variant alternative checking!
+                return; // A raw Value is always valid, skip variant alternative checking
             } else {
                 if (!std::holds_alternative<DecayedTarget>(arg)) {
                     throw NativeTypeError(

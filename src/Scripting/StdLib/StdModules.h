@@ -10,6 +10,7 @@
 #include <fstream>
 #include <numbers>
 #include <random>
+#include <ranges>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -171,7 +172,7 @@ namespace ObSL {
                 const auto end = std::find_if_not(str.rbegin(), str.rend(), [](const unsigned char ch) {
                     return std::isspace(ch);
                 }).base();
-                return (start < end) ? std::string(start, end) : "";
+                return start < end ? std::string(start, end) : "";
             });
 
             // string replacement
@@ -274,8 +275,8 @@ namespace ObSL {
         void register_modules(Interpreter &interpreter) override {
             // string type name of any given script value ("null", "number", "string", etc.)
             interpreter.define_native("type_of", [](const Value &val) -> std::string {
-                return std::visit([](auto &&arg) -> std::string {
-                    using T = std::decay_t<decltype(arg)>;
+                return std::visit([]<typename T0>(T0 &&arg) -> std::string {
+                    using T = std::decay_t<T0>;
                     if constexpr (std::is_same_v<T, std::monostate>) return "null";
                     else if constexpr (std::is_same_v<T, bool>) return "bool";
                     else if constexpr (std::is_same_v<T, double>) return "number";
@@ -292,7 +293,7 @@ namespace ObSL {
                                       [](const std::shared_ptr<ObSLObject> &obj,
                                          const std::string &field_name) -> bool {
                                           if (!obj) return false;
-                                          return obj->fields.find(field_name) != obj->fields.end();
+                                          return obj->fields.contains(field_name);
                                       });
 
             // returns a script array containing string names of all fields on the object
@@ -300,7 +301,7 @@ namespace ObSL {
                                       [](const std::shared_ptr<ObSLObject> &obj) -> std::shared_ptr<ObSLArray> {
                                           auto arr = std::make_shared<ObSLArray>();
                                           if (obj) {
-                                              for (const auto &[key, _]: obj->fields) {
+                                              for (const auto &key: obj->fields | std::views::keys) {
                                                   arr->elements.push_back(key);
                                               }
                                           }
@@ -310,7 +311,7 @@ namespace ObSL {
             // returns the number of arguments expected by a function or native callable
             interpreter.define_native("get_arity", [](const std::shared_ptr<ObSLCallable> &callable) -> double {
                 if (!callable) return -1.0;
-                return static_cast<double>(callable->arity());
+                return callable->arity();
             });
         }
     };
