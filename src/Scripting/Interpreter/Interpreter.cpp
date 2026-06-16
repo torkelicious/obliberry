@@ -576,8 +576,6 @@ namespace ObSL {
 
     Value ObSLFunction::call(Interpreter *interpreter, const std::vector<Value> &arguments, const Token &call_token) {
         const size_t max_arity = declaration->params.size();
-        size_t min_arity_val = min_arity();
-
         const auto environment = std::make_shared<Environment>(closure);
         interpreter->register_environment(environment);
         const auto previous_env = interpreter->get_current_environment();

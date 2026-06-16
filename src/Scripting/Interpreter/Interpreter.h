@@ -208,7 +208,7 @@ namespace ObSL {
 
         void execute_foreach_stmt(const ForeachStmt *stmt);
 
-        void execute_break_stmt(const BreakStmt *stmt);
+        static void execute_break_stmt(const BreakStmt *stmt);
 
         void execute_return_stmt(const ReturnStmt *stmt);
 
@@ -216,7 +216,7 @@ namespace ObSL {
 
         Value evaluate_set(const SetExpr *expr);
 
-        Value evaluate_literal(const LiteralExpr *expr);
+        static Value evaluate_literal(const LiteralExpr *expr);
 
         Value evaluate_variable(const VariableExpr *expr) const;
 
@@ -238,11 +238,11 @@ namespace ObSL {
 
         Value evaluate_logical(const LogicalExpr *expr);
 
-        bool is_truthy(const Value &value);
+        static bool is_truthy(const Value &value);
 
-        void check_number_operand(const Token &oprt, const Value &oprnd);
+        static void check_number_operand(const Token &oprt, const Value &oprnd);
 
-        void check_number_operands(const Token &oprt, const Value &lhs, const Value &rhs);
+        static void check_number_operands(const Token &oprt, const Value &lhs, const Value &rhs);
 
         [[nodiscard]] bool is_equal(const Value &a, const Value &b) const;
 
@@ -254,7 +254,6 @@ namespace ObSL {
         static void validate_native_arg(const Value &arg, const size_t index) {
             using DecayedTarget = std::decay_t<TargetType>;
             if constexpr (std::is_same_v<DecayedTarget, Value>) {
-                return; // A raw Value is always valid, skip variant alternative checking
             } else {
                 if (!std::holds_alternative<DecayedTarget>(arg)) {
                     throw NativeTypeError(

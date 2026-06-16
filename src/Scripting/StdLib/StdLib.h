@@ -12,6 +12,6 @@ namespace ObSL {
 
     class StdLib {
     public:
-        void register_modules(Interpreter &interpreter);
+        static void register_modules(Interpreter &interpreter);
     };
 } // ObSL

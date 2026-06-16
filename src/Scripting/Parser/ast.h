@@ -100,6 +100,7 @@ namespace ObSL {
                     return "[Array]";
                 else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLObject> >)
                     return "[Object]";
+                return "";
             }, value);
         }
     };

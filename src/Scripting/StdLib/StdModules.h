@@ -275,7 +275,7 @@ namespace ObSL {
         void register_modules(Interpreter &interpreter) override {
             // string type name of any given script value ("null", "number", "string", etc.)
             interpreter.define_native("type_of", [](const Value &val) -> std::string {
-                return std::visit([]<typename T0>(T0 &&arg) -> std::string {
+                return std::visit([]<typename T0>(T0 &&) -> std::string {
                     using T = std::decay_t<T0>;
                     if constexpr (std::is_same_v<T, std::monostate>) return "null";
                     else if constexpr (std::is_same_v<T, bool>) return "bool";
