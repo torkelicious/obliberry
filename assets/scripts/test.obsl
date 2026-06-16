@@ -139,6 +139,10 @@ println "StdLib System OK";
 println"";
 println "All core and stdlib tests completed successfully";
 
-println "write something";
-var something = readln();
-println "you wrote: " + something;
+//println "write something";
+//var something = readln();
+//println "you wrote: " + something;
+
+// error handling test
+//var bad_value = "hello";
+//var root = sqrt(bad_value); // should throw a NativeTypeError

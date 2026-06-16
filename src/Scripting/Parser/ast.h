@@ -41,7 +41,7 @@ namespace ObSL {
 
         [[nodiscard]] virtual int arity() const = 0;
 
-        virtual Value call(Interpreter *interpreter, const std::vector<Value> &arguments) = 0;
+        virtual Value call(Interpreter *interpreter, const std::vector<Value> &arguments, const Token &call_token) = 0;
 
         [[nodiscard]] virtual std::string to_string() const { return "<callable>"; }
     };

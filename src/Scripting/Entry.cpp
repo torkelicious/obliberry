@@ -12,7 +12,7 @@
 /*
  * ObSL todo:
  * regex & networking?? (maybe)
- * better error handling (try catch ?)
+ * try catch ?
  * structs
  * function default args
  * reflection
@@ -67,8 +67,9 @@ namespace ObSL {
             Parser parser(tokens);
             auto statements = parser.parse();
             m_interpreter.interpret(std::move(statements));
+            // the interpreter handles runtimeerrors
         } catch (const std::exception &e) {
-            std::cerr << "ObSL Error: " << e.what() << "\n";
+            std::cerr << "Error: " << e.what() << "\n";
         } catch (...) {
             std::cerr << "ObSL Error: An unknown exception occurred.\n";
         }

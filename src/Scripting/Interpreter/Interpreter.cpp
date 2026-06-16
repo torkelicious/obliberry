@@ -9,8 +9,6 @@
 #include "Scripting/Parser/Parser.h"
 
 namespace ObSL {
-    Token NativeFunction::m_dummy_token{TokenType::EOF_, "<native>", 0, 0, 0, 0};
-
     struct EnvironmentGuard {
         std::shared_ptr<Environment> &current_env;
         std::shared_ptr<Environment> previous_env;
@@ -30,11 +28,11 @@ namespace ObSL {
                 if (stmt) { execute(stmt.get()); }
             }
         } catch (const RuntimeError &error) {
-            std::cerr << std::format("Runtime Error at {} : {}\n",
-                                     error.token.lexeme, error.what());
+            std::cerr << std::format("{}\n", error.what());
         }
         ast_storage.push_back(std::move(statements));
     }
+
 
     void Interpreter::execute(const Stmt *stmt) {
         if (const auto s = dynamic_cast<const UsingStmt *>(stmt)) return execute_using_stmt(s);
@@ -91,7 +89,7 @@ namespace ObSL {
             throw RuntimeError(expr->paren,
                                std::format("Expected {} arguments but got {}.", function->arity(), arguments.size()));
         }
-        return function->call(this, arguments);
+        return function->call(this, arguments, expr->paren);
     }
 
     void Interpreter::execute_expression_stmt(const ExpressionStmt *stmt) {
@@ -552,10 +550,11 @@ namespace ObSL {
         return static_cast<int>(declaration->params.size());
     }
 
-    Value ObSLFunction::call(Interpreter *interpreter, const std::vector<Value> &arguments) {
+    Value ObSLFunction::call(Interpreter *interpreter, const std::vector<Value> &arguments, const Token &call_token)
+    /* ignores call token for now , its mostly for nativee stuff*/
+    {
         const auto env = std::make_shared<Environment>(closure);
-        interpreter->register_environment(env); // Register newly allocated call environment
-
+        interpreter->register_environment(env);
         for (size_t i = 0; i < declaration->params.size(); ++i) {
             env->define(std::string(declaration->params[i].lexeme), arguments[i]);
         }

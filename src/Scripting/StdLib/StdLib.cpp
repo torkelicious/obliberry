@@ -5,7 +5,6 @@
 
 namespace ObSL {
     void StdLib::register_modules(Interpreter &interpreter) {
-
         interpreter.define_native("assert", [](const bool condition, const std::string &message) -> bool {
             if (!condition) {
                 throw std::runtime_error("Assertion Failed: " + message);

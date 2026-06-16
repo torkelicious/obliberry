@@ -84,8 +84,10 @@ namespace ObSL {
     struct RuntimeError : public std::runtime_error {
         Token token;
 
-        RuntimeError(const Token &token, const std::string &msg)
-            : std::runtime_error(msg), token(token) {
+        RuntimeError(const Token &token, std::string_view message)
+            : std::runtime_error(std::format("[Line {}:{}] Error at '{}': {}",
+                                             token.line, token.column, token.lexeme, message)),
+              token(token) {
         }
     };
 
@@ -99,13 +101,12 @@ namespace ObSL {
     public:
         [[nodiscard]] int arity() const override { return 0; }
 
-        Value call(Interpreter *interpreter, const std::vector<Value> &arguments) override {
+        Value call(Interpreter *interpreter, const std::vector<Value> &arguments, const Token &call_token) override {
             return std::make_shared<ObSLObject>();
         }
 
         [[nodiscard]] std::string to_string() const override { return "<native fn Object>"; }
     };
-
 
     // Interpreter
     class Interpreter {
@@ -278,7 +279,7 @@ namespace ObSL {
 
         [[nodiscard]] int arity() const override;
 
-        Value call(Interpreter *interpreter, const std::vector<Value> &arguments) override;
+        Value call(Interpreter *interpreter, const std::vector<Value> &arguments, const Token &call_token) override;
 
         [[nodiscard]] std::string to_string() const override;
 
@@ -308,7 +309,7 @@ namespace ObSL {
 
         [[nodiscard]] int arity() const override { return m_arity; }
 
-        Value call(Interpreter *interpreter, const std::vector<Value> &arguments) override {
+        Value call(Interpreter *interpreter, const std::vector<Value> &arguments, const Token &call_token) override {
             try {
                 return m_body(interpreter, arguments);
             } catch (const RuntimeError &) {
@@ -318,20 +319,17 @@ namespace ObSL {
             } catch (const ReturnException &) {
                 throw;
             } catch (const NativeTypeError &e) {
-                throw RuntimeError(m_dummy_token, e.what());
+                throw RuntimeError(call_token, e.what());
             } catch (const std::exception &e) {
-                throw RuntimeError(m_dummy_token, std::format("Native function '{}': {}", m_name, e.what()));
+                throw RuntimeError(call_token, std::format("Native function '{}': {}", m_name, e.what()));
             }
         }
 
-    private:
-        static Token m_dummy_token;
-
-    public:
         [[nodiscard]] std::string to_string() const override {
             return std::format("<native fn {}>", m_name);
         }
     };
+
 
     template<typename F>
     void Interpreter::define_native(std::string name, F &&body) {

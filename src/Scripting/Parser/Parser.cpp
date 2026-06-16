@@ -1,5 +1,5 @@
 #include "Parser.h"
-#include <stdexcept>
+#include "../Interpreter/Interpreter.h"
 #include <charconv>
 #include <format>
 
@@ -107,8 +107,7 @@ namespace ObSL {
             }
             if (auto *index_expr = dynamic_cast<IndexExpr *>(expr.get())) {
                 if (equals.type != TokenType::ASSIGN) {
-                    throw std::runtime_error(std::format(
-                        "[Line {}] Compound assignment (+=, -=,etc) on arrays is not supported.", equals.line));
+                    throw RuntimeError(equals, "Compound assignment (+=, -=, etc) on arrays is not supported.");
                 }
                 auto callee = std::move(index_expr->callee);
                 Token bracket = index_expr->bracket;
@@ -120,12 +119,11 @@ namespace ObSL {
             }
             if (auto *get_expr = dynamic_cast<GetExpr *>(expr.get())) {
                 if (equals.type != TokenType::ASSIGN) {
-                    throw std::runtime_error(std::format(
-                        "[Line {}] Compound assignment on object properties is not supported.", equals.line));
+                    throw RuntimeError(equals, "Compound assignment on object properties is not supported.");
                 }
                 return std::make_unique<SetExpr>(std::move(get_expr->obj), get_expr->name, std::move(value));
             }
-            throw std::runtime_error(std::format("[Line {}] Invalid assignment target.", equals.line));
+            throw RuntimeError(equals, "Invalid assignment target.");
         }
         return expr;
     }
@@ -225,7 +223,7 @@ namespace ObSL {
     }
 
     std::unique_ptr<Expr> Parser::parse_logical_and() {
-        auto expr = parse_bitwise_or(); // Fixed hierarchy route: logical_and -> bitwise_or
+        auto expr = parse_bitwise_or();
         while (match({TokenType::AND})) {
             Token op = previous();
             auto right = parse_bitwise_or();
@@ -235,7 +233,6 @@ namespace ObSL {
     }
 
     std::unique_ptr<Expr> Parser::parse_unary() {
-        // Added support for the Bitwise NOT (~) operator token
         if (match({TokenType::BANG, TokenType::MINUS, TokenType::TILDE})) {
             Token op = previous();
             auto right = parse_unary();
@@ -257,7 +254,7 @@ namespace ObSL {
             if (const auto *var_expr = dynamic_cast<VariableExpr *>(expr.get())) {
                 return std::make_unique<UpdateExpr>(var_expr->name, op, false);
             }
-            throw std::runtime_error(std::format("[Line {}] Invalid target for postfix operator.", op.line));
+            throw RuntimeError(op, "Invalid target for postfix operator.");
         }
         return expr;
     }
@@ -272,7 +269,7 @@ namespace ObSL {
             double num = 0.0;
             if (auto [ptr, ec] = std::from_chars(tok.lexeme.data(), tok.lexeme.data() + tok.lexeme.size(), num);
                 ec != std::errc()) {
-                throw std::runtime_error("Failed to parse number.");
+                throw RuntimeError(tok, "Failed to parse number.");
             }
             return std::make_unique<LiteralExpr>(tok, Value(num));
         }
@@ -331,7 +328,7 @@ namespace ObSL {
             return std::make_unique<ArrayExpr>(std::move(elements));
         }
 
-        throw std::runtime_error("Expect expression.");
+        throw RuntimeError(peek(), "Expect expression.");
     }
 
     std::unique_ptr<BlockStmt> Parser::parse_block() {
@@ -414,7 +411,7 @@ namespace ObSL {
             } else if (match({TokenType::DEFAULT})) {
                 consume(TokenType::COLON, "Expect ':' after default.");
             } else {
-                throw std::runtime_error(std::format("[Line {}] Expect 'case' or 'default'.", peek().line));
+                throw RuntimeError(peek(), "Expect 'case' or 'default'.");
             }
 
             std::vector<std::unique_ptr<Stmt> > statements;
@@ -535,12 +532,10 @@ namespace ObSL {
         return peek().type == TokenType::EOF_;
     }
 
-    Token Parser::consume(const TokenType type, std::string_view message) {
+    Token Parser::consume(const TokenType type, const std::string_view message) {
         if (check(type)) return advance();
-        throw std::runtime_error(std::format("[Line {}] {}", peek().line, message));
+        throw RuntimeError(peek(), std::string(message));
     }
-
-    // bitwise presidence
 
     std::unique_ptr<Expr> Parser::parse_bitwise_or() {
         auto expr = parse_bitwise_xor();
