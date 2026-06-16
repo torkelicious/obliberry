@@ -12,7 +12,7 @@
 #include <string_view>
 #include <format>
 #include <iostream>
-
+#include <algorithm>
 #include "Scripting/Tokens.h"
 #include "Scripting/Parser/ast.h"
 #include "Scripting/Interpreter/Environment.h"
@@ -27,8 +27,25 @@ namespace ObSL {
     template<typename T>
     struct native_fn_traits;
 
+    // for const member functions
     template<typename R, typename C, typename... Args>
     struct native_fn_traits<R(C::*)(Args...) const> {
+        using return_type = R;
+        static constexpr int arity = sizeof...(Args);
+        using args_tuple = std::tuple<std::decay_t<Args>...>;
+    };
+
+    // for non-const member functions
+    template<typename R, typename C, typename... Args>
+    struct native_fn_traits<R(C::*)(Args...)> {
+        using return_type = R;
+        static constexpr int arity = sizeof...(Args);
+        using args_tuple = std::tuple<std::decay_t<Args>...>;
+    };
+
+    // free function pointers
+    template<typename R, typename... Args>
+    struct native_fn_traits<R(*)(Args...)> {
         using return_type = R;
         static constexpr int arity = sizeof...(Args);
         using args_tuple = std::tuple<std::decay_t<Args>...>;
@@ -108,7 +125,7 @@ namespace ObSL {
             if (globals) {
                 globals->clear();
             }
-            // stop  leftover reference cycles trapped in closure scopes
+            // stop leftover reference cycles trapped in closure scopes
             for (auto &weak_env: all_environments) {
                 if (auto env = weak_env.lock()) {
                     env->clear();
@@ -140,6 +157,9 @@ namespace ObSL {
         // registration wrapper
         template<typename F>
         void define_native(std::string name, F &&body);
+
+        std::istream &Get_Stdin() const { return m_stdin; }
+        std::ostream &Get_Stdout() const { return m_stdout; }
 
     private:
         std::shared_ptr<Environment> globals;
@@ -247,7 +267,7 @@ namespace ObSL {
         }
     };
 
-    // user defined  functions
+    // user defined functions
     class ObSLFunction : public ObSLCallable {
     private:
         const FunctionStmt *declaration;
@@ -313,18 +333,21 @@ namespace ObSL {
         }
     };
 
-    // more templating :DDDDD -.-
     template<typename F>
     void Interpreter::define_native(std::string name, F &&body) {
-        using Traits = native_fn_traits<decltype(&std::decay_t<F>::operator())>;
-
-        auto wrapped = [body = std::forward<F>(body)](Interpreter *, const std::vector<Value> &args) -> Value {
-            return call_native_helper<F, Traits>(body, args, std::make_index_sequence<Traits::arity>
-                                                 {
-                                                 }
-            );
-        };
-
-        globals->define(name, std::make_shared<NativeFunction>(Traits::arity, std::move(wrapped), name));
+        using DecayedF = std::decay_t<F>;
+        if constexpr (std::is_pointer_v<DecayedF> && std::is_function_v<std::remove_pointer_t<DecayedF> >) {
+            using Traits = native_fn_traits<DecayedF>;
+            auto wrapped = [body = std::forward<F>(body)](Interpreter *, const std::vector<Value> &args) -> Value {
+                return call_native_helper<DecayedF, Traits>(body, args, std::make_index_sequence<Traits::arity>{});
+            };
+            globals->define(name, std::make_shared<NativeFunction>(Traits::arity, std::move(wrapped), name));
+        } else {
+            using Traits = native_fn_traits<decltype(&DecayedF::operator())>;
+            auto wrapped = [body = std::forward<F>(body)](Interpreter *, const std::vector<Value> &args) -> Value {
+                return call_native_helper<DecayedF, Traits>(body, args, std::make_index_sequence<Traits::arity>{});
+            };
+            globals->define(name, std::make_shared<NativeFunction>(Traits::arity, std::move(wrapped), name));
+        }
     }
 } // namespace ObSL

@@ -262,6 +262,14 @@ namespace ObSL {
                         static_cast<int>(current)
                     };
                 }
+                if (peek() == '<') {
+                    advance();
+                    return Token{
+                        TokenType::LESS_LESS, "<<", line, static_cast<int>(start_col),
+                        static_cast<int>(start_pos),
+                        static_cast<int>(current)
+                    };
+                }
                 return Token{
                     TokenType::LESS, "<", line, static_cast<int>(start_col), static_cast<int>(start_pos),
                     static_cast<int>(current)
@@ -274,9 +282,37 @@ namespace ObSL {
                         static_cast<int>(current)
                     };
                 }
+                if (peek() == '>') {
+                    advance();
+                    return Token{
+                        TokenType::GREATER_GREATER, ">>", line, static_cast<int>(start_col),
+                        static_cast<int>(start_pos),
+                        static_cast<int>(current)
+                    };
+                }
                 return Token{
                     TokenType::GREATER, ">", line, static_cast<int>(start_col), static_cast<int>(start_pos),
                     static_cast<int>(current)
+                };
+            case '&':
+                return Token{
+                    TokenType::AMPERSAND, "&", line, static_cast<int>(start_col),
+                    static_cast<int>(start_pos), static_cast<int>(current)
+                };
+            case '|':
+                return Token{
+                    TokenType::PIPE, "|", line, static_cast<int>(start_col),
+                    static_cast<int>(start_pos), static_cast<int>(current)
+                };
+            case '^':
+                return Token{
+                    TokenType::CARET, "^", line, static_cast<int>(start_col),
+                    static_cast<int>(start_pos), static_cast<int>(current)
+                };
+            case '~':
+                return Token{
+                    TokenType::TILDE, "~", line, static_cast<int>(start_col),
+                    static_cast<int>(start_pos), static_cast<int>(current)
                 };
             case '(': return Token{
                     TokenType::LEFT_PAREN, "(", line, static_cast<int>(start_col), static_cast<int>(start_pos),

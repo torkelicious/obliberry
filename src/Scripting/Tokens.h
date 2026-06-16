@@ -38,6 +38,13 @@ namespace ObSL {
         GREATER_EQUAL,
         LESS,
         LESS_EQUAL,
+        // bitwise
+        AMPERSAND,
+        PIPE,
+        CARET,
+        LESS_LESS,
+        GREATER_GREATER,
+        TILDE,
 
         // Literals & Identifiers
         STRING,
@@ -64,7 +71,7 @@ namespace ObSL {
         BREAK,
         THIS,
         TRUE_,
-        USING, // todo: imports
+        USING,
         VAR,
         WHILE,
 

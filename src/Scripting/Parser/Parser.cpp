@@ -78,12 +78,28 @@ namespace ObSL {
                     } else if (equals.type == TokenType::SLASH_EQUAL) {
                         binary_op = TokenType::SLASH;
                         lexeme = "/";
-                    } else {
+                    } else if (equals.type == TokenType::PERCENT_EQUAL) {
                         binary_op = TokenType::PERCENT;
                         lexeme = "%";
+                    } else if (equals.type == TokenType::AMPERSAND) {
+                        binary_op = TokenType::AMPERSAND;
+                        lexeme = "&";
+                    } else if (equals.type == TokenType::PIPE) {
+                        binary_op = TokenType::PIPE;
+                        lexeme = "|";
+                    } else if (equals.type == TokenType::CARET) {
+                        binary_op = TokenType::CARET;
+                        lexeme = "^";
+                    } else if (equals.type == TokenType::LESS_LESS) {
+                        binary_op = TokenType::LESS_LESS;
+                        lexeme = "<<";
+                    } else if (equals.type == TokenType::GREATER_GREATER) {
+                        binary_op = TokenType::GREATER_GREATER;
+                        lexeme = ">>";
                     }
-
-                    Token op_token = {binary_op, lexeme, equals.line, equals.column, equals.start_pos, equals.end_pos};
+                    Token op_token = {
+                        binary_op, lexeme, equals.line, equals.column, equals.start_pos, equals.end_pos
+                    };
                     auto left_var = std::make_unique<VariableExpr>(name);
                     value = std::make_unique<BinaryExpr>(std::move(left_var), op_token, std::move(value));
                 }
@@ -169,10 +185,10 @@ namespace ObSL {
     }
 
     std::unique_ptr<Expr> Parser::parse_comparison() {
-        auto expr = parse_term();
+        auto expr = parse_shift();
         while (match({TokenType::GREATER, TokenType::GREATER_EQUAL, TokenType::LESS, TokenType::LESS_EQUAL})) {
             Token op = previous();
-            auto right = parse_term();
+            auto right = parse_shift();
             expr = std::make_unique<BinaryExpr>(std::move(expr), op, std::move(right));
         }
         return expr;
@@ -209,21 +225,23 @@ namespace ObSL {
     }
 
     std::unique_ptr<Expr> Parser::parse_logical_and() {
-        auto expr = parse_equality();
+        auto expr = parse_bitwise_or(); // Fixed hierarchy route: logical_and -> bitwise_or
         while (match({TokenType::AND})) {
             Token op = previous();
-            auto right = parse_equality();
+            auto right = parse_bitwise_or();
             expr = std::make_unique<LogicalExpr>(std::move(expr), op, std::move(right));
         }
         return expr;
     }
 
     std::unique_ptr<Expr> Parser::parse_unary() {
-        if (match({TokenType::BANG, TokenType::MINUS})) {
+        // Added support for the Bitwise NOT (~) operator token
+        if (match({TokenType::BANG, TokenType::MINUS, TokenType::TILDE})) {
             Token op = previous();
             auto right = parse_unary();
             return std::make_unique<UnaryExpr>(op, std::move(right));
         }
+
         if (match({TokenType::PLUS_PLUS, TokenType::MINUS_MINUS})) {
             Token op = previous();
             Token name = consume(TokenType::IDENTIFIER, "Expect variable name after prefix operator.");
@@ -266,7 +284,6 @@ namespace ObSL {
 
             for (size_t i = 0; i < tok.lexeme.size(); ++i) {
                 if (tok.lexeme[i] == '\\' && i + 1 < tok.lexeme.size()) {
-                    // escape chars
                     switch (const char next = tok.lexeme[i + 1]) {
                         case 'n': processed_string += '\n';
                             break;
@@ -285,9 +302,8 @@ namespace ObSL {
                             processed_string += next;
                             break;
                     }
-                    ++i; // skip the escaped char
+                    ++i;
                 } else {
-                    // normal character
                     processed_string += tok.lexeme[i];
                 }
             }
@@ -331,7 +347,7 @@ namespace ObSL {
         Token keyword = previous();
         Token path_token = consume(TokenType::STRING, "Expected string literal for filepath");
         consume(TokenType::SEMICOLON, "Expect ';' after using statement");
-        std::string path(path_token.lexeme); // strings are stripped in readstring already :))))
+        std::string path(path_token.lexeme);
         return std::make_unique<UsingStmt>(keyword, path);
     }
 
@@ -357,7 +373,6 @@ namespace ObSL {
 
     std::unique_ptr<Stmt> Parser::parse_foreach_statement() {
         consume(TokenType::LEFT_PAREN, "Expect '(' after 'foreach'.");
-        // optional var keyword
         match({TokenType::VAR});
         Token loop_var = consume(TokenType::IDENTIFIER, "Expect variable name.");
         consume(TokenType::IN, "Expect 'in' after variable name.");
@@ -523,5 +538,47 @@ namespace ObSL {
     Token Parser::consume(const TokenType type, std::string_view message) {
         if (check(type)) return advance();
         throw std::runtime_error(std::format("[Line {}] {}", peek().line, message));
+    }
+
+    // bitwise presidence
+
+    std::unique_ptr<Expr> Parser::parse_bitwise_or() {
+        auto expr = parse_bitwise_xor();
+        while (match({TokenType::PIPE})) {
+            Token op = previous();
+            auto right = parse_bitwise_xor();
+            expr = std::make_unique<BinaryExpr>(std::move(expr), op, std::move(right));
+        }
+        return expr;
+    }
+
+    std::unique_ptr<Expr> Parser::parse_bitwise_xor() {
+        auto expr = parse_bitwise_and();
+        while (match({TokenType::CARET})) {
+            Token op = previous();
+            auto right = parse_bitwise_and();
+            expr = std::make_unique<BinaryExpr>(std::move(expr), op, std::move(right));
+        }
+        return expr;
+    }
+
+    std::unique_ptr<Expr> Parser::parse_bitwise_and() {
+        auto expr = parse_equality();
+        while (match({TokenType::AMPERSAND})) {
+            Token op = previous();
+            auto right = parse_equality();
+            expr = std::make_unique<BinaryExpr>(std::move(expr), op, std::move(right));
+        }
+        return expr;
+    }
+
+    std::unique_ptr<Expr> Parser::parse_shift() {
+        auto expr = parse_term();
+        while (match({TokenType::LESS_LESS, TokenType::GREATER_GREATER})) {
+            Token op = previous();
+            auto right = parse_term();
+            expr = std::make_unique<BinaryExpr>(std::move(expr), op, std::move(right));
+        }
+        return expr;
     }
 } // namespace ObSL

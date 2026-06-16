@@ -5,7 +5,7 @@
 #include <format>
 #include <fstream>
 #include <type_traits>
-
+#include <sstream>
 #include "Scripting/Parser/Parser.h"
 
 namespace ObSL {
@@ -240,6 +240,41 @@ namespace ObSL {
             case TokenType::STAR:
                 check_number_operands(expr->oprt, lhs, rhs);
                 return std::get<double>(lhs) * std::get<double>(rhs);
+            case TokenType::AMPERSAND:
+                check_number_operands(expr->oprt, lhs, rhs);
+                {
+                    auto left = static_cast<int64_t>(std::get<double>(lhs));
+                    auto right = static_cast<int64_t>(std::get<double>(rhs));
+                    return static_cast<double>(left & right);
+                }
+            case TokenType::PIPE:
+                check_number_operands(expr->oprt, lhs, rhs);
+                {
+                    auto left = static_cast<int64_t>(std::get<double>(lhs));
+                    auto right = static_cast<int64_t>(std::get<double>(rhs));
+                    return static_cast<double>(left | right);
+                }
+            case TokenType::CARET:
+                check_number_operands(expr->oprt, lhs, rhs);
+                {
+                    auto left = static_cast<int64_t>(std::get<double>(lhs));
+                    auto right = static_cast<int64_t>(std::get<double>(rhs));
+                    return static_cast<double>(left ^ right);
+                }
+            case TokenType::LESS_LESS:
+                check_number_operands(expr->oprt, lhs, rhs);
+                {
+                    auto left = static_cast<int64_t>(std::get<double>(lhs));
+                    auto right = static_cast<int64_t>(std::get<double>(rhs));
+                    return static_cast<double>(left << right);
+                }
+            case TokenType::GREATER_GREATER:
+                check_number_operands(expr->oprt, lhs, rhs);
+                {
+                    auto left = static_cast<int64_t>(std::get<double>(lhs));
+                    auto right = static_cast<int64_t>(std::get<double>(rhs));
+                    return static_cast<double>(left >> right);
+                }
             default:
                 break;
         }
@@ -258,6 +293,12 @@ namespace ObSL {
                 return -std::get<double>(right);
             case TokenType::BANG:
                 return !is_truthy(right);
+            case TokenType::TILDE:
+                if (std::holds_alternative<double>(right)) {
+                    auto val = static_cast<int64_t>(std::get<double>(right));
+                    return static_cast<double>(~val);
+                }
+                throw RuntimeError(expr->oprt, "Operand must be a number.");
             default:
                 break;
         }
@@ -468,14 +509,7 @@ namespace ObSL {
             }
             throw RuntimeError(expr->name, std::format("Undefined property '{}' on Array.", expr->name.lexeme));
         }
-        //// strings
-        //if (std::holds_alternative<std::string>(obj)) {
-        //    const auto &str = std::get<std::string>(obj);
-        //    if (expr->name.lexeme == "len") {
-        //        return Value(static_cast<double>(str.length()));
-        //    }
-        //    throw RuntimeError(expr->name, std::format("Undefined property '{}' on String.", expr->name.lexeme));
-        //}
+
         // objects
         if (std::holds_alternative<std::shared_ptr<ObSLObject> >(obj)) {
             const auto instance = std::get<std::shared_ptr<ObSLObject> >(obj);
@@ -483,7 +517,6 @@ namespace ObSL {
             const std::string prop_name(expr->name.lexeme);
 
             if (const auto it = instance->fields.find(prop_name); it != instance->fields.end()) {
-                //return it->second;
                 Value val = it->second;
 
                 if (std::holds_alternative<std::shared_ptr<ObSLCallable> >(val)) {

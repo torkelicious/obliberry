@@ -53,6 +53,14 @@ namespace ObSL {
 
         std::unique_ptr<Expr> parse_unary();
 
+        std::unique_ptr<Expr> parse_bitwise_or();
+
+        std::unique_ptr<Expr> parse_bitwise_xor();
+
+        std::unique_ptr<Expr> parse_bitwise_and();
+
+        std::unique_ptr<Expr> parse_shift();
+
         std::unique_ptr<Expr> parse_postfix();
 
         std::unique_ptr<Expr> parse_primary();

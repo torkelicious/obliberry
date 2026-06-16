@@ -11,7 +11,6 @@
 
 /*
  * ObSL todo:
- * bitwise operators
  * regex & networking?? (maybe)
  * better error handling (try catch ?)
  * structs

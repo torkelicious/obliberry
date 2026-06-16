@@ -199,6 +199,23 @@ namespace ObSL {
                 return 0.0; // never reached but  for signature matching
             });
 
+            std::istream *in = &interpreter.Get_Stdin();
+            // whitespace delimited word
+            interpreter.define_native("read", [in]() -> std::string {
+                if (std::string word; *in >> word) {
+                    return word;
+                }
+                return "";
+            });
+
+            // read a line (obviously)
+            interpreter.define_native("readln", [in]() -> std::string {
+                if (std::string line; std::getline(*in, line)) {
+                    return line;
+                }
+                return "";
+            });
+
             interpreter.define_native("get_env", [](const std::string &var_name) -> std::string {
                 const char *env_p = std::getenv(var_name.c_str());
                 return env_p ? std::string(env_p) : "";
