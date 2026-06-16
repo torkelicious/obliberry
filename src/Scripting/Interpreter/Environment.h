@@ -9,7 +9,7 @@ namespace ObSL {
     class Environment {
     private:
         std::unordered_map<std::string, Value> values;
-        std::weak_ptr<Environment> enclosing;
+        std::shared_ptr<Environment> enclosing;
 
     public:
         Environment() = default;

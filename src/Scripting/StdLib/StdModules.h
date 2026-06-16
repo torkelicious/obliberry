@@ -269,10 +269,49 @@ namespace ObSL {
     };
 
     // REFLECTION LIBRARY
-    // todo : implement...
     class Reflection : public Lib {
     public:
-        void register_modules(Interpreter &) override {
+        void register_modules(Interpreter &interpreter) override {
+            // string type name of any given script value ("null", "number", "string", etc.)
+            interpreter.define_native("type_of", [](const Value &val) -> std::string {
+                return std::visit([](auto &&arg) -> std::string {
+                    using T = std::decay_t<decltype(arg)>;
+                    if constexpr (std::is_same_v<T, std::monostate>) return "null";
+                    else if constexpr (std::is_same_v<T, bool>) return "bool";
+                    else if constexpr (std::is_same_v<T, double>) return "number";
+                    else if constexpr (std::is_same_v<T, std::string>) return "string";
+                    else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLCallable> >) return "callable";
+                    else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLArray> >) return "array";
+                    else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLObject> >) return "object";
+                    else return "unknown";
+                }, val);
+            });
+
+            // check if a script object contains a specific field property name
+            interpreter.define_native("has_field",
+                                      [](const std::shared_ptr<ObSLObject> &obj,
+                                         const std::string &field_name) -> bool {
+                                          if (!obj) return false;
+                                          return obj->fields.find(field_name) != obj->fields.end();
+                                      });
+
+            // returns a script array containing string names of all fields on the object
+            interpreter.define_native("get_fields",
+                                      [](const std::shared_ptr<ObSLObject> &obj) -> std::shared_ptr<ObSLArray> {
+                                          auto arr = std::make_shared<ObSLArray>();
+                                          if (obj) {
+                                              for (const auto &[key, _]: obj->fields) {
+                                                  arr->elements.push_back(key);
+                                              }
+                                          }
+                                          return arr;
+                                      });
+
+            // returns the number of arguments expected by a function or native callable
+            interpreter.define_native("get_arity", [](const std::shared_ptr<ObSLCallable> &callable) -> double {
+                if (!callable) return -1.0;
+                return static_cast<double>(callable->arity());
+            });
         }
     };
 } // namespace ObSL

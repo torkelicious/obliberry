@@ -41,6 +41,8 @@ namespace ObSL {
 
         [[nodiscard]] virtual int arity() const = 0;
 
+        [[nodiscard]] virtual int min_arity() const { return arity(); }
+
         virtual Value call(Interpreter *interpreter, const std::vector<Value> &arguments, const Token &call_token) = 0;
 
         [[nodiscard]] virtual std::string to_string() const { return "<callable>"; }
@@ -283,24 +285,6 @@ namespace ObSL {
         }
     };
 
-    struct FunctionStmt : public Stmt {
-        Token name;
-        std::vector<Token> params;
-        std::vector<std::unique_ptr<Stmt> > body;
-
-        FunctionStmt(const Token &name, std::vector<Token> params, std::vector<std::unique_ptr<Stmt> > body)
-            : name(name), params(std::move(params)), body(std::move(body)) {
-        }
-
-        [[nodiscard]] std::string to_string() const override {
-            std::string param_str;
-            for (size_t i = 0; i < params.size(); ++i) {
-                param_str += params[i].lexeme;
-                if (i < params.size() - 1) param_str += ", ";
-            }
-            return std::format("[FunctionStmt: (fn {}({}))]\n", name.lexeme, param_str);
-        }
-    };
 
     struct ExpressionStmt : public Stmt {
         std::unique_ptr<Expr> expression;
@@ -354,6 +338,27 @@ namespace ObSL {
             return std::format("[BlockStmt: {{\n{}}}]\n", body);
         }
     };
+
+
+    struct Param {
+        Token name;
+        std::unique_ptr<Expr> default_value;
+    };
+
+    struct FunctionStmt : public Stmt {
+        Token name;
+        std::vector<Param> params;
+        std::unique_ptr<BlockStmt> body;
+
+        FunctionStmt(Token name, std::vector<Param> params, std::unique_ptr<BlockStmt> body)
+            : name(name), params(std::move(params)), body(std::move(body)) {
+        }
+
+        [[nodiscard]] std::string to_string() const override {
+            return std::format("[FunctionStmt: {}]", name.lexeme);
+        }
+    };
+
 
     struct IfStmt : public Stmt {
         std::unique_ptr<Expr> condition;
@@ -464,6 +469,22 @@ namespace ObSL {
                                name.lexeme,
                                initializer ? std::format(" = {}", initializer->to_string()) : ""
             );
+        }
+    };
+
+    struct TryCatchStmt : public Stmt {
+        std::unique_ptr<BlockStmt> try_body;
+        Token exception_var;
+        std::unique_ptr<BlockStmt> catch_body;
+
+        TryCatchStmt(std::unique_ptr<BlockStmt> try_body, const Token &exception_var,
+                     std::unique_ptr<BlockStmt> catch_body)
+            : try_body(std::move(try_body)), exception_var(exception_var), catch_body(std::move(catch_body)) {
+        }
+
+        [[nodiscard]] std::string to_string() const override {
+            return std::format("[TryCatchStmt: try {} catch({}) {}]\n",
+                               try_body->to_string(), exception_var.lexeme, catch_body->to_string());
         }
     };
 } // namespace ObSL

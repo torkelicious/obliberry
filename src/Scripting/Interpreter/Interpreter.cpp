@@ -36,6 +36,7 @@ namespace ObSL {
 
     void Interpreter::execute(const Stmt *stmt) {
         if (const auto s = dynamic_cast<const UsingStmt *>(stmt)) return execute_using_stmt(s);
+        if (const auto s = dynamic_cast<const TryCatchStmt *>(stmt)) return execute_try_catch_stmt(s);
         if (const auto s = dynamic_cast<const ExpressionStmt *>(stmt)) return execute_expression_stmt(s);
         if (const auto s = dynamic_cast<const PrintStmt *>(stmt)) return execute_print_stmt(s);
         if (const auto s = dynamic_cast<const PrintlnStmt *>(stmt)) return execute_print_ln_stmt(s);
@@ -85,9 +86,11 @@ namespace ObSL {
             throw RuntimeError(expr->paren, "Can only call functions.");
         }
         const auto function = std::get<std::shared_ptr<ObSLCallable> >(callee);
-        if (arguments.size() != static_cast<size_t>(function->arity())) {
+        if (arguments.size() < static_cast<size_t>(function->min_arity()) || arguments.size() > static_cast<size_t>(
+                function->arity())) {
             throw RuntimeError(expr->paren,
-                               std::format("Expected {} arguments but got {}.", function->arity(), arguments.size()));
+                               std::format("Expected between {} and {} arguments but got {}.", function->min_arity(),
+                                           function->arity(), arguments.size()));
         }
         return function->call(this, arguments, expr->paren);
     }
@@ -401,6 +404,17 @@ namespace ObSL {
         ast_storage.push_back(std::move(statements));
     }
 
+    void Interpreter::execute_try_catch_stmt(const TryCatchStmt *stmt) {
+        try {
+            execute_block_stmt(stmt->try_body.get());
+        } catch (const RuntimeError &error) {
+            auto catch_env = std::make_shared<Environment>(environment);
+            register_environment(catch_env);
+            catch_env->define(std::string(stmt->exception_var.lexeme), std::string(error.what()));
+            execute_block(stmt->catch_body->statements, catch_env);
+        }
+    }
+
 
     void Interpreter::execute_block(const std::vector<std::unique_ptr<Stmt> > &statements,
                                     std::shared_ptr<Environment> block_env) {
@@ -550,21 +564,52 @@ namespace ObSL {
         return static_cast<int>(declaration->params.size());
     }
 
-    Value ObSLFunction::call(Interpreter *interpreter, const std::vector<Value> &arguments, const Token &call_token)
-    /* ignores call token for now , its mostly for nativee stuff*/
-    {
-        const auto env = std::make_shared<Environment>(closure);
-        interpreter->register_environment(env);
-        for (size_t i = 0; i < declaration->params.size(); ++i) {
-            env->define(std::string(declaration->params[i].lexeme), arguments[i]);
+    int ObSLFunction::min_arity() const {
+        int min_args = 0;
+        for (const auto &param: declaration->params) {
+            if (param.default_value == nullptr) {
+                min_args++;
+            }
         }
+        return min_args;
+    }
+
+    Value ObSLFunction::call(Interpreter *interpreter, const std::vector<Value> &arguments, const Token &call_token) {
+        size_t max_arity = declaration->params.size();
+        size_t min_arity_val = min_arity();
+
+        auto environment = std::make_shared<Environment>(closure);
+        interpreter->register_environment(environment);
+        auto previous_env = interpreter->get_current_environment();
+
         try {
-            interpreter->execute_block(declaration->body, env);
-        } catch (const ReturnException &ret) {
-            return ret.value;
+            for (size_t i = 0; i < max_arity; ++i) {
+                const auto &param = declaration->params[i];
+                Value final_val;
+
+                if (i < arguments.size()) {
+                    final_val = arguments[i];
+                } else {
+                    interpreter->set_current_environment(environment);
+                    final_val = interpreter->evaluate(param.default_value.get());
+                }
+
+                environment->define(std::string(param.name.lexeme), final_val);
+            }
+
+            interpreter->set_current_environment(environment);
+            interpreter->execute_block(declaration->body->statements, environment);
+        } catch (const ReturnException &returnValue) {
+            interpreter->set_current_environment(previous_env);
+            return returnValue.value;
+        } catch (...) {
+            interpreter->set_current_environment(previous_env);
+            throw;
         }
+        interpreter->set_current_environment(previous_env);
         return std::monostate{};
     }
+
 
     std::string ObSLFunction::to_string() const {
         return std::format("<fn {}>", declaration->name.lexeme);

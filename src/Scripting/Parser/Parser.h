@@ -92,5 +92,8 @@ namespace ObSL {
         std::unique_ptr<Stmt> parse_var_statement();
 
         std::unique_ptr<Stmt> parse_for_statement();
+
+        std::unique_ptr<Stmt> parse_try_statement();
+
     };
 } // namespace ObSL

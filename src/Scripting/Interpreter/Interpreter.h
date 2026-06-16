@@ -162,6 +162,16 @@ namespace ObSL {
         std::istream &Get_Stdin() const { return m_stdin; }
         std::ostream &Get_Stdout() const { return m_stdout; }
 
+        [[nodiscard]] std::shared_ptr<Environment> get_current_environment() const {
+            return environment;
+        }
+
+        void set_current_environment(std::shared_ptr<Environment> env) {
+            environment = std::move(env);
+        }
+
+        friend class ObSLFunction;
+
     private:
         std::shared_ptr<Environment> globals;
         std::shared_ptr<Environment> environment;
@@ -238,32 +248,50 @@ namespace ObSL {
 
         void execute_using_stmt(const UsingStmt *stmt);
 
+        void execute_try_catch_stmt(const TryCatchStmt *stmt);
+
+        template<typename TargetType>
+        static void validate_native_arg(const Value &arg, const size_t index) {
+            using DecayedTarget = std::decay_t<TargetType>;
+            if constexpr (std::is_same_v<DecayedTarget, Value>) {
+                return; // A raw Value is always valid, skip variant alternative checking!
+            } else {
+                if (!std::holds_alternative<DecayedTarget>(arg)) {
+                    throw NativeTypeError(
+                        std::format("Argument {}: expected type '{}', got '{}'.",
+                                    index,
+                                    native_type_name<DecayedTarget>(),
+                                    std::visit([]<typename T>(const T &) -> std::string_view {
+                                        return native_type_name<std::decay_t<T> >();
+                                    }, arg))
+                    );
+                }
+            }
+        }
+
         template<typename F, typename Traits, size_t... Is>
         static Value call_native_helper(const F &body, const std::vector<Value> &args, std::index_sequence<Is...>) {
-            using ArgsTuple = typename Traits::args_tuple;
+            using ArgsTuple = Traits::args_tuple;
             (
                 validate_native_arg<std::tuple_element_t<Is, ArgsTuple> >(args[Is], Is),
                 ...
             );
+
+            // Helper to safely extract the argument depending on if it's already a variant
+            auto unpack = []<typename T>(const Value &v) -> decltype(auto) {
+                using DecayedT = std::decay_t<T>;
+                if constexpr (std::is_same_v<DecayedT, Value>) {
+                    return v;
+                } else {
+                    return std::get<DecayedT>(v);
+                }
+            };
+
             if constexpr (std::is_void_v<typename Traits::return_type>) {
-                body(std::get<std::tuple_element_t<Is, ArgsTuple> >(args[Is])...);
+                body(unpack.template operator()<std::tuple_element_t<Is, ArgsTuple> >(args[Is])...);
                 return std::monostate{};
             } else {
-                return body(std::get<std::tuple_element_t<Is, ArgsTuple> >(args[Is])...);
-            }
-        }
-
-        template<typename TargetType>
-        static void validate_native_arg(const Value &arg, const size_t index) {
-            if (!std::holds_alternative<TargetType>(arg)) {
-                throw NativeTypeError(
-                    std::format("Argument {}: expected type '{}', got '{}'.",
-                                index,
-                                native_type_name<TargetType>(),
-                                std::visit([]<typename T>(const T &) -> std::string_view {
-                                    return native_type_name<std::decay_t<T> >();
-                                }, arg))
-                );
+                return body(unpack.template operator()<std::tuple_element_t<Is, ArgsTuple> >(args[Is])...);
             }
         }
     };
@@ -278,6 +306,8 @@ namespace ObSL {
         ObSLFunction(const FunctionStmt *declaration, std::shared_ptr<Environment> closure);
 
         [[nodiscard]] int arity() const override;
+
+        [[nodiscard]] int min_arity() const override;
 
         Value call(Interpreter *interpreter, const std::vector<Value> &arguments, const Token &call_token) override;
 
@@ -310,16 +340,15 @@ namespace ObSL {
         [[nodiscard]] int arity() const override { return m_arity; }
 
         Value call(Interpreter *interpreter, const std::vector<Value> &arguments, const Token &call_token) override {
+            if (arguments.size() != m_arity) {
+                throw RuntimeError(call_token,
+                                   std::format("Native function expects {} arguments but got {}.", m_arity,
+                                               arguments.size()));
+            }
             try {
                 return m_body(interpreter, arguments);
-            } catch (const RuntimeError &) {
+            } catch (const RuntimeError &e) {
                 throw;
-            } catch (const BreakException &) {
-                throw;
-            } catch (const ReturnException &) {
-                throw;
-            } catch (const NativeTypeError &e) {
-                throw RuntimeError(call_token, e.what());
             } catch (const std::exception &e) {
                 throw RuntimeError(call_token, std::format("Native function '{}': {}", m_name, e.what()));
             }
@@ -329,7 +358,6 @@ namespace ObSL {
             return std::format("<native fn {}>", m_name);
         }
     };
-
 
     template<typename F>
     void Interpreter::define_native(std::string name, F &&body) {

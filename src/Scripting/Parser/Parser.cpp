@@ -16,14 +16,10 @@ namespace ObSL {
     }
 
     std::unique_ptr<Stmt> Parser::parse_statement() {
-        if (match({TokenType::USING})) {
-            Token keyword = previous();
-            Token path_token = consume(TokenType::STRING, "Expect string literal for file path.");
-            consume(TokenType::SEMICOLON, "Expect ';' after using statement.");
-            return std::make_unique<UsingStmt>(keyword, std::string(path_token.lexeme));
-        }
+        if (match({TokenType::USING})) return parse_using_statement();
         if (match({TokenType::FN})) return parse_function();
         if (match({TokenType::VAR})) return parse_var_statement();
+        if (match({TokenType::TRY})) return parse_try_statement();
         if (match({TokenType::LEFT_BRACE})) return parse_block();
         if (match({TokenType::IF})) return parse_if_statement();
         if (match({TokenType::SWITCH})) return parse_switch_statement();
@@ -130,19 +126,34 @@ namespace ObSL {
 
 
     std::unique_ptr<Stmt> Parser::parse_function() {
-        Token name = consume(TokenType::IDENTIFIER, "Expected function name.");
+        Token name = consume(TokenType::IDENTIFIER, "Expect function name.");
         consume(TokenType::LEFT_PAREN, "Expect '(' after function name.");
-        std::vector<Token> parameters;
+        std::vector<Param> params;
+        bool has_default = false;
         if (!check(TokenType::RIGHT_PAREN)) {
             do {
-                parameters.push_back(consume(TokenType::IDENTIFIER, "Expected parameter name"));
-            } while (match({TokenType::COMMA}));
-        }
+                if (params.size() >= 255) {
+                    throw RuntimeError(peek(), "Can't have more than 255 parameters.");
+                }
+                Token param_name = consume(TokenType::IDENTIFIER, "Expect parameter name.");
+                std::unique_ptr<Expr> default_value = nullptr;
 
-        consume(TokenType::RIGHT_PAREN, "Expected ')' after function parameters.");
+                if (match(TokenType::ASSIGN)) {
+                    has_default = true;
+                    default_value = parse_expression();
+                } else {
+                    if (has_default) {
+                        throw RuntimeError(param_name, "Mandatory parameter cannot follow an optional parameter.");
+                    }
+                }
+
+                params.push_back(Param{param_name, std::move(default_value)});
+            } while (match(TokenType::COMMA));
+        }
+        consume(TokenType::RIGHT_PAREN, "Expect ')' after parameters.");
         consume(TokenType::LEFT_BRACE, "Expect '{' before function body.");
-        const auto block = parse_block();
-        return std::make_unique<FunctionStmt>(name, std::move(parameters), std::move(block->statements));
+        auto body = parse_block();
+        return std::make_unique<FunctionStmt>(name, std::move(params), std::move(body));
     }
 
     std::unique_ptr<Expr> Parser::parse_call() {
@@ -344,8 +355,35 @@ namespace ObSL {
         Token keyword = previous();
         Token path_token = consume(TokenType::STRING, "Expected string literal for filepath");
         consume(TokenType::SEMICOLON, "Expect ';' after using statement");
-        std::string path(path_token.lexeme);
-        return std::make_unique<UsingStmt>(keyword, path);
+
+        std::string processed_path;
+        processed_path.reserve(path_token.lexeme.size());
+        for (size_t i = 0; i < path_token.lexeme.size(); ++i) {
+            if (path_token.lexeme[i] == '\\' && i + 1 < path_token.lexeme.size()) {
+                switch (const char next = path_token.lexeme[i + 1]) {
+                    case 'n': processed_path += '\n';
+                        break;
+                    case 't': processed_path += '\t';
+                        break;
+                    case 'r': processed_path += '\r';
+                        break;
+                    case '\\': processed_path += '\\';
+                        break;
+                    case '"': processed_path += '"';
+                        break;
+                    case '\'': processed_path += '\'';
+                        break;
+                    default:
+                        processed_path += '\\';
+                        processed_path += next;
+                        break;
+                }
+                ++i;
+            } else {
+                processed_path += path_token.lexeme[i];
+            }
+        }
+        return std::make_unique<UsingStmt>(keyword, std::move(processed_path));
     }
 
     std::unique_ptr<Stmt> Parser::parse_if_statement() {
@@ -575,5 +613,22 @@ namespace ObSL {
             expr = std::make_unique<BinaryExpr>(std::move(expr), op, std::move(right));
         }
         return expr;
+    }
+
+    std::unique_ptr<Stmt> Parser::parse_try_statement() {
+        consume(TokenType::LEFT_BRACE, "Expect '{' before try block.");
+        auto try_body = parse_block();
+        consume(TokenType::CATCH, "Expect 'catch' after try block.");
+        consume(TokenType::LEFT_PAREN, "Expect '(' after catch.");
+        Token exception_var = consume(TokenType::IDENTIFIER, "Expect exception variable name.");
+        consume(TokenType::RIGHT_PAREN, "Expect ')' after catch exception name.");
+        consume(TokenType::LEFT_BRACE, "Expect '{' before catch block.");
+        auto catch_body = parse_block();
+
+        return std::make_unique<TryCatchStmt>(
+            std::move(try_body),
+            exception_var,
+            std::move(catch_body)
+        );
     }
 } // namespace ObSL

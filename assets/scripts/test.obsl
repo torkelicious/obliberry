@@ -64,6 +64,10 @@ assert(forSum == 10, "For loop failed");
 var arr = [10, 20, 30];
 assert(arr.len == 3, "Array length failed");
 
+arr[1] = 99;
+assert(arr[1] == 99, "Array index assignment failed");
+arr[1] = 20;
+
 var foreachSum = 0;
 foreach (var num in arr) {
     foreachSum += num;
@@ -117,32 +121,81 @@ assert(to_upper("test") == "TEST", "to_upper failed");
 assert(starts_with("hello world", "hello") == true, "starts_with failed");
 assert(contains("hello world", "world") == true, "contains failed");
 assert(substring("hello", 0.0, 4.0) == "hell", "substring failed");
-assert(trim("  hi  ") == "hi", "trim failed");
+assert(trim("   hi  ") == "hi", "trim failed");
 assert(replace("a b a", "a", "c") == "c b c", "replace failed");
 println "StdLib String OK";
 
+
+// more func tests
+fn functionWithDefaults(param = 100) {
+    return param;
+}
+assert(functionWithDefaults() == 100, "Function default parameter failed");
+
+// math edge cases
+assert(min(-5.0, -10.0) == -10.0, "Negative min failed");
+assert(clamp(-5.0, 0.0, 10.0) == 0.0, "Clamp lower bound failed");
+assert(round(4.5) == 5.0, "Round midpoint failed");
+
+assert(true or false, "Logical OR failed");
+assert(!(false and true), "Logical AND / NOT failed");
+println "StdLib Advanced & Edge Cases OK";
+
 // StdLib System
 var tStart = clock();
-var testFile = "obsl_io_test.txt";
-
-// these work fine, i just dont to write to my disk more :)
-//write_file(testFile, "IO Test Data");
-//assert(file_exists(testFile) == true, "file_exists failed");
-//assert(get_file_ext(testFile) == ".txt", "get_file_ext failed");
-//assert(read_file(testFile) == "IO Test Data", "read_file failed");
+//var testFile = "obsl_io_test.txt";
 
 wait(0.05);
 var tEnd = clock();
 assert(tEnd > tStart, "clock/wait failed");
 println "StdLib System OK";
 
-println"";
+// StdLib Reflection
+assert(type_of(a) == "number", "type_of failed for number");
+assert(type_of("hello") == "string", "type_of failed for string");
+assert(type_of(flowTest) == "bool", "type_of failed for boolean");
+assert(type_of(arr) == "array", "type_of failed for array");
+assert(type_of(obj) == "object", "type_of failed for object");
+assert(type_of(createAdder) == "callable", "type_of failed for script function");
+assert(type_of(sqrt) == "callable", "type_of failed for native function");
+
+assert(get_arity(createAdder) == 1, "get_arity failed for free function");
+assert(get_arity(addFive) == 1, "get_arity failed for closure function");
+assert(get_arity(sqrt) == 1, "get_arity failed for native function with 1 argument");
+assert(get_arity(clamp) == 3, "get_arity failed for native function with 3 arguments");
+
+assert(has_field(obj, "val") == true, "has_field failed to find existing property");
+assert(has_field(obj, "method") == true, "has_field failed to find existing method");
+assert(has_field(obj, "nonexistent") == false, "has_field falsely confirmed a missing field");
+
+var fields = get_fields(obj);
+assert(fields.len == 2, "get_fields array length mismatch");
+println "StdLib Reflection OK";
+
+// error handling
+try {
+    println "Attempting invalid math";
+    var bad = "hello";
+    var root = sqrt(bad);
+    println "This line will never print!";
+} catch (err) {
+    println "Caught an error successfully";
+    assert(type_of(err) == "string", "Error catch variable is not a string description");
+}
+
+println "Error Handling OK";
+
+println "";
 println "All core and stdlib tests completed successfully";
+println "";
 
-//println "write something";
-//var something = readln();
-//println "you wrote: " + something;
+println "Starting interactive tests (Press Enter to continue if running manually)...";
+print "> Write something: ";
+var something = readln();
+println "You wrote: " + something;
+println "";
 
-// error handling test
-//var bad_value = "hello";
-//var root = sqrt(bad_value); // should throw a NativeTypeError
+//println "testing deliberate uncaught throw";
+//throw("this is a runtime error...");
+//println "double check";
+// works
