@@ -5,12 +5,17 @@
 #include "Scripting/Lexer/Lexer.h"
 
 int main(int argc, char *argv[]) {
-    //Application app;
-    //app.Run();
+    // Application app;
+    // app.Run();
 
     ObSL::Entry entry;
-    const std::string fp = PathUtils::Join(SCRIPT_PATH, "test.obsl");
-    entry.runFile(fp);
-    //entry.runREPL();
+    // mockup standard command line arguments
+    const char *test_argv[] = {
+        "obsl_interpreter",
+        "assets/scripts/test.obsl"
+    };
+
+    entry.exec(2, const_cast<char **>(test_argv));
+
     return 0;
 }

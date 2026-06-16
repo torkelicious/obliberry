@@ -23,8 +23,10 @@
 
 namespace ObSL {
     int Entry::exec(const int argc, char *argv[]) {
+        std::setvbuf(stdin, nullptr, _IONBF, 0);
+        std::setvbuf(stdout, nullptr, _IONBF, 0);
         if (argc > 2) {
-            std::cout << "takes arg [script.obsl]\n";
+            std::cout << "takes [script.obsl]\n";
             return 64;
         }
         if (argc == 2) {

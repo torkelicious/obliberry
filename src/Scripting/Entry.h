@@ -15,12 +15,13 @@ namespace ObSL {
 
         int exec(int argc, char *argv[]);
 
+    private:
+        Interpreter m_interpreter;
+
+        // everything should go through exec()
         void runFile(const std::string &path);
 
         void runREPL();
-
-    private:
-        Interpreter m_interpreter;
 
         void run(const std::string &source);
     };

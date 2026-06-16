@@ -125,6 +125,7 @@ namespace ObSL {
             if (globals) {
                 globals->clear();
             }
+
             // stop leftover reference cycles trapped in closure scopes
             for (auto &weak_env: all_environments) {
                 if (auto env = weak_env.lock()) {
@@ -137,13 +138,12 @@ namespace ObSL {
             // periodically prune expired pointers just incase
             if (all_environments.size() > 1000) {
                 all_environments.erase(
-                    std::remove_if(all_environments.begin(), all_environments.end(),
-                                   [](const std::weak_ptr<Environment> &wp) { return wp.expired(); }),
+                    std::ranges::remove_if(all_environments,
+                                           [](const std::weak_ptr<Environment> &wp) { return wp.expired(); }).begin(),
                     all_environments.end());
             }
             all_environments.push_back(env);
         }
-
 
         void interpret(std::vector<std::unique_ptr<Stmt> > statements);
 
