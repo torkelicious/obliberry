@@ -24,7 +24,8 @@ namespace ObSL {
             }
         }
         tokens.push_back(Token{
-            TokenType::EOF_, "", line, column, static_cast<int>(current), static_cast<int>(current)
+            TokenType::EOF_, "", static_cast<uint16_t>(line), static_cast<uint16_t>(column),
+            static_cast<uint32_t>(current), static_cast<uint32_t>(current)
         });
         return tokens;
     }
@@ -79,8 +80,9 @@ namespace ObSL {
         }
         const auto lexeme = source.substr(number_start, current - number_start);
         return Token{
-            TokenType::NUMBER, lexeme, line, static_cast<int>(start_col), static_cast<int>(number_start),
-            static_cast<int>(current)
+            TokenType::NUMBER, lexeme, static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+            static_cast<uint32_t>(number_start),
+            static_cast<uint32_t>(current)
         };
     }
 
@@ -123,7 +125,8 @@ namespace ObSL {
         const TokenType type = it != keywords.end() ? it->second : TokenType::IDENTIFIER;
 
         return Token{
-            type, text, line, static_cast<int>(start_col), static_cast<int>(id_start), static_cast<int>(current)
+            type, text, static_cast<uint16_t>(line), static_cast<uint16_t>(start_col), static_cast<uint32_t>(id_start),
+            static_cast<uint32_t>(current)
         };
     }
 
@@ -142,15 +145,17 @@ namespace ObSL {
         if (is_at_end()) {
             std::cerr << std::format("line: {} unterminated string at column: {}\n", line, column);
             return Token{
-                TokenType::EOF_, "", line, static_cast<int>(start_col), static_cast<int>(str_start),
-                static_cast<int>(current)
+                TokenType::EOF_, "", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                static_cast<uint32_t>(str_start),
+                static_cast<uint32_t>(current)
             };
         }
         advance(); // consume the closing quote
         const std::string_view value = source.substr(str_start + 1, current - str_start - 2);
         return Token{
-            TokenType::STRING, value, line, static_cast<int>(start_col), static_cast<int>(str_start),
-            static_cast<int>(current)
+            TokenType::STRING, value, static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+            static_cast<uint32_t>(str_start),
+            static_cast<uint32_t>(current)
         };
     }
 
@@ -162,204 +167,235 @@ namespace ObSL {
                 if (peek() == '+') {
                     advance();
                     return Token{
-                        TokenType::PLUS_PLUS, "++", line, static_cast<int>(start_col), static_cast<int>(start_pos),
-                        static_cast<int>(current)
+                        TokenType::PLUS_PLUS, "++", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                        static_cast<uint32_t>(start_pos),
+                        static_cast<uint32_t>(current)
                     };
                 }
                 if (peek() == '=') {
                     advance();
                     return Token{
-                        TokenType::PLUS_EQUAL, "+=", line, static_cast<int>(start_col), static_cast<int>(start_pos),
-                        static_cast<int>(current)
+                        TokenType::PLUS_EQUAL, "+=", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                        static_cast<uint32_t>(start_pos),
+                        static_cast<uint32_t>(current)
                     };
                 }
                 return Token{
-                    TokenType::PLUS, "+", line, static_cast<int>(start_col), static_cast<int>(start_pos),
-                    static_cast<int>(current)
+                    TokenType::PLUS, "+", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                    static_cast<uint32_t>(start_pos),
+                    static_cast<uint32_t>(current)
                 };
             case '-':
                 if (peek() == '-') {
                     advance();
                     return Token{
-                        TokenType::MINUS_MINUS, "--", line, static_cast<int>(start_col), static_cast<int>(start_pos),
-                        static_cast<int>(current)
+                        TokenType::MINUS_MINUS, "--", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                        static_cast<uint32_t>(start_pos),
+                        static_cast<uint32_t>(current)
                     };
                 }
                 if (peek() == '=') {
                     advance();
                     return Token{
-                        TokenType::MINUS_EQUAL, "-=", line, static_cast<int>(start_col), static_cast<int>(start_pos),
-                        static_cast<int>(current)
+                        TokenType::MINUS_EQUAL, "-=", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                        static_cast<uint32_t>(start_pos),
+                        static_cast<uint32_t>(current)
                     };
                 }
                 return Token{
-                    TokenType::MINUS, "-", line, static_cast<int>(start_col), static_cast<int>(start_pos),
-                    static_cast<int>(current)
+                    TokenType::MINUS, "-", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                    static_cast<uint32_t>(start_pos),
+                    static_cast<uint32_t>(current)
                 };
             case '*':
                 if (peek() == '=') {
                     advance();
                     return Token{
-                        TokenType::STAR_EQUAL, "*=", line, static_cast<int>(start_col), static_cast<int>(start_pos),
-                        static_cast<int>(current)
+                        TokenType::STAR_EQUAL, "*=", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                        static_cast<uint32_t>(start_pos),
+                        static_cast<uint32_t>(current)
                     };
                 }
                 return Token{
-                    TokenType::STAR, "*", line, static_cast<int>(start_col), static_cast<int>(start_pos),
-                    static_cast<int>(current)
+                    TokenType::STAR, "*", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                    static_cast<uint32_t>(start_pos),
+                    static_cast<uint32_t>(current)
                 };
             case '/':
                 if (peek() == '=') {
                     advance();
                     return Token{
-                        TokenType::SLASH_EQUAL, "/=", line, static_cast<int>(start_col), static_cast<int>(start_pos),
-                        static_cast<int>(current)
+                        TokenType::SLASH_EQUAL, "/=", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                        static_cast<uint32_t>(start_pos),
+                        static_cast<uint32_t>(current)
                     };
                 }
                 return Token{
-                    TokenType::SLASH, "/", line, static_cast<int>(start_col), static_cast<int>(start_pos),
-                    static_cast<int>(current)
+                    TokenType::SLASH, "/", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                    static_cast<uint32_t>(start_pos),
+                    static_cast<uint32_t>(current)
                 };
             case '%':
                 if (peek() == '=') {
                     advance();
                     return Token{
-                        TokenType::PERCENT_EQUAL, "%=", line, static_cast<int>(start_col), static_cast<int>(start_pos),
-                        static_cast<int>(current)
+                        TokenType::PERCENT_EQUAL, "%=", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                        static_cast<uint32_t>(start_pos),
+                        static_cast<uint32_t>(current)
                     };
                 }
                 return Token{
-                    TokenType::PERCENT, "%", line, static_cast<int>(start_col), static_cast<int>(start_pos),
-                    static_cast<int>(current)
+                    TokenType::PERCENT, "%", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                    static_cast<uint32_t>(start_pos),
+                    static_cast<uint32_t>(current)
                 };
             case '=':
                 if (peek() == '=') {
                     advance();
                     return Token{
-                        TokenType::EQUAL_EQUAL, "==", line, static_cast<int>(start_col), static_cast<int>(start_pos),
-                        static_cast<int>(current)
+                        TokenType::EQUAL_EQUAL, "==", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                        static_cast<uint32_t>(start_pos),
+                        static_cast<uint32_t>(current)
                     };
                 }
                 return Token{
-                    TokenType::ASSIGN, "=", line, static_cast<int>(start_col), static_cast<int>(start_pos),
-                    static_cast<int>(current)
+                    TokenType::ASSIGN, "=", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                    static_cast<uint32_t>(start_pos),
+                    static_cast<uint32_t>(current)
                 };
             case '!':
                 if (peek() == '=') {
                     advance();
                     return Token{
-                        TokenType::BANG_EQUAL, "!=", line, static_cast<int>(start_col), static_cast<int>(start_pos),
-                        static_cast<int>(current)
+                        TokenType::BANG_EQUAL, "!=", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                        static_cast<uint32_t>(start_pos),
+                        static_cast<uint32_t>(current)
                     };
                 }
                 return Token{
-                    TokenType::BANG, "!", line, static_cast<int>(start_col), static_cast<int>(start_pos),
-                    static_cast<int>(current)
+                    TokenType::BANG, "!", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                    static_cast<uint32_t>(start_pos),
+                    static_cast<uint32_t>(current)
                 };
             case '<':
                 if (peek() == '=') {
                     advance();
                     return Token{
-                        TokenType::LESS_EQUAL, "<=", line, static_cast<int>(start_col), static_cast<int>(start_pos),
-                        static_cast<int>(current)
+                        TokenType::LESS_EQUAL, "<=", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                        static_cast<uint32_t>(start_pos),
+                        static_cast<uint32_t>(current)
                     };
                 }
                 if (peek() == '<') {
                     advance();
                     return Token{
-                        TokenType::LESS_LESS, "<<", line, static_cast<int>(start_col),
-                        static_cast<int>(start_pos),
-                        static_cast<int>(current)
+                        TokenType::LESS_LESS, "<<", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                        static_cast<uint32_t>(start_pos),
+                        static_cast<uint32_t>(current)
                     };
                 }
                 return Token{
-                    TokenType::LESS, "<", line, static_cast<int>(start_col), static_cast<int>(start_pos),
-                    static_cast<int>(current)
+                    TokenType::LESS, "<", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                    static_cast<uint32_t>(start_pos),
+                    static_cast<uint32_t>(current)
                 };
             case '>':
                 if (peek() == '=') {
                     advance();
                     return Token{
-                        TokenType::GREATER_EQUAL, ">=", line, static_cast<int>(start_col), static_cast<int>(start_pos),
-                        static_cast<int>(current)
+                        TokenType::GREATER_EQUAL, ">=", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                        static_cast<uint32_t>(start_pos),
+                        static_cast<uint32_t>(current)
                     };
                 }
                 if (peek() == '>') {
                     advance();
                     return Token{
-                        TokenType::GREATER_GREATER, ">>", line, static_cast<int>(start_col),
-                        static_cast<int>(start_pos),
-                        static_cast<int>(current)
+                        TokenType::GREATER_GREATER, ">>", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                        static_cast<uint32_t>(start_pos),
+                        static_cast<uint32_t>(current)
                     };
                 }
                 return Token{
-                    TokenType::GREATER, ">", line, static_cast<int>(start_col), static_cast<int>(start_pos),
-                    static_cast<int>(current)
+                    TokenType::GREATER, ">", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                    static_cast<uint32_t>(start_pos),
+                    static_cast<uint32_t>(current)
                 };
             case '&':
                 return Token{
-                    TokenType::AMPERSAND, "&", line, static_cast<int>(start_col),
-                    static_cast<int>(start_pos), static_cast<int>(current)
+                    TokenType::AMPERSAND, "&", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                    static_cast<uint32_t>(start_pos), static_cast<uint32_t>(current)
                 };
             case '|':
                 return Token{
-                    TokenType::PIPE, "|", line, static_cast<int>(start_col),
-                    static_cast<int>(start_pos), static_cast<int>(current)
+                    TokenType::PIPE, "|", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                    static_cast<uint32_t>(start_pos), static_cast<uint32_t>(current)
                 };
             case '^':
                 return Token{
-                    TokenType::CARET, "^", line, static_cast<int>(start_col),
-                    static_cast<int>(start_pos), static_cast<int>(current)
+                    TokenType::CARET, "^", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                    static_cast<uint32_t>(start_pos), static_cast<uint32_t>(current)
                 };
             case '~':
                 return Token{
-                    TokenType::TILDE, "~", line, static_cast<int>(start_col),
-                    static_cast<int>(start_pos), static_cast<int>(current)
+                    TokenType::TILDE, "~", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                    static_cast<uint32_t>(start_pos), static_cast<uint32_t>(current)
                 };
             case '(': return Token{
-                    TokenType::LEFT_PAREN, "(", line, static_cast<int>(start_col), static_cast<int>(start_pos),
-                    static_cast<int>(current)
+                    TokenType::LEFT_PAREN, "(", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                    static_cast<uint32_t>(start_pos),
+                    static_cast<uint32_t>(current)
                 };
             case ')': return Token{
-                    TokenType::RIGHT_PAREN, ")", line, static_cast<int>(start_col), static_cast<int>(start_pos),
-                    static_cast<int>(current)
+                    TokenType::RIGHT_PAREN, ")", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                    static_cast<uint32_t>(start_pos),
+                    static_cast<uint32_t>(current)
                 };
             case '{': return Token{
-                    TokenType::LEFT_BRACE, "{", line, static_cast<int>(start_col), static_cast<int>(start_pos),
-                    static_cast<int>(current)
+                    TokenType::LEFT_BRACE, "{", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                    static_cast<uint32_t>(start_pos),
+                    static_cast<uint32_t>(current)
                 };
             case '}': return Token{
-                    TokenType::RIGHT_BRACE, "}", line, static_cast<int>(start_col), static_cast<int>(start_pos),
-                    static_cast<int>(current)
+                    TokenType::RIGHT_BRACE, "}", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                    static_cast<uint32_t>(start_pos),
+                    static_cast<uint32_t>(current)
                 };
             case '[': return Token{
-                    TokenType::LEFT_BRACKET, "[", line, static_cast<int>(start_col), static_cast<int>(start_pos),
-                    static_cast<int>(current)
+                    TokenType::LEFT_BRACKET, "[", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                    static_cast<uint32_t>(start_pos),
+                    static_cast<uint32_t>(current)
                 };
             case ']': return Token{
-                    TokenType::RIGHT_BRACKET, "]", line, static_cast<int>(start_col), static_cast<int>(start_pos),
-                    static_cast<int>(current)
+                    TokenType::RIGHT_BRACKET, "]", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                    static_cast<uint32_t>(start_pos),
+                    static_cast<uint32_t>(current)
                 };
             case ';': return Token{
-                    TokenType::SEMICOLON, ";", line, static_cast<int>(start_col), static_cast<int>(start_pos),
-                    static_cast<int>(current)
+                    TokenType::SEMICOLON, ";", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                    static_cast<uint32_t>(start_pos),
+                    static_cast<uint32_t>(current)
                 };
             case ',': return Token{
-                    TokenType::COMMA, ",", line, static_cast<int>(start_col), static_cast<int>(start_pos),
-                    static_cast<int>(current)
+                    TokenType::COMMA, ",", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                    static_cast<uint32_t>(start_pos),
+                    static_cast<uint32_t>(current)
                 };
             case '.': return Token{
-                    TokenType::DOT, ".", line, static_cast<int>(start_col), static_cast<int>(start_pos),
-                    static_cast<int>(current)
+                    TokenType::DOT, ".", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                    static_cast<uint32_t>(start_pos),
+                    static_cast<uint32_t>(current)
                 };
             case ':': return Token{
-                    TokenType::COLON, ":", line, static_cast<int>(start_col), static_cast<int>(start_pos),
-                    static_cast<int>(current)
+                    TokenType::COLON, ":", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                    static_cast<uint32_t>(start_pos),
+                    static_cast<uint32_t>(current)
                 };
             default:
                 return Token{
-                    TokenType::UNKNOWN, std::string_view(&source[start_pos], 1), line, static_cast<int>(start_col),
-                    static_cast<int>(start_pos), static_cast<int>(current)
+                    TokenType::UNKNOWN, std::string_view(&source[start_pos], 1), static_cast<uint16_t>(line),
+                    static_cast<uint16_t>(start_col),
+                    static_cast<uint32_t>(start_pos), static_cast<uint32_t>(current)
                 };
         }
     }

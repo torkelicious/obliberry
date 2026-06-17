@@ -3,6 +3,7 @@
 #include <memory>
 #include <unordered_map>
 #include <string>
+#include <string_view>
 #include "Scripting/Parser/ast.h"
 
 namespace ObSL {
@@ -24,10 +25,14 @@ namespace ObSL {
 
         const std::unordered_map<std::string, Value> &get_values() const { return values; }
 
-        void define(const std::string &name, const Value &value);
+        void define(std::string_view name, const Value &value);
 
         Value get(const Token &name);
 
+        Value get(std::string_view name);
+
         void assign(const Token &name, const Value &value);
+
+        void assign(std::string_view name, const Value &value);
     };
 } // namespace ObSL

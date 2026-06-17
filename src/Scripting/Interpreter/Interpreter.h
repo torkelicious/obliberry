@@ -13,6 +13,7 @@
 #include <format>
 #include <iostream>
 #include <algorithm>
+#include <span>
 #include "Scripting/Tokens.h"
 #include "Scripting/Parser/ast.h"
 #include "Scripting/Interpreter/Environment.h"
@@ -26,6 +27,13 @@ namespace ObSL {
 
     template<typename T>
     struct native_fn_traits;
+
+    // Concepts for function traits
+    template<typename F>
+    concept FunctionPointer = std::is_function_v<std::remove_pointer_t<F> >;
+
+    template<typename F>
+    concept MemberFunctionPointer = std::is_member_function_pointer_v<F>;
 
     // for const member functions
     template<typename R, typename C, typename... Args>
@@ -89,6 +97,11 @@ namespace ObSL {
                                              token.line, token.column, token.lexeme, message)),
               token(token) {
         }
+
+        RuntimeError(const std::string_view name, std::string_view message)
+            : std::runtime_error(std::format("Error: {}", message)),
+              token(Token{TokenType::UNKNOWN, name, 0, 0, 0, 0}) {
+        }
     };
 
     struct NativeTypeError : public std::runtime_error {
@@ -136,19 +149,18 @@ namespace ObSL {
         }
 
         void register_environment(const std::shared_ptr<Environment> &env) {
-            // periodically prune expired pointers just incase
-            if (all_environments.size() > 1000) {
-                all_environments.erase(
-                    std::ranges::remove_if(all_environments,
-                                           [](const std::weak_ptr<Environment> &wp) { return wp.expired(); }).begin(),
-                    all_environments.end());
+            // Periodically prune expired pointers to avoid unbounded growth.
+            // We don't prune on every insertion because remove_if is O(n).
+            if (++m_env_insert_count % prune_interval == 0) {
+                std::erase_if(all_environments,
+                              [](const std::weak_ptr<Environment> &wp) { return wp.expired(); });
             }
             all_environments.push_back(env);
         }
 
-        void interpret(std::vector<std::unique_ptr<Stmt> > statements);
+        void interpret(const std::vector<std::unique_ptr<Stmt> > &statements);
 
-        void execute_block(const std::vector<std::unique_ptr<Stmt> > &statements,
+        void execute_block(std::span<const std::unique_ptr<Stmt>> statements,
                            std::shared_ptr<Environment> block_env);
 
         void define_native(const std::string &name, std::shared_ptr<ObSLCallable> function) const {
@@ -173,18 +185,20 @@ namespace ObSL {
         friend class ObSLFunction;
 
     private:
+        static constexpr std::size_t prune_interval = 64;
+        static constexpr std::size_t max_loaded_modules = 256;
+
         std::shared_ptr<Environment> globals;
         std::shared_ptr<Environment> environment;
-        std::vector<std::vector<std::unique_ptr<Stmt> > > ast_storage;
-        std::vector<std::string> source_storage;
         std::vector<std::weak_ptr<Environment> > all_environments;
+        std::size_t m_env_insert_count = 0;
         std::ostream &m_stdout;
         std::istream &m_stdin;
         std::unordered_map<std::string, std::shared_ptr<ObSLObject> > loaded_modules;
 
         void execute(const Stmt *stmt);
 
-        Value evaluate(const Expr *expr);
+        [[nodiscard]] Value evaluate(const Expr *expr);
 
         void execute_function_stmt(const FunctionStmt *stmt);
 
@@ -232,7 +246,7 @@ namespace ObSL {
 
         Value evaluate_unary(const UnaryExpr *expr);
 
-        Value evaluate_update(const UpdateExpr *expr);
+        Value evaluate_update(const UpdateExpr *expr) const;
 
         Value evaluate_assignment(const AssignmentExpr *expr);
 
@@ -240,11 +254,11 @@ namespace ObSL {
 
         static bool is_truthy(const Value &value);
 
-        static void check_number_operand(const Token &oprt, const Value &oprnd);
+        static void check_number_operand(TokenType oprt, const Value &oprnd);
 
-        static void check_number_operands(const Token &oprt, const Value &lhs, const Value &rhs);
+        static void check_number_operands(TokenType oprt, const Value &lhs, const Value &rhs);
 
-        [[nodiscard]] bool is_equal(const Value &a, const Value &b) const;
+        static bool is_equal(const Value &a, const Value &b);
 
         void execute_using_stmt(const UsingStmt *stmt);
 
@@ -346,7 +360,7 @@ namespace ObSL {
             }
             try {
                 return m_body(interpreter, arguments);
-            } catch (const RuntimeError &e) {
+            } catch (RuntimeError) {
                 throw;
             } catch (const std::exception &e) {
                 throw RuntimeError(call_token, std::format("Native function '{}': {}", m_name, e.what()));
@@ -364,13 +378,19 @@ namespace ObSL {
         if constexpr (std::is_pointer_v<DecayedF> && std::is_function_v<std::remove_pointer_t<DecayedF> >) {
             using Traits = native_fn_traits<DecayedF>;
             auto wrapped = [body = std::forward<F>(body)](Interpreter *, const std::vector<Value> &args) -> Value {
-                return call_native_helper<DecayedF, Traits>(body, args, std::make_index_sequence<Traits::arity>{});
+                return call_native_helper<DecayedF, Traits>(body, args, std::make_index_sequence<Traits::arity>
+                                                            {
+                                                            }
+                );
             };
             globals->define(name, std::make_shared<NativeFunction>(Traits::arity, std::move(wrapped), name));
         } else {
             using Traits = native_fn_traits<decltype(&DecayedF::operator())>;
             auto wrapped = [body = std::forward<F>(body)](Interpreter *, const std::vector<Value> &args) -> Value {
-                return call_native_helper<DecayedF, Traits>(body, args, std::make_index_sequence<Traits::arity>{});
+                return call_native_helper<DecayedF, Traits>(body, args, std::make_index_sequence<Traits::arity>
+                                                            {
+                                                            }
+                );
             };
             globals->define(name, std::make_shared<NativeFunction>(Traits::arity, std::move(wrapped), name));
         }

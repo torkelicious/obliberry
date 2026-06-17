@@ -58,7 +58,7 @@ namespace ObSL {
             const Token equals = previous();
             auto value = parse_assignment();
             if (const auto *var_expr = dynamic_cast<VariableExpr *>(expr.get())) {
-                Token name = var_expr->name;
+                std::string_view name = var_expr->name;
                 if (equals.type != TokenType::ASSIGN) {
                     TokenType binary_op = {};
                     std::string_view lexeme;
@@ -147,7 +147,7 @@ namespace ObSL {
                     }
                 }
 
-                params.push_back(Param{param_name, std::move(default_value)});
+                params.emplace_back(Param{param_name, std::move(default_value)});
             } while (match(TokenType::COMMA));
         }
         consume(TokenType::RIGHT_PAREN, "Expect ')' after parameters.");

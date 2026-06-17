@@ -1,9 +1,10 @@
 #ifndef OBLIBERRY_TOKENS_H
 #define OBLIBERRY_TOKENS_H
 #include <string_view>
+#include <cstdint>
 
 namespace ObSL {
-    enum class TokenType {
+    enum class TokenType : uint8_t {
         // Punctuation & Single character tokens
         LEFT_PAREN,
         RIGHT_PAREN,
@@ -87,10 +88,10 @@ namespace ObSL {
     struct Token {
         TokenType type;
         std::string_view lexeme;
-        int line;
-        int column;
-        int start_pos;
-        int end_pos;
+        uint16_t line;
+        uint16_t column;
+        uint32_t start_pos;
+        uint32_t end_pos;
     };
 }
 

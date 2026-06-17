@@ -6,73 +6,88 @@
 #include <fstream>
 #include <type_traits>
 #include <sstream>
+#include <memory_resource>
+#include <ranges>
 #include "Scripting/Parser/Parser.h"
+
+using namespace std::string_view_literals;
 
 namespace ObSL {
     struct EnvironmentGuard {
-        std::shared_ptr<Environment> &current_env;
-        std::shared_ptr<Environment> previous_env;
+        std::shared_ptr<Environment> &m_env_ref;
+        std::shared_ptr<Environment> m_previous;
 
-        EnvironmentGuard(std::shared_ptr<Environment> &env, std::shared_ptr<Environment> prev)
-            : current_env(env), previous_env(std::move(prev)) {
+        EnvironmentGuard(std::shared_ptr<Environment> &env, std::shared_ptr<Environment> new_env)
+            : m_env_ref(env), m_previous(std::move(new_env)) {
+            m_env_ref = m_previous;
         }
 
         ~EnvironmentGuard() {
-            current_env = previous_env;
+            m_env_ref = m_previous;
         }
+
+        EnvironmentGuard(const EnvironmentGuard &) = delete;
+
+        EnvironmentGuard &operator=(const EnvironmentGuard &) = delete;
     };
 
-    void Interpreter::interpret(std::vector<std::unique_ptr<Stmt> > statements) {
+    void Interpreter::interpret(const std::vector<std::unique_ptr<Stmt> > &statements) {
         try {
             for (const auto &stmt: statements) {
-                if (stmt) { execute(stmt.get()); }
+                if (stmt) {
+                    execute(stmt.get());
+                }
             }
         } catch (const RuntimeError &error) {
-            std::cerr << std::format("{}\n", error.what());
+            std::cerr << error.what() << "\n";
         }
-        ast_storage.push_back(std::move(statements));
     }
 
 
     void Interpreter::execute(const Stmt *stmt) {
-        if (const auto s = dynamic_cast<const UsingStmt *>(stmt)) return execute_using_stmt(s);
-        if (const auto s = dynamic_cast<const TryCatchStmt *>(stmt)) return execute_try_catch_stmt(s);
-        if (const auto s = dynamic_cast<const ExpressionStmt *>(stmt)) return execute_expression_stmt(s);
-        if (const auto s = dynamic_cast<const PrintStmt *>(stmt)) return execute_print_stmt(s);
-        if (const auto s = dynamic_cast<const PrintlnStmt *>(stmt)) return execute_print_ln_stmt(s);
-        if (const auto s = dynamic_cast<const VarStmt *>(stmt)) return execute_var_stmt(s);
-        if (const auto s = dynamic_cast<const BlockStmt *>(stmt)) return execute_block_stmt(s);
-        if (const auto s = dynamic_cast<const IfStmt *>(stmt)) return execute_if_stmt(s);
-        if (const auto s = dynamic_cast<const SwitchStmt *>(stmt)) return execute_switch_stmt(s);
-        if (const auto s = dynamic_cast<const WhileStmt *>(stmt)) return execute_while_stmt(s);
-        if (const auto s = dynamic_cast<const ForeachStmt *>(stmt)) return execute_foreach_stmt(s);
-        if (const auto s = dynamic_cast<const BreakStmt *>(stmt)) return execute_break_stmt(s);
-        if (const auto s = dynamic_cast<const ReturnStmt *>(stmt)) return execute_return_stmt(s);
-        if (const auto s = dynamic_cast<const FunctionStmt *>(stmt)) return execute_function_stmt(s);
+        switch (stmt->type()) {
+            case StmtType::Using: return execute_using_stmt(static_cast<const UsingStmt *>(stmt));
+            case StmtType::Expression: return execute_expression_stmt(static_cast<const ExpressionStmt *>(stmt));
+            case StmtType::Print: return execute_print_stmt(static_cast<const PrintStmt *>(stmt));
+            case StmtType::Println: return execute_print_ln_stmt(static_cast<const PrintlnStmt *>(stmt));
+            case StmtType::Var: return execute_var_stmt(static_cast<const VarStmt *>(stmt));
+            case StmtType::Block: return execute_block_stmt(static_cast<const BlockStmt *>(stmt));
+            case StmtType::If: return execute_if_stmt(static_cast<const IfStmt *>(stmt));
+            case StmtType::Switch: return execute_switch_stmt(static_cast<const SwitchStmt *>(stmt));
+            case StmtType::While: return execute_while_stmt(static_cast<const WhileStmt *>(stmt));
+            case StmtType::Foreach: return execute_foreach_stmt(static_cast<const ForeachStmt *>(stmt));
+            case StmtType::Break: return execute_break_stmt(static_cast<const BreakStmt *>(stmt));
+            case StmtType::Return: return execute_return_stmt(static_cast<const ReturnStmt *>(stmt));
+            case StmtType::Function: return execute_function_stmt(static_cast<const FunctionStmt *>(stmt));
+            case StmtType::TryCatch: return execute_try_catch_stmt(static_cast<const TryCatchStmt *>(stmt));
+        }
         throw std::runtime_error("Unknown statement type in interpreter.");
     }
 
     Value Interpreter::evaluate(const Expr *expr) {
-        if (const auto e = dynamic_cast<const LiteralExpr *>(expr)) return evaluate_literal(e);
-        if (const auto e = dynamic_cast<const VariableExpr *>(expr)) return evaluate_variable(e);
-        if (const auto e = dynamic_cast<const BinaryExpr *>(expr)) return evaluate_binary(e);
-        if (const auto e = dynamic_cast<const GroupingExpr *>(expr)) return evaluate_grouping(e);
-        if (const auto e = dynamic_cast<const UnaryExpr *>(expr)) return evaluate_unary(e);
-        if (const auto e = dynamic_cast<const UpdateExpr *>(expr)) return evaluate_update(e);
-        if (const auto e = dynamic_cast<const AssignmentExpr *>(expr)) return evaluate_assignment(e);
-        if (const auto e = dynamic_cast<const ArrayExpr *>(expr)) return evaluate_array(e);
-        if (const auto e = dynamic_cast<const IndexExpr *>(expr)) return evaluate_index(e);
-        if (const auto e = dynamic_cast<const IndexAssignmentExpr *>(expr)) return evaluate_index_assignment(e);
-        if (const auto e = dynamic_cast<const LogicalExpr *>(expr)) return evaluate_logical(e);
-        if (const auto e = dynamic_cast<const CallExpr *>(expr)) return evaluate_call(e);
-        if (const auto e = dynamic_cast<const GetExpr *>(expr)) return evaluate_get(e);
-        if (const auto e = dynamic_cast<const SetExpr *>(expr)) return evaluate_set(e);
+        switch (expr->type()) {
+            case ExprType::Literal: return evaluate_literal(static_cast<const LiteralExpr *>(expr));
+            case ExprType::Variable: return evaluate_variable(static_cast<const VariableExpr *>(expr));
+            case ExprType::Binary: return evaluate_binary(static_cast<const BinaryExpr *>(expr));
+            case ExprType::Grouping: return evaluate_grouping(static_cast<const GroupingExpr *>(expr));
+            case ExprType::Unary: return evaluate_unary(static_cast<const UnaryExpr *>(expr));
+            case ExprType::Update: return evaluate_update(static_cast<const UpdateExpr *>(expr));
+            case ExprType::Assignment: return evaluate_assignment(static_cast<const AssignmentExpr *>(expr));
+            case ExprType::Array: return evaluate_array(static_cast<const ArrayExpr *>(expr));
+            case ExprType::Index: return evaluate_index(static_cast<const IndexExpr *>(expr));
+            case ExprType::IndexAssignment: return evaluate_index_assignment(
+                    static_cast<const IndexAssignmentExpr *>(expr));
+            case ExprType::Logical: return evaluate_logical(static_cast<const LogicalExpr *>(expr));
+            case ExprType::Call: return evaluate_call(static_cast<const CallExpr *>(expr));
+            case ExprType::Get: return evaluate_get(static_cast<const GetExpr *>(expr));
+            case ExprType::Set: return evaluate_set(static_cast<const SetExpr *>(expr));
+        }
         throw std::runtime_error("Unknown expression type in interpreter.");
     }
 
     void Interpreter::execute_function_stmt(const FunctionStmt *stmt) {
         auto function = std::make_shared<ObSLFunction>(stmt, environment);
-        environment->define(std::string(stmt->name.lexeme), function);
+        environment->define(stmt->name, function);
     }
 
     Value Interpreter::evaluate_call(const CallExpr *expr) {
@@ -96,7 +111,9 @@ namespace ObSL {
     }
 
     void Interpreter::execute_expression_stmt(const ExpressionStmt *stmt) {
-        evaluate(stmt->expression.get());
+        static_cast<void>(
+            evaluate(stmt->expression.get())
+        );
     }
 
     void Interpreter::execute_print_stmt(const PrintStmt *stmt) {
@@ -134,7 +151,7 @@ namespace ObSL {
         if (stmt->initializer) {
             value = evaluate(stmt->initializer.get());
         }
-        environment->define(std::string(stmt->name.lexeme), value);
+        environment->define(stmt->name, value);
     }
 
     Value Interpreter::evaluate_literal(const LiteralExpr *expr) {
@@ -196,25 +213,26 @@ namespace ObSL {
     Value Interpreter::evaluate_binary(const BinaryExpr *expr) {
         const Value lhs = evaluate(expr->left.get());
         const Value rhs = evaluate(expr->right.get());
-        switch (expr->oprt.type) {
+
+        switch (expr->oprt_type) {
             case TokenType::GREATER:
-                check_number_operands(expr->oprt, lhs, rhs);
+                check_number_operands(expr->oprt_type, lhs, rhs);
                 return std::get<double>(lhs) > std::get<double>(rhs);
             case TokenType::GREATER_EQUAL:
-                check_number_operands(expr->oprt, lhs, rhs);
+                check_number_operands(expr->oprt_type, lhs, rhs);
                 return std::get<double>(lhs) >= std::get<double>(rhs);
             case TokenType::LESS:
-                check_number_operands(expr->oprt, lhs, rhs);
+                check_number_operands(expr->oprt_type, lhs, rhs);
                 return std::get<double>(lhs) < std::get<double>(rhs);
             case TokenType::LESS_EQUAL:
-                check_number_operands(expr->oprt, lhs, rhs);
+                check_number_operands(expr->oprt_type, lhs, rhs);
                 return std::get<double>(lhs) <= std::get<double>(rhs);
             case TokenType::BANG_EQUAL:
                 return !is_equal(lhs, rhs);
             case TokenType::EQUAL_EQUAL:
                 return is_equal(lhs, rhs);
             case TokenType::MINUS:
-                check_number_operands(expr->oprt, lhs, rhs);
+                check_number_operands(expr->oprt_type, lhs, rhs);
                 return std::get<double>(lhs) - std::get<double>(rhs);
             case TokenType::PLUS:
                 if (std::holds_alternative<std::string>(lhs) || std::holds_alternative<std::string>(rhs)) {
@@ -229,48 +247,53 @@ namespace ObSL {
                 if (std::holds_alternative<double>(lhs) && std::holds_alternative<double>(rhs)) {
                     return std::get<double>(lhs) + std::get<double>(rhs);
                 }
-                throw RuntimeError(expr->oprt, "Operands must be numbers or strings.");
+                throw RuntimeError(Token{TokenType::UNKNOWN, "binary", 0, 0, 0, 0},
+                                   "Operands must be numbers or strings.");
             case TokenType::SLASH:
-                check_number_operands(expr->oprt, lhs, rhs);
-                if (std::get<double>(rhs) == 0) throw RuntimeError(expr->oprt, "Division by zero.");
+                check_number_operands(expr->oprt_type, lhs, rhs);
+                if (std::get<double>(rhs) == 0)
+                    throw RuntimeError(Token{expr->oprt_type, "", 0, 0, 0, 0},
+                                       "Division by zero.");
                 return std::get<double>(lhs) / std::get<double>(rhs);
             case TokenType::PERCENT:
-                check_number_operands(expr->oprt, lhs, rhs);
-                if (std::get<double>(rhs) == 0) throw RuntimeError(expr->oprt, "Modulo by zero.");
+                check_number_operands(expr->oprt_type, lhs, rhs);
+                if (std::get<double>(rhs) == 0)
+                    throw RuntimeError(Token{expr->oprt_type, "", 0, 0, 0, 0},
+                                       "Modulo by zero.");
                 return std::fmod(std::get<double>(lhs), std::get<double>(rhs));
             case TokenType::STAR:
-                check_number_operands(expr->oprt, lhs, rhs);
+                check_number_operands(expr->oprt_type, lhs, rhs);
                 return std::get<double>(lhs) * std::get<double>(rhs);
             case TokenType::AMPERSAND:
-                check_number_operands(expr->oprt, lhs, rhs);
+                check_number_operands(expr->oprt_type, lhs, rhs);
                 {
                     const auto left = static_cast<int64_t>(std::get<double>(lhs));
                     const auto right = static_cast<int64_t>(std::get<double>(rhs));
                     return static_cast<double>(left & right);
                 }
             case TokenType::PIPE:
-                check_number_operands(expr->oprt, lhs, rhs);
+                check_number_operands(expr->oprt_type, lhs, rhs);
                 {
                     const auto left = static_cast<int64_t>(std::get<double>(lhs));
                     const auto right = static_cast<int64_t>(std::get<double>(rhs));
                     return static_cast<double>(left | right);
                 }
             case TokenType::CARET:
-                check_number_operands(expr->oprt, lhs, rhs);
+                check_number_operands(expr->oprt_type, lhs, rhs);
                 {
                     const auto left = static_cast<int64_t>(std::get<double>(lhs));
                     const auto right = static_cast<int64_t>(std::get<double>(rhs));
                     return static_cast<double>(left ^ right);
                 }
             case TokenType::LESS_LESS:
-                check_number_operands(expr->oprt, lhs, rhs);
+                check_number_operands(expr->oprt_type, lhs, rhs);
                 {
                     const auto left = static_cast<int64_t>(std::get<double>(lhs));
                     const auto right = static_cast<int64_t>(std::get<double>(rhs));
                     return static_cast<double>(left << right);
                 }
             case TokenType::GREATER_GREATER:
-                check_number_operands(expr->oprt, lhs, rhs);
+                check_number_operands(expr->oprt_type, lhs, rhs);
                 {
                     const auto left = static_cast<int64_t>(std::get<double>(lhs));
                     const auto right = static_cast<int64_t>(std::get<double>(rhs));
@@ -288,9 +311,10 @@ namespace ObSL {
 
     Value Interpreter::evaluate_unary(const UnaryExpr *expr) {
         const Value right = evaluate(expr->right.get());
-        switch (expr->oprt.type) {
+
+        switch (expr->oprt_type) {
             case TokenType::MINUS:
-                check_number_operand(expr->oprt, right);
+                check_number_operand(expr->oprt_type, right);
                 return -std::get<double>(right);
             case TokenType::BANG:
                 return !is_truthy(right);
@@ -299,18 +323,19 @@ namespace ObSL {
                     const auto val = static_cast<int64_t>(std::get<double>(right));
                     return static_cast<double>(~val);
                 }
-                throw RuntimeError(expr->oprt, "Operand must be a number.");
+                throw RuntimeError(Token{TokenType::UNKNOWN, "unary", 0, 0, 0, 0}, "Operand must be a number.");
             default:
                 break;
         }
         return std::monostate{};
     }
 
-    Value Interpreter::evaluate_update(const UpdateExpr *expr) {
+    Value Interpreter::evaluate_update(const UpdateExpr *expr) const {
         const Value current_value = environment->get(expr->name);
-        check_number_operand(expr->oprt, current_value);
+
+        check_number_operand(expr->oprt_type, current_value);
         double num = std::get<double>(current_value);
-        double new_num = expr->oprt.type == TokenType::PLUS_PLUS ? num + 1.0 : num - 1.0;
+        double new_num = expr->oprt_type == TokenType::PLUS_PLUS ? num + 1.0 : num - 1.0;
         environment->assign(expr->name, Value(new_num));
         return expr->is_prefix ? Value(new_num) : Value(num);
     }
@@ -323,7 +348,7 @@ namespace ObSL {
 
     Value Interpreter::evaluate_logical(const LogicalExpr *expr) {
         Value left = evaluate(expr->left.get());
-        if (expr->oprt.type == TokenType::OR) {
+        if (expr->oprt_type == TokenType::OR) {
             if (is_truthy(left)) return left;
         } else {
             if (!is_truthy(left)) return left;
@@ -337,23 +362,23 @@ namespace ObSL {
         return true;
     }
 
-    void Interpreter::check_number_operand(const Token &oprt, const Value &oprnd) {
+    void Interpreter::check_number_operand(const TokenType oprt, const Value &oprnd) {
         if (std::holds_alternative<double>(oprnd)) return;
-        throw RuntimeError(oprt, "Operand must be a number.");
+        throw RuntimeError(Token{oprt, "", 0, 0, 0, 0}, "Operand must be a number.");
     }
 
-    void Interpreter::check_number_operands(const Token &oprt, const Value &lhs, const Value &rhs) {
+    void Interpreter::check_number_operands(const TokenType oprt, const Value &lhs, const Value &rhs) {
         if (!std::holds_alternative<double>(lhs) || !std::holds_alternative<double>(rhs)) {
-            throw RuntimeError(oprt, "Operands must be numbers.");
+            throw RuntimeError(Token{oprt, "", 0, 0, 0, 0}, "Operands must be numbers.");
         }
     }
 
-    bool Interpreter::is_equal(const Value &a, const Value &b) const {
-        return std::visit([]<typename T0, typename T1>(const T0 &lhs, const T1 &rhs) -> bool {
-            using L = std::decay_t<T0>;
-            using R = std::decay_t<T1>;
-            if constexpr (std::is_same_v<L, R>) {
-                return lhs == rhs;
+    bool Interpreter::is_equal(const Value &a, const Value &b) {
+        return std::visit([](auto &&arg1, auto &&arg2) {
+            using T1 = std::decay_t<decltype(arg1)>;
+            using T2 = std::decay_t<decltype(arg2)>;
+            if constexpr (std::is_same_v<T1, T2>) {
+                return arg1 == arg2;
             } else {
                 return false;
             }
@@ -369,12 +394,13 @@ namespace ObSL {
         }
         std::ifstream file(stmt->path);
         if (!file.is_open()) {
-            throw RuntimeError(stmt->keyword, std::format("Could not open module '{}'.", stmt->path));
+            throw RuntimeError(Token{TokenType::UNKNOWN, "using", 0, 0, 0, 0},
+                               std::format("Could not open module '{}'.", stmt->path));
         }
         std::stringstream buffer;
         buffer << file.rdbuf();
-        source_storage.push_back(buffer.str());
-        Lexer lexer(source_storage.back());
+        std::string source = buffer.str();
+        Lexer lexer(source);
         auto tokens = lexer.tokenize();
 
         Parser parser(tokens);
@@ -386,8 +412,8 @@ namespace ObSL {
 
         try {
             environment = module_env;
-            for (const auto &module_stmt: statements) {
-                if (module_stmt) { execute(module_stmt.get()); }
+            for (const auto &module_stmt: statements | std::views::filter([](auto &s) { return s != nullptr; })) {
+                execute(module_stmt.get());
             }
             environment = previous_env;
         } catch (...) {
@@ -401,7 +427,15 @@ namespace ObSL {
         }
         loaded_modules[stmt->path] = module_obj;
         environment->define(module_name, module_obj);
-        ast_storage.push_back(std::move(statements));
+
+        // prune loaded_modules if it grows too large
+        if (loaded_modules.size() > max_loaded_modules) {
+            size_t to_remove = loaded_modules.size() / 2;
+            for (auto it = loaded_modules.begin(); to_remove > 0 && it != loaded_modules.end(); ++it) {
+                it = loaded_modules.erase(it);
+                --to_remove;
+            }
+        }
     }
 
     void Interpreter::execute_try_catch_stmt(const TryCatchStmt *stmt) {
@@ -410,13 +444,13 @@ namespace ObSL {
         } catch (const RuntimeError &error) {
             const auto catch_env = std::make_shared<Environment>(environment);
             register_environment(catch_env);
-            catch_env->define(std::string(stmt->exception_var.lexeme), std::string(error.what()));
+            catch_env->define(stmt->exception_var, std::string(error.what()));
             execute_block(stmt->catch_body->statements, catch_env);
         }
     }
 
 
-    void Interpreter::execute_block(const std::vector<std::unique_ptr<Stmt> > &statements,
+    void Interpreter::execute_block(const std::span<const std::unique_ptr<Stmt>> statements,
                                     std::shared_ptr<Environment> block_env) {
         EnvironmentGuard guard(environment, environment);
         environment = std::move(block_env);
@@ -428,7 +462,8 @@ namespace ObSL {
     void Interpreter::execute_block_stmt(const BlockStmt *stmt) {
         const auto block_env = std::make_shared<Environment>(environment);
         register_environment(block_env);
-        execute_block(stmt->statements, block_env);
+        EnvironmentGuard guard(environment, environment);
+        execute_block(std::span(stmt->statements), block_env);
     }
 
     void Interpreter::execute_if_stmt(const IfStmt *stmt) {
@@ -453,7 +488,9 @@ namespace ObSL {
                 }
                 // match
                 if (Value case_val = evaluate(case_branch.match_value.get()); is_equal(condition_val, case_val)) {
-                    for (const auto &case_stmt: case_branch.statements) {
+                    for (const auto &case_stmt: case_branch.statements | std::views::filter([](auto &s) {
+                        return s != nullptr;
+                    })) {
                         execute(case_stmt.get());
                     }
                     return;
@@ -461,7 +498,9 @@ namespace ObSL {
             }
             // no cases matched, run default
             if (default_branch != nullptr) {
-                for (const auto &case_stmt: default_branch->statements) {
+                for (const auto &case_stmt: default_branch->statements | std::views::filter([](auto &s) {
+                    return s != nullptr;
+                })) {
                     execute(case_stmt.get());
                 }
             }
@@ -488,13 +527,14 @@ namespace ObSL {
             for (const auto &item: array->elements) {
                 auto loop_env = std::make_shared<Environment>(environment);
                 register_environment(loop_env);
-                loop_env->define(std::string(stmt->loop_var.lexeme), item);
+                loop_env->define(stmt->loop_var, item);
                 EnvironmentGuard guard(environment, environment);
                 environment = std::move(loop_env);
                 try { execute(stmt->body.get()); } catch (const BreakException &) { break; }
             }
         } else {
-            throw RuntimeError(stmt->loop_var, "Object is not iterable. Expected an Array.");
+            throw RuntimeError(Token{TokenType::UNKNOWN, stmt->loop_var, 0, 0, 0, 0},
+                               "Object is not iterable. Expected an Array.");
         }
     }
 
@@ -516,17 +556,18 @@ namespace ObSL {
         // arrays
         if (std::holds_alternative<std::shared_ptr<ObSLArray> >(obj)) {
             const auto array = std::get<std::shared_ptr<ObSLArray> >(obj);
-            if (expr->name.lexeme == "len") {
+            if (expr->name == "len") {
                 return Value(static_cast<double>(array->elements.size()));
             }
-            throw RuntimeError(expr->name, std::format("Undefined property '{}' on Array.", expr->name.lexeme));
+            throw RuntimeError(Token{TokenType::IDENTIFIER, expr->name, 0, 0, 0, 0},
+                               std::format("Undefined property '{}' on Array.", expr->name));
         }
 
         // objects
         if (std::holds_alternative<std::shared_ptr<ObSLObject> >(obj)) {
             const auto instance = std::get<std::shared_ptr<ObSLObject> >(obj);
             // null terminated copy of property name
-            const std::string prop_name(expr->name.lexeme);
+            const std::string prop_name(expr->name);
 
             if (const auto it = instance->fields.find(prop_name); it != instance->fields.end()) {
                 Value val = it->second;
@@ -539,19 +580,21 @@ namespace ObSL {
                 }
                 return val;
             }
-            throw RuntimeError(expr->name, std::format("Undefined property '{}' on object.", expr->name.lexeme));
+            throw RuntimeError(Token{TokenType::IDENTIFIER, expr->name, 0, 0, 0, 0},
+                               std::format("Undefined property '{}' on object.", expr->name));
         }
-        throw RuntimeError(expr->name, " does not contain property.");
+        throw RuntimeError(Token{TokenType::IDENTIFIER, expr->name, 0, 0, 0, 0}, " does not contain property.");
     }
 
     Value Interpreter::evaluate_set(const SetExpr *expr) {
         const Value obj = evaluate(expr->obj.get());
         if (!std::holds_alternative<std::shared_ptr<ObSLObject> >(obj)) {
-            throw RuntimeError(expr->name, "Only objects can have fields assigned.");
+            throw RuntimeError(Token{TokenType::IDENTIFIER, expr->name, 0, 0, 0, 0},
+                               "Only objects can have fields assigned.");
         }
         const auto instance = std::get<std::shared_ptr<ObSLObject> >(obj);
         Value value = evaluate(expr->value.get());
-        instance->fields[std::string(expr->name.lexeme)] = value;
+        instance->fields[std::string(expr->name)] = value;
         return value;
     }
 
@@ -592,7 +635,7 @@ namespace ObSL {
                     final_val = interpreter->evaluate(default_value.get());
                 }
 
-                environment->define(std::string(name.lexeme), final_val);
+                environment->define(name, final_val);
             }
 
             interpreter->set_current_environment(environment);
@@ -610,6 +653,6 @@ namespace ObSL {
 
 
     std::string ObSLFunction::to_string() const {
-        return std::format("<fn {}>", declaration->name.lexeme);
+        return std::format("<fn {}>", declaration->name);
     }
 } // namespace ObSL
