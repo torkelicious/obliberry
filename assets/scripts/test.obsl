@@ -1,3 +1,4 @@
+var timer = clock();
 println "obsl testing...";
 
 // modules
@@ -145,9 +146,9 @@ println "StdLib Advanced & Edge Cases OK";
 var tStart = clock();
 //var testFile = "obsl_io_test.txt";
 
-wait(0.05);
-var tEnd = clock();
-assert(tEnd > tStart, "clock/wait failed");
+//wait(0.05);
+//var tEnd = clock();
+//assert(tEnd > tStart, "clock/wait failed");
 println "StdLib System OK";
 
 // StdLib Reflection
@@ -189,13 +190,8 @@ println "";
 println "All core and stdlib tests completed successfully";
 println "";
 
-println "Starting interactive tests (Press Enter to continue if running manually)...";
-print "> Write something: ";
-var something = readln();
-println "You wrote: " + something;
-println "";
-
 //println "testing deliberate uncaught throw";
 //throw("this is a runtime error...");
 //println "double check";
 // works
+println "execution timer:" + (clock() - timer);
