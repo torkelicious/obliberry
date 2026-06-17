@@ -11,6 +11,7 @@
 
 /*
  * ObSL todo:
+ * Garbage collector
  * regex & networking?? (maybe)
  * structs
  * engine intergration

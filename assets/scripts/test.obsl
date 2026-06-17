@@ -194,4 +194,22 @@ println "";
 //throw("this is a runtime error...");
 //println "double check";
 // works
+
+println"";
+var a = 1;var b = a; var c = b;var d = c;
+println d;
+
+// mem leak
+
+// Create two arrays on the heap (ref count = 1 each)
+var parent = [1,2];
+var child = [3,4];
+// Make them point to each other (ref count = 2 each)
+parent[0] = child;
+child[0] = parent;
+// When the script finishes, 'parent' and 'child' variables are destroyed.
+// The ref counts drop to 1.... never deletes them. Memory leak...
+
+
+println"";
 println "execution timer:" + (clock() - timer);
