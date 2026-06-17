@@ -111,6 +111,8 @@ namespace ObSL {
     }
 
     void Interpreter::execute_expression_stmt(const ExpressionStmt *stmt) {
+        // the return value is marked as nodiscard
+        // in this case it is not used so it is cast to void so it gets discarded
         static_cast<void>(
             evaluate(stmt->expression.get())
         );
