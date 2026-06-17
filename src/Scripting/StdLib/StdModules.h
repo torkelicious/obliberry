@@ -302,7 +302,7 @@ namespace ObSL {
                                           auto arr = std::make_shared<ObSLArray>();
                                           if (obj) {
                                               for (const auto &key: obj->fields | std::views::keys) {
-                                                  arr->elements.push_back(key);
+                                                  arr->elements.emplace_back(key);
                                               }
                                           }
                                           return arr;

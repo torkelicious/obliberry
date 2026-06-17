@@ -13,7 +13,7 @@ namespace ObSL {
             return true;
         });
 
-        // this is lazy but ..i dont care..
+        // this is lazy but... i dont care..
         interpreter.define_native("throw", [](const std::string &message) -> std::monostate {
             throw std::runtime_error(message);
         });

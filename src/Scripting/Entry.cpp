@@ -12,10 +12,7 @@
 /*
  * ObSL todo:
  * regex & networking?? (maybe)
- * try catch ?
  * structs
- * function default args
- * reflection
  * engine intergration
  * lsp
  * docs lol
