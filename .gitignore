@@ -100,3 +100,4 @@ todo.txt
 .directory/
 compile_commands.json
 .directory
+/.zed/
