@@ -8,30 +8,27 @@ namespace ObSL {
     }
 
     Value Environment::get(const Token &name) {
-        const std::string var_name{name.lexeme};
-        if (const auto it = values.find(var_name); it != values.end()) {
+        if (const auto it = values.find(name.lexeme); it != values.end()) {
             return it->second;
         }
         if (enclosing) {
             return enclosing->get(name);
         }
-        throw std::runtime_error(std::format("Undefined variable '{}'.", var_name));
+        throw std::runtime_error(std::format("Undefined variable '{}'.", name.lexeme));
     }
 
     Value Environment::get(const std::string_view name) {
-        const std::string var_name{name};
-        if (const auto it = values.find(var_name); it != values.end()) {
+        if (const auto it = values.find(name); it != values.end()) {
             return it->second;
         }
         if (enclosing) {
             return enclosing->get(name);
         }
-        throw std::runtime_error(std::format("Undefined variable '{}'.", var_name));
+        throw std::runtime_error(std::format("Undefined variable '{}'.", name));
     }
 
     void Environment::assign(const Token &name, const Value &value) {
-        const std::string var_name{name.lexeme};
-        if (const auto it = values.find(var_name); it != values.end()) {
+        if (const auto it = values.find(name.lexeme); it != values.end()) {
             it->second = value;
             return;
         }
@@ -40,12 +37,11 @@ namespace ObSL {
             enclosing->assign(name, value);
             return;
         }
-        throw std::runtime_error(std::format("Undefined variable '{}'.", var_name));
+        throw std::runtime_error(std::format("Undefined variable '{}'.", name.lexeme));
     }
 
     void Environment::assign(const std::string_view name, const Value &value) {
-        const std::string var_name{name};
-        if (const auto it = values.find(var_name); it != values.end()) {
+        if (const auto it = values.find(name); it != values.end()) {
             it->second = value;
             return;
         }
@@ -54,6 +50,6 @@ namespace ObSL {
             enclosing->assign(name, value);
             return;
         }
-        throw std::runtime_error(std::format("Undefined variable '{}'.", var_name));
+        throw std::runtime_error(std::format("Undefined variable '{}'.", name));
     }
 } // namespace ObSL

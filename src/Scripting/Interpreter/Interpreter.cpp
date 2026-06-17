@@ -16,18 +16,14 @@ namespace ObSL {
     struct EnvironmentGuard {
         std::shared_ptr<Environment> &m_env_ref;
         std::shared_ptr<Environment> m_previous;
-
         EnvironmentGuard(std::shared_ptr<Environment> &env, std::shared_ptr<Environment> new_env)
-            : m_env_ref(env), m_previous(std::move(new_env)) {
-            m_env_ref = m_previous;
+            : m_env_ref(env), m_previous(env) {
+            m_env_ref = std::move(new_env);
         }
-
         ~EnvironmentGuard() {
-            m_env_ref = m_previous;
+            m_env_ref = std::move(m_previous);
         }
-
         EnvironmentGuard(const EnvironmentGuard &) = delete;
-
         EnvironmentGuard &operator=(const EnvironmentGuard &) = delete;
     };
 

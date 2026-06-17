@@ -15,6 +15,7 @@
 #include <stdexcept>
 #include <string>
 #include <thread>
+#include <format>
 #include "Scripting/Interpreter/Interpreter.h"
 #include "Scripting/StdLib/StdLib.h"
 
@@ -65,8 +66,8 @@ namespace ObSL {
 
             // rand num (returns a double between 0.0 and 1.0)
             interpreter.define_native("random", []() -> double {
-                static std::mt19937 gen(std::random_device{}());
-                static std::uniform_real_distribution dis(0.0, 1.0);
+                thread_local std::mt19937 gen(std::random_device{}());
+                thread_local std::uniform_real_distribution dis(0.0, 1.0);
                 return dis(gen);
             });
 
@@ -157,10 +158,16 @@ namespace ObSL {
             interpreter.define_native("substring",
                                       [](const std::string &str, const double start,
                                          const double length) -> std::string {
-                                          const size_t s = static_cast<size_t>(std::max(0.0, start));
-                                          const size_t len = static_cast<size_t>(std::max(0.0, length));
+                                          if (std::isnan(start) || std::isnan(length) || str.empty()) return "";
 
-                                          if (s >= str.length()) return "";
+                                          const double safe_start = std::clamp(
+                                              start, 0.0, static_cast<double>(str.length()));
+                                          const size_t s = static_cast<size_t>(safe_start);
+
+                                          const double safe_len = std::clamp(
+                                              length, 0.0, static_cast<double>(str.length() - s));
+                                          const size_t len = static_cast<size_t>(safe_len);
+
                                           return str.substr(s, len);
                                       });
 
@@ -194,10 +201,11 @@ namespace ObSL {
     class SystemLib : public Lib {
     public:
         void register_modules(Interpreter &interpreter) override {
-            // immediately terminates the host process with a status code
+            // do not let scripts kill the everything
+            // throw exception instead.
             interpreter.define_native("exit", [](const double status_code) -> double {
-                std::exit(static_cast<int>(status_code));
-                return 0.0; // never reached but  for signature matching
+                throw std::runtime_error(std::format("Script exited with code: {}", status_code));
+                return 0.0;
             });
 
             std::istream *in = &interpreter.Get_Stdin();
@@ -238,6 +246,7 @@ namespace ObSL {
                 return std::filesystem::path(path).extension().string();
             });
 
+            // maybe route io stuff through something?
             // reads (text) file into a string
             interpreter.define_native("read_file", [](const std::string &path) -> std::string {
                 std::ifstream file(path);
@@ -260,7 +269,8 @@ namespace ObSL {
             });
 
             // wait function
-            interpreter.define_native("wait", [](const double seconds) -> double {
+            // renamed because ... it freezes the entire thread.. lol
+            interpreter.define_native("sleep_thread", [](const double seconds) -> double {
                 if (seconds > 0.0) {
                     std::this_thread::sleep_for(std::chrono::duration<double>(seconds));
                 }
