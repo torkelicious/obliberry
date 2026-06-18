@@ -186,6 +186,16 @@ try {
 }
 pass_suite("Error Handling (Try/Catch)");
 
+var value = 10;
+assert(value is number, "is number failed");
+value = "test";
+assert(value is string, "is string failed");
+value = null;
+assert(value is null, "is null failed");
+value = true;
+assert(value is bool,"is bool failed");
+pass_suite("Type checking via 'is' operator");
+
 var parent_arr = [1, 2];
 var child_arr = [3, 4];
 parent_arr[0] = child_arr;
@@ -206,12 +216,8 @@ while (idx < 2000) {
 pass_suite("GC Threshold & Cyclic Tracking");
 
 
+
+
 var elapsed = clock() - start_time;
 println "SUCCESS: " + to_string(suites_passed) + " suites passed in " + to_fixed(elapsed, 3) + " seconds.";
 
-println " quicktest";
-var value = 10;
-
-if (value is number) {
-    println "Number";
-}
