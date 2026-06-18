@@ -10,12 +10,15 @@ int main(int argc, char *argv[]) {
 
     ObSL::Entry entry;
     // mockup standard command line arguments
-    const char *test_argv[] = {
-        "obsl_interpreter",
-        "assets/scripts/test.obsl"
-    };
 
-    entry.exec(2, const_cast<char **>(test_argv));
+    //const char *test_argv[] = {
+    //    "obsl_interpreter",
+    //    "assets/scripts/test.obsl"
+    //};
+    //
+    //entry.exec(2, const_cast<char **>(test_argv));
+
+    entry.exec(argc, argv);
 
     return 0;
 }

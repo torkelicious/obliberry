@@ -126,7 +126,7 @@ namespace ObSL {
             }
             try {
                 return m_body(interpreter, arguments);
-            } catch (RuntimeError &e) {
+            } catch ([[maybe_unused]] RuntimeError &e) {
                 throw;
             } catch (const std::exception &e) {
                 throw RuntimeError(call_token, std::format("Native function '{}': {}", m_name, e.what()));

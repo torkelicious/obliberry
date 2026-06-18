@@ -24,6 +24,8 @@ namespace ObSL {
         void runREPL();
 
         void run(const std::string &source);
+
+        static void run_lint(const std::string &path);
     };
 } // ObSL
 
