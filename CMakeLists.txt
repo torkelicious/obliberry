@@ -122,8 +122,8 @@ add_executable(
         src/Scripting/Interpreter/Interpreter.h
         src/Scripting/Interpreter/Environment.cpp
         src/Scripting/Interpreter/Environment.h
-        src/Scripting/Entry.cpp
-        src/Scripting/Entry.h
+        src/Scripting/ScriptEntry.cpp
+        src/Scripting/ScriptEntry.h
         src/Scripting/StdLib/StdLib.cpp
         src/Scripting/StdLib/StdLib.h
         src/Scripting/StdLib/StdModules.h

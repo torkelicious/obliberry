@@ -3,15 +3,15 @@
 #include "Interpreter/Interpreter.h"
 
 namespace ObSL {
-    class Entry {
+    class ScriptEntry {
     public:
-        Entry() = default;
+        ScriptEntry() = default;
 
-        ~Entry() = default;
+        ~ScriptEntry() = default;
 
-        Entry(const Entry &) = delete;
+        ScriptEntry(const ScriptEntry &) = delete;
 
-        Entry &operator=(const Entry &) = delete;
+        ScriptEntry &operator=(const ScriptEntry &) = delete;
 
         int exec(int argc, char *argv[]);
 

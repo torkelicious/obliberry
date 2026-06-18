@@ -1,4 +1,4 @@
-#include "Entry.h"
+#include "ScriptEntry.h"
 #include <chrono>
 #include <iostream>
 #include <fstream>
@@ -17,7 +17,7 @@
  */
 
 namespace ObSL {
-    int Entry::exec(const int argc, char *argv[]) {
+    int ScriptEntry::exec(const int argc, char *argv[]) {
         std::setvbuf(stdin, nullptr, _IONBF, 0);
         std::setvbuf(stdout, nullptr, _IONBF, 0);
 
@@ -50,7 +50,6 @@ namespace ObSL {
             return 0;
         }
 
-
         if (!file_path.empty()) {
             runFile(file_path);
         } else {
@@ -59,7 +58,7 @@ namespace ObSL {
         return 0;
     }
 
-    void Entry::runFile(const std::string &path) {
+    void ScriptEntry::runFile(const std::string &path) {
         std::ifstream file(path);
         if (!file.is_open()) {
             std::cerr << "Error: Could not open file '" << path << "'\n";
@@ -70,7 +69,7 @@ namespace ObSL {
         run(buffer.str());
     }
 
-    void Entry::runREPL() {
+    void ScriptEntry::runREPL() {
         std::string line;
         std::cout << "ObSL REPL (type 'exit' to quit)\n> ";
         while (std::getline(std::cin, line)) {
@@ -82,7 +81,7 @@ namespace ObSL {
         }
     }
 
-    void Entry::run(const std::string &source) {
+    void ScriptEntry::run(const std::string &source) {
         try {
             Lexer lexer(source);
             const auto tokens = lexer.tokenize();
@@ -96,7 +95,7 @@ namespace ObSL {
         }
     }
 
-    void Entry::run_lint(const std::string &path) {
+    void ScriptEntry::run_lint(const std::string &path) {
         // base JSON response object
         nlohmann::json output;
         output["errors"] = nlohmann::json::array();
@@ -131,16 +130,6 @@ namespace ObSL {
 
             size_t report_line = e.token.line;
             size_t report_col = e.token.column;
-
-            // If the parser hits a closing brace or EOF on a brand new line,
-            // it means the missing semicolon belongs at the end of the line b4 it.
-
-            // todo: fix line messing up on braces/eof this is a hack i guess. (maybe implement wrapper idk?)
-            if ((e.token.type == TokenType::RIGHT_BRACE || e.token.type == TokenType::EOF_)
-                && report_line > 1) {
-                report_line -= 1;
-                report_col = 1;
-            }
             output["errors"].push_back({
                 {"line", report_line},
                 {"column", report_col},

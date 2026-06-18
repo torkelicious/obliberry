@@ -574,10 +574,17 @@ namespace ObSL {
         return peek().type == TokenType::EOF_;
     }
 
-    Token Parser::consume(const TokenType type, const std::string_view message) {
+    Token Parser::consume(TokenType type, std::string_view message) {
         if (check(type)) return advance();
-        throw RuntimeError(peek(), std::string(message));
+        Token error_token = peek();
+        // If we hit a block end or EOF on a new line,point the error at the statement on the line before it.
+        if ((error_token.type == TokenType::RIGHT_BRACE || error_token.type == TokenType::EOF_)
+            && error_token.line > previous().line) {
+            error_token = previous();
+        }
+        throw RuntimeError(error_token, message);
     }
+
 
     std::unique_ptr<Expr> Parser::parse_bitwise_or() {
         auto expr = parse_bitwise_xor();
