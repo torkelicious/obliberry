@@ -127,6 +127,9 @@ add_executable(
         src/Scripting/StdLib/StdLib.cpp
         src/Scripting/StdLib/StdLib.h
         src/Scripting/StdLib/StdModules.h
+        src/Scripting/GarbageCollector.cpp
+        src/Scripting/GarbageCollector.h
+        src/Scripting/Interpreter/Natives.h
 )
 
 target_include_directories(

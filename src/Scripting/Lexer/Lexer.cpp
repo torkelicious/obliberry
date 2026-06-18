@@ -10,6 +10,14 @@ namespace ObSL {
 
     std::vector<Token> Lexer::tokenize() {
         std::vector<Token> tokens;
+
+        if (source.length() >= 3 &&
+            static_cast<unsigned char>(source[0]) == 0xEF &&
+            static_cast<unsigned char>(source[1]) == 0xBB &&
+            static_cast<unsigned char>(source[2]) == 0xBF) {
+            current += 3;
+        }
+
         while (!is_at_end()) {
             skip_whitespace();
             if (is_at_end()) break;
@@ -30,6 +38,7 @@ namespace ObSL {
         return tokens;
     }
 
+
     char Lexer::peek() const {
         return is_at_end() ? '\0' : source[current];
     }
@@ -49,9 +58,10 @@ namespace ObSL {
         return current >= source.size();
     }
 
+    // skips comments too
     void Lexer::skip_whitespace() {
-        while (true) {
-            if (const char c = peek(); c == ' ' || c == '\t' || c == '\r') {
+        while (!is_at_end()) {
+            if (const char c = peek(); c == ' ' || c == '\t' || c == '\r' || c == '\v' || c == '\f') {
                 advance();
             } else if (c == '\n') {
                 advance();
@@ -63,11 +73,15 @@ namespace ObSL {
                 while (peek() != '\n' && !is_at_end()) {
                     advance();
                 }
+            } else if (static_cast<unsigned char>(c) == 0xC2 && static_cast<unsigned char>(peek_next()) == 0xA0) {
+                advance();
+                advance();
             } else {
                 break;
             }
         }
     }
+
 
     Token Lexer::read_num() {
         const size_t number_start = current;

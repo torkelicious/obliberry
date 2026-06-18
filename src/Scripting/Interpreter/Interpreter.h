@@ -2,184 +2,76 @@
 
 #include <vector>
 #include <memory>
-#include <stdexcept>
-#include <exception>
-#include <functional>
-#include <tuple>
-#include <utility>
-#include <type_traits>
-#include <unordered_set>
-#include <string_view>
-#include <format>
 #include <iostream>
-#include <algorithm>
+#include <unordered_map>
 #include <span>
-#include "Scripting/Tokens.h"
-#include "Scripting/Parser/ast.h"
+
+#include "Scripting/Interpreter/Natives.h"
 #include "Scripting/Interpreter/Environment.h"
+#include "Scripting/GarbageCollector.h"
 #include "Scripting/StdLib/StdLib.h"
 
 namespace ObSL {
-    // forward declarations
-    class NativeFunction;
-    struct ObSLCallable;
-    class Interpreter;
-
-    template<typename T>
-    struct native_fn_traits;
-
-    // Concepts for function traits
-    template<typename F>
-    concept FunctionPointer = std::is_function_v<std::remove_pointer_t<F> >;
-
-    template<typename F>
-    concept MemberFunctionPointer = std::is_member_function_pointer_v<F>;
-
-    // for const member functions
-    template<typename R, typename C, typename... Args>
-    struct native_fn_traits<R(C::*)(Args...) const> {
-        using return_type = R;
-        static constexpr int arity = sizeof...(Args);
-        using args_tuple = std::tuple<std::decay_t<Args>...>;
-    };
-
-    // for non-const member functions
-    template<typename R, typename C, typename... Args>
-    struct native_fn_traits<R(C::*)(Args...)> {
-        using return_type = R;
-        static constexpr int arity = sizeof...(Args);
-        using args_tuple = std::tuple<std::decay_t<Args>...>;
-    };
-
-    // free function pointers
-    template<typename R, typename... Args>
-    struct native_fn_traits<R(*)(Args...)> {
-        using return_type = R;
-        static constexpr int arity = sizeof...(Args);
-        using args_tuple = std::tuple<std::decay_t<Args>...>;
-    };
-
-    // runtime Exceptions
-    struct BreakException : public std::exception {
-        [[nodiscard]] const char *what() const noexcept override {
-            return "Break signal";
-        }
-    };
-
-    struct ReturnException : public std::exception {
-        Value value;
-
-        explicit ReturnException(Value value) : value(std::move(value)) {
-        }
-
-        [[nodiscard]] const char *what() const noexcept override {
-            return "Return signal";
-        }
-    };
-
-    template<typename T>
-    consteval std::string_view native_type_name() {
-        if constexpr (std::is_same_v<T, bool>) return "bool";
-        else if constexpr (std::is_same_v<T, double>) return "number";
-        else if constexpr (std::is_same_v<T, std::string>) return "string";
-        else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLCallable> >) return "callable";
-        else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLArray> >) return "array";
-        else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLObject> >) return "object";
-        else if constexpr (std::is_same_v<T, std::monostate>) return "null";
-        else return "unknown";
-    }
-
-    struct RuntimeError : public std::runtime_error {
-        Token token;
-
-        RuntimeError(const Token &token, std::string_view message)
-            : std::runtime_error(std::format("[Line {}:{}] Error at '{}': {}",
-                                             token.line, token.column, token.lexeme, message)),
-              token(token) {
-        }
-
-        RuntimeError(const std::string_view name, std::string_view message)
-            : std::runtime_error(std::format("Error: {}", message)),
-              token(Token{TokenType::UNKNOWN, name, 0, 0, 0, 0}) {
-        }
-    };
-
-    struct NativeTypeError : public std::runtime_error {
-        explicit NativeTypeError(const std::string &msg)
-            : std::runtime_error(msg) {
-        }
-    };
-
-    class NativeObjectCreator : public ObSLCallable {
-    public:
-        [[nodiscard]] int arity() const override { return 0; }
-
-        Value call(Interpreter *interpreter, const std::vector<Value> &arguments, const Token &call_token) override {
-            return std::make_shared<ObSLObject>();
-        }
-
-        [[nodiscard]] std::string to_string() const override { return "<native fn Object>"; }
-    };
-
-    // Interpreter
     class Interpreter {
     public:
+        GarbageCollector gc{this};
+        std::vector<Value> gc_protect_stack;
+
         explicit Interpreter(std::ostream &out = std::cout, std::istream &in = std::cin)
             : m_stdout(out), m_stdin(in) {
             globals = std::make_shared<Environment>();
             register_environment(globals);
             environment = globals;
-            globals->define("Object", std::make_shared<NativeObjectCreator>());
+
+            define_native("Object", [this]() -> ObSLObject * {
+                return this->gc.allocate<ObSLObject>();
+            });
 
             StdLib std_lib;
             std_lib.register_modules(*this);
         }
 
         ~Interpreter() {
-            if (globals) {
-                globals->clear();
-            }
-
-            // stop leftover reference cycles trapped in closure scopes
+            if (globals) globals->clear();
             for (auto &weak_env: all_environments) {
-                if (const auto env = weak_env.lock()) {
-                    env->clear();
-                }
+                if (const auto env = weak_env.lock()) env->clear();
             }
         }
 
         void register_environment(const std::shared_ptr<Environment> &env) {
-            // Periodically prune expired pointers to avoid unbounded growth.
-            // We don't prune on every insertion because remove_if is O(n).
             if (++m_env_insert_count % prune_interval == 0) {
-                std::erase_if(all_environments,
-                              [](const std::weak_ptr<Environment> &wp) { return wp.expired(); });
+                std::erase_if(all_environments, [](const std::weak_ptr<Environment> &wp) { return wp.expired(); });
             }
             all_environments.push_back(env);
         }
 
         void interpret(const std::vector<std::unique_ptr<Stmt> > &statements);
 
-        void execute_block(std::span<const std::unique_ptr<Stmt>> statements,
-                           std::shared_ptr<Environment> block_env);
+        void execute_block(std::span<const std::unique_ptr<Stmt>> statements, std::shared_ptr<Environment> block_env);
 
-        void define_native(const std::string &name, std::shared_ptr<ObSLCallable> function) const {
+        void define_native(const std::string &name, ObSLCallable *function) const {
             globals->define(name, function);
         }
 
-        // registration wrapper
         template<typename F>
         void define_native(std::string name, F &&body);
 
         std::istream &Get_Stdin() const { return m_stdin; }
         std::ostream &Get_Stdout() const { return m_stdout; }
 
-        [[nodiscard]] std::shared_ptr<Environment> get_current_environment() const {
-            return environment;
-        }
+        [[nodiscard]] std::shared_ptr<Environment> get_current_environment() const { return environment; }
+        [[nodiscard]] std::shared_ptr<Environment> get_global_environment() const { return globals; }
+        void set_current_environment(std::shared_ptr<Environment> env) { environment = std::move(env); }
 
-        void set_current_environment(std::shared_ptr<Environment> env) {
-            environment = std::move(env);
+        void mark_roots() {
+            if (globals) globals->mark();
+            if (environment) environment->mark();
+            for (auto &val: gc_protect_stack) {
+                mark_value(val);
+            }
+            for (const auto &module_obj: loaded_modules | std::views::values) {
+                if (module_obj) module_obj->mark();
+            }
         }
 
         friend class ObSLFunction;
@@ -191,10 +83,15 @@ namespace ObSL {
         std::shared_ptr<Environment> globals;
         std::shared_ptr<Environment> environment;
         std::vector<std::weak_ptr<Environment> > all_environments;
+
+        std::unordered_map<std::string, ObSLObject *> loaded_modules;
+
+        std::vector<std::string> module_sources;
+        std::vector<std::vector<std::unique_ptr<Stmt> > > module_asts;
+
         std::size_t m_env_insert_count = 0;
         std::ostream &m_stdout;
         std::istream &m_stdin;
-        std::unordered_map<std::string, std::shared_ptr<ObSLObject> > loaded_modules;
 
         void execute(const Stmt *stmt);
 
@@ -263,60 +160,34 @@ namespace ObSL {
         void execute_using_stmt(const UsingStmt *stmt);
 
         void execute_try_catch_stmt(const TryCatchStmt *stmt);
+    };
 
-        template<typename TargetType>
-        static void validate_native_arg(const Value &arg, const size_t index) {
-            using DecayedTarget = std::decay_t<TargetType>;
-            if constexpr (std::is_same_v<DecayedTarget, Value>) {
-            } else {
-                if (!std::holds_alternative<DecayedTarget>(arg)) {
-                    throw NativeTypeError(
-                        std::format("Argument {}: expected type '{}', got '{}'.",
-                                    index,
-                                    native_type_name<DecayedTarget>(),
-                                    std::visit([]<typename T>(const T &) -> std::string_view {
-                                        return native_type_name<std::decay_t<T> >();
-                                    }, arg))
-                    );
-                }
-            }
+    struct GCProtectScope {
+        Interpreter *interpreter;
+        size_t start_size;
+
+        explicit GCProtectScope(Interpreter *interp)
+            : interpreter(interp), start_size(interp->gc_protect_stack.size()) {
         }
 
-        template<typename F, typename Traits, size_t... Is>
-        static Value call_native_helper(const F &body, const std::vector<Value> &args, std::index_sequence<Is...>) {
-            using ArgsTuple = Traits::args_tuple;
-            (
-                validate_native_arg<std::tuple_element_t<Is, ArgsTuple> >(args[Is], Is),
-                ...
-            );
+        ~GCProtectScope() {
+            interpreter->gc_protect_stack.resize(start_size);
+        }
 
-            // Helper to safely extract the argument depending on if it's already a variant
-            auto unpack = []<typename T>(const Value &v) -> decltype(auto) {
-                using DecayedT = std::decay_t<T>;
-                if constexpr (std::is_same_v<DecayedT, Value>) {
-                    return v;
-                } else {
-                    return std::get<DecayedT>(v);
-                }
-            };
-
-            if constexpr (std::is_void_v<typename Traits::return_type>) {
-                body(unpack.template operator()<std::tuple_element_t<Is, ArgsTuple> >(args[Is])...);
-                return std::monostate{};
-            } else {
-                return body(unpack.template operator()<std::tuple_element_t<Is, ArgsTuple> >(args[Is])...);
-            }
+        void protect(const Value &val) const {
+            interpreter->gc_protect_stack.push_back(val);
         }
     };
 
-    // user defined functions
     class ObSLFunction : public ObSLCallable {
     private:
         const FunctionStmt *declaration;
         std::shared_ptr<Environment> closure;
 
     public:
-        ObSLFunction(const FunctionStmt *declaration, std::shared_ptr<Environment> closure);
+        ObSLFunction(const FunctionStmt *declaration, std::shared_ptr<Environment> closure)
+            : declaration(declaration), closure(std::move(closure)) {
+        }
 
         [[nodiscard]] int arity() const override;
 
@@ -326,73 +197,36 @@ namespace ObSL {
 
         [[nodiscard]] std::string to_string() const override;
 
-        std::shared_ptr<ObSLFunction> bind(std::shared_ptr<ObSLObject> instance, Interpreter *interpreter = nullptr) {
+        void mark() override {
+            if (is_marked) return;
+            is_marked = true;
+            if (closure) closure->mark();
+        }
+
+        ObSLFunction *bind(ObSLObject *instance, Interpreter *interpreter) {
             auto enviroment = std::make_shared<Environment>(closure);
-            if (interpreter) {
-                interpreter->register_environment(enviroment);
-            }
+            interpreter->register_environment(enviroment);
             enviroment->define("this", instance);
-            return std::make_shared<ObSLFunction>(declaration, enviroment);
-        }
-    };
 
-    // native binds
-    class NativeFunction : public ObSLCallable {
-    private:
-        int m_arity;
-        std::function<Value(Interpreter *, const std::vector<Value> &)> m_body;
-        std::string m_name;
-
-    public:
-        NativeFunction(const int arity,
-                       std::function<Value(Interpreter *, const std::vector<Value> &)> body,
-                       std::string name = "native")
-            : m_arity(arity), m_body(std::move(body)), m_name(std::move(name)) {
-        }
-
-        [[nodiscard]] int arity() const override { return m_arity; }
-
-        Value call(Interpreter *interpreter, const std::vector<Value> &arguments, const Token &call_token) override {
-            if (arguments.size() != m_arity) {
-                throw RuntimeError(call_token,
-                                   std::format("Native function expects {} arguments but got {}.", m_arity,
-                                               arguments.size()));
-            }
-            try {
-                return m_body(interpreter, arguments);
-            } catch (RuntimeError) {
-                throw;
-            } catch (const std::exception &e) {
-                throw RuntimeError(call_token, std::format("Native function '{}': {}", m_name, e.what()));
-            }
-        }
-
-        [[nodiscard]] std::string to_string() const override {
-            return std::format("<native fn {}>", m_name);
+            return interpreter->gc.allocate<ObSLFunction>(declaration, enviroment);
         }
     };
 
     template<typename F>
     void Interpreter::define_native(std::string name, F &&body) {
         using DecayedF = std::decay_t<F>;
-        if constexpr (std::is_pointer_v<DecayedF> && std::is_function_v<std::remove_pointer_t<DecayedF> >) {
+        if constexpr (std::is_pointer_v<DecayedF> &&std::is_function_v<std::remove_pointer_t<DecayedF> >) {
             using Traits = native_fn_traits<DecayedF>;
             auto wrapped = [body = std::forward<F>(body)](Interpreter *, const std::vector<Value> &args) -> Value {
-                return call_native_helper<DecayedF, Traits>(body, args, std::make_index_sequence<Traits::arity>
-                                                            {
-                                                            }
-                );
+                return call_native_helper<DecayedF, Traits>(body, args, std::make_index_sequence<Traits::arity>{});
             };
-            globals->define(name, std::make_shared<NativeFunction>(Traits::arity, std::move(wrapped), name));
+            globals->define(name, gc.allocate<NativeFunction>(Traits::arity, std::move(wrapped), name));
         } else {
             using Traits = native_fn_traits<decltype(&DecayedF::operator())>;
             auto wrapped = [body = std::forward<F>(body)](Interpreter *, const std::vector<Value> &args) -> Value {
-                return call_native_helper<DecayedF, Traits>(body, args, std::make_index_sequence<Traits::arity>
-                                                            {
-                                                            }
-                );
+                return call_native_helper<DecayedF, Traits>(body, args, std::make_index_sequence<Traits::arity>{});
             };
-            globals->define(name, std::make_shared<NativeFunction>(Traits::arity, std::move(wrapped), name));
+            globals->define(name, gc.allocate<NativeFunction>(Traits::arity, std::move(wrapped), name));
         }
     }
 } // namespace ObSL

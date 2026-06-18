@@ -1,3 +1,1 @@
-println"";
-println "Module test loaded";
-println"";
+println "module loaded";

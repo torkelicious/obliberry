@@ -8,8 +8,10 @@
 #include <string>
 #include <vector>
 #include <format>
+#include <ranges>
 #include <unordered_map>
 #include "Scripting/Lexer/Lexer.h"
+#include "Scripting/GarbageCollector.h"
 
 namespace ObSL {
     class Interpreter;
@@ -22,21 +24,39 @@ namespace ObSL {
         bool,
         double,
         std::string,
-        std::shared_ptr<ObSLCallable>,
-        std::shared_ptr<ObSLArray>,
-        std::shared_ptr<ObSLObject>
-    >;
+        ObSLCallable *,
+        ObSLArray *,
+        ObSLObject *>;
 
-    struct ObSLObject {
+
+    void mark_value(const Value &val);
+
+    struct ObSLObject : public GCObject {
         std::unordered_map<std::string, Value> fields;
+
+        void mark() override {
+            if (is_marked)return;
+            is_marked = true;
+            for (auto &val: fields | std::views::values) {
+                mark_value(val);
+            }
+        }
     };
 
-    struct ObSLArray {
+    struct ObSLArray : public GCObject {
         std::vector<Value> elements;
+
+        void mark() override {
+            if (is_marked)return;
+            is_marked = true;
+            for (auto &val: elements) {
+                mark_value(val);
+            }
+        };
     };
 
-    struct ObSLCallable {
-        virtual ~ObSLCallable() = default;
+    struct ObSLCallable : public GCObject {
+        ~ObSLCallable() override = default;
 
         [[nodiscard]] virtual int arity() const = 0;
 
@@ -45,6 +65,9 @@ namespace ObSL {
         virtual Value call(Interpreter *interpreter, const std::vector<Value> &arguments, const Token &call_token) = 0;
 
         [[nodiscard]] virtual std::string to_string() const { return "<callable>"; }
+
+        void mark() override {
+        }
     };
 
     enum class ExprType : uint8_t {

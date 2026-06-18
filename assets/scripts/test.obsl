@@ -122,7 +122,7 @@ assert(to_upper("test") == "TEST", "to_upper failed");
 assert(starts_with("hello world", "hello") == true, "starts_with failed");
 assert(contains("hello world", "world") == true, "contains failed");
 assert(substring("hello", 0.0, 4.0) == "hell", "substring failed");
-assert(trim("   hi  ") == "hi", "trim failed");
+assert(trim("    hi  ") == "hi", "trim failed");
 assert(replace("a b a", "a", "c") == "c b c", "replace failed");
 println "StdLib String OK";
 
@@ -195,21 +195,58 @@ println "";
 //println "double check";
 // works
 
+// mem leak
+println "GC / Memory Leak Test";
 println"";
 var a = 1;var b = a; var c = b;var d = c;
-println d;
+//Array Cyclic Reference
+println "Testing Array Cycles";
+var parent_arr = [1, 2];
+var child_arr = [3, 4];
+parent_arr[0] = child_arr;
+child_arr[0] = parent_arr;
+println "Array Cycle Created";
 
-// mem leak
+//Object Cyclic Reference
+println "Testing Object Cycles";
+var parent_obj = Object();
+var child_obj = Object();
+parent_obj.child = child_obj;
+child_obj.parent = parent_obj;
+println "Object Cycle Created";
+// Closures (Environment GC)
+println "Testing Closures";
+fn make_counter() {
+    var count = 0;
+    fn counter() {
+        count = count + 1;
+        return count;
+    }
+    return counter;
+}
 
-// Create two arrays on the heap (ref count = 1 each)
-var parent = [1,2];
-var child = [3,4];
-// Make them point to each other (ref count = 2 each)
-parent[0] = child;
-child[0] = parent;
-// When the script finishes, 'parent' and 'child' variables are destroyed.
-// The ref counts drop to 1.... never deletes them. Memory leak...
+var my_counter = make_counter();
+var val1 = my_counter();
+var val2 = my_counter();
+assert(val1 == 1, "Closure failed on first call");
+assert(val2 == 2, "Closure failed on second call");
+println "Closure Test 2 OK";
 
+// Massive Allocation
+
+println "GC Allocation Stress Test";
+var i = 0;
+
+// The GC threshold is 1000
+// Looping 2000 times makes GC collect() function fire multiple times
+
+while (i < 2000) {
+    // Allocate lots of temporary arrays and objects
+    var temp_arr = [i, i + 1, i + 2];
+    var temp_obj = Object();
+    temp_obj.data = temp_arr;
+    i = i + 1;
+}
 
 println"";
 println "execution timer:" + (clock() - timer);

@@ -9,14 +9,15 @@
 namespace ObSL {
     struct StringHash {
         using is_transparent = void;
-        [[nodiscard]] size_t operator()(std::string_view txt) const {
+
+        [[nodiscard]] size_t operator()(const std::string_view txt) const {
             return std::hash<std::string_view>{}(txt);
         }
     };
 
     class Environment {
     private:
-        std::unordered_map<std::string, Value, StringHash, std::equal_to<>> values;
+        std::unordered_map<std::string, Value, StringHash, std::equal_to<> > values;
         std::shared_ptr<Environment> enclosing;
 
     public:
@@ -30,7 +31,9 @@ namespace ObSL {
             values.clear();
         }
 
-        const std::unordered_map<std::string, Value, StringHash, std::equal_to<>> &get_values() const { return values; }
+        const std::unordered_map<std::string, Value, StringHash, std::equal_to<> > &get_values() const {
+            return values;
+        }
 
         void define(std::string_view name, const Value &value);
 
@@ -41,5 +44,14 @@ namespace ObSL {
         void assign(const Token &name, const Value &value);
 
         void assign(std::string_view name, const Value &value);
+
+        void mark() {
+            for (auto &val: values | std::views::values) {
+                mark_value(val);
+            }
+            if (enclosing) {
+                enclosing->mark();
+            }
+        }
     };
 } // namespace ObSL

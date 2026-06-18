@@ -1,6 +1,4 @@
-#ifndef OBLIBERRY_STDMODULES_H
-#define OBLIBERRY_STDMODULES_H
-
+#pragma once
 #include <algorithm>
 #include <cctype>
 #include <chrono>
@@ -24,12 +22,10 @@ namespace ObSL {
     class ConversionLib : public Lib {
     public:
         void register_modules(Interpreter &interpreter) override {
-            // convert a number to a string
             interpreter.define_native("to_string", [](const double val) -> std::string {
                 return std::to_string(val);
             });
 
-            // convert a string to number
             interpreter.define_native("to_num", [](const std::string &str) -> double {
                 try {
                     size_t idx;
@@ -41,7 +37,7 @@ namespace ObSL {
                 } catch (const std::invalid_argument &) {
                     throw std::runtime_error("Conversion Error: Cannot convert string '" + str + "' to a number.");
                 } catch (const std::out_of_range &) {
-                    throw std::runtime_error("Conversion Error: Number in string is out of range.");
+                    throw std::runtime_error("Conversion Error: Number out of range.");
                 }
             });
         }
@@ -51,7 +47,6 @@ namespace ObSL {
     class MathLib : public Lib {
     public:
         void register_modules(Interpreter &interpreter) override {
-            // Square Root
             interpreter.define_native("sqrt", [](const double x) -> double {
                 if (x < 0.0) {
                     throw std::runtime_error("Math Error: Cannot calculate square root of a negative number.");
@@ -111,8 +106,7 @@ namespace ObSL {
             // map value from an input range to an output range
             interpreter.define_native("map_value",
                                       [](const double val, const double in_min, const double in_max,
-                                         const double out_min,
-                                         const double out_max) -> double {
+                                         const double out_min, const double out_max) -> double {
                                           if (std::abs(in_max - in_min) < 1e-9) return out_min;
                                           return out_min + (val - in_min) * (out_max - out_min) / (in_max - in_min);
                                       });
@@ -159,15 +153,12 @@ namespace ObSL {
                                       [](const std::string &str, const double start,
                                          const double length) -> std::string {
                                           if (std::isnan(start) || std::isnan(length) || str.empty()) return "";
-
                                           const double safe_start = std::clamp(
                                               start, 0.0, static_cast<double>(str.length()));
-                                          const size_t s = static_cast<size_t>(safe_start);
-
+                                          const auto s = static_cast<size_t>(safe_start);
                                           const double safe_len = std::clamp(
                                               length, 0.0, static_cast<double>(str.length() - s));
-                                          const size_t len = static_cast<size_t>(safe_len);
-
+                                          const auto len = static_cast<size_t>(safe_len);
                                           return str.substr(s, len);
                                       });
 
@@ -182,18 +173,16 @@ namespace ObSL {
                 return start < end ? std::string(start, end) : "";
             });
 
-            // string replacement
-            interpreter.define_native("replace",
-                                      [](std::string str, const std::string &search_for,
-                                         const std::string &replace_with) -> std::string {
-                                          if (search_for.empty()) return str;
-                                          size_t pos = 0;
-                                          while ((pos = str.find(search_for, pos)) != std::string::npos) {
-                                              str.replace(pos, search_for.length(), replace_with);
-                                              pos += replace_with.length();
-                                          }
-                                          return str;
-                                      });
+            interpreter.define_native("replace", [](std::string str, const std::string &search_for,
+                                                    const std::string &replace_with) -> std::string {
+                if (search_for.empty()) return str;
+                size_t pos = 0;
+                while ((pos = str.find(search_for, pos)) != std::string::npos) {
+                    str.replace(pos, search_for.length(), replace_with);
+                    pos += replace_with.length();
+                }
+                return str;
+            });
         }
     };
 
@@ -209,7 +198,6 @@ namespace ObSL {
             });
 
             std::istream *in = &interpreter.Get_Stdin();
-            // whitespace delimited word
             interpreter.define_native("read", [in]() -> std::string {
                 if (std::string word; *in >> word) {
                     return word;
@@ -231,7 +219,7 @@ namespace ObSL {
             });
 
             // clock tracking precision
-            interpreter.define_native("clock", [] {
+            interpreter.define_native("clock", []() -> double {
                 const auto now = std::chrono::system_clock::now().time_since_epoch();
                 return static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(now).count()) / 1000.0;
             });
@@ -291,40 +279,34 @@ namespace ObSL {
                     else if constexpr (std::is_same_v<T, bool>) return "bool";
                     else if constexpr (std::is_same_v<T, double>) return "number";
                     else if constexpr (std::is_same_v<T, std::string>) return "string";
-                    else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLCallable> >) return "callable";
-                    else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLArray> >) return "array";
-                    else if constexpr (std::is_same_v<T, std::shared_ptr<ObSLObject> >) return "object";
+                    else if constexpr (std::is_same_v<T, ObSLCallable *>) return "callable";
+                    else if constexpr (std::is_same_v<T, ObSLArray *>) return "array";
+                    else if constexpr (std::is_same_v<T, ObSLObject *>) return "object";
                     else return "unknown";
                 }, val);
             });
 
-            // check if a script object contains a specific field property name
-            interpreter.define_native("has_field",
-                                      [](const std::shared_ptr<ObSLObject> &obj,
-                                         const std::string &field_name) -> bool {
-                                          if (!obj) return false;
-                                          return obj->fields.contains(field_name);
-                                      });
+            // ReSharper disable once CppParameterMayBeConstPtrOrRef
+            interpreter.define_native("has_field", [](ObSLObject *obj, const std::string &field_name) -> bool {
+                if (!obj) return false;
+                return obj->fields.contains(field_name);
+            });
 
-            // returns a script array containing string names of all fields on the object
-            interpreter.define_native("get_fields",
-                                      [](const std::shared_ptr<ObSLObject> &obj) -> std::shared_ptr<ObSLArray> {
-                                          auto arr = std::make_shared<ObSLArray>();
-                                          if (obj) {
-                                              for (const auto &key: obj->fields | std::views::keys) {
-                                                  arr->elements.emplace_back(key);
-                                              }
-                                          }
-                                          return arr;
-                                      });
+            interpreter.define_native("get_fields", [&interpreter](ObSLObject *obj) -> ObSLArray * {
+                const auto arr = interpreter.gc.allocate<ObSLArray>();
+                if (obj) {
+                    for (const auto &key: obj->fields | std::views::keys) {
+                        arr->elements.emplace_back(key);
+                    }
+                }
+                return arr;
+            });
 
-            // returns the number of arguments expected by a function or native callable
-            interpreter.define_native("get_arity", [](const std::shared_ptr<ObSLCallable> &callable) -> double {
+            // ReSharper disable once CppParameterMayBeConstPtrOrRef
+            interpreter.define_native("get_arity", [](ObSLCallable *callable) -> double {
                 if (!callable) return -1.0;
                 return callable->arity();
             });
         }
     };
 } // namespace ObSL
-
-#endif // OBLIBERRY_STDMODULES_H

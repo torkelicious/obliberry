@@ -11,7 +11,6 @@
 
 /*
  * ObSL todo:
- * Garbage collector
  * regex & networking?? (maybe)
  * structs
  * engine intergration
@@ -63,8 +62,8 @@ namespace ObSL {
             Lexer lexer(source);
             const auto tokens = lexer.tokenize();
             Parser parser(tokens);
-            auto statements = parser.parse();
-            m_interpreter.interpret(std::move(statements));
+            const auto statements = parser.parse();
+            m_interpreter.interpret(statements);
             // the interpreter handles runtimeerrors
         } catch (const std::exception &e) {
             std::cerr << "Error: " << e.what() << "\n";
