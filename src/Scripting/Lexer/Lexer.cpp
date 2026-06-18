@@ -123,6 +123,7 @@ namespace ObSL {
             {"foreach", TokenType::FOREACH},
             {"if", TokenType::IF},
             {"in", TokenType::IN},
+            {"is", TokenType::IS},
             {"null", TokenType::NULL_},
             {"or", TokenType::OR},
             {"print", TokenType::PRINT},

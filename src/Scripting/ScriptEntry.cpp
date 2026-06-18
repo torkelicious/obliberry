@@ -12,6 +12,7 @@
 /*
  * ObSL todo:
  * engine intergration
+ * IS keyword
  * lsp
  * docs lol
  */

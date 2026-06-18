@@ -205,5 +205,13 @@ while (idx < 2000) {
 }
 pass_suite("GC Threshold & Cyclic Tracking");
 
+
 var elapsed = clock() - start_time;
 println "SUCCESS: " + to_string(suites_passed) + " suites passed in " + to_fixed(elapsed, 3) + " seconds.";
+
+println " quicktest";
+var value = 10;
+
+if (value is number) {
+    println "Number";
+}
