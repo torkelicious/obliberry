@@ -346,21 +346,27 @@ namespace ObSL {
     }
 
     Value Interpreter::evaluate_type_check(const TypeCheckExpr *expr) {
-        Value value = evaluate(expr->left.get());
+        const Value value = evaluate(expr->left.get());
 
         if (expr->type_name == "number") {
             return std::holds_alternative<double>(value);
-        } else if (expr->type_name == "string") {
+        }
+        if (expr->type_name == "string") {
             return std::holds_alternative<std::string>(value);
-        } else if (expr->type_name == "boolean" || expr->type_name == "bool") {
+        }
+        if (expr->type_name == "boolean" || expr->type_name == "bool") {
             return std::holds_alternative<bool>(value);
-        } else if (expr->type_name == "null" || expr->type_name == "nil") {
+        }
+        if (expr->type_name == "null" || expr->type_name == "nil") {
             return std::holds_alternative<std::monostate>(value);
-        } else if (expr->type_name == "function" || expr->type_name == "fn") {
+        }
+        if (expr->type_name == "function" || expr->type_name == "fn") {
             return std::holds_alternative<ObSLCallable *>(value);
-        } else if (expr->type_name == "array") {
+        }
+        if (expr->type_name == "array") {
             return std::holds_alternative<ObSLArray *>(value);
-        } else if (expr->type_name == "object") {
+        }
+        if (expr->type_name == "object") {
             return std::holds_alternative<ObSLObject *>(value);
         }
 
@@ -464,7 +470,7 @@ namespace ObSL {
     }
 
     void Interpreter::execute_struct_stmt(const StructStmt *stmt) {
-        ObSLStruct *struct_def = gc.allocate<ObSLStruct>(stmt);
+        auto *struct_def = gc.allocate<ObSLStruct>(stmt);
         environment->define(stmt->name.lexeme, struct_def);
     }
 
@@ -668,7 +674,7 @@ namespace ObSL {
     }
 
     Value ObSLStruct::call(Interpreter *interpreter, const std::vector<Value> &arguments, const Token &call_token) {
-        ObSLObject *instance = interpreter->gc.allocate<ObSLObject>();
+        auto *instance = interpreter->gc.allocate<ObSLObject>();
 
         for (size_t i = 0; i < declaration->fields.size(); ++i) {
             const auto &[name, default_value] = declaration->fields[i];

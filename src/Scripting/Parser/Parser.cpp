@@ -592,7 +592,7 @@ namespace ObSL {
         return peek().type == TokenType::EOF_;
     }
 
-    Token Parser::consume(TokenType type, std::string_view message) {
+    Token Parser::consume(const TokenType type, const std::string_view message) {
         if (check(type)) return advance();
         Token error_token = peek();
         // If we hit a block end or EOF on a new line,point the error at the statement on the line before it.
