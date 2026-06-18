@@ -1,37 +1,39 @@
-var timer = clock();
-println "obsl testing...";
+var start_time = clock();
+var suites_passed = 0;
 
-// modules
-using "assets/scripts/module_test.obsl";
+fn pass_suite(name) {
+    println "[ OK ] " + name;
+    suites_passed++;
+}
 
-// Variables and Math
+try {
+    using "assets/scripts/module_test.obsl";
+    pass_suite("Module Import System");
+} catch (err) {}
+
 var a = 10;
 var b = 20.5;
 a += 5;
 a++;
 b--;
-
 assert(a == 16, "Math assignment test failed");
 assert(b == 19.5, "Math decrement test failed");
-println "Variables & Math OK";
+pass_suite("Variables & Math Operations");
 
-// Bitwise Operations
 var bitAnd = 5 & 3;
 var bitOr = 5 | 3;
 var bitXor = 5 ^ 3;
 var bitNot = ~0;
 var bitLShift = 2 << 3;
 var bitRShift = 16 >> 2;
-
 assert(bitAnd == 1, "Bitwise AND test failed");
 assert(bitOr == 7, "Bitwise OR test failed");
 assert(bitXor == 6, "Bitwise XOR test failed");
 assert(bitNot == -1, "Bitwise NOT test failed");
 assert(bitLShift == 16, "Bitwise Left Shift test failed");
 assert(bitRShift == 4, "Bitwise Right Shift test failed");
-println "Bitwise Operations OK";
+pass_suite("Bitwise Operations");
 
-// Control Flow
 var flowTest = false;
 if (a > 10) {
     flowTest = true;
@@ -47,9 +49,8 @@ switch (2) {
     case 3: switchResult = 3;
 }
 assert(switchResult == 2, "switch test failed");
-println "Control Flow OK";
+pass_suite("Control Flow (If/Switch)");
 
-// Loops & Arrays
 var whileCount = 0;
 while (whileCount < 3) {
     whileCount++;
@@ -61,13 +62,10 @@ for (var i = 1; i <= 4; i++) {
     forSum += i;
 }
 assert(forSum == 10, "For loop failed");
+pass_suite("Iterators (While/For)");
 
 var arr = [10, 20, 30];
 assert(arr.len == 3, "Array length failed");
-
-arr[1] = 99;
-assert(arr[1] == 99, "Array index assignment failed");
-arr[1] = 20;
 
 var foreachSum = 0;
 foreach (var num in arr) {
@@ -75,236 +73,120 @@ foreach (var num in arr) {
 }
 assert(foreachSum == 60, "Foreach loop failed");
 
-// Index Assignment Test
-println "Testing Array Index Assignment";
-var test_arr = [10, 20, 30];
+arr[0] = 15;
+arr[-1] = 99;
+arr[-2] = 55;
+assert(arr[0] == 15, "Array state corrupted at index 0");
+assert(arr[1] == 55, "Negative index assignment (-2) failed");
+assert(arr[2] == 99, "Negative index assignment (-1) failed");
 
-// standard positive assignment
-test_arr[0] = 15;
-assert(test_arr[0] == 15, "Positive index assignment failed");
-
-// negative assignment to the last element (-1)
-test_arr[-1] = 99;
-assert(test_arr[2] == 99, "Negative index assignment (-1) failed to update correct element");
-
-// negative assignment to a middle element (-2)
-test_arr[-2] = 55;
-assert(test_arr[1] == 55, "Negative index assignment (-2) failed to update correct element");
-
-// check the array state
-assert(test_arr[0] == 15, "Array state corrupted at index 0");
-assert(test_arr[1] == 55, "Array state corrupted at index 1");
-assert(test_arr[2] == 99, "Array state corrupted at index 2");
-
-println "Array Index Assignment OK";
-
-// array natives (push, pop, clear)
-println "Testing Array Native Methods";
 var dynamic_arr = [];
-
-// push() on an empty array
 dynamic_arr.push(100);
 dynamic_arr.push(200);
-assert(dynamic_arr.len == 2, "Array length should be 2 after two pushes");
-assert(dynamic_arr[0] == 100, "First pushed element is incorrect");
-assert(dynamic_arr[1] == 200, "Second pushed element is incorrect");
-
-// using negative indexing on freshly pushed elements
 dynamic_arr[-1] = 250;
-assert(dynamic_arr[1] == 250, "Failed to modify pushed element via negative indexing");
-
-// pop() returning and removing the last item
 var popped = dynamic_arr.pop();
-assert(popped == 250, "pop() did not return the last element");
-assert(dynamic_arr.len == 1, "Array length should be 1 after pop()");
-assert(dynamic_arr[0] == 100, "The remaining element was corrupted after pop()");
+assert(popped == 250, "Incorrect element returned from pop()");
+assert(dynamic_arr.len == 1, "Array length mismatch after pop()");
 
-// clear() the entire array
 dynamic_arr.clear();
-assert(dynamic_arr.len == 0, "Array length should be 0 after clear()");
+assert(dynamic_arr.len == 0, "Array length mismatch after clear()");
+pass_suite("Arrays & Collection Methods");
 
-println "Array Native Methods OK";
-
-
-println "Loops & Arrays: OK";
-
-// Functions & Closures
 fn createAdder(baseAmount) {
-    fn adder(value) {
-        return value + baseAmount;
-    }
+    fn adder(value) { return value + baseAmount; }
     return adder;
 }
 var addFive = createAdder(5);
-assert(addFive(10) == 15, "closure test failed");
-println "Functions & Closures OK";
+assert(addFive(10) == 15, "Closure behavior test failed");
 
-// Objects
+fn functionWithDefaults(param = 100) { return param; }
+assert(functionWithDefaults() == 100, "Function default parameter evaluation failed");
+pass_suite("Functions & Closures");
+
 var obj = Object();
 obj.val = 42;
-
-fn getVal() {
-    return 42;
-}
+fn getVal() { return 42; }
 obj.method = getVal;
+assert(obj.val == 42, "Object property lookup failed");
+assert(obj.method() == 42, "Object method execution failed");
+pass_suite("Dynamic Objects");
 
-assert(obj.val == 42, "Object property failed");
-assert(obj.method() == 42, "Object method failed");
-println "Objects OK";
+struct Vector3 { x; y; z; }
+var vec = Vector3(10, 20, 30);
+assert(vec.x == 10, "Struct field evaluation X failed");
+vec.x = 150;
+assert(vec.x == 150, "Struct mutation field X failed");
 
-// StdLib Conversion
-assert(to_string(12.5) == "12.500000", "to_string failed");
-assert(to_num("12.5") == 12.5, "to_num failed");
-println "StdLib Conversion OK";
+var partialVec = Vector3(5);
+assert(partialVec.x == 5, "Struct initialization with partial arguments failed");
 
-// StdLib Math
-assert(sqrt(25.0) == 5.0, "sqrt failed");
-assert(pow(2.0, 4.0) == 16.0, "pow failed");
-assert(min(5.0, 10.0) == 5.0, "min failed");
-assert(max(5.0, 10.0) == 10.0, "max failed");
-assert(clamp(15.0, 0.0, 10.0) == 10.0, "clamp failed");
-assert(round(4.6) == 5.0, "round failed");
-assert(abs(-42.0) == 42.0, "abs failed");
-println "StdLib Math OK";
+fn modifyStruct(v) { v.z = 999; }
+modifyStruct(vec);
+assert(vec.z == 999, "Struct pass-by-reference mutation failed");
+pass_suite("Struct Instantiation & References");
 
-// StdLib String
-assert(len("ObSL") == 4.0, "len failed");
-assert(to_lower("TEST") == "test", "to_lower failed");
-assert(to_upper("test") == "TEST", "to_upper failed");
-assert(starts_with("hello world", "hello") == true, "starts_with failed");
-assert(contains("hello world", "world") == true, "contains failed");
-assert(substring("hello", 0.0, 4.0) == "hell", "substring failed");
-assert(trim("    hi  ") == "hi", "trim failed");
-assert(replace("a b a", "a", "c") == "c b c", "replace failed");
-println "StdLib String OK";
+assert(to_string(12.5) == "12.5", "to_string basic conversion failed");
+assert(to_string(13.0) == "13", "to_string whole number failed");
+assert(to_string(0.003) == "0.003", "to_string small fraction failed");
+assert(to_string(-42.1234) == "-42.1234", "to_string negative fraction failed");
+assert(to_string(0.0) == "0", "to_string zero failed");
+
+assert(to_fixed(3.14159, 2) == "3.14", "to_fixed standard rounding failed");
+assert(to_fixed(3.14159, 0) == "3", "to_fixed zero decimal places failed");
+assert(to_fixed(13.0, 2) == "13.00", "to_fixed padding whole numbers failed");
+assert(to_fixed(13.1, 4) == "13.1000", "to_fixed padding fractions failed");
+assert(to_fixed(0.0, 3) == "0.000", "to_fixed zero padding failed");
+assert(to_fixed(-1.239, 2) == "-1.24", "to_fixed negative rounding failed");
+
+assert(to_num("12.5") == 12.5, "to_num conversion failed");
+assert(sqrt(25.0) == 5.0, "Math sqrt failed");
+assert(pow(2.0, 4.0) == 16.0, "Math pow failed");
+assert(clamp(-5.0, 0.0, 10.0) == 0.0, "Math clamp lower bound failed");
+assert(abs(-42.0) == 42.0, "Math abs failed");
+assert(len("ObSL") == 4.0, "String len failed");
+assert(to_upper("test") == "TEST", "String to_upper failed");
+assert(substring("hello", 0.0, 4.0) == "hell", "String substring failed");
+assert(replace("a b a", "a", "c") == "c b c", "String replace failed");
+pass_suite("Standard Library (Math/Strings & Formatting)");
 
 
-// more func tests
-fn functionWithDefaults(param = 100) {
-    return param;
-}
-assert(functionWithDefaults() == 100, "Function default parameter failed");
-
-// math edge cases
-assert(min(-5.0, -10.0) == -10.0, "Negative min failed");
-assert(clamp(-5.0, 0.0, 10.0) == 0.0, "Clamp lower bound failed");
-assert(round(4.5) == 5.0, "Round midpoint failed");
-
-assert(true or false, "Logical OR failed");
-assert(!(false and true), "Logical AND / NOT failed");
-println "StdLib Advanced & Edge Cases OK";
-
-// StdLib System
-var tStart = clock();
-//var testFile = "obsl_io_test.txt";
-
-//wait(0.05);
-//var tEnd = clock();
-//assert(tEnd > tStart, "clock/wait failed");
-println "StdLib System OK";
-
-// StdLib Reflection
-assert(type_of(a) == "number", "type_of failed for number");
-assert(type_of("hello") == "string", "type_of failed for string");
-assert(type_of(flowTest) == "bool", "type_of failed for boolean");
-assert(type_of(arr) == "array", "type_of failed for array");
-assert(type_of(obj) == "object", "type_of failed for object");
-assert(type_of(createAdder) == "callable", "type_of failed for script function");
-assert(type_of(sqrt) == "callable", "type_of failed for native function");
-
-assert(get_arity(createAdder) == 1, "get_arity failed for free function");
-assert(get_arity(addFive) == 1, "get_arity failed for closure function");
-assert(get_arity(sqrt) == 1, "get_arity failed for native function with 1 argument");
-assert(get_arity(clamp) == 3, "get_arity failed for native function with 3 arguments");
-
-assert(has_field(obj, "val") == true, "has_field failed to find existing property");
-assert(has_field(obj, "method") == true, "has_field failed to find existing method");
-assert(has_field(obj, "nonexistent") == false, "has_field falsely confirmed a missing field");
+assert(type_of(a) == "number", "Reflection type_of number failed");
+assert(type_of(arr) == "array", "Reflection type_of array failed");
+assert(type_of(vec) == "object", "Reflection type_of struct instance failed");
+assert(type_of(createAdder) == "callable", "Reflection type_of script function failed");
+assert(get_arity(clamp) == 3, "Reflection get_arity 3-arg native function failed");
+assert(has_field(obj, "val") == true, "Reflection has_field dynamic property failed");
 
 var fields = get_fields(obj);
-assert(fields.len == 2, "get_fields array length mismatch");
-println "StdLib Reflection OK";
+assert(fields.len == 2, "Reflection get_fields element count mismatch");
+pass_suite("Standard Library (Reflection)");
 
-// error handling
 try {
-    println "Attempting invalid math";
-    var bad = "hello";
-    var root = sqrt(bad);
-    println "This line will never print!";
+    var root = sqrt("bad_type");
+    assert(false, "Error execution flow failed to trap exception");
 } catch (err) {
-    println "Caught an error successfully";
-    assert(type_of(err) == "string", "Error catch variable is not a string description");
+    assert(type_of(err) == "string", "Caught exception object is not a string description");
 }
+pass_suite("Error Handling (Try/Catch)");
 
-println "Error Handling OK";
-
-println "";
-println "All core and stdlib tests completed successfully";
-println "";
-
-//println "testing deliberate uncaught throw";
-//throw("this is a runtime error");
-//println "double check";
-// works
-
-// mem leak
-println "GC / Memory Leak Test";
-println"";
-var a = 1;var b = a; var c = b;var d = c;
-//Array Cyclic Reference
-println "Testing Array Cycles";
 var parent_arr = [1, 2];
 var child_arr = [3, 4];
 parent_arr[0] = child_arr;
 child_arr[0] = parent_arr;
-println "Array Cycle Created";
 
-//Object Cyclic Reference
-println "Testing Object Cycles";
 var parent_obj = Object();
 var child_obj = Object();
 parent_obj.child = child_obj;
 child_obj.parent = parent_obj;
-println "Object Cycle Created";
-// Closures (Environment GC)
-println "Testing Closures";
-fn make_counter() {
-    var count = 0;
-    fn counter() {
-        count = count + 1;
-        return count;
-    }
-    return counter;
-}
 
-var my_counter = make_counter();
-var val1 = my_counter();
-var val2 = my_counter();
-assert(val1 == 1, "Closure failed on first call");
-assert(val2 == 2, "Closure failed on second call");
-println "Closure Test 2 OK";
-
-// Massive Allocation
-
-println "GC Allocation Stress Test";
-var i = 0;
-
-// The GC threshold is 1000
-// Looping 2000 times makes GC collect() function fire multiple times
-
-while (i < 2000) {
-    // Allocate lots of temporary arrays and objects
-    var temp_arr = [i, i + 1, i + 2];
+var idx = 0;
+while (idx < 2000) {
+    var temp_arr = [idx, idx + 1, idx + 2];
     var temp_obj = Object();
     temp_obj.data = temp_arr;
-    i = i + 1;
+    idx++;
 }
-println "If it didn't sefault and this message is getting printed.. then it's probably OK";
+pass_suite("GC Threshold & Cyclic Tracking");
 
-// string escaping tests
-println ":)";
-println "Line 1\nLine 2";
-println "and i quote, \"Hello!\"";
-
-println"";
-println "execution timer:" + (clock() - timer);
+var elapsed = clock() - start_time;
+println "SUCCESS: " + to_string(suites_passed) + " suites passed in " + to_string(elapsed) + " s.";

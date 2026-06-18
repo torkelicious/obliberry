@@ -115,6 +115,7 @@ namespace ObSL {
             {"catch", TokenType::CATCH},
             {"default", TokenType::DEFAULT},
             {"switch", TokenType::SWITCH},
+            {"struct", TokenType::STRUCT},
             {"else", TokenType::ELSE},
             {"false", TokenType::FALSE_},
             {"fn", TokenType::FN},

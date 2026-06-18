@@ -10,6 +10,8 @@
 #include <format>
 #include <ranges>
 #include <unordered_map>
+
+#include "ast.h"
 #include "Scripting/Lexer/Lexer.h"
 #include "Scripting/GarbageCollector.h"
 
@@ -77,7 +79,7 @@ namespace ObSL {
 
     enum class StmtType : uint8_t {
         Using, Expression, Print, Println, Block, Function, If,
-        Switch, While, Foreach, Return, Break, Var, TryCatch
+        Switch, While, Foreach, Return, Break, Var, TryCatch, Struct
     };
 
     // expression base
@@ -129,6 +131,7 @@ namespace ObSL {
     struct BreakStmt;
     struct VarStmt;
     struct TryCatchStmt;
+    struct StructStmt;
 
     // Expressions
 
@@ -634,6 +637,47 @@ namespace ObSL {
         [[nodiscard]] std::string to_string() const override {
             return std::format("[TryCatchStmt: try {} catch({}) {}]\n",
                                try_body->to_string(), exception_var, catch_body->to_string());
+        }
+    };
+
+    struct StructField {
+        Token name;
+        std::unique_ptr<Expr> default_value;
+    };
+
+    struct StructStmt : public Stmt {
+        Token name;
+        std::vector<StructField> fields;
+
+        StructStmt(const Token &name, std::vector<StructField> fields)
+            : name(name), fields(std::move(fields)) {
+        }
+
+        [[nodiscard]] StmtType type() const noexcept override { return StmtType::Struct; }
+        [[nodiscard]] std::string to_string() const override { return std::format("[StructStmt: {}]\n", name.lexeme); }
+    };
+
+    struct ObSLStruct : public ObSLCallable {
+        const StructStmt *declaration;
+
+        ObSLStruct(const StructStmt *declaration) : declaration(declaration) {
+        }
+
+        void mark() override {
+            is_marked = true;
+        }
+
+        [[nodiscard]] int arity() const override { return declaration->fields.size(); }
+
+        [[nodiscard]] int min_arity() const override {
+            return 0;
+        }
+
+
+        Value call(Interpreter *interpreter, const std::vector<Value> &arguments, const Token &call_token) override;
+
+        [[nodiscard]] std::string to_string() const override {
+            return std::format("<struct {}>", declaration->name.lexeme);
         }
     };
 } // namespace ObSL

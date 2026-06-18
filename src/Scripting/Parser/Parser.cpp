@@ -17,6 +17,7 @@ namespace ObSL {
 
     std::unique_ptr<Stmt> Parser::parse_statement() {
         if (match({TokenType::USING})) return parse_using_statement();
+        if (match({TokenType::STRUCT})) return parse_struct_statement();
         if (match({TokenType::FN})) return parse_function();
         if (match({TokenType::VAR})) return parse_var_statement();
         if (match({TokenType::TRY})) return parse_try_statement();
@@ -633,5 +634,22 @@ namespace ObSL {
             exception_var,
             std::move(catch_body)
         );
+    }
+
+    std::unique_ptr<Stmt> Parser::parse_struct_statement() {
+        Token name = consume(TokenType::IDENTIFIER, "Expect struct name.");
+        consume(TokenType::LEFT_BRACE, "Expect '{' before struct body.");
+        std::vector<StructField> fields;
+        while (!check(TokenType::RIGHT_BRACE) && !is_at_end()) {
+            const Token field_name = consume(TokenType::IDENTIFIER, "Expect field name.");
+            std::unique_ptr<Expr> default_val = nullptr;
+            if (match({TokenType::ASSIGN})) {
+                default_val = parse_expression();
+            }
+            consume(TokenType::SEMICOLON, "Expect ';' after field declaration.");
+            fields.push_back(StructField{field_name, std::move(default_val)});
+        }
+        consume(TokenType::RIGHT_BRACE, "Expect '}' after struct body.");
+        return std::make_unique<StructStmt>(name, std::move(fields));
     }
 } // namespace ObSL

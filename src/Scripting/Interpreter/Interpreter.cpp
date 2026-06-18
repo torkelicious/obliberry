@@ -59,6 +59,7 @@ namespace ObSL {
             case StmtType::Return: return execute_return_stmt(static_cast<const ReturnStmt *>(stmt));
             case StmtType::Function: return execute_function_stmt(static_cast<const FunctionStmt *>(stmt));
             case StmtType::TryCatch: return execute_try_catch_stmt(static_cast<const TryCatchStmt *>(stmt));
+            case StmtType::Struct: return execute_struct_stmt(static_cast<const StructStmt *>(stmt));
         }
         throw std::runtime_error("Unknown statement type in interpreter.");
     }
@@ -438,6 +439,11 @@ namespace ObSL {
         }
     }
 
+    void Interpreter::execute_struct_stmt(const StructStmt *stmt) {
+        ObSLStruct *struct_def = gc.allocate<ObSLStruct>(stmt);
+        environment->define(stmt->name.lexeme, struct_def);
+    }
+
 
     void Interpreter::execute_block(const std::span<const std::unique_ptr<Stmt>> statements,
                                     std::shared_ptr<Environment> block_env) {
@@ -635,5 +641,24 @@ namespace ObSL {
 
     std::string ObSLFunction::to_string() const {
         return std::format("<fn {}>", declaration->name);
+    }
+
+    Value ObSLStruct::call(Interpreter *interpreter, const std::vector<Value> &arguments, const Token &call_token) {
+        ObSLObject *instance = interpreter->gc.allocate<ObSLObject>();
+
+        for (size_t i = 0; i < declaration->fields.size(); ++i) {
+            const auto &field = declaration->fields[i];
+            std::string field_name = std::string(field.name.lexeme);
+
+            if (i < arguments.size()) {
+                instance->fields[field_name] = arguments[i];
+            } else if (field.default_value) {
+                instance->fields[field_name] = interpreter->evaluate(field.default_value.get());
+            } else {
+                instance->fields[field_name] = std::monostate{};
+            }
+        }
+
+        return instance;
     }
 } // namespace ObSL

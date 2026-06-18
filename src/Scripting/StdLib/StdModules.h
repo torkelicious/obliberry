@@ -22,8 +22,16 @@ namespace ObSL {
     class ConversionLib : public Lib {
     public:
         void register_modules(Interpreter &interpreter) override {
+            // default smart string conversion
             interpreter.define_native("to_string", [](const double val) -> std::string {
-                return std::to_string(val);
+                return std::format("{}", val);
+            });
+
+            // formats to a specific number of decimal places
+            interpreter.define_native("to_fixed", [](const double val, const double decimals) -> std::string {
+                int prec = static_cast<int>(decimals);
+                if (prec < 0) prec = 0;
+                return std::format("{:.{}f}", val, prec);
             });
 
             interpreter.define_native("to_num", [](const std::string &str) -> double {

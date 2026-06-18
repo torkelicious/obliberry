@@ -75,6 +75,7 @@ namespace ObSL {
         }
 
         friend class ObSLFunction;
+        friend struct ObSLStruct;
 
     private:
         static constexpr std::size_t prune_interval = 64;
@@ -92,6 +93,7 @@ namespace ObSL {
         std::size_t m_env_insert_count = 0;
         std::ostream &m_stdout;
         std::istream &m_stdin;
+
 
         void execute(const Stmt *stmt);
 
@@ -160,6 +162,8 @@ namespace ObSL {
         void execute_using_stmt(const UsingStmt *stmt);
 
         void execute_try_catch_stmt(const TryCatchStmt *stmt);
+
+        void execute_struct_stmt(const StructStmt *stmt);
     };
 
     struct GCProtectScope {
@@ -215,7 +219,7 @@ namespace ObSL {
     template<typename F>
     void Interpreter::define_native(std::string name, F &&body) {
         using DecayedF = std::decay_t<F>;
-        if constexpr (std::is_pointer_v<DecayedF> &&std::is_function_v<std::remove_pointer_t<DecayedF> >) {
+        if constexpr (std::is_pointer_v<DecayedF> && std::is_function_v<std::remove_pointer_t<DecayedF> >) {
             using Traits = native_fn_traits<DecayedF>;
             auto wrapped = [body = std::forward<F>(body)](Interpreter *, const std::vector<Value> &args) -> Value {
                 return call_native_helper<DecayedF, Traits>(body, args, std::make_index_sequence<Traits::arity>{});
