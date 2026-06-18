@@ -52,7 +52,7 @@ namespace ObSL {
             for (auto &val: elements) {
                 mark_value(val);
             }
-        };
+        }
     };
 
     struct ObSLCallable : public GCObject {

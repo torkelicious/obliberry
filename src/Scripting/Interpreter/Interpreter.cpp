@@ -8,6 +8,8 @@
 #include <sstream>
 #include <memory_resource>
 #include <ranges>
+#include <unordered_set>
+
 #include "Scripting/Parser/Parser.h"
 
 using namespace std::string_view_literals;
@@ -83,12 +85,12 @@ namespace ObSL {
     }
 
     void Interpreter::execute_function_stmt(const FunctionStmt *stmt) {
-        ObSLFunction *function = gc.allocate<ObSLFunction>(stmt, environment);
+        auto *function = gc.allocate<ObSLFunction>(stmt, environment);
         environment->define(stmt->name, function);
     }
 
     Value Interpreter::evaluate_call(const CallExpr *expr) {
-        GCProtectScope scope(this);
+        const GCProtectScope scope(this);
 
         const Value callee = evaluate(expr->callee.get());
         scope.protect(callee);
@@ -152,8 +154,8 @@ namespace ObSL {
     }
 
     Value Interpreter::evaluate_array(const ArrayExpr *expr) {
-        GCProtectScope scope(this);
-        ObSLArray *array = gc.allocate<ObSLArray>();
+        const GCProtectScope scope(this);
+        auto *array = gc.allocate<ObSLArray>();
         scope.protect(array);
 
         array->elements.reserve(expr->elements.size());
@@ -166,7 +168,7 @@ namespace ObSL {
     }
 
     Value Interpreter::evaluate_index(const IndexExpr *expr) {
-        GCProtectScope scope(this);
+        const GCProtectScope scope(this);
         const Value callee = evaluate(expr->callee.get());
         scope.protect(callee);
         const Value index_val = evaluate(expr->index.get());
@@ -195,13 +197,20 @@ namespace ObSL {
 
         if (std::holds_alternative<ObSLArray *>(callee)) {
             auto array = std::get<ObSLArray *>(callee);
-            if (!std::holds_alternative<double>(index_val))
-                throw RuntimeError(
-                    expr->bracket, "Array index must be a number.");
+
+            if (!std::holds_alternative<double>(index_val)) {
+                throw RuntimeError(expr->bracket, "Array index must be a number.");
+            }
             int index = static_cast<int>(std::get<double>(index_val));
-            if (index < 0 || index >= array->elements.size())
-                throw RuntimeError(
-                    expr->bracket, "Array index out of bounds.");
+            int array_size = static_cast<int>(array->elements.size());
+
+            // negative indexing
+            if (index < 0) {
+                index += array_size;
+            }
+            if (index < 0 || index >= array_size) {
+                throw RuntimeError(expr->bracket, "Array index out of bounds.");
+            }
             array->elements[index] = value;
             return value;
         }
@@ -209,7 +218,7 @@ namespace ObSL {
     }
 
     Value Interpreter::evaluate_binary(const BinaryExpr *expr) {
-        GCProtectScope scope(this);
+        const GCProtectScope scope(this);
         const Value lhs = evaluate(expr->left.get());
         scope.protect(lhs);
         const Value rhs = evaluate(expr->right.get());
@@ -383,7 +392,7 @@ namespace ObSL {
         module_asts.push_back(parser.parse());
         const auto &statements = module_asts.back();
 
-        ObSLObject *module_obj = gc.allocate<ObSLObject>();
+        auto *module_obj = gc.allocate<ObSLObject>();
         GCProtectScope scope(this);
         scope.protect(module_obj);
 
@@ -517,7 +526,31 @@ namespace ObSL {
 
         if (std::holds_alternative<ObSLArray *>(obj)) {
             const auto array = std::get<ObSLArray *>(obj);
-            if (expr->name == "len") return Value(static_cast<double>(array->elements.size()));
+            if (expr->name == "len") return static_cast<double>(array->elements.size());
+            if (expr->name == "push") {
+                auto push_fn = [array](Interpreter *, const std::vector<Value> &args)-> Value {
+                    array->elements.push_back(args[0]);
+                    return args[0];
+                };
+                return gc.allocate<NativeFunction>(1, std::move(push_fn), "push");
+            }
+            if (expr->name == "pop") {
+                auto pop_fn = [array](Interpreter *, const std::vector<Value> &)-> Value {
+                    if (array->elements.empty()) return std::monostate{}; // return null if empty
+                    Value val = array->elements.back();
+                    array->elements.pop_back();
+                    return val;
+                };
+                return gc.allocate<NativeFunction>(0, std::move(pop_fn), "pop");
+            }
+            if (expr->name == "clear") {
+                auto clear_fn = [array](Interpreter *, const std::vector<Value> &)-> Value {
+                    array->elements.clear();
+                    return std::monostate{};
+                };
+                return gc.allocate<NativeFunction>(0, std::move(clear_fn), "clear");
+            }
+
             throw RuntimeError(Token{TokenType::IDENTIFIER, expr->name, 0, 0, 0, 0},
                                std::format("Undefined property '{}' on Array.", expr->name));
         }
@@ -543,7 +576,7 @@ namespace ObSL {
     }
 
     Value Interpreter::evaluate_set(const SetExpr *expr) {
-        GCProtectScope scope(this);
+        const GCProtectScope scope(this);
         const Value obj = evaluate(expr->obj.get());
         scope.protect(obj);
 

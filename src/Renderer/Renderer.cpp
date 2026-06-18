@@ -145,6 +145,7 @@ void Renderer::BindLightmap(Shader *shader) const {
     if (m_Lightmap &&m_Lightmap
 
 
+
     ->
     texture
     )

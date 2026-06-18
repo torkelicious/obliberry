@@ -74,6 +74,58 @@ foreach (var num in arr) {
     foreachSum += num;
 }
 assert(foreachSum == 60, "Foreach loop failed");
+
+// Index Assignment Test
+println "Testing Array Index Assignment";
+var test_arr = [10, 20, 30];
+
+// standard positive assignment
+test_arr[0] = 15;
+assert(test_arr[0] == 15, "Positive index assignment failed");
+
+// negative assignment to the last element (-1)
+test_arr[-1] = 99;
+assert(test_arr[2] == 99, "Negative index assignment (-1) failed to update correct element");
+
+// negative assignment to a middle element (-2)
+test_arr[-2] = 55;
+assert(test_arr[1] == 55, "Negative index assignment (-2) failed to update correct element");
+
+// check the array state
+assert(test_arr[0] == 15, "Array state corrupted at index 0");
+assert(test_arr[1] == 55, "Array state corrupted at index 1");
+assert(test_arr[2] == 99, "Array state corrupted at index 2");
+
+println "Array Index Assignment OK";
+
+// array natives (push, pop, clear)
+println "Testing Array Native Methods";
+var dynamic_arr = [];
+
+// push() on an empty array
+dynamic_arr.push(100);
+dynamic_arr.push(200);
+assert(dynamic_arr.len == 2, "Array length should be 2 after two pushes");
+assert(dynamic_arr[0] == 100, "First pushed element is incorrect");
+assert(dynamic_arr[1] == 200, "Second pushed element is incorrect");
+
+// using negative indexing on freshly pushed elements
+dynamic_arr[-1] = 250;
+assert(dynamic_arr[1] == 250, "Failed to modify pushed element via negative indexing");
+
+// pop() returning and removing the last item
+var popped = dynamic_arr.pop();
+assert(popped == 250, "pop() did not return the last element");
+assert(dynamic_arr.len == 1, "Array length should be 1 after pop()");
+assert(dynamic_arr[0] == 100, "The remaining element was corrupted after pop()");
+
+// clear() the entire array
+dynamic_arr.clear();
+assert(dynamic_arr.len == 0, "Array length should be 0 after clear()");
+
+println "Array Native Methods OK";
+
+
 println "Loops & Arrays: OK";
 
 // Functions & Closures
@@ -191,7 +243,7 @@ println "All core and stdlib tests completed successfully";
 println "";
 
 //println "testing deliberate uncaught throw";
-//throw("this is a runtime error...");
+//throw("this is a runtime error");
 //println "double check";
 // works
 
@@ -247,6 +299,12 @@ while (i < 2000) {
     temp_obj.data = temp_arr;
     i = i + 1;
 }
+println "If it didn't sefault and this message is getting printed.. then it's probably OK";
+
+// string escaping tests
+println ":)";
+println "Line 1\nLine 2";
+println "and i quote, \"Hello!\"";
 
 println"";
 println "execution timer:" + (clock() - timer);

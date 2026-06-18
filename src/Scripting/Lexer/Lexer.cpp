@@ -1,8 +1,8 @@
 #include "Lexer.h"
 #include <cctype>
-#include <iostream>
 #include <unordered_map>
 #include <format>
+#include "Scripting/Interpreter/Natives.h"
 
 namespace ObSL {
     Lexer::Lexer(const std::string_view source) : source(source) {
@@ -145,37 +145,51 @@ namespace ObSL {
     }
 
     Token Lexer::read_string() {
-        const size_t start_col = column;
-        const size_t str_start = current;
-        // support ' or "
-        const char quote_type = advance();
-        while (peek() != quote_type && !is_at_end()) {
+        const char quote_type = peek();
+        const auto start_pos = static_cast<uint32_t>(current);
+        const auto start_col = static_cast<uint16_t>(column);
+        advance();
+        while (!is_at_end() && peek() != quote_type) {
             if (peek() == '\n') {
+                advance();
                 line++;
-                column = 0;
+                column = 1;
+                continue;
+            }
+            if (peek() == '\\') {
+                advance();
+                if (!is_at_end()) {
+                    if (peek() == '\n') {
+                        advance();
+                        line++;
+                        column = 1;
+                    } else {
+                        advance();
+                    }
+                    continue;
+                }
             }
             advance();
         }
         if (is_at_end()) {
-            std::cerr << std::format("line: {} unterminated string at column: {}\n", line, column);
-            return Token{
-                TokenType::EOF_, "", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
-                static_cast<uint32_t>(str_start),
-                static_cast<uint32_t>(current)
-            };
+            throw RuntimeError(Token{
+                                   TokenType::UNKNOWN, "", static_cast<uint16_t>(line),
+                                   static_cast<uint16_t>(start_col), static_cast<uint32_t>(current)
+                               }, "Unterminated string.");
         }
-        advance(); // consume the closing quote
-        const std::string_view value = source.substr(str_start + 1, current - str_start - 2);
+        advance();
         return Token{
-            TokenType::STRING, value, static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
-            static_cast<uint32_t>(str_start),
+            TokenType::STRING,
+            std::string_view(&source[start_pos], current - start_pos),
+            static_cast<uint16_t>(line),
+            static_cast<uint16_t>(start_col),
             static_cast<uint32_t>(current)
         };
     }
 
     Token Lexer::read_operator_or_symbol() {
-        const size_t start_col = column;
-        const size_t start_pos = current;
+        const uint16_t start_col = column;
+        const uint32_t start_pos = current;
         switch (advance()) {
             case '+':
                 if (peek() == '+') {

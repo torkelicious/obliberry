@@ -30,7 +30,7 @@ namespace ObSL {
         ~GarbageCollector() {
             const GCObject *obj = first_obj;
             while (obj != nullptr) {
-                GCObject *next = obj->next;
+                const GCObject *next = obj->next;
                 delete obj;
                 obj = next;
             }

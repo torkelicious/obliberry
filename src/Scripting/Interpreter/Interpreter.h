@@ -28,7 +28,7 @@ namespace ObSL {
             });
 
             StdLib std_lib;
-            std_lib.register_modules(*this);
+            ObSL::StdLib::register_modules(*this);
         }
 
         ~Interpreter() {

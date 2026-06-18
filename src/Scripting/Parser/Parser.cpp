@@ -147,7 +147,7 @@ namespace ObSL {
                     }
                 }
 
-                params.emplace_back(Param{param_name, std::move(default_value)});
+                params.emplace_back(param_name, std::move(default_value));
             } while (match(TokenType::COMMA));
         }
         consume(TokenType::RIGHT_PAREN, "Expect ')' after parameters.");
@@ -286,18 +286,21 @@ namespace ObSL {
         }
 
         if (match({TokenType::STRING})) {
-            const Token &tok = previous();
+            Token tok = previous();
             std::string processed_string;
-            processed_string.reserve(tok.lexeme.size());
-
-            for (size_t i = 0; i < tok.lexeme.size(); ++i) {
-                if (tok.lexeme[i] == '\\' && i + 1 < tok.lexeme.size()) {
+            processed_string.reserve(tok.lexeme.size() > 2 ? tok.lexeme.size() - 2 : 0);
+            for (size_t i = 1; i < tok.lexeme.size() - 1; ++i) {
+                if (tok.lexeme[i] == '\\' && i + 1 < tok.lexeme.size() - 1) {
                     switch (const char next = tok.lexeme[i + 1]) {
                         case 'n': processed_string += '\n';
                             break;
                         case 't': processed_string += '\t';
                             break;
                         case 'r': processed_string += '\r';
+                            break;
+                        case '0': processed_string += '\0';
+                            break;
+                        case 'b': processed_string += '\b';
                             break;
                         case '\\': processed_string += '\\';
                             break;
@@ -315,9 +318,8 @@ namespace ObSL {
                     processed_string += tok.lexeme[i];
                 }
             }
-            return std::make_unique<LiteralExpr>(tok, Value(std::move(processed_string)));
+            return std::make_unique<LiteralExpr>(tok, Value(processed_string));
         }
-
 
         if (match({TokenType::IDENTIFIER})) {
             return std::make_unique<VariableExpr>(previous());
@@ -357,9 +359,10 @@ namespace ObSL {
         consume(TokenType::SEMICOLON, "Expect ';' after using statement");
 
         std::string processed_path;
-        processed_path.reserve(path_token.lexeme.size());
-        for (size_t i = 0; i < path_token.lexeme.size(); ++i) {
-            if (path_token.lexeme[i] == '\\' && i + 1 < path_token.lexeme.size()) {
+        processed_path.reserve(path_token.lexeme.size() > 2 ? path_token.lexeme.size() - 2 : 0);
+
+        for (size_t i = 1; i < path_token.lexeme.size() - 1; ++i) {
+            if (path_token.lexeme[i] == '\\' && i + 1 < path_token.lexeme.size() - 1) {
                 switch (const char next = path_token.lexeme[i + 1]) {
                     case 'n': processed_path += '\n';
                         break;
