@@ -660,7 +660,7 @@ namespace ObSL {
     struct ObSLStruct : public ObSLCallable {
         const StructStmt *declaration;
 
-        ObSLStruct(const StructStmt *declaration) : declaration(declaration) {
+        explicit ObSLStruct(const StructStmt *declaration) : declaration(declaration) {
         }
 
         void mark() override {

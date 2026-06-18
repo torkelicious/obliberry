@@ -14,6 +14,8 @@
 #include <string>
 #include <thread>
 #include <format>
+#include <regex>
+
 #include "Scripting/Interpreter/Interpreter.h"
 #include "Scripting/StdLib/StdLib.h"
 
@@ -272,6 +274,65 @@ namespace ObSL {
                 }
                 return seconds;
             });
+        }
+    };
+
+    // REGEX LIBRARY
+    class RegexLib : public Lib {
+    public:
+        void register_modules(Interpreter &interpreter) override {
+            // Checks if the pattern matches the entire string
+            interpreter.define_native("regex_match", [](const std::string &text, const std::string &pattern) -> bool {
+                try {
+                    return std::regex_match(text, std::regex(pattern));
+                } catch (const std::regex_error &e) {
+                    throw std::runtime_error(std::format("Regex Pattern Error: {}", e.what()));
+                }
+            });
+
+            // Checks if the pattern matches part of the string
+            interpreter.define_native("regex_search", [](const std::string &text, const std::string &pattern) -> bool {
+                try {
+                    return std::regex_search(text, std::regex(pattern));
+                } catch (const std::regex_error &e) {
+                    throw std::runtime_error(std::format("Regex Pattern Error: {}", e.what()));
+                }
+            });
+
+            // Replaces all occurrences matching the pattern
+            interpreter.define_native("regex_replace",
+                                      [](const std::string &text, const std::string &pattern,
+                                         const std::string &replacement) -> std::string {
+                                          try {
+                                              return std::regex_replace(text, std::regex(pattern), replacement);
+                                          } catch (const std::regex_error &e) {
+                                              throw std::runtime_error(
+                                                  std::format("Regex Pattern Error: {}", e.what()));
+                                          }
+                                      });
+
+            // finds all matches and returns them as an ObSLArray
+            interpreter.define_native("regex_find_all",
+                                      [&interpreter](const std::string &text,
+                                                     const std::string &pattern) -> ObSLArray * {
+                                          try {
+                                              const std::regex re(pattern);
+                                              const auto arr = interpreter.gc.allocate<ObSLArray>();
+
+                                              const auto matches_begin = std::sregex_iterator(
+                                                  text.begin(), text.end(), re);
+                                              const auto matches_end = std::sregex_iterator();
+
+                                              for (std::sregex_iterator i = matches_begin; i != matches_end; ++i) {
+                                                  const std::smatch &match = *i;
+                                                  arr->elements.emplace_back(match.str());
+                                              }
+                                              return arr;
+                                          } catch (const std::regex_error &e) {
+                                              throw std::runtime_error(
+                                                  std::format("Regex Pattern Error: {}", e.what()));
+                                          }
+                                      });
         }
     };
 

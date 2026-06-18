@@ -24,6 +24,7 @@ namespace ObSL {
         MathLib().register_modules(interpreter);
         StringLib().register_modules(interpreter);
         SystemLib().register_modules(interpreter);
+        RegexLib().register_modules(interpreter);
         Reflection().register_modules(interpreter);
     }
 } // ObSL

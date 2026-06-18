@@ -125,6 +125,24 @@ modifyStruct(vec);
 assert(vec.z == 999, "Struct pass-by-reference mutation failed");
 pass_suite("Struct Instantiation & References");
 
+assert(regex_match("12345", "^\\d+$") == true, "regex_match exact true failed");
+assert(regex_match("123a45", "^\\d+$") == false, "regex_match exact false failed");
+assert(regex_search("error code: 404", "\\d+") == true, "regex_search pattern find failed");
+assert(regex_search("hello world", "\\d+") == false, "regex_search pattern negative failed");
+var clean = regex_replace("price is 100 dollars", "\\d+", "99");
+assert(clean == "price is 99 dollars", "regex_replace digits failed");
+var matches = regex_find_all("apples, oranges, bananas", "[a-zA-Z]+");
+assert(matches.len == 3.0, "regex_find_all length failed");
+assert(matches[0] == "apples", "regex_find_all index 0 failed");
+assert(matches[1] == "oranges", "regex_find_all index 1 failed");
+assert(matches[2] == "bananas", "regex_find_all index 2 failed");
+
+try {
+    regex_match("test", "([a-z]");
+    assert(false, "Failed to trap invalid regex syntax error");
+} catch (err) {}
+pass_suite("Standard Library (Regex Validation)");
+
 assert(to_string(12.5) == "12.5", "to_string basic conversion failed");
 assert(to_string(13.0) == "13", "to_string whole number failed");
 assert(to_string(0.003) == "0.003", "to_string small fraction failed");
@@ -148,7 +166,6 @@ assert(to_upper("test") == "TEST", "String to_upper failed");
 assert(substring("hello", 0.0, 4.0) == "hell", "String substring failed");
 assert(replace("a b a", "a", "c") == "c b c", "String replace failed");
 pass_suite("Standard Library (Math/Strings & Formatting)");
-
 
 assert(type_of(a) == "number", "Reflection type_of number failed");
 assert(type_of(arr) == "array", "Reflection type_of array failed");
@@ -189,4 +206,4 @@ while (idx < 2000) {
 pass_suite("GC Threshold & Cyclic Tracking");
 
 var elapsed = clock() - start_time;
-println "SUCCESS: " + to_string(suites_passed) + " suites passed in " + to_string(elapsed) + " s.";
+println "SUCCESS: " + to_string(suites_passed) + " suites passed in " + to_fixed(elapsed, 3) + " seconds.";

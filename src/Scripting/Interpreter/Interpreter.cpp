@@ -647,13 +647,13 @@ namespace ObSL {
         ObSLObject *instance = interpreter->gc.allocate<ObSLObject>();
 
         for (size_t i = 0; i < declaration->fields.size(); ++i) {
-            const auto &field = declaration->fields[i];
-            std::string field_name = std::string(field.name.lexeme);
+            const auto &[name, default_value] = declaration->fields[i];
+            auto field_name = std::string(name.lexeme);
 
             if (i < arguments.size()) {
                 instance->fields[field_name] = arguments[i];
-            } else if (field.default_value) {
-                instance->fields[field_name] = interpreter->evaluate(field.default_value.get());
+            } else if (default_value) {
+                instance->fields[field_name] = interpreter->evaluate(default_value.get());
             } else {
                 instance->fields[field_name] = std::monostate{};
             }

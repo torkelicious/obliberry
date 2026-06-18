@@ -27,8 +27,7 @@ namespace ObSL {
                 return this->gc.allocate<ObSLObject>();
             });
 
-            StdLib std_lib;
-            ObSL::StdLib::register_modules(*this);
+            StdLib::register_modules(*this);
         }
 
         ~Interpreter() {
@@ -219,7 +218,7 @@ namespace ObSL {
     template<typename F>
     void Interpreter::define_native(std::string name, F &&body) {
         using DecayedF = std::decay_t<F>;
-        if constexpr (std::is_pointer_v<DecayedF> && std::is_function_v<std::remove_pointer_t<DecayedF> >) {
+        if constexpr (std::is_pointer_v<DecayedF> &&std::is_function_v<std::remove_pointer_t<DecayedF> >) {
             using Traits = native_fn_traits<DecayedF>;
             auto wrapped = [body = std::forward<F>(body)](Interpreter *, const std::vector<Value> &args) -> Value {
                 return call_native_helper<DecayedF, Traits>(body, args, std::make_index_sequence<Traits::arity>{});
