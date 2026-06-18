@@ -11,7 +11,6 @@
 
 /*
  * ObSL todo:
- * regex & networking?? (maybe)
  * engine intergration
  * lsp
  * docs lol
