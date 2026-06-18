@@ -74,7 +74,7 @@ namespace ObSL {
 
     enum class ExprType : uint8_t {
         Call, Literal, Binary, Logical, Grouping, Unary, Variable,
-        Assignment, Update, Array, Index, IndexAssignment, Get, Set
+        Assignment, Update, Array, Index, IndexAssignment, Get, Set, TypeCheck
     };
 
     enum class StmtType : uint8_t {
@@ -116,6 +116,7 @@ namespace ObSL {
     struct IndexAssignmentExpr;
     struct GetExpr;
     struct SetExpr;
+    struct TypeCheckExpr;
     // stmts
     struct UsingStmt;
     struct ExpressionStmt;
@@ -397,6 +398,21 @@ namespace ObSL {
 
         [[nodiscard]] std::string to_string() const override {
             return std::format("(. {} {} {})", obj->to_string(), name, value->to_string());
+        }
+    };
+
+    struct TypeCheckExpr : public Expr {
+        std::unique_ptr<Expr> left;
+        std::string type_name;
+
+        TypeCheckExpr(std::unique_ptr<Expr> left, std::string type_name)
+            : left(std::move(left)), type_name(std::move(type_name)) {
+        }
+
+        [[nodiscard]] ExprType type() const noexcept override { return ExprType::TypeCheck; }
+
+        [[nodiscard]] std::string to_string() const override {
+            return "(" + left->to_string() + " is " + type_name + ")";
         }
     };
 

@@ -49,6 +49,8 @@ namespace ObSL {
 
         std::unique_ptr<Expr> parse_equality();
 
+        std::unique_ptr<Expr> parse_type_check();
+
         std::unique_ptr<Expr> parse_comparison();
 
         std::unique_ptr<Expr> parse_unary();

@@ -78,6 +78,7 @@ namespace ObSL {
             case ExprType::IndexAssignment: return evaluate_index_assignment(
                     static_cast<const IndexAssignmentExpr *>(expr));
             case ExprType::Logical: return evaluate_logical(static_cast<const LogicalExpr *>(expr));
+            case ExprType::TypeCheck: return evaluate_type_check(static_cast<const TypeCheckExpr *>(expr));
             case ExprType::Call: return evaluate_call(static_cast<const CallExpr *>(expr));
             case ExprType::Get: return evaluate_get(static_cast<const GetExpr *>(expr));
             case ExprType::Set: return evaluate_set(static_cast<const SetExpr *>(expr));
@@ -342,6 +343,29 @@ namespace ObSL {
             if (!is_truthy(left)) return left;
         }
         return evaluate(expr->right.get());
+    }
+
+    Value Interpreter::evaluate_type_check(const TypeCheckExpr *expr) {
+        Value value = evaluate(expr->left.get());
+
+        if (expr->type_name == "number") {
+            return std::holds_alternative<double>(value);
+        } else if (expr->type_name == "string") {
+            return std::holds_alternative<std::string>(value);
+        } else if (expr->type_name == "boolean" || expr->type_name == "bool") {
+            return std::holds_alternative<bool>(value);
+        } else if (expr->type_name == "null" || expr->type_name == "nil") {
+            return std::holds_alternative<std::monostate>(value);
+        } else if (expr->type_name == "function" || expr->type_name == "fn") {
+            return std::holds_alternative<ObSLCallable *>(value);
+        } else if (expr->type_name == "array") {
+            return std::holds_alternative<ObSLArray *>(value);
+        } else if (expr->type_name == "object") {
+            return std::holds_alternative<ObSLObject *>(value);
+        }
+
+        throw RuntimeError(Token{TokenType::IS, "is", 0, 0, 0, 0},
+                           std::format("Unknown type name '{}'.", expr->type_name));
     }
 
     bool Interpreter::is_truthy(const Value &value) {

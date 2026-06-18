@@ -150,6 +150,8 @@ namespace ObSL {
 
         Value evaluate_logical(const LogicalExpr *expr);
 
+        Value evaluate_type_check(const TypeCheckExpr *expr);
+
         static bool is_truthy(const Value &value);
 
         static void check_number_operand(TokenType oprt, const Value &oprnd);

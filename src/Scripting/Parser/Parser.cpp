@@ -185,11 +185,29 @@ namespace ObSL {
     }
 
     std::unique_ptr<Expr> Parser::parse_equality() {
-        auto expr = parse_comparison();
+        auto expr = parse_type_check();
         while (match({TokenType::BANG_EQUAL, TokenType::EQUAL_EQUAL})) {
             Token op = previous();
-            auto right = parse_comparison();
+            auto right = parse_type_check();
             expr = std::make_unique<BinaryExpr>(std::move(expr), op, std::move(right));
+        }
+        return expr;
+    }
+
+    std::unique_ptr<Expr> Parser::parse_type_check() {
+        auto expr = parse_comparison();
+        if (match({TokenType::IS})) {
+            Token type_name;
+            if (match({TokenType::IDENTIFIER})) {
+                type_name = previous();
+            } else if (match({TokenType::NULL_})) {
+                type_name = previous();
+            } else if (match({TokenType::FN})) {
+                type_name = previous();
+            } else {
+                throw RuntimeError(peek(), "Expect type name after 'is'.");
+            }
+            expr = std::make_unique<TypeCheckExpr>(std::move(expr), std::string(type_name.lexeme));
         }
         return expr;
     }
