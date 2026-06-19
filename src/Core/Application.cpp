@@ -51,7 +51,7 @@ void Application::Run() {
 
     while (!m_Window.ShouldClose()) {
         m_InputManager.BeginFrame();
-        m_Window.PollEvents();
+        Window::PollEvents();
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();

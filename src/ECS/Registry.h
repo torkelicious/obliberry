@@ -44,6 +44,7 @@ public:
         return id;
     }
 
+    // todo implement some sort of wrapper or callback that calls scripsystem OnEntityDestroyed
     void DestroyEntity(const EntityID entity) {
         for (const auto &pool: m_ComponentPools | std::views::values) {
             pool->EntityDestroyed(entity);

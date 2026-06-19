@@ -32,7 +32,7 @@ void Scene::OnEnter() {
 
     if (m_Context.renderer) {
         m_Context.renderer->Clean();
-        m_Context.renderer->SetClearColor(m_Properties.BackgroundClearColor);
+        Renderer::SetClearColor(m_Properties.BackgroundClearColor);
     }
 }
 
@@ -57,7 +57,8 @@ void Scene::Render() {
     m_Context.renderer->Flush();
 }
 
-void Scene::OnExit() const {
+void Scene::OnExit() {
+    ScriptSystem::OnSceneExit(m_Registry, m_Context);
     if (m_Context.renderer) {
         m_Context.renderer->Clean();
     }

@@ -112,6 +112,7 @@ add_executable(
         src/Math/Math.h
         src/ECS/Systems/lightingSystem.h
         src/ECS/Components/PointLightComponent.h
+        # ObSL Core
         src/Scripting/ObSLCore/Lexer/Lexer.cpp
         src/Scripting/ObSLCore/Lexer/Lexer.h
         src/Scripting/ObSLCore/Parser/ast.h
@@ -130,6 +131,7 @@ add_executable(
         src/Scripting/ObSLCore/GarbageCollector.cpp
         src/Scripting/ObSLCore/GarbageCollector.h
         src/Scripting/ObSLCore/Interpreter/Natives.h
+        # ObSL Core
         src/ECS/Components/ScriptComponent.h
         src/ECS/Systems/ScriptSystem.h
         src/Scripting/EngineLib/EngineLib.cpp

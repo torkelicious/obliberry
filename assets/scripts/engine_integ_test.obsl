@@ -11,3 +11,13 @@ fn on_update(entity_id, dt) {
         timer = 0.0;
     }
 }
+
+fn on_destroy(entity_id){
+println("Entity destroyed:");
+print_name(entity_id);
+}
+
+
+fn on_exit(entity_id){
+    println("script: scene exiting");
+}

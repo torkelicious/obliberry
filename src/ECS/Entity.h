@@ -2,6 +2,7 @@
 #define OBLIBERRY_ENTITY_H
 
 #include "Types.h"
+#include <string>
 
 class Registry;
 

@@ -45,13 +45,34 @@ namespace ScriptSystem {
             // Interpret
             interpreter->interpret(script->ast_nodes);
 
-            ObSL::Token lookup{
+            ObSL::Token lookup_update{
                 ObSL::TokenType::IDENTIFIER, "on_update", 0, 0, 0, 0
             };
 
-            if (ObSL::Value update_val = script->instance_env->get(lookup); std::holds_alternative<ObSL::ObSLCallable
+            ObSL::Token lookup_destroy{
+                ObSL::TokenType::IDENTIFIER, "on_destroy", 0, 0, 0, 0
+            };
+
+            ObSL::Token lookup_exit{
+                ObSL::TokenType::IDENTIFIER, "on_exit", 0, 0, 0, 0
+            };
+
+            if (ObSL::Value update_val = script->instance_env->get(lookup_update); std::holds_alternative<
+                ObSL::ObSLCallable
                 *>(update_val)) {
                 script->on_update = std::get<ObSL::ObSLCallable *>(update_val);
+            }
+
+            if (ObSL::Value destroy_val = script->instance_env->get(lookup_destroy); std::holds_alternative<
+                ObSL::ObSLCallable
+                *>(destroy_val)) {
+                script->on_destroy = std::get<ObSL::ObSLCallable *>(destroy_val);
+            }
+
+            if (ObSL::Value exit_val = script->instance_env->get(lookup_exit); std::holds_alternative<
+                ObSL::ObSLCallable
+                *>(exit_val)) {
+                script->on_exit = std::get<ObSL::ObSLCallable *>(exit_val);
             }
         } catch (const std::exception &e) {
             std::cerr << "[ScriptSystem] Script Failed for [" << script->scriptPath << "]:\n  " << e.what() << "\n";
@@ -85,9 +106,43 @@ namespace ScriptSystem {
             if (script->on_update) {
                 double raw_id = static_cast<EntityID>(entity);
                 const std::vector<ObSL::Value> args = {raw_id, static_cast<double>(ctx.deltaTime)};
-
                 ctx.scriptEngine->set_current_environment(script->instance_env);
                 script->on_update->call(ctx.scriptEngine, args, call_token);
+            }
+        });
+    }
+
+    // todo: actually call when entity destroyed
+    inline void OnEntityDestroyed(const EntityID entity, Registry &registry, const EngineContext &ctx) noexcept {
+        if (!ctx.scriptEngine) return;
+
+        if (registry.HasComponent<ScriptComponent>(entity)) {
+            if (const ScriptComponent *script = registry.GetComponent<ScriptComponent>(entity);
+                script && script->isInitialized && script->on_destroy) {
+                constexpr ObSL::Token call_token{
+                    ObSL::TokenType::LEFT_PAREN, "(", 0, 0, 0, 0
+                };
+
+                auto raw_id = static_cast<double>(entity);
+                const std::vector<ObSL::Value> args = {raw_id};
+
+                ctx.scriptEngine->set_current_environment(script->instance_env);
+                script->on_destroy->call(ctx.scriptEngine, args, call_token);
+            }
+        }
+    }
+
+    inline void OnSceneExit(Registry &registry, const EngineContext &ctx) noexcept {
+        if (!ctx.scriptEngine) return;
+        constexpr ObSL::Token call_token{
+            ObSL::TokenType::LEFT_PAREN, "(", 0, 0, 0, 0
+        };
+        registry.ForEach<ScriptComponent>([&](const Entity entity, const ScriptComponent *script) {
+            if (script->isInitialized && script->on_exit) {
+                double raw_id = static_cast<EntityID>(entity);
+                const std::vector<ObSL::Value> args = {raw_id, static_cast<double>(ctx.deltaTime)};
+                ctx.scriptEngine->set_current_environment(script->instance_env);
+                script->on_exit->call(ctx.scriptEngine, args, call_token);
             }
         });
     }

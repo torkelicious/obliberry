@@ -22,11 +22,11 @@ public:
 
     void OnEnter();
 
-    void OnExit() const;
-
     void Update(float dt);
 
     void Render();
+
+    void OnExit();
 
     [[nodiscard]] Registry &GetRegistry() { return m_Registry; }
     [[nodiscard]] const Registry &GetRegistry() const { return m_Registry; }
