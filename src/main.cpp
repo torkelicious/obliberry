@@ -3,6 +3,7 @@
 /*
   todo:
  * SCRIPTS:
+ * this keyword
  * on_destroy
  * full ecs integration (i.e getcomponent etc)
  * more enginelib stuff in general
