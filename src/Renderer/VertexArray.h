@@ -32,7 +32,7 @@ public:
 
     void Bind() const;
 
-    void Unbind() const;
+    static void Unbind();
 
     [[nodiscard]] GLuint GetID() const { return m_ID; }
 

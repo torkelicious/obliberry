@@ -170,7 +170,7 @@ public:
                     fScore =
                             tentativeG + Math::HexMath::Distance(neighbor, goal);
 
-                    openSet.push({fScore, neighbor});
+                    openSet.emplace(fScore, neighbor);
                 }
             }
         }

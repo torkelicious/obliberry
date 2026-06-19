@@ -2,7 +2,7 @@
 
 #include <vector>
 #include <string_view>
-#include "Scripting/Tokens.h"
+#include "Scripting/ObSLCore/Tokens.h"
 
 namespace ObSL {
     class Lexer {

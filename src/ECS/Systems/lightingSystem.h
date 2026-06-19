@@ -2,7 +2,6 @@
 #define OBLIBERRY_LIGHTINGSYSTEM_H
 #include <memory>
 #include <glm/glm.hpp>
-#include <iostream>
 #include <algorithm>
 
 #include "Core/Constants.h"

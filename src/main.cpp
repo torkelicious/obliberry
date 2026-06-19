@@ -1,22 +1,25 @@
 #include "Core/Application.h"
-#include "Core/Constants.h"
-#include "Core/Utils.h"
-#include "Scripting/ScriptEntry.h"
-#include "Scripting/Lexer/Lexer.h"
+
+/*
+  todo:
+ * SCRIPTS:
+ * on_destroy
+ * full ecs integration (i.e getcomponent etc)
+ * more enginelib stuff in general
+ * lsp
+ * docs
+ *  ===
+ * ENGINE:
+ * audio
+ * multithreading
+ * gui generation (via ObSL?)
+ * editor
+ * convert some stuff to ObSL
+ */
+
 
 int main(int argc, char *argv[]) {
-    // Application app;
-    // app.Run();
-
-    ObSL::ScriptEntry entry;
-    // mockup standard command line arguments
-
-    //const char *test_argv[] = {
-    //    "obsl_interpreter",
-    //    "assets/scripts/test.obsl"
-    //};
-    //
-    //entry.exec(2, const_cast<char **>(test_argv));
-    entry.exec(argc, argv);
+    Application app;
+    app.Run();
     return 0;
 }

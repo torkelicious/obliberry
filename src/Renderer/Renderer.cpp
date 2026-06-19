@@ -158,7 +158,7 @@ void Renderer::BindLightmap(Shader *shader) const {
     }
 }
 
-void Renderer::SetClearColor(const glm::vec4 color) const {
+void Renderer::SetClearColor(const glm::vec4 color) {
     glClearColor(color[0], color[1], color[2], color[3]);
 }
 

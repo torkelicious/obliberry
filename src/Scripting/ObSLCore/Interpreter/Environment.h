@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <string>
 #include <string_view>
-#include "Scripting/Parser/ast.h"
+#include "Scripting/ObSLCore/Parser/ast.h"
 
 namespace ObSL {
     struct StringHash {

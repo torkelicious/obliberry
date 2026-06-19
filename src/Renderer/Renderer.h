@@ -54,10 +54,10 @@ public:
 
     void SetLightmap(const Lightmap *lightmap);
 
-    void SetClearColor(glm::vec4 color) const;
+    static void SetClearColor(glm::vec4 color);
 
 private:
-    void Execute(const RenderCommand &cmd);
+    static void Execute(const RenderCommand &cmd);
 
     void BindLightmap(Shader *shader) const;
 

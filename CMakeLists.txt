@@ -112,24 +112,28 @@ add_executable(
         src/Math/Math.h
         src/ECS/Systems/lightingSystem.h
         src/ECS/Components/PointLightComponent.h
-        src/Scripting/Lexer/Lexer.cpp
-        src/Scripting/Lexer/Lexer.h
-        src/Scripting/Parser/ast.h
-        src/Scripting/Parser/Parser.cpp
-        src/Scripting/Parser/Parser.h
-        src/Scripting/Tokens.h
-        src/Scripting/Interpreter/Interpreter.cpp
-        src/Scripting/Interpreter/Interpreter.h
-        src/Scripting/Interpreter/Environment.cpp
-        src/Scripting/Interpreter/Environment.h
-        src/Scripting/ScriptEntry.cpp
-        src/Scripting/ScriptEntry.h
-        src/Scripting/StdLib/StdLib.cpp
-        src/Scripting/StdLib/StdLib.h
-        src/Scripting/StdLib/StdModules.h
-        src/Scripting/GarbageCollector.cpp
-        src/Scripting/GarbageCollector.h
-        src/Scripting/Interpreter/Natives.h
+        src/Scripting/ObSLCore/Lexer/Lexer.cpp
+        src/Scripting/ObSLCore/Lexer/Lexer.h
+        src/Scripting/ObSLCore/Parser/ast.h
+        src/Scripting/ObSLCore/Parser/Parser.cpp
+        src/Scripting/ObSLCore/Parser/Parser.h
+        src/Scripting/ObSLCore/Tokens.h
+        src/Scripting/ObSLCore/Interpreter/Interpreter.cpp
+        src/Scripting/ObSLCore/Interpreter/Interpreter.h
+        src/Scripting/ObSLCore/Interpreter/Environment.cpp
+        src/Scripting/ObSLCore/Interpreter/Environment.h
+        src/Scripting/ObSLCore/ScriptEntry.cpp
+        src/Scripting/ObSLCore/ScriptEntry.h
+        src/Scripting/ObSLCore/StdLib/StdLib.cpp
+        src/Scripting/ObSLCore/StdLib/StdLib.h
+        src/Scripting/ObSLCore/StdLib/StdModules.h
+        src/Scripting/ObSLCore/GarbageCollector.cpp
+        src/Scripting/ObSLCore/GarbageCollector.h
+        src/Scripting/ObSLCore/Interpreter/Natives.h
+        src/ECS/Components/ScriptComponent.h
+        src/ECS/Systems/ScriptSystem.h
+        src/Scripting/EngineLib/EngineLib.cpp
+        src/Scripting/EngineLib/EngineLib.h
 )
 
 target_include_directories(

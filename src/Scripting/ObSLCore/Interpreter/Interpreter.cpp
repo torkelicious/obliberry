@@ -10,7 +10,7 @@
 #include <ranges>
 #include <unordered_set>
 
-#include "Scripting/Parser/Parser.h"
+#include "Scripting/ObSLCore/Parser/Parser.h"
 
 using namespace std::string_view_literals;
 

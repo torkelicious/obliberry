@@ -11,6 +11,7 @@
 #include "ECS/Components/BillboardComponent.h"
 #include "Renderer/Mesh.h"
 #include "ECS/Components/PointLightComponent.h"
+#include "ECS/Components/ScriptComponent.h"
 
 std::unordered_map<std::string, ComponentDeserializer> EntityFactory::s_Deserializers;
 std::unordered_map<std::string, ComponentSerializer> EntityFactory::s_Serializers;
@@ -118,6 +119,16 @@ void EntityFactory::RegisterDeserializers() {
         }
         entity.AddComponent<PointLightComponent>(plc);
     };
+
+    // SCRIPT COMPONENT
+    s_Deserializers["ScriptComponent"] = [](Entity &entity, const nlohmann::json &data, ResourceManager &resources) {
+        if (data.contains("scriptPath")) {
+            auto &sc = entity.AddComponent<ScriptComponent>();
+            sc.scriptPath = data["scriptPath"].get<std::string>();
+        } else {
+            entity.AddComponent<ScriptComponent>(); // empty component fallback...
+        }
+    };
 }
 
 void EntityFactory::RegisterSerializers() {
@@ -210,6 +221,14 @@ void EntityFactory::RegisterSerializers() {
             data["PointLightComponent"]["color"] = {plc->color.x, plc->color.y, plc->color.z};
             data["PointLightComponent"]["radius"] = plc->radius;
             data["PointLightComponent"]["intensity"] = plc->intensity;
+        }
+    };
+
+    // SCRIPT COMPONENT
+    s_Serializers["ScriptComponent"] = [](const Entity &entity, nlohmann::json &data, ResourceManager &) {
+        if (entity.HasComponent<ScriptComponent>()) {
+            const auto *scriptComp = entity.GetComponent<ScriptComponent>();
+            data["ScriptComponent"]["scriptPath"] = scriptComp->scriptPath;
         }
     };
 }

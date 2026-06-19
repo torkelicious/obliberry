@@ -51,6 +51,6 @@ void VertexArray::Bind() const {
     glBindVertexArray(m_ID);
 }
 
-void VertexArray::Unbind() const {
+void VertexArray::Unbind() {
     glBindVertexArray(0);
 }

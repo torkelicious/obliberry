@@ -12,8 +12,8 @@
 #include <format>
 #include <variant>
 
-#include "Scripting/Tokens.h"
-#include "Scripting/Parser/ast.h"
+#include "Scripting/ObSLCore/Tokens.h"
+#include "Scripting/ObSLCore/Parser/ast.h"
 
 namespace ObSL {
     class Interpreter;

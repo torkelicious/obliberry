@@ -26,7 +26,7 @@ public:
 
     void Bind() const;
 
-    void Unbind() const;
+    static void Unbind();
 
     GLuint GetID() const { return m_ID; }
 
@@ -50,11 +50,11 @@ private:
     GLuint m_ID = 0;
     std::unordered_map<std::string, GLint> m_UniformCache;
 
-    std::string LoadFile(const std::string &path);
+    static std::string LoadFile(const std::string &path);
 
-    GLuint Compile(GLenum type, const std::string &src) const;
+    static GLuint Compile(GLenum type, const std::string &src);
 
-    GLuint Link(GLuint vert, GLuint frag) const;
+    static GLuint Link(GLuint vert, GLuint frag);
 
     GLint GetUniformLocation(const std::string &name);
 };

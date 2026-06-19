@@ -39,14 +39,14 @@ public:
 
     void Bind(unsigned int slot = 0) const;
 
-    void Unbind() const;
+    static void Unbind();
 
     void UpdateData(const unsigned char *data, int width, int height);
 
     std::string &GetPath() { return m_FilePath; }
 
-    int GetWidth() const { return m_Width; }
-    int GetHeight() const { return m_Height; }
+    [[nodiscard]] int GetWidth() const { return m_Width; }
+    [[nodiscard]] int GetHeight() const { return m_Height; }
 
     static Texture *White();
 

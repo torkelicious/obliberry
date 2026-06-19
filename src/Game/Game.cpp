@@ -2,7 +2,9 @@
 #include "IO/AssetLoader.h"
 #include "Renderer/MeshFactory.h"
 #include <filesystem>
+
 #include "Renderer/Renderer.h"
+
 
 void Game::Start() {
     MeshFactory::RegisterAllMeshFactories();
@@ -36,5 +38,5 @@ void Game::Render() const {
     m_SceneManager.Render();
 }
 
-void Game::Shutdown() const {
+void Game::Shutdown() {
 }

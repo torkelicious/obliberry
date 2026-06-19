@@ -1,6 +1,6 @@
 #include "StdLib.h"
 #include "StdModules.h"
-#include "Scripting/Interpreter/Interpreter.h"
+#include "Scripting/ObSLCore/Interpreter/Interpreter.h"
 #include <stdexcept>
 
 namespace ObSL {

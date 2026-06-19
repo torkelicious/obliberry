@@ -1,4 +1,8 @@
 #include "ScriptEntry.h"
+#include "Parser/Parser.h"
+#include "Lexer/Lexer.h"
+#include "Interpreter/Interpreter.h"
+#include "Interpreter/Natives.h"
 #include <chrono>
 #include <iostream>
 #include <fstream>
@@ -6,16 +10,6 @@
 #include <vector>
 #include <memory>
 #include <json.hpp>
-#include "Scripting/Lexer/Lexer.h"
-#include "Scripting/Parser/Parser.h"
-
-/*
- * ObSL todo:
- * engine intergration
- * IS keyword
- * lsp
- * docs lol
- */
 
 namespace ObSL {
     int ScriptEntry::exec(const int argc, char *argv[]) {

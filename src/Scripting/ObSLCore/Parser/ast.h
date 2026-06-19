@@ -12,8 +12,8 @@
 #include <unordered_map>
 
 #include "ast.h"
-#include "Scripting/Lexer/Lexer.h"
-#include "Scripting/GarbageCollector.h"
+#include "Scripting/ObSLCore/Lexer/Lexer.h"
+#include "Scripting/ObSLCore/GarbageCollector.h"
 
 namespace ObSL {
     class Interpreter;

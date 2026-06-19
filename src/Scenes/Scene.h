@@ -37,7 +37,7 @@ public:
         return m_Properties.ScenePath;
     }
 
-    SceneProperties &GetProperties() { return m_Properties; };
+    SceneProperties &GetProperties() { return m_Properties; }
 
 private:
     SceneProperties m_Properties;

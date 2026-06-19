@@ -14,7 +14,7 @@ public:
 
     Window &operator=(const Window &) = delete;
 
-    void PollEvents();
+    static void PollEvents();
 
     void SwapBuffers() const;
 
@@ -22,10 +22,10 @@ public:
 
     void Close() const { glfwSetWindowShouldClose(m_Window, true); }
 
-    int GetWidth() const { return m_Width; }
-    int GetHeight() const { return m_Height; }
+    [[nodiscard]] int GetWidth() const { return m_Width; }
+    [[nodiscard]] int GetHeight() const { return m_Height; }
 
-    GLFWwindow *GetNativeWindow() const { return m_Window; }
+    [[nodiscard]] GLFWwindow *GetNativeWindow() const { return m_Window; }
 
     void SetInputManager(InputManager *inputManager);
 

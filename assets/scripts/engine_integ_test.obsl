@@ -1,0 +1,13 @@
+var timer = 0.0;
+
+println "engine integration test loaded";
+
+// this is called on Scene.Update(); ! :DDD
+fn on_update(entity_id, dt) {
+    timer += dt;
+    if (timer >= 2.0) {
+        print "[ Engine ObSL Integration Test ] ";
+        print_name(entity_id);
+        timer = 0.0;
+    }
+}

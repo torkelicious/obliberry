@@ -11,11 +11,18 @@
 #include "IO/EntityFactory.h"
 #include <iostream>
 
+#include "ECS/Systems/ScriptSystem.h"
+#include "Scripting/EngineLib/EngineLib.h"
+
 Scene::Scene(const EngineContext &context, SceneProperties props)
     : m_Properties(std::move(props)), m_Context(context) {
 }
 
+
 void Scene::OnEnter() {
+    EngineLib lib;
+    lib.register_enginelib(*m_Context.scriptEngine, m_Registry, m_Context);
+
     EntityFactory::RegisterDeserializers();
     EntityFactory::RegisterSerializers();
 
@@ -36,6 +43,7 @@ void Scene::Update(const float dt) {
     PlayerControlSystem::Update(m_Registry, m_Context, worldPos);
     AISystem::Update(m_Registry, dt);
     MovementSystem::Update(m_Registry, dt);
+    ScriptSystem::Update(m_Registry, m_Context);
     LightingSystem::Update(m_Registry);
 }
 

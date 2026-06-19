@@ -39,6 +39,7 @@ void Application::Run() {
     context.renderer = &renderer;
     context.camera = &camera;
     context.deltaTime = 0.0f;
+    context.scriptEngine = &m_ScriptEngine;
 
     Game game;
     game.SetContext(context);

@@ -1,6 +1,7 @@
+#include <iostream>
+
 #include "Game.h"
 #include "imgui.h"
-#include "../Renderer/Camera.h"
 #include "IO/MapSerialization.h"
 #include "ECS/Systems/MapRuntimeSystem.h"
 #include "IO/SceneSerialization.h"
@@ -263,7 +264,7 @@ void Game::DrawInterface() {
                 auto &registry = scene.GetRegistry();
                 registry.ForEach<MapComponent>([&](Entity, const MapComponent *mapComp) {
                     const std::string newPath = PathUtils::Join(MAP_PATH, nameBuf, MAP_FILE_EXTENSION);
-                    if (const bool ok = MapIO::Serialize(newPath, mapComp->grid)) {
+                    if ([[maybe_unused]] const bool ok = MapIO::Serialize(newPath, mapComp->grid)) {
                         std::cout << "Saved!" << "\n";
                     }
                 });

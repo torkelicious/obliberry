@@ -5,7 +5,7 @@
 #include <initializer_list>
 #include <string_view>
 #include "ast.h"
-#include "Scripting/Lexer/Lexer.h"
+#include "Scripting/ObSLCore/Lexer/Lexer.h"
 
 namespace ObSL {
     class Parser {

@@ -6,10 +6,10 @@
 #include <unordered_map>
 #include <span>
 
-#include "Scripting/Interpreter/Natives.h"
-#include "Scripting/Interpreter/Environment.h"
-#include "Scripting/GarbageCollector.h"
-#include "Scripting/StdLib/StdLib.h"
+#include "Scripting/ObSLCore/Interpreter/Natives.h"
+#include "Scripting/ObSLCore/Interpreter/Environment.h"
+#include "Scripting/ObSLCore/GarbageCollector.h"
+#include "Scripting/ObSLCore/StdLib/StdLib.h"
 
 namespace ObSL {
     class Interpreter {

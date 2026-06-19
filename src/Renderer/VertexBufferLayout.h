@@ -37,7 +37,7 @@ public:
     }
 
     [[nodiscard]] const std::vector<VertexBufferElement> &GetElements() const { return m_Elements; }
-    unsigned int GetStride() const { return m_Stride; }
+    [[nodiscard]] unsigned int GetStride() const { return m_Stride; }
 };
 
 #endif //OBLIBERRY_VERTEXBUFFERLAYOUT_H

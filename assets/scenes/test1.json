@@ -192,6 +192,9 @@
   "entities": [
     {
       "components": {
+        "ScriptComponent": {
+          "scriptPath": "assets/scripts/engine_integ_test.obsl"
+        },
         "BillboardComponent": {},
         "DirectionalTextureComponent": {
           "index": 2,

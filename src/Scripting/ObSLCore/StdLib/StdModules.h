@@ -16,8 +16,8 @@
 #include <format>
 #include <regex>
 
-#include "Scripting/Interpreter/Interpreter.h"
-#include "Scripting/StdLib/StdLib.h"
+#include "Scripting/ObSLCore/Interpreter/Interpreter.h"
+#include "Scripting/ObSLCore/StdLib/StdLib.h"
 
 namespace ObSL {
     // CONVERSION LIBRARY

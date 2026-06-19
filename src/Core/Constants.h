@@ -15,6 +15,7 @@ constexpr std::string_view SCRIPT_PATH = "assets/scripts/";
 // fs extensions
 constexpr auto MAP_FILE_EXTENSION = ".obmap";
 constexpr auto SCENE_FILE_EXTENSION = ".json";
+constexpr auto SCRIPT_FILE_EXTENSION = ".obsl";
 // misc file stuff
 constexpr std::string MAP_FILE_MAGIC_STR = "OBLIHEXM";
 // window config

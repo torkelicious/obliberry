@@ -2,10 +2,8 @@
 #define OBLIBERRY_GAME_H
 
 #include <optional>
-#include <string>
 #include "Core/EngineContext.h"
 #include "../Scenes/SceneManager.h"
-#include "Map/Hex.h"
 
 enum class GameState { MainMenu, Gameplay, Paused, EditorMode };
 
@@ -26,7 +24,7 @@ public:
     void SetContext(const EngineContext &context) { m_Context = context; }
 
 private:
-    void Shutdown() const;
+    static void Shutdown();
 
     void DrawInterface();
 

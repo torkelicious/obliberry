@@ -118,9 +118,9 @@ VRAMStats GLDebug::GetVRAMStats() {
     VRAMStats stats;
     const GLubyte *renderer = glGetString(GL_RENDERER);
     if (!renderer) return stats;
-    const std::string rendererStr(reinterpret_cast<const char *>(renderer));
     // NVIDIA Path
-    if (rendererStr.find("NVIDIA") != std::string::npos) {
+    if (const std::string rendererStr(reinterpret_cast<const char *>(renderer));
+        rendererStr.find("NVIDIA") != std::string::npos) {
         GLint totalKb = 0;
         GLint currentAvailableKb = 0;
         glGetIntegerv(GL_GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX, &totalKb);

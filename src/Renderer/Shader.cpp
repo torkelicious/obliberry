@@ -31,7 +31,7 @@ void Shader::Bind() const {
     glUseProgram(m_ID);
 }
 
-void Shader::Unbind() const {
+void Shader::Unbind() {
     glUseProgram(0);
 }
 
@@ -88,7 +88,7 @@ std::string Shader::LoadFile(const std::string &path) {
     return ss.str();
 }
 
-GLuint Shader::Compile(const GLenum type, const std::string &src) const {
+GLuint Shader::Compile(const GLenum type, const std::string &src) {
     if (src.empty()) {
         // Prevent confusing GLSL errors if file load failed.
         return 0;
@@ -112,7 +112,7 @@ GLuint Shader::Compile(const GLenum type, const std::string &src) const {
     return shader;
 }
 
-GLuint Shader::Link(const GLuint vert, const GLuint frag) const {
+GLuint Shader::Link(const GLuint vert, const GLuint frag) {
     if (vert == 0 || frag == 0) {
         if (vert)
             glDeleteShader(vert);

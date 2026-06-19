@@ -2,7 +2,7 @@
 #include <cctype>
 #include <unordered_map>
 #include <format>
-#include "Scripting/Interpreter/Natives.h"
+#include "Scripting/ObSLCore/Interpreter/Natives.h"
 
 namespace ObSL {
     Lexer::Lexer(const std::string_view source) : source(source) {
