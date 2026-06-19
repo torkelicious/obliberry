@@ -5,7 +5,7 @@
 # The Obliberry Scripting Language
 
 ObSL is a small interpreted, dynamically typed programming language designed for game logic inside the Obliberry game
-engine.
+engine and made to be easily extendable.
 
 ---
 

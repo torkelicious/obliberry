@@ -58,6 +58,15 @@ void Scene::Render() {
 }
 
 void Scene::OnExit() {
+    std::vector<EntityID> deadEntities;
+    m_Registry.ForEach<DestroyTagComponent>([&](const Entity entity, DestroyTagComponent *) {
+        deadEntities.push_back(static_cast<EntityID>(entity));
+    });
+
+    for (const EntityID id: deadEntities) {
+        m_Registry.DestroyEntity(id);
+    }
+
     ScriptSystem::OnSceneExit(m_Registry, m_Context);
     if (m_Context.renderer) {
         m_Context.renderer->Clean();

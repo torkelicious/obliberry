@@ -8,7 +8,7 @@
 #include "ECS/Components/MeshComponent.h"
 #include "ECS/Components/MaterialComponent.h"
 #include "ECS/Components/DirectionalTextureComponent.h"
-#include "ECS/Components/BillboardComponent.h"
+#include "ECS/Components/BillboardTagComponent.h"
 #include "Renderer/Mesh.h"
 #include "ECS/Components/PointLightComponent.h"
 #include "ECS/Components/ScriptComponent.h"
@@ -84,8 +84,8 @@ void EntityFactory::RegisterDeserializers() {
         entity.AddComponent<MaterialComponent>(matComp);
     };
 
-    s_Deserializers["BillboardComponent"] = [](Entity &entity, const nlohmann::json &, ResourceManager &) {
-        entity.AddComponent<BillboardComponent>();
+    s_Deserializers["BillboardTagComponent"] = [](Entity &entity, const nlohmann::json &, ResourceManager &) {
+        entity.AddComponent<BillboardTagComponent>();
     };
 
     // DIRECTIONAL TEXTURE COMPONENT
@@ -190,9 +190,9 @@ void EntityFactory::RegisterSerializers() {
         }
     };
 
-    s_Serializers["BillboardComponent"] = [](const Entity &entity, nlohmann::json &data, ResourceManager &) {
-        if (entity.HasComponent<BillboardComponent>()) {
-            data["BillboardComponent"] = nlohmann::json::object();
+    s_Serializers["BillboardTagComponent"] = [](const Entity &entity, nlohmann::json &data, ResourceManager &) {
+        if (entity.HasComponent<BillboardTagComponent>()) {
+            data["BillboardTagComponent"] = nlohmann::json::object();
         }
     };
 

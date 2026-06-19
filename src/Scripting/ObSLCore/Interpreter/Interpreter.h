@@ -64,6 +64,9 @@ namespace ObSL {
 
         void mark_roots() {
             if (globals) globals->mark();
+            for (auto &weak_env: all_environments) {
+                if (const auto env = weak_env.lock()) env->mark();
+            }
             if (environment) environment->mark();
             for (auto &val: gc_protect_stack) {
                 mark_value(val);
@@ -72,6 +75,7 @@ namespace ObSL {
                 if (module_obj) module_obj->mark();
             }
         }
+
 
         friend class ObSLFunction;
         friend struct ObSLStruct;

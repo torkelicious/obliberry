@@ -3,9 +3,11 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <filesystem>
 
 #include "Core/EngineContext.h"
 #include "ECS/Registry.h"
+#include "ECS/Components/DestroyTagComponent.h"
 #include "ECS/Components/ScriptComponent.h"
 #include "Scripting/ObSLCore/Interpreter/Interpreter.h"
 #include "Scripting/ObSLCore/Lexer/Lexer.h"
@@ -30,122 +32,120 @@ namespace ScriptSystem {
 
         // store source code permanently in the component
         script->source_code = buff.str();
-        script->lastModified = std::filesystem::last_write_time(script->scriptPath);
+        if (std::filesystem::exists(script->scriptPath)) {
+            script->lastModified = std::filesystem::last_write_time(script->scriptPath);
+        }
 
         try {
             ObSL::Lexer lexer(script->source_code);
             auto tokens = lexer.tokenize();
             ObSL::Parser parser(tokens);
 
-            // store the AST nodes permanently in the component
             script->ast_nodes = parser.parse();
-
-            interpreter->set_current_environment(script->instance_env);
-
-            // Interpret
             interpreter->interpret(script->ast_nodes);
 
-            ObSL::Token lookup_update{
-                ObSL::TokenType::IDENTIFIER, "on_update", 0, 0, 0, 0
-            };
+            try {
+                if (auto val = script->instance_env->get("on_update"); std::holds_alternative<ObSL::ObSLCallable
+                    *>(val)) {
+                    script->on_update = std::get<ObSL::ObSLCallable *>(val);
+                }
+            } catch (...) { script->on_update = nullptr; }
 
-            ObSL::Token lookup_destroy{
-                ObSL::TokenType::IDENTIFIER, "on_destroy", 0, 0, 0, 0
-            };
+            try {
+                if (auto val = script->instance_env->get("on_destroy"); std::holds_alternative<ObSL::ObSLCallable
+                    *>(val)) {
+                    script->on_destroy = std::get<ObSL::ObSLCallable *>(val);
+                }
+            } catch (...) { script->on_destroy = nullptr; }
 
-            ObSL::Token lookup_exit{
-                ObSL::TokenType::IDENTIFIER, "on_exit", 0, 0, 0, 0
-            };
+            try {
+                if (auto val = script->instance_env->get("on_exit"); std::holds_alternative<ObSL::ObSLCallable
+                    *>(val)) {
+                    script->on_exit = std::get<ObSL::ObSLCallable *>(val);
+                }
+            } catch (...) { script->on_exit = nullptr; }
 
-            if (ObSL::Value update_val = script->instance_env->get(lookup_update); std::holds_alternative<
-                ObSL::ObSLCallable
-                *>(update_val)) {
-                script->on_update = std::get<ObSL::ObSLCallable *>(update_val);
-            }
-
-            if (ObSL::Value destroy_val = script->instance_env->get(lookup_destroy); std::holds_alternative<
-                ObSL::ObSLCallable
-                *>(destroy_val)) {
-                script->on_destroy = std::get<ObSL::ObSLCallable *>(destroy_val);
-            }
-
-            if (ObSL::Value exit_val = script->instance_env->get(lookup_exit); std::holds_alternative<
-                ObSL::ObSLCallable
-                *>(exit_val)) {
-                script->on_exit = std::get<ObSL::ObSLCallable *>(exit_val);
-            }
+            script->isInitialized = true;
         } catch (const std::exception &e) {
             std::cerr << "[ScriptSystem] Script Failed for [" << script->scriptPath << "]:\n  " << e.what() << "\n";
-            script->on_update = nullptr;
+            script->isInitialized = true;
         } catch (...) {
-            std::cerr << "[ScriptSystem] Unknown error occurred for [" << script->scriptPath << "]\n";
-            script->on_update = nullptr;
+            std::cerr << "[ScriptSystem] Unknown error initializing [" << script->scriptPath << "]\n";
+            script->isInitialized = true;
         }
-
-        script->isInitialized = true;
     }
 
-
-    inline void Update(Registry &registry, const EngineContext &ctx) noexcept {
+    inline void Update(Registry &registry, const EngineContext &ctx) {
         if (!ctx.scriptEngine) return;
         constexpr ObSL::Token call_token{
             ObSL::TokenType::LEFT_PAREN, "(", 0, 0, 0, 0
         };
 
         registry.ForEach<ScriptComponent>([&](const Entity entity, ScriptComponent *script) {
-            if (!script->isInitialized) {
-                InitalizeScript(script, ctx.scriptEngine);
-            }
+            try {
+                if (!script->isInitialized) {
+                    InitalizeScript(script, ctx.scriptEngine);
+                }
 
-            // hot reloading
-            if (std::filesystem::last_write_time(script->scriptPath) != script->lastModified) {
-                std::cout << "Script: " << script->scriptPath << " was modified, reloading it..\n";
-                script->isInitialized = false;
-            }
+                if (std::filesystem::exists(script->scriptPath)) {
+                    if (std::filesystem::last_write_time(script->scriptPath) != script->lastModified) {
+                        std::cout << "Script: " << script->scriptPath << " was modified, reloading it..\n";
+                        script->isInitialized = false;
+                    }
+                }
 
-            if (script->on_update) {
-                double raw_id = static_cast<EntityID>(entity);
-                const std::vector<ObSL::Value> args = {raw_id, static_cast<double>(ctx.deltaTime)};
-                ctx.scriptEngine->set_current_environment(script->instance_env);
-                script->on_update->call(ctx.scriptEngine, args, call_token);
+                if (script->isInitialized && script->on_update) {
+                    double raw_id = static_cast<EntityID>(entity);
+                    const std::vector<ObSL::Value> args = {raw_id, static_cast<double>(ctx.deltaTime)};
+                    ctx.scriptEngine->set_current_environment(script->instance_env);
+                    script->on_update->call(ctx.scriptEngine, args, call_token);
+                }
+            } catch (const std::exception &e) {
+                std::cerr << "[ScriptSystem] Runtime Error in Update loop: " << e.what() << "\n";
+                if (script) script->on_update = nullptr; // Stop spamming error
+            } catch (...) {
+                std::cerr << "[ScriptSystem] Unknown Exception in Update loop!\n";
+                if (script) script->on_update = nullptr;
             }
         });
+
+        registry.ForEach<DestroyTagComponent, ScriptComponent>(
+            [&](const Entity entity, DestroyTagComponent *, ScriptComponent *script) {
+                try {
+                    if (script && script->isInitialized && script->on_destroy) {
+                        double raw_id = static_cast<EntityID>(entity);
+                        const std::vector<ObSL::Value> args = {raw_id};
+
+                        ctx.scriptEngine->set_current_environment(script->instance_env);
+                        script->on_destroy->call(ctx.scriptEngine, args, call_token);
+                        script->on_destroy = nullptr;
+                    }
+                } catch (const std::exception &e) {
+                    std::cerr << "[ScriptSystem] Exception in on_destroy: " << e.what() << "\n";
+                    if (script) script->on_destroy = nullptr;
+                } catch (...) {
+                }
+            });
     }
 
-    // todo: actually call when entity destroyed
-    inline void OnEntityDestroyed(const EntityID entity, Registry &registry, const EngineContext &ctx) noexcept {
-        if (!ctx.scriptEngine) return;
-
-        if (registry.HasComponent<ScriptComponent>(entity)) {
-            if (const ScriptComponent *script = registry.GetComponent<ScriptComponent>(entity);
-                script && script->isInitialized && script->on_destroy) {
-                constexpr ObSL::Token call_token{
-                    ObSL::TokenType::LEFT_PAREN, "(", 0, 0, 0, 0
-                };
-
-                auto raw_id = static_cast<double>(entity);
-                const std::vector<ObSL::Value> args = {raw_id};
-
-                ctx.scriptEngine->set_current_environment(script->instance_env);
-                script->on_destroy->call(ctx.scriptEngine, args, call_token);
-            }
-        }
-    }
-
-    inline void OnSceneExit(Registry &registry, const EngineContext &ctx) noexcept {
+    inline void OnSceneExit(Registry &registry, const EngineContext &ctx) {
         if (!ctx.scriptEngine) return;
         constexpr ObSL::Token call_token{
             ObSL::TokenType::LEFT_PAREN, "(", 0, 0, 0, 0
         };
         registry.ForEach<ScriptComponent>([&](const Entity entity, const ScriptComponent *script) {
-            if (script->isInitialized && script->on_exit) {
-                double raw_id = static_cast<EntityID>(entity);
-                const std::vector<ObSL::Value> args = {raw_id, static_cast<double>(ctx.deltaTime)};
-                ctx.scriptEngine->set_current_environment(script->instance_env);
-                script->on_exit->call(ctx.scriptEngine, args, call_token);
+            try {
+                if (script->isInitialized && script->on_exit) {
+                    double raw_id = static_cast<EntityID>(entity);
+                    const std::vector<ObSL::Value> args = {raw_id, static_cast<double>(ctx.deltaTime)};
+                    ctx.scriptEngine->set_current_environment(script->instance_env);
+                    script->on_exit->call(ctx.scriptEngine, args, call_token);
+                }
+            } catch (const std::exception &e) {
+                std::cerr << "[ScriptSystem] Exception in on_exit: " << e.what() << "\n";
+            } catch (...) {
             }
         });
     }
 }
-
-#endif //OBLIBERRY_SCRIPTSYSTEM_H
+#endif // OBLIBERRY_SCRIPTSYSTEM_H

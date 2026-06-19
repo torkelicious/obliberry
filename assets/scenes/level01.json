@@ -90,7 +90,7 @@
     {
       "name": "Player",
       "components": {
-        "BillboardComponent": {},
+        "BillboardTagComponent": {},
         "DirectionalTextureComponent": {
           "index": 1,
           "textures": [
@@ -142,7 +142,7 @@
     {
       "name": "NPC",
       "components": {
-        "BillboardComponent": {},
+        "BillboardTagComponent": {},
         "DirectionalTextureComponent": {
           "index": 1,
           "textures": [

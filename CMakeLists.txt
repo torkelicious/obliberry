@@ -97,7 +97,7 @@ add_executable(
         src/ECS/Components/PlayerInputComponent.h
         src/ECS/Systems/SpriteBillboardSystem.h
         src/ECS/Systems/MapRenderSystem.h
-        src/ECS/Components/BillboardComponent.h
+        src/ECS/Components/BillboardTagComponent.h
         src/ECS/Systems/DirectionalAnimationSystem.h
         src/ECS/Systems/MapRuntimeSystem.h
         src/IO/AssetLoader.cpp
@@ -136,6 +136,8 @@ add_executable(
         src/ECS/Systems/ScriptSystem.h
         src/Scripting/EngineLib/EngineLib.cpp
         src/Scripting/EngineLib/EngineLib.h
+        src/ECS/Components/DestroyTagComponent.h
+        src/Scripting/EngineLib/EngineLibFactories.h
 )
 
 target_include_directories(

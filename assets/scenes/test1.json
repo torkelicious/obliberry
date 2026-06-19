@@ -195,7 +195,7 @@
         "ScriptComponent": {
           "scriptPath": "assets/scripts/engine_integ_test.obsl"
         },
-        "BillboardComponent": {},
+        "BillboardTagComponent": {},
         "DirectionalTextureComponent": {
           "index": 2,
           "textures": [
@@ -252,7 +252,7 @@
     },
     {
       "components": {
-        "BillboardComponent": {},
+        "BillboardTagComponent": {},
         "DirectionalTextureComponent": {
           "index": 5,
           "textures": [
@@ -299,7 +299,7 @@
     },
     {
       "components": {
-        "BillboardComponent": {},
+        "BillboardTagComponent": {},
         "MaterialComponent": {
           "material_id": "t_mat"
         },
@@ -326,7 +326,7 @@
     },
     {
       "components": {
-        "BillboardComponent": {},
+        "BillboardTagComponent": {},
         "MaterialComponent": {
           "material_id": "t_mat"
         },
@@ -353,7 +353,7 @@
     },
     {
       "components": {
-        "BillboardComponent": {},
+        "BillboardTagComponent": {},
         "MaterialComponent": {
           "material_id": "red_mat"
         },
@@ -380,7 +380,7 @@
     },
     {
       "components": {
-        "BillboardComponent": {},
+        "BillboardTagComponent": {},
         "MaterialComponent": {
           "material_id": "green_mat"
         },
@@ -407,7 +407,7 @@
     },
     {
       "components": {
-        "BillboardComponent": {},
+        "BillboardTagComponent": {},
         "MaterialComponent": {
           "material_id": "blue_mat"
         },
@@ -434,7 +434,7 @@
     },
     {
       "components": {
-        "BillboardComponent": {},
+        "BillboardTagComponent": {},
         "MaterialComponent": {
           "material_id": "yellow_mat"
         },
@@ -461,7 +461,7 @@
     },
     {
       "components": {
-        "BillboardComponent": {},
+        "BillboardTagComponent": {},
         "MaterialComponent": {
           "material_id": "purple_mat"
         },
@@ -488,7 +488,7 @@
     },
     {
       "components": {
-        "BillboardComponent": {},
+        "BillboardTagComponent": {},
         "MaterialComponent": {
           "material_id": "cyan_mat"
         },
@@ -515,7 +515,7 @@
     },
     {
       "components": {
-        "BillboardComponent": {},
+        "BillboardTagComponent": {},
         "MaterialComponent": {
           "material_id": "t_mat"
         },

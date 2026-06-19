@@ -1,23 +1,71 @@
 var timer = 0.0;
 
-println "engine integration test loaded";
+// 1.0 means growing
+// -1.0 means shrinking
+var scale_dir = 1.0;
+var scale_speed = 2.0;
 
-// this is called on Scene.Update(); ! :DDD
+println "EngineLib test loaded";
+
 fn on_update(entity_id, dt) {
     timer += dt;
-    if (timer >= 2.0) {
-        print "[ Engine ObSL Integration Test ] ";
-        print_name(entity_id);
-        timer = 0.0;
+
+    var player = Find("Player");
+
+    if (player != null) {
+        var transform = player.GetComponent("Transform");
+
+        if (transform != null) {
+            var scale = transform.GetScale();
+
+            var current_sx = scale[0];
+            var current_sy = scale[1];
+            var current_sz = scale[2];
+
+            current_sx = current_sx + (scale_dir * scale_speed * dt);
+            current_sy = current_sy + (scale_dir * scale_speed * dt);
+            current_sz = current_sz + (scale_dir * scale_speed * dt);
+
+            if (current_sx > 5.0) {
+                scale_dir = -1.0;
+                current_sx = 5.0;
+                current_sy = 5.0;
+                current_sz = 5.0;
+            }
+
+            if (current_sx < 0.5) {
+                scale_dir = 1.0;
+                current_sx = 0.5;
+                current_sy = 0.5;
+                current_sz = 0.5;
+            }
+
+            transform.SetScale(current_sx, current_sy, current_sz);
+
+            if (timer >= 1.0) {
+                print player.name;
+                print " is scaling Current Scale X: ";
+                println current_sx;
+                timer = 0.0;
+            }
+        } else {
+            if (timer >= 1.0) {
+                println "no TransformComponent!";
+                timer = 0.0;
+            }
+        }
+    } else {
+        if (timer >= 1.0) {
+            println "Could not find 'Player'";
+            timer = 0.0;
+        }
     }
 }
 
-fn on_destroy(entity_id){
-println("Entity destroyed:");
-print_name(entity_id);
+fn on_destroy(entity_id) {
+    println "Entity destroyed!";
 }
 
-
-fn on_exit(entity_id){
-    println("script: scene exiting");
+fn on_exit(entity_id, dt) {
+    println "exiting scene";
 }

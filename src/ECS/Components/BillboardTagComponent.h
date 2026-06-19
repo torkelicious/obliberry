@@ -2,7 +2,7 @@
 #define OBLIBERRY_BILLBOARDCOMPONENT_H
 
 // tag component
-struct BillboardComponent {
+struct BillboardTagComponent {
 };
 
 #endif // OBLIBERRY_BILLBOARDCOMPONENT_H

@@ -8,7 +8,7 @@
 #include "glm/glm.hpp"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Components/MapComponent.h"
-#include "ECS/Components/BillboardComponent.h"
+#include "ECS/Components/BillboardTagComponent.h"
 #include "ECS/Components/DirectionalTextureComponent.h"
 #include "ECS/Components/MapStateComponent.h"
 #include "ECS/Components/MaterialComponent.h"
@@ -216,8 +216,8 @@ void Game::DrawInterface() {
                     }
                 }
 
-                // BillboardComponent
-                if (entity.HasComponent<BillboardComponent>()) {
+                // BillboardTagComponent
+                if (entity.HasComponent<BillboardTagComponent>()) {
                     if (ImGui::CollapsingHeader("Billboard Component")) {
                         ImGui::TextWrapped("(Tag Component)");
                     }
