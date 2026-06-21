@@ -1,0 +1,49 @@
+println "Player Movement Initialized";
+
+var cameraSpeed = 15.0;
+
+fn on_update(entity_id, dt) {
+    var player = Find("Player");
+
+    if (Input_IsKeyDown("Esc")) {
+            CloseWindow();
+        }
+
+    if (player != null) {
+        var movement = player.GetComponent("Movement");
+
+        if (Input_IsMousePressed(0)) {
+            var selection = GetSelectedHex();
+            if (selection.hasSelection) {
+                SetPathToHex(player.id, selection.q, selection.r);
+            }
+        }
+
+        if (movement != null) {
+            if (movement.GetIsMoving() == false) {
+                // If we are standing still, clear the destination marker
+                ClearPathTarget();
+            }
+        }
+    }
+
+    // WASD Camera Movement
+    var moveX = 0.0;
+    var moveY = 0.0;
+
+    if (Input_IsKeyDown("W")) { moveY = moveY + 1.0; }
+    if (Input_IsKeyDown("S")) { moveY = moveY - 1.0; }
+    if (Input_IsKeyDown("A")) { moveX = moveX - 1.0; }
+    if (Input_IsKeyDown("D")) { moveX = moveX + 1.0; }
+
+    if (moveX != 0.0 and moveY != 0.0) {
+        moveX = moveX * 0.7071;
+        moveY = moveY * 0.7071;
+    }
+
+    if (moveX != 0.0 or moveY != 0.0) {
+        var moveAmountX = moveX * cameraSpeed * dt;
+        var moveAmountY = moveY * cameraSpeed * dt;
+        Camera_PanScreenSpace(moveAmountX, moveAmountY);
+    }
+}

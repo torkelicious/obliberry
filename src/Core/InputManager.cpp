@@ -1,5 +1,6 @@
 #include "InputManager.h"
 #include <algorithm>
+#include <unordered_map>
 
 
 void InputManager::BeginFrame() {
@@ -64,4 +65,25 @@ void InputManager::SetMousePos(const double xPos, const double yPos) {
 void InputManager::HandleScrollEvent(const double xOffset, const double yOffset) {
     m_ScrollX += xOffset;
     m_ScrollY += yOffset;
+}
+
+int InputManager::GetKeyFromName(const std::string &keyName) {
+    static const std::unordered_map<std::string, int> keyMap = {
+        {"Space", GLFW_KEY_SPACE},
+        {"W", GLFW_KEY_W},
+        {"A", GLFW_KEY_A},
+        {"S", GLFW_KEY_S},
+        {"D", GLFW_KEY_D},
+        {"Up", GLFW_KEY_UP},
+        {"Down", GLFW_KEY_DOWN},
+        {"Left", GLFW_KEY_LEFT},
+        {"Right", GLFW_KEY_RIGHT},
+        {"Esc", GLFW_KEY_ESCAPE},
+    };
+
+    if (const auto it = keyMap.find(keyName); it != keyMap.end()) {
+        return it->second;
+    }
+
+    return -1; // invalid key
 }

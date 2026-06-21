@@ -7,13 +7,12 @@
 #include "ECS/Components/PointLightComponent.h"
 #include "ECS/Components/MovementComponent.h"
 #include "ECS/Components/MapStateComponent.h"
-#include "ECS/Components/PlayerInputComponent.h"
 #include "ECS/Components/DirectionalTextureComponent.h"
 #include "ECS/Components/BillboardTagComponent.h"
 #include "ECS/Components/DestroyTagComponent.h"
 
 namespace EngineLibFactories {
-    // ensure the GC stack always pops safely even if exception
+    // GC Guard
     struct GCProtectGuard {
         ObSL::Interpreter *interpreter;
 
@@ -25,13 +24,12 @@ namespace EngineLibFactories {
             interpreter->gc_protect_stack.pop_back();
         }
 
-        // prevent copying
         GCProtectGuard(const GCProtectGuard &) = delete;
 
         GCProtectGuard &operator=(const GCProtectGuard &) = delete;
     };
 
-    // TRANSFORM COMPONENT
+    //  TRANSFORM COMPONENT 
     inline ObSL::ObSLObject *CreateTransformObject(ObSL::Interpreter *interpreter, Registry &registry, EntityID id) {
         auto *obj = interpreter->gc.allocate<ObSL::ObSLObject>();
         GCProtectGuard guard(interpreter, obj);
@@ -41,8 +39,7 @@ namespace EngineLibFactories {
                 && std::holds_alternative<double>(args[2])) {
                 if (auto *comp = registry.GetComponent<TransformComponent>(id)) {
                     comp->transform.SetPosition({
-                        static_cast<float>(std::get<double>(args[0])),
-                        static_cast<float>(std::get<double>(args[1])),
+                        static_cast<float>(std::get<double>(args[0])), static_cast<float>(std::get<double>(args[1])),
                         static_cast<float>(std::get<double>(args[2]))
                     });
                 }
@@ -55,8 +52,7 @@ namespace EngineLibFactories {
                 && std::holds_alternative<double>(args[2])) {
                 if (auto *comp = registry.GetComponent<TransformComponent>(id)) {
                     comp->transform.SetRotation({
-                        static_cast<float>(std::get<double>(args[0])),
-                        static_cast<float>(std::get<double>(args[1])),
+                        static_cast<float>(std::get<double>(args[0])), static_cast<float>(std::get<double>(args[1])),
                         static_cast<float>(std::get<double>(args[2]))
                     });
                 }
@@ -69,8 +65,7 @@ namespace EngineLibFactories {
                 && std::holds_alternative<double>(args[2])) {
                 if (auto *comp = registry.GetComponent<TransformComponent>(id)) {
                     comp->transform.SetScale({
-                        static_cast<float>(std::get<double>(args[0])),
-                        static_cast<float>(std::get<double>(args[1])),
+                        static_cast<float>(std::get<double>(args[0])), static_cast<float>(std::get<double>(args[1])),
                         static_cast<float>(std::get<double>(args[2]))
                     });
                 }
@@ -89,6 +84,7 @@ namespace EngineLibFactories {
             }
             return std::monostate{};
         };
+
         auto get_rot = [id, &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
             if (const auto *comp = registry.GetComponent<TransformComponent>(id)) {
                 auto *arr = interp->gc.allocate<ObSL::ObSLArray>();
@@ -100,6 +96,7 @@ namespace EngineLibFactories {
             }
             return std::monostate{};
         };
+
         auto get_scale = [id, &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
             if (const auto *comp = registry.GetComponent<TransformComponent>(id)) {
                 auto *arr = interp->gc.allocate<ObSL::ObSLArray>();
@@ -112,22 +109,30 @@ namespace EngineLibFactories {
             return std::monostate{};
         };
 
+        auto is_moving_body = [id, &registry](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+            if (auto *move = registry.GetComponent<MovementComponent>(id)) {
+                return move->isMoving;
+            }
+            return false;
+        };
+
         obj->fields["SetPosition"] = interpreter->gc.allocate<ObSL::NativeFunction>(
             3, std::move(set_pos), "SetPosition");
         obj->fields["SetRotation"] = interpreter->gc.allocate<ObSL::NativeFunction>(
             3, std::move(set_rot), "SetRotation");
         obj->fields["SetScale"] = interpreter->gc.allocate<ObSL::NativeFunction>(3, std::move(set_scale), "SetScale");
-
         obj->fields["GetPosition"] = interpreter->gc.allocate<ObSL::NativeFunction>(
             0, std::move(get_pos), "GetPosition");
         obj->fields["GetRotation"] = interpreter->gc.allocate<ObSL::NativeFunction>(
             0, std::move(get_rot), "GetRotation");
         obj->fields["GetScale"] = interpreter->gc.allocate<ObSL::NativeFunction>(0, std::move(get_scale), "GetScale");
 
+        obj->fields["IsMoving"] = interpreter->gc.allocate<ObSL::NativeFunction>(
+            0, std::move(is_moving_body), "IsMoving");
         return obj;
     }
 
-    // POINT LIGHT COMPONENT
+    //  POINT LIGHT COMPONENT 
     inline ObSL::ObSLObject *CreatePointLightObject(ObSL::Interpreter *interpreter, Registry &registry, EntityID id) {
         auto *obj = interpreter->gc.allocate<ObSL::ObSLObject>();
         GCProtectGuard guard(interpreter, obj);
@@ -146,18 +151,16 @@ namespace EngineLibFactories {
 
         auto set_intensity = [id, &registry](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
             if (!args.empty() && std::holds_alternative<double>(args[0])) {
-                if (auto *comp = registry.GetComponent<PointLightComponent>(id)) {
+                if (auto *comp = registry.GetComponent<PointLightComponent>(id))
                     comp->intensity = static_cast<float>(std::get<double>(args[0]));
-                }
             }
             return std::monostate{};
         };
 
         auto set_radius = [id, &registry](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
             if (!args.empty() && std::holds_alternative<double>(args[0])) {
-                if (auto *comp = registry.GetComponent<PointLightComponent>(id)) {
+                if (auto *comp = registry.GetComponent<PointLightComponent>(id))
                     comp->radius = static_cast<float>(std::get<double>(args[0]));
-                }
             }
             return std::monostate{};
         };
@@ -171,7 +174,7 @@ namespace EngineLibFactories {
         return obj;
     }
 
-    // MOVEMENT COMPONENT
+    //  MOVEMENT COMPONENT 
     inline ObSL::ObSLObject *CreateMovementObject(ObSL::Interpreter *interpreter, Registry &registry, EntityID id) {
         auto *obj = interpreter->gc.allocate<ObSL::ObSLObject>();
         GCProtectGuard guard(interpreter, obj);
@@ -207,15 +210,13 @@ namespace EngineLibFactories {
         return obj;
     }
 
-    // MAP STATE COMPONENT
+    //  MAP STATE COMPONENT 
     inline ObSL::ObSLObject *CreateMapStateObject(ObSL::Interpreter *interpreter, Registry &registry, EntityID id) {
         auto *obj = interpreter->gc.allocate<ObSL::ObSLObject>();
         GCProtectGuard guard(interpreter, obj);
 
         auto get_has_selection = [id, &registry](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
-            if (auto *comp = registry.GetComponent<MapStateComponent>(id)) {
-                return comp->hasSelection;
-            }
+            if (auto *comp = registry.GetComponent<MapStateComponent>(id)) return comp->hasSelection;
             return false;
         };
 
@@ -251,7 +252,7 @@ namespace EngineLibFactories {
         return obj;
     }
 
-    // DIRECTIONAL TEXTURE COMPONENT
+    //  DIRECTIONAL TEXTURE COMPONENT 
     inline ObSL::ObSLObject *CreateDirectionalTextureObject(ObSL::Interpreter *interpreter, Registry &registry,
                                                             EntityID id) {
         auto *obj = interpreter->gc.allocate<ObSL::ObSLObject>();
@@ -259,46 +260,22 @@ namespace EngineLibFactories {
 
         auto set_index = [id, &registry](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
             if (!args.empty() && std::holds_alternative<double>(args[0])) {
-                if (auto *comp = registry.GetComponent<DirectionalTextureComponent>(id)) {
+                if (auto *comp = registry.GetComponent<DirectionalTextureComponent>(id))
                     comp->index = static_cast<int>(std::get<double>(args[0]));
-                }
             }
             return std::monostate{};
         };
 
         obj->fields["SetIndex"] = interpreter->gc.allocate<ObSL::NativeFunction>(1, std::move(set_index), "SetIndex");
-
         return obj;
     }
 
-    // PLAYER INPUT COMPONENT
-    inline ObSL::ObSLObject *CreatePlayerInputObject(ObSL::Interpreter *interpreter, Registry &registry, EntityID id) {
-        auto *obj = interpreter->gc.allocate<ObSL::ObSLObject>();
-        GCProtectGuard guard(interpreter, obj);
-
-        auto set_up_key = [id, &registry](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
-            if (!args.empty() && std::holds_alternative<double>(args[0])) {
-                if (auto *comp = registry.GetComponent<PlayerInputComponent>(id)) {
-                    comp->Up = static_cast<int>(std::get<double>(args[0]));
-                }
-            }
-            return std::monostate{};
-        };
-        obj->fields["SetUpKey"] = interpreter->gc.allocate<ObSL::NativeFunction>(1, std::move(set_up_key), "SetUpKey");
-
-        return obj;
-    }
-
-    // BILLBOARD TAG COMPONENT
-    inline ObSL::ObSLObject *CreateBillboardTagObject(ObSL::Interpreter *interpreter, Registry & /*registry*/,
-                                                      EntityID /*id*/) {
-        // No further allocations happen here, so no GC Guard is necessary!
+    //  TAG COMPONENTS 
+    inline ObSL::ObSLObject *CreateBillboardTagObject(ObSL::Interpreter *interpreter, Registry &, EntityID) {
         return interpreter->gc.allocate<ObSL::ObSLObject>();
     }
 
-    // DESTROY TAG COMPONENT
-    inline ObSL::ObSLObject *CreateDestroyTagObject(ObSL::Interpreter *interpreter, Registry & /*registry*/,
-                                                    EntityID /*id*/) {
+    inline ObSL::ObSLObject *CreateDestroyTagObject(ObSL::Interpreter *interpreter, Registry &, EntityID) {
         return interpreter->gc.allocate<ObSL::ObSLObject>();
     }
 }

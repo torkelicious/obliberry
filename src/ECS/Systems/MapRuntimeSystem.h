@@ -53,7 +53,7 @@ namespace MapRuntimeSystem {
         [[maybe_unused]] const std::optional<HexCoords> preferredSpawn = FindPreferredSpawnHex(grid);
 
         registry.ForEach<MovementComponent, TransformComponent>(
-            [&](const Entity e, MovementComponent *movement, TransformComponent *transform) {
+            [&](const Entity e, MovementComponent */*movement*/, TransformComponent */*transform*/) {
                 MovementSystem::MoveToCenter(e);
             }
         );

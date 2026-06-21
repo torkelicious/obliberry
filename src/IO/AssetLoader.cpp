@@ -105,9 +105,9 @@ void AssetLoader::LoadMeshes(
         resources.LoadFromFactory<Mesh>(
             id,
             [factory = it->second, factoryName] {
-                auto mesh = factory();
-                mesh->SetFactoryId(factoryName);
-                return mesh;
+                auto fac_mesh = factory();
+                fac_mesh->SetFactoryId(factoryName);
+                return fac_mesh;
             }
         );
     }

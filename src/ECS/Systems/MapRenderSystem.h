@@ -45,12 +45,12 @@ namespace MapRenderSystem {
         return {minQ - 1, maxQ + 1, minR - 1, maxR + 1};
     }
 
-    inline void RenderTiles(Registry &registry, Renderer &renderer, EngineContext &ctx) {
+    inline void RenderTiles(Registry &registry, Renderer &renderer) {
         const Math::Projection::AABB cameraBounds =
                 Math::Projection::GetCameraGroundAABB(renderer.GetCamera(), TARGET_ASPECT);
 
         registry.ForEach<MapComponent, MapStateComponent>(
-            [&](Entity, MapComponent *mapComp, const MapStateComponent *stateComp) {
+            [&](Entity, MapComponent *mapComp, const MapStateComponent */*stateComp*/) {
                 if (!mapComp->hexMesh) {
                     mapComp->hexMesh = std::make_shared<Mesh>(MeshFactory::CreatePointTopHex(HEX_SIZE));
                 }
@@ -122,7 +122,7 @@ namespace MapRenderSystem {
     }
 
     inline void RenderAll(Registry &reg, EngineContext &ctx) {
-        RenderTiles(reg, *ctx.renderer, ctx);
+        RenderTiles(reg, *ctx.renderer);
         RenderOverlays(reg, *ctx.renderer);
     }
 }

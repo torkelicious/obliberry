@@ -1,34 +1,19 @@
 {
   "properties": {
     "name": "level01",
-    "clear_color": [
-      0.15,
-      0.15,
-      0.15,
-      1.0
-    ],
+    "clear_color": [0.15, 0.15, 0.15, 1.0],
     "ambient_light": 0.15
   },
   "assets": {
     "materials": [
       {
-        "color": [
-          1.0,
-          0.5,
-          0.5,
-          1.0
-        ],
+        "color": [1.0, 0.5, 0.5, 1.0],
         "id": "npc_mat",
         "shader": "base_shader",
         "texture": "p_north_east"
       },
       {
-        "color": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
+        "color": [1.0, 1.0, 1.0, 1.0],
         "id": "player_mat",
         "shader": "base_shader",
         "texture": "p_north_east"
@@ -121,22 +106,17 @@
           "Up": 87
         },
         "TransformComponent": {
-          "position": [
-            0.0,
-            0.0,
-            0.05000000074505806
-          ],
-          "scale": [
-            0.5,
-            1.0,
-            1.0
-          ]
+          "position": [0.0, 0.0, 0.05000000074505806],
+          "scale": [0.5, 1.0, 1.0]
         },
         "PointLightComponent": {
           "color": [1.0, 0.9, 0.7],
           "radius": 6.0,
           "intensity": 1.5
         }
+      },
+      "ScriptComponent": {
+        "scriptPath": "assets/scripts/PlayerMovement.obsl"
       }
     },
     {
@@ -164,16 +144,8 @@
           "timePerStep": 0.15000000596046448
         },
         "TransformComponent": {
-          "position": [
-            3.4639999866485596,
-            6.0,
-            0.05000000074505806
-          ],
-          "scale": [
-            1.0,
-            1.0,
-            1.0
-          ]
+          "position": [3.4639999866485596, 6.0, 0.05000000074505806],
+          "scale": [1.0, 1.0, 1.0]
         },
         "PointLightComponent": {
           "color": [1.0, 0.2, 0.2],

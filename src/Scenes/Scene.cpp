@@ -40,7 +40,7 @@ void Scene::Update(const float dt) {
     m_Context.deltaTime = dt;
     // this looks stupid but is fine because Update checks for required component for system before running
     const glm::vec2 worldPos = InteractionSystem::Update(m_Registry, m_Context);
-    PlayerControlSystem::Update(m_Registry, m_Context, worldPos);
+    PlayerControlSystem::Update(m_Registry, worldPos);
     AISystem::Update(m_Registry, dt);
     MovementSystem::Update(m_Registry, dt);
     ScriptSystem::Update(m_Registry, m_Context);

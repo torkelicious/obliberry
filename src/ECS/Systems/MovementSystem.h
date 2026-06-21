@@ -38,7 +38,7 @@ namespace MovementSystem {
         if (!map) return;
 
         registry.ForEach<MovementComponent, TransformComponent>(
-            [&](const Entity entity, MovementComponent *moveComp, TransformComponent *transComp) {
+            [&](const Entity /*entity*/, MovementComponent *moveComp, TransformComponent *transComp) {
                 if (!moveComp->isMoving) return;
 
                 if (moveComp->currentPathIndex >= moveComp->currentPath.size()) {

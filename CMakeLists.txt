@@ -94,7 +94,6 @@ add_executable(
         src/ECS/Systems/PlayerControlSystem.h
         src/ECS/Systems/AISystem.h
         src/ECS/Components/MovementComponent.h
-        src/ECS/Components/PlayerInputComponent.h
         src/ECS/Systems/SpriteBillboardSystem.h
         src/ECS/Systems/MapRenderSystem.h
         src/ECS/Components/BillboardTagComponent.h

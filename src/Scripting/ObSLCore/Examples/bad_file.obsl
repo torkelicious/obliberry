@@ -1,3 +1,4 @@
+
 // Valid
 var starting_health = 100;
 var max_speed = 50.5;

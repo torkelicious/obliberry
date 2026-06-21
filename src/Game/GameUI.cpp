@@ -14,7 +14,6 @@
 #include "ECS/Components/MaterialComponent.h"
 #include "ECS/Components/MeshComponent.h"
 #include "ECS/Components/MovementComponent.h"
-#include "ECS/Components/PlayerInputComponent.h"
 #include "ECS/Components/PointLightComponent.h"
 
 namespace {
@@ -206,13 +205,6 @@ void Game::DrawInterface() {
                     if (ImGui::CollapsingHeader("Material Component")) {
                         const auto *mat = entity.GetComponent<MaterialComponent>();
                         ImGui::Text("Material Loaded: %s", mat->material ? "Yes" : "No");
-                    }
-                }
-
-                // PlayerInputComponent
-                if (entity.HasComponent<PlayerInputComponent>()) {
-                    if (ImGui::CollapsingHeader("Player Input Component")) {
-                        ImGui::TextWrapped("Entity is receiving player input (Keys bound).");
                     }
                 }
 

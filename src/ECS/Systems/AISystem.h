@@ -3,7 +3,6 @@
 
 #include "ECS/ECS.h"
 #include "Map/Hex.h"
-#include "ECS/Components/PlayerInputComponent.h"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Components/MovementComponent.h"
 #include "ECS/Components/MaterialComponent.h"
@@ -19,10 +18,13 @@ namespace AISystem {
         if (!map) return;
 
         HexCoords playerHex{0, 0};
-        registry.ForEach<PlayerInputComponent, TransformComponent>(
-            [&](Entity, PlayerInputComponent *, const TransformComponent *pt) {
-                const glm::vec3 pos = pt->transform.GetPosition();
-                playerHex = Math::HexMath::PixelToHex({pos.x, pos.y});
+
+        registry.ForEach<TransformComponent>(
+            [&](const Entity entity, const TransformComponent *pt) {
+                if (entity.GetName() == "Player") {
+                    const glm::vec3 pos = pt->transform.GetPosition();
+                    playerHex = Math::HexMath::PixelToHex({pos.x, pos.y});
+                }
             }
         );
 
@@ -33,10 +35,11 @@ namespace AISystem {
         registry.ForEach<MovementComponent, TransformComponent, MaterialComponent>(
             [&](const Entity entity, MovementComponent *move, const TransformComponent *trans,
                 const MaterialComponent *mat) {
-                if (entity.HasComponent<PlayerInputComponent>()) return;
+                if (entity.GetName() == "Player") return;
 
-                if (!move->isMoving && !map->grid.walkableTiles.empty()) {
+                if (!move->isMoving) {
                     move->idleTimer -= dt;
+
                     if (move->idleTimer <= 0.0f) {
                         HexCoords target;
                         bool valid = false;

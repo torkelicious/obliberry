@@ -1,6 +1,7 @@
 #ifndef OBLIBERRY_INPUTMANAGER_H
 #define OBLIBERRY_INPUTMANAGER_H
 
+#include <string>
 #include <GLFW/glfw3.h>
 
 class InputManager {
@@ -14,6 +15,8 @@ public:
     void HandleClickEvent(int button, int action, int mods);
 
     void SetMousePos(double xPos, double yPos);
+
+    static int GetKeyFromName(const std::string &keyName);
 
     [[nodiscard]] double MousePosX() const noexcept { return m_MousePosX; }
     [[nodiscard]] double MousePosY() const noexcept { return m_MousePosY; }

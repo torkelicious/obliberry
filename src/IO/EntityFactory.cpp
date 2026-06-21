@@ -4,7 +4,6 @@
 #include "ECS/ECS.h"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Components/MovementComponent.h"
-#include "ECS/Components/PlayerInputComponent.h"
 #include "ECS/Components/MeshComponent.h"
 #include "ECS/Components/MaterialComponent.h"
 #include "ECS/Components/DirectionalTextureComponent.h"
@@ -28,7 +27,8 @@ void EntityFactory::RegisterDeserializers() {
     if (!s_Deserializers.empty()) return;
 
     // TRANSFORM COMPONENT
-    s_Deserializers["TransformComponent"] = [](Entity &entity, const nlohmann::json &data, ResourceManager &resources) {
+    s_Deserializers["TransformComponent"] = [](Entity &entity, const nlohmann::json &data,
+                                               ResourceManager &/*resources*/) {
         TransformComponent tc;
         if (data.contains("position")) {
             tc.transform.SetPosition({data["position"][0], data["position"][1], data["position"][2]});
@@ -40,7 +40,8 @@ void EntityFactory::RegisterDeserializers() {
     };
 
     // MOVEMENT COMPONENT
-    s_Deserializers["MovementComponent"] = [](Entity &entity, const nlohmann::json &data, ResourceManager &resources) {
+    s_Deserializers["MovementComponent"] = [](Entity &entity, const nlohmann::json &data,
+                                              ResourceManager &/*resources*/) {
         MovementComponent mc;
         if (data.contains("timePerStep")) {
             mc.timePerStep = data["timePerStep"].get<float>();
@@ -49,18 +50,18 @@ void EntityFactory::RegisterDeserializers() {
     };
 
     // PLAYER INPUT COMPONENT
-    s_Deserializers["PlayerInputComponent"] = [
-            ](Entity &entity, const nlohmann::json &data, ResourceManager &resources) {
-                PlayerInputComponent input;
-                if (data.contains("LeftClick")) input.LeftClick = data["LeftClick"].get<int>();
-                if (data.contains("RightClick")) input.RightClick = data["RightClick"].get<int>();
-                if (data.contains("Up")) input.Up = data["Up"].get<int>();
-                if (data.contains("Down")) input.Down = data["Down"].get<int>();
-                if (data.contains("Left")) input.Left = data["Left"].get<int>();
-                if (data.contains("Right")) input.Right = data["Right"].get<int>();
-                if (data.contains("Quit")) input.Quit = data["Quit"].get<int>();
-                entity.AddComponent<PlayerInputComponent>(input);
-            };
+    //s_Deserializers["PlayerInputComponent"] = [
+    //        ](Entity &entity, const nlohmann::json &data, ResourceManager &resources) {
+    //            PlayerInputComponent input;
+    //            if (data.contains("LeftClick")) input.LeftClick = data["LeftClick"].get<int>();
+    //            if (data.contains("RightClick")) input.RightClick = data["RightClick"].get<int>();
+    //            if (data.contains("Up")) input.Up = data["Up"].get<int>();
+    //            if (data.contains("Down")) input.Down = data["Down"].get<int>();
+    //            if (data.contains("Left")) input.Left = data["Left"].get<int>();
+    //            if (data.contains("Right")) input.Right = data["Right"].get<int>();
+    //            if (data.contains("Quit")) input.Quit = data["Quit"].get<int>();
+    //            entity.AddComponent<PlayerInputComponent>(input);
+    //        };
 
     // MESH COMPONENT
     s_Deserializers["MeshComponent"] = [](Entity &entity, const nlohmann::json &data, ResourceManager &resources) {
@@ -121,52 +122,73 @@ void EntityFactory::RegisterDeserializers() {
     };
 
     // SCRIPT COMPONENT
-    s_Deserializers["ScriptComponent"] = [](Entity &entity, const nlohmann::json &data, ResourceManager &resources) {
-        if (data.contains("scriptPath")) {
-            auto &sc = entity.AddComponent<ScriptComponent>();
-            sc.scriptPath = data["scriptPath"].get<std::string>();
-        } else {
-            entity.AddComponent<ScriptComponent>(); // empty component fallback...
-        }
-    };
+    s_Deserializers["ScriptComponent"] = [
+            ](Entity &entity, const nlohmann::json &data, ResourceManager &/*resources*/) {
+                auto &[scriptPaths, instance_envs, on_update_functions, on_destroy_functions, on_exit_functions,
+                    isInitialized,
+                    source_codes, ast_nodes, lastModified] = entity.AddComponent<ScriptComponent>();
+
+                if (data.contains("scriptPath")) {
+                    // Single script
+                    scriptPaths.push_back(data["scriptPath"].get<std::string>());
+                } else if (data.contains("scriptPaths") && data["scriptPaths"].is_array()) {
+                    // Multiple scripts
+                    for (const auto &scriptPath: data["scriptPaths"]) {
+                        scriptPaths.push_back(scriptPath.get<std::string>());
+                    }
+                }
+
+                // Initialize vectors to match the number of scripts
+                const size_t scriptCount = scriptPaths.size();
+                instance_envs.resize(scriptCount);
+                on_update_functions.resize(scriptCount, nullptr);
+                on_destroy_functions.resize(scriptCount, nullptr);
+                on_exit_functions.resize(scriptCount, nullptr);
+                isInitialized.resize(scriptCount, false);
+                source_codes.resize(scriptCount);
+                ast_nodes.resize(scriptCount);
+                lastModified.resize(scriptCount);
+            };
 }
 
 void EntityFactory::RegisterSerializers() {
     if (!s_Serializers.empty()) return;
 
     // TRANSFORM COMPONENT
-    s_Serializers["TransformComponent"] = [](const Entity &entity, nlohmann::json &data, ResourceManager &resources) {
-        if (entity.HasComponent<TransformComponent>()) {
-            const auto *tc = entity.GetComponent<TransformComponent>();
-            auto pos = tc->transform.GetPosition();
-            auto scale = tc->transform.GetScale();
-            data["TransformComponent"]["position"] = {pos.x, pos.y, pos.z};
-            data["TransformComponent"]["scale"] = {scale.x, scale.y, scale.z};
-        }
-    };
+    s_Serializers["TransformComponent"] = [
+            ](const Entity &entity, nlohmann::json &data, ResourceManager &/*resources*/) {
+                if (entity.HasComponent<TransformComponent>()) {
+                    const auto *tc = entity.GetComponent<TransformComponent>();
+                    auto pos = tc->transform.GetPosition();
+                    auto scale = tc->transform.GetScale();
+                    data["TransformComponent"]["position"] = {pos.x, pos.y, pos.z};
+                    data["TransformComponent"]["scale"] = {scale.x, scale.y, scale.z};
+                }
+            };
 
     // MOVEMENT COMPONENT
-    s_Serializers["MovementComponent"] = [](const Entity &entity, nlohmann::json &data, ResourceManager &resources) {
-        if (entity.HasComponent<MovementComponent>()) {
-            auto *mc = entity.GetComponent<MovementComponent>();
-            data["MovementComponent"]["timePerStep"] = mc->timePerStep;
-            // state data is ignored
-        }
-    };
+    s_Serializers["MovementComponent"] = [
+            ](const Entity &entity, nlohmann::json &data, ResourceManager &/*resources*/) {
+                if (entity.HasComponent<MovementComponent>()) {
+                    auto *mc = entity.GetComponent<MovementComponent>();
+                    data["MovementComponent"]["timePerStep"] = mc->timePerStep;
+                    // state data is ignored
+                }
+            };
 
     // PLAYER INPUT COMPONENT
-    s_Serializers["PlayerInputComponent"] = [](const Entity &entity, nlohmann::json &data, ResourceManager &resources) {
-        if (entity.HasComponent<PlayerInputComponent>()) {
-            auto *pic = entity.GetComponent<PlayerInputComponent>();
-            data["PlayerInputComponent"]["LeftClick"] = pic->LeftClick;
-            data["PlayerInputComponent"]["RightClick"] = pic->RightClick;
-            data["PlayerInputComponent"]["Up"] = pic->Up;
-            data["PlayerInputComponent"]["Down"] = pic->Down;
-            data["PlayerInputComponent"]["Left"] = pic->Left;
-            data["PlayerInputComponent"]["Right"] = pic->Right;
-            data["PlayerInputComponent"]["Quit"] = pic->Quit;
-        }
-    };
+    //s_Serializers["PlayerInputComponent"] = [](const Entity &entity, nlohmann::json &data, ResourceManager &resources) {
+    //    if (entity.HasComponent<PlayerInputComponent>()) {
+    //        auto *pic = entity.GetComponent<PlayerInputComponent>();
+    //        data["PlayerInputComponent"]["LeftClick"] = pic->LeftClick;
+    //        data["PlayerInputComponent"]["RightClick"] = pic->RightClick;
+    //        data["PlayerInputComponent"]["Up"] = pic->Up;
+    //        data["PlayerInputComponent"]["Down"] = pic->Down;
+    //        data["PlayerInputComponent"]["Left"] = pic->Left;
+    //        data["PlayerInputComponent"]["Right"] = pic->Right;
+    //        data["PlayerInputComponent"]["Quit"] = pic->Quit;
+    //    }
+    //};
 
     // MESH COMPONENT
     s_Serializers["MeshComponent"] = [](const Entity &entity, nlohmann::json &data, ResourceManager &resources) {
@@ -227,8 +249,17 @@ void EntityFactory::RegisterSerializers() {
     // SCRIPT COMPONENT
     s_Serializers["ScriptComponent"] = [](const Entity &entity, nlohmann::json &data, ResourceManager &) {
         if (entity.HasComponent<ScriptComponent>()) {
-            const auto *scriptComp = entity.GetComponent<ScriptComponent>();
-            data["ScriptComponent"]["scriptPath"] = scriptComp->scriptPath;
+            if (const auto *scriptComp = entity.GetComponent<ScriptComponent>(); scriptComp->scriptPaths.size() == 1) {
+                // Single script
+                data["ScriptComponent"]["scriptPath"] = scriptComp->scriptPaths[0];
+            } else if (scriptComp->scriptPaths.size() > 1) {
+                // Multiple scripts
+                nlohmann::json scriptPathsArray = nlohmann::json::array();
+                for (const auto &scriptPath: scriptComp->scriptPaths) {
+                    scriptPathsArray.push_back(scriptPath);
+                }
+                data["ScriptComponent"]["scriptPaths"] = scriptPathsArray;
+            }
         }
     };
 }

@@ -2,100 +2,55 @@
   "assets": {
     "materials": [
       {
-        "color": [
-          1.0,
-          0.5,
-          0.5,
-          1.0
-        ],
+        "color": [1.0, 0.5, 0.5, 1.0],
         "id": "npc_mat",
         "shader": "base_shader",
         "texture": "p_north_east"
       },
       {
-        "color": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
+        "color": [1.0, 1.0, 1.0, 1.0],
         "id": "player_mat",
         "shader": "base_shader",
         "texture": "p_north_east"
       },
       {
-        "color": [
-          1.0,
-          0.5,
-          0.25,
-          1.0
-        ],
+        "color": [1.0, 0.5, 0.25, 1.0],
         "id": "t_mat",
         "shader": "base_shader",
         "texture": ""
       },
       {
-        "color": [
-          1.0,
-          0.20000000298023224,
-          0.20000000298023224,
-          1.0
-        ],
+        "color": [1.0, 0.20000000298023224, 0.20000000298023224, 1.0],
         "id": "red_mat",
         "shader": "base_shader",
         "texture": ""
       },
       {
-        "color": [
-          0.20000000298023224,
-          1.0,
-          0.20000000298023224,
-          1.0
-        ],
+        "color": [0.20000000298023224, 1.0, 0.20000000298023224, 1.0],
         "id": "green_mat",
         "shader": "base_shader",
         "texture": ""
       },
       {
-        "color": [
-          0.20000000298023224,
-          0.4000000059604645,
-          1.0,
-          1.0
-        ],
+        "color": [0.20000000298023224, 0.4000000059604645, 1.0, 1.0],
         "id": "blue_mat",
         "shader": "base_shader",
         "texture": ""
       },
       {
-        "color": [
-          1.0,
-          1.0,
-          0.20000000298023224,
-          1.0
-        ],
+        "color": [1.0, 1.0, 0.20000000298023224, 1.0],
         "id": "yellow_mat",
         "shader": "base_shader",
         "texture": ""
       },
       {
-        "color": [
-          1.0,
-          0.20000000298023224,
-          1.0,
-          1.0
-        ],
+        "color": [1.0, 0.20000000298023224, 1.0, 1.0],
         "id": "purple_mat",
         "shader": "base_shader",
         "texture": ""
       },
       {
-        "color": [
-          0.20000000298023224,
-          1.0,
-          1.0,
-          1.0
-        ],
+        "color": [0.20000000298023224, 1.0, 1.0, 1.0],
         "id": "cyan_mat",
         "shader": "base_shader",
         "texture": ""
@@ -193,7 +148,10 @@
     {
       "components": {
         "ScriptComponent": {
-          "scriptPath": "assets/scripts/engine_integ_test.obsl"
+          "scriptPaths": [
+            "assets/scripts/PlayerMovement.obsl",
+            "assets/scripts/engine_integ_test.obsl"
+          ]
         },
         "BillboardTagComponent": {},
         "DirectionalTextureComponent": {
@@ -216,34 +174,12 @@
         "MovementComponent": {
           "timePerStep": 0.15000000596046448
         },
-        "PlayerInputComponent": {
-          "Down": 83,
-          "Left": 65,
-          "LeftClick": 0,
-          "Quit": 256,
-          "Right": 68,
-          "RightClick": 1,
-          "Up": 87,
-          "Console": 96
-        },
         "TransformComponent": {
-          "position": [
-            0.0,
-            0.0,
-            0.05000000074505806
-          ],
-          "scale": [
-            0.5,
-            1.0,
-            1.0
-          ]
+          "position": [0.0, 0.0, 0.05000000074505806],
+          "scale": [0.5, 1.0, 1.0]
         },
         "PointLightComponent": {
-          "color": [
-            1.0,
-            0.9,
-            0.7
-          ],
+          "color": [1.0, 0.9, 0.7],
           "radius": 2.5,
           "intensity": 1.0
         }
@@ -274,23 +210,11 @@
           "timePerStep": 0.15000000596046448
         },
         "TransformComponent": {
-          "position": [
-            -11.258000373840332,
-            -7.5,
-            0.05000000074505806
-          ],
-          "scale": [
-            1.0,
-            1.0,
-            1.0
-          ]
+          "position": [-11.258000373840332, -7.5, 0.05000000074505806],
+          "scale": [1.0, 1.0, 1.0]
         },
         "PointLightComponent": {
-          "color": [
-            1.0,
-            0.2,
-            0.2
-          ],
+          "color": [1.0, 0.2, 0.2],
           "radius": 5.0,
           "intensity": 1.2
         }
@@ -310,16 +234,8 @@
           "timePerStep": 0.05000000074505806
         },
         "TransformComponent": {
-          "position": [
-            -3.8970000743865967,
-            -9.75,
-            0.05000000074505806
-          ],
-          "scale": [
-            1.0,
-            1.0,
-            1.0
-          ]
+          "position": [-3.8970000743865967, -9.75, 0.05000000074505806],
+          "scale": [1.0, 1.0, 1.0]
         }
       },
       "name": "Ellipse"
@@ -337,16 +253,8 @@
           "timePerStep": 0.05000000074505806
         },
         "TransformComponent": {
-          "position": [
-            -1.7319999933242798,
-            -15.0,
-            0.05000000074505806
-          ],
-          "scale": [
-            1.0,
-            1.0,
-            1.0
-          ]
+          "position": [-1.7319999933242798, -15.0, 0.05000000074505806],
+          "scale": [1.0, 1.0, 1.0]
         }
       },
       "name": "Triangle"
@@ -364,16 +272,8 @@
           "timePerStep": 0.05000000074505806
         },
         "TransformComponent": {
-          "position": [
-            -6.061999797821045,
-            -4.5,
-            0.05000000074505806
-          ],
-          "scale": [
-            1.0,
-            1.0,
-            1.0
-          ]
+          "position": [-6.061999797821045, -4.5, 0.05000000074505806],
+          "scale": [1.0, 1.0, 1.0]
         }
       },
       "name": "Red Circle"
@@ -391,16 +291,8 @@
           "timePerStep": 0.05000000074505806
         },
         "TransformComponent": {
-          "position": [
-            16.886999130249023,
-            2.25,
-            0.05000000074505806
-          ],
-          "scale": [
-            1.0,
-            1.0,
-            1.0
-          ]
+          "position": [16.886999130249023, 2.25, 0.05000000074505806],
+          "scale": [1.0, 1.0, 1.0]
         }
       },
       "name": "Green Pentagon"
@@ -418,16 +310,8 @@
           "timePerStep": 0.05000000074505806
         },
         "TransformComponent": {
-          "position": [
-            3.0309998989105225,
-            -14.25,
-            0.05000000074505806
-          ],
-          "scale": [
-            1.0,
-            1.0,
-            1.0
-          ]
+          "position": [3.0309998989105225, -14.25, 0.05000000074505806],
+          "scale": [1.0, 1.0, 1.0]
         }
       },
       "name": "Blue Hexagon"
@@ -445,16 +329,8 @@
           "timePerStep": 0.05000000074505806
         },
         "TransformComponent": {
-          "position": [
-            9.093000411987305,
-            5.25,
-            0.05000000074505806
-          ],
-          "scale": [
-            1.0,
-            1.0,
-            1.0
-          ]
+          "position": [9.093000411987305, 5.25, 0.05000000074505806],
+          "scale": [1.0, 1.0, 1.0]
         }
       },
       "name": "Yellow Octagon"
@@ -472,16 +348,8 @@
           "timePerStep": 0.05000000074505806
         },
         "TransformComponent": {
-          "position": [
-            -0.43299999833106995,
-            8.25,
-            0.05000000074505806
-          ],
-          "scale": [
-            1.0,
-            1.0,
-            1.0
-          ]
+          "position": [-0.43299999833106995, 8.25, 0.05000000074505806],
+          "scale": [1.0, 1.0, 1.0]
         }
       },
       "name": "Purple Ring"
@@ -499,16 +367,8 @@
           "timePerStep": 0.05000000074505806
         },
         "TransformComponent": {
-          "position": [
-            -0.8659999966621399,
-            -10.5,
-            0.05000000074505806
-          ],
-          "scale": [
-            1.0,
-            1.0,
-            1.0
-          ]
+          "position": [-0.8659999966621399, -10.5, 0.05000000074505806],
+          "scale": [1.0, 1.0, 1.0]
         }
       },
       "name": "Cyan Sector"
@@ -526,16 +386,8 @@
           "timePerStep": 0.05000000074505806
         },
         "TransformComponent": {
-          "position": [
-            13.42300033569336,
-            -14.25,
-            0.05000000074505806
-          ],
-          "scale": [
-            1.0,
-            1.0,
-            1.0
-          ]
+          "position": [13.42300033569336, -14.25, 0.05000000074505806],
+          "scale": [1.0, 1.0, 1.0]
         }
       },
       "name": "Diamond"
@@ -556,12 +408,7 @@
     ]
   },
   "properties": {
-    "clear_color": [
-      1.0,
-      0.5,
-      0.20000000298023224,
-      1.0
-    ],
+    "clear_color": [1.0, 0.5, 0.20000000298023224, 1.0],
     "name": "test1",
     "ambient_light": 0.15
   }
