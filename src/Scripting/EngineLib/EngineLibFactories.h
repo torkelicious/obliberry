@@ -29,7 +29,7 @@ namespace EngineLibFactories {
         GCProtectGuard &operator=(const GCProtectGuard &) = delete;
     };
 
-    //  TRANSFORM COMPONENT 
+    // TRANSFORM COMPONENT
     inline ObSL::ObSLObject *CreateTransformObject(ObSL::Interpreter *interpreter, Registry &registry, EntityID id) {
         auto *obj = interpreter->gc.allocate<ObSL::ObSLObject>();
         GCProtectGuard guard(interpreter, obj);
@@ -39,7 +39,8 @@ namespace EngineLibFactories {
                 && std::holds_alternative<double>(args[2])) {
                 if (auto *comp = registry.GetComponent<TransformComponent>(id)) {
                     comp->transform.SetPosition({
-                        static_cast<float>(std::get<double>(args[0])), static_cast<float>(std::get<double>(args[1])),
+                        static_cast<float>(std::get<double>(args[0])),
+                        static_cast<float>(std::get<double>(args[1])),
                         static_cast<float>(std::get<double>(args[2]))
                     });
                 }
@@ -52,7 +53,8 @@ namespace EngineLibFactories {
                 && std::holds_alternative<double>(args[2])) {
                 if (auto *comp = registry.GetComponent<TransformComponent>(id)) {
                     comp->transform.SetRotation({
-                        static_cast<float>(std::get<double>(args[0])), static_cast<float>(std::get<double>(args[1])),
+                        static_cast<float>(std::get<double>(args[0])),
+                        static_cast<float>(std::get<double>(args[1])),
                         static_cast<float>(std::get<double>(args[2]))
                     });
                 }
@@ -65,7 +67,8 @@ namespace EngineLibFactories {
                 && std::holds_alternative<double>(args[2])) {
                 if (auto *comp = registry.GetComponent<TransformComponent>(id)) {
                     comp->transform.SetScale({
-                        static_cast<float>(std::get<double>(args[0])), static_cast<float>(std::get<double>(args[1])),
+                        static_cast<float>(std::get<double>(args[0])),
+                        static_cast<float>(std::get<double>(args[1])),
                         static_cast<float>(std::get<double>(args[2]))
                     });
                 }
@@ -126,13 +129,13 @@ namespace EngineLibFactories {
         obj->fields["GetRotation"] = interpreter->gc.allocate<ObSL::NativeFunction>(
             0, std::move(get_rot), "GetRotation");
         obj->fields["GetScale"] = interpreter->gc.allocate<ObSL::NativeFunction>(0, std::move(get_scale), "GetScale");
-
         obj->fields["IsMoving"] = interpreter->gc.allocate<ObSL::NativeFunction>(
             0, std::move(is_moving_body), "IsMoving");
+
         return obj;
     }
 
-    //  POINT LIGHT COMPONENT 
+    // POINT LIGHT COMPONENT
     inline ObSL::ObSLObject *CreatePointLightObject(ObSL::Interpreter *interpreter, Registry &registry, EntityID id) {
         auto *obj = interpreter->gc.allocate<ObSL::ObSLObject>();
         GCProtectGuard guard(interpreter, obj);
@@ -174,7 +177,7 @@ namespace EngineLibFactories {
         return obj;
     }
 
-    //  MOVEMENT COMPONENT 
+    // MOVEMENT COMPONENT
     inline ObSL::ObSLObject *CreateMovementObject(ObSL::Interpreter *interpreter, Registry &registry, EntityID id) {
         auto *obj = interpreter->gc.allocate<ObSL::ObSLObject>();
         GCProtectGuard guard(interpreter, obj);
@@ -210,7 +213,7 @@ namespace EngineLibFactories {
         return obj;
     }
 
-    //  MAP STATE COMPONENT 
+    // MAP STATE COMPONENT
     inline ObSL::ObSLObject *CreateMapStateObject(ObSL::Interpreter *interpreter, Registry &registry, EntityID id) {
         auto *obj = interpreter->gc.allocate<ObSL::ObSLObject>();
         GCProtectGuard guard(interpreter, obj);
@@ -252,7 +255,7 @@ namespace EngineLibFactories {
         return obj;
     }
 
-    //  DIRECTIONAL TEXTURE COMPONENT 
+    // DIRECTIONAL TEXTURE COMPONENT
     inline ObSL::ObSLObject *CreateDirectionalTextureObject(ObSL::Interpreter *interpreter, Registry &registry,
                                                             EntityID id) {
         auto *obj = interpreter->gc.allocate<ObSL::ObSLObject>();
@@ -270,7 +273,7 @@ namespace EngineLibFactories {
         return obj;
     }
 
-    //  TAG COMPONENTS 
+    // TAG COMPONENTS
     inline ObSL::ObSLObject *CreateBillboardTagObject(ObSL::Interpreter *interpreter, Registry &, EntityID) {
         return interpreter->gc.allocate<ObSL::ObSLObject>();
     }
