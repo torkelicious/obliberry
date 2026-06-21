@@ -137,6 +137,7 @@ add_executable(
         src/Scripting/EngineLib/EngineLib.h
         src/ECS/Components/DestroyTagComponent.h
         src/Scripting/EngineLib/EngineLibFactories.h
+        src/IO/PrefabManager.h
 )
 
 target_include_directories(

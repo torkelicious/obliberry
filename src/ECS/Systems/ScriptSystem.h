@@ -14,11 +14,17 @@
 #include "Scripting/ObSLCore/Parser/Parser.h"
 
 namespace ScriptSystem {
-    inline void InitalizeScript(ScriptComponent *script, ObSL::Interpreter *interpreter, size_t scriptIndex = 0) {
+    inline void InitializeScript(ScriptComponent *script, ObSL::Interpreter *interpreter, size_t scriptIndex = 0) {
         if (scriptIndex >= script->scriptPaths.size() || script->isInitialized[scriptIndex] || !interpreter) return;
+
+        // Clear any stale function pointers before destroying the old AST
+        script->on_update_functions[scriptIndex] = nullptr;
+        script->on_destroy_functions[scriptIndex] = nullptr;
+        script->on_exit_functions[scriptIndex] = nullptr;
 
         // create entity script env
         script->instance_envs[scriptIndex] = std::make_shared<ObSL::Environment>(interpreter->get_global_environment());
+        interpreter->register_environment(script->instance_envs[scriptIndex]);
 
         // read file
         std::ifstream file(script->scriptPaths[scriptIndex]);
@@ -43,28 +49,27 @@ namespace ScriptSystem {
             ObSL::Parser parser(tokens);
 
             script->ast_nodes[scriptIndex] = parser.parse();
+
+            interpreter->set_current_environment(script->instance_envs[scriptIndex]);
             interpreter->interpret(script->ast_nodes[scriptIndex]);
 
             try {
                 if (auto val = script->instance_envs[scriptIndex]->get("on_update"); std::holds_alternative<
-                    ObSL::ObSLCallable
-                    *>(val)) {
+                    ObSL::ObSLCallable *>(val)) {
                     script->on_update_functions[scriptIndex] = std::get<ObSL::ObSLCallable *>(val);
                 }
             } catch (...) { script->on_update_functions[scriptIndex] = nullptr; }
 
             try {
                 if (auto val = script->instance_envs[scriptIndex]->get("on_destroy"); std::holds_alternative<
-                    ObSL::ObSLCallable
-                    *>(val)) {
+                    ObSL::ObSLCallable *>(val)) {
                     script->on_destroy_functions[scriptIndex] = std::get<ObSL::ObSLCallable *>(val);
                 }
             } catch (...) { script->on_destroy_functions[scriptIndex] = nullptr; }
 
             try {
                 if (auto val = script->instance_envs[scriptIndex]->get("on_exit"); std::holds_alternative<
-                    ObSL::ObSLCallable
-                    *>(val)) {
+                    ObSL::ObSLCallable *>(val)) {
                     script->on_exit_functions[scriptIndex] = std::get<ObSL::ObSLCallable *>(val);
                 }
             } catch (...) { script->on_exit_functions[scriptIndex] = nullptr; }
@@ -73,9 +78,15 @@ namespace ScriptSystem {
         } catch (const std::exception &e) {
             std::cerr << "[ScriptSystem] Script Failed for [" << script->scriptPaths[scriptIndex] << "]:\n  " << e.
                     what() << "\n";
+            script->on_update_functions[scriptIndex] = nullptr;
+            script->on_destroy_functions[scriptIndex] = nullptr;
+            script->on_exit_functions[scriptIndex] = nullptr;
             script->isInitialized[scriptIndex] = true;
         } catch (...) {
             std::cerr << "[ScriptSystem] Unknown error initializing [" << script->scriptPaths[scriptIndex] << "]\n";
+            script->on_update_functions[scriptIndex] = nullptr;
+            script->on_destroy_functions[scriptIndex] = nullptr;
+            script->on_exit_functions[scriptIndex] = nullptr;
             script->isInitialized[scriptIndex] = true;
         }
     }
@@ -90,19 +101,20 @@ namespace ScriptSystem {
             // Process each script in the component
             for (size_t i = 0; i < script->scriptPaths.size(); i++) {
                 try {
-                    if (!script->isInitialized[i]) {
-                        std::cout << "[ScriptSystem] Initializing script: " << script->scriptPaths[i] << " for entity "
-                                << static_cast<uint32_t>(entity) << "\n";
-                        InitalizeScript(script, ctx.scriptEngine, i);
-                    }
-
-                    if (std::filesystem::exists(script->scriptPaths[i])) {
+                    if (script->isInitialized[i] && std::filesystem::exists(script->scriptPaths[i])) {
                         if (std::filesystem::last_write_time(script->scriptPaths[i]) != script->lastModified[i]) {
                             std::cout << "Script: " << script->scriptPaths[i] << " was modified, reloading it..\n";
                             script->isInitialized[i] = false;
                         }
                     }
 
+                    if (!script->isInitialized[i]) {
+                        std::cout << "[ScriptSystem] Initializing script: " << script->scriptPaths[i] << " for entity "
+                                << static_cast<uint32_t>(entity) << "\n";
+                        InitializeScript(script, ctx.scriptEngine, i);
+                    }
+
+                    // Execute update
                     if (script->isInitialized[i] && script->on_update_functions[i]) {
                         double raw_id = static_cast<EntityID>(entity);
                         const std::vector<ObSL::Value> args = {raw_id, static_cast<double>(ctx.deltaTime)};
@@ -136,6 +148,7 @@ namespace ScriptSystem {
                         std::cerr << "[ScriptSystem] Exception in on_destroy: " << e.what() << "\n";
                         if (script) script->on_destroy_functions[i] = nullptr;
                     } catch (...) {
+                        std::cerr << "[ScriptSystem] Unknown Exception in on_destroy loop!\n";
                     }
                 }
             });
@@ -159,6 +172,7 @@ namespace ScriptSystem {
                 } catch (const std::exception &e) {
                     std::cerr << "[ScriptSystem] Exception in on_exit: " << e.what() << "\n";
                 } catch (...) {
+                    std::cerr << "[ScriptSystem] Unknown Exception in on_exit loop!\n";
                 }
             }
         });

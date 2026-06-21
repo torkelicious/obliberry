@@ -8,6 +8,7 @@
 #include "Scripting/ObSLCore/Interpreter/Interpreter.h"
 #include "ECS/Components/MapComponent.h"
 #include "ECS/Systems/MovementSystem.h"
+#include "IO/PrefabManager.h"
 #include "Math/HexMath.h"
 
 // Entity Wrapper Object
@@ -400,4 +401,16 @@ void EngineLib::register_modules(ObSL::Interpreter &interpreter) {
             },
             "ClearPathTarget"
         ));
+
+    interpreter.get_global_environment()->define(
+        "Instantiate", interpreter.gc.allocate<ObSL::NativeFunction>(
+            1, // the filepath
+            [reg = m_registry, ctx = m_ctx](ObSL::Interpreter *interp,
+                                            const std::vector<ObSL::Value> &args) -> ObSL::Value {
+                if (args.empty() || !std::holds_alternative<std::string>(args[0])) return std::monostate{};
+                std::string prefab_path = std::get<std::string>(args[0]);
+                EntityID new_id = PrefabManager::Instantiate(*reg, *(ctx->resources), prefab_path);
+                if (new_id == 0) return std::monostate{}; // Failed to load
+                return CreateEntityObject(interp, *reg, new_id);
+            }, "Instantiate"));
 }

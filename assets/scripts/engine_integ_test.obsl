@@ -1,5 +1,23 @@
 println "Engine Integration Test Initialized";
 
+var has_spawned = 0;
+var bullet = null;
+
 fn on_update(entity_id, dt) {
-    // Simple test script that does nothing
+    if (has_spawned == 0) {
+        bullet = Instantiate("assets/prefabs/prefab_test.json");
+        has_spawned = 1;
+        var player = Find("Player");
+        var playerTrans = player.GetComponent("Transform");
+        var playerPos = playerTrans.GetPosition();
+
+        var bulletTrans = bullet.GetComponent("Transform");
+        bulletTrans.SetPosition(playerPos[0], playerPos[1] + 1.0, 0.1);
+    }
+    // move
+    if (bullet != null) {
+        var trans = bullet.GetComponent("Transform");
+        var currentPos = trans.GetPosition();
+        trans.SetPosition(currentPos[0], currentPos[1] + (dt * 5.0), currentPos[2]);
+    }
 }

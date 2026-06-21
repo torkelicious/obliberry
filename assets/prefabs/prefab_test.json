@@ -1,0 +1,33 @@
+{
+  "name": "Bullet",
+  "components": {
+    "BillboardTagComponent": {},
+    "MaterialComponent": {
+      "material_id": "t_mat"
+    },
+    "MeshComponent": {
+      "mesh_id": "tri_mesh"
+    },
+    "TransformComponent": {
+      "position": [
+        0,
+        0,
+        0.05
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "PointLightComponent": {
+      "color": [
+        1,
+        0,
+        0
+      ],
+      "intensity": 5.0,
+      "radius": 2.0
+    }
+  }
+}
