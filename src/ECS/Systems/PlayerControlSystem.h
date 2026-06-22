@@ -1,7 +1,6 @@
 #ifndef OBLIBERRY_PLAYERCONTROLSYSTEM_H
 #define OBLIBERRY_PLAYERCONTROLSYSTEM_H
 
-#include "Core/EngineContext.h"
 #include "ECS/ECS.h"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Components/MovementComponent.h"

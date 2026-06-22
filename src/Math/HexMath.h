@@ -57,7 +57,7 @@ namespace Math::HexMath {
         // cast to int32_t & round
         auto rq = static_cast<int32_t>(std::lround(h.q));
         auto rr = static_cast<int32_t>(std::lround(h.r));
-        const int32_t rs = static_cast<int32_t>(std::lround(h.s));
+        const auto rs = static_cast<int32_t>(std::lround(h.s));
 
         const float q_diff = std::abs(rq - h.q);
         const float r_diff = std::abs(rr - h.r);
@@ -70,7 +70,7 @@ namespace Math::HexMath {
 
         const int32_t col = rq + (rr - (rr & 1)) / 2;
         const int32_t row = rr;
-        return HexCoords(col, row);
+        return {col, row};
     }
 
     // alias cuz i can :)

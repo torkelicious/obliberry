@@ -16,9 +16,9 @@ struct SceneProperties {
 
 class Scene {
 public:
-    Scene(const EngineContext &context, SceneProperties props);
-
     ~Scene() = default;
+
+    Scene(EngineContext context, SceneProperties props);
 
     void OnEnter();
 

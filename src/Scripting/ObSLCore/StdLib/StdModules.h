@@ -15,7 +15,6 @@
 #include <thread>
 #include <format>
 #include <regex>
-
 #include "Scripting/ObSLCore/Interpreter/Interpreter.h"
 #include "Scripting/ObSLCore/StdLib/StdLib.h"
 

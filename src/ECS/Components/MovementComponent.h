@@ -9,8 +9,8 @@ struct MovementComponent {
     size_t currentPathIndex = 0;
     float stepTimer = 0.0f;
     float timePerStep = 0.15f;
-    bool isMoving = false;
     float idleTimer = 0.0f;
+    bool isMoving = false;
 };
 
 #endif //OBLIBERRY_MOVEMENTCOMPONENT_H

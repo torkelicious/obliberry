@@ -1,7 +1,6 @@
 #include "EngineLib.h"
 #include "EngineLibFactories.h"
 #include <string>
-
 #include "ECS/Components/CustomDataComponent.h"
 
 
@@ -10,7 +9,6 @@
  * gui stuff?
  * wait corutine type thingy (wait for specific time without pausing entire thread type thingy)
  */
-
 
 // Helper Object
 ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, Registry &registry, EntityID id) {
@@ -21,6 +19,7 @@ ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, Registry &r
     obj->fields["name"] = registry.GetEntityName(id);
 
     auto set_name_body = [id, &registry](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        if (!registry.IsValid(id)) return std::monostate{};
         if (!args.empty() && std::holds_alternative<std::string>(args[0])) {
             registry.SetEntityName(id, std::get<std::string>(args[0]));
         }
@@ -29,6 +28,7 @@ ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, Registry &r
 
     auto get_comp_body = [id, &registry
             ](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        if (!registry.IsValid(id)) return std::monostate{};
         if (args.empty() || !std::holds_alternative<std::string>(args[0])) return std::monostate{};
         const std::string comp_name = std::get<std::string>(args[0]);
 
@@ -46,6 +46,7 @@ ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, Registry &r
     };
 
     auto add_comp_body = [id, &registry](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        if (!registry.IsValid(id)) return std::monostate{};
         if (args.empty() || !std::holds_alternative<std::string>(args[0])) return std::monostate{};
         if (const std::string comp_name = std::get<std::string>(args[0]); comp_name == "DestroyTag") {
             if (!registry.HasComponent<DestroyTagComponent>(id)) {
@@ -58,13 +59,14 @@ ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, Registry &r
 
     // script defined custom components to the ECS
     auto add_custom_comp = [id, &registry](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        if (!registry.IsValid(id)) return std::monostate{};
         // args Component Name , The object/data
         if (args.size() == 2 && std::holds_alternative<std::string>(args[0])) {
             if (!registry.HasComponent<CustomDataComponent>(id)) {
                 registry.AddComponent<CustomDataComponent>(id, CustomDataComponent{});
             }
             auto *comp = registry.GetComponent<CustomDataComponent>(id);
-            std::string compName = std::get<std::string>(args[0]);
+            const std::string compName = std::get<std::string>(args[0]);
 
             comp->script_components[compName] = args[1];
             return true;
@@ -72,11 +74,11 @@ ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, Registry &r
         return false;
     };
     auto get_custom_comp = [id, &registry](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        if (!registry.IsValid(id)) return std::monostate{};
         //  name
         if (args.size() == 1 && std::holds_alternative<std::string>(args[0])) {
             if (auto *comp = registry.GetComponent<CustomDataComponent>(id)) {
-                std::string compName = std::get<std::string>(args[0]);
-                if (comp->script_components.find(compName) != comp->script_components.end()) {
+                if (const auto compName = std::get<std::string>(args[0]); comp->script_components.contains(compName)) {
                     return comp->script_components[compName]; // the script object
                 }
             }

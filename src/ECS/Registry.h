@@ -9,7 +9,6 @@
 #include <typeindex>
 #include <cassert>
 #include <ranges>
-
 #include "Entity.h"
 
 class Registry {
@@ -18,6 +17,7 @@ private:
     std::unordered_map<std::type_index, std::unique_ptr<IPool> > m_ComponentPools;
     std::vector<EntityID> m_LivingEntities;
     std::unordered_map<EntityID, std::string> m_EntityNames;
+    std::vector<bool> m_EntityStatus;
 
     template<typename T>
     ComponentPool<T> *GetPool() {
@@ -31,9 +31,15 @@ private:
 
 public:
     Registry() {
+        m_EntityStatus.resize(MAX_ENTITIES, false);
         for (EntityID i = 0; i < MAX_ENTITIES; ++i) {
             m_AvailableEntities.push(i);
         }
+    }
+
+    bool IsValid(const EntityID id) const {
+        if (id >= MAX_ENTITIES) return false;
+        return m_EntityStatus[id];
     }
 
     EntityID CreateEntity() {
@@ -41,6 +47,7 @@ public:
         const EntityID id = m_AvailableEntities.front();
         m_AvailableEntities.pop();
         m_LivingEntities.push_back(id);
+        m_EntityStatus[id] = true; // mark as alive
         return id;
     }
 
@@ -50,8 +57,8 @@ public:
         }
         std::erase(m_LivingEntities, entity);
         m_EntityNames.erase(entity);
-
         m_AvailableEntities.push(entity);
+        m_EntityStatus[entity] = false;
     }
 
     template<typename T>
@@ -61,11 +68,15 @@ public:
 
     template<typename T, typename... Args>
     T &AddComponent(EntityID entity, Args &&... args) {
+        assert(IsValid(entity) && "Attempted to add component to an invalid entity");
         return GetPool<T>()->Emplace(entity, std::forward<Args>(args)...);
     }
 
     template<typename T>
-    T *GetComponent(EntityID entity) { return GetPool<T>()->Get(entity); }
+    T *GetComponent(EntityID entity) {
+        if (!IsValid(entity)) { return nullptr; }
+        return GetPool<T>()->Get(entity);
+    }
 
     template<typename T>
     bool HasComponent(EntityID entity) { return GetPool<T>()->Has(entity); }

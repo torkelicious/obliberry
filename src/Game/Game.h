@@ -5,7 +5,7 @@
 #include "Core/EngineContext.h"
 #include "../Scenes/SceneManager.h"
 
-enum class GameState { MainMenu, Gameplay, Paused, EditorMode };
+enum class GameState : uint8_t { MainMenu, Gameplay, Paused, EditorMode };
 
 
 class Game {

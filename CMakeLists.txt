@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 4.2)
 project(obliberry)
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_package(glfw3 REQUIRED)
 find_package(glm REQUIRED)
@@ -151,6 +152,7 @@ add_executable(
         src/Scripting/EngineLib/Modules/EngineLibSceneManagement.cpp
         src/ECS/Components/CustomDataComponent.h
         src/Core/KeyMappings.cpp
+        src/Scripting/EngineLib/Modules/EngineLibTime.cpp
 )
 
 target_include_directories(

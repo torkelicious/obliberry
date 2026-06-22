@@ -99,7 +99,7 @@ namespace ScriptSystem {
         };
 
         registry.ForEach<ScriptComponent>([&](const Entity entity, ScriptComponent *script) {
-            const EntityID raw_id = static_cast<EntityID>(entity);
+            const auto raw_id = static_cast<EntityID>(entity);
 
             for (size_t i = 0; i < script->scriptPaths.size(); i++) {
                 if (!script->isInitialized[i]) {
@@ -108,8 +108,8 @@ namespace ScriptSystem {
 
                 try {
                     if (std::filesystem::exists(script->scriptPaths[i])) {
-                        auto current_time = std::filesystem::last_write_time(script->scriptPaths[i]);
-                        if (current_time > script->lastModified[i]) {
+                        if (auto current_time = std::filesystem::last_write_time(script->scriptPaths[i]);
+                            current_time > script->lastModified[i]) {
                             script->isInitialized[i] = false;
                             InitializeScript(registry, raw_id, script, ctx.scriptEngine, i);
                             std::cout << "[ScriptSystem] Hot-reloaded script: " << script->scriptPaths[i] << "\n";

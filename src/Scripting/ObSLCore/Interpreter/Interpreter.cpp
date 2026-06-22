@@ -43,6 +43,8 @@ namespace ObSL {
         }
     }
 
+    // The type is manually checked so static casts are OK!!!
+    // NOLINTBEGIN(*-pro-type-static-cast-downcast)
     void Interpreter::execute(const Stmt *stmt) {
         switch (stmt->type()) {
             case StmtType::Using: return execute_using_stmt(static_cast<const UsingStmt *>(stmt));
@@ -86,6 +88,8 @@ namespace ObSL {
         throw std::runtime_error("Unknown expression type in interpreter.");
     }
 
+    // NOLINTEND(*-pro-type-static-cast-downcast)
+
     void Interpreter::execute_function_stmt(const FunctionStmt *stmt) {
         auto *function = gc.allocate<ObSLFunction>(stmt, environment);
         environment->define(stmt->name, function);
@@ -128,9 +132,9 @@ namespace ObSL {
             using T = std::decay_t<T0>;
             if constexpr (std::is_same_v<T, std::monostate>) m_stdout << "null";
             else if constexpr (std::is_same_v<T, bool>) m_stdout << (arg ? "true" : "false");
-            else if constexpr (std::is_same_v<T, double>) m_stdout << arg;
-            else if constexpr (std::is_same_v<T, std::string>) m_stdout << arg;
-            else if constexpr (std::is_same_v<T, ObSLCallable *>) m_stdout << (arg ? arg->to_string() : "null");
+            else if constexpr (std::is_same_v<T, double> || std::is_same_v<T, std::string>) { m_stdout << arg; } else if
+            constexpr (std::is_same_v<T, ObSLCallable *>)
+                m_stdout << (arg ? arg->to_string() : "null");
             else if constexpr (std::is_same_v<T, ObSLArray *>) m_stdout << (arg ? "[Array]" : "null");
             else if constexpr (std::is_same_v<T, ObSLObject *>) m_stdout << (arg ? "[Object]" : "null");
         }, value);

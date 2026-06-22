@@ -14,7 +14,7 @@
 namespace InteractionSystem {
     [[nodiscard]] inline glm::vec2 Update(Registry &registry, const EngineContext &ctx) noexcept {
         const auto windowWidth = static_cast<float>(ctx.window->GetWidth());
-        const float windowHeight = static_cast<float>(ctx.window->GetHeight());
+        const auto windowHeight = static_cast<float>(ctx.window->GetHeight());
 
         // Viewport Zoom
         if (ctx.input->ScrollY() != 0.0) {

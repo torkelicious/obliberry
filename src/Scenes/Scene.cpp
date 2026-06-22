@@ -10,13 +10,14 @@
 #include "IO/EntityFactory.h"
 #include "IO/SceneSerialization.h"
 #include <iostream>
-
+#include <utility>
 #include "ECS/Systems/ScriptSystem.h"
+#include "IO/PrefabManager.h"
 #include "Scripting/EngineLib/EngineLib.h"
 #include "Sound/AudioEngine.h"
 
-Scene::Scene(const EngineContext &context, SceneProperties props)
-    : m_Properties(std::move(props)), m_Context(context) {
+Scene::Scene(EngineContext context, SceneProperties props)
+    : m_Properties(std::move(props)), m_Context(std::move(context)) {
 }
 
 void Scene::OnEnter() {
@@ -75,12 +76,15 @@ void Scene::OnExit() {
         });
 
     for (const EntityID id: deadEntities) {
-        m_Registry.DestroyEntity(id);
+        if (m_Registry.IsValid(id)) {
+            m_Registry.DestroyEntity(id);
+        }
     }
 
     ScriptSystem::OnSceneExit(m_Registry, m_Context);
     if (m_Context.renderer) {
         m_Context.renderer->Clean();
     }
+    PrefabManager::ClearCache();
     std::cout << "Exiting Scene " << m_Properties.ScenePath << "\n";
 }

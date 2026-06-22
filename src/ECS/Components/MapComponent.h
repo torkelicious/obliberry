@@ -26,8 +26,6 @@ struct MapComponent {
     std::shared_ptr<Material> outlineMat;
     std::shared_ptr<Material> pathToMat;
 
-    bool needsMeshUpdate = true;
-
     // monobuffers
     //               // type            transforms
     std::unordered_map<uint8_t, std::vector<glm::mat4> > visibles;
@@ -37,6 +35,8 @@ struct MapComponent {
 
     // lighting
     Lightmap lightmap;
+
+    bool needsMeshUpdate = true;
 };
 
 #endif //OBLIBERRY_MAPCOMPONENT_H

@@ -562,14 +562,16 @@ namespace ObSL {
     }
 
     bool Parser::match(const std::initializer_list<TokenType> types) {
-        for (const TokenType type: types) {
-            if (check(type)) {
-                advance();
-                return true;
-            }
+        const auto it = std::ranges::find_if(types, [this](const TokenType type) {
+            return check(type);
+        });
+        if (it != types.end()) {
+            advance();
+            return true;
         }
         return false;
     }
+
 
     bool Parser::match(const TokenType type) {
         if (check(type)) {

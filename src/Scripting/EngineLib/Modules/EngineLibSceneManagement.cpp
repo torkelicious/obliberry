@@ -2,6 +2,7 @@
 #include "Scenes/SceneManager.h"
 #include "Scenes/Scene.h"
 #include "Core/EngineContext.h"
+#include "IO/PrefabManager.h"
 #include "Scripting/ObSLCore/Interpreter/Interpreter.h"
 
 void EngineLib::register_scene_management_modules(ObSL::Interpreter &interpreter) {
