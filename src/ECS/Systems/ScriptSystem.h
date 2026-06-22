@@ -13,11 +13,14 @@
 #include "Scripting/ObSLCore/Lexer/Lexer.h"
 #include "Scripting/ObSLCore/Parser/Parser.h"
 
+ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, Registry &registry, EntityID id);
+
 namespace ScriptSystem {
-    inline void InitializeScript(ScriptComponent *script, ObSL::Interpreter *interpreter, size_t scriptIndex = 0) {
+    inline void InitializeScript(Registry &registry, EntityID entityId, ScriptComponent *script,
+                                 ObSL::Interpreter *interpreter, size_t scriptIndex = 0) {
         if (scriptIndex >= script->scriptPaths.size() || script->isInitialized[scriptIndex] || !interpreter) return;
 
-        // Clear any stale function pointers before destroying the old AST
+        // clear any stale function pointers
         script->on_update_functions[scriptIndex] = nullptr;
         script->on_destroy_functions[scriptIndex] = nullptr;
         script->on_exit_functions[scriptIndex] = nullptr;
@@ -26,68 +29,66 @@ namespace ScriptSystem {
         script->instance_envs[scriptIndex] = std::make_shared<ObSL::Environment>(interpreter->get_global_environment());
         interpreter->register_environment(script->instance_envs[scriptIndex]);
 
+        auto *entityWrapper = CreateEntityObject(interpreter, registry, entityId);
+        script->instance_envs[scriptIndex]->define("this", entityWrapper);
+
         // read file
         std::ifstream file(script->scriptPaths[scriptIndex]);
         if (!file.is_open()) {
             std::cerr << "[ScriptSystem] Error: Failed to open script file: " << script->scriptPaths[scriptIndex] <<
                     "\n";
-            script->isInitialized[scriptIndex] = true;
             return;
         }
-        std::stringstream buff;
-        buff << file.rdbuf();
 
-        // store source code permanently in the component
-        script->source_codes[scriptIndex] = buff.str();
-        if (std::filesystem::exists(script->scriptPaths[scriptIndex])) {
-            script->lastModified[scriptIndex] = std::filesystem::last_write_time(script->scriptPaths[scriptIndex]);
-        }
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+        script->source_codes[scriptIndex] = buffer.str();
+        script->lastModified[scriptIndex] = std::filesystem::last_write_time(script->scriptPaths[scriptIndex]);
 
         try {
             ObSL::Lexer lexer(script->source_codes[scriptIndex]);
-            auto tokens = lexer.tokenize();
-            ObSL::Parser parser(tokens);
+            std::vector<ObSL::Token> tokens = lexer.tokenize();
 
+            ObSL::Parser parser(tokens);
             script->ast_nodes[scriptIndex] = parser.parse();
 
+            auto prev_env = interpreter->get_current_environment();
             interpreter->set_current_environment(script->instance_envs[scriptIndex]);
+
             interpreter->interpret(script->ast_nodes[scriptIndex]);
 
+            // look for built in hook functions
             try {
-                if (auto val = script->instance_envs[scriptIndex]->get("on_update"); std::holds_alternative<
+                if (const auto val = script->instance_envs[scriptIndex]->get("on_update"); std::holds_alternative<
                     ObSL::ObSLCallable *>(val)) {
                     script->on_update_functions[scriptIndex] = std::get<ObSL::ObSLCallable *>(val);
                 }
-            } catch (...) { script->on_update_functions[scriptIndex] = nullptr; }
+            } catch (...) {
+            }
 
             try {
-                if (auto val = script->instance_envs[scriptIndex]->get("on_destroy"); std::holds_alternative<
+                if (const auto val = script->instance_envs[scriptIndex]->get("on_destroy"); std::holds_alternative<
                     ObSL::ObSLCallable *>(val)) {
                     script->on_destroy_functions[scriptIndex] = std::get<ObSL::ObSLCallable *>(val);
                 }
-            } catch (...) { script->on_destroy_functions[scriptIndex] = nullptr; }
+            } catch (...) {
+            }
 
             try {
-                if (auto val = script->instance_envs[scriptIndex]->get("on_exit"); std::holds_alternative<
+                if (const auto val = script->instance_envs[scriptIndex]->get("on_exit"); std::holds_alternative<
                     ObSL::ObSLCallable *>(val)) {
                     script->on_exit_functions[scriptIndex] = std::get<ObSL::ObSLCallable *>(val);
                 }
-            } catch (...) { script->on_exit_functions[scriptIndex] = nullptr; }
+            } catch (...) {
+            }
+
+            // restore the previous environment
+            interpreter->set_current_environment(prev_env);
 
             script->isInitialized[scriptIndex] = true;
         } catch (const std::exception &e) {
-            std::cerr << "[ScriptSystem] Script Failed for [" << script->scriptPaths[scriptIndex] << "]:\n  " << e.
-                    what() << "\n";
-            script->on_update_functions[scriptIndex] = nullptr;
-            script->on_destroy_functions[scriptIndex] = nullptr;
-            script->on_exit_functions[scriptIndex] = nullptr;
-            script->isInitialized[scriptIndex] = true;
-        } catch (...) {
-            std::cerr << "[ScriptSystem] Unknown error initializing [" << script->scriptPaths[scriptIndex] << "]\n";
-            script->on_update_functions[scriptIndex] = nullptr;
-            script->on_destroy_functions[scriptIndex] = nullptr;
-            script->on_exit_functions[scriptIndex] = nullptr;
-            script->isInitialized[scriptIndex] = true;
+            std::cerr << "[ScriptSystem] Error compiling/executing '" << script->scriptPaths[scriptIndex] << "':\n  " <<
+                    e.what() << "\n";
         }
     }
 
@@ -98,57 +99,58 @@ namespace ScriptSystem {
         };
 
         registry.ForEach<ScriptComponent>([&](const Entity entity, ScriptComponent *script) {
-            // Process each script in the component
+            const EntityID raw_id = static_cast<EntityID>(entity);
+
             for (size_t i = 0; i < script->scriptPaths.size(); i++) {
+                if (!script->isInitialized[i]) {
+                    InitializeScript(registry, raw_id, script, ctx.scriptEngine, i);
+                }
+
                 try {
-                    if (script->isInitialized[i] && std::filesystem::exists(script->scriptPaths[i])) {
-                        if (std::filesystem::last_write_time(script->scriptPaths[i]) != script->lastModified[i]) {
-                            std::cout << "Script: " << script->scriptPaths[i] << " was modified, reloading it..\n";
+                    if (std::filesystem::exists(script->scriptPaths[i])) {
+                        auto current_time = std::filesystem::last_write_time(script->scriptPaths[i]);
+                        if (current_time > script->lastModified[i]) {
                             script->isInitialized[i] = false;
+                            InitializeScript(registry, raw_id, script, ctx.scriptEngine, i);
+                            std::cout << "[ScriptSystem] Hot-reloaded script: " << script->scriptPaths[i] << "\n";
                         }
                     }
+                } catch (const std::exception &e) {
+                    std::cerr << "[ScriptSystem] reload error: " << e.what() << "\n";
+                }
 
-                    if (!script->isInitialized[i]) {
-                        std::cout << "[ScriptSystem] Initializing script: " << script->scriptPaths[i] << " for entity "
-                                << static_cast<uint32_t>(entity) << "\n";
-                        InitializeScript(script, ctx.scriptEngine, i);
-                    }
-
-                    // Execute update
+                try {
                     if (script->isInitialized[i] && script->on_update_functions[i]) {
-                        double raw_id = static_cast<EntityID>(entity);
-                        const std::vector<ObSL::Value> args = {raw_id, static_cast<double>(ctx.deltaTime)};
+                        const std::vector<ObSL::Value> args = {static_cast<double>(ctx.deltaTime)};
                         ctx.scriptEngine->set_current_environment(script->instance_envs[i]);
                         script->on_update_functions[i]->call(ctx.scriptEngine, args, call_token);
                     }
                 } catch (const std::exception &e) {
-                    std::cerr << "[ScriptSystem] Runtime Error in Update loop: " << e.what() << "\n";
-                    if (script) script->on_update_functions[i] = nullptr; // stop spamming error
+                    std::cerr << "[ScriptSystem] Exception in script on_update (" << script->scriptPaths[i] << "): " <<
+                            e.what() << "\n";
                 } catch (...) {
-                    std::cerr << "[ScriptSystem] Unknown Exception in Update loop!\n";
-                    if (script) script->on_update_functions[i] = nullptr;
+                    std::cerr << "[ScriptSystem] Unknown Exception in script on_update loop (" << script->scriptPaths[i]
+                            << ")\n";
                 }
             }
         });
 
-        registry.ForEach<DestroyTagComponent, ScriptComponent>(
-            [&](const Entity entity, DestroyTagComponent *, ScriptComponent *script) {
-                // process each script in the component
-                for (size_t i = 0; i < script->scriptPaths.size(); i++) {
-                    try {
-                        if (script && script->isInitialized[i] && script->on_destroy_functions[i]) {
-                            double raw_id = static_cast<EntityID>(entity);
-                            const std::vector<ObSL::Value> args = {raw_id};
-
-                            ctx.scriptEngine->set_current_environment(script->instance_envs[i]);
-                            script->on_destroy_functions[i]->call(ctx.scriptEngine, args, call_token);
-                            script->on_destroy_functions[i] = nullptr;
+        registry.ForEach<DestroyTagComponent>(
+            [&](const Entity entity, DestroyTagComponent *) {
+                if (const auto script = registry.GetComponent<ScriptComponent>(static_cast<EntityID>(entity))) {
+                    for (size_t i = 0; i < script->scriptPaths.size(); i++) {
+                        try {
+                            if (script->isInitialized[i] && script->on_destroy_functions[i]) {
+                                const std::vector<ObSL::Value> args = {static_cast<double>(ctx.deltaTime)};
+                                ctx.scriptEngine->set_current_environment(script->instance_envs[i]);
+                                script->on_destroy_functions[i]->call(ctx.scriptEngine, args, call_token);
+                            }
+                        } catch (const std::exception &e) {
+                            std::cerr << "[ScriptSystem] Exception in on_destroy (" << script->scriptPaths[i] << "): "
+                                    << e.what() << "\n";
+                        } catch (...) {
+                            std::cerr << "[ScriptSystem] Unknown Exception in on_destroy loop\n";
                         }
-                    } catch (const std::exception &e) {
-                        std::cerr << "[ScriptSystem] Exception in on_destroy: " << e.what() << "\n";
-                        if (script) script->on_destroy_functions[i] = nullptr;
-                    } catch (...) {
-                        std::cerr << "[ScriptSystem] Unknown Exception in on_destroy loop!\n";
                     }
                 }
             });
@@ -160,19 +162,18 @@ namespace ScriptSystem {
             ObSL::TokenType::LEFT_PAREN, "(", 0, 0, 0, 0
         };
         registry.ForEach<ScriptComponent>([&](const Entity entity, const ScriptComponent *script) {
-            // process each script in the component
             for (size_t i = 0; i < script->scriptPaths.size(); i++) {
                 try {
                     if (script->isInitialized[i] && script->on_exit_functions[i]) {
-                        double raw_id = static_cast<EntityID>(entity);
-                        const std::vector<ObSL::Value> args = {raw_id, static_cast<double>(ctx.deltaTime)};
+                        const std::vector<ObSL::Value> args = {static_cast<double>(ctx.deltaTime)};
                         ctx.scriptEngine->set_current_environment(script->instance_envs[i]);
                         script->on_exit_functions[i]->call(ctx.scriptEngine, args, call_token);
                     }
                 } catch (const std::exception &e) {
-                    std::cerr << "[ScriptSystem] Exception in on_exit: " << e.what() << "\n";
+                    std::cerr << "[ScriptSystem] Exception in on_exit (" << script->scriptPaths[i] << "): " << e.what()
+                            << "\n";
                 } catch (...) {
-                    std::cerr << "[ScriptSystem] Unknown Exception in on_exit loop!\n";
+                    std::cerr << "[ScriptSystem] Unknown Exception in on_exit loop\n";
                 }
             }
         });

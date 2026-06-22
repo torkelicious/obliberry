@@ -16,7 +16,7 @@ public:
 
     void SetMousePos(double xPos, double yPos);
 
-    static int GetKeyFromName(const std::string &keyName);
+    static int GetKeyFromName(const std::string &keyName); // in KeyMappings.cpp
 
     [[nodiscard]] double MousePosX() const noexcept { return m_MousePosX; }
     [[nodiscard]] double MousePosY() const noexcept { return m_MousePosY; }

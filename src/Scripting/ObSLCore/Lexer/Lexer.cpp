@@ -131,7 +131,6 @@ namespace ObSL {
             {"print", TokenType::PRINT},
             {"println", TokenType::PRINTLN},
             {"return", TokenType::RETURN},
-            {"this", TokenType::THIS},
             {"true", TokenType::TRUE_},
             {"try", TokenType::TRY},
             {"using", TokenType::USING},

@@ -149,6 +149,8 @@ add_executable(
         src/Scripting/EngineLib/Modules/EngineLibInput.cpp
         src/Scripting/EngineLib/Modules/EngineLibCamera.cpp
         src/Scripting/EngineLib/Modules/EngineLibSceneManagement.cpp
+        src/ECS/Components/CustomDataComponent.h
+        src/Core/KeyMappings.cpp
 )
 
 target_include_directories(

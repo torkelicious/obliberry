@@ -2,13 +2,12 @@
 #include "EngineLibFactories.h"
 #include <string>
 
+#include "ECS/Components/CustomDataComponent.h"
+
 
 /*
  *todo:
- * Audio (wip)
- * Scene Management & general I/O (wip)
  * gui stuff?
- * user defined components? idk
  * wait corutine type thingy (wait for specific time without pausing entire thread type thingy)
  */
 
@@ -56,11 +55,44 @@ ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, Registry &r
         return std::monostate{};
     };
 
+
+    // script defined custom components to the ECS
+    auto add_custom_comp = [id, &registry](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        // args Component Name , The object/data
+        if (args.size() == 2 && std::holds_alternative<std::string>(args[0])) {
+            if (!registry.HasComponent<CustomDataComponent>(id)) {
+                registry.AddComponent<CustomDataComponent>(id, CustomDataComponent{});
+            }
+            auto *comp = registry.GetComponent<CustomDataComponent>(id);
+            std::string compName = std::get<std::string>(args[0]);
+
+            comp->script_components[compName] = args[1];
+            return true;
+        }
+        return false;
+    };
+    auto get_custom_comp = [id, &registry](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        //  name
+        if (args.size() == 1 && std::holds_alternative<std::string>(args[0])) {
+            if (auto *comp = registry.GetComponent<CustomDataComponent>(id)) {
+                std::string compName = std::get<std::string>(args[0]);
+                if (comp->script_components.find(compName) != comp->script_components.end()) {
+                    return comp->script_components[compName]; // the script object
+                }
+            }
+        }
+        return std::monostate{};
+    };
+
     obj->fields["SetName"] = interpreter->gc.allocate<ObSL::NativeFunction>(1, std::move(set_name_body), "SetName");
     obj->fields["GetComponent"] = interpreter->gc.allocate<ObSL::NativeFunction>(
         1, std::move(get_comp_body), "GetComponent");
     obj->fields["AddComponent"] = interpreter->gc.allocate<ObSL::NativeFunction>(
         1, std::move(add_comp_body), "AddComponent");
+    obj->fields["AddCustomComponent"] = interpreter->gc.allocate<ObSL::NativeFunction>(
+        2, std::move(add_custom_comp), "AddCustomComponent");
+    obj->fields["GetCustomComponent"] = interpreter->gc.allocate<ObSL::NativeFunction>(
+        1, std::move(get_custom_comp), "GetCustomComponent");
     return obj;
 }
 

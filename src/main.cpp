@@ -5,8 +5,10 @@
  * SCRIPTS:
  * lsp
  * docs
+ * enginelib
  *  ===
  * ENGINE:
+ * MSAA?
  * multithreading
  * gui generation (via ObSL?)
  * editor

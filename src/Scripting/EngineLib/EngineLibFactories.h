@@ -11,6 +11,10 @@
 #include "ECS/Components/BillboardTagComponent.h"
 #include "ECS/Components/DestroyTagComponent.h"
 
+
+// dec so other files can call it
+ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, Registry &registry, EntityID id);
+
 namespace EngineLibFactories {
     // GC Guard
     struct GCProtectGuard {

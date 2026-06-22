@@ -24,6 +24,19 @@ void EngineLib::register_core_modules(ObSL::Interpreter &interpreter) {
             }, "get_dt"));
 
     interpreter.get_global_environment()->define(
+        "GetEntity", interpreter.gc.allocate<ObSL::NativeFunction>(
+            1,
+            [reg = m_registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+                if (args.empty() || !std::holds_alternative<double>(args[0])) return std::monostate{};
+
+                // the ID that was passed in from the script
+                const auto id = static_cast<EntityID>(std::get<double>(args[0]));
+
+                // return the object
+                return CreateEntityObject(interp, *reg, id);
+            }, "GetEntity"));
+
+    interpreter.get_global_environment()->define(
         "Find", interpreter.gc.allocate<ObSL::NativeFunction>(
             1,
             [reg = m_registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {

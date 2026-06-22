@@ -1,0 +1,143 @@
+//
+// EngineLib & ObSL API reference / examples
+// This is a showcase, not plug-and-play code.
+// It will fail if the referenced assets/entities are missing :)
+//
+
+// The code below will run one-time when the Script loads (i.e when the entity it's attached to is loaded in)
+
+// Scene Management
+// LoadScene("assets/scenes/level1.json");
+var scene = GetCurrentScenePath();
+println "Current scene: " + scene;
+
+// Entity Creation
+var ent = CreateEntity("TestEntity");
+// var prefab = Instantiate("assets/prefabs/enemy.json"); // prefabs are stored as JSON files.
+
+// Entity Lookups
+var found_ent = Find("TestEntity");
+var ent_by_id = GetEntity(ent.id);
+
+// Entity Methods
+ent.SetName("RenamedTestEntity");
+
+// Native Components (built-into the engine)
+ent.AddComponent("Transform");
+ent.AddComponent("PointLight");
+ent.AddComponent("DirectionalTexture");
+ent.AddComponent("Movement");
+ent.AddComponent("MapState");
+ent.AddComponent("DestroyTag");
+ent.AddComponent("BillboardTag");
+
+// Custom Script Data Component (Persists and avoids GC cleanup)
+var custom_data = Object();
+custom_data.hp = 100;
+ent.AddCustomComponent("Stats", custom_data);
+var stats = ent.GetCustomComponent("Stats");
+
+// Component Interactions
+var tf = ent.GetComponent("Transform");
+if (tf != null) {
+    tf.SetPosition(100.0, 50.0, 0.0);
+    var pos = tf.GetPosition(); // returns ObSLArray: [x, y, z]
+}
+
+var light = ent.GetComponent("PointLight");
+if (light != null) {
+    light.SetColor(1.0, 0.0, 0.0);
+    light.SetIntensity(2.0);
+    light.SetRadius(150.0);
+}
+
+var dirTex = ent.GetComponent("DirectionalTexture");
+if (dirTex != null) {
+    dirTex.SetIndex(2);
+}
+
+var moveComp = ent.GetComponent("Movement");
+if (moveComp != null) {
+    moveComp.SetSpeed(20.0);
+    var is_moving = moveComp.GetIsMoving(); // returns bool
+}
+
+var mapState = ent.GetComponent("MapState");
+if (mapState != null) {
+    var selected = mapState.GetSelectedHex(); // returns ObSLObject: {q, r}
+    var pathTarget = mapState.GetPathToHex(); // returns ObSLObject: {q, r}
+}
+
+// Audio System (Global)
+// PlayMusic("assets/audio/bgm.wav", 0.5);
+
+
+// Code below will be ran everyframe (i.e Scene.Update() in engine src)
+fn on_update(dt) {
+
+    // Global delta time fetcher for when you need it outside of on_update
+    // var global_dt = get_dt();
+
+    // Core Window Management
+    if (Input_IsKeyDown("Esc")) {
+        CloseWindow();
+    }
+
+    // Input Handling
+    if (Input_IsKeyPressed("Space")) {
+        PlaySound2D("assets/audio/jump.wav", 0.8); // play jump sound at 0.8/1.0 volume when space is pressed
+    }
+
+    if (Input_IsMousePressed(0)) {
+        var mouse = Input_GetMouseWorldPos(); // returns ObSLObject: {x, y}
+    }
+
+    // Hex Map System
+    if (Input_IsKeyPressed("Enter")) {
+        var hex = GetSelectedHex(); // returns ObSLObject: {hasSelection, q, r}
+        if (hex.hasSelection) {
+            SetPathToHex(this.id, hex.q, hex.r);
+        }
+    }
+
+    if (Input_IsKeyPressed("C")) {
+        ClearSelectionOverlay();
+        ClearPathTarget();
+    }
+
+    // Camera System
+    var moveX = 0.0;
+    var moveY = 0.0;
+
+    if (Input_IsKeyDown("W")) { moveY = moveY - 1.0; }
+    if (Input_IsKeyDown("S")) { moveY = moveY + 1.0; }
+    if (Input_IsKeyDown("A")) { moveX = moveX - 1.0; }
+    if (Input_IsKeyDown("D")) { moveX = moveX + 1.0; }
+
+    if (moveX != 0.0 and moveY != 0.0) {
+        moveX = moveX * 0.7071;
+        moveY = moveY * 0.7071;
+    }
+
+    // Camera_PanScreenSpace handles zoom scaling and isometric axis correction
+    Camera_PanScreenSpace(moveX * 15.0 * dt, moveY * 15.0 * dt);
+
+    // Alternatively raw world space translation
+    // Camera_Move(moveX * 150.0 * dt, moveY * 150.0 * dt, 0.0);
+
+    if (Input_IsKeyPressed("Z")) {
+        Camera_SetZoom(1.5);
+        Camera_SetPosition(0.0, 0.0, 0.0);
+    }
+
+    if (Input_IsMousePressed(2)) {
+        var cam_pos = Camera_GetPosition(); // returns ObSLObject: {x, y, z}
+        var zoom = Camera_GetZoom();        // returns number (double)
+    }
+
+    // Scene Loading
+    if (Input_IsKeyPressed("M")) {
+        StopMusic();
+        // LoadScene("assets/scenes/menu.json");
+    }
+}
