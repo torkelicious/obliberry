@@ -101,3 +101,4 @@ todo.txt
 compile_commands.json
 .directory
 /.zed/
+.clangd
