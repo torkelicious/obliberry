@@ -2,6 +2,7 @@
 #define OBLIBERRY_PREFABMANAGER_H
 #include <fstream>
 #include <iosfwd>
+#include <iostream>
 #include <json.hpp>
 
 #include "EntityFactory.h"

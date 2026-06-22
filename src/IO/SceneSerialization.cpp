@@ -32,7 +32,7 @@ namespace SceneIO {
         if (!file.is_open())
             return false;
 
-        auto &[ScenePath, Name, BackgroundClearColor, AmbientLight] = scene.GetProperties();
+        auto &[ScenePath, Name,BackgroundMusicPath, BackgroundClearColor, AmbientLight] = scene.GetProperties();
         ScenePath = path;
 
         json j;
@@ -54,6 +54,10 @@ namespace SceneIO {
                 } else {
                     std::cerr << "SceneSerializer Warning: 'clear_color' is malformed. Defaulting to black.\n";
                 }
+            }
+
+            if (properties.contains("background_music")) {
+                BackgroundMusicPath = properties["background_music"].get<std::string>();
             }
 
             if (properties.contains("ambient_light")) {
@@ -160,6 +164,8 @@ namespace SceneIO {
             c[2],
             c[3]
         };
+        j["properties"]["background_music"] = sceneProps.BackgroundMusicPath;
+
         j["properties"]["ambient_light"] = sceneProps.AmbientLight;
 
         // ecs query to save grid

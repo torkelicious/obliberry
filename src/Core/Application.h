@@ -3,6 +3,7 @@
 #include "ResourceManager.h"
 #include "Window.h"
 #include "Scripting/ObSLCore/Interpreter/Interpreter.h"
+#include "Sound/AudioEngine.h"
 
 
 class Application {
@@ -22,6 +23,7 @@ private:
     InputManager m_InputManager;
     ResourceManager m_ResourceManager;
     ObSL::Interpreter m_ScriptEngine;
+    std::unique_ptr<AudioEngine> m_AudioEngine;
 };
 
 

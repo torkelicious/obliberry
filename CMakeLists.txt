@@ -34,6 +34,9 @@ add_executable(
         # nlohmann/json
         external/nlohmann/json.hpp
         external/nlohmann/json_fwd.hpp
+        # miniaudio
+        external/miniaudio/miniaudio.h
+        external/miniaudio/miniaudio.c
         # External
 
         src/main.cpp
@@ -138,6 +141,14 @@ add_executable(
         src/ECS/Components/DestroyTagComponent.h
         src/Scripting/EngineLib/EngineLibFactories.h
         src/IO/PrefabManager.h
+        src/Sound/AudioEngine.cpp
+        src/Sound/AudioEngine.h
+        src/Scripting/EngineLib/Modules/EngineLibAudio.cpp
+        src/Scripting/EngineLib/Modules/EngineLibMap.cpp
+        src/Scripting/EngineLib/Modules/EngineLibCore.cpp
+        src/Scripting/EngineLib/Modules/EngineLibInput.cpp
+        src/Scripting/EngineLib/Modules/EngineLibCamera.cpp
+        src/Scripting/EngineLib/Modules/EngineLibSceneManagement.cpp
 )
 
 target_include_directories(
@@ -147,6 +158,7 @@ target_include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui
         ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui/backends
         ${CMAKE_CURRENT_SOURCE_DIR}/external/nlohmann/
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/miniaudio/
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 

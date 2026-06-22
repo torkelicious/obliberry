@@ -110,6 +110,7 @@ namespace ObSL {
 
         static const std::unordered_map<std::string_view, TokenType> keywords = {
             {"and", TokenType::AND},
+            {"&&", TokenType::AND},
             {"break", TokenType::BREAK},
             {"case", TokenType::CASE},
             {"catch", TokenType::CATCH},
@@ -126,6 +127,7 @@ namespace ObSL {
             {"is", TokenType::IS},
             {"null", TokenType::NULL_},
             {"or", TokenType::OR},
+            {"||", TokenType::OR},
             {"print", TokenType::PRINT},
             {"println", TokenType::PRINTLN},
             {"return", TokenType::RETURN},

@@ -1,23 +1,23 @@
 #include "Scene.h"
-#include "ECS/Systems/MovementSystem.h"
-#include "ECS/Systems/RenderSystem.h"
-#include "ECS/Systems/InteractionSystem.h"
-#include "ECS/Systems/PlayerControlSystem.h"
 #include "ECS/Systems/AISystem.h"
+#include "ECS/Systems/InteractionSystem.h"
 #include "ECS/Systems/MapRenderSystem.h"
+#include "ECS/Systems/MovementSystem.h"
+#include "ECS/Systems/PlayerControlSystem.h"
+#include "ECS/Systems/RenderSystem.h"
 #include "ECS/Systems/SpriteBillboardSystem.h"
 #include "ECS/Systems/lightingSystem.h"
-#include "IO/SceneSerialization.h"
 #include "IO/EntityFactory.h"
+#include "IO/SceneSerialization.h"
 #include <iostream>
 
 #include "ECS/Systems/ScriptSystem.h"
 #include "Scripting/EngineLib/EngineLib.h"
+#include "Sound/AudioEngine.h"
 
 Scene::Scene(const EngineContext &context, SceneProperties props)
     : m_Properties(std::move(props)), m_Context(context) {
 }
-
 
 void Scene::OnEnter() {
     EngineLib lib;
@@ -27,7 +27,16 @@ void Scene::OnEnter() {
     EntityFactory::RegisterSerializers();
 
     if (!SceneIO::Deserialize(m_Properties.ScenePath, *this)) {
-        std::cerr << "Scene: Failed to load scene file: " << m_Properties.ScenePath << "\n";
+        std::cerr << "Scene: Failed to load scene file: " << m_Properties.ScenePath
+                << "\n";
+    }
+
+    if (m_Context.audioEngine) {
+        if (!m_Properties.BackgroundMusicPath.empty()) {
+            m_Context.audioEngine->PlayMusic(m_Properties.BackgroundMusicPath);
+        } else {
+            m_Context.audioEngine->StopMusic();
+        }
     }
 
     if (m_Context.renderer) {
@@ -38,7 +47,8 @@ void Scene::OnEnter() {
 
 void Scene::Update(const float dt) {
     m_Context.deltaTime = dt;
-    // this looks stupid but is fine because Update checks for required component for system before running
+    // this looks stupid but is fine because Update checks for required component
+    // for system before running
     const glm::vec2 worldPos = InteractionSystem::Update(m_Registry, m_Context);
     PlayerControlSystem::Update(m_Registry, worldPos);
     AISystem::Update(m_Registry, dt);
@@ -59,9 +69,10 @@ void Scene::Render() {
 
 void Scene::OnExit() {
     std::vector<EntityID> deadEntities;
-    m_Registry.ForEach<DestroyTagComponent>([&](const Entity entity, DestroyTagComponent *) {
-        deadEntities.push_back(static_cast<EntityID>(entity));
-    });
+    m_Registry.ForEach<DestroyTagComponent>(
+        [&](const Entity entity, DestroyTagComponent *) {
+            deadEntities.push_back(static_cast<EntityID>(entity));
+        });
 
     for (const EntityID id: deadEntities) {
         m_Registry.DestroyEntity(id);

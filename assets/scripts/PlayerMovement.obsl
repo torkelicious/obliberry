@@ -16,6 +16,7 @@ fn on_update(entity_id, dt) {
             var selection = GetSelectedHex();
             if (selection.hasSelection) {
                 SetPathToHex(player.id, selection.q, selection.r);
+                PlaySound2D("assets/audio/boom.mp3",0.8); // play boom.mp3 on each click with a volume of 0.8
             }
         }
 

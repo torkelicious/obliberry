@@ -121,7 +121,7 @@ namespace MapRenderSystem {
             });
     }
 
-    inline void RenderAll(Registry &reg, EngineContext &ctx) {
+    inline void RenderAll(Registry &reg, const EngineContext &ctx) {
         RenderTiles(reg, *ctx.renderer);
         RenderOverlays(reg, *ctx.renderer);
     }

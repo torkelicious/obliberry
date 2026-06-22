@@ -17,7 +17,7 @@ namespace EngineLibFactories {
         ObSL::Interpreter *interpreter;
 
         GCProtectGuard(ObSL::Interpreter *interp, const ObSL::Value &val) : interpreter(interp) {
-            interpreter->gc_protect_stack.push_back(val);
+            interpreter->gc_protect_stack.emplace_back(val);
         }
 
         ~GCProtectGuard() {
@@ -80,9 +80,9 @@ namespace EngineLibFactories {
             if (const auto *comp = registry.GetComponent<TransformComponent>(id)) {
                 auto *arr = interp->gc.allocate<ObSL::ObSLArray>();
                 const auto &pos = comp->transform.GetPosition();
-                arr->elements.push_back(pos.x);
-                arr->elements.push_back(pos.y);
-                arr->elements.push_back(pos.z);
+                arr->elements.emplace_back(pos.x);
+                arr->elements.emplace_back(pos.y);
+                arr->elements.emplace_back(pos.z);
                 return arr;
             }
             return std::monostate{};
@@ -92,9 +92,9 @@ namespace EngineLibFactories {
             if (const auto *comp = registry.GetComponent<TransformComponent>(id)) {
                 auto *arr = interp->gc.allocate<ObSL::ObSLArray>();
                 const auto &rot = comp->transform.GetRotation();
-                arr->elements.push_back(rot.x);
-                arr->elements.push_back(rot.y);
-                arr->elements.push_back(rot.z);
+                arr->elements.emplace_back(rot.x);
+                arr->elements.emplace_back(rot.y);
+                arr->elements.emplace_back(rot.z);
                 return arr;
             }
             return std::monostate{};
@@ -104,9 +104,9 @@ namespace EngineLibFactories {
             if (const auto *comp = registry.GetComponent<TransformComponent>(id)) {
                 auto *arr = interp->gc.allocate<ObSL::ObSLArray>();
                 const auto &scale = comp->transform.GetScale();
-                arr->elements.push_back(scale.x);
-                arr->elements.push_back(scale.y);
-                arr->elements.push_back(scale.z);
+                arr->elements.emplace_back(scale.x);
+                arr->elements.emplace_back(scale.y);
+                arr->elements.emplace_back(scale.z);
                 return arr;
             }
             return std::monostate{};
@@ -227,8 +227,8 @@ namespace EngineLibFactories {
                                                 const std::vector<ObSL::Value> &) -> ObSL::Value {
             if (const auto *comp = registry.GetComponent<MapStateComponent>(id)) {
                 auto *arr = interp->gc.allocate<ObSL::ObSLArray>();
-                arr->elements.push_back(static_cast<double>(comp->selectedHex.q));
-                arr->elements.push_back(static_cast<double>(comp->selectedHex.r));
+                arr->elements.emplace_back(static_cast<double>(comp->selectedHex.q));
+                arr->elements.emplace_back(static_cast<double>(comp->selectedHex.r));
                 return arr;
             }
             return std::monostate{};
@@ -238,8 +238,8 @@ namespace EngineLibFactories {
                                                const std::vector<ObSL::Value> &) -> ObSL::Value {
             if (const auto *comp = registry.GetComponent<MapStateComponent>(id)) {
                 auto *arr = interp->gc.allocate<ObSL::ObSLArray>();
-                arr->elements.push_back(static_cast<double>(comp->pathTo.q));
-                arr->elements.push_back(static_cast<double>(comp->pathTo.r));
+                arr->elements.emplace_back(static_cast<double>(comp->pathTo.q));
+                arr->elements.emplace_back(static_cast<double>(comp->pathTo.r));
                 return arr;
             }
             return std::monostate{};

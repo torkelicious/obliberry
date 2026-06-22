@@ -2,12 +2,13 @@
 #include "IO/AssetLoader.h"
 #include "Renderer/MeshFactory.h"
 #include <filesystem>
-
 #include "Renderer/Renderer.h"
-
+#include "Scripting/EngineLib/EngineLib.h"
 
 void Game::Start() {
     MeshFactory::RegisterAllMeshFactories();
+
+    m_Context.sceneManager = &m_SceneManager;
     m_SceneManager.LoadScene(
         std::make_unique<Scene>
         (m_Context,
@@ -18,6 +19,15 @@ void Game::Start() {
 void Game::Update(const float dt) {
     m_Context.deltaTime = dt;
 
+    if (!m_Context.pendingScenePath.empty()) {
+        const std::string nextScene = std::move(m_Context.pendingScenePath);
+        m_Context.pendingScenePath.clear();
+
+        m_SceneManager.LoadScene(
+            std::make_unique<Scene>(m_Context, SceneProperties{.ScenePath = nextScene}));
+    }
+
+    // (Legacy/Fallback)
     if (m_PendingSceneLoad.has_value()) {
         m_SceneManager.LoadScene(
             std::make_unique<Scene>(m_Context, std::move(*m_PendingSceneLoad)));

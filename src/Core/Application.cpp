@@ -10,10 +10,12 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include "Sound/AudioEngine.h"
 
 Application::Application()
     : m_Window(WINDOW_WIDTH, WINDOW_HEIGHT, "obliberry") {
     m_Window.SetInputManager(&m_InputManager);
+    m_AudioEngine = AudioEngine::Create();
 }
 
 void Application::Run() {
@@ -40,7 +42,7 @@ void Application::Run() {
     context.camera = &camera;
     context.deltaTime = 0.0f;
     context.scriptEngine = &m_ScriptEngine;
-
+    if (m_AudioEngine) { context.audioEngine = m_AudioEngine.get(); }
     Game game;
     game.SetContext(context);
 
@@ -62,8 +64,8 @@ void Application::Run() {
         previousTime = currentTime;
 
         game.Update(delta.count());
+        if (context.audioEngine) { context.audioEngine->Update(); }
         game.Render();
-
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 

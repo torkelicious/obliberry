@@ -65,8 +65,8 @@ bool Window::Init(const unsigned int width, const unsigned int height, const cha
 
     const int dbg = GLDebug::InitDebug();
     dbg == 0
-        ? std::cout << "Debug Enabled" << std::endl
-        : std::cout << "Debug unavailable" << "\n";
+        ? std::cout << "GLDebug Enabled" << std::endl
+        : std::cout << "GLDebug unavailable" << "\n";
 
     glViewport(0, 0, width, height);
 
