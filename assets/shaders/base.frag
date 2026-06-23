@@ -10,19 +10,22 @@ uniform vec4 u_Color;
 uniform float u_Ambient;
 out vec4 FragColor;
 
-
 void main()
 {
     vec4 tex = texture(u_Texture, v_UV);
 
-    // RGB lightmap
-    vec3 light =
-    texture(u_LightTexture, v_LightUV).rgb;
+    float finalAlpha = tex.a * u_Color.a;
 
+    if (finalAlpha < 0.05) {
+        discard;
+    }
+
+    // RGB lightmap
+    vec3 light = texture(u_LightTexture, v_LightUV).rgb;
     // Prevent total darkness
     light = max(light, vec3(u_Ambient));
 
     vec3 finalColor = tex.rgb * u_Color.rgb * light;
 
-    FragColor = vec4(finalColor, tex.a * u_Color.a);
+    FragColor = vec4(finalColor, finalAlpha);
 }

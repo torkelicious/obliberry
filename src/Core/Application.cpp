@@ -22,6 +22,7 @@ Application::Application(ProjectConfig config)
 void Application::Run() {
     glEnable(GL_BLEND);
     glDisable(GL_DEPTH_TEST);
+    glEnable(GL_MULTISAMPLE);
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glfwSwapInterval(0);
