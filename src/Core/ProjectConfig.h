@@ -12,6 +12,5 @@ struct ProjectConfig {
 
     static ProjectConfig Deserialize(const std::string &filepath = "project.json");
 
-    static bool Serialize(const ProjectConfig& conf, const std::string &filepath = "project.json");
-
+    static bool Serialize(const ProjectConfig &conf, const std::string &filepath = "project.json");
 };

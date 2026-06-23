@@ -49,5 +49,5 @@ private:
 
     static void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset);
 
-    void SetFullscreen(bool fullscreen);
+    void SetFullscreen(bool fullscreen) const;
 };

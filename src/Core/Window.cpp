@@ -133,7 +133,7 @@ void Window::ScrollCallback(GLFWwindow *window, const double xoffset, const doub
     }
 }
 
-void Window::SetFullscreen(bool fullscreen) {
+void Window::SetFullscreen(const bool fullscreen) const {
     if (fullscreen) {
         GLFWmonitor *monitor = glfwGetPrimaryMonitor();
         const GLFWvidmode *mode = glfwGetVideoMode(monitor);
