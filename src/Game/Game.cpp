@@ -2,7 +2,7 @@
 #include "IO/AssetLoader.h"
 #include "Renderer/MeshFactory.h"
 #include <filesystem>
-
+#include "Core/ProjectConfig.h"
 #include "Core/Window.h"
 #include "Renderer/Renderer.h"
 #include "Scripting/EngineLib/EngineLib.h"
@@ -14,7 +14,7 @@ void Game::Start() {
     m_SceneManager.LoadScene(
         std::make_unique<Scene>(
             m_Context,
-            SceneProperties{.ScenePath = m_Context.startScenePath}
+            SceneProperties{.ScenePath = m_Context.projectConfig ? m_Context.projectConfig->startScenePath : ""}
         )
     );
 }

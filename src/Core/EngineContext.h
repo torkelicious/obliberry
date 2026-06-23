@@ -18,7 +18,6 @@ namespace ObSL {
 
 struct EngineContext {
     std::string pendingScenePath;
-    std::string startScenePath;
     ProjectConfig *projectConfig = nullptr;
     Window *window = nullptr;
     InputManager *input = nullptr;
