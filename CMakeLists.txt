@@ -94,7 +94,6 @@ add_executable(
         src/Scenes/SceneManager.h
         src/Scenes/Scene.cpp
         src/Core/EngineContext.h
-        src/ECS/Systems/InteractionSystem.h
         src/ECS/Systems/PlayerControlSystem.h
         src/ECS/Systems/AISystem.h
         src/ECS/Components/MovementComponent.h

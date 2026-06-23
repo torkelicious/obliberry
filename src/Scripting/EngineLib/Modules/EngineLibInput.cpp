@@ -61,28 +61,28 @@ void EngineLib::register_input_modules(ObSL::Interpreter &interpreter) {
         "Input_GetMouseX", interpreter.gc.allocate<ObSL::NativeFunction>(
             0,
             [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
-                return (ctx && ctx->input) ? static_cast<double>(ctx->input->MousePosX()) : 0.0;
+                return ctx && ctx->input ? ctx->input->MousePosX() : 0.0;
             }, "Input_GetMouseX"));
 
     interpreter.get_global_environment()->define(
         "Input_GetMouseY", interpreter.gc.allocate<ObSL::NativeFunction>(
             0,
             [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
-                return (ctx && ctx->input) ? static_cast<double>(ctx->input->MousePosY()) : 0.0;
+                return ctx && ctx->input ? ctx->input->MousePosY() : 0.0;
             }, "Input_GetMouseY"));
 
     interpreter.get_global_environment()->define(
         "Input_GetScrollX", interpreter.gc.allocate<ObSL::NativeFunction>(
             0,
             [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
-                return (ctx && ctx->input) ? static_cast<double>(ctx->input->ScrollX()) : 0.0;
+                return ctx && ctx->input ? ctx->input->ScrollX() : 0.0;
             }, "Input_GetScrollX"));
 
     interpreter.get_global_environment()->define(
         "Input_GetScrollY", interpreter.gc.allocate<ObSL::NativeFunction>(
             0,
             [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
-                return (ctx && ctx->input) ? static_cast<double>(ctx->input->ScrollY()) : 0.0;
+                return ctx && ctx->input ? ctx->input->ScrollY() : 0.0;
             }, "Input_GetScrollY"));
 
     interpreter.get_global_environment()->define(

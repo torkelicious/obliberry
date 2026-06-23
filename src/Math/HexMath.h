@@ -26,10 +26,11 @@ namespace Math::HexMath {
 
     // distance calculation on hex grids
     inline int32_t Distance(const HexCoords a, const HexCoords b) {
-        auto [x, y, z] = OddRToCube(a);
-        const CubeCoords bc = OddRToCube(b);
-        return (std::abs(x - bc.x) + std::abs(y - bc.y) + std::abs(z - bc.z)) / 2;
+        const auto [ax, ay, az] = OddRToCube(a);
+        const auto [bx, by, bz] = OddRToCube(b);
+        return (std::abs(ax - bx) + std::abs(ay - by) + std::abs(az - bz)) / 2;
     }
+
 
     // hex pos to world pos
     inline glm::vec2 HexToWorld(const HexCoords &h, const float size = HEX_SIZE) {

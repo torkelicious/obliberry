@@ -80,7 +80,17 @@ void EngineLib::register_camera_modules(ObSL::Interpreter &interpreter) {
         "Camera_GetZoom", interpreter.gc.allocate<ObSL::NativeFunction>(
             0,
             [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
-                if (ctx && ctx->camera) return ctx->camera->Zoom;
-                return 1.0;
+                return ctx && ctx->camera ? static_cast<double>(ctx->camera->Zoom) : 0.0;
             }, "Camera_GetZoom"));
+
+    interpreter.get_global_environment()->define(
+        "Camera_SetZoom", interpreter.gc.allocate<ObSL::NativeFunction>(
+            1,
+            [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+                if (ctx && ctx->camera && args.size() >= 1 && std::holds_alternative<double>(args[0])) {
+                    ctx->camera->Zoom = static_cast<float>(std::get<double>(args[0]));
+                    return true;
+                }
+                return false;
+            }, "Camera_SetZoom"));
 }

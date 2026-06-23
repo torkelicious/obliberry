@@ -1,11 +1,6 @@
 println "player movement initialized";
 
-var cameraSpeed = 15.0;
-
 fn on_update(dt) {
-    if (Input_IsKeyDown("Esc")) {
-        CloseWindow();
-    }
 
     var movement = this.GetComponent("Movement");
 
@@ -19,24 +14,7 @@ fn on_update(dt) {
 
     if (movement != null) {
         if (movement.GetIsMoving() == false) {
-            // if we are standing still clear the destination marker
             ClearPathTarget();
         }
     }
-
-    // WASD Camera Movement
-    var moveX = 0.0;
-    var moveY = 0.0;
-
-    // Y-Axis: W is Negative (Up), S is Positive (Down)
-    if (Input_IsKeyDown("W")) { moveY = moveY + 1.0; }
-    if (Input_IsKeyDown("S")) { moveY = moveY - 1.0; }
-    if (Input_IsKeyDown("A")) { moveX = moveX - 1.0; }
-    if (Input_IsKeyDown("D")) { moveX = moveX + 1.0; }
-
-    if (moveX != 0.0 and moveY != 0.0) {
-        moveX = moveX * 0.7071;
-        moveY = moveY * 0.7071;
-    }
-    Camera_PanScreenSpace(moveX * cameraSpeed * dt, moveY * cameraSpeed * dt);
 }

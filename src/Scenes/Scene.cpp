@@ -1,6 +1,5 @@
 #include "Scene.h"
 #include "ECS/Systems/AISystem.h"
-#include "ECS/Systems/InteractionSystem.h"
 #include "ECS/Systems/MapRenderSystem.h"
 #include "ECS/Systems/MovementSystem.h"
 #include "ECS/Systems/PlayerControlSystem.h"
@@ -50,8 +49,8 @@ void Scene::Update(const float dt) {
     m_Context.deltaTime = dt;
     // this looks stupid but is fine because Update checks for required component
     // for system before running
-    const glm::vec2 worldPos = InteractionSystem::Update(m_Registry, m_Context);
-    PlayerControlSystem::Update(m_Registry, worldPos);
+
+    PlayerControlSystem::Update(m_Registry, m_Context);
     AISystem::Update(m_Registry, dt);
     MovementSystem::Update(m_Registry, dt);
     ScriptSystem::Update(m_Registry, m_Context);

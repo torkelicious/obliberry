@@ -71,14 +71,14 @@ void EngineLib::register_core_modules(ObSL::Interpreter &interpreter) {
         "Window_GetHeight", interpreter.gc.allocate<ObSL::NativeFunction>(
             0,
             [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
-                return (ctx && ctx->window) ? static_cast<double>(ctx->window->GetHeight()) : 0.0;
+                return ctx && ctx->window ? static_cast<double>(ctx->window->GetHeight()) : 0.0;
             }, "Window_GetHeight"));
 
     interpreter.get_global_environment()->define(
         "Window_GetWidth", interpreter.gc.allocate<ObSL::NativeFunction>(
             0,
             [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
-                return (ctx && ctx->window) ? static_cast<double>(ctx->window->GetWidth()) : 0.0;
+                return ctx && ctx->window ? static_cast<double>(ctx->window->GetWidth()) : 0.0;
             }, "Window_GetWidth"));
 
     interpreter.get_global_environment()->define(

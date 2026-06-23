@@ -161,7 +161,7 @@ namespace ScriptSystem {
         constexpr ObSL::Token call_token{
             ObSL::TokenType::LEFT_PAREN, "(", 0, 0, 0, 0
         };
-        registry.ForEach<ScriptComponent>([&](const Entity entity, const ScriptComponent *script) {
+        registry.ForEach<ScriptComponent>([&](const Entity /*entity*/, const ScriptComponent *script) {
             for (size_t i = 0; i < script->scriptPaths.size(); i++) {
                 try {
                     if (script->isInitialized[i] && script->on_exit_functions[i]) {

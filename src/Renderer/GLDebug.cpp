@@ -14,6 +14,7 @@ void APIENTRY GLDebug::glDebugOutput(const GLenum source, const GLenum type,
     std::cout << "---------------" << "\n";
     std::cout << "Debug message (" << id << "): " << message << "\n";
 
+    // ReSharper disable once CppDefaultCaseNotHandledInSwitchStatement
     switch (source) {
         case GL_DEBUG_SOURCE_API:
             std::cout << "Source: API";
@@ -36,6 +37,7 @@ void APIENTRY GLDebug::glDebugOutput(const GLenum source, const GLenum type,
     }
     std::cout << "\n";
 
+    // ReSharper disable once CppDefaultCaseNotHandledInSwitchStatement
     switch (type) {
         case GL_DEBUG_TYPE_ERROR:
             std::cout << "Type: Error";
@@ -67,6 +69,7 @@ void APIENTRY GLDebug::glDebugOutput(const GLenum source, const GLenum type,
     }
     std::cout << "\n";
 
+    // ReSharper disable once CppDefaultCaseNotHandledInSwitchStatement
     switch (severity) {
         case GL_DEBUG_SEVERITY_HIGH:
             std::cout << "Severity: high";
