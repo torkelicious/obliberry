@@ -1,0 +1,24 @@
+//
+// Basic player movement example in ObSL
+//
+
+println "player movement initialized";
+
+fn on_update(dt) {
+
+    var movement = this.GetComponent("Movement");
+
+    if (Input_IsMousePressed(0)) {
+        var selection = GetSelectedHex();
+        if (selection.hasSelection) {
+            SetPathToHex(this.id, selection.q, selection.r);
+           // PlaySound2D("assets/audio/boom.mp3", 0.8);
+        }
+    }
+
+    if (movement != null) {
+        if (movement.GetIsMoving() == false) {
+            ClearPathTarget();
+        }
+    }
+}
