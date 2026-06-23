@@ -28,7 +28,7 @@ struct InstancedRenderCommand {
 
 class Renderer {
 public:
-    void SetCamera(const Camera &camera);
+    void SetCamera(const Camera &camera, float aspect);
 
     [[nodiscard]] const Camera *GetCamera() const noexcept {
         return m_Camera;

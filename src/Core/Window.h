@@ -1,12 +1,13 @@
 #pragma once
 
 #include <GLFW/glfw3.h>
+#include <string>
 
 #include "InputManager.h"
 
 class Window {
 public:
-    Window(unsigned int width, unsigned int height, const char *title);
+    Window(unsigned int width, unsigned int height, const char *title, bool fullscreen);
 
     ~Window();
 
@@ -19,7 +20,6 @@ public:
     void SwapBuffers() const;
 
     [[nodiscard]] bool ShouldClose() const { return glfwWindowShouldClose(m_Window); }
-
     void Close() const { glfwSetWindowShouldClose(m_Window, true); }
 
     [[nodiscard]] int GetWidth() const { return m_Width; }
@@ -37,7 +37,7 @@ private:
     int m_Width = 0;
     int m_Height = 0;
 
-    bool Init(unsigned int width, unsigned int height, const char *title);
+    bool Init(unsigned int width, unsigned int height, const char *title, bool fullscreen);
 
     static void WindowResizeCallback(GLFWwindow *window, int width, int height);
 

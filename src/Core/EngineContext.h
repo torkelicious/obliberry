@@ -16,14 +16,15 @@ namespace ObSL {
 }
 
 struct EngineContext {
+    std::string pendingScenePath;
+    std::string startScenePath;
     Window *window = nullptr;
     InputManager *input = nullptr;
     ResourceManager *resources = nullptr;
     SceneManager *sceneManager = nullptr;
     Renderer *renderer = nullptr;
     Camera *camera = nullptr;
-    float deltaTime = 0.0f;
     ObSL::Interpreter *scriptEngine = nullptr;
     AudioEngine *audioEngine = nullptr;
-    std::string pendingScenePath;
+    float deltaTime = 0.0f;
 };

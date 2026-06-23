@@ -6,9 +6,9 @@
 
 constexpr unsigned int MAX_INSTANCES = 1000000;
 
-void Renderer::SetCamera(const Camera &camera) {
+void Renderer::SetCamera(const Camera &camera, const float aspect) {
     m_Camera = &camera;
-    m_VP = camera.GetVP();
+    m_VP = camera.GetVP(aspect);
 }
 
 void Renderer::BeginFrame() {

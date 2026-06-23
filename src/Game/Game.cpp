@@ -2,6 +2,8 @@
 #include "IO/AssetLoader.h"
 #include "Renderer/MeshFactory.h"
 #include <filesystem>
+
+#include "Core/Window.h"
 #include "Renderer/Renderer.h"
 #include "Scripting/EngineLib/EngineLib.h"
 
@@ -10,11 +12,13 @@ void Game::Start() {
 
     m_Context.sceneManager = &m_SceneManager;
     m_SceneManager.LoadScene(
-        std::make_unique<Scene>
-        (m_Context,
-         SceneProperties{.ScenePath = "assets/scenes/test1.json"}
-        ));
+        std::make_unique<Scene>(
+            m_Context,
+            SceneProperties{.ScenePath = m_Context.startScenePath}
+        )
+    );
 }
+
 
 void Game::Update(const float dt) {
     m_Context.deltaTime = dt;
@@ -41,9 +45,12 @@ void Game::Update(const float dt) {
 }
 
 void Game::Render() const {
-    if (m_Context.camera) {
-        m_Context.renderer->SetCamera(*m_Context.camera);
+    if (m_Context.camera && m_Context.window) {
+        const float aspect = static_cast<float>(m_Context.window->GetWidth()) /
+                             static_cast<float>(m_Context.window->GetHeight());
+        m_Context.renderer->SetCamera(*m_Context.camera, aspect);
     }
+
     m_Context.renderer->BeginFrame();
     m_SceneManager.Render();
 }

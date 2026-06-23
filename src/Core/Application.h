@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ProjectConfig.h"
 #include "ResourceManager.h"
 #include "Window.h"
 #include "Scripting/ObSLCore/Interpreter/Interpreter.h"
@@ -8,7 +9,7 @@
 
 class Application {
 public:
-    Application();
+    explicit Application(ProjectConfig config);
 
     ~Application() {
         Shutdown();
@@ -19,6 +20,7 @@ public:
     static void Shutdown();
 
 private:
+    ProjectConfig m_Project;
     Window m_Window;
     InputManager m_InputManager;
     ResourceManager m_ResourceManager;

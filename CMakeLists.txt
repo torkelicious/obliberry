@@ -152,6 +152,8 @@ add_executable(
         src/ECS/Components/CustomDataComponent.h
         src/Core/KeyMappings.cpp
         src/Scripting/EngineLib/Modules/EngineLibTime.cpp
+        src/Core/ProjectConfig.h
+        src/Core/ProjectConfig.cpp
 )
 
 target_include_directories(

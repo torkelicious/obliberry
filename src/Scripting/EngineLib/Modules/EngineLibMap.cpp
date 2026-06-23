@@ -21,8 +21,8 @@ void EngineLib::register_map_modules(ObSL::Interpreter &interpreter) {
                     return obj;
                 }
 
-                float x = static_cast<float>(std::get<double>(args[0]));
-                float y = static_cast<float>(std::get<double>(args[1]));
+                auto x = static_cast<float>(std::get<double>(args[0]));
+                auto y = static_cast<float>(std::get<double>(args[1]));
 
                 const HexCoords hex = Math::HexMath::PixelToHex({x, y});
 
@@ -104,7 +104,7 @@ void EngineLib::register_map_modules(ObSL::Interpreter &interpreter) {
                 if (!move || !trans) return false;
 
                 const MapComponent *mapComp = nullptr;
-                reg->ForEach<MapComponent>([&](Entity, MapComponent *map) {
+                reg->ForEach<MapComponent>([&](Entity, const MapComponent *map) {
                     mapComp = map;
                 });
 

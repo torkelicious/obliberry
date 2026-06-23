@@ -1,4 +1,5 @@
 #include "Core/Application.h"
+#include "Core/ProjectConfig.h"
 
 /*
   todo:
@@ -16,7 +17,9 @@
  */
 
 int main(int argc, char *argv[]) {
-    Application app;
+    const ProjectConfig config = ProjectConfig::Deserialize("project.json");
+
+    Application app(config);
     app.Run();
     return 0;
 }

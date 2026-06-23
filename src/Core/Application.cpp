@@ -3,7 +3,7 @@
 #include "Application.h"
 #include <chrono>
 #include <thread>
-#include "Constants.h"
+#include <utility>
 #include "Game/Game.h"
 #include "Renderer/Renderer.h"
 #include "Core/EngineContext.h"
@@ -12,8 +12,9 @@
 #include "imgui_impl_opengl3.h"
 #include "Sound/AudioEngine.h"
 
-Application::Application()
-    : m_Window(WINDOW_WIDTH, WINDOW_HEIGHT, "obliberry") {
+Application::Application(ProjectConfig config)
+    : m_Project(std::move(config)),
+      m_Window(m_Project.windowWidth, m_Project.windowHeight, m_Project.windowTitle.c_str(), m_Project.fullscreen) {
     m_Window.SetInputManager(&m_InputManager);
     m_AudioEngine = AudioEngine::Create();
 }
@@ -31,6 +32,12 @@ void Application::Run() {
     ImGui_ImplOpenGL3_Init();
     ImGui::StyleColorsDark();
 
+    float xscale, yscale;
+    glfwGetWindowContentScale(m_Window.GetNativeWindow(), &xscale, &yscale);
+    ImGui::GetStyle().ScaleAllSizes(xscale);
+    ImGuiIO &io = ImGui::GetIO();
+    io.FontGlobalScale = xscale;
+
     Renderer renderer;
     Camera camera;
 
@@ -42,11 +49,13 @@ void Application::Run() {
     context.camera = &camera;
     context.deltaTime = 0.0f;
     context.scriptEngine = &m_ScriptEngine;
+    context.startScenePath = m_Project.startScenePath;
     if (m_AudioEngine) { context.audioEngine = m_AudioEngine.get(); }
     Game game;
     game.SetContext(context);
 
-    renderer.SetCamera(camera);
+    float initialAspect = static_cast<float>(m_Window.GetWidth()) / static_cast<float>(m_Window.GetHeight());
+    renderer.SetCamera(camera, initialAspect);
 
     auto previousTime = std::chrono::steady_clock::now();
     game.Start();

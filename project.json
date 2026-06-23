@@ -1,0 +1,11 @@
+{
+  "project_name": "Demo",
+  "version": "0.0.1",
+  "start_scene": "assets/scenes/test1.json",
+  "window": {
+    "width": 1280,
+    "height": 720,
+    "title": "Demo",
+    "fullscreen": true
+  }
+}
