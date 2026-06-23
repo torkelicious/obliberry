@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_TEXTURE_H
-#define OBLIBERRY_TEXTURE_H
+#pragma once
+
 #include <string>
 
 #include "glad/glad.h"
@@ -60,4 +60,3 @@ private:
 };
 
 
-#endif //OBLIBERRY_TEXTURE_H

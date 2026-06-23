@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_PREFABMANAGER_H
-#define OBLIBERRY_PREFABMANAGER_H
+#pragma once
+
 #include <fstream>
 #include <iosfwd>
 #include <iostream>
@@ -49,4 +49,3 @@ private:
 };
 
 
-#endif //OBLIBERRY_PREFABMANAGER_H

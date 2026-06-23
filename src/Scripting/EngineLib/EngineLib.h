@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_ENGINELIB_H
-#define OBLIBERRY_ENGINELIB_H
+#pragma once
+
 #include "Core/EngineContext.h"
 #include "ECS/Registry.h"
 #include "Scripting/ObSLCore/StdLib/StdLib.h"
@@ -33,4 +33,3 @@ private:
     EngineContext *m_ctx = nullptr;
 };
 
-#endif //OBLIBERRY_ENGINELIB_H

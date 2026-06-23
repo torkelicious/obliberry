@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_SCENESERIALIZER_H
-#define OBLIBERRY_SCENESERIALIZER_H
+#pragma once
+
 #include <string>
 
 #include "json.hpp"
@@ -22,4 +22,3 @@ namespace SceneIO {
     }
 }
 
-#endif //OBLIBERRY_SCENESERIALIZER_H

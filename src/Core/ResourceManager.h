@@ -1,5 +1,6 @@
-#ifndef OBLIBERRY_RESOURCEMANAGER_H
-#define OBLIBERRY_RESOURCEMANAGER_H
+#pragma once
+
+
 #include <memory>
 #include <string>
 #include <typeindex>
@@ -97,5 +98,3 @@ private:
         return *static_cast<ResourceCache<T> *>(it->second.get());
     }
 };
-
-#endif //OBLIBERRY_RESOURCEMANAGER_H

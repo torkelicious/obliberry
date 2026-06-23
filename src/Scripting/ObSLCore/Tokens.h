@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_TOKENS_H
-#define OBLIBERRY_TOKENS_H
+#pragma once
+
 #include <string_view>
 #include <cstdint>
 
@@ -94,5 +94,3 @@ namespace ObSL {
         uint32_t end_pos;
     };
 }
-
-#endif //OBLIBERRY_TOKENS_H

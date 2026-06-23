@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_MOVEMENT_H
-#define OBLIBERRY_MOVEMENT_H
+#pragma once
+
 
 #include <vector>
 #include <glm/glm.hpp>
@@ -82,4 +82,3 @@ namespace MovementSystem {
     }
 }
 
-#endif //OBLIBERRY_MOVEMENT_H

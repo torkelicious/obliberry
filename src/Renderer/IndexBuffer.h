@@ -1,7 +1,5 @@
+#pragma once
 
-
-#ifndef OBLIBERRY_INDEXBUFFER_H
-#define OBLIBERRY_INDEXBUFFER_H
 #include "glad/glad.h"
 
 
@@ -35,6 +33,3 @@ private:
     GLuint m_ID{};
     unsigned int m_Count;
 };
-
-
-#endif //OBLIBERRY_INDEXBUFFER_H

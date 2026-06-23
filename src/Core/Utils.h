@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_UTILS_H
-#define OBLIBERRY_UTILS_H
+#pragma once
+
 #include <string>
 
 namespace PathUtils {
@@ -13,5 +13,3 @@ namespace PathUtils {
         return result;
     }
 }
-
-#endif //OBLIBERRY_UTILS_H

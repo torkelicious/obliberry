@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_WINDOW_H
-#define OBLIBERRY_WINDOW_H
+#pragma once
+
 #include <GLFW/glfw3.h>
 
 #include "InputManager.h"
@@ -51,4 +51,3 @@ private:
 };
 
 
-#endif //OBLIBERRY_WINDOW_H

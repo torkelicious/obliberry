@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_MOVEMENTCOMPONENT_H
-#define OBLIBERRY_MOVEMENTCOMPONENT_H
+#pragma once
+
 #include <vector>
 #include "Map/HexCoords.h"
 
@@ -13,4 +13,3 @@ struct MovementComponent {
     bool isMoving = false;
 };
 
-#endif //OBLIBERRY_MOVEMENTCOMPONENT_H

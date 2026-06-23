@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_MESHFACTORY_H
-#define OBLIBERRY_MESHFACTORY_H
+#pragma once
+
 #include "Mesh.h"
 
 namespace MeshFactory {
@@ -40,4 +40,3 @@ namespace MeshFactory {
 }
 
 
-#endif //OBLIBERRY_MESHFACTORY_H

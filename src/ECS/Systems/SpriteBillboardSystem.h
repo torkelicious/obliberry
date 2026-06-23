@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_SPRITEBILLBOARDSYSTEM_H
-#define OBLIBERRY_SPRITEBILLBOARDSYSTEM_H
+#pragma once
+
 #include "../Components/TransformComponent.h"
 #include "ECS/Components/BillboardTagComponent.h"
 #include "ECS/Registry.h"
@@ -32,4 +32,3 @@ namespace SpriteBillboardSystem {
     }
 }
 
-#endif //OBLIBERRY_SPRITEBILLBOARDSYSTEM_H

@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_MAPRENDERSYSTEM_H
-#define OBLIBERRY_MAPRENDERSYSTEM_H
+#pragma once
+
 
 #include <algorithm>
 #include "ECS/Components/MapComponent.h"
@@ -127,4 +127,3 @@ namespace MapRenderSystem {
     }
 }
 
-#endif // OBLIBERRY_MAPRENDERSYSTEM_H

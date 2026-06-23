@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_MESH_H
-#define OBLIBERRY_MESH_H
+#pragma once
+
 
 #include <string>
 #include <vector>
@@ -115,4 +115,3 @@ private:
     IndexBuffer m_IBO;
 };
 
-#endif

@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_APPLICATION_H
-#define OBLIBERRY_APPLICATION_H
+#pragma once
+
 #include "ResourceManager.h"
 #include "Window.h"
 #include "Scripting/ObSLCore/Interpreter/Interpreter.h"
@@ -26,5 +26,3 @@ private:
     std::unique_ptr<AudioEngine> m_AudioEngine;
 };
 
-
-#endif //OBLIBERRY_APPLICATION_H

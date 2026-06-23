@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_ECS_H
-#define OBLIBERRY_ECS_H
+#pragma once
+
 
 /*
  * refs/inspo:
@@ -16,4 +16,3 @@
 #include "Registry.h"
 #include "Types.h"
 
-#endif // OBLIBERRY_ECS_H

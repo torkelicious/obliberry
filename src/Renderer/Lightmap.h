@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_LIGHTMAP_H
-#define OBLIBERRY_LIGHTMAP_H
+#pragma once
+
 
 #include <memory>
 #include <vector>
@@ -15,5 +15,3 @@ struct Lightmap {
     std::vector<glm::vec3> accumulationBuffer;
     std::vector<unsigned char> pixelBuffer;
 };
-
-#endif //OBLIBERRY_LIGHTMAP_H

@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_SCENEMANAGER_H
-#define OBLIBERRY_SCENEMANAGER_H
+#pragma once
+
 
 #include <memory>
 #include "Scene.h"
@@ -34,4 +34,3 @@ private:
     std::unique_ptr<Scene> m_CurrentScene = nullptr;
 };
 
-#endif //OBLIBERRY_SCENEMANAGER_H

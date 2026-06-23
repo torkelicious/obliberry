@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_MAPSERIALIZATION_H
-#define OBLIBERRY_MAPSERIALIZATION_H
+#pragma once
+
 #include <cstdint>
 #include "../Map/Hex.h"
 
@@ -36,5 +36,3 @@ namespace MapIO {
         return headerSize + payloadSize;
     }
 }
-
-#endif //OBLIBERRY_MAPSERIALIZATION_H

@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_COMPONENTPOOL_H
-#define OBLIBERRY_COMPONENTPOOL_H
+#pragma once
+
 #include "IPool.h"
 #include "Types.h"
 #include <vector>
@@ -79,4 +79,3 @@ public:
     [[nodiscard]] const std::vector<EntityID> &GetDenseEntities() const { return m_IndexToEntity; }
 };
 
-#endif //OBLIBERRY_COMPONENTPOOL_H

@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_RENDERSYSTEM_H
-#define OBLIBERRY_RENDERSYSTEM_H
+#pragma once
+
 
 #include "ECS/ECS.h"
 #include "ECS/Components/DirectionalTextureComponent.h"
@@ -37,4 +37,3 @@ namespace RenderSystem {
     }
 }
 
-#endif //OBLIBERRY_RENDERSYSTEM_H

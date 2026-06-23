@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_SCRIPTCOMPONENT_H
-#define OBLIBERRY_SCRIPTCOMPONENT_H
+#pragma once
+
 #include <memory>
 #include "Scripting/ObSLCore/Interpreter/Environment.h"
 #include "Scripting/ObSLCore/Parser/Parser.h"
@@ -16,4 +16,3 @@ struct ScriptComponent {
     std::vector<std::filesystem::file_time_type> lastModified;
 };
 
-#endif //OBLIBERRY_SCRIPTCOMPONENT_H

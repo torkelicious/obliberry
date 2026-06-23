@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_PLAYERCONTROLSYSTEM_H
-#define OBLIBERRY_PLAYERCONTROLSYSTEM_H
+#pragma once
+
 
 #include "ECS/ECS.h"
 #include "ECS/Components/TransformComponent.h"
@@ -29,4 +29,3 @@ namespace PlayerControlSystem {
     }
 }
 
-#endif //OBLIBERRY_PLAYERCONTROLSYSTEM_H

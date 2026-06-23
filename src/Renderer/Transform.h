@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_TRANSFORM_H
-#define OBLIBERRY_TRANSFORM_H
+#pragma once
+
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -72,4 +72,3 @@ private:
     bool m_UseCustomMatrix{false};
 };
 
-#endif //OBLIBERRY_TRANSFORM_H

@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_CAMERA_H
-#define OBLIBERRY_CAMERA_H
+#pragma once
+
 
 #include <limits>
 #include <glm/glm.hpp>
@@ -126,4 +126,3 @@ private:
     mutable glm::mat4 m_CachedVP{1.0f};
 };
 
-#endif

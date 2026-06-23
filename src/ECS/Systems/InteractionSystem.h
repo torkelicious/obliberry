@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_INTERACTIONSYSTEM_H
-#define OBLIBERRY_INTERACTIONSYSTEM_H
+#pragma once
+
 
 #include "Core/EngineContext.h"
 #include "ECS/Components/MapComponent.h"
@@ -10,6 +10,8 @@
 #include <algorithm>
 #include "Core/Window.h"
 #include "Renderer/Camera.h"
+
+// todo: convert to obsl
 
 namespace InteractionSystem {
     [[nodiscard]] inline glm::vec2 Update(Registry &registry, const EngineContext &ctx) noexcept {
@@ -61,5 +63,3 @@ namespace InteractionSystem {
         return worldPos;
     }
 }
-
-#endif //OBLIBERRY_INTERACTIONSYSTEM_H

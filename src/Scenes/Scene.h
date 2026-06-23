@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_SCENE_H
-#define OBLIBERRY_SCENE_H
+#pragma once
+
 
 #include <string>
 #include <glm/glm.hpp>
@@ -45,4 +45,3 @@ private:
     Registry m_Registry;
 };
 
-#endif //OBLIBERRY_SCENE_H

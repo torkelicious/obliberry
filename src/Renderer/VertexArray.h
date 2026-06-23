@@ -1,7 +1,5 @@
+#pragma once
 
-
-#ifndef OBLIBERRY_VERTEXARRAY_H
-#define OBLIBERRY_VERTEXARRAY_H
 #include "IndexBuffer.h"
 #include "VertexBuffer.h"
 #include "VertexBufferLayout.h"
@@ -41,4 +39,3 @@ private:
 };
 
 
-#endif //OBLIBERRY_VERTEXARRAY_H

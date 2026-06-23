@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_MATH_H
-#define OBLIBERRY_MATH_H
+#pragma once
+
 #include <glm/glm.hpp>
 #include "Renderer/Camera.h"
 
@@ -51,6 +51,3 @@ namespace Math::Projection {
         return bounds;
     }
 }
-
-
-#endif //OBLIBERRY_MATH_H

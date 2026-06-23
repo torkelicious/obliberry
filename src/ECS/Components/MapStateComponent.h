@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_MAPSTATECOMPONENT_H
-#define OBLIBERRY_MAPSTATECOMPONENT_H
+#pragma once
+
 #include "Map/HexCoords.h"
 
 struct MapStateComponent {
@@ -8,5 +8,3 @@ struct MapStateComponent {
     bool hasSelection = false;
     bool hasPathTo = false;
 };
-
-#endif //OBLIBERRY_MAPSTATECOMPONENT_H

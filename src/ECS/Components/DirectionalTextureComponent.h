@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_DIRECTIONALTEXTURECOMPONENT_H
-#define OBLIBERRY_DIRECTIONALTEXTURECOMPONENT_H
+#pragma once
+
 #include <array>
 #include <memory>
 
@@ -11,4 +11,3 @@ struct DirectionalTextureComponent {
     int index = 0;
 };
 
-#endif //OBLIBERRY_DIRECTIONALTEXTURECOMPONENT_H

@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_CUSTOMDATACOMPONENT_H
-#define OBLIBERRY_CUSTOMDATACOMPONENT_H
+#pragma once
+
 #include <unordered_map>
 #include <string>
 #include "Scripting/ObSLCore/Interpreter/Interpreter.h"
@@ -10,4 +10,3 @@ struct CustomDataComponent {
     std::unordered_map<std::string, ObSL::Value> script_components;
 };
 
-#endif //OBLIBERRY_CUSTOMDATACOMPONENT_H

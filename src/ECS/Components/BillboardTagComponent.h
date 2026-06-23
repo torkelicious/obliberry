@@ -1,8 +1,7 @@
-#ifndef OBLIBERRY_BILLBOARDCOMPONENT_H
-#define OBLIBERRY_BILLBOARDCOMPONENT_H
+#pragma once
+
 
 // tag component
 struct BillboardTagComponent {
 };
 
-#endif // OBLIBERRY_BILLBOARDCOMPONENT_H

@@ -1,5 +1,4 @@
-#ifndef OBLIBERRY_GAME_H
-#define OBLIBERRY_GAME_H
+#pragma once
 
 #include <optional>
 #include "Core/EngineContext.h"
@@ -35,4 +34,3 @@ private:
     std::optional<SceneProperties> m_PendingSceneLoad;
 };
 
-#endif //OBLIBERRY_GAME_H

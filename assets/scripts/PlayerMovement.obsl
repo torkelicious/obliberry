@@ -12,7 +12,6 @@ fn on_update(dt) {
     if (Input_IsMousePressed(0)) {
         var selection = GetSelectedHex();
         if (selection.hasSelection) {
-            // using this.id
             SetPathToHex(this.id, selection.q, selection.r);
            // PlaySound2D("assets/audio/boom.mp3", 0.8);
         }

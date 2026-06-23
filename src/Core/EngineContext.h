@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_ENGINECONTEXT_H
-#define OBLIBERRY_ENGINECONTEXT_H
+#pragma once
+
 
 #include <string>
 
@@ -27,5 +27,3 @@ struct EngineContext {
     AudioEngine *audioEngine = nullptr;
     std::string pendingScenePath;
 };
-
-#endif //OBLIBERRY_ENGINECONTEXT_H

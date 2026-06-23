@@ -1,7 +1,5 @@
+#pragma once
 
-
-#ifndef OBLIBERRY_IPOOL_H
-#define OBLIBERRY_IPOOL_H
 #include "Types.h"
 
 // base class for stuff like component pools
@@ -11,5 +9,3 @@ public:
 
     virtual void EntityDestroyed(EntityID entity) = 0;
 };
-
-#endif //OBLIBERRY_IPOOL_H

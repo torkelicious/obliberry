@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_DIRECTIONALANIMATIONSYSTEM_H
-#define OBLIBERRY_DIRECTIONALANIMATIONSYSTEM_H
+#pragma once
+
 
 #include <cmath>
 #include <glm/glm.hpp>
@@ -23,4 +23,3 @@ namespace DirectionalAnimation {
     }
 }
 
-#endif // OBLIBERRY_DIRECTIONALANIMATIONSYSTEM_H

@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_MAPRUNTIMESYSTEM_H
-#define OBLIBERRY_MAPRUNTIMESYSTEM_H
+#pragma once
+
 
 #include <optional>
 #include <vector>
@@ -90,5 +90,3 @@ namespace MapRuntimeSystem {
         OnMapChanged(registry, *map, state, ctx);
     }
 }
-
-#endif // OBLIBERRY_MAPRUNTIMESYSTEM_H

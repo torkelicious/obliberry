@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_SHADER_H
-#define OBLIBERRY_SHADER_H
+#pragma once
+
 #include <string>
 #include <unordered_map>
 
@@ -59,4 +59,3 @@ private:
     GLint GetUniformLocation(const std::string &name);
 };
 
-#endif //OBLIBERRY_SHADER_H

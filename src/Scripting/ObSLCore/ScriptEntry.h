@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_ENTRY_H
-#define OBLIBERRY_ENTRY_H
+#pragma once
+
 #include "Interpreter/Interpreter.h"
 
 namespace ObSL {
@@ -29,4 +29,4 @@ namespace ObSL {
     };
 } // ObSL
 
-#endif //OBLIBERRY_ENTRY_H
+

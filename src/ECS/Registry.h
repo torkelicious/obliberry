@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_REGISTRY_H
-#define OBLIBERRY_REGISTRY_H
+#pragma once
+
 
 #include "Types.h"
 #include "ComponentPool.h"
@@ -128,4 +128,3 @@ inline const std::string &Entity::GetName() const {
     return m_Registry->GetEntityName(m_EntityHandle);
 }
 
-#endif //OBLIBERRY_REGISTRY_H

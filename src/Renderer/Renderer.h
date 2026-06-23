@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_RENDERER_H
-#define OBLIBERRY_RENDERER_H
+#pragma once
+
 
 #include <unordered_map>
 
@@ -79,4 +79,3 @@ private:
     glm::vec4 m_ClearColor = {0.0f, 0.0f, 0.0f, 1.0f};
 };
 
-#endif //OBLIBERRY_RENDERER_H

@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_AISYSTEM_H
-#define OBLIBERRY_AISYSTEM_H
+#pragma once
+
 
 #include "ECS/ECS.h"
 #include "Map/Hex.h"
@@ -75,5 +75,3 @@ namespace AISystem {
         );
     }
 }
-
-#endif //OBLIBERRY_AISYSTEM_H

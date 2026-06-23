@@ -1,5 +1,4 @@
-#ifndef OBLIBERRY_INPUTMANAGER_H
-#define OBLIBERRY_INPUTMANAGER_H
+#pragma once
 
 #include <string>
 #include <GLFW/glfw3.h>
@@ -52,5 +51,3 @@ private:
     double m_ScrollX = 0.0;
     double m_ScrollY = 0.0;
 };
-
-#endif //OBLIBERRY_INPUTMANAGER_H

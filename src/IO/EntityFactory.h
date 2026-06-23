@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_ENTITYFACTORY_H
-#define OBLIBERRY_ENTITYFACTORY_H
+#pragma once
+
 
 #include "json.hpp"
 #include "Core/ResourceManager.h"
@@ -30,5 +30,3 @@ private:
     static std::unordered_map<std::string, ComponentDeserializer> s_Deserializers;
     static std::unordered_map<std::string, ComponentSerializer> s_Serializers;
 };
-
-#endif //OBLIBERRY_ENTITYFACTORY_H

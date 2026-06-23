@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_CONSTANTS_H
-#define OBLIBERRY_CONSTANTS_H
+#pragma once
+
 #include <limits>
 #include <string>
 #include <string_view>
@@ -47,5 +47,3 @@ constexpr float PI = 3.14159265359f;
 // lighting
 constexpr int LIGHTMAP_TEXELS_PER_HEX = 2;
 
-
-#endif //OBLIBERRY_CONSTANTS_H

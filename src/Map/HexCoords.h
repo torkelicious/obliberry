@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_HEXCOORDS_H
-#define OBLIBERRY_HEXCOORDS_H
+#pragma once
+
 
 // hex coordinates (odd-r offset, pointy-top hexes)
 struct HexCoords {
@@ -41,5 +41,3 @@ struct HexCoordsHash {
     }
 };
 
-
-#endif //OBLIBERRY_HEXCOORDS_H

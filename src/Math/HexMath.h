@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_HEXMATH_H
-#define OBLIBERRY_HEXMATH_H
+#pragma once
+
 #include "Core/Constants.h"
 #include <glm/glm.hpp>
 
@@ -98,4 +98,3 @@ namespace Math::HexMath {
     }
 }
 
-#endif //OBLIBERRY_HEXMATH_H

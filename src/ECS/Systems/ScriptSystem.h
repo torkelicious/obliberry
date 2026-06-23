@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_SCRIPTSYSTEM_H
-#define OBLIBERRY_SCRIPTSYSTEM_H
+#pragma once
+
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -179,4 +179,3 @@ namespace ScriptSystem {
         });
     }
 }
-#endif // OBLIBERRY_SCRIPTSYSTEM_H

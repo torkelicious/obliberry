@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_DEBUG_H
-#define OBLIBERRY_DEBUG_H
+#pragma once
+
 
 #include <glad/glad.h>
 
@@ -27,4 +27,4 @@ public:
 
     static VRAMStats GetVRAMStats();
 };
-#endif //OBLIBERRY_DEBUG_H
+

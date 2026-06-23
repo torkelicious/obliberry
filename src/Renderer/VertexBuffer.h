@@ -1,7 +1,5 @@
+#pragma once
 
-
-#ifndef OBLIBERRY_VERTEXBUFFER_H
-#define OBLIBERRY_VERTEXBUFFER_H
 #include "glad/glad.h"
 
 
@@ -35,4 +33,3 @@ private:
 };
 
 
-#endif //OBLIBERRY_VERTEXBUFFER_H

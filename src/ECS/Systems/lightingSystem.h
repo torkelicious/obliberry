@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_LIGHTINGSYSTEM_H
-#define OBLIBERRY_LIGHTINGSYSTEM_H
+#pragma once
+
 #include <memory>
 #include <glm/glm.hpp>
 #include <algorithm>
@@ -115,4 +115,3 @@ namespace LightingSystem {
     }
 }
 
-#endif //OBLIBERRY_LIGHTINGSYSTEM_H

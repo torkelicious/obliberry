@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_ASSETLOADER_H
-#define OBLIBERRY_ASSETLOADER_H
+#pragma once
+
 #include "json.hpp"
 #include "Core/ResourceManager.h"
 #include <functional>
@@ -46,5 +46,3 @@ private:
     static std::unordered_map<std::string, MeshFactory>
     s_MeshFactories;
 };
-
-#endif //OBLIBERRY_ASSETLOADER_H

@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_HEX_H
-#define OBLIBERRY_HEX_H
+#pragma once
+
 
 #include <glm/glm.hpp>
 #include <unordered_map>
@@ -177,4 +177,3 @@ public:
     }
 };
 
-#endif // OBLIBERRY_HEX_H

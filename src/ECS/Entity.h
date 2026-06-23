@@ -1,5 +1,4 @@
-#ifndef OBLIBERRY_ENTITY_H
-#define OBLIBERRY_ENTITY_H
+#pragma once
 
 #include "Types.h"
 #include <string>
@@ -42,5 +41,3 @@ private:
     Registry *m_Registry = nullptr;
 };
 
-
-#endif //OBLIBERRY_ENTITY_H

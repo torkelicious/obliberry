@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_MAPCOMPONENT_H
-#define OBLIBERRY_MAPCOMPONENT_H
+#pragma once
+
 
 #include "Map/Hex.h"
 #include <memory>
@@ -38,5 +38,3 @@ struct MapComponent {
 
     bool needsMeshUpdate = true;
 };
-
-#endif //OBLIBERRY_MAPCOMPONENT_H

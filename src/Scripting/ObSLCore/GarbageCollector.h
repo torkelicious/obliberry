@@ -1,5 +1,5 @@
-#ifndef OBLIBERRY_GARBAGECOLLECTOR_H
-#define OBLIBERRY_GARBAGECOLLECTOR_H
+#pragma once
+
 #include <stdio.h>
 #include <utility>
 
@@ -52,4 +52,3 @@ namespace ObSL {
     };
 } // ObSL
 
-#endif //OBLIBERRY_GARBAGECOLLECTOR_H
