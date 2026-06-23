@@ -16,7 +16,7 @@ void main()
 
     float finalAlpha = tex.a * u_Color.a;
 
-    if (finalAlpha < 0.05) {
+    if (finalAlpha < 0.01) {
         discard;
     }
 
