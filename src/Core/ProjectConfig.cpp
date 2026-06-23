@@ -30,3 +30,26 @@ ProjectConfig ProjectConfig::Deserialize(const std::string &filepath) {
     }
     return config;
 }
+
+bool ProjectConfig::Serialize(const ProjectConfig &conf, const std::string &filepath) {
+    try {
+        nlohmann::json j;
+        j["window"]["width"] = conf.windowWidth;
+        j["window"]["height"] = conf.windowHeight;
+        j["window"]["title"] = conf.windowTitle;
+        j["window"]["fullscreen"] = conf.fullscreen;
+
+        j["start_scene"] = conf.startScenePath;
+
+        std::ofstream file(filepath);
+        if (!file.is_open()) {
+            std::cerr << "Failed to open project file for writing: " << filepath << "\n";
+            return false;
+        }
+        file << j.dump(2);
+        return true;
+    } catch (const std::exception &e) {
+        std::cerr << "Failed to serialize project file: " << e.what() << "\n";
+        return false;
+    }
+}

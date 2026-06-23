@@ -11,4 +11,7 @@ struct ProjectConfig {
     bool fullscreen = false;
 
     static ProjectConfig Deserialize(const std::string &filepath = "project.json");
+
+    static bool Serialize(const ProjectConfig& conf, const std::string &filepath = "project.json");
+
 };
