@@ -42,6 +42,7 @@ void Application::Run() {
     Camera camera;
 
     EngineContext context;
+    context.projectConfig = &m_Project;
     context.window = &m_Window;
     context.input = &m_InputManager;
     context.resources = &m_ResourceManager;
@@ -49,8 +50,6 @@ void Application::Run() {
     context.camera = &camera;
     context.deltaTime = 0.0f;
     context.scriptEngine = &m_ScriptEngine;
-    context.startScenePath = m_Project.startScenePath;
-    if (m_AudioEngine) { context.audioEngine = m_AudioEngine.get(); }
     Game game;
     game.SetContext(context);
 

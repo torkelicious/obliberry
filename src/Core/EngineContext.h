@@ -3,6 +3,7 @@
 
 #include <string>
 
+struct ProjectConfig;
 class SceneManager;
 class AudioEngine;
 class Window;
@@ -18,6 +19,7 @@ namespace ObSL {
 struct EngineContext {
     std::string pendingScenePath;
     std::string startScenePath;
+    ProjectConfig *projectConfig = nullptr;
     Window *window = nullptr;
     InputManager *input = nullptr;
     ResourceManager *resources = nullptr;

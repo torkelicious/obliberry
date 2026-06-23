@@ -48,4 +48,6 @@ private:
     static void MouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
 
     static void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset);
+
+    void SetFullscreen(bool fullscreen);
 };

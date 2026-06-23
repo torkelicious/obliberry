@@ -30,7 +30,6 @@ void Window::SwapBuffers() const {
 }
 
 bool Window::Init(const unsigned int width, const unsigned int height, const char *title, const bool fullscreen) {
-
     /*
      * TODO: window resizing causes temporary stuttering/freezes
      *   seems to occur specifically on NVIDIA (Proprietary Drivers) on KWin,
@@ -131,5 +130,15 @@ void Window::ScrollCallback(GLFWwindow *window, const double xoffset, const doub
 
     if (self->m_InputManager) {
         self->m_InputManager->HandleScrollEvent(xoffset, yoffset);
+    }
+}
+
+void Window::SetFullscreen(bool fullscreen) {
+    if (fullscreen) {
+        GLFWmonitor *monitor = glfwGetPrimaryMonitor();
+        const GLFWvidmode *mode = glfwGetVideoMode(monitor);
+        glfwSetWindowMonitor(m_Window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+    } else {
+        glfwSetWindowMonitor(m_Window, nullptr, 100, 100, m_Width, m_Height, 0);
     }
 }
