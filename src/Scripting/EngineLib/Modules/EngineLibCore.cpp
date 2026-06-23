@@ -82,6 +82,27 @@ void EngineLib::register_core_modules(ObSL::Interpreter &interpreter) {
             }, "Window_GetWidth"));
 
     interpreter.get_global_environment()->define(
+        "Window_SetFullscreen", interpreter.gc.allocate<ObSL::NativeFunction>(
+            1,
+            [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+                if (args.empty()) return std::monostate{};
+                bool fullscreen = false;
+                // either boolean values or numeric flags
+                if (std::holds_alternative<bool>(args[0])) {
+                    fullscreen = std::get<bool>(args[0]);
+                } else if (std::holds_alternative<double>(args[0])) {
+                    fullscreen = std::get<double>(args[0]) != 0.0;
+                } else {
+                    return std::monostate{};
+                }
+                if (ctx && ctx->window) {
+                    ctx->window->SetFullscreen(fullscreen);
+                }
+
+                return std::monostate{};
+            }, "Window_SetFullscreen"));
+
+    interpreter.get_global_environment()->define(
         "CloseWindow", interpreter.gc.allocate<ObSL::NativeFunction>(
             0,
             [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {

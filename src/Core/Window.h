@@ -31,6 +31,8 @@ public:
 
     void SetWindowTitle(const std::string &title) const;
 
+    void SetFullscreen(bool fullscreen) const;
+
 private:
     GLFWwindow *m_Window = nullptr;
     InputManager *m_InputManager = nullptr;
@@ -48,6 +50,4 @@ private:
     static void MouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
 
     static void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset);
-
-    void SetFullscreen(bool fullscreen) const;
 };
