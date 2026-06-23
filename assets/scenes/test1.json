@@ -195,6 +195,7 @@
         "ScriptComponent": {
           "scriptPaths": [
             "assets/scripts/PlayerMovement.obsl",
+            "assets/scripts/InteractionSystem.obsl",
             "assets/scripts/engine_integ_test.obsl"
           ]
         },

@@ -9,14 +9,6 @@ ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, Registry &r
 
 void EngineLib::register_core_modules(ObSL::Interpreter &interpreter) {
     interpreter.get_global_environment()->define(
-        "CloseWindow", interpreter.gc.allocate<ObSL::NativeFunction>(
-            0,
-            [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
-                glfwSetWindowShouldClose(ctx->window->GetNativeWindow(), true);
-                return std::monostate{};
-            }, "CloseWindow"));
-
-    interpreter.get_global_environment()->define(
         "get_dt", interpreter.gc.allocate<ObSL::NativeFunction>(
             0,
             [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
@@ -73,4 +65,29 @@ void EngineLib::register_core_modules(ObSL::Interpreter &interpreter) {
                 if (new_id == 0) return std::monostate{};
                 return CreateEntityObject(interp, *reg, new_id);
             }, "Instantiate"));
+
+    // window management
+    interpreter.get_global_environment()->define(
+        "Window_GetHeight", interpreter.gc.allocate<ObSL::NativeFunction>(
+            0,
+            [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+                return (ctx && ctx->window) ? static_cast<double>(ctx->window->GetHeight()) : 0.0;
+            }, "Window_GetHeight"));
+
+    interpreter.get_global_environment()->define(
+        "Window_GetWidth", interpreter.gc.allocate<ObSL::NativeFunction>(
+            0,
+            [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+                return (ctx && ctx->window) ? static_cast<double>(ctx->window->GetWidth()) : 0.0;
+            }, "Window_GetWidth"));
+
+    interpreter.get_global_environment()->define(
+        "CloseWindow", interpreter.gc.allocate<ObSL::NativeFunction>(
+            0,
+            [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+                if (ctx && ctx->window && ctx->window->GetNativeWindow()) {
+                    glfwSetWindowShouldClose(ctx->window->GetNativeWindow(), true);
+                }
+                return std::monostate{};
+            }, "CloseWindow"));
 }

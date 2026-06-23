@@ -49,5 +49,3 @@ private:
 
     static void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset);
 };
-
-

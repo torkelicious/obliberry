@@ -5,6 +5,7 @@
 #include "Scripting/ObSLCore/Interpreter/Interpreter.h"
 
 void EngineLib::register_input_modules(ObSL::Interpreter &interpreter) {
+    // KEYBOARD
     interpreter.get_global_environment()->define(
         "Input_IsKeyDown", interpreter.gc.allocate<ObSL::NativeFunction>(
             1,
@@ -22,12 +23,67 @@ void EngineLib::register_input_modules(ObSL::Interpreter &interpreter) {
             }, "Input_IsKeyPressed"));
 
     interpreter.get_global_environment()->define(
+        "Input_IsKeyReleased", interpreter.gc.allocate<ObSL::NativeFunction>(
+            1,
+            [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+                if (!ctx || !ctx->input || args.empty() || !std::holds_alternative<std::string>(args[0])) return false;
+                return ctx->input->IsKeyReleased(InputManager::GetKeyFromName(std::get<std::string>(args[0])));
+            }, "Input_IsKeyReleased"));
+
+    // MOUSE BUTTON
+    interpreter.get_global_environment()->define(
+        "Input_IsMouseDown", interpreter.gc.allocate<ObSL::NativeFunction>(
+            1,
+            [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+                if (!ctx || !ctx->input || args.empty() || !std::holds_alternative<double>(args[0])) return false;
+                return ctx->input->IsMouseDown(static_cast<int>(std::get<double>(args[0])));
+            }, "Input_IsMouseDown"));
+
+    interpreter.get_global_environment()->define(
         "Input_IsMousePressed", interpreter.gc.allocate<ObSL::NativeFunction>(
             1,
             [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
                 if (!ctx || !ctx->input || args.empty() || !std::holds_alternative<double>(args[0])) return false;
                 return ctx->input->IsMousePressed(static_cast<int>(std::get<double>(args[0])));
             }, "Input_IsMousePressed"));
+
+    interpreter.get_global_environment()->define(
+        "Input_IsMouseReleased", interpreter.gc.allocate<ObSL::NativeFunction>(
+            1,
+            [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+                if (!ctx || !ctx->input || args.empty() || !std::holds_alternative<double>(args[0])) return false;
+                return ctx->input->IsMouseReleased(static_cast<int>(std::get<double>(args[0])));
+            }, "Input_IsMouseReleased"));
+
+
+    // MOUSE POS / SCROLLING
+    interpreter.get_global_environment()->define(
+        "Input_GetMouseX", interpreter.gc.allocate<ObSL::NativeFunction>(
+            0,
+            [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+                return (ctx && ctx->input) ? static_cast<double>(ctx->input->MousePosX()) : 0.0;
+            }, "Input_GetMouseX"));
+
+    interpreter.get_global_environment()->define(
+        "Input_GetMouseY", interpreter.gc.allocate<ObSL::NativeFunction>(
+            0,
+            [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+                return (ctx && ctx->input) ? static_cast<double>(ctx->input->MousePosY()) : 0.0;
+            }, "Input_GetMouseY"));
+
+    interpreter.get_global_environment()->define(
+        "Input_GetScrollX", interpreter.gc.allocate<ObSL::NativeFunction>(
+            0,
+            [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+                return (ctx && ctx->input) ? static_cast<double>(ctx->input->ScrollX()) : 0.0;
+            }, "Input_GetScrollX"));
+
+    interpreter.get_global_environment()->define(
+        "Input_GetScrollY", interpreter.gc.allocate<ObSL::NativeFunction>(
+            0,
+            [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+                return (ctx && ctx->input) ? static_cast<double>(ctx->input->ScrollY()) : 0.0;
+            }, "Input_GetScrollY"));
 
     interpreter.get_global_environment()->define(
         "Input_GetMouseWorldPos", interpreter.gc.allocate<ObSL::NativeFunction>(
