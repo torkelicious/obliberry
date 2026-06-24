@@ -1,13 +1,14 @@
 #pragma once
 
-
 #include <algorithm>
+#include <ranges>
 #include "ECS/Components/MapComponent.h"
 #include "ECS/Components/MapStateComponent.h"
 #include "ECS/Registry.h"
 #include "Renderer/MeshFactory.h"
 #include "Renderer/Renderer.h"
 #include "Renderer/Transform.h"
+#include "Math/Frustum.h"
 #include "Math/Math.h"
 
 namespace MapRenderSystem {
@@ -45,34 +46,44 @@ namespace MapRenderSystem {
         return {minQ - 1, maxQ + 1, minR - 1, maxR + 1};
     }
 
-    inline void RenderTiles(Registry &registry, Renderer &renderer) {
-        const Math::Projection::AABB cameraBounds =
-                Math::Projection::GetCameraGroundAABB(renderer.GetCamera(), TARGET_ASPECT);
-
+    inline void RenderTiles(Registry &registry, Renderer &renderer, const Math::Frustum::ViewFrustum &frustum) {
         registry.ForEach<MapComponent, MapStateComponent>(
-            [&](Entity, MapComponent *mapComp, const MapStateComponent */*stateComp*/) {
-                if (!mapComp->hexMesh) {
-                    mapComp->hexMesh = std::make_shared<Mesh>(MeshFactory::CreatePointTopHex(HEX_SIZE));
-                }
+            [&](Entity, MapComponent *mapComp, const MapStateComponent * /*stateComp*/) {
+                if (!mapComp->hexMesh) return;
 
-                const bool isContained = Contains(mapComp->bufferedRenderAABB, cameraBounds);
-                const bool shouldUpdateBuffers = mapComp->needsMeshUpdate || !isContained;
+                const Math::Projection::AABB cameraBounds{
+                    .min = frustum.minBounds,
+                    .max = frustum.maxBounds
+                };
 
-                if (shouldUpdateBuffers) {
+                const bool needsRebuild = mapComp->needsMeshUpdate ||
+                                          !Contains(mapComp->bufferedRenderAABB, cameraBounds);
+
+                if (needsRebuild) {
                     mapComp->bufferedRenderAABB = CalculateBufferedAABB(cameraBounds);
-                    for (auto &transforms: mapComp->visibles | std::views::values) {
+                    const auto [minQ, maxQ, minR, maxR] = GetGridBoundsForAABB(mapComp->bufferedRenderAABB);
+
+                    for (auto &[typeId, transforms]: mapComp->visibles) {
+                        (void) typeId;
                         transforms.clear();
                     }
 
-                    const auto [minQ, maxQ, minR, maxR] = GetGridBoundsForAABB(mapComp->bufferedRenderAABB);
+                    const int estimatedCols = maxQ - minQ + 1;
+                    const int estimatedRows = maxR - minR + 1;
+                    const int estimatedTiles = std::max(estimatedCols, 0) * std::max(estimatedRows, 0);
+                    for (auto &[typeId, transforms]: mapComp->visibles) {
+                        (void) typeId;
+                        transforms.reserve(
+                            transforms.size() + static_cast<std::size_t>(estimatedTiles / std::max(
+                                                                             1u, static_cast<unsigned>(mapComp->visibles
+                                                                                 .size()))));
+                    }
 
                     for (int r = minR; r <= maxR; ++r) {
                         for (int q = minQ; q <= maxQ; ++q) {
                             if (const Tile *tile = mapComp->grid.Get(HexCoords(q, r))) {
                                 const glm::mat4 translationMatrix = glm::translate(
                                     glm::mat4(1.0f), glm::vec3(tile->worldPos.x, tile->worldPos.y, 0.0f));
-
-                                // push the matrix instance into the vector for this specific tile type
                                 mapComp->visibles[tile->type].push_back(translationMatrix);
                             }
                         }
@@ -82,13 +93,12 @@ namespace MapRenderSystem {
                 }
 
                 renderer.SetLightmap(mapComp->lightmap.texture ? &mapComp->lightmap : nullptr);
-                // loop through all collected tile types and submit their instanced buffers
                 for (auto &[typeId, transforms]: mapComp->visibles) {
                     if (transforms.empty()) continue;
 
                     auto matIt = mapComp->typeMats.find(typeId);
                     if (matIt != mapComp->typeMats.end()) {
-                        renderer.Submit(mapComp->hexMesh.get(), &matIt->second, &transforms, shouldUpdateBuffers);
+                        renderer.Submit(mapComp->hexMesh, &matIt->second, transforms);
                     }
                 }
             });
@@ -108,7 +118,7 @@ namespace MapRenderSystem {
                     Transform t;
                     t.SetPosition({worldPos.x, worldPos.y, 0.01f});
                     t.SetScale({1.08f, 1.08f, 1.0f});
-                    renderer.Submit(mapComp->hexMesh.get(), mapComp->outlineMat.get(), t);
+                    renderer.Submit(mapComp->hexMesh, mapComp->outlineMat.get(), t);
                 }
 
                 if (stateComp->hasPathTo) {
@@ -116,14 +126,13 @@ namespace MapRenderSystem {
                     Transform t;
                     t.SetPosition({worldPos.x, worldPos.y, 0.01f});
                     t.SetScale({1.08f, 1.08f, 1.0f});
-                    renderer.Submit(mapComp->hexMesh.get(), mapComp->pathToMat.get(), t);
+                    renderer.Submit(mapComp->hexMesh, mapComp->pathToMat.get(), t);
                 }
             });
     }
 
-    inline void RenderAll(Registry &reg, const EngineContext &ctx) {
-        RenderTiles(reg, *ctx.renderer);
+    inline void RenderAll(Registry &reg, const EngineContext &ctx, const Math::Frustum::ViewFrustum &frustum) {
+        RenderTiles(reg, *ctx.renderer, frustum);
         RenderOverlays(reg, *ctx.renderer);
     }
 }
-

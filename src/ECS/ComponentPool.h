@@ -12,8 +12,8 @@ class ComponentPool : public IPool {
 private:
     std::vector<T> m_Data; // array of components
     std::vector<EntityID> m_IndexToEntity; // array mapping index back to EntityID
-    std::vector<size_t> m_EntityToIndex; // array mapping EntityID to Index
-    static constexpr size_t INVALID_INDEX = std::numeric_limits<size_t>::max();
+    std::vector<uint32_t> m_EntityToIndex; // array mapping EntityID to Index
+    static constexpr uint32_t INVALID_INDEX = std::numeric_limits<uint32_t>::max();
 
 public:
     ComponentPool() {
@@ -24,7 +24,7 @@ public:
     T &Insert(const EntityID entity, T component) {
         assert(entity < MAX_ENTITIES && "Entity ID exceeds maximum limit!");
 
-        const size_t newIndex = m_Data.size();
+        const auto newIndex = static_cast<uint32_t>(m_Data.size());
         m_EntityToIndex[entity] = newIndex;
         m_IndexToEntity.push_back(entity);
         m_Data.push_back(std::move(component));
@@ -36,7 +36,6 @@ public:
         if (entity >= m_EntityToIndex.size() || m_EntityToIndex[entity] == INVALID_INDEX) {
             return nullptr;
         }
-        // fast :))))
         return &m_Data[m_EntityToIndex[entity]];
     }
 
@@ -54,8 +53,8 @@ public:
     void EntityDestroyed(const EntityID entity) override {
         if (!Has(entity)) return;
 
-        const size_t indexOfRemoved = m_EntityToIndex[entity];
-        const size_t indexOfLast = m_Data.size() - 1;
+        const uint32_t indexOfRemoved = m_EntityToIndex[entity];
+        const uint32_t indexOfLast = static_cast<uint32_t>(m_Data.size()) - 1;
 
         if (indexOfRemoved != indexOfLast) {
             m_Data[indexOfRemoved] = std::move(m_Data[indexOfLast]);
@@ -78,4 +77,3 @@ public:
     const std::vector<T> &GetDenseData() const { return m_Data; }
     [[nodiscard]] const std::vector<EntityID> &GetDenseEntities() const { return m_IndexToEntity; }
 };
-

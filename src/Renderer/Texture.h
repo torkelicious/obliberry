@@ -61,8 +61,7 @@ private:
     GLuint m_ID = 0;
     std::string m_FilePath;
 
-    unsigned char *m_ImgLocBuffer = nullptr;
-    std::vector<unsigned char> m_DynamicData;
+    std::vector<unsigned char> m_PixelData;
 
     int m_Width = 0, m_Height = 0, m_BPP = 0;
 

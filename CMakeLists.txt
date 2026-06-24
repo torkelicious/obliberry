@@ -112,7 +112,7 @@ add_executable(
         src/IO/SceneSerialization.cpp
         src/IO/SceneSerialization.h
         src/Math/Math.h
-        src/ECS/Systems/lightingSystem.h
+        src/ECS/Systems/LightingSystem.h
         src/ECS/Components/PointLightComponent.h
         # ObSL Core
         src/Scripting/ObSLCore/Lexer/Lexer.cpp

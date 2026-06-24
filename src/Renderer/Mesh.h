@@ -52,6 +52,7 @@ public:
     Mesh &operator=(Mesh &&) = default;
 
     explicit Mesh(MeshData data) : m_TempData(std::move(data)) {
+        ComputeBoundingSphere();
     }
 
     void InitGL() {
@@ -70,6 +71,17 @@ public:
         m_TempData.vertices.clear();
         m_TempData.indices.clear();
     }
+
+    void ComputeBoundingSphere() noexcept {
+        m_BoundingRadius = 0.0f;
+        for (const auto &v: m_TempData.vertices) {
+            const float dist = glm::length(v.Position);
+            if (dist > m_BoundingRadius)
+                m_BoundingRadius = dist;
+        }
+    }
+
+    [[nodiscard]] float GetBoundingRadius() const noexcept { return m_BoundingRadius; }
 
     void Upload(const MeshData &data) {
         m_VAO.Bind();
@@ -101,4 +113,5 @@ private:
     VertexBuffer m_VBO;
     IndexBuffer m_IBO;
     MeshData m_TempData;
+    float m_BoundingRadius = 0.0f;
 };

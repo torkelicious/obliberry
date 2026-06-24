@@ -30,6 +30,8 @@ void Shader::InitGL() {
 
     m_VertexSrc.clear();
     m_FragmentSrc.clear();
+    m_VertexSrc.shrink_to_fit();
+    m_FragmentSrc.shrink_to_fit();
 }
 
 
@@ -43,43 +45,43 @@ void Shader::Unbind() {
 }
 
 
-void Shader::SetUniform1i(const std::string &name, const int value) {
+void Shader::SetUniform1i(const char *name, const int value) {
     const GLint loc = GetUniformLocation(name);
     if (loc == -1) return;
     glUniform1i(loc, value);
 }
 
-void Shader::SetUniform1f(const std::string &name, const float value) {
+void Shader::SetUniform1f(const char *name, const float value) {
     const GLint loc = GetUniformLocation(name);
     if (loc == -1) return;
     glUniform1f(loc, value);
 }
 
-void Shader::SetUniformVec2(const std::string &name, const glm::vec2 &v) {
+void Shader::SetUniformVec2(const char *name, const glm::vec2 &v) {
     const GLint loc = GetUniformLocation(name);
     if (loc == -1) return;
     glUniform2f(loc, v.x, v.y);
 }
 
-void Shader::SetUniformVec4(const std::string &name, const glm::vec4 &v) {
+void Shader::SetUniformVec4(const char *name, const glm::vec4 &v) {
     const GLint loc = GetUniformLocation(name);
     if (loc == -1) return;
     glUniform4f(loc, v.x, v.y, v.z, v.w);
 }
 
-void Shader::SetUniformMat4(const std::string &name, const glm::mat4 &mat) {
+void Shader::SetUniformMat4(const char *name, const glm::mat4 &mat) {
     const GLint loc = GetUniformLocation(name);
     if (loc == -1) return;
     glUniformMatrix4fv(loc, 1, GL_FALSE, &mat[0][0]);
 }
 
-GLint Shader::GetUniformLocation(const std::string &name) {
+GLint Shader::GetUniformLocation(const char *name) {
     if (m_ID == 0) return -1;
 
     if (const auto it = m_UniformCache.find(name); it != m_UniformCache.end())
         return it->second;
 
-    GLint location = glGetUniformLocation(m_ID, name.c_str());
+    GLint location = glGetUniformLocation(m_ID, name);
     m_UniformCache.emplace(name, location);
     return location;
 }

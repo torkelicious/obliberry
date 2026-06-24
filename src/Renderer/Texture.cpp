@@ -10,12 +10,16 @@ Texture::Texture(
     const GLuint wrapS,
     const GLuint wrapT
 )
-    : m_ID(0), m_FilePath(path), m_ImgLocBuffer(nullptr), m_Width(0), m_Height(0), m_BPP(0),
+    : m_ID(0), m_FilePath(path), m_Width(0), m_Height(0), m_BPP(0),
       m_MinFilter(minFilter), m_MagFilter(magFilter), m_WrapS(wrapS), m_WrapT(wrapT) {
     std::cout << "Loading: " << path << "\n";
     stbi_set_flip_vertically_on_load(1);
 
-    m_ImgLocBuffer = stbi_load(path.c_str(), &m_Width, &m_Height, &m_BPP, 4);
+    if (unsigned char *loaded = stbi_load(path.c_str(), &m_Width, &m_Height, &m_BPP, 4)) {
+        const auto size = static_cast<size_t>(m_Width * m_Height * 4);
+        m_PixelData.assign(loaded, loaded + size);
+        stbi_image_free(loaded);
+    }
 }
 
 Texture::Texture(
@@ -27,12 +31,11 @@ Texture::Texture(
     const GLuint wrapS,
     const GLuint wrapT
 )
-    : m_ID(0), m_ImgLocBuffer(nullptr), m_Width(width), m_Height(height), m_BPP(4),
+    : m_ID(0), m_Width(width), m_Height(height), m_BPP(4),
       m_MinFilter(minFilter), m_MagFilter(magFilter), m_WrapS(wrapS), m_WrapT(wrapT) {
     if (data) {
         const auto size = static_cast<size_t>(width * height * 4); // RGBA
-        m_DynamicData.resize(size);
-        std::memcpy(m_DynamicData.data(), data, size);
+        m_PixelData.assign(data, data + size);
     }
 }
 
@@ -40,9 +43,6 @@ Texture::~Texture() {
     if (m_ID != 0) {
         glDeleteTextures(1, &m_ID);
         m_ID = 0;
-    }
-    if (m_ImgLocBuffer) {
-        stbi_image_free(m_ImgLocBuffer);
     }
 }
 
@@ -61,24 +61,21 @@ void Texture::InitGL() {
     if (m_IsWhiteTexture) {
         constexpr uint32_t white = 0xFFFFFFFF;
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, &white);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     }
-    // loaded from disk
-    else if (m_ImgLocBuffer) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, m_Width, m_Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_ImgLocBuffer);
+    // loaded from disk or dynamic data
+    else if (!m_PixelData.empty()) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, m_Width, m_Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_PixelData.data());
 
-        // Generate Mipmaps
+        // mipmaps
         if (m_MinFilter == GL_NEAREST_MIPMAP_NEAREST || m_MinFilter == GL_LINEAR_MIPMAP_NEAREST ||
             m_MinFilter == GL_NEAREST_MIPMAP_LINEAR || m_MinFilter == GL_LINEAR_MIPMAP_LINEAR) {
             glGenerateMipmap(GL_TEXTURE_2D);
         }
 
-        stbi_image_free(m_ImgLocBuffer);
-        m_ImgLocBuffer = nullptr;
-    }
-    // array data
-    else if (!m_DynamicData.empty()) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, m_Width, m_Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_DynamicData.data());
-        m_DynamicData.clear();
+        m_PixelData.clear();
+        m_PixelData.shrink_to_fit();
     }
     // if allocating size
     else {

@@ -12,6 +12,7 @@
 #include <utility>
 #include "ECS/Systems/ScriptSystem.h"
 #include "IO/PrefabManager.h"
+#include "Math/Frustum.h"
 #include "Scripting/EngineLib/EngineLib.h"
 #include "Sound/AudioEngine.h"
 
@@ -47,8 +48,6 @@ void Scene::OnEnter() {
 
 void Scene::Update(const float dt) {
     m_Context.deltaTime = dt;
-    // this looks stupid but is fine because Update checks for required component
-    // for system before running
 
     PlayerControlSystem::Update(m_Registry, m_Context);
     AISystem::Update(m_Registry, dt);
@@ -60,18 +59,21 @@ void Scene::Update(const float dt) {
 void Scene::Render() {
     m_Context.renderer->BeginFrame();
 
-    MapRenderSystem::RenderAll(m_Registry, m_Context);
+    const glm::mat4 &vp = m_Context.renderer->GetCurrentVP();
+
     if (m_Context.camera) {
+        const Math::Frustum::ViewFrustum frustum =
+                Math::Frustum::FromCameraVP(vp, /*padding=*/ HEX_SIZE * 2.0f);
+        const Math::Frustum::FrustumPlanes frustum3D =
+                Math::Frustum::FrustumPlanes::FromVP(vp);
+
+        MapRenderSystem::RenderAll(m_Registry, m_Context, frustum);
+
         SpriteBillboardSystem::Update(m_Registry, m_Context.camera);
+
+        RenderSystem::Render(m_Registry, *m_Context.renderer, frustum3D);
     }
-    RenderSystem::Render(m_Registry, *m_Context.renderer);
-
-    Renderer::ProcessInitQ();
-
-    m_Context.renderer->InstancedFlush();
-    m_Context.renderer->Flush();
 }
-
 
 void Scene::OnExit() {
     std::vector<EntityID> deadEntities;

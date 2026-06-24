@@ -1,10 +1,12 @@
 #pragma once
 
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include <functional>
 #include <mutex>
 #include <memory>
+#include <cstring>
 
 #include "Camera.h"
 #include "Lightmap.h"
@@ -16,17 +18,44 @@
 struct RenderCommand {
     const Mesh *mesh;
     const Material *material;
-    Transform transform;
-    const Texture *textureOverride;
-    int sortKeyDepth;
-    int sortKeyZ;
+    const Texture *effectiveTexture;
+    glm::vec4 color;
+    glm::mat4 model;
+    int32_t sortKey;
 };
 
 struct InstancedRenderCommand {
     const Mesh *mesh;
     const Material *material;
-    const std::vector<glm::mat4> *transforms;
-    bool isDirty;
+    const Texture *effectiveTexture;
+    glm::vec4 color;
+    std::vector<glm::mat4> transforms;
+};
+
+struct BatchKey {
+    const Mesh *mesh;
+    const Material *material;
+    const Texture *texture;
+    glm::vec4 color;
+
+    bool operator==(const BatchKey &other) const noexcept {
+        return mesh == other.mesh && material == other.material && texture == other.texture && color == other.color;
+    }
+};
+
+// hash combine
+struct BatchKeyHash {
+    size_t operator()(const BatchKey &k) const noexcept {
+        size_t h = std::hash<const Mesh *>{}(k.mesh);
+        h ^= std::hash<const Material *>{}(k.material) + 0x9e3779b9 + (h << 6) + (h >> 2);
+        h ^= std::hash<const Texture *>{}(k.texture) + 0x9e3779b9 + (h << 6) + (h >> 2);
+        uint32_t rgba[4];
+        std::memcpy(rgba, &k.color, sizeof(rgba));
+        for (const uint32_t c: rgba) {
+            h ^= c + 0x9e3779b9 + (h << 6) + (h >> 2);
+        }
+        return h;
+    }
 };
 
 class Renderer {
@@ -37,54 +66,64 @@ public:
         return m_Camera;
     }
 
+    [[nodiscard]] const glm::mat4 &GetCurrentVP() const noexcept {
+        return m_VP[m_SubmitIndex];
+    }
+
     void BeginFrame();
 
-    void Submit(const Mesh *mesh,
+    void Submit(const std::shared_ptr<Mesh> &mesh,
                 const Material *material,
                 const Transform &transform,
                 const Texture *textureOverride = nullptr);
 
-    void Submit(const Mesh *mesh,
+    void Submit(const std::shared_ptr<Mesh> &mesh,
                 const Material *material,
-                const std::vector<glm::mat4> *transforms,
-                bool isDirty = true);
+                const std::vector<glm::mat4> &transforms);
 
-    void Flush();
-
-    void InstancedFlush();
+    void Flush(size_t renderIndex);
 
     void Clean();
+
+    void SwapBuffers();
 
     void SetLightmap(const Lightmap *lightmap);
 
     static void SetClearColor(glm::vec4 color);
+
+    static void ApplyClearColor();
 
     static void SubmitInitTask(std::function<void()> task);
 
     static void ProcessInitQ();
 
 private:
-    static void Execute(const RenderCommand &cmd);
+    void BindLightmap(Shader *shader, size_t renderIndex) const;
 
-    void BindLightmap(Shader *shader) const;
-
-private:
-    std::vector<RenderCommand> m_Commands;
-    std::vector<InstancedRenderCommand> m_InstancedCommands;
-    std::unordered_map<const void *, std::shared_ptr<VertexBuffer> > m_InstanceBuffers;
-
-    struct InstancedGroup {
-        std::shared_ptr<VertexBuffer> vbo;
-        std::shared_ptr<VertexArray> vao;
-    };
-
-    std::unordered_map<const void *, InstancedGroup> m_InstanceGroups;
-
-    const Camera *m_Camera = nullptr;
-    const Lightmap *m_Lightmap = nullptr;
-    glm::mat4 m_VP;
-    glm::vec4 m_ClearColor = {0.0f, 0.0f, 0.0f, 1.0f};
+    void RenderBatch(const BatchKey &key, const std::vector<glm::mat4> &transforms, size_t renderIndex);
 
     static std::vector<std::function<void()> > s_InitQueue;
     static std::mutex s_InitQueueMutex;
+
+    size_t m_SubmitIndex = 0;
+    size_t m_RenderIndex = 1;
+
+    std::vector<RenderCommand> m_Commands[2];
+    std::vector<InstancedRenderCommand> m_InstancedCommands[2];
+
+    const Camera *m_Camera = nullptr;
+    const Lightmap *m_Lightmap[2] = {nullptr, nullptr};
+
+    float m_Aspect = 1.7777777f;
+    glm::mat4 m_VP[2] = {glm::mat4(1.0f), glm::mat4(1.0f)};
+
+    struct MeshVAO {
+        std::shared_ptr<VertexArray> vao;
+        bool instanceAttribReady = false;
+    };
+
+    std::unordered_map<const Mesh *, MeshVAO> m_MeshVAOs;
+    std::unique_ptr<VertexBuffer> m_DynamicInstanceBuffer;
+    const VertexArray *m_LastBoundVAO = nullptr;
+    const Shader *m_LastBoundShader = nullptr;
 };

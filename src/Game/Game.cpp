@@ -51,7 +51,6 @@ void Game::Render() const {
         m_Context.renderer->SetCamera(*m_Context.camera, aspect);
     }
 
-    m_Context.renderer->BeginFrame();
     m_SceneManager.Render();
 }
 

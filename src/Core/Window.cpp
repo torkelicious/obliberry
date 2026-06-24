@@ -52,6 +52,8 @@ bool Window::Init(const unsigned int width, const unsigned int height, const cha
         glfwTerminate();
         return false;
     }
+    glfwSetWindowUserPointer(m_Window, this);
+    glfwSetFramebufferSizeCallback(m_Window, WindowResizeCallback);
 
     glfwGetWindowSize(m_Window, &m_Width, &m_Height);
 
@@ -66,7 +68,6 @@ bool Window::Init(const unsigned int width, const unsigned int height, const cha
     glfwGetFramebufferSize(m_Window, &fbWidth, &fbHeight);
     glViewport(0, 0, fbWidth, fbHeight);
 
-    glfwSetFramebufferSizeCallback(m_Window, WindowResizeCallback);
     glfwSetKeyCallback(m_Window, KeyCallback);
     glfwSetCursorPosCallback(m_Window, CursorPosCallback);
     glfwSetMouseButtonCallback(m_Window, MouseButtonCallback);

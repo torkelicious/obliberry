@@ -31,6 +31,8 @@ public:
 
     void SetSubData(const void *data, unsigned int size, unsigned int offset = 0) const;
 
+    void SetDataOrphaned(const void *data, unsigned int size) const;
+
 private:
     GLuint m_ID = 0;
 };

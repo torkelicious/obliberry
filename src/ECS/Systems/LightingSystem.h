@@ -45,10 +45,12 @@ namespace LightingSystem {
                 tex->InitGL();
             });
         } else {
-            std::vector<unsigned char> dataCopy = map.lightmap.pixelBuffer;
-            Renderer::SubmitInitTask([tex = texture, w = texW, h = texH, data = std::move(dataCopy)]() {
-                tex->UpdateData(data.data(), w, h);
-            });
+            Renderer::SubmitInitTask(
+                [tex = texture, w = texW, h = texH, data = std::move(map.lightmap.pixelBuffer)]() mutable {
+                    tex->UpdateData(data.data(), w, h);
+                    data.clear();
+                });
+            map.lightmap.pixelBuffer.assign(texW * texH * 4, 255);
         }
     }
 
@@ -118,9 +120,10 @@ namespace LightingSystem {
             pixelBuffer[pIdx + 2] = static_cast<unsigned char>(clamped.b * 255.0f);
             pixelBuffer[pIdx + 3] = 255;
         }
-        std::vector<unsigned char> dataCopy = pixelBuffer;
-        Renderer::SubmitInitTask([tex = texture, w = texW, h = texH, data = std::move(dataCopy)]() {
+        Renderer::SubmitInitTask([tex = texture, w = texW, h = texH, data = std::move(pixelBuffer)]() mutable {
             tex->UpdateData(data.data(), w, h);
+            data.clear();
         });
+        pixelBuffer.assign(texW * texH * 4, 255);
     }
 }

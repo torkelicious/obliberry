@@ -29,3 +29,9 @@ void VertexBuffer::SetSubData(const void *data, const unsigned int size, const u
     // modify existing memory instead of reallocating
     glBufferSubData(GL_ARRAY_BUFFER, offset, size, data);
 }
+
+void VertexBuffer::SetDataOrphaned(const void *data, const unsigned int size) const {
+    glBindBuffer(GL_ARRAY_BUFFER, m_ID);
+    glBufferData(GL_ARRAY_BUFFER, size, nullptr, GL_DYNAMIC_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, size, data);
+}

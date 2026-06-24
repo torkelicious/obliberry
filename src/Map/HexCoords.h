@@ -1,5 +1,5 @@
 #pragma once
-
+#include <cstdint>
 
 // hex coordinates (odd-r offset, pointy-top hexes)
 struct HexCoords {
@@ -26,17 +26,13 @@ struct HexCoords {
 // hash for 16-bit coordinates to avoid collision
 struct HexCoordsHash {
     std::size_t operator()(const HexCoords &h) const noexcept {
-        const uint32_t packed = static_cast<uint32_t>(static_cast<uint16_t>(h.q)) << 16 |
-                                static_cast<uint16_t>(h.r);
-
-        // MurmurHash3 finalizer scramble to spread bits evenly
-        // found this somewhere online
-        uint64_t x = packed;
-        x ^= x >> 30;
-        x *= 0xbf58476d1ce4e5b9ULL;
-        x ^= x >> 27;
-        x *= 0x94d049bb133111ebULL;
-        x ^= x >> 31;
+        uint32_t x = (static_cast<uint32_t>(static_cast<uint16_t>(h.q)) << 16) |
+                     static_cast<uint32_t>(static_cast<uint16_t>(h.r));
+        x ^= x >> 16;
+        x *= 0x85ebca6bU;
+        x ^= x >> 13;
+        x *= 0xc2b2ae35U;
+        x ^= x >> 16;
         return x;
     }
 };
