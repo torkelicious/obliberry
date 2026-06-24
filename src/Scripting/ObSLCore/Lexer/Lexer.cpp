@@ -110,7 +110,6 @@ namespace ObSL {
 
         static const std::unordered_map<std::string_view, TokenType> keywords = {
             {"and", TokenType::AND},
-            {"&&", TokenType::AND},
             {"break", TokenType::BREAK},
             {"case", TokenType::CASE},
             {"catch", TokenType::CATCH},
@@ -127,7 +126,6 @@ namespace ObSL {
             {"is", TokenType::IS},
             {"null", TokenType::NULL_},
             {"or", TokenType::OR},
-            {"||", TokenType::OR},
             {"print", TokenType::PRINT},
             {"println", TokenType::PRINTLN},
             {"return", TokenType::RETURN},
@@ -353,11 +351,25 @@ namespace ObSL {
                     static_cast<uint32_t>(current)
                 };
             case '&':
+                if (peek() == '&') {
+                    advance();
+                    return Token{
+                        TokenType::AND, "&&", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                        static_cast<uint32_t>(start_pos), static_cast<uint32_t>(current)
+                    };
+                }
                 return Token{
                     TokenType::AMPERSAND, "&", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
                     static_cast<uint32_t>(start_pos), static_cast<uint32_t>(current)
                 };
             case '|':
+                if (peek() == '|') {
+                    advance();
+                    return Token{
+                        TokenType::OR, "||", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
+                        static_cast<uint32_t>(start_pos), static_cast<uint32_t>(current)
+                    };
+                }
                 return Token{
                     TokenType::PIPE, "|", static_cast<uint16_t>(line), static_cast<uint16_t>(start_col),
                     static_cast<uint32_t>(start_pos), static_cast<uint32_t>(current)
