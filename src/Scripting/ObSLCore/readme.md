@@ -131,6 +131,10 @@ a <= b;
 true and false;
 true or false;
 !true;
+
+// Alternative syntax
+true && false;
+true || false;
 ```
 
 ---
