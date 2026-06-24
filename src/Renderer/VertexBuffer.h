@@ -16,7 +16,7 @@ public:
     VertexBuffer &operator=(VertexBuffer &&) = default;
 
 
-    VertexBuffer() : m_ID(0) {
+    VertexBuffer() {
     }
 
     void Init(const void *data, unsigned int size, GLenum usage = GL_STATIC_DRAW);

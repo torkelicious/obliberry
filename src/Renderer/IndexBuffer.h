@@ -15,7 +15,7 @@ public:
 
     IndexBuffer &operator=(IndexBuffer &&) = default;
 
-    IndexBuffer() : m_ID(0), m_Count(0) {
+    IndexBuffer() {
     }
 
     ~IndexBuffer();

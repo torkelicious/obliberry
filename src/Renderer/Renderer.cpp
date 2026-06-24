@@ -39,7 +39,7 @@ void Renderer::Submit(const std::shared_ptr<Mesh> &mesh,
         // signed 16-bit range
         d = std::clamp(d, -32767, 32767);
         z = std::clamp(z, -32767, 32767);
-        return static_cast<int32_t>((static_cast<uint32_t>(static_cast<int16_t>(d)) << 16) |
+        return static_cast<int32_t>(static_cast<uint32_t>(static_cast<int16_t>(d)) << 16 |
                                     static_cast<uint32_t>(static_cast<int16_t>(z)));
     };
 
@@ -65,7 +65,7 @@ void Renderer::Submit(const std::shared_ptr<Mesh> &mesh,
                       const std::vector<glm::mat4> &transforms) {
     if (transforms.empty()) return;
 
-    const Texture *tex = (material && material->texture) ? material->texture.get() : nullptr;
+    const Texture *tex = material && material->texture ? material->texture.get() : nullptr;
     const glm::vec4 col = material ? material->color : glm::vec4(1.0f);
 
     m_InstancedCommands[m_SubmitIndex].push_back({

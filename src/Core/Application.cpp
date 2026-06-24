@@ -133,7 +133,7 @@ void Application::Run() {
         {
             std::unique_lock lock(m_Frames[nextIdx].mutex);
             if (m_Frames[nextIdx].state != FrameState::Free) {
-                m_Frames[nextIdx].cv.wait(lock, [&]() {
+                m_Frames[nextIdx].cv.wait(lock, [&] {
                     return m_Frames[nextIdx].state == FrameState::Free || !m_Running.load();
                 });
             }
@@ -186,7 +186,7 @@ void Application::RenderThreadWorker(Renderer *renderer, Camera *camera, Game *g
         if (frameIdx == -1) {
             // sleep until woken
             std::unique_lock lock(m_RenderMutex);
-            m_RenderCV.wait(lock, [&]() {
+            m_RenderCV.wait(lock, [&] {
                 if (!m_Running) return true;
                 for (auto &m_Frame: m_Frames) {
                     std::lock_guard lk(m_Frame.mutex);

@@ -29,8 +29,7 @@ namespace Math::Frustum {
             fp.planes[5] = row3 - row2;
 
             for (auto &p: fp.planes) {
-                const float len = glm::length(glm::vec3(p));
-                if (len > 1e-8f) {
+                if (const float len = glm::length(glm::vec3(p)); len > 1e-8f) {
                     p /= len;
                 }
             }

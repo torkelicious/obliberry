@@ -74,9 +74,8 @@ public:
 
     void ComputeBoundingSphere() noexcept {
         m_BoundingRadius = 0.0f;
-        for (const auto &v: m_TempData.vertices) {
-            const float dist = glm::length(v.Position);
-            if (dist > m_BoundingRadius)
+        for (const auto &[Position, UV]: m_TempData.vertices) {
+            if (const float dist = glm::length(Position); dist > m_BoundingRadius)
                 m_BoundingRadius = dist;
         }
     }

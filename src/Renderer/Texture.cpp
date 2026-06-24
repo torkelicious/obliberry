@@ -10,7 +10,7 @@ Texture::Texture(
     const GLuint wrapS,
     const GLuint wrapT
 )
-    : m_ID(0), m_FilePath(path), m_Width(0), m_Height(0), m_BPP(0),
+    : m_FilePath(path),
       m_MinFilter(minFilter), m_MagFilter(magFilter), m_WrapS(wrapS), m_WrapT(wrapT) {
     std::cout << "Loading: " << path << "\n";
     stbi_set_flip_vertically_on_load(1);
@@ -31,7 +31,7 @@ Texture::Texture(
     const GLuint wrapS,
     const GLuint wrapT
 )
-    : m_ID(0), m_Width(width), m_Height(height), m_BPP(4),
+    : m_Width(width), m_Height(height), m_BPP(4),
       m_MinFilter(minFilter), m_MagFilter(magFilter), m_WrapS(wrapS), m_WrapT(wrapT) {
     if (data) {
         const auto size = static_cast<size_t>(width * height * 4); // RGBA

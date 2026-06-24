@@ -40,7 +40,7 @@ void AssetLoader::LoadTextures(
             tex.at("id").get<std::string>(),
             tex.at("path").get<std::string>()
         );
-        Renderer::SubmitInitTask([texture]() {
+        Renderer::SubmitInitTask([texture] {
             texture->InitGL();
         });
     }
@@ -56,7 +56,7 @@ void AssetLoader::LoadShaders(
             shader.at("vertex").get<std::string>(),
             shader.at("fragment").get<std::string>()
         );
-        Renderer::SubmitInitTask([s]() {
+        Renderer::SubmitInitTask([s] {
             s->InitGL();
         });
     }
@@ -120,7 +120,7 @@ void AssetLoader::LoadMeshes(
             }
         );
 
-        Renderer::SubmitInitTask([m]() {
+        Renderer::SubmitInitTask([m] {
             m->InitGL();
         });
     }

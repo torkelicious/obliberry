@@ -26,9 +26,8 @@ namespace RenderSystem {
 
                 const float meshRadius = meshComp->mesh->GetBoundingRadius();
                 const float maxScale = std::max({scale.x, scale.y, scale.z, 1.0f});
-                const float worldRadius = meshRadius * maxScale;
 
-                if (!frustum3D.IntersectsSphere(pos, worldRadius)) {
+                if (const float worldRadius = meshRadius * maxScale; !frustum3D.IntersectsSphere(pos, worldRadius)) {
                     return;
                 }
 

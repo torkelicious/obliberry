@@ -41,7 +41,7 @@ namespace LightingSystem {
         if (!texture || texture->GetWidth() != texW || texture->GetHeight() != texH) {
             texture = std::make_shared<Texture>(texW, texH, map.lightmap.pixelBuffer.data());
 
-            Renderer::SubmitInitTask([tex = texture]() {
+            Renderer::SubmitInitTask([tex = texture] {
                 tex->InitGL();
             });
         } else {
