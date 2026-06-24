@@ -3,9 +3,9 @@
 #include <memory>
 #include <glm/glm.hpp>
 #include <algorithm>
-
 #include "Core/Constants.h"
 #include "Renderer/Texture.h"
+#include "Renderer/Renderer.h"
 #include "ECS/Registry.h"
 #include "ECS/Components/MapComponent.h"
 #include "ECS/Components/PointLightComponent.h"
@@ -38,11 +38,17 @@ namespace LightingSystem {
         map.lightmap.accumulationBuffer.resize(texW * texH);
         map.lightmap.pixelBuffer.assign(texW * texH * 4, 255);
 
-        // create or update texture
-        if (!texture) {
+        if (!texture || texture->GetWidth() != texW || texture->GetHeight() != texH) {
             texture = std::make_shared<Texture>(texW, texH, map.lightmap.pixelBuffer.data());
+
+            Renderer::SubmitInitTask([tex = texture]() {
+                tex->InitGL();
+            });
         } else {
-            texture->UpdateData(map.lightmap.pixelBuffer.data(), texW, texH);
+            std::vector<unsigned char> dataCopy = map.lightmap.pixelBuffer;
+            Renderer::SubmitInitTask([tex = texture, w = texW, h = texH, data = std::move(dataCopy)]() {
+                tex->UpdateData(data.data(), w, h);
+            });
         }
     }
 
@@ -110,8 +116,11 @@ namespace LightingSystem {
             pixelBuffer[pIdx + 0] = static_cast<unsigned char>(clamped.r * 255.0f);
             pixelBuffer[pIdx + 1] = static_cast<unsigned char>(clamped.g * 255.0f);
             pixelBuffer[pIdx + 2] = static_cast<unsigned char>(clamped.b * 255.0f);
+            pixelBuffer[pIdx + 3] = 255;
         }
-        texture->UpdateData(pixelBuffer.data(), texW, texH);
+        std::vector<unsigned char> dataCopy = pixelBuffer;
+        Renderer::SubmitInitTask([tex = texture, w = texW, h = texH, data = std::move(dataCopy)]() {
+            tex->UpdateData(data.data(), w, h);
+        });
     }
 }
-

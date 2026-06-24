@@ -4,19 +4,9 @@
 #include <sstream>
 
 Shader::Shader(const std::string &vertPath, const std::string &fragPath)
-    : m_vertPath(vertPath), m_fragPath(fragPath) // copied but its ok
-{
-    const std::string vertexSrc = LoadFile(vertPath);
-    const std::string fragmentSrc = LoadFile(fragPath);
-
-    const GLuint vert = Compile(GL_VERTEX_SHADER, vertexSrc);
-    const GLuint frag = Compile(GL_FRAGMENT_SHADER, fragmentSrc);
-    m_ID = Link(vert, frag);
-
-    if (m_ID == 0) {
-        std::cerr << "[Shader] Failed to create program from:\n  "
-                << vertPath << "\n  " << fragPath << "\n";
-    }
+    : m_vertPath(vertPath), m_fragPath(fragPath) {
+    m_VertexSrc = LoadFile(vertPath);
+    m_FragmentSrc = LoadFile(fragPath);
 }
 
 Shader::~Shader() {
@@ -25,6 +15,23 @@ Shader::~Shader() {
         m_ID = 0;
     }
 }
+
+void Shader::InitGL() {
+    if (m_ID != 0) return;
+
+    const GLuint vert = Compile(GL_VERTEX_SHADER, m_VertexSrc);
+    const GLuint frag = Compile(GL_FRAGMENT_SHADER, m_FragmentSrc);
+    m_ID = Link(vert, frag);
+
+    if (m_ID == 0) {
+        std::cerr << "[Shader] Failed to create program from:\n  "
+                << m_vertPath << "\n  " << m_fragPath << "\n";
+    }
+
+    m_VertexSrc.clear();
+    m_FragmentSrc.clear();
+}
+
 
 void Shader::Bind() const {
     if (m_ID == 0) return;

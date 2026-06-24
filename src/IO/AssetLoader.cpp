@@ -3,6 +3,7 @@
 #include <iostream>
 #include <stdexcept>
 #include "Renderer/Mesh.h"
+#include "Renderer/Renderer.h"
 #include "Renderer/Shader.h"
 #include "Renderer/Texture.h"
 
@@ -35,24 +36,32 @@ void AssetLoader::LoadTextures(
     const json &textures,
     ResourceManager &resources) {
     for (const auto &tex: textures) {
-        resources.Load<Texture>(
+        auto texture = resources.Load<Texture>(
             tex.at("id").get<std::string>(),
             tex.at("path").get<std::string>()
         );
+        Renderer::SubmitInitTask([texture]() {
+            texture->InitGL();
+        });
     }
 }
+
 
 void AssetLoader::LoadShaders(
     const json &shaders,
     ResourceManager &resources) {
     for (const auto &shader: shaders) {
-        resources.Load<Shader>(
+        auto s = resources.Load<Shader>(
             shader.at("id").get<std::string>(),
             shader.at("vertex").get<std::string>(),
             shader.at("fragment").get<std::string>()
         );
+        Renderer::SubmitInitTask([s]() {
+            s->InitGL();
+        });
     }
 }
+
 
 void AssetLoader::LoadMaterials(
     const json &materials,
@@ -96,13 +105,13 @@ void AssetLoader::LoadMeshes(
     for (const auto &mesh: meshes) {
         const std::string id = mesh.at("id").get<std::string>();
         const std::string factoryName = mesh.at("factory").get<std::string>();
-
         auto it = s_MeshFactories.find(factoryName);
         if (it == s_MeshFactories.end()) {
             throw std::runtime_error(
                 "AssetLoader: Unknown mesh factory '" + factoryName + "'");
         }
-        resources.LoadFromFactory<Mesh>(
+
+        auto m = resources.LoadFromFactory<Mesh>(
             id,
             [factory = it->second, factoryName] {
                 auto fac_mesh = factory();
@@ -110,5 +119,9 @@ void AssetLoader::LoadMeshes(
                 return fac_mesh;
             }
         );
+
+        Renderer::SubmitInitTask([m]() {
+            m->InitGL();
+        });
     }
 }

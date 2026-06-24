@@ -4,7 +4,7 @@
 #include <optional>
 #include <vector>
 
-#include "lightingSystem.h"
+#include "LightingSystem.h"
 #include "ECS/Components/MapComponent.h"
 #include "ECS/Components/MapStateComponent.h"
 #include "ECS/Components/MovementComponent.h"

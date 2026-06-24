@@ -18,9 +18,12 @@ public:
 
     VertexArray &operator=(VertexArray &&) = default;
 
-    VertexArray();
+    VertexArray() : m_ID(0) {
+    }
 
     ~VertexArray();
+
+    void Init();
 
     void AddBuffer(const VertexBuffer &vb, const VertexBufferLayout &layout) const;
 

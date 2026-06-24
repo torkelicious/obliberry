@@ -3,8 +3,12 @@
 #include <algorithm>
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
+#include <ranges>
 
 constexpr unsigned int MAX_INSTANCES = 1000000;
+
+std::vector<std::function<void()> > Renderer::s_InitQueue;
+std::mutex Renderer::s_InitQueueMutex;
 
 void Renderer::SetCamera(const Camera &camera, const float aspect) {
     m_Camera = &camera;
@@ -40,85 +44,102 @@ void Renderer::Flush() {
     std::ranges::sort(m_Commands, [](const RenderCommand &a, const RenderCommand &b) {
         if (a.sortKeyZ != b.sortKeyZ) return a.sortKeyZ < b.sortKeyZ;
         if (a.sortKeyDepth != b.sortKeyDepth) return a.sortKeyDepth > b.sortKeyDepth;
-        if (a.material != b.material) return a.material < b.material;
-        if (a.textureOverride != b.textureOverride) return a.textureOverride < b.textureOverride;
-        return a.mesh < b.mesh;
+        if (a.material->shader->GetID() != b.material->shader->GetID())
+            return a.material->shader->GetID() < b.material->shader->GetID();
+
+        const Texture *texA = a.textureOverride ? a.textureOverride : a.material->texture.get();
+        const Texture *texB = b.textureOverride ? b.textureOverride : b.material->texture.get();
+
+        if (texA && texB)
+            return texA->GetPath() < texB->GetPath();
+
+        return texA < texB;
     });
 
-    const Material *currentMaterial = nullptr;
+
+    Shader *currentShader = nullptr;
     const Texture *currentTexture = nullptr;
-    const Mesh *currentMesh = nullptr;
 
     for (const auto &cmd: m_Commands) {
-        if (cmd.material != currentMaterial) {
-            cmd.material->shader->Bind();
-            cmd.material->shader->SetUniformMat4("u_VP", m_VP);
-            cmd.material->shader->SetUniformVec4("u_Color", cmd.material->color);
-            BindLightmap(cmd.material->shader.get());
-            currentMaterial = cmd.material;
-            currentTexture = nullptr;
+        if (!cmd.mesh || !cmd.material || !cmd.material->shader || !cmd.material->shader->IsValid()) continue;
+
+        if (currentShader != cmd.material->shader.get()) {
+            currentShader = cmd.material->shader.get();
+            currentShader->Bind();
+            currentShader->SetUniformMat4("u_VP", m_VP);
+            BindLightmap(currentShader);
         }
 
-        const Texture *texToBind = cmd.textureOverride
-                                       ? cmd.textureOverride
-                                       : cmd.material->texture
-                                             ? cmd.material->texture.get()
-                                             : Texture::White();
-
-        if (texToBind != currentTexture) {
-            texToBind->Bind(0);
-            cmd.material->shader->SetUniform1i("u_Texture", 0);
-            currentTexture = texToBind;
+        if (const Texture *texToUse = cmd.textureOverride ? cmd.textureOverride : cmd.material->texture.get()) {
+            if (currentTexture != texToUse) {
+                currentTexture = texToUse;
+                currentTexture->Bind(0);
+                currentShader->SetUniform1i("u_Texture", 0);
+            }
+        } else {
+            // FIX: Ensure the renderer rememebrs that it bound the White texture!
+            if (currentTexture != Texture::White()) {
+                Texture::White()->Bind(0);
+                currentShader->SetUniform1i("u_Texture", 0);
+                currentTexture = Texture::White();
+            }
         }
 
-        if (cmd.mesh != currentMesh) {
-            cmd.mesh->Bind();
-            currentMesh = cmd.mesh;
-        }
+        currentShader->SetUniformVec4("u_Color", cmd.material->color);
+        cmd.mesh->Bind();
         Execute(cmd);
     }
-
     m_Commands.clear();
 }
 
+
 void Renderer::InstancedFlush() {
-    std::ranges::sort(m_InstancedCommands, [](const InstancedRenderCommand &a, const InstancedRenderCommand &b) {
-        if (a.material != b.material) return a.material < b.material;
-        return a.mesh < b.mesh;
-    });
-    const Material *currentMaterial = nullptr;
-
     for (const auto &[mesh, material, transforms, isDirty]: m_InstancedCommands) {
-        if (transforms->empty()) { continue; }
-        if (material != currentMaterial) {
-            material->shader->Bind();
-            material->shader->SetUniformMat4("u_VP", m_VP);
-            const auto *tex = material->texture ? material->texture.get() : Texture::White();
-            tex->Bind(0);
+        if (!mesh || !material || !material->shader || !material->shader->IsValid()) continue;
+        const auto instanceCount = static_cast<unsigned int>(transforms->size());
+        if (instanceCount == 0 || instanceCount > MAX_INSTANCES) continue;
+
+        material->shader->Bind();
+        material->shader->SetUniformMat4("u_VP", m_VP);
+        BindLightmap(material->shader.get());
+
+        if (material->texture) {
+            material->texture->Bind(0);
             material->shader->SetUniform1i("u_Texture", 0);
-            material->shader->SetUniformVec4("u_Color", material->color);
-            BindLightmap(material->shader.get());
-            currentMaterial = material;
+        } else {
+            Texture::White()->Bind(0);
+            material->shader->SetUniform1i("u_Texture", 0);
         }
 
-        size_t instanceCount = transforms->size();
-        if (instanceCount > MAX_INSTANCES) {
-            std::cerr << "Exceeded MAX_INSTANCES Truncating to " << MAX_INSTANCES << ".\n";
-            instanceCount = MAX_INSTANCES;
-        }
+        material->shader->SetUniformVec4("u_Color", material->color);
 
-        auto &[vbo, vao] = m_InstanceGroups[transforms];
-        if (!vbo) {
-            vbo = std::make_shared<VertexBuffer>(nullptr, MAX_INSTANCES * sizeof(glm::mat4), GL_DYNAMIC_DRAW);
-            vbo->SetSubData(transforms->data(), instanceCount * sizeof(glm::mat4));
+        std::shared_ptr<VertexBuffer> vbo;
+        std::shared_ptr<VertexArray> vao;
+
+        auto it = m_InstanceGroups.find(transforms);
+
+        if (it == m_InstanceGroups.end()) {
+            vbo = std::make_shared<VertexBuffer>();
+            vbo->Init(transforms->data(), instanceCount * sizeof(glm::mat4), GL_DYNAMIC_DRAW);
 
             vao = std::make_shared<VertexArray>();
+            vao->Init();
+
+            vao->Bind();
             vao->AddBuffer(mesh->GetVBO(), VertexTraits<Vertex>::GetLayout());
             vao->SetIndexBuffer(mesh->GetIBO());
             vao->AddInstancedBuffer(*vbo, 2);
-        } else if (isDirty) {
+
+            m_InstanceGroups[transforms] = {vbo, vao};
+        } else {
+            vbo = it->second.vbo;
+            vao = it->second.vao;
+        }
+
+        if (isDirty && it != m_InstanceGroups.end()) {
             vbo->SetSubData(transforms->data(), instanceCount * sizeof(glm::mat4));
         }
+
         vao->Bind();
         glDrawElementsInstanced(
             GL_TRIANGLES,
@@ -142,14 +163,7 @@ void Renderer::SetLightmap(const Lightmap *lightmap) {
 }
 
 void Renderer::BindLightmap(Shader *shader) const {
-    if (m_Lightmap &&m_Lightmap
-
-
-
-    ->
-    texture
-    )
-    {
+    if (m_Lightmap && m_Lightmap->texture) {
         m_Lightmap->texture->Bind(1);
         shader->SetUniform1i("u_LightTexture", 1);
         shader->SetUniformVec2("u_MapSize", m_Lightmap->mapSize);
@@ -169,4 +183,20 @@ void Renderer::Execute(const RenderCommand &cmd) {
         glVertexAttrib4fv(2 + i, glm::value_ptr(model[i]));
     }
     glDrawElements(GL_TRIANGLES, cmd.mesh->GetIndexCount(), GL_UNSIGNED_INT, nullptr);
+}
+
+void Renderer::SubmitInitTask(std::function<void()> task) {
+    std::lock_guard lock(s_InitQueueMutex);
+    s_InitQueue.push_back(std::move(task));
+}
+
+void Renderer::ProcessInitQ() {
+    std::vector<std::function<void()> > queueCopy;
+    {
+        std::lock_guard lock(s_InitQueueMutex);
+        queueCopy = std::move(s_InitQueue);
+    }
+    for (auto &task: queueCopy) {
+        task();
+    }
 }

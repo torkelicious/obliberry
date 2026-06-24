@@ -4,8 +4,6 @@
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 
-#include "Core/Constants.h"
-
 class Camera {
 public:
     glm::vec3 Position = {0.0f, 0.0f, 0.0f};

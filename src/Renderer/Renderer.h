@@ -1,7 +1,10 @@
 #pragma once
 
-
 #include <unordered_map>
+#include <vector>
+#include <functional>
+#include <mutex>
+#include <memory>
 
 #include "Camera.h"
 #include "Lightmap.h"
@@ -56,6 +59,10 @@ public:
 
     static void SetClearColor(glm::vec4 color);
 
+    static void SubmitInitTask(std::function<void()> task);
+
+    static void ProcessInitQ();
+
 private:
     static void Execute(const RenderCommand &cmd);
 
@@ -77,5 +84,7 @@ private:
     const Lightmap *m_Lightmap = nullptr;
     glm::mat4 m_VP;
     glm::vec4 m_ClearColor = {0.0f, 0.0f, 0.0f, 1.0f};
-};
 
+    static std::vector<std::function<void()> > s_InitQueue;
+    static std::mutex s_InitQueueMutex;
+};

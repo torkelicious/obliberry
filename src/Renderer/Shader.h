@@ -22,6 +22,8 @@ public:
 
     ~Shader();
 
+    void InitGL();
+
     bool IsValid() const { return m_ID != 0; }
 
     void Bind() const;
@@ -46,6 +48,10 @@ public:
 private:
     std::string m_vertPath;
     std::string m_fragPath;
+
+    // tmp
+    std::string m_VertexSrc;
+    std::string m_FragmentSrc;
 
     GLuint m_ID = 0;
     std::unordered_map<std::string, GLint> m_UniformCache;

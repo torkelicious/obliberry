@@ -2,6 +2,7 @@
 
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <glm/glm.hpp>
@@ -50,38 +51,24 @@ public:
 
     Mesh &operator=(Mesh &&) = default;
 
+    explicit Mesh(MeshData data) : m_TempData(std::move(data)) {
+    }
 
-    explicit Mesh(const MeshData &data)
-        : m_VBO(
-            data.vertices.data(),
-            static_cast<uint32_t>(data.vertices.size() * sizeof(Vertex))
-        ) {
+    void InitGL() {
+        m_VBO.Init(m_TempData.vertices.data(), static_cast<uint32_t>(m_TempData.vertices.size() * sizeof(Vertex)));
+        m_IBO.Init(m_TempData.indices.data(), static_cast<uint32_t>(m_TempData.indices.size()));
+        m_VAO.Init();
+        // Setup VAO
         const auto &layout = VertexTraits<Vertex>::GetLayout();
         m_VAO.Bind();
         m_VBO.Bind();
         m_VAO.AddBuffer(m_VBO, layout);
-        // IBO is initialized here, after m_VAO is bound, so the element
-        // array buffer binding is stored in this VAO and no other.
-        m_IBO.SetData(data.indices.data(), static_cast<uint32_t>(data.indices.size()));
-        // uinbind vao bc polluiton cuasing sefgfault
+        m_VAO.SetIndexBuffer(m_IBO);
+        // unbind to avoid polluted state
         glBindVertexArray(0);
-    }
-
-    template<typename TVertex>
-    Mesh(
-        const std::vector<TVertex> &vertices,
-        const std::vector<uint32_t> &indices)
-        : m_VBO(
-            vertices.data(),
-            static_cast<uint32_t>(vertices.size() * sizeof(TVertex))
-        ) {
-        const auto layout = VertexTraits<TVertex>::GetLayout();
-        m_VAO.Bind();
-        m_VBO.Bind();
-        m_VAO.AddBuffer(m_VBO, layout);
-        m_IBO.SetData(indices.data(), static_cast<uint32_t>(indices.size()));
-        // unbind to avoid polluteed state
-        glBindVertexArray(0);
+        // free the RAM copy once uploaded
+        m_TempData.vertices.clear();
+        m_TempData.indices.clear();
     }
 
     void Upload(const MeshData &data) {
@@ -113,5 +100,5 @@ private:
     VertexArray m_VAO;
     VertexBuffer m_VBO;
     IndexBuffer m_IBO;
+    MeshData m_TempData;
 };
-

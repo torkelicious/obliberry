@@ -2,12 +2,15 @@
 
 #include <glm/glm.hpp>
 
-VertexArray::VertexArray() {
-    glGenVertexArrays(1, &m_ID);
+VertexArray::~VertexArray() {
+    if (m_ID != 0) {
+        glDeleteVertexArrays(1, &m_ID);
+        m_ID = 0;
+    }
 }
 
-VertexArray::~VertexArray() {
-    glDeleteVertexArrays(1, &m_ID);
+void VertexArray::Init() {
+    glGenVertexArrays(1, &m_ID);
 }
 
 void VertexArray::AddBuffer(const VertexBuffer &vb, const VertexBufferLayout &layout) const {

@@ -5,7 +5,7 @@
 #include "ECS/Systems/PlayerControlSystem.h"
 #include "ECS/Systems/RenderSystem.h"
 #include "ECS/Systems/SpriteBillboardSystem.h"
-#include "ECS/Systems/lightingSystem.h"
+#include "ECS/Systems/LightingSystem.h"
 #include "IO/EntityFactory.h"
 #include "IO/SceneSerialization.h"
 #include <iostream>
@@ -58,14 +58,20 @@ void Scene::Update(const float dt) {
 }
 
 void Scene::Render() {
+    m_Context.renderer->BeginFrame();
+
     MapRenderSystem::RenderAll(m_Registry, m_Context);
     if (m_Context.camera) {
         SpriteBillboardSystem::Update(m_Registry, m_Context.camera);
     }
     RenderSystem::Render(m_Registry, *m_Context.renderer);
+
+    Renderer::ProcessInitQ();
+
     m_Context.renderer->InstancedFlush();
     m_Context.renderer->Flush();
 }
+
 
 void Scene::OnExit() {
     std::vector<EntityID> deadEntities;

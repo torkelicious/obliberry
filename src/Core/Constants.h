@@ -11,6 +11,7 @@ constexpr std::string_view TEXTURE_PATH = "assets/textures/";
 constexpr std::string_view MAP_PATH = "assets/maps/";
 constexpr std::string_view SCENE_PATH = "assets/scenes/";
 constexpr std::string_view SCRIPT_PATH = "assets/scripts/";
+constexpr std::string_view AUDIO_PATH = "assets/audio/";
 
 // fs extensions
 constexpr auto MAP_FILE_EXTENSION = ".obmap";
@@ -46,4 +47,3 @@ constexpr float PI = 3.14159265359f;
 
 // lighting
 constexpr int LIGHTMAP_TEXELS_PER_HEX = 2;
-

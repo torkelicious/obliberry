@@ -1,6 +1,7 @@
 #include "Texture.h"
 #include <iostream>
 #include <stb_image.h>
+#include <cstring>
 
 Texture::Texture(
     const std::string &path,
@@ -9,42 +10,14 @@ Texture::Texture(
     const GLuint wrapS,
     const GLuint wrapT
 )
-    : m_ID(0), m_FilePath(path), m_ImgLocBuffer(nullptr), m_Width(0), m_Height(0), m_BPP(0) {
+    : m_ID(0), m_FilePath(path), m_ImgLocBuffer(nullptr), m_Width(0), m_Height(0), m_BPP(0),
+      m_MinFilter(minFilter), m_MagFilter(magFilter), m_WrapS(wrapS), m_WrapT(wrapT) {
     std::cout << "Loading: " << path << "\n";
     stbi_set_flip_vertically_on_load(1);
 
     m_ImgLocBuffer = stbi_load(path.c_str(), &m_Width, &m_Height, &m_BPP, 4);
-
-    glGenTextures(1, &m_ID);
-    glBindTexture(GL_TEXTURE_2D, m_ID);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapS);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapT);
-
-    if (m_ImgLocBuffer) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
-                     m_Width, m_Height, 0,
-                     GL_RGBA, GL_UNSIGNED_BYTE,
-                     m_ImgLocBuffer);
-
-        const bool usesMipmaps =
-                minFilter == GL_NEAREST_MIPMAP_NEAREST ||
-                minFilter == GL_LINEAR_MIPMAP_NEAREST ||
-                minFilter == GL_NEAREST_MIPMAP_LINEAR ||
-                minFilter == GL_LINEAR_MIPMAP_LINEAR;
-
-        if (usesMipmaps)
-            glGenerateMipmap(GL_TEXTURE_2D);
-    } else {
-        std::cerr << "Failed to load texture: " << path << "\n";
-    }
-
-    stbi_image_free(m_ImgLocBuffer);
 }
 
-// lightmap
 Texture::Texture(
     const int width,
     const int height,
@@ -54,26 +27,62 @@ Texture::Texture(
     const GLuint wrapS,
     const GLuint wrapT
 )
-    : m_ID(0), m_FilePath(""), m_ImgLocBuffer(nullptr), m_Width(width), m_Height(height), m_BPP(4) {
-    glGenTextures(1, &m_ID);
-    glBindTexture(GL_TEXTURE_2D, m_ID);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapS);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapT);
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
-                 m_Width, m_Height, 0,
-                 GL_RGBA, GL_UNSIGNED_BYTE,
-                 data);
+    : m_ID(0), m_ImgLocBuffer(nullptr), m_Width(width), m_Height(height), m_BPP(4),
+      m_MinFilter(minFilter), m_MagFilter(magFilter), m_WrapS(wrapS), m_WrapT(wrapT) {
+    if (data) {
+        const auto size = static_cast<size_t>(width * height * 4); // RGBA
+        m_DynamicData.resize(size);
+        std::memcpy(m_DynamicData.data(), data, size);
+    }
 }
 
 Texture::~Texture() {
-    Unbind();
     if (m_ID != 0) {
         glDeleteTextures(1, &m_ID);
         m_ID = 0;
+    }
+    if (m_ImgLocBuffer) {
+        stbi_image_free(m_ImgLocBuffer);
+    }
+}
+
+void Texture::InitGL() {
+    if (m_ID != 0) return;
+
+    glGenTextures(1, &m_ID);
+    glBindTexture(GL_TEXTURE_2D, m_ID);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, m_MinFilter);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, m_MagFilter);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, m_WrapS);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, m_WrapT);
+
+    // white default texture
+    if (m_IsWhiteTexture) {
+        constexpr uint32_t white = 0xFFFFFFFF;
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, &white);
+    }
+    // loaded from disk
+    else if (m_ImgLocBuffer) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, m_Width, m_Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_ImgLocBuffer);
+
+        // Generate Mipmaps
+        if (m_MinFilter == GL_NEAREST_MIPMAP_NEAREST || m_MinFilter == GL_LINEAR_MIPMAP_NEAREST ||
+            m_MinFilter == GL_NEAREST_MIPMAP_LINEAR || m_MinFilter == GL_LINEAR_MIPMAP_LINEAR) {
+            glGenerateMipmap(GL_TEXTURE_2D);
+        }
+
+        stbi_image_free(m_ImgLocBuffer);
+        m_ImgLocBuffer = nullptr;
+    }
+    // array data
+    else if (!m_DynamicData.empty()) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, m_Width, m_Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_DynamicData.data());
+        m_DynamicData.clear();
+    }
+    // if allocating size
+    else {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, m_Width, m_Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
     }
 }
 
@@ -105,27 +114,9 @@ Texture *Texture::White() {
 
     if (!instance) {
         instance = new Texture();
-
-        glGenTextures(1, &instance->m_ID);
-        glBindTexture(GL_TEXTURE_2D, instance->m_ID);
-
-        constexpr uint32_t white = 0xFFFFFFFF;
-
-        glTexImage2D(
-            GL_TEXTURE_2D,
-            0,
-            GL_RGBA8,
-            1, 1,
-            0,
-            GL_RGBA,
-            GL_UNSIGNED_BYTE,
-            &white
-        );
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        instance->m_IsWhiteTexture = true;
+        // must be called on render thread
+        instance->InitGL();
     }
     return instance;
 }

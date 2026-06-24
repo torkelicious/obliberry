@@ -15,11 +15,12 @@ public:
 
     IndexBuffer &operator=(IndexBuffer &&) = default;
 
-    IndexBuffer();
-
-    IndexBuffer(const unsigned int *data, unsigned int count);
+    IndexBuffer() : m_ID(0), m_Count(0) {
+    }
 
     ~IndexBuffer();
+
+    void Init(const unsigned int *data, unsigned int count);
 
     void Bind() const;
 
@@ -30,6 +31,6 @@ public:
     [[nodiscard]] unsigned int GetCount() const { return m_Count; }
 
 private:
-    GLuint m_ID{};
-    unsigned int m_Count;
+    GLuint m_ID = 0;
+    unsigned int m_Count = 0;
 };

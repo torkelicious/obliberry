@@ -265,60 +265,47 @@ namespace MeshFactory {
 
     void RegisterAllMeshFactories() {
         AssetLoader::RegisterMeshFactory("Quad", []() -> std::shared_ptr<Mesh> {
-            auto [vertices, indices] = CreateQuad();
-            return std::make_shared<Mesh>(vertices, indices);
+            return std::make_shared<Mesh>(CreateQuad());
         });
 
         AssetLoader::RegisterMeshFactory("PointTopHex", []() -> std::shared_ptr<Mesh> {
-            auto [vertices, indices] = CreatePointTopHex(0.5f);
-            return std::make_shared<Mesh>(vertices, indices);
+            return std::make_shared<Mesh>(CreatePointTopHex(0.5f));
         });
 
         AssetLoader::RegisterMeshFactory("ETriang", []() -> std::shared_ptr<Mesh> {
-            auto [vertices, indices] = CreateEquiTriangle(0.5f);
-            return std::make_shared<Mesh>(vertices, indices);
+            return std::make_shared<Mesh>(CreateEquiTriangle(0.5f));
         });
 
         AssetLoader::RegisterMeshFactory("Ellipse", []() -> std::shared_ptr<Mesh> {
-            auto [vertices, indices] = CreateEllipse(0.5f, 0.5f, 50);
-            return std::make_shared<Mesh>(vertices, indices);
+            return std::make_shared<Mesh>(CreateEllipse(0.5f, 0.5f, 50));
         });
 
         AssetLoader::RegisterMeshFactory("Circle", []() -> std::shared_ptr<Mesh> {
-            auto [vertices, indices] = CreateEllipse(0.5f, 0.5f, 50);
-            return std::make_shared<Mesh>(vertices, indices);
+            return std::make_shared<Mesh>(CreateEllipse(0.5f, 0.5f, 50));
         });
 
         AssetLoader::RegisterMeshFactory("Pentagon", []() -> std::shared_ptr<Mesh> {
-            auto [vertices, indices] = CreateRegularPolygon(5, 0.5f);
-            return std::make_shared<Mesh>(vertices, indices);
+            return std::make_shared<Mesh>(CreateRegularPolygon(5, 0.5f));
         });
 
         AssetLoader::RegisterMeshFactory("Hexagon", []() -> std::shared_ptr<Mesh> {
-            auto [vertices, indices] = CreateRegularPolygon(6, 0.5f);
-            return std::make_shared<Mesh>(vertices, indices);
+            return std::make_shared<Mesh>(CreateRegularPolygon(6, 0.5f));
         });
 
         AssetLoader::RegisterMeshFactory("Octagon", []() -> std::shared_ptr<Mesh> {
-            auto [vertices, indices] = CreateRegularPolygon(8, 0.5f);
-            return std::make_shared<Mesh>(vertices, indices);
+            return std::make_shared<Mesh>(CreateRegularPolygon(8, 0.5f));
         });
 
         AssetLoader::RegisterMeshFactory("Ring", []() -> std::shared_ptr<Mesh> {
-            auto [vertices, indices] = CreateRing(0.3f, 0.5f, 50);
-            return std::make_shared<Mesh>(vertices, indices);
+            return std::make_shared<Mesh>(CreateRing(0.3f, 0.5f, 50));
         });
 
         AssetLoader::RegisterMeshFactory("Sector", []() -> std::shared_ptr<Mesh> {
-            auto [vertices, indices] =
-                    CreateSector(0.5f, 0.0f, PI * 0.5f, 32);
-            return std::make_shared<Mesh>(vertices, indices);
+            return std::make_shared<Mesh>(CreateSector(0.5f, 0.0f, PI * 0.5f, 32));
         });
 
         AssetLoader::RegisterMeshFactory("Diamond", []() -> std::shared_ptr<Mesh> {
-            auto [vertices, indices] =
-                    CreateDiamond(1.0f, 1.0f);
-            return std::make_shared<Mesh>(vertices, indices);
+            return std::make_shared<Mesh>(CreateDiamond(1.0f, 1.0f));
         });
     }
 }
