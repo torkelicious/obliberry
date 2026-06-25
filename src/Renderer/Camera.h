@@ -30,13 +30,26 @@ public:
         );
     }
 
-    [[nodiscard]] glm::mat4 GetRotation() const {
-        auto rot = glm::mat4(1.0f);
-        // tilt down
-        rot = glm::rotate(rot, glm::radians(AngleX), glm::vec3(1, 0, 0));
-        // rotate around Z
-        rot = glm::rotate(rot, glm::radians(AngleZ), glm::vec3(0, 0, 1));
-        return rot;
+    [[nodiscard]] const glm::mat4 &GetRotation() const {
+        if (m_RotationDirty) [[unlikely]] {
+            auto rot = glm::mat4(1.0f);
+            // tilt down
+            rot = glm::rotate(rot, glm::radians(AngleX), glm::vec3(1, 0, 0));
+            // rotate around z
+            rot = glm::rotate(rot, glm::radians(AngleZ), glm::vec3(0, 0, 1));
+            m_CachedRotation = rot;
+            m_InverseDirty = true;
+            m_RotationDirty = false;
+        }
+        return m_CachedRotation;
+    }
+
+    [[nodiscard]] const glm::mat4 &GetInverseRotation() const {
+        if (m_InverseDirty) [[unlikely]] {
+            m_CachedInverseRotation = glm::inverse(GetRotation());
+            m_InverseDirty = false;
+        }
+        return m_CachedInverseRotation;
     }
 
     [[nodiscard]] glm::mat4 GetVP(const float aspect) const {
@@ -80,12 +93,16 @@ public:
     }
 
     [[nodiscard]] glm::vec3 GetRightVector() const {
-        glm::mat4 invRot = glm::inverse(GetRotation());
-        return glm::vec3(invRot[0]); // local Right
+        return glm::vec3(GetInverseRotation()[0]); // local Right
     }
 
     [[nodiscard]] glm::vec3 GetUpVector() const {
-        glm::mat4 invRot = glm::inverse(GetRotation());
-        return glm::vec3(invRot[1]); // local Up
+        return glm::vec3(GetInverseRotation()[1]); // local Up
     }
+
+private:
+    mutable glm::mat4 m_CachedRotation{1.0f};
+    mutable glm::mat4 m_CachedInverseRotation{1.0f};
+    mutable bool m_RotationDirty = true;
+    mutable bool m_InverseDirty = true;
 };

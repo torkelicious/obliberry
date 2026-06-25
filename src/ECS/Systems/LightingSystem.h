@@ -61,6 +61,12 @@ namespace LightingSystem {
         });
         if (!mapComp || !mapComp->lightmap.texture) return;
 
+        bool hasAnyLight = false;
+        reg.ForEach<PointLightComponent>([&](Entity, const PointLightComponent *) {
+            hasAnyLight = true;
+        });
+        if (!hasAnyLight) return;
+
         auto &[texture, mapOffset, mapSize, ambient, accumulationBuffer, pixelBuffer] = mapComp->lightmap;
         const int texW = texture->GetWidth();
         const int texH = texture->GetHeight();

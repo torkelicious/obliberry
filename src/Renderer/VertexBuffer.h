@@ -11,10 +11,20 @@ public:
     VertexBuffer &operator=(const VertexBuffer &) = delete;
 
     // allow moving
-    VertexBuffer(VertexBuffer &&) = default;
+    VertexBuffer(VertexBuffer &&other) noexcept
+        : m_ID(other.m_ID) {
+        other.m_ID = 0;
+    }
 
-    VertexBuffer &operator=(VertexBuffer &&) = default;
-
+    VertexBuffer &operator=(VertexBuffer &&other) noexcept {
+        if (this != &other) {
+            if (m_ID != 0)
+                glDeleteBuffers(1, &m_ID);
+            m_ID = other.m_ID;
+            other.m_ID = 0;
+        }
+        return *this;
+    }
 
     VertexBuffer() {
     }

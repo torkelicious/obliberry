@@ -34,11 +34,11 @@ namespace Math::HexMath {
 
     // hex pos to world pos
     inline glm::vec2 HexToWorld(const HexCoords &h, const float size = HEX_SIZE) {
-        const float width = std::sqrt(3.0f) * size;
+        const float width = SQRT_3 * size;
         const float height = HEX_HEIGHT_MULTIPLIER * size;
 
-        float x = width * (static_cast<float>(h.q) + HEX_ODD_ROW_OFFSET * static_cast<float>(h.r & 1));
-        float y = height * HEX_HEIGHT_SPACING_RATIO * static_cast<float>(h.r);
+        const float x = width * (static_cast<float>(h.q) + HEX_ODD_ROW_OFFSET * static_cast<float>(h.r & 1));
+        const float y = height * HEX_HEIGHT_SPACING_RATIO * static_cast<float>(h.r);
         return {x, y};
     }
 

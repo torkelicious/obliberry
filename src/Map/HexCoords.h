@@ -23,17 +23,10 @@ struct HexCoords {
     }
 };
 
-// hash for 16-bit coordinates to avoid collision
+// identity hash
 struct HexCoordsHash {
     std::size_t operator()(const HexCoords &h) const noexcept {
-        uint32_t x = static_cast<uint32_t>(static_cast<uint16_t>(h.q)) << 16 |
-                     static_cast<uint32_t>(static_cast<uint16_t>(h.r));
-        x ^= x >> 16;
-        x *= 0x85ebca6bU;
-        x ^= x >> 13;
-        x *= 0xc2b2ae35U;
-        x ^= x >> 16;
-        return x;
+        return static_cast<uint32_t>(static_cast<uint16_t>(h.q)) << 16 |
+               static_cast<uint32_t>(static_cast<uint16_t>(h.r));
     }
 };
-

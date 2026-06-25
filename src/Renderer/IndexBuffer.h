@@ -11,9 +11,23 @@ public:
     IndexBuffer &operator=(const IndexBuffer &) = delete;
 
     // allow moving
-    IndexBuffer(IndexBuffer &&) = default;
+    IndexBuffer(IndexBuffer &&other) noexcept
+        : m_ID(other.m_ID), m_Count(other.m_Count) {
+        other.m_ID = 0;
+        other.m_Count = 0;
+    }
 
-    IndexBuffer &operator=(IndexBuffer &&) = default;
+    IndexBuffer &operator=(IndexBuffer &&other) noexcept {
+        if (this != &other) {
+            if (m_ID != 0)
+                glDeleteBuffers(1, &m_ID);
+            m_ID = other.m_ID;
+            m_Count = other.m_Count;
+            other.m_ID = 0;
+            other.m_Count = 0;
+        }
+        return *this;
+    }
 
     IndexBuffer() {
     }

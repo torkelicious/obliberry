@@ -1,7 +1,6 @@
 #include "Texture.h"
 #include <iostream>
 #include <stb_image.h>
-#include <cstring>
 
 Texture::Texture(
     const std::string &path,
@@ -107,13 +106,11 @@ void Texture::UpdateData(const unsigned char *data, const int width, const int h
 }
 
 Texture *Texture::White() {
-    static Texture *instance = nullptr;
-
-    if (!instance) {
-        instance = new Texture();
-        instance->m_IsWhiteTexture = true;
-        // must be called on render thread
-        instance->InitGL();
-    }
+    static Texture *instance = [] {
+        auto *tex = new Texture();
+        tex->m_IsWhiteTexture = true;
+        tex->InitGL();
+        return tex;
+    }();
     return instance;
 }

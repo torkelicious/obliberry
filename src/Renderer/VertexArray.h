@@ -14,9 +14,20 @@ public:
     VertexArray &operator=(const VertexArray &) = delete;
 
     // allow moving
-    VertexArray(VertexArray &&) = default;
+    VertexArray(VertexArray &&other) noexcept
+        : m_ID(other.m_ID) {
+        other.m_ID = 0;
+    }
 
-    VertexArray &operator=(VertexArray &&) = default;
+    VertexArray &operator=(VertexArray &&other) noexcept {
+        if (this != &other) {
+            if (m_ID != 0)
+                glDeleteVertexArrays(1, &m_ID);
+            m_ID = other.m_ID;
+            other.m_ID = 0;
+        }
+        return *this;
+    }
 
     VertexArray() : m_ID(0) {
     }

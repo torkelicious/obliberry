@@ -1,23 +1,16 @@
 #pragma once
 
 #include <algorithm>
-#include <ranges>
+#include "Core/EngineContext.h"
 #include "ECS/Components/MapComponent.h"
 #include "ECS/Components/MapStateComponent.h"
 #include "ECS/Registry.h"
-#include "Renderer/MeshFactory.h"
 #include "Renderer/Renderer.h"
 #include "Renderer/Transform.h"
 #include "Math/Frustum.h"
 #include "Math/Math.h"
 
 namespace MapRenderSystem {
-    [[nodiscard]] inline bool Contains(const Math::Projection::AABB &outer,
-                                       const Math::Projection::AABB &inner) noexcept {
-        return outer.min.x <= inner.min.x && outer.max.x >= inner.max.x &&
-               outer.min.y <= inner.min.y && outer.max.y >= inner.max.y;
-    }
-
     [[nodiscard]] inline Math::Projection::AABB CalculateBufferedAABB(const Math::Projection::AABB &viewAABB,
                                                                       const float bufferSize = HEX_SIZE * 4.0f)
         noexcept {
@@ -46,7 +39,14 @@ namespace MapRenderSystem {
         return {minQ - 1, maxQ + 1, minR - 1, maxR + 1};
     }
 
-    inline void RenderTiles(Registry &registry, Renderer &renderer, const Math::Frustum::ViewFrustum &frustum) {
+    [[nodiscard]] inline bool Contains(const Math::Projection::AABB &outer,
+                                       const Math::Projection::AABB &inner) noexcept {
+        return outer.min.x <= inner.min.x && outer.max.x >= inner.max.x &&
+               outer.min.y <= inner.min.y && outer.max.y >= inner.max.y;
+    }
+
+    inline void RenderTiles(Registry &registry, Renderer &renderer,
+                            const Math::Frustum::ViewFrustum &frustum) {
         registry.ForEach<MapComponent, MapStateComponent>(
             [&](Entity, MapComponent *mapComp, const MapStateComponent * /*stateComp*/) {
                 if (!mapComp->hexMesh) return;
@@ -68,23 +68,10 @@ namespace MapRenderSystem {
                         transforms.clear();
                     }
 
-                    const int estimatedCols = maxQ - minQ + 1;
-                    const int estimatedRows = maxR - minR + 1;
-                    const int estimatedTiles = std::max(estimatedCols, 0) * std::max(estimatedRows, 0);
-                    for (auto &[typeId, transforms]: mapComp->visibles) {
-                        (void) typeId;
-                        transforms.reserve(
-                            transforms.size() + static_cast<std::size_t>(estimatedTiles / std::max(
-                                                                             1u, static_cast<unsigned>(mapComp->visibles
-                                                                                 .size()))));
-                    }
-
                     for (int r = minR; r <= maxR; ++r) {
                         for (int q = minQ; q <= maxQ; ++q) {
                             if (const Tile *tile = mapComp->grid.Get(HexCoords(q, r))) {
-                                const glm::mat4 translationMatrix = glm::translate(
-                                    glm::mat4(1.0f), glm::vec3(tile->worldPos.x, tile->worldPos.y, 0.0f));
-                                mapComp->visibles[tile->type].push_back(translationMatrix);
+                                mapComp->visibles[tile->type].push_back(tile->worldMatrix);
                             }
                         }
                     }
@@ -131,7 +118,8 @@ namespace MapRenderSystem {
             });
     }
 
-    inline void RenderAll(Registry &reg, const EngineContext &ctx, const Math::Frustum::ViewFrustum &frustum) {
+    inline void RenderAll(Registry &reg, const EngineContext &ctx,
+                          const Math::Frustum::ViewFrustum &frustum) {
         RenderTiles(reg, *ctx.renderer, frustum);
         RenderOverlays(reg, *ctx.renderer);
     }

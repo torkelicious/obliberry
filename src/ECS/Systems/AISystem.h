@@ -28,6 +28,8 @@ namespace AISystem {
             }
         );
 
+        if (map->grid.walkableTiles.empty()) return;
+
         thread_local std::mt19937 rng(std::random_device{}());
         std::uniform_int_distribution<size_t> dist(0, map->grid.walkableTiles.size() - 1);
         std::uniform_real_distribution timeDist(1.0f, 3.0f);

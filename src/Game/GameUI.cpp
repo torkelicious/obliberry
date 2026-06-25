@@ -91,6 +91,9 @@ void Game::DrawInterface() {
             auto &registry = m_SceneManager.GetCurrentScene()->GetRegistry();
             const auto &livingEntities = registry.GetLivingEntities();
             static auto selectedEntity = static_cast<EntityID>(-1);
+            if (selectedEntity != static_cast<EntityID>(-1) && !registry.IsValid(selectedEntity)) {
+                selectedEntity = static_cast<EntityID>(-1);
+            }
 
             ImGui::BeginChild("Entity List", ImVec2(150, 0), true);
             for (const EntityID id: livingEntities) {

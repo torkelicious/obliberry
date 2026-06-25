@@ -1,13 +1,10 @@
 #pragma once
 
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 #include <functional>
 #include <mutex>
 #include <memory>
-#include <cstring>
-
 #include "Camera.h"
 #include "Lightmap.h"
 #include "Material.h"
@@ -40,21 +37,6 @@ struct BatchKey {
 
     bool operator==(const BatchKey &other) const noexcept {
         return mesh == other.mesh && material == other.material && texture == other.texture && color == other.color;
-    }
-};
-
-// hash combine
-struct BatchKeyHash {
-    size_t operator()(const BatchKey &k) const noexcept {
-        size_t h = std::hash<const Mesh *>{}(k.mesh);
-        h ^= std::hash<const Material *>{}(k.material) + 0x9e3779b9 + (h << 6) + (h >> 2);
-        h ^= std::hash<const Texture *>{}(k.texture) + 0x9e3779b9 + (h << 6) + (h >> 2);
-        uint32_t rgba[4];
-        std::memcpy(rgba, &k.color, sizeof(rgba));
-        for (const uint32_t c: rgba) {
-            h ^= c + 0x9e3779b9 + (h << 6) + (h >> 2);
-        }
-        return h;
     }
 };
 

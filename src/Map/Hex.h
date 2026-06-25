@@ -11,20 +11,14 @@
 #include "Core/Constants.h"
 #include "../Math/HexMath.h"
 
-
-// tile types
-// currently used for textures but i'll figure something out
-// todo: not have this hardcoded, use id system maybe
-
 using TileType = uint8_t;
 
 struct Tile {
-    // serialized fields
-    HexCoords position; // 2x int16_t
-    TileType type; // uint_8t
-    bool walkable; // bool 1 byte
-    // serialized fields
-    glm::vec2 worldPos; // not serialized, only for caching!!!
+    glm::mat4 worldMatrix{1.0f};
+    glm::vec2 worldPos;
+    HexCoords position;
+    TileType type;
+    bool walkable;
 };
 
 // hex grid management
@@ -55,11 +49,12 @@ public:
     }
 
     Tile &EmplaceTile(const HexCoords &pos, const TileType type, const bool walkable = true) {
-        auto &tile = tiles.emplace(pos, Tile{pos, type, walkable}).first->second;
+        auto &tile = tiles.emplace(pos, Tile{.position = pos, .type = type, .walkable = walkable}).first->second;
         if (walkable) {
             walkableTiles.push_back(pos);
         }
         tile.worldPos = GetWorldPos(pos);
+        tile.worldMatrix[3] = glm::vec4(tile.worldPos, 0.0f, 1.0f);
         return tile;
     }
 
@@ -101,24 +96,19 @@ public:
         records.clear();
 
         // init start node
-        records[start] = NodeRecord{
-            start,
-            0,
-            Math::HexMath::Distance(start, goal),
-            false
-        };
-
-        openSet.emplace(records[start].fScore, start);
+        auto [startIt, startInserted] = records.try_emplace(
+            start, NodeRecord{start, 0, Math::HexMath::Distance(start, goal), false});
+        openSet.emplace(startIt->second.fScore, start);
 
         while (!openSet.empty()) {
             auto [fScoreTop, current] = openSet.top();
             openSet.pop();
 
-            // ignore outdated entries
-            if (!records.contains(current))
+            auto currentIt = records.find(current);
+            if (currentIt == records.end())
                 continue;
 
-            auto &currentRecord = records[current];
+            auto &currentRecord = currentIt->second;
 
             if (currentRecord.isClosed)
                 continue;
@@ -145,35 +135,23 @@ public:
             // Loop through all neighbors of currently evaluating tile
             for (const auto &neighbor: Math::HexMath::GetNeighbors(current)) {
                 if (const Tile *tile = Get(neighbor); !tile || !tile->walkable)
-                    // pass it if nonwalkable or dosent exist
                     continue;
 
-                if (!records.contains(neighbor)) {
-                    records[neighbor] = NodeRecord{
-                        current,
-                        P_INFINITY,
-                        P_INFINITY,
-                        false
-                    };
-                }
+                auto [nbIt, inserted] = records.try_emplace(
+                    neighbor, NodeRecord{current, P_INFINITY, P_INFINITY, false});
 
-                auto &[parent, gScore, fScore, isClosed] = records[neighbor];
+                auto &[parent, gScore, fScore, isClosed] = nbIt->second;
                 if (isClosed)
                     continue;
 
                 // flat weight move cost calculation
-
                 if (const int tentativeG = currentRecord.gScore + 1; tentativeG < gScore) {
-                    // record an optimized path tracking choice
                     parent = current;
                     gScore = tentativeG;
-                    fScore =
-                            tentativeG + Math::HexMath::Distance(neighbor, goal);
-
+                    fScore = tentativeG + Math::HexMath::Distance(neighbor, goal);
                     openSet.emplace(fScore, neighbor);
                 }
             }
         }
     }
 };
-

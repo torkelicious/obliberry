@@ -44,6 +44,7 @@ constexpr int P_INFINITY = std::numeric_limits<int>::max() / 2;
 constexpr float CHUNK_SIZE = 20.0f;
 // misc math
 constexpr float PI = 3.14159265359f;
+constexpr float SQRT_3 = 1.7320508075688772f;
 
 // lighting
 constexpr int LIGHTMAP_TEXELS_PER_HEX = 2;

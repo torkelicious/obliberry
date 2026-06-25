@@ -3,7 +3,6 @@
 
 #include <optional>
 #include <vector>
-
 #include "LightingSystem.h"
 #include "ECS/Components/MapComponent.h"
 #include "ECS/Components/MapStateComponent.h"
@@ -29,7 +28,7 @@ namespace MapRuntimeSystem {
         }
 
         for (const HexCoords &coords: grid.walkableTiles) {
-            if (const Tile *tile = grid.Get(coords); tile != nullptr && tile->walkable) {
+            if (grid.Get(coords) != nullptr) {
                 return coords;
             }
         }
