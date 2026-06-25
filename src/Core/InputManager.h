@@ -23,16 +23,21 @@ public:
     [[nodiscard]] double ScrollY() const noexcept { return m_ScrollY; }
 
     [[nodiscard]] bool IsKeyDown(int key) const;
+
     [[nodiscard]] bool IsKeyDown(const std::string &keyAlias) const;
 
     [[nodiscard]] bool IsKeyPressed(int key) const;
+
     [[nodiscard]] bool IsKeyPressed(const std::string &KeyAlias) const;
 
     [[nodiscard]] bool IsKeyReleased(int key) const;
+
     [[nodiscard]] bool IsKeyReleased(const std::string &keyAlias) const;
 
     [[nodiscard]] bool IsMouseDown(int button) const;
+
     [[nodiscard]] bool IsMousePressed(int button) const;
+
     [[nodiscard]] bool IsMouseReleased(int button) const;
 
 private:

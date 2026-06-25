@@ -3,5 +3,4 @@
 
 
 class EditorCamera : public Camera {
-
 };

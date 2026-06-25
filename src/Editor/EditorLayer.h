@@ -30,8 +30,8 @@ private:
     EngineContext m_Context;
     Scene *m_Scene = nullptr;
     std::string m_CurrentScenePath;
-    Camera* m_Camera;
-    InputManager* m_Input = nullptr;
+    Camera *m_Camera;
+    InputManager *m_Input = nullptr;
     Registry *m_Registry = nullptr;
     // switch out later
     SceneManager m_SceneManager;
