@@ -1,4 +1,4 @@
-#include "Game.h"
+#include "GameLayer.h"
 #include "IO/AssetLoader.h"
 #include "Renderer/MeshFactory.h"
 #include <filesystem>
@@ -7,8 +7,8 @@
 #include "Renderer/Renderer.h"
 #include "Scripting/EngineLib/EngineLib.h"
 
-void Game::Start() {
-    MeshFactory::RegisterAllMeshFactories();
+void GameLayer::Init(EngineContext &ctx) {
+    m_Context = ctx;
 
     m_Context.sceneManager = &m_SceneManager;
     m_SceneManager.LoadScene(
@@ -19,8 +19,7 @@ void Game::Start() {
     );
 }
 
-
-void Game::Update(const float dt) {
+void GameLayer::Update(const float dt) {
     m_Context.deltaTime = dt;
 
     if (!m_Context.pendingScenePath.empty()) {
@@ -31,28 +30,20 @@ void Game::Update(const float dt) {
             std::make_unique<Scene>(m_Context, SceneProperties{.ScenePath = nextScene}));
     }
 
-    // (Legacy/Fallback)
-    if (m_PendingSceneLoad.has_value()) {
-        m_SceneManager.LoadScene(
-            std::make_unique<Scene>(m_Context, std::move(*m_PendingSceneLoad)));
-        m_PendingSceneLoad.reset();
-    }
-
     DrawInterface();
-    if (m_CurrentState == GameState::Gameplay) {
+    if (m_GameIsRunning) {
         m_SceneManager.Update(dt);
     }
 }
 
-void Game::Render() const {
+void GameLayer::Render() {
     if (m_Context.camera && m_Context.window) {
         const float aspect = static_cast<float>(m_Context.window->GetWidth()) /
                              static_cast<float>(m_Context.window->GetHeight());
         m_Context.renderer->SetCamera(*m_Context.camera, aspect);
     }
-
     m_SceneManager.Render();
 }
 
-void Game::Shutdown() {
+void GameLayer::Shutdown() {
 }

@@ -8,11 +8,16 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include "Renderer/MeshFactory.h"
+#include "Renderer/Renderer.h"
 #include "Sound/AudioEngine.h"
 
-Application::Application(ProjectConfig config)
+Application::Application(ProjectConfig config,
+                         std::unique_ptr<ApplicationLayer> layer
+)
     : m_Project(std::move(config)),
-      m_Window(m_Project.windowWidth, m_Project.windowHeight, m_Project.windowTitle.c_str(), m_Project.fullscreen) {
+      m_Window(m_Project.windowWidth, m_Project.windowHeight, m_Project.windowTitle.c_str(), m_Project.fullscreen),
+      m_Layer(std::move(layer)) {
     m_Window.SetInputManager(&m_InputManager);
     m_AudioEngine = AudioEngine::Create();
 }
@@ -81,21 +86,24 @@ void Application::Run() {
     context.scriptEngine = &m_ScriptEngine;
     context.audioEngine = m_AudioEngine.get();
 
-    Game game;
-    game.SetContext(context);
+    MeshFactory::RegisterAllMeshFactories();
+    //Game game;
+    //game.SetContext(context);
 
     float initialAspect = static_cast<float>(m_Window.GetWidth()) / static_cast<float>(m_Window.GetHeight());
     renderer.SetCamera(camera, initialAspect);
 
     auto previousTime = std::chrono::steady_clock::now();
-    game.Start();
+    //game.Start();
+
+    m_Layer->Init(context);
 
     ImGui_ImplOpenGL3_CreateDeviceObjects();
 
     glfwMakeContextCurrent(nullptr);
 
     m_Running = true;
-    m_RenderThread = std::thread(&Application::RenderThreadWorker, this, &renderer, &camera, &game);
+    m_RenderThread = std::thread(&Application::RenderThreadWorker, this, &renderer, &camera);
 
     while (!m_Window.ShouldClose()) {
         m_InputManager.BeginFrame();
@@ -108,10 +116,12 @@ void Application::Run() {
         const std::chrono::duration<float> delta = currentTime - previousTime;
         previousTime = currentTime;
 
-        game.Update(delta.count());
+        //game.Update(delta.count());
+        m_Layer->Update(delta.count());
         if (context.audioEngine) { context.audioEngine->Update(); }
 
-        game.Render();
+        //game.Render();
+        m_Layer->Render();
         ImGui::Render();
 
         renderer.SwapBuffers();
@@ -164,11 +174,12 @@ void Application::Run() {
 }
 
 void Application::Shutdown() {
+    m_Layer->Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 }
 
-void Application::RenderThreadWorker(Renderer *renderer, Camera *camera, Game *game) {
+void Application::RenderThreadWorker(Renderer *renderer, Camera *camera) {
     glfwMakeContextCurrent(m_Window.GetNativeWindow());
 
     while (m_Running) {

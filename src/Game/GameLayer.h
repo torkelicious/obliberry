@@ -3,34 +3,27 @@
 #include <optional>
 #include "Core/EngineContext.h"
 #include "../Scenes/SceneManager.h"
+#include "../Core/ApplicationLayer.h"
 
-enum class GameState : uint8_t { MainMenu, Gameplay, Paused, EditorMode };
-
-
-class Game {
+class GameLayer : public ApplicationLayer {
 public:
-    Game() = default;
+    void Init(EngineContext &ctx) override;
 
-    ~Game() { Shutdown(); }
+    void Update(float dt) override;
 
-    void Start();
+    void Render() override;
 
-    void Update(float dt);
-
-    void Render() const;
+    void Shutdown() override;
 
     [[nodiscard]] Camera &GetCamera() const { return *m_Context.camera; }
     void SetContext(const EngineContext &context) { m_Context = context; }
 
 private:
-    static void Shutdown();
-
     void DrawInterface();
 
-    GameState m_CurrentState = GameState::Gameplay;
+    bool m_GameIsRunning = true;
     SceneManager m_SceneManager;
 
     EngineContext m_Context;
     std::optional<SceneProperties> m_PendingSceneLoad;
 };
-

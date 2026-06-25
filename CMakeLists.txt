@@ -4,172 +4,127 @@ project(obliberry)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 find_package(glfw3 REQUIRED)
 find_package(glm REQUIRED)
 
-add_executable(
-        obliberry
-
-        # External
+# External Sources
+set(EXTERNAL_SOURCES
         # GLAD
         external/glad/src/glad.c
         # stb_image
         external/stb_image/stb_image.cpp
-        # imgui
+        # ImGui
         external/imgui/backends/imgui_impl_glfw.cpp
-        external/imgui/backends/imgui_impl_glfw.h
         external/imgui/backends/imgui_impl_opengl3.cpp
-        external/imgui/backends/imgui_impl_opengl3.h
-        external/imgui/backends/imgui_impl_opengl3_loader.h
-        external/imgui/imconfig.h
         external/imgui/imgui.cpp
-        external/imgui/imgui.h
         external/imgui/imgui_demo.cpp
         external/imgui/imgui_draw.cpp
-        external/imgui/imgui_internal.h
         external/imgui/imgui_tables.cpp
         external/imgui/imgui_widgets.cpp
-        external/imgui/imstb_rectpack.h
-        external/imgui/imstb_textedit.h
-        external/imgui/imstb_truetype.h
-        # nlohmann/json
-        external/nlohmann/json.hpp
-        external/nlohmann/json_fwd.hpp
         # miniaudio
-        external/miniaudio/miniaudio.h
         external/miniaudio/miniaudio.c
-        # External
+)
 
-        src/main.cpp
-        src/Core/Application.cpp
-        src/Core/Application.h
-        src/Core/Window.cpp
-        src/Core/Window.h
-        src/Renderer/VertexBuffer.cpp
-        src/Renderer/VertexBuffer.h
-        src/Renderer/VertexArray.cpp
-        src/Renderer/VertexArray.h
-        src/Renderer/IndexBuffer.cpp
-        src/Renderer/IndexBuffer.h
-        src/Renderer/VertexBufferLayout.h
-        src/Renderer/Renderer.cpp
-        src/Renderer/Renderer.h
-        src/Renderer/Mesh.h
-        src/Renderer/Texture.cpp
-        src/Renderer/Texture.h
-        src/Renderer/Material.h
-        src/Renderer/Shader.cpp
-        src/Renderer/Shader.h
-        src/Renderer/GLDebug.cpp
-        src/Renderer/GLDebug.h
-        src/Map/Hex.h
-        src/Renderer/Camera.h
-        src/ECS/ECS.h
-        src/ECS/Components/MaterialComponent.h
-        src/ECS/Components/MeshComponent.h
-        src/Core/ResourceManager.h
-        src/Game/Game.cpp
-        src/Game/Game.h
-        src/Game/GameUI.cpp
-        src/Core/Constants.h
-        src/Renderer/MeshFactory.cpp
-        src/Renderer/MeshFactory.h
-        src/Core/InputManager.cpp
-        src/Core/InputManager.h
-        src/ECS/Components/TransformComponent.h
-        src/ECS/Systems/MovementSystem.h
-        src/Renderer/Transform.h
-        src/Math/HexMath.h
-        src/Map/HexCoords.h
-        src/IO/MapSerialization.cpp
-        src/IO/MapSerialization.h
-        src/ECS/Systems/RenderSystem.h
-        src/ECS/Types.h
-        src/ECS/IPool.h
-        src/ECS/ComponentPool.h
-        src/ECS/Registry.h
-        src/ECS/Entity.h
-        src/Scenes/Scene.h
-        src/Core/Utils.h
-        src/Scenes/SceneManager.h
-        src/Scenes/Scene.cpp
-        src/Core/EngineContext.h
-        src/ECS/Systems/PlayerControlSystem.h
-        src/ECS/Systems/AISystem.h
-        src/ECS/Components/MovementComponent.h
-        src/ECS/Systems/SpriteBillboardSystem.h
-        src/ECS/Systems/MapRenderSystem.h
-        src/ECS/Components/BillboardTagComponent.h
-        src/ECS/Systems/DirectionalAnimationSystem.h
-        src/ECS/Systems/MapRuntimeSystem.h
-        src/IO/AssetLoader.cpp
-        src/IO/AssetLoader.h
-        src/ECS/Components/DirectionalTextureComponent.h
-        src/IO/EntityFactory.cpp
-        src/IO/EntityFactory.h
-        src/ECS/Components/MapComponent.h
-        src/ECS/Components/MapStateComponent.h
-        src/IO/SceneSerialization.cpp
-        src/IO/SceneSerialization.h
-        src/Math/Math.h
-        src/ECS/Systems/LightingSystem.h
-        src/ECS/Components/PointLightComponent.h
-        # ObSL Core
+# ObSL Core
+set(OBSL_CORE_SOURCES
         src/Scripting/ObSLCore/Lexer/Lexer.cpp
-        src/Scripting/ObSLCore/Lexer/Lexer.h
-        src/Scripting/ObSLCore/Parser/ast.h
         src/Scripting/ObSLCore/Parser/Parser.cpp
-        src/Scripting/ObSLCore/Parser/Parser.h
-        src/Scripting/ObSLCore/Tokens.h
         src/Scripting/ObSLCore/Interpreter/Interpreter.cpp
-        src/Scripting/ObSLCore/Interpreter/Interpreter.h
         src/Scripting/ObSLCore/Interpreter/Environment.cpp
-        src/Scripting/ObSLCore/Interpreter/Environment.h
         src/Scripting/ObSLCore/ScriptEntry.cpp
-        src/Scripting/ObSLCore/ScriptEntry.h
         src/Scripting/ObSLCore/StdLib/StdLib.cpp
-        src/Scripting/ObSLCore/StdLib/StdLib.h
-        src/Scripting/ObSLCore/StdLib/StdModules.h
         src/Scripting/ObSLCore/GarbageCollector.cpp
-        src/Scripting/ObSLCore/GarbageCollector.h
-        src/Scripting/ObSLCore/Interpreter/Natives.h
-        # ObSL Core
-        src/ECS/Components/ScriptComponent.h
-        src/ECS/Systems/ScriptSystem.h
-        src/Scripting/EngineLib/EngineLib.cpp
-        src/Scripting/EngineLib/EngineLib.h
-        src/ECS/Components/DestroyTagComponent.h
-        src/Scripting/EngineLib/EngineLibFactories.h
-        src/IO/PrefabManager.h
+)
+
+# Engine Core Sources
+# NOTE: ObSL EngineLib stay here, but the core language is removed, must be linked later!!!
+set(ENGINE_SOURCES
+        # Core & Window
+        src/Core/Application.cpp
+        src/Core/Window.cpp
+        src/Core/InputManager.cpp
+        src/Core/ProjectConfig.cpp
+        src/Core/KeyMappings.cpp
+
+        # Renderer
+        src/Renderer/VertexBuffer.cpp
+        src/Renderer/VertexArray.cpp
+        src/Renderer/IndexBuffer.cpp
+        src/Renderer/Renderer.cpp
+        src/Renderer/Texture.cpp
+        src/Renderer/Shader.cpp
+        src/Renderer/GLDebug.cpp
+        src/Renderer/MeshFactory.cpp
+
+        # ECS / Scenes
+        src/Scenes/Scene.cpp
+        src/Game/GameLayer.cpp
+        src/Game/GameUI.cpp
+
+        # IO / Sound
+        src/IO/MapSerialization.cpp
+        src/IO/AssetLoader.cpp
+        src/IO/EntityFactory.cpp
+        src/IO/SceneSerialization.cpp
         src/Sound/AudioEngine.cpp
-        src/Sound/AudioEngine.h
+
+        # ObSL EngineLib
+        src/Scripting/EngineLib/EngineLib.cpp
         src/Scripting/EngineLib/Modules/EngineLibAudio.cpp
         src/Scripting/EngineLib/Modules/EngineLibMap.cpp
         src/Scripting/EngineLib/Modules/EngineLibCore.cpp
         src/Scripting/EngineLib/Modules/EngineLibInput.cpp
         src/Scripting/EngineLib/Modules/EngineLibCamera.cpp
         src/Scripting/EngineLib/Modules/EngineLibSceneManagement.cpp
-        src/ECS/Components/CustomDataComponent.h
-        src/Core/KeyMappings.cpp
         src/Scripting/EngineLib/Modules/EngineLibTime.cpp
-        src/Core/ProjectConfig.h
-        src/Core/ProjectConfig.cpp
+        src/Editor/EditorCamera.h
 )
 
-target_include_directories(
-        obliberry PRIVATE
+# ObSL Core
+add_library(obsl_core STATIC ${OBSL_CORE_SOURCES})
+
+# for linter
+target_include_directories(obsl_core PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/nlohmann
+)
+
+# Engine Library Target
+add_library(obliberry_engine STATIC
+        ${EXTERNAL_SOURCES}
+        ${ENGINE_SOURCES}
+)
+
+target_include_directories(obliberry_engine PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/include
         ${CMAKE_CURRENT_SOURCE_DIR}/external/stb_image
         ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui
         ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui/backends
-        ${CMAKE_CURRENT_SOURCE_DIR}/external/nlohmann/
-        ${CMAKE_CURRENT_SOURCE_DIR}/external/miniaudio/
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/nlohmann
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/miniaudio
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-target_link_libraries(
-        obliberry
+# Link
+target_link_libraries(obliberry_engine PUBLIC
         glfw
+        glm::glm
+        obsl_core
 )
 
+# Targets
+
+# Runtime Executable
+add_executable(obliberry_runtime src/Runtime/RuntimeMain.cpp)
+target_link_libraries(obliberry_runtime PRIVATE obliberry_engine)
+
+# Editor Executable
+# (!!!NOT IMPLEMENTED)
+add_executable(obliberry_editor src/Editor/EditorMain.cpp
+        src/Editor/EditorLayer.cpp
+        src/Editor/EditorLayer.h)
+target_link_libraries(obliberry_editor PRIVATE obliberry_engine)
+
+# Post build commands
 file(COPY ${CMAKE_SOURCE_DIR}/assets DESTINATION ${CMAKE_BINARY_DIR})

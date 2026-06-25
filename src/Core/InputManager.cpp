@@ -22,12 +22,24 @@ bool InputManager::IsKeyDown(const int key) const {
     return IsValidKey(key) && keys[key];
 }
 
+bool InputManager::IsKeyDown(const std::string &keyAlias) const {
+    return IsKeyDown(GetKeyFromName(keyAlias));
+}
+
 bool InputManager::IsKeyPressed(const int key) const {
     return IsValidKey(key) && keys[key] && !previousKeys[key];
 }
 
+bool InputManager::IsKeyPressed(const std::string &KeyAlias) const {
+    return IsKeyPressed(GetKeyFromName(KeyAlias));
+}
+
 bool InputManager::IsKeyReleased(const int key) const {
     return IsValidKey(key) && !keys[key] && previousKeys[key];
+}
+
+bool InputManager::IsKeyReleased(const std::string &keyAlias) const {
+    return IsKeyReleased(GetKeyFromName(keyAlias));
 }
 
 bool InputManager::IsValidMouseButton(const int button) {

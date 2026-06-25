@@ -5,12 +5,10 @@
 #include <thread>
 #include <atomic>
 #include <memory>
-
 #include "ProjectConfig.h"
 #include "ResourceManager.h"
 #include "Window.h"
-#include "Game/Game.h"
-#include "Renderer/Renderer.h"
+#include "ApplicationLayer.h"
 #include "Scripting/ObSLCore/Interpreter/Interpreter.h"
 #include "Sound/AudioEngine.h"
 
@@ -18,7 +16,7 @@ struct ImDrawData;
 
 class Application {
 public:
-    explicit Application(ProjectConfig config);
+    explicit Application(ProjectConfig config, std::unique_ptr<ApplicationLayer> layer);
 
     ~Application() {
         Shutdown();
@@ -26,7 +24,7 @@ public:
 
     void Run();
 
-    static void Shutdown();
+    void Shutdown();
 
 private:
     enum class FrameState : uint8_t {
@@ -41,7 +39,7 @@ private:
         FrameState state = FrameState::Free;
     };
 
-    void RenderThreadWorker(Renderer *renderer, Camera *camera, Game *game);
+    void RenderThreadWorker(Renderer *renderer, Camera *camera);
 
     ProjectConfig m_Project;
     Window m_Window;
@@ -49,6 +47,8 @@ private:
     ResourceManager m_ResourceManager;
     ObSL::Interpreter m_ScriptEngine;
     std::unique_ptr<AudioEngine> m_AudioEngine;
+
+    std::unique_ptr<ApplicationLayer> m_Layer;
 
     std::thread m_RenderThread;
     std::mutex m_RenderMutex;

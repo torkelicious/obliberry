@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "Game.h"
+#include "GameLayer.h"
 #include "imgui.h"
 #include "IO/MapSerialization.h"
 #include "ECS/Systems/MapRuntimeSystem.h"
@@ -29,11 +29,11 @@ namespace {
     bool showSceneSwitcher = true;
 }
 
-void Game::DrawInterface() {
+void GameLayer::DrawInterface() {
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("obliberry")) {
             ImGui::MenuItem("Performance Overlay", nullptr, &showPerformanceOverlay);
-            ImGui::MenuItem("Game State", nullptr, &showGameState);
+            ImGui::MenuItem("GameLayer State", nullptr, &showGameState);
             ImGui::MenuItem("Entity Inspector", nullptr, &showEntityInspector);
             ImGui::MenuItem("Scene / Map IO", nullptr, &showSceneSwitcher);
             ImGui::EndMenu();
@@ -70,12 +70,9 @@ void Game::DrawInterface() {
     }
 
     if (showGameState) {
-        if (ImGui::Begin("Game State", &showGameState)) {
-            const char *stateNames[] = {"MainMenu", "Gameplay", "Paused", "EditorMode"};
-            int currentStateIndex = static_cast<int>(m_CurrentState);
-            if (ImGui::Combo("State", &currentStateIndex, stateNames, IM_ARRAYSIZE(stateNames))) {
-                m_CurrentState = static_cast<GameState>(currentStateIndex);
-            }
+        if (ImGui::Begin("GameLayer State", &showGameState)) {
+            ImGui::Checkbox("is running", &m_GameIsRunning);
+
             ImGui::Separator();
             if (m_SceneManager.GetCurrentScene()) {
                 ImGui::Text("Active Scene: Loaded");
