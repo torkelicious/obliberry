@@ -1,7 +1,9 @@
 #include "EditorLayer.h"
 #include "../Core/Application.h"
 #include "../Core/ProjectConfig.h"
-#include "../Game/GameLayer.h"
+
+// todo:
+// some way to manage proejcts files
 
 int main(int argc, char *argv[]) {
     const ProjectConfig config = ProjectConfig::Deserialize("project.json");

@@ -1,0 +1,20 @@
+BasedOnStyle: LLVM
+Language: Cpp
+
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 120
+
+PointerAlignment: Left        
+DerivePointerAlignment: false
+AccessModifierOffset: -4      
+BreakBeforeBraces: Attach     
+
+SpaceAfterCStyleCast: false
+SpaceAfterTemplateKeyword: true
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeParens: ControlStatements 
+
+FixNamespaceComments: true    
+Standard: c++20                

@@ -1,20 +1,18 @@
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
 #include "Application.h"
-#include <chrono>
-#include <thread>
-#include <utility>
 #include "Core/EngineContext.h"
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_opengl3.h"
 #include "Renderer/MeshFactory.h"
 #include "Renderer/Renderer.h"
 #include "Sound/AudioEngine.h"
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+#include <GLFW/glfw3.h>
+#include <chrono>
+#include <glad/glad.h>
+#include <thread>
+#include <utility>
 
-Application::Application(ProjectConfig config,
-                         std::unique_ptr<ApplicationLayer> layer
-)
+Application::Application(ProjectConfig config, std::unique_ptr<ApplicationLayer> layer)
     : m_Project(std::move(config)),
       m_Window(m_Project.windowWidth, m_Project.windowHeight, m_Project.windowTitle.c_str(), m_Project.fullscreen),
       m_Layer(std::move(layer)) {
@@ -23,9 +21,10 @@ Application::Application(ProjectConfig config,
 }
 
 // a bit goofy but idk what else 2 do
-static ImDrawData *CloneImDrawData(const ImDrawData *src) {
-    if (!src) return nullptr;
-    auto *dst = IM_NEW(ImDrawData)();
+static ImDrawData* CloneImDrawData(const ImDrawData* src) {
+    if (!src)
+        return nullptr;
+    auto* dst = IM_NEW(ImDrawData)();
     dst->Valid = src->Valid;
     dst->CmdListsCount = src->CmdListsCount;
     dst->TotalIdxCount = src->TotalIdxCount;
@@ -42,8 +41,9 @@ static ImDrawData *CloneImDrawData(const ImDrawData *src) {
     return dst;
 }
 
-static void FreeImDrawData(ImDrawData *data) {
-    if (!data) return;
+static void FreeImDrawData(ImDrawData* data) {
+    if (!data)
+        return;
     for (int i = 0; i < data->CmdListsCount; ++i) {
         IM_DELETE(data->CmdLists[i]);
     }
@@ -69,8 +69,9 @@ void Application::Run() {
     float xscale, yscale;
     glfwGetWindowContentScale(m_Window.GetNativeWindow(), &xscale, &yscale);
     ImGui::GetStyle().ScaleAllSizes(xscale);
-    ImGuiIO &io = ImGui::GetIO();
+    ImGuiIO& io = ImGui::GetIO();
     io.FontGlobalScale = xscale;
+    // io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
     Renderer renderer;
     Camera camera;
@@ -87,14 +88,14 @@ void Application::Run() {
     context.audioEngine = m_AudioEngine.get();
 
     MeshFactory::RegisterAllMeshFactories();
-    //Game game;
-    //game.SetContext(context);
+    // Game game;
+    // game.SetContext(context);
 
     float initialAspect = static_cast<float>(m_Window.GetWidth()) / static_cast<float>(m_Window.GetHeight());
     renderer.SetCamera(camera, initialAspect);
 
     auto previousTime = std::chrono::steady_clock::now();
-    //game.Start();
+    // game.Start();
 
     m_Layer->Init(context);
 
@@ -116,18 +117,20 @@ void Application::Run() {
         const std::chrono::duration<float> delta = currentTime - previousTime;
         previousTime = currentTime;
 
-        //game.Update(delta.count());
+        // game.Update(delta.count());
         m_Layer->Update(delta.count());
-        if (context.audioEngine) { context.audioEngine->Update(); }
+        if (context.audioEngine) {
+            context.audioEngine->Update();
+        }
 
-        //game.Render();
+        // game.Render();
         m_Layer->Render();
         ImGui::Render();
 
         renderer.SwapBuffers();
 
         const int writeIdx = m_MainFrameIndex;
-        if (const ImDrawData *imguiDrawData = ImGui::GetDrawData(); imguiDrawData && imguiDrawData->CmdListsCount > 0) {
+        if (const ImDrawData* imguiDrawData = ImGui::GetDrawData(); imguiDrawData && imguiDrawData->CmdListsCount > 0) {
             m_FrameImGuiData[writeIdx] = CloneImDrawData(imguiDrawData);
         }
 
@@ -143,24 +146,24 @@ void Application::Run() {
         {
             std::unique_lock lock(m_Frames[nextIdx].mutex);
             if (m_Frames[nextIdx].state != FrameState::Free) {
-                m_Frames[nextIdx].cv.wait(lock, [&] {
-                    return m_Frames[nextIdx].state == FrameState::Free || !m_Running.load();
-                });
+                m_Frames[nextIdx].cv.wait(
+                    lock, [&] { return m_Frames[nextIdx].state == FrameState::Free || !m_Running.load(); });
             }
         }
-        if (!m_Running) break;
+        if (!m_Running)
+            break;
         m_MainFrameIndex = nextIdx;
     }
 
     // shutdown
     m_Running = false;
-    for (auto &m_Frame: m_Frames) {
+    for (auto& m_Frame : m_Frames) {
         std::lock_guard lock(m_Frame.mutex);
         if (m_Frame.state != FrameState::Free) {
             m_Frame.state = FrameState::Free;
         }
     }
-    for (auto &i: m_FrameImGuiData) {
+    for (auto& i : m_FrameImGuiData) {
         if (i) {
             FreeImDrawData(i);
             i = nullptr;
@@ -179,7 +182,7 @@ void Application::Shutdown() {
     ImGui::DestroyContext();
 }
 
-void Application::RenderThreadWorker(Renderer *renderer, Camera *camera) {
+void Application::RenderThreadWorker(Renderer* renderer, Camera* camera) {
     glfwMakeContextCurrent(m_Window.GetNativeWindow());
 
     while (m_Running) {
@@ -198,14 +201,17 @@ void Application::RenderThreadWorker(Renderer *renderer, Camera *camera) {
             // sleep until woken
             std::unique_lock lock(m_RenderMutex);
             m_RenderCV.wait(lock, [&] {
-                if (!m_Running) return true;
-                for (auto &m_Frame: m_Frames) {
+                if (!m_Running)
+                    return true;
+                for (auto& m_Frame : m_Frames) {
                     std::lock_guard lk(m_Frame.mutex);
-                    if (m_Frame.state == FrameState::Ready) return true;
+                    if (m_Frame.state == FrameState::Ready)
+                        return true;
                 }
                 return false;
             });
-            if (!m_Running) break;
+            if (!m_Running)
+                break;
             continue;
         }
 
@@ -232,13 +238,13 @@ void Application::RenderThreadWorker(Renderer *renderer, Camera *camera) {
     }
 
     // clean up any leftover
-    for (auto &m_Frame: m_Frames) {
+    for (auto& m_Frame : m_Frames) {
         std::lock_guard lock(m_Frame.mutex);
         if (m_Frame.state == FrameState::Ready || m_Frame.state == FrameState::Rendering) {
             m_Frame.state = FrameState::Free;
         }
     }
-    for (auto &i: m_FrameImGuiData) {
+    for (auto& i : m_FrameImGuiData) {
         if (i) {
             FreeImDrawData(i);
             i = nullptr;

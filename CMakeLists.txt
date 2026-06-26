@@ -128,3 +128,5 @@ target_link_libraries(obliberry_editor PRIVATE obliberry_engine)
 
 # Post build commands
 file(COPY ${CMAKE_SOURCE_DIR}/assets DESTINATION ${CMAKE_BINARY_DIR})
+# testing 4 now
+file(COPY ${CMAKE_SOURCE_DIR}/project.json DESTINATION ${CMAKE_BINARY_DIR})
