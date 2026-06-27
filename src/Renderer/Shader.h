@@ -74,7 +74,7 @@ private:
 
     std::unordered_map<std::string, GLint, StringHash, StringEqual> m_UniformCache;
 
-    static std::string LoadFile(const std::string &path);
+    static std::string LoadFile(const std::string &virtualPath);
 
     static GLuint Compile(GLenum type, const std::string &src);
 

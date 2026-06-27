@@ -1,6 +1,11 @@
 #include "AudioEngine.h"
+
+#include <filesystem>
+
 #include "miniaudio.h"
 #include <iostream>
+
+#include "IO/VFS.h"
 
 std::unique_ptr<AudioEngine> AudioEngine::Create() {
     std::unique_ptr<AudioEngine> instance(new AudioEngine());
@@ -61,12 +66,16 @@ void AudioEngine::Update() {
     }
 }
 
-void AudioEngine::PlaySound2D(const std::string &filepath, const float volume) {
+void AudioEngine::PlaySound2D(const std::string &virtualPath, const float volume) {
     if (!m_Engine) return;
+
+    const std::filesystem::path absolutePath = IO::VFS::Resolve(virtualPath);
+    const std::string osPathString = absolutePath.string();
+
     const auto sfx = new ma_sound();
     const ma_result result = ma_sound_init_from_file(
         m_Engine,
-        filepath.c_str(),
+        osPathString.c_str(),
         MA_SOUND_FLAG_DECODE,
         nullptr,
         nullptr,
@@ -74,7 +83,8 @@ void AudioEngine::PlaySound2D(const std::string &filepath, const float volume) {
     );
 
     if (result != MA_SUCCESS) {
-        std::cerr << "[AudioEngine] Failed to load sound effect: " << filepath << "\n";
+        std::cerr << "[AudioEngine] Failed to load sound effect: " << virtualPath
+                << " (" << osPathString << ")\n";
         delete sfx;
         return;
     }
@@ -85,17 +95,20 @@ void AudioEngine::PlaySound2D(const std::string &filepath, const float volume) {
     m_ActiveSounds.push_back(sfx);
 }
 
-void AudioEngine::PlayMusic(const std::string &filepath, const float volume) {
+void AudioEngine::PlayMusic(const std::string &virtualPath, const float volume) {
     if (!m_Engine) return;
 
     // avoid overlapping music
     StopMusic();
 
+    const std::filesystem::path absolutePath = IO::VFS::Resolve(virtualPath);
+    const std::string osPathString = absolutePath.string();
+
     m_CurrentMusic = new ma_sound();
 
     const ma_result result = ma_sound_init_from_file(
         m_Engine,
-        filepath.c_str(),
+        osPathString.c_str(),
         MA_SOUND_FLAG_STREAM,
         nullptr,
         nullptr,
@@ -103,7 +116,8 @@ void AudioEngine::PlayMusic(const std::string &filepath, const float volume) {
     );
 
     if (result != MA_SUCCESS) {
-        std::cerr << "[AudioEngine] Failed to load music: " << filepath << "\n";
+        std::cerr << "[AudioEngine] Failed to load music: " << virtualPath
+                << " (" << osPathString << ")\n";
         delete m_CurrentMusic;
         m_CurrentMusic = nullptr;
         return;

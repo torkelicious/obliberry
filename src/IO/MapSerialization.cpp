@@ -3,9 +3,12 @@
 #include <ios>
 #include <iostream>
 
+#include "VFS.h"
+
 namespace MapIO {
     bool Serialize(const std::string &path, const HexGrid &grid) {
-        std::ofstream file(path, std::ios::binary);
+        std::filesystem::path resolvedPath = IO::VFS::Resolve(path);
+        std::ofstream file(resolvedPath, std::ios::binary);
         if (!file.is_open()) {
             std::cerr << "Failed to open file: " << path << "\n";
             return false;
@@ -30,7 +33,8 @@ namespace MapIO {
     }
 
     bool Deserialize(const std::string &path, HexGrid &grid) {
-        std::ifstream file(path, std::ios::binary | std::ios::ate);
+        std::filesystem::path resolvedPath = IO::VFS::Resolve(path);
+        std::ifstream file(resolvedPath, std::ios::binary | std::ios::ate);
         if (!file.is_open()) {
             std::cerr << "Failed to open file: " << path << "\n";
             return false;

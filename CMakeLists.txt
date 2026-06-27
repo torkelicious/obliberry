@@ -85,6 +85,8 @@ set(ENGINE_SOURCES
         src/Scripting/EngineLib/Modules/EngineLibCamera.cpp
         src/Scripting/EngineLib/Modules/EngineLibSceneManagement.cpp
         src/Scripting/EngineLib/Modules/EngineLibTime.cpp
+        src/IO/VFS.h
+        src/IO/VFS.cpp
 )
 
 # ObSL Core
@@ -135,6 +137,8 @@ add_executable(obliberry_editor
         src/Editor/UI/InspectorPanel.cpp
         src/Editor/UI/RegistryPanel.cpp
         src/Editor/UI/ViewportPanel.cpp
+        src/Editor/UI/ProjectConfigEditor.cpp
+        src/Editor/UI/ProjectConfigEditor.h
 )
 
 target_link_libraries(obliberry_editor PRIVATE obliberry_engine)

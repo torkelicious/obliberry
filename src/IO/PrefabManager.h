@@ -7,24 +7,28 @@
 #include <string>
 #include <unordered_map>
 #include "EntityFactory.h"
+#include "VFS.h"
 #include "ECS/Registry.h"
 
 class PrefabManager {
 public:
     static EntityID Instantiate(Registry &registry, ResourceManager &resources, const std::string &filepath) {
         if (const auto it = s_prefab_cache.find(filepath); it != s_prefab_cache.end()) {
-            // cache hit
             const EntityID newId = registry.CreateEntity();
             Entity newEntity(newId, &registry);
             EntityFactory::DeserializeEntity(newEntity, it->second, resources);
             return newId;
         }
+
         // parse from disk if not cached
-        std::ifstream file(filepath);
+        std::filesystem::path resolvedPath = IO::VFS::Resolve(filepath);
+        std::ifstream file(resolvedPath);
         if (!file.is_open()) {
-            std::cerr << "[PrefabManager] Failed to instantiate from file: " << filepath << "\n";
+            std::cerr << "[PrefabManager] Failed to instantiate: " << filepath
+                    << " (Resolved: " << resolvedPath.string() << ")\n";
             return 0;
         }
+
 
         nlohmann::json prefabJson;
         file >> prefabJson;
@@ -47,5 +51,3 @@ public:
 private:
     inline static std::unordered_map<std::string, nlohmann::json> s_prefab_cache;
 };
-
-

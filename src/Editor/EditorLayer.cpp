@@ -14,6 +14,8 @@
 #include "Core/InputManager.h"
 #include "Core/Window.h"
 
+// todo since vfs is implemented now i need real proper project management
+
 bool EditorLayer::s_ShouldBuildDock = true;
 
 void EditorLayer::Init(EngineContext &ctx) {
@@ -56,6 +58,7 @@ void EditorLayer::Shutdown() {
 }
 
 void EditorLayer::HandleInput(float dt) {
+    //todo: dont hardcode sens
     if (m_Input->IsKeyPressed("Esc")) {
         m_Context.window->Close();
     }

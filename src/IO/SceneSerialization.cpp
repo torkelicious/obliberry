@@ -3,6 +3,8 @@
 #include <iostream>
 #include "json.hpp"
 #include "MapSerialization.h"
+#include "VFS.h"
+#include "Core/ProjectConfig.h"
 #include "Core/Utils.h"
 #include "IO/AssetLoader.h"
 #include "IO/EntityFactory.h"
@@ -28,11 +30,13 @@ namespace SceneIO {
     }
 
     bool Deserialize(const std::string &path, Scene &scene) {
-        std::ifstream file(path);
+        std::filesystem::path resolvedPath = IO::VFS::Resolve(path);
+
+        std::ifstream file(resolvedPath);
         if (!file.is_open())
             return false;
 
-        auto &[ScenePath, Name,BackgroundMusicPath, BackgroundClearColor, AmbientLight] = scene.GetProperties();
+        auto &[ScenePath, Name, BackgroundMusicPath, BackgroundClearColor, AmbientLight] = scene.GetProperties();
         ScenePath = path;
 
         json j;
@@ -272,10 +276,8 @@ namespace SceneIO {
             }
         );
 
-
         // ENTITIES
         j["entities"] = json::array();
-
         for (const auto &livingEntities = scene.GetRegistry().GetLivingEntities(); EntityID entityID: livingEntities) {
             Entity entity(entityID, &scene.GetRegistry());
 
@@ -292,7 +294,8 @@ namespace SceneIO {
         }
 
         RoundJsonFloats(j, 3);
-        std::ofstream file(path);
+        std::filesystem::path resolvedPath = IO::VFS::Resolve(path);
+        std::ofstream file(resolvedPath);
         if (!file.is_open()) return false;
         file << j.dump(4);
         return true;

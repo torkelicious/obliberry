@@ -1,7 +1,11 @@
 #include "Shader.h"
+
+#include <filesystem>
 #include <iostream>
 #include <fstream>
 #include <sstream>
+
+#include "IO/VFS.h"
 
 Shader::Shader(const std::string &vertPath, const std::string &fragPath)
     : m_vertPath(vertPath), m_fragPath(fragPath) {
@@ -86,10 +90,11 @@ GLint Shader::GetUniformLocation(const char *name) {
     return location;
 }
 
-std::string Shader::LoadFile(const std::string &path) {
-    std::ifstream file(path);
+std::string Shader::LoadFile(const std::string &virtualPath) {
+    std::filesystem::path absolutePath = IO::VFS::Resolve(virtualPath);
+    std::ifstream file(absolutePath);
     if (!file.is_open()) {
-        std::cerr << "[Shader] Failed to open shader: " << path << "\n";
+        std::cerr << "[Shader] Failed to open shader: " << absolutePath.string() << "\n";
         return {};
     }
     std::stringstream ss;

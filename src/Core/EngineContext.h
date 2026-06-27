@@ -1,6 +1,7 @@
 #pragma once
 
 
+#include <filesystem>
 #include <string>
 
 struct ProjectConfig;
@@ -17,6 +18,7 @@ namespace ObSL {
 }
 
 struct EngineContext {
+    std::filesystem::path ProjectRootPath;
     std::string pendingScenePath;
     ProjectConfig *projectConfig = nullptr;
     Window *window = nullptr;

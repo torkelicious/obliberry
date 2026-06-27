@@ -1,16 +1,20 @@
 #include "ProjectConfig.h"
-
+#include "IO/VFS.h"
 #include <fstream>
 #include <iostream>
 #include <json.hpp>
 
 ProjectConfig ProjectConfig::Deserialize(const std::string &filepath) {
     ProjectConfig config;
-    std::ifstream file(filepath);
+    std::filesystem::path resolvedPath = IO::VFS::Resolve(filepath);
+    std::ifstream file(resolvedPath);
+
     if (!file.is_open()) {
-        std::cerr << "Project file not found: " << filepath << ". Attempting to use defaults.\n";
+        std::cerr << "[ProjectConfig] Project file not found: " << filepath
+                << " (Resolved: " << resolvedPath.string() << "). Using defaults.\n";
         return config;
     }
+
     try {
         nlohmann::json j;
         file >> j;
@@ -24,9 +28,8 @@ ProjectConfig ProjectConfig::Deserialize(const std::string &filepath) {
         if (j.contains("start_scene")) {
             config.startScenePath = j["start_scene"];
         }
-    } catch
-    (const std::exception &e) {
-        std::cerr << "Failed to parse project file: " << e.what() << "\n";
+    } catch (const std::exception &e) {
+        std::cerr << "[ProjectConfig] Failed to parse project file: " << e.what() << "\n";
     }
     return config;
 }
@@ -38,18 +41,18 @@ bool ProjectConfig::Serialize(const ProjectConfig &conf, const std::string &file
         j["window"]["height"] = conf.windowHeight;
         j["window"]["title"] = conf.windowTitle;
         j["window"]["fullscreen"] = conf.fullscreen;
-
         j["start_scene"] = conf.startScenePath;
+        std::filesystem::path resolvedPath = IO::VFS::Resolve(filepath);
+        std::ofstream file(resolvedPath);
 
-        std::ofstream file(filepath);
         if (!file.is_open()) {
-            std::cerr << "Failed to open project file for writing: " << filepath << "\n";
+            std::cerr << "[ProjectConfig] Failed to open project file for writing: " << resolvedPath.string() << "\n";
             return false;
         }
         file << j.dump(2);
         return true;
     } catch (const std::exception &e) {
-        std::cerr << "Failed to serialize project file: " << e.what() << "\n";
+        std::cerr << "[ProjectConfig] Failed to serialize project file: " << e.what() << "\n";
         return false;
     }
 }

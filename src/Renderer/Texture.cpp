@@ -2,6 +2,8 @@
 #include <iostream>
 #include <stb_image.h>
 
+#include "IO/VFS.h"
+
 Texture::Texture(
     const std::string &path,
     const GLuint minFilter,
@@ -11,10 +13,13 @@ Texture::Texture(
 )
     : m_FilePath(path),
       m_MinFilter(minFilter), m_MagFilter(magFilter), m_WrapS(wrapS), m_WrapT(wrapT) {
-    std::cout << "Loading: " << path << "\n";
+    const std::filesystem::path absolutePath = IO::VFS::Resolve(m_FilePath);
+    const std::string ospath = absolutePath.string();
+
+    std::cout << "Loading: " << ospath << "\n";
     stbi_set_flip_vertically_on_load(1);
 
-    if (unsigned char *loaded = stbi_load(path.c_str(), &m_Width, &m_Height, &m_BPP, 4)) {
+    if (unsigned char *loaded = stbi_load(ospath.c_str(), &m_Width, &m_Height, &m_BPP, 4)) {
         const auto size = static_cast<size_t>(m_Width * m_Height * 4);
         m_PixelData.assign(loaded, loaded + size);
         stbi_image_free(loaded);
