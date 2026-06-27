@@ -106,7 +106,6 @@ void Window::KeyCallback(GLFWwindow *window, const int key, int scancode, const 
 }
 
 void Window::CursorPosCallback(GLFWwindow *window, const double xpos, const double ypos) {
-    if (ImGui::GetIO().WantCaptureMouse) return;
     const auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
     if (!self) return;
 
@@ -116,7 +115,6 @@ void Window::CursorPosCallback(GLFWwindow *window, const double xpos, const doub
 }
 
 void Window::MouseButtonCallback(GLFWwindow *window, const int button, const int action, const int mods) {
-    if (ImGui::GetIO().WantCaptureMouse) return;
     const auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
     if (!self) return;
 
@@ -126,7 +124,6 @@ void Window::MouseButtonCallback(GLFWwindow *window, const int button, const int
 }
 
 void Window::ScrollCallback(GLFWwindow *window, const double xoffset, const double yoffset) {
-    if (ImGui::GetIO().WantCaptureMouse) return;
     const auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
     if (!self) return;
 

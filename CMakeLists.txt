@@ -22,6 +22,13 @@ set(EXTERNAL_SOURCES
         external/imgui/imgui_draw.cpp
         external/imgui/imgui_tables.cpp
         external/imgui/imgui_widgets.cpp
+        #ImGuizmo
+       external/imguizmo/ImGuizmo.cpp
+       external/imguizmo/GraphEditor.cpp
+       external/imguizmo/ImCurveEdit.cpp
+       external/imguizmo/ImGradient.cpp
+       external/imguizmo/ImSequencer.cpp
+       external/imguizmo/ImVectorEditor.cpp
         # miniaudio
         external/miniaudio/miniaudio.c
 )
@@ -78,7 +85,6 @@ set(ENGINE_SOURCES
         src/Scripting/EngineLib/Modules/EngineLibCamera.cpp
         src/Scripting/EngineLib/Modules/EngineLibSceneManagement.cpp
         src/Scripting/EngineLib/Modules/EngineLibTime.cpp
-        src/Editor/EditorCamera.h
 )
 
 # ObSL Core
@@ -100,6 +106,7 @@ target_include_directories(obliberry_engine PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/include
         ${CMAKE_CURRENT_SOURCE_DIR}/external/stb_image
         ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/imguizmo
         ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui/backends
         ${CMAKE_CURRENT_SOURCE_DIR}/external/nlohmann
         ${CMAKE_CURRENT_SOURCE_DIR}/external/miniaudio
@@ -120,10 +127,16 @@ add_executable(obliberry_runtime src/Runtime/RuntimeMain.cpp)
 target_link_libraries(obliberry_runtime PRIVATE obliberry_engine)
 
 # Editor Executable
-# (!!!NOT IMPLEMENTED)
-add_executable(obliberry_editor src/Editor/EditorMain.cpp
+add_executable(obliberry_editor
+        src/Editor/EditorMain.cpp
         src/Editor/EditorLayer.cpp
-        src/Editor/EditorLayer.h)
+        src/Editor/EditorCamera.h
+        src/Editor/UI/EditorWidgets.cpp
+        src/Editor/UI/InspectorPanel.cpp
+        src/Editor/UI/RegistryPanel.cpp
+        src/Editor/UI/ViewportPanel.cpp
+)
+
 target_link_libraries(obliberry_editor PRIVATE obliberry_engine)
 
 # Post build commands

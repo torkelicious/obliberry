@@ -7,6 +7,9 @@ void InputManager::BeginFrame() {
 
     m_ScrollX = 0.0;
     m_ScrollY = 0.0;
+
+    m_MouseDeltaX = 0.0;
+    m_MouseDeltaY = 0.0;
 }
 
 bool InputManager::IsValidKey(const int key) {
@@ -55,10 +58,18 @@ bool InputManager::IsMouseDown(const int button) const {
     return IsValidMouseButton(button) && mouseButtons[button];
 }
 
+bool InputManager::IsMouseDown(const std::string &buttonAlias) const {
+    return IsMouseDown(GetKeyFromName(buttonAlias));
+}
+
 bool InputManager::IsMousePressed(const int button) const {
     return IsValidMouseButton(button) &&
            mouseButtons[button] &&
            !previousMouseButtons[button];
+}
+
+bool InputManager::IsMousePressed(const std::string &buttonAlias) const {
+    return IsMousePressed(GetKeyFromName(buttonAlias));
 }
 
 bool InputManager::IsMouseReleased(const int button) const {
@@ -67,10 +78,24 @@ bool InputManager::IsMouseReleased(const int button) const {
            previousMouseButtons[button];
 }
 
+bool InputManager::IsMouseReleased(const std::string &buttonAlias) const {
+    return IsMouseReleased(GetKeyFromName(buttonAlias));
+}
+
 void InputManager::SetMousePos(const double xPos, const double yPos) {
+    if (m_FirstMouse) {
+        m_MousePosX = xPos;
+        m_MousePosY = yPos;
+        m_FirstMouse = false;
+    }
+
+    m_MouseDeltaX += xPos - m_MousePosX;
+    m_MouseDeltaY += yPos - m_MousePosY;
+
     m_MousePosX = xPos;
     m_MousePosY = yPos;
 }
+
 
 void InputManager::HandleScrollEvent(const double xOffset, const double yOffset) {
     m_ScrollX += xOffset;

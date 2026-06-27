@@ -3,14 +3,22 @@
 #include <glm/glm.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
+#include <cmath>
 
 class Camera {
 public:
     glm::vec3 Position = {0.0f, 0.0f, 0.0f};
     float Zoom = 1.5f;
 
-    float AngleX = 55.0f; // tilt down
-    float AngleZ = 45.0f; // rotate world
+    [[nodiscard]] float GetAngleX() const { return m_AngleX; }
+    [[nodiscard]] float GetAngleZ() const { return m_AngleZ; }
+
+    void SetRotation(float angleX, float angleZ) {
+        m_AngleX = angleX;
+        m_AngleZ = angleZ;
+        m_RotationDirty = true;
+        m_InverseDirty = true;
+    }
 
     [[nodiscard]] glm::mat4 GetViewMatrix() const {
         auto view = glm::mat4(1.0f);
@@ -34,11 +42,10 @@ public:
         if (m_RotationDirty) [[unlikely]] {
             auto rot = glm::mat4(1.0f);
             // tilt down
-            rot = glm::rotate(rot, glm::radians(AngleX), glm::vec3(1, 0, 0));
+            rot = glm::rotate(rot, glm::radians(m_AngleX), glm::vec3(1, 0, 0));
             // rotate around z
-            rot = glm::rotate(rot, glm::radians(AngleZ), glm::vec3(0, 0, 1));
+            rot = glm::rotate(rot, glm::radians(m_AngleZ), glm::vec3(0, 0, 1));
             m_CachedRotation = rot;
-            m_InverseDirty = true;
             m_RotationDirty = false;
         }
         return m_CachedRotation;
@@ -59,7 +66,7 @@ public:
     [[nodiscard]] glm::vec2 MouseToWorld(float mx, float my, float viewWidth, float viewHeight) const {
         const float aspect = viewWidth / viewHeight;
 
-        // Correct for inverted Y in GLFW
+        // inverted Y in GLFW
         float adjustedMx = mx;
         float adjustedMy = my;
 
@@ -99,6 +106,10 @@ public:
     [[nodiscard]] glm::vec3 GetUpVector() const {
         return glm::vec3(GetInverseRotation()[1]); // local Up
     }
+
+protected:
+    float m_AngleX = 55.0f; // tilt down
+    float m_AngleZ = 45.0f; // rotate world
 
 private:
     mutable glm::mat4 m_CachedRotation{1.0f};

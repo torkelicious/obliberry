@@ -1,12 +1,18 @@
 #pragma once
+#include <cstdint>
 #include <memory>
 
-#include "EditorCamera.h"
 #include "Core/ApplicationLayer.h"
+#include "Editor/UI/InspectorPanel.h"
+#include "Editor/UI/RegistryPanel.h"
+#include "Editor/UI/ViewportPanel.h"
+
+#include "EditorCamera.h"
 #include "Map/HexCoords.h"
 #include "Scenes/Scene.h"
 #include "Scenes/SceneManager.h"
 
+enum EditorMode : uint8_t { Normal, Map };
 
 class EditorLayer : public ApplicationLayer {
 public:
@@ -21,7 +27,15 @@ public:
 private:
     void DrawInterface();
 
-    void HandleInput(float dt); // just call from update so i dont make update a mess
+    void DrawDockSpace();
+
+    void DrawEditorPanels();
+
+    void DrawGameView();
+
+    void DrawUtilityWindows();
+
+    void HandleInput(float dt);
 
     void LoadScene(const std::string &path);
 
@@ -30,15 +44,19 @@ private:
     EngineContext m_Context;
     Scene *m_Scene = nullptr;
     std::string m_CurrentScenePath;
-    Camera *m_Camera;
+    //Camera *m_Camera = nullptr;
+    EditorCamera m_Camera;
     InputManager *m_Input = nullptr;
     Registry *m_Registry = nullptr;
-    // switch out later
     SceneManager m_SceneManager;
 
+    bool m_Playing = false;
 
-    bool m_Playing = false; // run scripts systems etc play mode
-
-    // could use the mapruntimecomponent for this but i dont want to make editor dependent too much on ecs components
     HexCoords m_SelectedTile;
+
+    // UI
+    static bool s_ShouldBuildDock;
+    RegistryPanel m_RegistryPanel;
+    InspectorPanel m_InspectorPanel;
+    ViewportPanel m_ViewportPanel;
 };

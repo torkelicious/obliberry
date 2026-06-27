@@ -12,6 +12,8 @@
 #include <thread>
 #include <utility>
 
+#include "Editor/EditorLayer.h"
+
 Application::Application(ProjectConfig config, std::unique_ptr<ApplicationLayer> layer)
     : m_Project(std::move(config)),
       m_Window(m_Project.windowWidth, m_Project.windowHeight, m_Project.windowTitle.c_str(), m_Project.fullscreen),
@@ -71,7 +73,8 @@ void Application::Run() {
     ImGui::GetStyle().ScaleAllSizes(xscale);
     ImGuiIO& io = ImGui::GetIO();
     io.FontGlobalScale = xscale;
-    // io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Docking
+    // io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; for later
 
     Renderer renderer;
     Camera camera;
@@ -88,14 +91,11 @@ void Application::Run() {
     context.audioEngine = m_AudioEngine.get();
 
     MeshFactory::RegisterAllMeshFactories();
-    // Game game;
-    // game.SetContext(context);
 
     float initialAspect = static_cast<float>(m_Window.GetWidth()) / static_cast<float>(m_Window.GetHeight());
     renderer.SetCamera(camera, initialAspect);
 
     auto previousTime = std::chrono::steady_clock::now();
-    // game.Start();
 
     m_Layer->Init(context);
 
@@ -117,13 +117,11 @@ void Application::Run() {
         const std::chrono::duration<float> delta = currentTime - previousTime;
         previousTime = currentTime;
 
-        // game.Update(delta.count());
         m_Layer->Update(delta.count());
         if (context.audioEngine) {
             context.audioEngine->Update();
         }
 
-        // game.Render();
         m_Layer->Render();
         ImGui::Render();
 
@@ -215,12 +213,26 @@ void Application::RenderThreadWorker(Renderer* renderer, Camera* camera) {
             continue;
         }
 
-        glViewport(0, 0, m_Window.GetWidth(), m_Window.GetHeight());
-        Renderer::ApplyClearColor();
-        glClear(GL_COLOR_BUFFER_BIT);
-
         Renderer::ProcessInitQ();
-        renderer->Flush(static_cast<size_t>(frameIdx));
+
+        if (auto fbo = renderer->GetEditorFramebuffer()) {
+            // Render to FrameBuffer if editor mode
+            fbo->Bind();
+            Renderer::ApplyClearColor();
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            renderer->Flush(static_cast<size_t>(frameIdx));
+            fbo->Unbind();
+            glViewport(0, 0, m_Window.GetWidth(), m_Window.GetHeight());
+            glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT);
+        } else {
+            glViewport(0, 0, m_Window.GetWidth(), m_Window.GetHeight());
+            Renderer::ApplyClearColor();
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            renderer->Flush(static_cast<size_t>(frameIdx));
+        }
 
         if (m_FrameImGuiData[frameIdx]) {
             ImGui_ImplOpenGL3_RenderDrawData(m_FrameImGuiData[frameIdx]);

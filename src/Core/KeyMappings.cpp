@@ -1,5 +1,4 @@
 #include <unordered_map>
-
 #include "InputManager.h"
 
 int InputManager::GetKeyFromName(const std::string &keyName) {
@@ -85,7 +84,20 @@ int InputManager::GetKeyFromName(const std::string &keyName) {
         {"LeftBracket", GLFW_KEY_LEFT_BRACKET},
         {"RightBracket", GLFW_KEY_RIGHT_BRACKET},
         {"Backslash", GLFW_KEY_BACKSLASH},
-        {"GraveAccent", GLFW_KEY_GRAVE_ACCENT}
+        {"GraveAccent", GLFW_KEY_GRAVE_ACCENT},
+
+        // Mouse Buttons
+        {"MouseLeft", GLFW_MOUSE_BUTTON_LEFT},
+        {"MouseRight", GLFW_MOUSE_BUTTON_RIGHT},
+        {"MouseMiddle", GLFW_MOUSE_BUTTON_MIDDLE},
+        {"MouseButton1", GLFW_MOUSE_BUTTON_1},
+        {"MouseButton2", GLFW_MOUSE_BUTTON_2},
+        {"MouseButton3", GLFW_MOUSE_BUTTON_3},
+        {"MouseButton4", GLFW_MOUSE_BUTTON_4}, // often'Back' button
+        {"MouseButton5", GLFW_MOUSE_BUTTON_5}, // often 'Forward' button
+        {"MouseButton6", GLFW_MOUSE_BUTTON_6},
+        {"MouseButton7", GLFW_MOUSE_BUTTON_7},
+        {"MouseButton8", GLFW_MOUSE_BUTTON_8}
     };
 
     if (const auto it = keyMap.find(keyName); it != keyMap.end()) {

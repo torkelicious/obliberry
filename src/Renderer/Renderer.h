@@ -1,67 +1,61 @@
 #pragma once
 
-#include <unordered_map>
-#include <vector>
-#include <functional>
-#include <mutex>
-#include <memory>
 #include "Camera.h"
 #include "Lightmap.h"
 #include "Material.h"
 #include "Mesh.h"
+#include "Renderer/FrameBuffer.h"
 #include "Transform.h"
 #include "glm/glm.hpp"
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <mutex>
+#include <unordered_map>
+#include <vector>
 
 struct RenderCommand {
-    const Mesh *mesh;
-    const Material *material;
-    const Texture *effectiveTexture;
+    const Mesh* mesh;
+    const Material* material;
+    const Texture* effectiveTexture;
     glm::vec4 color;
     glm::mat4 model;
     int32_t sortKey;
 };
 
 struct InstancedRenderCommand {
-    const Mesh *mesh;
-    const Material *material;
-    const Texture *effectiveTexture;
+    const Mesh* mesh;
+    const Material* material;
+    const Texture* effectiveTexture;
     glm::vec4 color;
     std::vector<glm::mat4> transforms;
 };
 
 struct BatchKey {
-    const Mesh *mesh;
-    const Material *material;
-    const Texture *texture;
+    const Mesh* mesh;
+    const Material* material;
+    const Texture* texture;
     glm::vec4 color;
 
-    bool operator==(const BatchKey &other) const noexcept {
+    bool operator==(const BatchKey& other) const noexcept {
         return mesh == other.mesh && material == other.material && texture == other.texture && color == other.color;
     }
 };
 
 class Renderer {
 public:
-    void SetCamera(const Camera &camera, float aspect);
+    void SetCamera(const Camera& camera, float aspect);
 
-    [[nodiscard]] const Camera *GetCamera() const noexcept {
-        return m_Camera;
-    }
+    [[nodiscard]] const Camera* GetCamera() const noexcept { return m_Camera; }
 
-    [[nodiscard]] const glm::mat4 &GetCurrentVP() const noexcept {
-        return m_VP[m_SubmitIndex];
-    }
+    [[nodiscard]] const glm::mat4& GetCurrentVP() const noexcept { return m_VP[m_SubmitIndex]; }
 
     void BeginFrame();
 
-    void Submit(const std::shared_ptr<Mesh> &mesh,
-                const Material *material,
-                const Transform &transform,
-                const Texture *textureOverride = nullptr);
+    void Submit(const std::shared_ptr<Mesh>& mesh, const Material* material, const Transform& transform,
+                const Texture* textureOverride = nullptr);
 
-    void Submit(const std::shared_ptr<Mesh> &mesh,
-                const Material *material,
-                const std::vector<glm::mat4> &transforms);
+    void Submit(const std::shared_ptr<Mesh>& mesh, const Material* material, const std::vector<glm::mat4>& transforms);
 
     void Flush(size_t renderIndex);
 
@@ -69,7 +63,7 @@ public:
 
     void SwapBuffers();
 
-    void SetLightmap(const Lightmap *lightmap);
+    void SetLightmap(const Lightmap* lightmap);
 
     static void SetClearColor(glm::vec4 color);
 
@@ -79,12 +73,15 @@ public:
 
     static void ProcessInitQ();
 
+    std::shared_ptr<FrameBuffer> GetEditorFramebuffer() const { return m_EditorFramebuffer; }
+    void EnsureFramebufferSize(uint32_t width, uint32_t height);
+
 private:
-    void BindLightmap(Shader *shader, size_t renderIndex) const;
+    void BindLightmap(Shader* shader, size_t renderIndex) const;
 
-    void RenderBatch(const BatchKey &key, const std::vector<glm::mat4> &transforms, size_t renderIndex);
+    void RenderBatch(const BatchKey& key, const std::vector<glm::mat4>& transforms, size_t renderIndex);
 
-    static std::vector<std::function<void()> > s_InitQueue;
+    static std::vector<std::function<void()>> s_InitQueue;
     static std::mutex s_InitQueueMutex;
 
     size_t m_SubmitIndex = 0;
@@ -93,8 +90,8 @@ private:
     std::vector<RenderCommand> m_Commands[2];
     std::vector<InstancedRenderCommand> m_InstancedCommands[2];
 
-    const Camera *m_Camera = nullptr;
-    const Lightmap *m_Lightmap[2] = {nullptr, nullptr};
+    const Camera* m_Camera = nullptr;
+    const Lightmap* m_Lightmap[2] = {nullptr, nullptr};
 
     float m_Aspect = 1.7777777f;
     glm::mat4 m_VP[2] = {glm::mat4(1.0f), glm::mat4(1.0f)};
@@ -104,8 +101,13 @@ private:
         bool instanceAttribReady = false;
     };
 
-    std::unordered_map<const Mesh *, MeshVAO> m_MeshVAOs;
+    std::unordered_map<const Mesh*, MeshVAO> m_MeshVAOs;
     std::unique_ptr<VertexBuffer> m_DynamicInstanceBuffer;
-    const VertexArray *m_LastBoundVAO = nullptr;
-    const Shader *m_LastBoundShader = nullptr;
+    const VertexArray* m_LastBoundVAO = nullptr;
+    const Shader* m_LastBoundShader = nullptr;
+
+    // editor
+    std::shared_ptr<FrameBuffer> m_EditorFramebuffer = nullptr;
+    uint32_t m_FboWidth = 0;
+    uint32_t m_FboHeight = 0;
 };

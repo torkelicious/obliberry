@@ -15,6 +15,11 @@ public:
 
     void SetMousePos(double xPos, double yPos);
 
+
+    [[nodiscard]] double GetMouseDeltaX() const { return m_MouseDeltaX; }
+    [[nodiscard]] double GetMouseDeltaY() const { return m_MouseDeltaY; }
+
+
     static int GetKeyFromName(const std::string &keyName); // in KeyMappings.cpp
 
     [[nodiscard]] double MousePosX() const noexcept { return m_MousePosX; }
@@ -36,9 +41,15 @@ public:
 
     [[nodiscard]] bool IsMouseDown(int button) const;
 
+    bool IsMouseDown(const std::string &buttonAlias) const;
+
     [[nodiscard]] bool IsMousePressed(int button) const;
 
+    bool IsMousePressed(const std::string &buttonAlias) const;
+
     [[nodiscard]] bool IsMouseReleased(int button) const;
+
+    bool IsMouseReleased(const std::string &buttonAlias) const;
 
 private:
     bool keys[GLFW_KEY_LAST + 1]{};
@@ -56,4 +67,8 @@ private:
 
     double m_ScrollX = 0.0;
     double m_ScrollY = 0.0;
+
+    double m_MouseDeltaX = 0.0;
+    double m_MouseDeltaY = 0.0;
+    bool m_FirstMouse = true;
 };
