@@ -1,24 +1,21 @@
+#define GLFW_INCLUDE_NONE
 #include "EditorLayer.h"
-
+#include "Core/InputManager.h"
 #include "Core/ProjectConfig.h"
-#include "ECS/ECS.h"
+#include "Core/Window.h"
 #include "ECS/Entity.h"
 #include "ECS/Systems/LightingSystem.h"
 #include "Scenes/Scene.h"
 #include "imgui.h"
 #include "imgui_internal.h"
-#include <cstdint>
 #include <ImGuizmo.h>
+#include <cstdint>
+#include <iostream>
 #include <memory>
-
-#include "Core/InputManager.h"
-#include "Core/Window.h"
-
-// todo since vfs is implemented now i need real proper project management
 
 bool EditorLayer::s_ShouldBuildDock = true;
 
-void EditorLayer::Init(EngineContext &ctx) {
+void EditorLayer::Init(EngineContext& ctx) {
     m_Context = ctx;
     m_Context.camera = &m_Camera;
     m_Context.sceneManager = &m_SceneManager;
@@ -45,20 +42,17 @@ void EditorLayer::Render() {
     ImGuizmo::BeginFrame();
     DrawInterface();
 
-    // camera aspect ratio based on the panel
     if (m_Context.camera) {
-        const float aspect = m_ViewportPanel.GetViewportWidth() / m_ViewportPanel.GetViewportHeight();
+        const float aspect = m_ViewportPanel.GetWidth() / m_ViewportPanel.GetHeight();
         m_Context.renderer->SetCamera(*m_Context.camera, aspect);
     }
 
     m_SceneManager.Render();
 }
 
-void EditorLayer::Shutdown() {
-}
+void EditorLayer::Shutdown() {}
 
 void EditorLayer::HandleInput(float dt) {
-    //todo: dont hardcode sens
     if (m_Input->IsKeyPressed("Esc")) {
         m_Context.window->Close();
     }
@@ -67,7 +61,8 @@ void EditorLayer::HandleInput(float dt) {
         m_Camera.ToggleViewMode();
     }
 
-    if (!m_ViewportPanel.IsHovered()) return;
+    if (!m_ViewportPanel.IsHovered())
+        return;
 
     const float scrollDelta = static_cast<float>(m_Input->ScrollY());
     if (scrollDelta != 0.0f) {
@@ -86,10 +81,14 @@ void EditorLayer::HandleInput(float dt) {
     float kbPanX = 0.0f;
     float kbPanY = 0.0f;
 
-    if (m_Input->IsKeyDown("W")) kbPanY += 1.0f;
-    if (m_Input->IsKeyDown("S")) kbPanY -= 1.0f;
-    if (m_Input->IsKeyDown("A")) kbPanX -= 1.0f;
-    if (m_Input->IsKeyDown("D")) kbPanX += 1.0f;
+    if (m_Input->IsKeyDown("W"))
+        kbPanY += 1.0f;
+    if (m_Input->IsKeyDown("S"))
+        kbPanY -= 1.0f;
+    if (m_Input->IsKeyDown("A"))
+        kbPanX -= 1.0f;
+    if (m_Input->IsKeyDown("D"))
+        kbPanX += 1.0f;
 
     if (kbPanX != 0.0f || kbPanY != 0.0f) {
         const float length = std::sqrt(kbPanX * kbPanX + kbPanY * kbPanY);
@@ -101,12 +100,8 @@ void EditorLayer::HandleInput(float dt) {
     }
 }
 
-
-void EditorLayer::LoadScene(const std::string &path) {
-}
-
-void EditorLayer::SaveScene() {
-}
+void EditorLayer::LoadScene(const std::string& path) {}
+void EditorLayer::SaveScene() {}
 
 void EditorLayer::DrawInterface() {
     DrawDockSpace();
@@ -124,17 +119,16 @@ void EditorLayer::DrawDockSpace() {
 
     ImGui::DockBuilderRemoveNode(dockspaceId);
     ImGui::DockBuilderAddNode(dockspaceId,
-                              ImGuiDockNodeFlags_PassthruCentralNode |
-                              static_cast<int>(ImGuiDockNodeFlags_DockSpace));
+                              ImGuiDockNodeFlags_PassthruCentralNode | static_cast<int>(ImGuiDockNodeFlags_DockSpace));
     ImGui::DockBuilderSetNodeSize(dockspaceId, ImGui::GetMainViewport()->Size);
 
     ImGuiID dock_id_center = dockspaceId;
     const ImGuiID dock_id_right =
-            ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Right, 0.25f, nullptr, &dock_id_center);
-    const ImGuiID dock_id_left = ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Left, 0.2f, nullptr,
-                                                             &dock_id_center);
-    const ImGuiID dock_id_bottom = ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Down, 0.3f, nullptr,
-                                                               &dock_id_center);
+        ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Right, 0.25f, nullptr, &dock_id_center);
+    const ImGuiID dock_id_left =
+        ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Left, 0.2f, nullptr, &dock_id_center);
+    const ImGuiID dock_id_bottom =
+        ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Down, 0.3f, nullptr, &dock_id_center);
 
     ImGui::DockBuilderDockWindow("Registry", dock_id_left);
     ImGui::DockBuilderDockWindow("Inspector", dock_id_right);
@@ -152,6 +146,19 @@ void EditorLayer::DrawEditorPanels() {
     m_InspectorPanel.SetContext(m_Scene, m_Context);
     m_ViewportPanel.SetContext(m_Scene, m_Context);
 
+    int clickedID = m_ViewportPanel.GetSelectedEntityID();
+    if (clickedID != -1) {
+        EntityID eID = static_cast<EntityID>(clickedID);
+        if (m_Registry->IsValid(eID)) {
+            Entity selectedEntity(eID, m_Registry);
+            m_RegistryPanel.SetSelectedEntity(selectedEntity);
+            std::cout << "[Editor] Picked Entity ID: " << clickedID << "\n";
+        } else {
+            std::cout << "[Editor] Clicked invalid Entity ID: " << clickedID << "\n";
+        }
+        m_ViewportPanel.ClearSelectedEntityID();
+    }
+
     m_InspectorPanel.SetSelectedEntity(m_RegistryPanel.GetSelectedEntity());
 
     m_RegistryPanel.OnImGuiRender();
@@ -160,7 +167,6 @@ void EditorLayer::DrawEditorPanels() {
 }
 
 void EditorLayer::DrawGameView() {
-    //todo: implement
     ImGui::Begin("Game View");
     const ImVec2 gameViewportSize = ImGui::GetContentRegionAvail();
 
@@ -173,12 +179,11 @@ void EditorLayer::DrawGameView() {
         if (gameViewportSize.x > 0.0f && gameViewportSize.y > 0.0f) {
             if (const auto fbo = m_Context.renderer->GetEditorFramebuffer()) {
                 const uint32_t texId = fbo->GetColorAttID();
-                ImGui::Image(reinterpret_cast<void *>(static_cast<intptr_t>(texId)), gameViewportSize, ImVec2{0, 1},
+                ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(texId)), gameViewportSize, ImVec2{0, 1},
                              ImVec2{1, 0});
             }
         }
     }
-
     ImGui::End();
 }
 

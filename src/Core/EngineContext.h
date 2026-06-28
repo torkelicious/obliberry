@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <string>
 
+class Project;
 struct ProjectConfig;
 class SceneManager;
 class AudioEngine;
@@ -30,4 +31,5 @@ struct EngineContext {
     ObSL::Interpreter *scriptEngine = nullptr;
     AudioEngine *audioEngine = nullptr;
     float deltaTime = 0.0f;
+    std::shared_ptr<Project> activeProject = nullptr;
 };

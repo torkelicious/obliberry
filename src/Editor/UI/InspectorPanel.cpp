@@ -31,10 +31,9 @@ void InspectorPanel::OnImGuiRender() {
         ImGui::Separator();
         ImGui::Spacing();
 
-        for (const auto& widget : m_Widgets) {
+        for (const auto &widget: m_Widgets) {
             widget->Draw(m_SelectedEntity);
         }
-
     } else {
         ImGui::TextDisabled("No entity selected.");
     }

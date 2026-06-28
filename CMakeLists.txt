@@ -87,6 +87,8 @@ set(ENGINE_SOURCES
         src/Scripting/EngineLib/Modules/EngineLibTime.cpp
         src/IO/VFS.h
         src/IO/VFS.cpp
+        src/Core/Project.cpp
+        src/Core/Project.h
 )
 
 # ObSL Core

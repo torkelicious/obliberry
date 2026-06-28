@@ -219,17 +219,18 @@ void Application::RenderThreadWorker(Renderer* renderer, Camera* camera) {
             // Render to FrameBuffer if editor mode
             fbo->Bind();
             Renderer::ApplyClearColor();
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glClear(GL_COLOR_BUFFER_BIT);
 
             renderer->Flush(static_cast<size_t>(frameIdx));
             fbo->Unbind();
             glViewport(0, 0, m_Window.GetWidth(), m_Window.GetHeight());
             glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
+            fbo->ClearEntityIDAttachment();
         } else {
             glViewport(0, 0, m_Window.GetWidth(), m_Window.GetHeight());
             Renderer::ApplyClearColor();
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glClear(GL_COLOR_BUFFER_BIT);
 
             renderer->Flush(static_cast<size_t>(frameIdx));
         }

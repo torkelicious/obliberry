@@ -8,7 +8,9 @@ uniform sampler2D u_LightTexture;
 
 uniform vec4 u_Color;
 uniform float u_Ambient;
-out vec4 FragColor;
+flat in int v_EntityID;
+layout(location = 0) out vec4 FragColor;
+layout(location = 1) out int OutEntityID;
 
 void main()
 {
@@ -28,4 +30,7 @@ void main()
     vec3 finalColor = tex.rgb * u_Color.rgb * light;
 
     FragColor = vec4(finalColor, finalAlpha);
+
+    // Write the entity ID from the instanced vertex attribute
+    OutEntityID = v_EntityID;
 }

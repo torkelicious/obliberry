@@ -3,6 +3,7 @@
 layout(location = 0) in vec3 a_Pos;
 layout(location = 1) in vec2 a_UV;
 layout(location = 2) in mat4 a_InstanceMatrix;
+layout(location = 6) in int a_EntityID;
 
 uniform mat4 u_VP;
 uniform vec2 u_MapSize;
@@ -10,6 +11,7 @@ uniform vec2 u_MapOffset;
 
 out vec2 v_UV;
 out vec2 v_LightUV;
+flat out int v_EntityID;
 
 void main()
 {
@@ -21,4 +23,5 @@ void main()
     v_LightUV = (worldPos.xy - u_MapOffset) / u_MapSize;
 
     gl_Position = u_VP * worldPos;
+    v_EntityID = a_EntityID;
 }

@@ -10,6 +10,7 @@ struct IComponentWidget;
 class InspectorPanel : public EditorPanel {
 public:
     InspectorPanel();
+
     ~InspectorPanel();
 
     void OnImGuiRender() override;
@@ -18,5 +19,5 @@ public:
 
 private:
     Entity m_SelectedEntity;
-    std::vector<std::unique_ptr<IComponentWidget>> m_Widgets;
+    std::vector<std::unique_ptr<IComponentWidget> > m_Widgets;
 };

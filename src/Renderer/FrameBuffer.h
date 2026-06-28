@@ -11,7 +11,7 @@ public:
         if (m_RendererID) {
             glDeleteFramebuffers(1, &m_RendererID);
             glDeleteTextures(1, &m_ColorAtt);
-            glDeleteTextures(1, &m_DepthAtt);
+            glDeleteTextures(1, &m_EntityIDAtt);
         }
     }
 
@@ -19,7 +19,7 @@ public:
         if (m_RendererID) {
             glDeleteFramebuffers(1, &m_RendererID);
             glDeleteTextures(1, &m_ColorAtt);
-            glDeleteTextures(1, &m_DepthAtt);
+            glDeleteTextures(1, &m_EntityIDAtt);
         }
         m_Width = width;
         m_Height = height;
@@ -27,6 +27,7 @@ public:
         glGenFramebuffers(1, &m_RendererID);
         glBindFramebuffer(GL_FRAMEBUFFER, m_RendererID);
 
+        // Color Attachment
         glGenTextures(1, &m_ColorAtt);
         glBindTexture(GL_TEXTURE_2D, m_ColorAtt);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, m_Width, m_Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
@@ -34,11 +35,16 @@ public:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_ColorAtt, 0);
 
-        glGenTextures(1, &m_DepthAtt);
-        glBindTexture(GL_TEXTURE_2D, m_DepthAtt);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, m_Width, m_Height, 0, GL_DEPTH_STENCIL,
-                     GL_UNSIGNED_INT_24_8, nullptr);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, m_DepthAtt, 0);
+        // Entity ID
+        glGenTextures(1, &m_EntityIDAtt);
+        glBindTexture(GL_TEXTURE_2D, m_EntityIDAtt);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_R32I, m_Width, m_Height, 0, GL_RED_INTEGER, GL_INT, nullptr);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, m_EntityIDAtt, 0);
+
+        GLenum buffers[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+        glDrawBuffers(2, buffers);
 
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
             std::cerr << "Error: Framebuffer is incomplete!\n";
@@ -54,12 +60,40 @@ public:
 
     void Unbind() const { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
 
+    // EDITOR PICKING
+
+    // call after clearing
+    void ClearEntityIDAttachment(int clearValue = -1) const {
+        glBindFramebuffer(GL_FRAMEBUFFER, m_RendererID);
+        // Clears the specific color buffer index
+        glClearBufferiv(GL_COLOR, 1, &clearValue);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
+    // on click
+    int ReadEntityID(uint32_t x, uint32_t y) const {
+        if (x >= m_Width || y >= m_Height)
+            return -1;
+
+        glBindFramebuffer(GL_FRAMEBUFFER, m_RendererID);
+        glReadBuffer(GL_COLOR_ATTACHMENT1);
+
+        int pixelData = -1;
+        glReadPixels(x, y, 1, 1, GL_RED_INTEGER, GL_INT, &pixelData);
+
+        glReadBuffer(GL_NONE);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        return pixelData;
+    }
+
     uint32_t GetColorAttID() const { return m_ColorAtt; }
+    uint32_t GetEntityIDAttID() const { return m_EntityIDAtt; }
 
 private:
     uint32_t m_RendererID = 0;
     uint32_t m_ColorAtt = 0;
-    uint32_t m_DepthAtt = 0;
+    uint32_t m_EntityIDAtt = 0;
     uint32_t m_Width = 0;
     uint32_t m_Height = 0;
 };

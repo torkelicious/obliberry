@@ -6,7 +6,7 @@
 #include "Mesh.h"
 #include "Renderer/FrameBuffer.h"
 #include "Transform.h"
-#include "glm/glm.hpp"
+#include <atomic>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -21,6 +21,7 @@ struct RenderCommand {
     glm::vec4 color;
     glm::mat4 model;
     int32_t sortKey;
+    int entityID; // signed int since -1 is used to represent invalid/non-entities
 };
 
 struct InstancedRenderCommand {
@@ -29,6 +30,7 @@ struct InstancedRenderCommand {
     const Texture* effectiveTexture;
     glm::vec4 color;
     std::vector<glm::mat4> transforms;
+    std::vector<int> entityIDs;
 };
 
 struct BatchKey {
@@ -45,41 +47,42 @@ struct BatchKey {
 class Renderer {
 public:
     void SetCamera(const Camera& camera, float aspect);
-
     [[nodiscard]] const Camera* GetCamera() const noexcept { return m_Camera; }
-
     [[nodiscard]] const glm::mat4& GetCurrentVP() const noexcept { return m_VP[m_SubmitIndex]; }
 
     void BeginFrame();
 
     void Submit(const std::shared_ptr<Mesh>& mesh, const Material* material, const Transform& transform,
-                const Texture* textureOverride = nullptr);
+                const Texture* textureOverride = nullptr, int entityID = -1);
 
-    void Submit(const std::shared_ptr<Mesh>& mesh, const Material* material, const std::vector<glm::mat4>& transforms);
+    void Submit(const std::shared_ptr<Mesh>& mesh, const Material* material, const std::vector<glm::mat4>& transforms,
+                const std::vector<int>& entityIDs = {});
 
     void Flush(size_t renderIndex);
-
     void Clean();
-
     void SwapBuffers();
-
     void SetLightmap(const Lightmap* lightmap);
-
     static void SetClearColor(glm::vec4 color);
-
     static void ApplyClearColor();
-
     static void SubmitInitTask(std::function<void()> task);
-
     static void ProcessInitQ();
 
     std::shared_ptr<FrameBuffer> GetEditorFramebuffer() const { return m_EditorFramebuffer; }
     void EnsureFramebufferSize(uint32_t width, uint32_t height);
 
+    // Picking
+    void RequestPixelRead(int x, int y) {
+        m_PixelReadX.store(x);
+        m_PixelReadY.store(y);
+        m_PixelReadRequested.store(true);
+    }
+    int GetLastReadPixel() const { return m_PixelReadResult.load(); }
+    void ClearPixelReadResult() { m_PixelReadResult.store(-1); }
+
 private:
     void BindLightmap(Shader* shader, size_t renderIndex) const;
-
-    void RenderBatch(const BatchKey& key, const std::vector<glm::mat4>& transforms, size_t renderIndex);
+    void RenderBatch(const BatchKey& key, const std::vector<glm::mat4>& transforms, const std::vector<int>& entityIDs,
+                     size_t renderIndex);
 
     static std::vector<std::function<void()>> s_InitQueue;
     static std::mutex s_InitQueueMutex;
@@ -103,11 +106,17 @@ private:
 
     std::unordered_map<const Mesh*, MeshVAO> m_MeshVAOs;
     std::unique_ptr<VertexBuffer> m_DynamicInstanceBuffer;
+    std::unique_ptr<VertexBuffer> m_DynamicEntityIDBuffer;
     const VertexArray* m_LastBoundVAO = nullptr;
     const Shader* m_LastBoundShader = nullptr;
 
-    // editor
     std::shared_ptr<FrameBuffer> m_EditorFramebuffer = nullptr;
     uint32_t m_FboWidth = 0;
     uint32_t m_FboHeight = 0;
+
+    // picking
+    std::atomic<bool> m_PixelReadRequested{false};
+    std::atomic<int> m_PixelReadX{0};
+    std::atomic<int> m_PixelReadY{0};
+    std::atomic<int> m_PixelReadResult{-1};
 };
