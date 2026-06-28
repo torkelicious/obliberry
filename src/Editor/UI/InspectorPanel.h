@@ -11,7 +11,7 @@ class InspectorPanel : public EditorPanel {
 public:
     InspectorPanel();
 
-    ~InspectorPanel();
+    ~InspectorPanel() override;
 
     void OnImGuiRender() override;
 

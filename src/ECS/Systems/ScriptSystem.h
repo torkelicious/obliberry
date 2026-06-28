@@ -9,6 +9,7 @@
 #include "ECS/Registry.h"
 #include "ECS/Components/DestroyTagComponent.h"
 #include "ECS/Components/ScriptComponent.h"
+#include "IO/VFS.h"
 #include "Scripting/ObSLCore/Interpreter/Interpreter.h"
 #include "Scripting/ObSLCore/Lexer/Lexer.h"
 #include "Scripting/ObSLCore/Parser/Parser.h"
@@ -33,17 +34,18 @@ namespace ScriptSystem {
         script->instance_envs[scriptIndex]->define("this", entityWrapper);
 
         // read file
-        std::ifstream file(script->scriptPaths[scriptIndex]);
+        std::filesystem::path resolvedPath = IO::VFS::Resolve(script->scriptPaths[scriptIndex]);
+        std::ifstream file(resolvedPath);
         if (!file.is_open()) {
-            std::cerr << "[ScriptSystem] Error: Failed to open script file: " << script->scriptPaths[scriptIndex] <<
-                    "\n";
+            std::cerr << "[ScriptSystem] Error: Failed to open script file: " << script->scriptPaths[scriptIndex]
+                    << " (Resolved: " << resolvedPath.string() << ")\n";
             return;
         }
 
         std::stringstream buffer;
         buffer << file.rdbuf();
         script->source_codes[scriptIndex] = buffer.str();
-        script->lastModified[scriptIndex] = std::filesystem::last_write_time(script->scriptPaths[scriptIndex]);
+        script->lastModified[scriptIndex] = std::filesystem::last_write_time(resolvedPath);
 
         try {
             ObSL::Lexer lexer(script->source_codes[scriptIndex]);
@@ -107,8 +109,9 @@ namespace ScriptSystem {
                 }
 
                 try {
-                    if (std::filesystem::exists(script->scriptPaths[i])) {
-                        if (auto current_time = std::filesystem::last_write_time(script->scriptPaths[i]);
+                    std::filesystem::path resolvedPath = IO::VFS::Resolve(script->scriptPaths[i]);
+                    if (std::filesystem::exists(resolvedPath)) {
+                        if (auto current_time = std::filesystem::last_write_time(resolvedPath);
                             current_time > script->lastModified[i]) {
                             script->isInitialized[i] = false;
                             InitializeScript(registry, raw_id, script, ctx.scriptEngine, i);

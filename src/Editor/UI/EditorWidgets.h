@@ -43,35 +43,35 @@ protected:
     std::vector<ComponentField> m_Fields;
 
 public:
-    AutoComponentWidget(const char *name) : m_Name(name) {
+    explicit AutoComponentWidget(const char *name) : m_Name(name) {
     }
 
     [[nodiscard]] const char *GetName() const override { return m_Name; }
 
-    virtual void Draw(const Entity entity) override {
+    void Draw(const Entity entity) override {
         if (!entity.HasComponent<T>())
             return;
         if (ImGui::CollapsingHeader(m_Name, ImGuiTreeNodeFlags_DefaultOpen)) {
             T *component = entity.GetComponent<T>();
-            auto byte_ptr = reinterpret_cast<uint8_t *>(component);
+            const auto byte_ptr = reinterpret_cast<uint8_t *>(component);
 
-            for (const auto &field: m_Fields) {
-                void *fieldAddress = byte_ptr + field.Offset;
-                switch (field.Type) {
+            for (const auto &[Name, Type, Offset]: m_Fields) {
+                void *fieldAddress = byte_ptr + Offset;
+                switch (Type) {
                     case FieldType::Float:
-                        ImGui::DragFloat(field.Name, static_cast<float *>(fieldAddress), 0.1f);
+                        ImGui::DragFloat(Name, static_cast<float *>(fieldAddress), 0.1f);
                         break;
                     case FieldType::Int:
-                        ImGui::DragInt(field.Name, static_cast<int *>(fieldAddress));
+                        ImGui::DragInt(Name, static_cast<int *>(fieldAddress));
                         break;
                     case FieldType::Vec3:
-                        ImGui::DragFloat3(field.Name, static_cast<float *>(fieldAddress), 0.1f);
+                        ImGui::DragFloat3(Name, static_cast<float *>(fieldAddress), 0.1f);
                         break;
                     case FieldType::Color3:
-                        ImGui::ColorEdit3(field.Name, static_cast<float *>(fieldAddress));
+                        ImGui::ColorEdit3(Name, static_cast<float *>(fieldAddress));
                         break;
                     case FieldType::Bool:
-                        ImGui::Checkbox(field.Name, static_cast<bool *>(fieldAddress));
+                        ImGui::Checkbox(Name, static_cast<bool *>(fieldAddress));
                         break;
                 }
             }

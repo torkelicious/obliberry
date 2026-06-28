@@ -10,21 +10,21 @@ VertexArray::~VertexArray() {
 
 void VertexArray::Init() { glGenVertexArrays(1, &m_ID); }
 
-void VertexArray::AddBuffer(const VertexBuffer& vb, const VertexBufferLayout& layout) const {
+void VertexArray::AddBuffer(const VertexBuffer &vb, const VertexBufferLayout &layout) const {
     Bind();
     vb.Bind();
-    const auto& elements = layout.GetElements();
+    const auto &elements = layout.GetElements();
     unsigned int offset = 0;
 
     for (unsigned int i = 0; i < elements.size(); i++) {
-        const auto& [type, count, normalized] = elements[i];
+        const auto &[type, count, normalized] = elements[i];
         glEnableVertexAttribArray(i);
-        glVertexAttribPointer(i, count, type, normalized, layout.GetStride(), reinterpret_cast<const void*>(offset));
+        glVertexAttribPointer(i, count, type, normalized, layout.GetStride(), reinterpret_cast<const void *>(offset));
         offset += count * VertexBufferElement::GetSizeOfType(type);
     }
 }
 
-void VertexArray::AddInstancedBuffer(const VertexBuffer& vb, const unsigned int attributeStartLoc) const {
+void VertexArray::AddInstancedBuffer(const VertexBuffer &vb, const unsigned int attributeStartLoc) const {
     Bind();
     vb.Bind();
 
@@ -33,23 +33,23 @@ void VertexArray::AddInstancedBuffer(const VertexBuffer& vb, const unsigned int 
         constexpr std::size_t vec4size = sizeof(glm::vec4);
         glEnableVertexAttribArray(attributeStartLoc + i);
         glVertexAttribPointer(attributeStartLoc + i, 4, GL_FLOAT, GL_FALSE, stride,
-                              reinterpret_cast<const void*>(i * vec4size));
+                              reinterpret_cast<const void *>(i * vec4size));
         glVertexAttribDivisor(attributeStartLoc + i, 1);
     }
 }
 
-void VertexArray::AddInstancedIntBuffer(const VertexBuffer& vb, const unsigned int attributeLoc) const {
+void VertexArray::AddInstancedIntBuffer(const VertexBuffer &vb, const unsigned int attributeLoc) const {
     Bind();
     vb.Bind();
 
     glEnableVertexAttribArray(attributeLoc);
 
-    glVertexAttribIPointer(attributeLoc, 1, GL_INT, sizeof(int), reinterpret_cast<const void*>(0));
+    glVertexAttribIPointer(attributeLoc, 1, GL_INT, sizeof(int), reinterpret_cast<const void *>(0));
 
     glVertexAttribDivisor(attributeLoc, 1);
 }
 
-void VertexArray::SetIndexBuffer(const IndexBuffer& ibo) const {
+void VertexArray::SetIndexBuffer(const IndexBuffer &ibo) const {
     Bind();
     ibo.Bind();
 }

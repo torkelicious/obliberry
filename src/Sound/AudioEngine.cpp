@@ -66,10 +66,10 @@ void AudioEngine::Update() {
     }
 }
 
-void AudioEngine::PlaySound2D(const std::string &virtualPath, const float volume) {
+void AudioEngine::PlaySound2D(const std::string &filepath, const float volume) {
     if (!m_Engine) return;
 
-    const std::filesystem::path absolutePath = IO::VFS::Resolve(virtualPath);
+    const std::filesystem::path absolutePath = IO::VFS::Resolve(filepath);
     const std::string osPathString = absolutePath.string();
 
     const auto sfx = new ma_sound();
@@ -83,7 +83,7 @@ void AudioEngine::PlaySound2D(const std::string &virtualPath, const float volume
     );
 
     if (result != MA_SUCCESS) {
-        std::cerr << "[AudioEngine] Failed to load sound effect: " << virtualPath
+        std::cerr << "[AudioEngine] Failed to load sound effect: " << filepath
                 << " (" << osPathString << ")\n";
         delete sfx;
         return;

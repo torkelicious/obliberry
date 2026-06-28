@@ -23,12 +23,12 @@ set(EXTERNAL_SOURCES
         external/imgui/imgui_tables.cpp
         external/imgui/imgui_widgets.cpp
         #ImGuizmo
-       external/imguizmo/ImGuizmo.cpp
-       external/imguizmo/GraphEditor.cpp
-       external/imguizmo/ImCurveEdit.cpp
-       external/imguizmo/ImGradient.cpp
-       external/imguizmo/ImSequencer.cpp
-       external/imguizmo/ImVectorEditor.cpp
+        external/imguizmo/ImGuizmo.cpp
+        external/imguizmo/GraphEditor.cpp
+        external/imguizmo/ImCurveEdit.cpp
+        external/imguizmo/ImGradient.cpp
+        external/imguizmo/ImSequencer.cpp
+        external/imguizmo/ImVectorEditor.cpp
         # miniaudio
         external/miniaudio/miniaudio.c
 )
@@ -146,6 +146,7 @@ add_executable(obliberry_editor
 target_link_libraries(obliberry_editor PRIVATE obliberry_engine)
 
 # Post build commands
-file(COPY ${CMAKE_SOURCE_DIR}/assets DESTINATION ${CMAKE_BINARY_DIR})
+#file(COPY ${CMAKE_SOURCE_DIR}/assets DESTINATION ${CMAKE_BINARY_DIR})
 # testing 4 now
-file(COPY ${CMAKE_SOURCE_DIR}/project.json DESTINATION ${CMAKE_BINARY_DIR})
+#file(COPY ${CMAKE_SOURCE_DIR}/project.json DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY ${CMAKE_SOURCE_DIR}/Templates DESTINATION ${CMAKE_BINARY_DIR})

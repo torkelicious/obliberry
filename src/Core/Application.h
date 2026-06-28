@@ -24,7 +24,7 @@ public:
 
     void Run();
 
-    void Shutdown();
+    void Shutdown() const;
 
 private:
     enum class FrameState : uint8_t {
@@ -39,7 +39,7 @@ private:
         FrameState state = FrameState::Free;
     };
 
-    void RenderThreadWorker(Renderer *renderer, Camera *camera);
+    void RenderThreadWorker(Renderer *renderer);
 
     ProjectConfig m_Project;
     Window m_Window;

@@ -14,7 +14,7 @@ namespace IO::VFS {
     void MountProject(const std::filesystem::path &projectConfigPath) {
         try {
             // Absolute turns a potential relative "project.json" into its true OS representation
-            auto absolutePath = std::filesystem::absolute(projectConfigPath);
+            const auto absolutePath = std::filesystem::absolute(projectConfigPath);
             s_State.rootDir = absolutePath.parent_path();
             s_State.assetsDir = s_State.rootDir / "assets";
             s_State.isLoaded = true;

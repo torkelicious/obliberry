@@ -31,9 +31,11 @@ private:
 
     void DrawEditorPanels();
 
-    void DrawGameView();
+    void DrawGameView() const;
 
     void DrawUtilityWindows();
+
+    void DrawProjectHub();
 
     void HandleInput(float dt);
 
@@ -58,4 +60,16 @@ private:
     RegistryPanel m_RegistryPanel;
     InspectorPanel m_InspectorPanel;
     ViewportPanel m_ViewportPanel;
+
+    // Logging
+    std::vector<std::string> m_ConsoleLogs;
+    std::stringstream m_InterpreterOutput;
+
+    void FlushInterpreterOutput() {
+        std::string line;
+        while (std::getline(m_InterpreterOutput, line)) {
+            m_ConsoleLogs.push_back(line);
+        }
+        m_InterpreterOutput.clear();
+    }
 };

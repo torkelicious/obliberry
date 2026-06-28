@@ -8,14 +8,14 @@
 class VertexArray {
 public:
     // disable copying
-    VertexArray(const VertexArray&) = delete;
+    VertexArray(const VertexArray &) = delete;
 
-    VertexArray& operator=(const VertexArray&) = delete;
+    VertexArray &operator=(const VertexArray &) = delete;
 
     // allow moving
-    VertexArray(VertexArray&& other) noexcept : m_ID(other.m_ID) { other.m_ID = 0; }
+    VertexArray(VertexArray &&other) noexcept : m_ID(other.m_ID) { other.m_ID = 0; }
 
-    VertexArray& operator=(VertexArray&& other) noexcept {
+    VertexArray &operator=(VertexArray &&other) noexcept {
         if (this != &other) {
             if (m_ID != 0)
                 glDeleteVertexArrays(1, &m_ID);
@@ -25,18 +25,20 @@ public:
         return *this;
     }
 
-    VertexArray() : m_ID(0) {}
+    VertexArray() : m_ID(0) {
+    }
 
     ~VertexArray();
 
     void Init();
 
-    void AddBuffer(const VertexBuffer& vb, const VertexBufferLayout& layout) const;
+    void AddBuffer(const VertexBuffer &vb, const VertexBufferLayout &layout) const;
 
-    void AddInstancedBuffer(const VertexBuffer& vb, unsigned int attributeStartLoc) const;
-    void AddInstancedIntBuffer(const VertexBuffer& vb, unsigned int attributeLoc) const;
+    void AddInstancedBuffer(const VertexBuffer &vb, unsigned int attributeStartLoc) const;
 
-    void SetIndexBuffer(const IndexBuffer& ibo) const;
+    void AddInstancedIntBuffer(const VertexBuffer &vb, unsigned int attributeLoc) const;
+
+    void SetIndexBuffer(const IndexBuffer &ibo) const;
 
     void Bind() const;
 

@@ -23,10 +23,10 @@ Application::Application(ProjectConfig config, std::unique_ptr<ApplicationLayer>
 }
 
 // a bit goofy but idk what else 2 do
-static ImDrawData* CloneImDrawData(const ImDrawData* src) {
+static ImDrawData *CloneImDrawData(const ImDrawData *src) {
     if (!src)
         return nullptr;
-    auto* dst = IM_NEW(ImDrawData)();
+    auto *dst = IM_NEW(ImDrawData)();
     dst->Valid = src->Valid;
     dst->CmdListsCount = src->CmdListsCount;
     dst->TotalIdxCount = src->TotalIdxCount;
@@ -43,7 +43,7 @@ static ImDrawData* CloneImDrawData(const ImDrawData* src) {
     return dst;
 }
 
-static void FreeImDrawData(ImDrawData* data) {
+static void FreeImDrawData(ImDrawData *data) {
     if (!data)
         return;
     for (int i = 0; i < data->CmdListsCount; ++i) {
@@ -71,7 +71,7 @@ void Application::Run() {
     float xscale, yscale;
     glfwGetWindowContentScale(m_Window.GetNativeWindow(), &xscale, &yscale);
     ImGui::GetStyle().ScaleAllSizes(xscale);
-    ImGuiIO& io = ImGui::GetIO();
+    ImGuiIO &io = ImGui::GetIO();
     io.FontGlobalScale = xscale;
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Docking
     // io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; for later
@@ -128,7 +128,7 @@ void Application::Run() {
         renderer.SwapBuffers();
 
         const int writeIdx = m_MainFrameIndex;
-        if (const ImDrawData* imguiDrawData = ImGui::GetDrawData(); imguiDrawData && imguiDrawData->CmdListsCount > 0) {
+        if (const ImDrawData *imguiDrawData = ImGui::GetDrawData(); imguiDrawData && imguiDrawData->CmdListsCount > 0) {
             m_FrameImGuiData[writeIdx] = CloneImDrawData(imguiDrawData);
         }
 
@@ -155,13 +155,13 @@ void Application::Run() {
 
     // shutdown
     m_Running = false;
-    for (auto& m_Frame : m_Frames) {
+    for (auto &m_Frame: m_Frames) {
         std::lock_guard lock(m_Frame.mutex);
         if (m_Frame.state != FrameState::Free) {
             m_Frame.state = FrameState::Free;
         }
     }
-    for (auto& i : m_FrameImGuiData) {
+    for (auto &i: m_FrameImGuiData) {
         if (i) {
             FreeImDrawData(i);
             i = nullptr;
@@ -174,13 +174,13 @@ void Application::Run() {
     }
 }
 
-void Application::Shutdown() {
+void Application::Shutdown() const {
     m_Layer->Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 }
 
-void Application::RenderThreadWorker(Renderer* renderer, Camera* camera) {
+void Application::RenderThreadWorker(Renderer *renderer) {
     glfwMakeContextCurrent(m_Window.GetNativeWindow());
 
     while (m_Running) {
@@ -201,7 +201,7 @@ void Application::RenderThreadWorker(Renderer* renderer, Camera* camera) {
             m_RenderCV.wait(lock, [&] {
                 if (!m_Running)
                     return true;
-                for (auto& m_Frame : m_Frames) {
+                for (auto &m_Frame: m_Frames) {
                     std::lock_guard lk(m_Frame.mutex);
                     if (m_Frame.state == FrameState::Ready)
                         return true;
@@ -215,7 +215,7 @@ void Application::RenderThreadWorker(Renderer* renderer, Camera* camera) {
 
         Renderer::ProcessInitQ();
 
-        if (auto fbo = renderer->GetEditorFramebuffer()) {
+        if (const auto fbo = renderer->GetEditorFramebuffer()) {
             // Render to FrameBuffer if editor mode
             fbo->Bind();
             Renderer::ApplyClearColor();
@@ -251,13 +251,13 @@ void Application::RenderThreadWorker(Renderer* renderer, Camera* camera) {
     }
 
     // clean up any leftover
-    for (auto& m_Frame : m_Frames) {
+    for (auto &m_Frame: m_Frames) {
         std::lock_guard lock(m_Frame.mutex);
         if (m_Frame.state == FrameState::Ready || m_Frame.state == FrameState::Rendering) {
             m_Frame.state = FrameState::Free;
         }
     }
-    for (auto& i : m_FrameImGuiData) {
+    for (auto &i: m_FrameImGuiData) {
         if (i) {
             FreeImDrawData(i);
             i = nullptr;

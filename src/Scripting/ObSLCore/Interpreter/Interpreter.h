@@ -1,14 +1,16 @@
 #pragma once
 
-#include <vector>
-#include <memory>
 #include <iostream>
-#include <unordered_map>
+#include <istream>
+#include <memory>
 #include <span>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
-#include "Scripting/ObSLCore/Interpreter/Natives.h"
-#include "Scripting/ObSLCore/Interpreter/Environment.h"
 #include "Scripting/ObSLCore/GarbageCollector.h"
+#include "Scripting/ObSLCore/Interpreter/Environment.h"
+#include "Scripting/ObSLCore/Interpreter/Natives.h"
 #include "Scripting/ObSLCore/StdLib/StdLib.h"
 
 namespace ObSL {
@@ -17,23 +19,22 @@ namespace ObSL {
         GarbageCollector gc{this};
         std::vector<Value> gc_protect_stack;
 
-        explicit Interpreter(std::ostream &out = std::cout, std::istream &in = std::cin)
-            : m_stdout(out), m_stdin(in) {
+        explicit Interpreter(std::ostream &out = std::cout, std::istream &in = std::cin) : m_stdout(out), m_stdin(in) {
             globals = std::make_shared<Environment>();
             register_environment(globals);
             environment = globals;
 
-            define_native("Object", [this]() -> ObSLObject * {
-                return this->gc.allocate<ObSLObject>();
-            });
+            define_native("Object", [this]() -> ObSLObject * { return this->gc.allocate<ObSLObject>(); });
 
             StdLib::register_modules(*this);
         }
 
         ~Interpreter() {
-            if (globals) globals->clear();
+            if (globals)
+                globals->clear();
             for (auto &weak_env: all_environments) {
-                if (const auto env = weak_env.lock()) env->clear();
+                if (const auto env = weak_env.lock())
+                    env->clear();
             }
         }
 
@@ -48,34 +49,37 @@ namespace ObSL {
 
         void execute_block(std::span<const std::unique_ptr<Stmt>> statements, std::shared_ptr<Environment> block_env);
 
-        void define_native(const std::string &name, ObSLCallable *function) const {
-            globals->define(name, function);
-        }
+        void define_native(const std::string &name, ObSLCallable *function) const { globals->define(name, function); }
 
         template<typename F>
         void define_native(std::string name, F &&body);
 
-        std::istream &Get_Stdin() const { return m_stdin; }
-        std::ostream &Get_Stdout() const { return m_stdout; }
+        void Set_Stdout(std::ostream &out) { m_stdout = std::ref(out); }
+        void Set_Stdin(std::istream &in) { m_stdin = std::ref(in); }
 
+        std::istream &Get_Stdin() const { return m_stdin.get(); }
+        std::ostream &Get_Stdout() const { return m_stdout.get(); }
         [[nodiscard]] std::shared_ptr<Environment> get_current_environment() const { return environment; }
         [[nodiscard]] std::shared_ptr<Environment> get_global_environment() const { return globals; }
         void set_current_environment(std::shared_ptr<Environment> env) { environment = std::move(env); }
 
         void mark_roots() {
-            if (globals) globals->mark();
+            if (globals)
+                globals->mark();
             for (auto &weak_env: all_environments) {
-                if (const auto env = weak_env.lock()) env->mark();
+                if (const auto env = weak_env.lock())
+                    env->mark();
             }
-            if (environment) environment->mark();
+            if (environment)
+                environment->mark();
             for (auto &val: gc_protect_stack) {
                 mark_value(val);
             }
             for (const auto &module_obj: loaded_modules | std::views::values) {
-                if (module_obj) module_obj->mark();
+                if (module_obj)
+                    module_obj->mark();
             }
         }
-
 
         friend class ObSLFunction;
         friend struct ObSLStruct;
@@ -83,6 +87,11 @@ namespace ObSL {
     private:
         static constexpr std::size_t prune_interval = 64;
         static constexpr std::size_t max_loaded_modules = 256;
+
+        // Stream wrappers must be declared first to ensure they are fully initialized
+        // before other members that might use them during construction (e.g., StdLib).
+        std::reference_wrapper<std::ostream> m_stdout;
+        std::reference_wrapper<std::istream> m_stdin;
 
         std::shared_ptr<Environment> globals;
         std::shared_ptr<Environment> environment;
@@ -94,9 +103,6 @@ namespace ObSL {
         std::vector<std::vector<std::unique_ptr<Stmt> > > module_asts;
 
         std::size_t m_env_insert_count = 0;
-        std::ostream &m_stdout;
-        std::istream &m_stdin;
-
 
         void execute(const Stmt *stmt);
 
@@ -175,17 +181,13 @@ namespace ObSL {
         Interpreter *interpreter;
         size_t start_size;
 
-        explicit GCProtectScope(Interpreter *interp)
-            : interpreter(interp), start_size(interp->gc_protect_stack.size()) {
+        explicit GCProtectScope(Interpreter *interp) : interpreter(interp),
+                                                       start_size(interp->gc_protect_stack.size()) {
         }
 
-        ~GCProtectScope() {
-            interpreter->gc_protect_stack.resize(start_size);
-        }
+        ~GCProtectScope() { interpreter->gc_protect_stack.resize(start_size); }
 
-        void protect(const Value &val) const {
-            interpreter->gc_protect_stack.push_back(val);
-        }
+        void protect(const Value &val) const { interpreter->gc_protect_stack.push_back(val); }
     };
 
     class ObSLFunction : public ObSLCallable {
@@ -207,9 +209,11 @@ namespace ObSL {
         [[nodiscard]] std::string to_string() const override;
 
         void mark() override {
-            if (is_marked) return;
+            if (is_marked)
+                return;
             is_marked = true;
-            if (closure) closure->mark();
+            if (closure)
+                closure->mark();
         }
 
         ObSLFunction *bind(ObSLObject *instance, Interpreter *interpreter) {

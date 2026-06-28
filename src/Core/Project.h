@@ -1,9 +1,9 @@
 #pragma once
 
-#include <string>
-#include <memory>
-#include <filesystem>
 #include "Core/ProjectConfig.h"
+#include <filesystem>
+#include <memory>
+#include <string>
 
 class Project {
 public:
@@ -15,7 +15,10 @@ public:
 
     static std::shared_ptr<Project> Load(const std::filesystem::path &projectFilePath);
 
-    bool Save();
+    bool Save() const;
+
+    static std::shared_ptr<Project> GetActive() { return s_ActiveProject; }
+    static void SetActive(const std::shared_ptr<Project> &project) { s_ActiveProject = project; }
 
     [[nodiscard]] const ProjectConfig &GetConfig() const { return m_Config; }
     ProjectConfig &GetConfig() { return m_Config; }
@@ -27,4 +30,5 @@ public:
 private:
     ProjectConfig m_Config;
     std::filesystem::path m_ProjectFilepath;
+    static inline std::shared_ptr<Project> s_ActiveProject = nullptr;
 };

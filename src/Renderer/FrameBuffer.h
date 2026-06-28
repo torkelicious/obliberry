@@ -5,7 +5,7 @@
 
 class FrameBuffer {
 public:
-    FrameBuffer(uint32_t width, uint32_t height) { Invalidate(width, height); }
+    FrameBuffer(const uint32_t width, const uint32_t height) { Invalidate(width, height); }
 
     ~FrameBuffer() {
         if (m_RendererID) {
@@ -15,7 +15,7 @@ public:
         }
     }
 
-    void Invalidate(uint32_t width, uint32_t height) {
+    void Invalidate(const uint32_t width, const uint32_t height) {
         if (m_RendererID) {
             glDeleteFramebuffers(1, &m_RendererID);
             glDeleteTextures(1, &m_ColorAtt);
@@ -43,7 +43,7 @@ public:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, m_EntityIDAtt, 0);
 
-        GLenum buffers[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+        const GLenum buffers[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
         glDrawBuffers(2, buffers);
 
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
@@ -63,7 +63,7 @@ public:
     // EDITOR PICKING
 
     // call after clearing
-    void ClearEntityIDAttachment(int clearValue = -1) const {
+    void ClearEntityIDAttachment(const int clearValue = -1) const {
         glBindFramebuffer(GL_FRAMEBUFFER, m_RendererID);
         // Clears the specific color buffer index
         glClearBufferiv(GL_COLOR, 1, &clearValue);
@@ -71,7 +71,7 @@ public:
     }
 
     // on click
-    int ReadEntityID(uint32_t x, uint32_t y) const {
+    int ReadEntityID(const uint32_t x, const uint32_t y) const {
         if (x >= m_Width || y >= m_Height)
             return -1;
 

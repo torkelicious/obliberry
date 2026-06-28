@@ -8,13 +8,13 @@
 
 class Window {
 public:
-    Window(unsigned int width, unsigned int height, const char* title, bool fullscreen);
+    Window(unsigned int width, unsigned int height, const char *title, bool fullscreen);
 
     ~Window();
 
-    Window(const Window&) = delete;
+    Window(const Window &) = delete;
 
-    Window& operator=(const Window&) = delete;
+    Window &operator=(const Window &) = delete;
 
     static void PollEvents();
 
@@ -26,29 +26,29 @@ public:
     [[nodiscard]] int GetWidth() const { return m_Width; }
     [[nodiscard]] int GetHeight() const { return m_Height; }
 
-    [[nodiscard]] GLFWwindow* GetNativeWindow() const { return m_Window; }
+    [[nodiscard]] GLFWwindow *GetNativeWindow() const { return m_Window; }
 
-    void SetInputManager(InputManager* inputManager);
+    void SetInputManager(InputManager *inputManager);
 
-    void SetWindowTitle(const std::string& title) const;
+    void SetWindowTitle(const std::string &title) const;
 
     void SetFullscreen(bool fullscreen) const;
 
 private:
-    GLFWwindow* m_Window = nullptr;
-    InputManager* m_InputManager = nullptr;
+    GLFWwindow *m_Window = nullptr;
+    InputManager *m_InputManager = nullptr;
     int m_Width = 0;
     int m_Height = 0;
 
-    bool Init(unsigned int width, unsigned int height, const char* title, bool fullscreen);
+    bool Init(unsigned int width, unsigned int height, const char *title, bool fullscreen);
 
-    static void WindowResizeCallback(GLFWwindow* window, int width, int height);
+    static void WindowResizeCallback(GLFWwindow *window, int width, int height);
 
-    static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+    static void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
 
-    static void CursorPosCallback(GLFWwindow* window, double xpos, double ypos);
+    static void CursorPosCallback(GLFWwindow *window, double xpos, double ypos);
 
-    static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
+    static void MouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
 
-    static void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+    static void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset);
 };

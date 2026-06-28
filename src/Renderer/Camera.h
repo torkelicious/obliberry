@@ -13,7 +13,7 @@ public:
     [[nodiscard]] float GetAngleX() const { return m_AngleX; }
     [[nodiscard]] float GetAngleZ() const { return m_AngleZ; }
 
-    void SetRotation(float angleX, float angleZ) {
+    void SetRotation(const float angleX, const float angleZ) {
         m_AngleX = angleX;
         m_AngleZ = angleZ;
         m_RotationDirty = true;

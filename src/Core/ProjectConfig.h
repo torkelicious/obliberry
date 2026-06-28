@@ -1,10 +1,10 @@
 #pragma once
-#include <string>
 #include "Constants.h"
+#include <string>
 
 struct ProjectConfig {
     std::string windowTitle = "Obliberry Project";
-    std::string startScenePath = "assets/scenes/default.json";
+    std::string startScenePath;
     int windowWidth = WINDOW_WIDTH;
     int windowHeight = WINDOW_HEIGHT;
     bool fullscreen = false;

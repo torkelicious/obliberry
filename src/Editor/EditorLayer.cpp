@@ -1,35 +1,64 @@
-#define GLFW_INCLUDE_NONE
 #include "EditorLayer.h"
-#include "Core/InputManager.h"
+#include "Core/Project.h"
 #include "Core/ProjectConfig.h"
-#include "Core/Window.h"
+#include "ECS/ECS.h"
 #include "ECS/Entity.h"
 #include "ECS/Systems/LightingSystem.h"
 #include "Scenes/Scene.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 #include <ImGuizmo.h>
+#include <Scripting/ObSLCore/Interpreter/Interpreter.h>
 #include <cstdint>
+#include <cstdlib>
 #include <iostream>
 #include <memory>
+#include <string>
+
+#include "Core/InputManager.h"
+#include "Core/Window.h"
+
+/* TODO:
+ *  fix mouse offset when running via editor view
+ *  implement proper playmode / editmode / mapeditmode or something
+ *  gizmos and shit
+ *  real editing ig
+ *  map editor etc etc just an actual editor
+ */
 
 bool EditorLayer::s_ShouldBuildDock = true;
 
-void EditorLayer::Init(EngineContext& ctx) {
+void EditorLayer::Init(EngineContext &ctx) {
     m_Context = ctx;
     m_Context.camera = &m_Camera;
     m_Context.sceneManager = &m_SceneManager;
     m_Input = m_Context.input;
+    m_Context.scriptEngine->Set_Stdout(m_InterpreterOutput);
+    if (Project::GetActive()) {
+        const std::string startScene = Project::GetActive()->GetConfig().startScenePath;
+        m_SceneManager.LoadScene(std::make_unique<Scene>(m_Context, SceneProperties{.ScenePath = startScene}));
 
-    m_SceneManager.LoadScene(std::make_unique<Scene>(
-        m_Context,
-        SceneProperties{.ScenePath = m_Context.projectConfig ? m_Context.projectConfig->startScenePath : ""}));
-
-    m_Scene = m_SceneManager.GetCurrentScene();
-    m_Registry = &m_Scene->GetRegistry();
+        m_Scene = m_SceneManager.GetCurrentScene();
+        m_Registry = &m_Scene->GetRegistry();
+    }
 }
 
-void EditorLayer::Update(float dt) {
+void EditorLayer::Update(const float dt) {
+    if (Project::GetActive() && !m_Scene) {
+        const std::string startScene = Project::GetActive()->GetConfig().startScenePath;
+
+        m_SceneManager.LoadScene(std::make_unique<Scene>(m_Context, SceneProperties{.ScenePath = startScene}));
+
+        m_Scene = m_SceneManager.GetCurrentScene();
+        m_Registry = &m_Scene->GetRegistry();
+
+        // m_Playing = true; // TEMP FOR TESTING
+    }
+
+    if (!m_Scene || !m_Registry) {
+        return;
+    }
+
     if (m_Playing) {
         m_SceneManager.Update(dt);
     } else {
@@ -42,6 +71,9 @@ void EditorLayer::Render() {
     ImGuizmo::BeginFrame();
     DrawInterface();
 
+    if (!Project::GetActive())
+        return;
+
     if (m_Context.camera) {
         const float aspect = m_ViewportPanel.GetWidth() / m_ViewportPanel.GetHeight();
         m_Context.renderer->SetCamera(*m_Context.camera, aspect);
@@ -50,9 +82,10 @@ void EditorLayer::Render() {
     m_SceneManager.Render();
 }
 
-void EditorLayer::Shutdown() {}
+void EditorLayer::Shutdown() {
+}
 
-void EditorLayer::HandleInput(float dt) {
+void EditorLayer::HandleInput(const float dt) {
     if (m_Input->IsKeyPressed("Esc")) {
         m_Context.window->Close();
     }
@@ -94,20 +127,54 @@ void EditorLayer::HandleInput(float dt) {
         const float length = std::sqrt(kbPanX * kbPanX + kbPanY * kbPanY);
         kbPanX /= length;
         kbPanY /= length;
-        float speedMod = m_Input->IsKeyDown("LeftShift") ? 3.0f : 1.0f;
+        const float speedMod = m_Input->IsKeyDown("LeftShift") ? 3.0f : 1.0f;
         const float kbPanSpeed = 15.0f * speedMod * dt;
         m_Camera.Pan(kbPanX, kbPanY, kbPanSpeed);
     }
 }
 
-void EditorLayer::LoadScene(const std::string& path) {}
-void EditorLayer::SaveScene() {}
+void EditorLayer::LoadScene(const std::string &path) {
+}
+
+void EditorLayer::SaveScene() {
+}
 
 void EditorLayer::DrawInterface() {
+    if (!Project::GetActive()) {
+        DrawProjectHub();
+        return;
+    }
+
     DrawDockSpace();
     DrawEditorPanels();
     DrawGameView();
     DrawUtilityWindows();
+}
+
+void EditorLayer::DrawProjectHub() {
+    ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(600, 400));
+
+    ImGui::Begin("Obliberry hub", nullptr,
+                 ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
+
+    ImGui::Text("welcome :)");
+    ImGui::Separator();
+
+    if (ImGui::Button("Create New Project (TestGame)", ImVec2(250, 50))) {
+        const char *homeDir = getenv("HOME");
+        const std::string baseDir = homeDir ? std::string(homeDir) + "/OBLI_TEST_Projects" : ".";
+        Project::NewProject(baseDir, "TestGame");
+    }
+
+    // ImGui::SameLine();
+    //
+    // if (ImGui::Button("Open Existing Project", ImVec2(250, 50))) {
+    //     std::cout << "not implemented\n";
+    // }
+    //
+
+    ImGui::End();
 }
 
 void EditorLayer::DrawDockSpace() {
@@ -124,11 +191,11 @@ void EditorLayer::DrawDockSpace() {
 
     ImGuiID dock_id_center = dockspaceId;
     const ImGuiID dock_id_right =
-        ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Right, 0.25f, nullptr, &dock_id_center);
+            ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Right, 0.25f, nullptr, &dock_id_center);
     const ImGuiID dock_id_left =
-        ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Left, 0.2f, nullptr, &dock_id_center);
+            ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Left, 0.2f, nullptr, &dock_id_center);
     const ImGuiID dock_id_bottom =
-        ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Down, 0.3f, nullptr, &dock_id_center);
+            ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Down, 0.3f, nullptr, &dock_id_center);
 
     ImGui::DockBuilderDockWindow("Registry", dock_id_left);
     ImGui::DockBuilderDockWindow("Inspector", dock_id_right);
@@ -146,16 +213,16 @@ void EditorLayer::DrawEditorPanels() {
     m_InspectorPanel.SetContext(m_Scene, m_Context);
     m_ViewportPanel.SetContext(m_Scene, m_Context);
 
-    int clickedID = m_ViewportPanel.GetSelectedEntityID();
+    const int clickedID = m_ViewportPanel.GetSelectedEntityID();
+
     if (clickedID != -1) {
-        EntityID eID = static_cast<EntityID>(clickedID);
+        const EntityID eID = static_cast<EntityID>(clickedID);
+
         if (m_Registry->IsValid(eID)) {
-            Entity selectedEntity(eID, m_Registry);
+            const Entity selectedEntity(eID, m_Registry);
             m_RegistryPanel.SetSelectedEntity(selectedEntity);
-            std::cout << "[Editor] Picked Entity ID: " << clickedID << "\n";
-        } else {
-            std::cout << "[Editor] Clicked invalid Entity ID: " << clickedID << "\n";
         }
+
         m_ViewportPanel.ClearSelectedEntityID();
     }
 
@@ -166,7 +233,7 @@ void EditorLayer::DrawEditorPanels() {
     m_ViewportPanel.OnImGuiRender();
 }
 
-void EditorLayer::DrawGameView() {
+void EditorLayer::DrawGameView() const {
     ImGui::Begin("Game View");
     const ImVec2 gameViewportSize = ImGui::GetContentRegionAvail();
 
@@ -179,7 +246,7 @@ void EditorLayer::DrawGameView() {
         if (gameViewportSize.x > 0.0f && gameViewportSize.y > 0.0f) {
             if (const auto fbo = m_Context.renderer->GetEditorFramebuffer()) {
                 const uint32_t texId = fbo->GetColorAttID();
-                ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(texId)), gameViewportSize, ImVec2{0, 1},
+                ImGui::Image(texId, gameViewportSize, ImVec2{0, 1},
                              ImVec2{1, 0});
             }
         }
@@ -188,7 +255,27 @@ void EditorLayer::DrawGameView() {
 }
 
 void EditorLayer::DrawUtilityWindows() {
+    FlushInterpreterOutput();
+
     ImGui::Begin("Console");
+
+    if (ImGui::Button("Clear")) {
+        m_ConsoleLogs.clear();
+    }
+
+    ImGui::Separator();
+
+    ImGui::BeginChild("LogScroll", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
+
+    for (const auto &logLine: m_ConsoleLogs) {
+        ImGui::TextUnformatted(logLine.c_str());
+    }
+
+    if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY()) {
+        ImGui::SetScrollHereY(1.0f);
+    }
+
+    ImGui::EndChild();
     ImGui::End();
 
     ImGui::Begin("Project Browser");
