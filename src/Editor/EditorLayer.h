@@ -12,7 +12,7 @@
 #include "Scenes/Scene.h"
 #include "Scenes/SceneManager.h"
 
-enum EditorMode : uint8_t { Normal, Map };
+enum EditorMode : uint8_t { EditorMode, MapEditorMode, PlayMode };
 
 class EditorLayer : public ApplicationLayer {
 public:
@@ -34,6 +34,8 @@ private:
     void DrawGameView() const;
 
     void DrawUtilityWindows();
+
+    void DrawToolbar();
 
     void DrawProjectHub();
 

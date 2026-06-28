@@ -9,7 +9,7 @@
 #include <sstream>
 #include <vector>
 #include <memory>
-#include <json.hpp>
+#include <nlohmann/json.hpp>
 
 namespace ObSL {
     int ScriptEntry::exec(const int argc, char *argv[]) {

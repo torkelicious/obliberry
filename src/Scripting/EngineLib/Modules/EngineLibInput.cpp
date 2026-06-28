@@ -1,7 +1,9 @@
+#define GLFW_INCLUDE_NONE
 #include "../EngineLib.h"
 #include "Core/InputManager.h"
 #include "Renderer/Camera.h"
 #include "Core/Window.h"
+#include "Renderer/Renderer.h"
 #include "Scripting/ObSLCore/Interpreter/Interpreter.h"
 
 void EngineLib::register_input_modules(ObSL::Interpreter &interpreter) {
@@ -91,13 +93,20 @@ void EngineLib::register_input_modules(ObSL::Interpreter &interpreter) {
             [ctx = m_ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
                 auto *obj = interp->gc.allocate<ObSL::ObSLObject>();
                 if (ctx && ctx->input && ctx->camera && ctx->window) {
-                    const auto w = static_cast<float>(ctx->window->GetWidth());
-                    const auto h = static_cast<float>(ctx->window->GetHeight());
+                    float w = static_cast<float>(ctx->window->GetWidth());
+                    float h = static_cast<float>(ctx->window->GetHeight());
+                    if (ctx->renderer) {
+                        if (const auto fbo = ctx->renderer->GetEditorFramebuffer()) {
+                            w = static_cast<float>(fbo->GetWidth());
+                            h = static_cast<float>(fbo->GetHeight());
+                        }
+                    }
                     const glm::vec2 m{
                         static_cast<float>(ctx->input->MousePosX()),
                         static_cast<float>(ctx->input->MousePosY())
                     };
                     const glm::vec2 world = ctx->camera->MouseToWorld(m.x, m.y, w, h);
+
                     obj->fields["x"] = static_cast<double>(world.x);
                     obj->fields["y"] = static_cast<double>(world.y);
                 } else {

@@ -1,7 +1,7 @@
 #include "SceneSerialization.h"
 #include <fstream>
 #include <iostream>
-#include "json.hpp"
+#include <nlohmann/json.hpp>
 #include "MapSerialization.h"
 #include "VFS.h"
 #include "Core/ProjectConfig.h"

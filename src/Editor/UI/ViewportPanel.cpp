@@ -1,19 +1,35 @@
 #include "ViewportPanel.h"
 #include "Renderer/Renderer.h"
 #include <imgui.h>
+#include "Core/InputManager.h"
 
 void ViewportPanel::OnImGuiRender() {
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
     ImGui::Begin("Scene View");
+    ImGui::PopStyleVar();
+
     m_IsHovered = ImGui::IsWindowHovered();
 
-    if (m_EngineContext &&m_EngineContext
+    const ImVec2 boundsMin = ImGui::GetCursorScreenPos();
+    const ImVec2 imguiMousePos = ImGui::GetMousePos();
 
-    ->
-    renderer
-    )
-    {
-        const int pickedEntity = m_EngineContext->renderer->GetLastReadPixel();
-        if (pickedEntity != -1) {
+    const double localMouseX = static_cast<double>(imguiMousePos.x - boundsMin.x);
+    const double localMouseY = static_cast<double>(imguiMousePos.y - boundsMin.y);
+
+    if (m_EngineContext && m_EngineContext->input) {
+        if (m_IsHovered) {
+            const double offsetX = m_EngineContext->input->RawMousePosX() - localMouseX;
+            const double offsetY = m_EngineContext->input->RawMousePosY() - localMouseY;
+
+            m_EngineContext->input->SetViewportOffset(offsetX, offsetY);
+        } else {
+            m_EngineContext->input->SetViewportOffset(0.0, 0.0);
+        }
+    }
+
+
+    if (m_EngineContext && m_EngineContext->renderer) {
+        if (const int pickedEntity = m_EngineContext->renderer->GetLastReadPixel(); pickedEntity != -1) {
             m_SelectedEntityID = pickedEntity;
             m_EngineContext->renderer->ClearPixelReadResult();
         }
@@ -23,29 +39,18 @@ void ViewportPanel::OnImGuiRender() {
         m_ViewportWidth = viewportSize.x;
         m_ViewportHeight = viewportSize.y;
 
-        if (m_EngineContext &&m_EngineContext
-
-        ->
-        renderer
-        )
-        {
+        if (m_EngineContext && m_EngineContext->renderer) {
             m_EngineContext->renderer->EnsureFramebufferSize(static_cast<uint32_t>(viewportSize.x),
                                                              static_cast<uint32_t>(viewportSize.y));
 
             if (const auto fbo = m_EngineContext->renderer->GetEditorFramebuffer()) {
                 const uint32_t texId = fbo->GetColorAttID();
 
-                ImGui::Image(texId, viewportSize, ImVec2{0, 1},
-                             ImVec2{1, 0});
+                ImGui::Image(texId, viewportSize, ImVec2{0, 1}, ImVec2{1, 0});
 
-                if (m_IsHovered &&ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-                    const ImVec2 viewportMinRegion = ImGui::GetWindowContentRegionMin();
-                    const ImVec2 viewportOffset = ImGui::GetWindowPos();
-                    const ImVec2 boundsMin = {
-                        viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y
-                    };
-
+                if (m_IsHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
                     const ImVec2 mousePos = ImGui::GetMousePos();
+
                     const int mouseX = static_cast<int>(mousePos.x - boundsMin.x);
                     const int mouseY = static_cast<int>(mousePos.y - boundsMin.y);
 

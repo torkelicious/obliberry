@@ -15,6 +15,10 @@ public:
 
     void SetMousePos(double xPos, double yPos);
 
+    void SetViewportOffset(const double x, const double y) {
+        m_ViewportOffsetX = x;
+        m_ViewportOffsetY = y;
+    }
 
     [[nodiscard]] double GetMouseDeltaX() const { return m_MouseDeltaX; }
     [[nodiscard]] double GetMouseDeltaY() const { return m_MouseDeltaY; }
@@ -22,8 +26,12 @@ public:
 
     static int GetKeyFromName(const std::string &keyName); // in KeyMappings.cpp
 
-    [[nodiscard]] double MousePosX() const noexcept { return m_MousePosX; }
-    [[nodiscard]] double MousePosY() const noexcept { return m_MousePosY; }
+    [[nodiscard]] double MousePosX() const noexcept { return m_MousePosX - m_ViewportOffsetX; }
+    [[nodiscard]] double MousePosY() const noexcept { return m_MousePosY - m_ViewportOffsetY; }
+
+    [[nodiscard]] double RawMousePosX() const noexcept { return m_MousePosX; }
+    [[nodiscard]] double RawMousePosY() const noexcept { return m_MousePosY; }
+
     [[nodiscard]] double ScrollX() const noexcept { return m_ScrollX; }
     [[nodiscard]] double ScrollY() const noexcept { return m_ScrollY; }
 
@@ -71,4 +79,7 @@ private:
     double m_MouseDeltaX = 0.0;
     double m_MouseDeltaY = 0.0;
     bool m_FirstMouse = true;
+
+    double m_ViewportOffsetX = 0.0;
+    double m_ViewportOffsetY = 0.0;
 };

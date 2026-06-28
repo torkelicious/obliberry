@@ -15,6 +15,9 @@ public:
         }
     }
 
+    [[nodiscard]] uint32_t GetWidth() const { return m_Width; }
+    [[nodiscard]] uint32_t GetHeight() const { return m_Height; }
+
     void Invalidate(const uint32_t width, const uint32_t height) {
         if (m_RendererID) {
             glDeleteFramebuffers(1, &m_RendererID);
@@ -58,7 +61,9 @@ public:
         glViewport(0, 0, m_Width, m_Height);
     }
 
-    void Unbind() const { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
+    void Unbind() const {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
 
     // EDITOR PICKING
 

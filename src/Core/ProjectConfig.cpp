@@ -2,7 +2,7 @@
 #include "IO/VFS.h"
 #include <fstream>
 #include <iostream>
-#include <json.hpp>
+#include <nlohmann/json.hpp>
 
 ProjectConfig ProjectConfig::Deserialize(const std::string &filepath) {
     ProjectConfig config;

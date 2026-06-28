@@ -19,11 +19,12 @@
 #include "Core/Window.h"
 
 /* TODO:
- *  fix mouse offset when running via editor view
- *  implement proper playmode / editmode / mapeditmode or something
+ *  implement proper playmode / editmode / mapeditmode or something, enum exists but is unused
  *  gizmos and shit
  *  real editing ig
  *  map editor etc etc just an actual editor
+ *  -
+ *  fix mouse offset when running via editor view - kinda done in a hacky way??
  */
 
 bool EditorLayer::s_ShouldBuildDock = true;
@@ -52,7 +53,7 @@ void EditorLayer::Update(const float dt) {
         m_Scene = m_SceneManager.GetCurrentScene();
         m_Registry = &m_Scene->GetRegistry();
 
-        // m_Playing = true; // TEMP FOR TESTING
+        //m_Playing = true; // TEMP FOR TESTING
     }
 
     if (!m_Scene || !m_Registry) {
@@ -146,6 +147,7 @@ void EditorLayer::DrawInterface() {
     }
 
     DrawDockSpace();
+    DrawToolbar();
     DrawEditorPanels();
     DrawGameView();
     DrawUtilityWindows();
@@ -190,6 +192,10 @@ void EditorLayer::DrawDockSpace() {
     ImGui::DockBuilderSetNodeSize(dockspaceId, ImGui::GetMainViewport()->Size);
 
     ImGuiID dock_id_center = dockspaceId;
+
+    const ImGuiID dock_id_top =
+            ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Up, 0.06f, nullptr, &dock_id_center);
+
     const ImGuiID dock_id_right =
             ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Right, 0.25f, nullptr, &dock_id_center);
     const ImGuiID dock_id_left =
@@ -197,6 +203,7 @@ void EditorLayer::DrawDockSpace() {
     const ImGuiID dock_id_bottom =
             ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Down, 0.3f, nullptr, &dock_id_center);
 
+    ImGui::DockBuilderDockWindow("##Toolbar", dock_id_top);
     ImGui::DockBuilderDockWindow("Registry", dock_id_left);
     ImGui::DockBuilderDockWindow("Inspector", dock_id_right);
     ImGui::DockBuilderDockWindow("Console", dock_id_bottom);
@@ -207,6 +214,7 @@ void EditorLayer::DrawDockSpace() {
     ImGui::DockBuilderFinish(dockspaceId);
     s_ShouldBuildDock = false;
 }
+
 
 void EditorLayer::DrawEditorPanels() {
     m_RegistryPanel.SetContext(m_Scene, m_Context);
@@ -279,5 +287,32 @@ void EditorLayer::DrawUtilityWindows() {
     ImGui::End();
 
     ImGui::Begin("Project Browser");
+    ImGui::End();
+}
+
+void EditorLayer::DrawToolbar() {
+    ImGuiWindowClass window_class;
+    window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoTabBar;
+    ImGui::SetNextWindowClass(&window_class);
+
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 2));
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0, 0));
+
+    ImGui::Begin("##Toolbar", nullptr,
+                 ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse |
+                 ImGuiWindowFlags_NoTitleBar);
+
+    float size = ImGui::GetWindowHeight() - 4.0f;
+    ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.5f) - (size * 0.5f));
+
+    if (m_Playing) {
+        if (ImGui::Button("Stop", ImVec2(size, size))) {
+        }
+    } else {
+        if (ImGui::Button("Play (placeholder)", ImVec2(size, size))) {
+        }
+    }
+
+    ImGui::PopStyleVar(2);
     ImGui::End();
 }

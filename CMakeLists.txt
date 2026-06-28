@@ -5,8 +5,37 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-find_package(glfw3 REQUIRED)
-find_package(glm REQUIRED)
+include(FetchContent)
+
+# Fetch GLFW dep
+FetchContent_Declare(
+    glfw
+    GIT_REPOSITORY https://github.com/glfw/glfw.git
+    GIT_TAG        3.4 
+)
+# disable GLFW extras to speed up build
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(glfw)
+
+# Fetch GLM dep
+FetchContent_Declare(
+    glm
+    GIT_REPOSITORY https://github.com/g-truc/glm.git
+    GIT_TAG        1.0.3
+)
+set(GLM_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(glm)
+
+# Fetch nlohmann/json dep
+FetchContent_Declare(
+    nlohmann_json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG        v3.12.0
+)
+set(JSON_BuildTests OFF CACHE INTERNAL "")
+FetchContent_MakeAvailable(nlohmann_json)
 
 # External Sources
 set(EXTERNAL_SOURCES
@@ -97,8 +126,10 @@ add_library(obsl_core STATIC ${OBSL_CORE_SOURCES})
 # for linter
 target_include_directories(obsl_core PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/external/nlohmann
 )
+
+# Link JSON to obsl_core
+target_link_libraries(obsl_core PUBLIC nlohmann_json::nlohmann_json)
 
 # Engine Library Target
 add_library(obliberry_engine STATIC
@@ -112,7 +143,6 @@ target_include_directories(obliberry_engine PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui
         ${CMAKE_CURRENT_SOURCE_DIR}/external/imguizmo
         ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui/backends
-        ${CMAKE_CURRENT_SOURCE_DIR}/external/nlohmann
         ${CMAKE_CURRENT_SOURCE_DIR}/external/miniaudio
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
@@ -122,6 +152,7 @@ target_link_libraries(obliberry_engine PUBLIC
         glfw
         glm::glm
         obsl_core
+        nlohmann_json::nlohmann_json
 )
 
 # Targets
@@ -146,7 +177,4 @@ add_executable(obliberry_editor
 target_link_libraries(obliberry_editor PRIVATE obliberry_engine)
 
 # Post build commands
-#file(COPY ${CMAKE_SOURCE_DIR}/assets DESTINATION ${CMAKE_BINARY_DIR})
-# testing 4 now
-#file(COPY ${CMAKE_SOURCE_DIR}/project.json DESTINATION ${CMAKE_BINARY_DIR})
 file(COPY ${CMAKE_SOURCE_DIR}/Templates DESTINATION ${CMAKE_BINARY_DIR})
