@@ -104,7 +104,7 @@ void Application::Run() {
     glfwMakeContextCurrent(nullptr);
 
     m_Running = true;
-    m_RenderThread = std::thread(&Application::RenderThreadWorker, this, &renderer, &camera);
+    m_RenderThread = std::thread(&Application::RenderThreadWorker, this, &renderer);
 
     while (!m_Window.ShouldClose()) {
         m_InputManager.BeginFrame();
