@@ -158,6 +158,9 @@ void Editor::EditorLayer::DrawInterface() {
 }
 
 void Editor::EditorLayer::DrawProjectHub() {
+    //TODO !!!:
+    // Fix Deadlock in hub when trying to close resize or really do anything other than press the button!!!
+
     ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(600, 400));
 
