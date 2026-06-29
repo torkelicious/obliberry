@@ -16,7 +16,7 @@ namespace Core {
 
         static std::shared_ptr<Project> Load(const std::filesystem::path &projectFilePath);
 
-        bool Save() const;
+        [[nodiscard]] bool Save() const;
 
         static std::shared_ptr<Project> GetActive() { return s_ActiveProject; }
         static void SetActive(const std::shared_ptr<Project> &project) { s_ActiveProject = project; }

@@ -15,6 +15,7 @@
 #include <memory>
 #include <string>
 
+#include "FileDialogs.h"
 #include "IO/VFS.h"
 #include "Core/InputManager.h"
 #include "Core/Window.h"
@@ -206,7 +207,6 @@ void Editor::EditorLayer::DrawDockSpace() {
     const ImGuiID dock_id_bottom =
             ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Down, 0.3f, nullptr, &dock_id_center);
 
-    ImGui::DockBuilderDockWindow("##Toolbar", dock_id_top);
     ImGui::DockBuilderDockWindow("Registry", dock_id_left);
     ImGui::DockBuilderDockWindow("Inspector", dock_id_right);
     ImGui::DockBuilderDockWindow("Console", dock_id_bottom);
@@ -293,29 +293,48 @@ void Editor::EditorLayer::DrawUtilityWindows() {
     ImGui::End();
 }
 
-void Editor::EditorLayer::DrawToolbar() const {
-    ImGuiWindowClass window_class;
-    window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoTabBar;
-    ImGui::SetNextWindowClass(&window_class);
-
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 2));
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0, 0));
-
-    ImGui::Begin("##Toolbar", nullptr,
-                 ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse |
-                 ImGuiWindowFlags_NoTitleBar);
-
-    const float size = ImGui::GetWindowHeight() - 4.0f;
-    ImGui::SetCursorPosX(ImGui::GetWindowContentRegionMax().x * 0.5f - size * 0.5f);
-
-    if (m_Playing) {
-        if (ImGui::Button("Stop", ImVec2(size, size))) {
+void Editor::EditorLayer::DrawToolbar() {
+    if (ImGui::BeginMainMenuBar()) {
+        if (ImGui::BeginMenu("File")) {
+            if (ImGui::MenuItem("Open Project")) {
+                auto path = FileDialogs::PickFolder(m_Context);
+                if (path.has_value()) {
+                    //TODO: IMPLEMENT
+                    std::cout << "[Editor] Picked Project Folder: " << path.value() << "\n";
+                }
+            }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Save Scene As")) {
+                auto path = FileDialogs::SaveFile(m_Context, "ObliBerry JSON Scene", "json");
+                if (path.has_value()) {
+                    //TODO: IMPLEMENT
+                    std::cout << "[Editor] Saving Scene to: " << path.value() << "\n";
+                }
+            }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Exit")) {
+                m_Context.window->Close();
+            }
+            ImGui::EndMenu();
         }
-    } else {
-        if (ImGui::Button("Play (placeholder)", ImVec2(size, size))) {
+
+        // the center of the screen minus half the button's width
+        float buttonWidth = 60.0f;
+        float centerPos = (ImGui::GetWindowSize().x * 0.5f) - (buttonWidth * 0.5f);
+
+        ImGui::SetCursorPosX(centerPos);
+
+        if (ImGui::Button(m_Playing ? "Stop" : "Play", ImVec2(buttonWidth, 0))) {
+            m_Playing = !m_Playing;
+
+            if (m_Playing) {
+                std::cout << "[Editor] Entering Play Mode\n";
+                // TODO: Initialize play mode
+            } else {
+                std::cout << "[Editor] Returning to Edit Mode\n";
+                // TODO: Restore scene state
+            }
         }
+        ImGui::EndMainMenuBar();
     }
-
-    ImGui::PopStyleVar(2);
-    ImGui::End();
 }

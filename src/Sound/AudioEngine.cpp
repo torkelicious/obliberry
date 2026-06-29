@@ -95,13 +95,13 @@ void Sound::AudioEngine::PlaySound2D(const std::string &filepath, const float vo
     m_ActiveSounds.push_back(sfx);
 }
 
-void Sound::AudioEngine::PlayMusic(const std::string &virtualPath, const float volume) {
+void Sound::AudioEngine::PlayMusic(const std::string &filepath, const float volume) {
     if (!m_Engine) return;
 
     // avoid overlapping music
     StopMusic();
 
-    const std::filesystem::path absolutePath = IO::VFS::Resolve(virtualPath);
+    const std::filesystem::path absolutePath = IO::VFS::Resolve(filepath);
     const std::string osPathString = absolutePath.string();
 
     m_CurrentMusic = new ma_sound();
@@ -116,7 +116,7 @@ void Sound::AudioEngine::PlayMusic(const std::string &virtualPath, const float v
     );
 
     if (result != MA_SUCCESS) {
-        std::cerr << "[AudioEngine] Failed to load music: " << virtualPath
+        std::cerr << "[AudioEngine] Failed to load music: " << filepath
                 << " (" << osPathString << ")\n";
         delete m_CurrentMusic;
         m_CurrentMusic = nullptr;

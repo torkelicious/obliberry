@@ -36,7 +36,7 @@ namespace Editor {
 
         void DrawUtilityWindows();
 
-        void DrawToolbar() const;
+        void DrawToolbar();
 
         void DrawProjectHub();
 

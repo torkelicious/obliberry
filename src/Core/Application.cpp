@@ -1,12 +1,3 @@
-#ifdef _WIN32
-#define GLFW_EXPOSE_NATIVE_WIN32
-elif __APPLE__
-#define GLFW_EXPOSE_NATIVE_COCOA
-#elif __linux__
-#define GLFW_EXPOSE_NATIVE_X11
-#define GLFW_EXPOSE_NATIVE_WAYLAND
-#endif
-
 #include "Application.h"
 #include "Core/EngineContext.h"
 #include "Rendering/MeshFactory.h"
@@ -24,7 +15,7 @@ elif __APPLE__
 
 #include "Editor/EditorLayer.h"
 
-Core::Application::Application(Core::ProjectConfig config, std::unique_ptr<Core::ApplicationLayer> layer)
+Core::Application::Application(ProjectConfig config, std::unique_ptr<ApplicationLayer> layer)
     : m_Project(std::move(config)),
       m_Window(m_Project.windowWidth, m_Project.windowHeight, m_Project.windowTitle.c_str(), m_Project.fullscreen),
       m_Layer(std::move(layer)) {
@@ -89,7 +80,7 @@ void Core::Application::Run() {
     Rendering::Renderer renderer;
     Rendering::Camera camera;
 
-    Core::EngineContext context;
+    EngineContext context;
     context.projectConfig = &m_Project;
     context.window = &m_Window;
     context.input = &m_InputManager;
@@ -110,22 +101,16 @@ void Core::Application::Run() {
     m_Layer->Init(context);
 
     ImGui_ImplOpenGL3_CreateDeviceObjects();
-    //
-    //if (NFD::Init() != NFD_OKAY) {
-    //    std::cerr << "NativeFileDialogs-e failed to init: " << NFD::GetError() << "\n";
-    //}
-    //nfdwindowhandle_t parentWindow;
-    //NFD_GetNativeWindowFromGLFWWindow(m_Window.GetNativeWindow(), &parentWindow);
-    //NFD_SetDisplayPropertiesFromGLFW();
 
+    // context handover
     glfwMakeContextCurrent(nullptr);
 
     m_Running = true;
-    m_RenderThread = std::thread(&Core::Application::RenderThreadWorker, this, &renderer);
+    m_RenderThread = std::thread(&Application::RenderThreadWorker, this, &renderer);
 
     while (!m_Window.ShouldClose()) {
         m_InputManager.BeginFrame();
-        Core::Window::PollEvents();
+        Window::PollEvents();
 
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -195,7 +180,6 @@ void Core::Application::Shutdown() const {
     m_Layer->Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
-    /*NFD::Quit();*/
 }
 
 void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer) {

@@ -2,6 +2,8 @@
 
 #include <iostream>
 #include <stdexcept>
+
+#include "VFS.h"
 #include "Rendering/Mesh.h"
 #include "Rendering/Renderer.h"
 #include "Rendering/Shader.h"
@@ -9,6 +11,54 @@
 
 std::unordered_map<std::string, IO::AssetLoader::MeshFactory>
 IO::AssetLoader::s_MeshFactories;
+
+std::optional<std::string> IO::AssetLoader::ImportAsset(const std::string &AbsoultePath,
+                                                        const std::string &TargetSubDir) {
+    const std::filesystem::path srcpath(AbsoultePath);
+
+    const std::filesystem::path projectAssetsDir = VFS::GetAssetsDirectory();
+    if (projectAssetsDir.empty()) {
+        std::cerr << "[AssetLoader] Import failed. No project is currently mounted\n";
+        return std::nullopt;
+    }
+
+    const std::filesystem::path assetdir = VFS::GetAssetsDirectory();
+    if (assetdir.empty()) {
+        std::cerr << "[AssetLoader] Import failed. "
+                "Could not resolve Asset Path.\n Is project loaded?\n";
+        return std::nullopt;
+    }
+
+    // build fin target
+    std::filesystem::path destinationdir = projectAssetsDir;
+    if (!TargetSubDir.empty()) {
+        destinationdir /= TargetSubDir;
+    }
+
+    // ensure exists
+    std::filesystem::create_directories(destinationdir);
+
+    // absolute path
+    const std::filesystem::path destinationPath = destinationdir / srcpath.filename();
+
+    // copy the file
+    try {
+        std::filesystem::copy(srcpath, destinationPath, std::filesystem::copy_options::overwrite_existing);
+        std::cout << "[AssetLoader] Successfully imported asset to: " << destinationPath.string() << "\n";
+    } catch (const std::exception &e) {
+        std::cerr << "[AssetLoader] Failed to copy asset: " << e.what() << "\n";
+        return std::nullopt;
+    }
+
+    // return vfs-resolved path for later serialization
+    const std::filesystem::path vfsRelativePath = std::filesystem::relative(destinationPath, VFS::GetProjectRoot());
+
+    // fuck windows and their backslashes :)
+    std::string finalVirtualPath = vfsRelativePath.string();
+    std::ranges::replace(finalVirtualPath, '\\', '/');
+
+    return finalVirtualPath;
+}
 
 void IO::AssetLoader::LoadAssets(
     const json &assets,

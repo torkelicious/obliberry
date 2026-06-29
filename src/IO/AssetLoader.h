@@ -41,6 +41,11 @@ namespace IO {
             const json &meshes,
             Core::ResourceManager &resources);
 
+        static std::optional<std::string> ImportAsset(
+            const std::string &AbsoultePath,
+            const std::string &TargetSubDir = ""
+        );
+
     private:
         static std::unordered_map<std::string, MeshFactory>
         s_MeshFactories;

@@ -1,5 +1,21 @@
+#include <iostream>
+
+
+#if defined(_WIN32)
+#define GLFW_EXPOSE_NATIVE_WIN32
+#elif defined(__APPLE__)
+#define GLFW_EXPOSE_NATIVE_COCOA
+#elif defined(__linux__)
+#define GLFW_EXPOSE_NATIVE_WAYLAND
+#define GLFW_EXPOSE_NATIVE_X11
+#endif
+
+
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
+#include <GLFW/glfw3native.h>
+#include <nfd.hpp>
+#include <nfd_glfw3.h>
 #include <stdexcept>
 #include "Window.h"
 #include "Constants.h"
@@ -12,6 +28,7 @@ Core::Window::Window(const unsigned int width, const unsigned int height, const 
 }
 
 Core::Window::~Window() {
+    NFD_Quit();
     if (m_Window) {
         glfwDestroyWindow(m_Window);
         m_Window = nullptr;
@@ -30,11 +47,6 @@ void Core::Window::SwapBuffers() const {
 }
 
 bool Core::Window::Init(const unsigned int width, const unsigned int height, const char *title, const bool fullscreen) {
-    /*
-     * TODO: window resizing causes temporary stuttering/freezes
-     *   seems to occur specifically on NVIDIA (Proprietary Drivers) on KWin,
-    */
-
     m_Width = static_cast<int>(width);
     m_Height = static_cast<int>(height);
 
@@ -52,10 +64,21 @@ bool Core::Window::Init(const unsigned int width, const unsigned int height, con
         glfwTerminate();
         return false;
     }
+
     glfwSetWindowUserPointer(m_Window, this);
     glfwSetFramebufferSizeCallback(m_Window, WindowResizeCallback);
 
     glfwGetWindowSize(m_Window, &m_Width, &m_Height);
+
+
+    if (NFD_Init() != NFD_OKAY) {
+        std::cerr << "Failed to initialize Native File Dialog" << std::endl;
+    }
+
+    // wont do anything on nonlinux/nonwayland displays anyways
+#if defined(__linux__)
+    NFD_SetDisplayPropertiesFromGLFW();
+#endif
 
     glfwMakeContextCurrent(m_Window);
     glfwSetWindowUserPointer(m_Window, this);

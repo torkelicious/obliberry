@@ -9,9 +9,9 @@ include(FetchContent)
 
 # Fetch GLFW dep
 FetchContent_Declare(
-    glfw
-    GIT_REPOSITORY https://github.com/glfw/glfw.git
-    GIT_TAG        3.4 
+        glfw
+        GIT_REPOSITORY https://github.com/glfw/glfw.git
+        GIT_TAG 3.4
 )
 # disable GLFW extras to speed up build
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
@@ -21,30 +21,34 @@ FetchContent_MakeAvailable(glfw)
 
 # Fetch GLM dep
 FetchContent_Declare(
-    glm
-    GIT_REPOSITORY https://github.com/g-truc/glm.git
-    GIT_TAG        1.0.3
+        glm
+        GIT_REPOSITORY https://github.com/g-truc/glm.git
+        GIT_TAG 1.0.3
 )
 set(GLM_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(glm)
 
 # Fetch nlohmann/json dep
 FetchContent_Declare(
-    nlohmann_json
-    GIT_REPOSITORY https://github.com/nlohmann/json.git
-    GIT_TAG        v3.12.0
+        nlohmann_json
+        GIT_REPOSITORY https://github.com/nlohmann/json.git
+        GIT_TAG v3.12.0
 )
 set(JSON_BuildTests OFF CACHE INTERNAL "")
 FetchContent_MakeAvailable(nlohmann_json)
 
 # Fetch nfd
 FetchContent_Declare(
-    nfd
-    GIT_REPOSITORY https://github.com/btzy/nativefiledialog-extended.git
-    GIT_TAG        v1.3.0
+        nfd
+        GIT_REPOSITORY https://github.com/btzy/nativefiledialog-extended.git
+        GIT_TAG master # master for proper glfw / wayland support, since releases are "slow"
 )
-FetchContent_MakeAvailable(nfd)
+# Use xdg portal rather on linux
+if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+    set(NFD_PORTAL ON CACHE BOOL "Enable XDG Desktop Portal for Linux" FORCE)
+endif ()
 
+FetchContent_MakeAvailable(nfd)
 # External Sources
 set(EXTERNAL_SOURCES
         # GLAD
@@ -161,7 +165,7 @@ target_link_libraries(obliberry_engine PUBLIC
         glm::glm
         obsl_core
         nlohmann_json::nlohmann_json
-        nfd
+        nfd # i dont want this here but it is for now
 )
 
 # Targets
@@ -181,9 +185,14 @@ add_executable(obliberry_editor
         src/Editor/UI/ViewportPanel.cpp
         src/Editor/UI/ProjectConfigEditor.cpp
         src/Editor/UI/ProjectConfigEditor.h
+        src/Editor/FileDialogs.cpp
+        src/Editor/FileDialogs.h
 )
 
-target_link_libraries(obliberry_editor PRIVATE obliberry_engine)
+target_link_libraries(obliberry_editor
+        PRIVATE obliberry_engine
+)
+
 
 # Post build commands
 file(COPY ${CMAKE_SOURCE_DIR}/Templates DESTINATION ${CMAKE_BINARY_DIR})
