@@ -7,32 +7,34 @@
 struct ma_engine;
 struct ma_sound;
 
-class AudioEngine {
-public:
-    static std::unique_ptr<AudioEngine> Create();
+namespace Sound {
+    class AudioEngine {
+    public:
+        static std::unique_ptr<AudioEngine> Create();
 
-    ~AudioEngine();
+        ~AudioEngine();
 
-    AudioEngine(const AudioEngine &) = delete;
+        AudioEngine(const AudioEngine &) = delete;
 
-    AudioEngine &operator=(const AudioEngine &) = delete;
+        AudioEngine &operator=(const AudioEngine &) = delete;
 
-    void Update();
+        void Update();
 
-    void PlaySound2D(const std::string &filepath, float volume = 1.0f);
+        void PlaySound2D(const std::string &filepath, float volume = 1.0f);
 
-    void PlayMusic(const std::string &filepath, float volume = 1.0f);
+        void PlayMusic(const std::string &filepath, float volume = 1.0f);
 
-    void StopMusic();
+        void StopMusic();
 
-    void SetMasterVolume(float volume) const;
+        void SetMasterVolume(float volume) const;
 
-private:
-    AudioEngine();
+    private:
+        AudioEngine();
 
-    bool Init();
+        bool Init();
 
-    ma_engine *m_Engine = nullptr;
-    ma_sound *m_CurrentMusic = nullptr;
-    std::vector<ma_sound *> m_ActiveSounds;
-};
+        ma_engine *m_Engine = nullptr;
+        ma_sound *m_CurrentMusic = nullptr;
+        std::vector<ma_sound *> m_ActiveSounds;
+    };
+} // namespace Sound

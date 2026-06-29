@@ -8,8 +8,8 @@
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Components/MapComponent.h"
 
-namespace MovementSystem {
-    inline void CancelPath(MovementComponent *moveComp) noexcept {
+namespace ECS::Systems::MovementSystem {
+    inline void CancelPath(Components::MovementComponent *moveComp) noexcept {
         if (!moveComp) return;
         moveComp->isMoving = false;
         moveComp->currentPathIndex = 0;
@@ -18,7 +18,7 @@ namespace MovementSystem {
     }
 
     inline void StartPath(const Entity entity) noexcept {
-        auto *moveComp = entity.GetComponent<MovementComponent>();
+        auto *moveComp = entity.GetComponent<Components::MovementComponent>();
         if (!moveComp) return;
 
         if (moveComp->currentPath.empty()) {
@@ -32,13 +32,16 @@ namespace MovementSystem {
     }
 
     inline void Update(Registry &registry, const float dt) noexcept {
-        const MapComponent *map = nullptr;
-        registry.ForEach<MapComponent>([&](Entity, const MapComponent *m) { map = m; });
+        const Components::MapComponent *map = nullptr;
+        registry.ForEach<Components::MapComponent>([&](Entity, const Components::MapComponent *m) {
+            map = m;
+        });
 
         if (!map) return;
 
-        registry.ForEach<MovementComponent, TransformComponent>(
-            [&](const Entity /*entity*/, MovementComponent *moveComp, TransformComponent *transComp) {
+        registry.ForEach<Components::MovementComponent, Components::TransformComponent>(
+            [&](const Entity /*entity*/, Components::MovementComponent *moveComp,
+                Components::TransformComponent *transComp) {
                 if (!moveComp->isMoving) return;
 
                 if (moveComp->currentPathIndex >= moveComp->currentPath.size()) {
@@ -49,9 +52,9 @@ namespace MovementSystem {
                 moveComp->stepTimer += dt;
                 if (moveComp->stepTimer >= moveComp->timePerStep) {
                     moveComp->stepTimer -= moveComp->timePerStep;
-                    const HexCoords targetHex = moveComp->currentPath[moveComp->currentPathIndex];
+                    const Map::HexCoords targetHex = moveComp->currentPath[moveComp->currentPathIndex];
 
-                    const glm::vec2 targetWorldPos2D = HexGrid::GetWorldPos(targetHex);
+                    const glm::vec2 targetWorldPos2D = Map::HexGrid::GetWorldPos(targetHex);
 
                     transComp->transform.SetPosition(glm::vec3(
                         targetWorldPos2D.x,
@@ -69,8 +72,8 @@ namespace MovementSystem {
     }
 
     inline void MoveToCenter(const Entity entity) noexcept {
-        auto *moveComp = entity.GetComponent<MovementComponent>();
-        auto *transComp = entity.GetComponent<TransformComponent>();
+        auto *moveComp = entity.GetComponent<Components::MovementComponent>();
+        auto *transComp = entity.GetComponent<Components::TransformComponent>();
 
         if (!moveComp || !transComp) return;
 
@@ -80,5 +83,5 @@ namespace MovementSystem {
             0.0f, 0.0f, transComp->transform.GetPosition().z
         ));
     }
-}
+} // namespace ECS::Systems::MovementSystem
 

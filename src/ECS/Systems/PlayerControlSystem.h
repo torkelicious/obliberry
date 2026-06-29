@@ -9,10 +9,10 @@
 #include "Core/EngineContext.h"
 #include "Core/InputManager.h"
 #include "Core/Window.h"
-#include "Renderer/Camera.h"
+#include "Rendering/Camera.h"
 
-namespace PlayerControlSystem {
-    inline void Update(Registry &registry, const EngineContext &ctx) noexcept {
+namespace ECS::Systems::PlayerControlSystem {
+    inline void Update(Registry &registry, const Core::EngineContext &ctx) noexcept {
         glm::vec2 worldPos{0.0f, 0.0f};
         if (ctx.camera && ctx.window && ctx.input) {
             worldPos = ctx.camera->MouseToWorld(
@@ -22,13 +22,15 @@ namespace PlayerControlSystem {
                 static_cast<float>(ctx.window->GetHeight())
             );
         }
-        registry.ForEach<TransformComponent, MovementComponent, MaterialComponent>(
-            [&](const Entity entity, const TransformComponent *trans, const MovementComponent *move,
-                const MaterialComponent *mat) {
+        registry.ForEach<Components::TransformComponent, Components::MovementComponent,
+            Components::MaterialComponent>(
+            [&](const Entity entity, const Components::TransformComponent *trans,
+                const Components::MovementComponent *move,
+                const Components::MaterialComponent *mat) {
                 const glm::vec2 pPos = trans->transform.GetPosition();
                 glm::vec2 targetDir;
                 if (move->isMoving && move->currentPathIndex < move->currentPath.size()) {
-                    const HexCoords nextHex = move->currentPath[move->currentPathIndex];
+                    const Map::HexCoords nextHex = move->currentPath[move->currentPathIndex];
                     targetDir = Math::HexMath::HexToWorld(nextHex) - pPos;
                 } else {
                     targetDir = worldPos - pPos;
@@ -38,4 +40,4 @@ namespace PlayerControlSystem {
             }
         );
     }
-}
+} // namespace ECS::Systems::PlayerControlSystem

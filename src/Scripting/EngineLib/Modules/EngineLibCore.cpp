@@ -5,9 +5,9 @@
 #include "Scripting/ObSLCore/Interpreter/Interpreter.h"
 
 // forward declaration
-ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, Registry &registry, EntityID id);
+ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, ECS::Registry &registry, ECS::EntityID id);
 
-void EngineLib::register_core_modules(ObSL::Interpreter &interpreter) {
+void Scripting::EngineLib::EngineLib::register_core_modules(ObSL::Interpreter &interpreter) {
     interpreter.get_global_environment()->define(
         "get_dt", interpreter.gc.allocate<ObSL::NativeFunction>(
             0,
@@ -22,7 +22,7 @@ void EngineLib::register_core_modules(ObSL::Interpreter &interpreter) {
                 if (args.empty() || !std::holds_alternative<double>(args[0])) return std::monostate{};
 
                 // the ID that was passed in from the script
-                const auto id = static_cast<EntityID>(std::get<double>(args[0]));
+                const auto id = static_cast<ECS::EntityID>(std::get<double>(args[0]));
 
                 // return the object
                 return CreateEntityObject(interp, *reg, id);
@@ -34,7 +34,7 @@ void EngineLib::register_core_modules(ObSL::Interpreter &interpreter) {
             [reg = m_registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
                 if (args.empty() || !std::holds_alternative<std::string>(args[0])) return std::monostate{};
                 const auto target_name = std::get<std::string>(args[0]);
-                for (const EntityID id: reg->GetLivingEntities()) {
+                for (const ECS::EntityID id: reg->GetLivingEntities()) {
                     if (reg->GetEntityName(id) == target_name)
                         return CreateEntityObject(interp, *reg, id);
                 }
@@ -49,7 +49,7 @@ void EngineLib::register_core_modules(ObSL::Interpreter &interpreter) {
                 if (!args.empty() && std::holds_alternative<std::string>(args[0])) {
                     name = std::get<std::string>(args[0]);
                 }
-                const EntityID new_id = reg->CreateEntity();
+                const ECS::EntityID new_id = reg->CreateEntity();
                 reg->SetEntityName(new_id, name);
                 return CreateEntityObject(interp, *reg, new_id);
             }, "CreateEntity"));
@@ -61,7 +61,7 @@ void EngineLib::register_core_modules(ObSL::Interpreter &interpreter) {
                                             const std::vector<ObSL::Value> &args) -> ObSL::Value {
                 if (args.empty() || !std::holds_alternative<std::string>(args[0])) return std::monostate{};
                 const std::string prefab_path = std::get<std::string>(args[0]);
-                const EntityID new_id = PrefabManager::Instantiate(*reg, *ctx->resources, prefab_path);
+                const ECS::EntityID new_id = IO::PrefabManager::Instantiate(*reg, *ctx->resources, prefab_path);
                 if (new_id == 0) return std::monostate{};
                 return CreateEntityObject(interp, *reg, new_id);
             }, "Instantiate"));

@@ -11,30 +11,32 @@
 #include <glm/gtx/hash.hpp>
 
 #include "Core/Utils.h"
-#include "Renderer/Mesh.h"
-#include "Renderer/Material.h"
-#include "Renderer/Lightmap.h"
+#include "Rendering/Mesh.h"
+#include "Rendering/Material.h"
+#include "Rendering/Lightmap.h"
 #include "Math/Math.h"
 
-struct MapComponent {
-    HexGrid grid;
-    std::string mapFilePath = PathUtils::Join(MAP_PATH, "default", MAP_FILE_EXTENSION);
+namespace ECS::Components {
+    struct MapComponent {
+        Map::HexGrid grid;
+        std::string mapFilePath = Core::PathUtils::Join(Core::MAP_PATH, "default", Core::MAP_FILE_EXTENSION);
 
-    // visual assets
-    std::shared_ptr<Mesh> hexMesh;
-    std::unordered_map<uint8_t, Material> typeMats;
-    std::shared_ptr<Material> outlineMat;
-    std::shared_ptr<Material> pathToMat;
+        // visual assets
+        std::shared_ptr<Rendering::Mesh> hexMesh;
+        std::unordered_map<uint8_t, Rendering::Material> typeMats;
+        std::shared_ptr<Rendering::Material> outlineMat;
+        std::shared_ptr<Rendering::Material> pathToMat;
 
-    // monobuffers
-    //               // type            transforms
-    std::unordered_map<uint8_t, std::vector<glm::mat4> > visibles;
+        // monobuffers
+        //               // type            transforms
+        std::unordered_map<uint8_t, std::vector<glm::mat4> > visibles;
 
-    // padding bounds
-    Math::Projection::AABB bufferedRenderAABB;
+        // padding bounds
+        Math::Projection::AABB bufferedRenderAABB;
 
-    // lighting
-    Lightmap lightmap;
+        // lighting
+        Rendering::Lightmap lightmap;
 
-    bool needsMeshUpdate = true;
-};
+        bool needsMeshUpdate = true;
+    };
+} // namespace ECS::Components

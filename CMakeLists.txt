@@ -37,6 +37,14 @@ FetchContent_Declare(
 set(JSON_BuildTests OFF CACHE INTERNAL "")
 FetchContent_MakeAvailable(nlohmann_json)
 
+# Fetch nfd
+FetchContent_Declare(
+    nfd
+    GIT_REPOSITORY https://github.com/btzy/nativefiledialog-extended.git
+    GIT_TAG        v1.3.0
+)
+FetchContent_MakeAvailable(nfd)
+
 # External Sources
 set(EXTERNAL_SOURCES
         # GLAD
@@ -83,15 +91,15 @@ set(ENGINE_SOURCES
         src/Core/ProjectConfig.cpp
         src/Core/KeyMappings.cpp
 
-        # Renderer
-        src/Renderer/VertexBuffer.cpp
-        src/Renderer/VertexArray.cpp
-        src/Renderer/IndexBuffer.cpp
-        src/Renderer/Renderer.cpp
-        src/Renderer/Texture.cpp
-        src/Renderer/Shader.cpp
-        src/Renderer/GLDebug.cpp
-        src/Renderer/MeshFactory.cpp
+        # Rendering
+        src/Rendering/VertexBuffer.cpp
+        src/Rendering/VertexArray.cpp
+        src/Rendering/IndexBuffer.cpp
+        src/Rendering/Renderer.cpp
+        src/Rendering/Texture.cpp
+        src/Rendering/Shader.cpp
+        src/Rendering/GLDebug.cpp
+        src/Rendering/MeshFactory.cpp
 
         # ECS / Scenes
         src/Scenes/Scene.cpp
@@ -153,6 +161,7 @@ target_link_libraries(obliberry_engine PUBLIC
         glm::glm
         obsl_core
         nlohmann_json::nlohmann_json
+        nfd
 )
 
 # Targets

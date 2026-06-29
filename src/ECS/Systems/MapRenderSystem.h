@@ -6,13 +6,13 @@
 #include "ECS/Registry.h"
 #include "Math/Frustum.h"
 #include "Math/Math.h"
-#include "Renderer/Renderer.h"
-#include "Renderer/Transform.h"
+#include "Rendering/Renderer.h"
+#include "Rendering/Transform.h"
 #include <algorithm>
 
-namespace MapRenderSystem {
+namespace ECS::Systems::MapRenderSystem {
     [[nodiscard]] inline Math::Projection::AABB CalculateBufferedAABB(const Math::Projection::AABB &viewAABB,
-                                                                      const float bufferSize = HEX_SIZE * 4.0f)
+                                                                      const float bufferSize = Core::HEX_SIZE * 4.0f)
         noexcept {
         Math::Projection::AABB buffered = viewAABB;
         buffered.min -= glm::vec2(bufferSize);
@@ -26,10 +26,10 @@ namespace MapRenderSystem {
     };
 
     [[nodiscard]] inline GridBounds GetGridBoundsForAABB(const Math::Projection::AABB &aabb) noexcept {
-        const HexCoords tl = Math::HexMath::PixelToHex({aabb.min.x, aabb.max.y});
-        const HexCoords tr = Math::HexMath::PixelToHex({aabb.max.x, aabb.max.y});
-        const HexCoords bl = Math::HexMath::PixelToHex({aabb.min.x, aabb.min.y});
-        const HexCoords br = Math::HexMath::PixelToHex({aabb.max.x, aabb.min.y});
+        const Map::HexCoords tl = Math::HexMath::PixelToHex({aabb.min.x, aabb.max.y});
+        const Map::HexCoords tr = Math::HexMath::PixelToHex({aabb.max.x, aabb.max.y});
+        const Map::HexCoords bl = Math::HexMath::PixelToHex({aabb.min.x, aabb.min.y});
+        const Map::HexCoords br = Math::HexMath::PixelToHex({aabb.max.x, aabb.min.y});
 
         const int minQ = std::min({tl.q, tr.q, bl.q, br.q});
         const int maxQ = std::max({tl.q, tr.q, bl.q, br.q});
@@ -45,9 +45,11 @@ namespace MapRenderSystem {
                outer.max.y >= inner.max.y;
     }
 
-    inline void RenderTiles(Registry &registry, Renderer &renderer, const Math::Frustum::ViewFrustum &frustum) {
-        registry.ForEach<MapComponent, MapStateComponent>(
-            [&](Entity, MapComponent *mapComp, const MapStateComponent * /*stateComp*/) {
+    inline void RenderTiles(Registry &registry, Rendering::Renderer &renderer,
+                            const Math::Frustum::ViewFrustum &frustum) {
+        registry.ForEach<Components::MapComponent, Components::MapStateComponent>(
+            [&](Entity, Components::MapComponent *mapComp,
+                const Components::MapStateComponent * /*stateComp*/) {
                 if (!mapComp->hexMesh)
                     return;
 
@@ -67,7 +69,7 @@ namespace MapRenderSystem {
 
                     for (int r = minR; r <= maxR; ++r) {
                         for (int q = minQ; q <= maxQ; ++q) {
-                            if (const Tile *tile = mapComp->grid.Get(HexCoords(q, r))) {
+                            if (const Map::Tile *tile = mapComp->grid.Get(Map::HexCoords(q, r))) {
                                 mapComp->visibles[tile->type].push_back(tile->worldMatrix);
                             }
                         }
@@ -89,24 +91,25 @@ namespace MapRenderSystem {
             });
     }
 
-    inline void RenderOverlays(Registry &registry, Renderer &renderer) {
-        registry.ForEach<MapComponent, MapStateComponent>(
-            [&](Entity, MapComponent *mapComp, const MapStateComponent *stateComp) {
+    inline void RenderOverlays(Registry &registry, Rendering::Renderer &renderer) {
+        registry.ForEach<Components::MapComponent, Components::MapStateComponent>(
+            [&](Entity, Components::MapComponent *mapComp,
+                const Components::MapStateComponent *stateComp) {
                 if (!mapComp->hexMesh || !mapComp->outlineMat->shader || !mapComp->pathToMat->shader) {
                     return;
                 }
 
                 if (stateComp->hasSelection) {
-                    const glm::vec2 worldPos = HexGrid::GetWorldPos(stateComp->selectedHex);
-                    Transform t;
+                    const glm::vec2 worldPos = Map::HexGrid::GetWorldPos(stateComp->selectedHex);
+                    Rendering::Transform t;
                     t.SetPosition({worldPos.x, worldPos.y, 0.01f});
                     t.SetScale({1.08f, 1.08f, 1.0f});
                     renderer.Submit(mapComp->hexMesh, mapComp->outlineMat.get(), t);
                 }
 
                 if (stateComp->hasPathTo) {
-                    const glm::vec2 worldPos = HexGrid::GetWorldPos(stateComp->pathTo);
-                    Transform t;
+                    const glm::vec2 worldPos = Map::HexGrid::GetWorldPos(stateComp->pathTo);
+                    Rendering::Transform t;
                     t.SetPosition({worldPos.x, worldPos.y, 0.01f});
                     t.SetScale({1.08f, 1.08f, 1.0f});
                     renderer.Submit(mapComp->hexMesh, mapComp->pathToMat.get(), t);
@@ -114,8 +117,9 @@ namespace MapRenderSystem {
             });
     }
 
-    inline void RenderAll(Registry &reg, const EngineContext &ctx, const Math::Frustum::ViewFrustum &frustum) {
+    inline void RenderAll(Registry &reg, const Core::EngineContext &ctx,
+                          const Math::Frustum::ViewFrustum &frustum) {
         RenderTiles(reg, *ctx.renderer, frustum);
         RenderOverlays(reg, *ctx.renderer);
     }
-} // namespace MapRenderSystem
+} // namespace ECS::Systems::MapRenderSystem

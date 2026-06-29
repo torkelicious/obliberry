@@ -5,14 +5,14 @@
 #include "ECS/Components/PointLightComponent.h"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Registry.h"
-#include "Renderer/Renderer.h"
-#include "Renderer/Texture.h"
+#include "Rendering/Renderer.h"
+#include "Rendering/Texture.h"
 #include <algorithm>
 #include <glm/glm.hpp>
 #include <memory>
 
-namespace LightingSystem {
-    inline void GenerateLightmap(MapComponent &map) {
+namespace ECS::Systems::LightingSystem {
+    inline void GenerateLightmap(Components::MapComponent &map) {
         auto &[texture, mapOffset, mapSize, ambient, accumulationBuffer, pixelBuffer] = map.lightmap;
         // world space bounding box of all tiles
         glm::vec2 minWorld(std::numeric_limits<float>::max());
@@ -24,26 +24,26 @@ namespace LightingSystem {
             maxWorld = glm::max(maxWorld, wp);
         }
         // padding
-        minWorld -= glm::vec2(HEX_SIZE);
-        maxWorld += glm::vec2(HEX_SIZE);
+        minWorld -= glm::vec2(Core::HEX_SIZE);
+        maxWorld += glm::vec2(Core::HEX_SIZE);
 
         mapOffset = minWorld;
         mapSize = maxWorld - minWorld;
 
         // determine texture resolution
-        const int texW = std::max(1, static_cast<int>(mapSize.x / HEX_SIZE) * LIGHTMAP_TEXELS_PER_HEX);
-        const int texH = std::max(1, static_cast<int>(mapSize.y / HEX_SIZE) * LIGHTMAP_TEXELS_PER_HEX);
+        const int texW = std::max(1, static_cast<int>(mapSize.x / Core::HEX_SIZE) * Core::LIGHTMAP_TEXELS_PER_HEX);
+        const int texH = std::max(1, static_cast<int>(mapSize.y / Core::HEX_SIZE) * Core::LIGHTMAP_TEXELS_PER_HEX);
 
         // resize and fill cache
         map.lightmap.accumulationBuffer.resize(texW * texH);
         map.lightmap.pixelBuffer.assign(texW * texH * 4, 255);
 
         if (!texture || texture->GetWidth() != texW || texture->GetHeight() != texH) {
-            texture = std::make_shared<Texture>(texW, texH, map.lightmap.pixelBuffer.data());
+            texture = std::make_shared<Rendering::Texture>(texW, texH, map.lightmap.pixelBuffer.data());
 
-            Renderer::SubmitInitTask([tex = texture] { tex->InitGL(); });
+            Rendering::Renderer::SubmitInitTask([tex = texture] { tex->InitGL(); });
         } else {
-            Renderer::SubmitInitTask(
+            Rendering::Renderer::SubmitInitTask(
                 [tex = texture, w = texW, h = texH, data = std::move(map.lightmap.pixelBuffer)]() mutable {
                     tex->UpdateData(data.data(), w, h);
                     data.clear();
@@ -53,8 +53,8 @@ namespace LightingSystem {
     }
 
     inline void Update(Registry &reg) {
-        MapComponent *mapComp = nullptr;
-        reg.ForEach<MapComponent>([&](Entity, MapComponent *map) {
+        Components::MapComponent *mapComp = nullptr;
+        reg.ForEach<Components::MapComponent>([&](Entity, Components::MapComponent *map) {
             if (!mapComp)
                 mapComp = map;
         });
@@ -62,7 +62,8 @@ namespace LightingSystem {
             return;
 
         bool hasAnyLight = false;
-        reg.ForEach<PointLightComponent>([&](Entity, const PointLightComponent *) { hasAnyLight = true; });
+        reg.ForEach<Components::PointLightComponent>(
+            [&](Entity, const Components::PointLightComponent *) { hasAnyLight = true; });
         if (!hasAnyLight)
             return;
 
@@ -81,8 +82,9 @@ namespace LightingSystem {
         std::ranges::fill(accumulationBuffer, glm::vec3(ambient));
 
         int lightCount = 0;
-        reg.ForEach<PointLightComponent, TransformComponent>(
-            [&](Entity, const PointLightComponent *light, const TransformComponent *transform) {
+        reg.ForEach<Components::PointLightComponent, Components::TransformComponent>(
+            [&](Entity, const Components::PointLightComponent *light,
+                const Components::TransformComponent *transform) {
                 lightCount++;
                 const glm::vec3 pos = transform->transform.GetPosition();
 
@@ -125,10 +127,11 @@ namespace LightingSystem {
             pixelBuffer[pIdx + 2] = static_cast<unsigned char>(clamped.b * 255.0f);
             pixelBuffer[pIdx + 3] = 255;
         }
-        Renderer::SubmitInitTask([tex = texture, w = texW, h = texH, data = std::move(pixelBuffer)]() mutable {
-            tex->UpdateData(data.data(), w, h);
-            data.clear();
-        });
+        Rendering::Renderer::SubmitInitTask(
+            [tex = texture, w = texW, h = texH, data = std::move(pixelBuffer)]() mutable {
+                tex->UpdateData(data.data(), w, h);
+                data.clear();
+            });
         pixelBuffer.assign(texW * texH * 4, 255);
     }
-} // namespace LightingSystem
+} // namespace ECS::Systems::LightingSystem

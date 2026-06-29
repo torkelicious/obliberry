@@ -1,25 +1,35 @@
+#ifdef _WIN32
+#define GLFW_EXPOSE_NATIVE_WIN32
+elif __APPLE__
+#define GLFW_EXPOSE_NATIVE_COCOA
+#elif __linux__
+#define GLFW_EXPOSE_NATIVE_X11
+#define GLFW_EXPOSE_NATIVE_WAYLAND
+#endif
+
 #include "Application.h"
 #include "Core/EngineContext.h"
-#include "Renderer/MeshFactory.h"
-#include "Renderer/Renderer.h"
+#include "Rendering/MeshFactory.h"
+#include "Rendering/Renderer.h"
 #include "Sound/AudioEngine.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <chrono>
-#include <glad/glad.h>
+#include <nfd.hpp>
 #include <thread>
 #include <utility>
 
 #include "Editor/EditorLayer.h"
 
-Application::Application(ProjectConfig config, std::unique_ptr<ApplicationLayer> layer)
+Core::Application::Application(Core::ProjectConfig config, std::unique_ptr<Core::ApplicationLayer> layer)
     : m_Project(std::move(config)),
       m_Window(m_Project.windowWidth, m_Project.windowHeight, m_Project.windowTitle.c_str(), m_Project.fullscreen),
       m_Layer(std::move(layer)) {
     m_Window.SetInputManager(&m_InputManager);
-    m_AudioEngine = AudioEngine::Create();
+    m_AudioEngine = Sound::AudioEngine::Create();
 }
 
 // a bit goofy but idk what else 2 do
@@ -53,7 +63,7 @@ static void FreeImDrawData(ImDrawData *data) {
     IM_DELETE(data);
 }
 
-void Application::Run() {
+void Core::Application::Run() {
     glfwMakeContextCurrent(m_Window.GetNativeWindow());
 
     glEnable(GL_BLEND);
@@ -76,10 +86,10 @@ void Application::Run() {
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Docking
     // io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; for later
 
-    Renderer renderer;
-    Camera camera;
+    Rendering::Renderer renderer;
+    Rendering::Camera camera;
 
-    EngineContext context;
+    Core::EngineContext context;
     context.projectConfig = &m_Project;
     context.window = &m_Window;
     context.input = &m_InputManager;
@@ -90,7 +100,7 @@ void Application::Run() {
     context.scriptEngine = &m_ScriptEngine;
     context.audioEngine = m_AudioEngine.get();
 
-    MeshFactory::RegisterAllMeshFactories();
+    Rendering::MeshFactory::RegisterAllMeshFactories();
 
     float initialAspect = static_cast<float>(m_Window.GetWidth()) / static_cast<float>(m_Window.GetHeight());
     renderer.SetCamera(camera, initialAspect);
@@ -100,15 +110,22 @@ void Application::Run() {
     m_Layer->Init(context);
 
     ImGui_ImplOpenGL3_CreateDeviceObjects();
+    //
+    //if (NFD::Init() != NFD_OKAY) {
+    //    std::cerr << "NativeFileDialogs-e failed to init: " << NFD::GetError() << "\n";
+    //}
+    //nfdwindowhandle_t parentWindow;
+    //NFD_GetNativeWindowFromGLFWWindow(m_Window.GetNativeWindow(), &parentWindow);
+    //NFD_SetDisplayPropertiesFromGLFW();
 
     glfwMakeContextCurrent(nullptr);
 
     m_Running = true;
-    m_RenderThread = std::thread(&Application::RenderThreadWorker, this, &renderer);
+    m_RenderThread = std::thread(&Core::Application::RenderThreadWorker, this, &renderer);
 
     while (!m_Window.ShouldClose()) {
         m_InputManager.BeginFrame();
-        Window::PollEvents();
+        Core::Window::PollEvents();
 
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -174,13 +191,14 @@ void Application::Run() {
     }
 }
 
-void Application::Shutdown() const {
+void Core::Application::Shutdown() const {
     m_Layer->Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
+    /*NFD::Quit();*/
 }
 
-void Application::RenderThreadWorker(Renderer *renderer) {
+void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer) {
     glfwMakeContextCurrent(m_Window.GetNativeWindow());
 
     while (m_Running) {
@@ -213,12 +231,12 @@ void Application::RenderThreadWorker(Renderer *renderer) {
             continue;
         }
 
-        Renderer::ProcessInitQ();
+        renderer->ProcessInitQ();
 
         if (const auto fbo = renderer->GetEditorFramebuffer()) {
             // Render to FrameBuffer if editor mode
             fbo->Bind();
-            Renderer::ApplyClearColor();
+            renderer->ApplyClearColor();
             glClear(GL_COLOR_BUFFER_BIT);
 
             renderer->Flush(static_cast<size_t>(frameIdx));
@@ -229,7 +247,7 @@ void Application::RenderThreadWorker(Renderer *renderer) {
             fbo->ClearEntityIDAttachment();
         } else {
             glViewport(0, 0, m_Window.GetWidth(), m_Window.GetHeight());
-            Renderer::ApplyClearColor();
+            renderer->ApplyClearColor();
             glClear(GL_COLOR_BUFFER_BIT);
 
             renderer->Flush(static_cast<size_t>(frameIdx));
@@ -263,7 +281,6 @@ void Application::RenderThreadWorker(Renderer *renderer) {
             i = nullptr;
         }
     }
-
     ImGui_ImplOpenGL3_Shutdown();
     glfwMakeContextCurrent(nullptr);
 }

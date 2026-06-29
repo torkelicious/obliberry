@@ -29,7 +29,7 @@ namespace {
     bool showSceneSwitcher = true;
 }
 
-void GameLayer::DrawInterface() {
+void Game::GameLayer::DrawInterface() {
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("obliberry")) {
             ImGui::MenuItem("Performance Overlay", nullptr, &showPerformanceOverlay);
@@ -87,14 +87,14 @@ void GameLayer::DrawInterface() {
         if (ImGui::Begin("Entity Inspector", &showEntityInspector)) {
             auto &registry = m_SceneManager.GetCurrentScene()->GetRegistry();
             const auto &livingEntities = registry.GetLivingEntities();
-            static auto selectedEntity = static_cast<EntityID>(-1);
-            if (selectedEntity != static_cast<EntityID>(-1) && !registry.IsValid(selectedEntity)) {
-                selectedEntity = static_cast<EntityID>(-1);
+            static auto selectedEntity = static_cast<ECS::EntityID>(-1);
+            if (selectedEntity != static_cast<ECS::EntityID>(-1) && !registry.IsValid(selectedEntity)) {
+                selectedEntity = static_cast<ECS::EntityID>(-1);
             }
 
             ImGui::BeginChild("Entity List", ImVec2(150, 0), true);
-            for (const EntityID id: livingEntities) {
-                Entity entity(id, &registry);
+            for (const ECS::EntityID id: livingEntities) {
+                ECS::Entity entity(id, &registry);
                 std::string label = entity.GetName();
                 if (label.empty()) {
                     label = "Entity " + std::to_string(id);
@@ -109,8 +109,8 @@ void GameLayer::DrawInterface() {
 
             ImGui::SameLine();
             ImGui::BeginChild("Component View", ImVec2(0, 0), true);
-            if (selectedEntity != static_cast<EntityID>(-1)) {
-                const Entity entity(selectedEntity, &registry);
+            if (selectedEntity != static_cast<ECS::EntityID>(-1)) {
+                const ECS::Entity entity(selectedEntity, &registry);
                 std::string headerName = entity.GetName();
                 if (headerName.empty()) {
                     headerName = "Entity " + std::to_string(selectedEntity);
@@ -122,9 +122,9 @@ void GameLayer::DrawInterface() {
                 // to be used in editor or something later on??
                 // this is a lil messy..
                 // TransformComponent
-                if (entity.HasComponent<TransformComponent>()) {
+                if (entity.HasComponent<ECS::Components::TransformComponent>()) {
                     if (ImGui::CollapsingHeader("Transform Component", ImGuiTreeNodeFlags_DefaultOpen)) {
-                        auto *tc = entity.GetComponent<TransformComponent>();
+                        auto *tc = entity.GetComponent<ECS::Components::TransformComponent>();
                         glm::vec3 pos = tc->transform.GetPosition();
                         glm::vec3 rot = tc->transform.GetRotation();
                         glm::vec3 scale = tc->transform.GetScale();
@@ -142,27 +142,27 @@ void GameLayer::DrawInterface() {
                 }
 
                 // MapComponent
-                if (entity.HasComponent<MapComponent>()) {
+                if (entity.HasComponent<ECS::Components::MapComponent>()) {
                     if (ImGui::CollapsingHeader("Map Component")) {
-                        auto *mc = entity.GetComponent<MapComponent>();
+                        auto *mc = entity.GetComponent<ECS::Components::MapComponent>();
                         ImGui::Text("Map File: %s", mc->mapFilePath.c_str());
                         ImGui::Checkbox("Needs Mesh Update", &mc->needsMeshUpdate);
                     }
                 }
 
                 // MapStateComponent
-                if (entity.HasComponent<MapStateComponent>()) {
+                if (entity.HasComponent<ECS::Components::MapStateComponent>()) {
                     if (ImGui::CollapsingHeader("Map State Component")) {
-                        auto *msc = entity.GetComponent<MapStateComponent>();
+                        auto *msc = entity.GetComponent<ECS::Components::MapStateComponent>();
                         ImGui::Checkbox("Has Selection", &msc->hasSelection);
                         ImGui::Checkbox("Has Path To", &msc->hasPathTo);
                     }
                 }
 
                 // PointLightComponent
-                if (entity.HasComponent<PointLightComponent>()) {
+                if (entity.HasComponent<ECS::Components::PointLightComponent>()) {
                     if (ImGui::CollapsingHeader("Point Light Component")) {
-                        auto *plc = entity.GetComponent<PointLightComponent>();
+                        auto *plc = entity.GetComponent<ECS::Components::PointLightComponent>();
                         ImGui::ColorEdit3("Color", &plc->color.x);
                         ImGui::DragFloat("Radius", &plc->radius, 0.5f, 0.0f, 1000.0f);
                         ImGui::DragFloat("Intensity", &plc->intensity, 0.05f, 0.0f, 10.0f);
@@ -170,17 +170,17 @@ void GameLayer::DrawInterface() {
                 }
 
                 // DirectionalTextureComponent
-                if (entity.HasComponent<DirectionalTextureComponent>()) {
+                if (entity.HasComponent<ECS::Components::DirectionalTextureComponent>()) {
                     if (ImGui::CollapsingHeader("Directional Texture Component")) {
-                        auto *dtc = entity.GetComponent<DirectionalTextureComponent>();
+                        auto *dtc = entity.GetComponent<ECS::Components::DirectionalTextureComponent>();
                         ImGui::SliderInt("Sprite Index", &dtc->index, 0, 5);
                     }
                 }
 
                 // MovementComponent
-                if (entity.HasComponent<MovementComponent>()) {
+                if (entity.HasComponent<ECS::Components::MovementComponent>()) {
                     if (ImGui::CollapsingHeader("Movement Component")) {
-                        auto *mov = entity.GetComponent<MovementComponent>();
+                        auto *mov = entity.GetComponent<ECS::Components::MovementComponent>();
                         ImGui::Checkbox("Is Moving", &mov->isMoving);
                         ImGui::DragFloat("Time Per Step", &mov->timePerStep, 0.01f, 0.01f, 5.0f);
                         ImGui::Text("Path Length: %zu", mov->currentPath.size());
@@ -193,23 +193,23 @@ void GameLayer::DrawInterface() {
                 }
 
                 // MeshComponent
-                if (entity.HasComponent<MeshComponent>()) {
+                if (entity.HasComponent<ECS::Components::MeshComponent>()) {
                     if (ImGui::CollapsingHeader("Mesh Component")) {
-                        const auto *mc = entity.GetComponent<MeshComponent>();
+                        const auto *mc = entity.GetComponent<ECS::Components::MeshComponent>();
                         ImGui::Text("Mesh Loaded: %s", mc->mesh ? "Yes" : "No");
                     }
                 }
 
                 // MaterialComponent
-                if (entity.HasComponent<MaterialComponent>()) {
+                if (entity.HasComponent<ECS::Components::MaterialComponent>()) {
                     if (ImGui::CollapsingHeader("Material Component")) {
-                        const auto *mat = entity.GetComponent<MaterialComponent>();
+                        const auto *mat = entity.GetComponent<ECS::Components::MaterialComponent>();
                         ImGui::Text("Material Loaded: %s", mat->material ? "Yes" : "No");
                     }
                 }
 
                 // BillboardTagComponent
-                if (entity.HasComponent<BillboardTagComponent>()) {
+                if (entity.HasComponent<ECS::Components::BillboardTagComponent>()) {
                     if (ImGui::CollapsingHeader("Billboard Component")) {
                         ImGui::TextWrapped("(Tag Component)");
                     }
@@ -228,38 +228,43 @@ void GameLayer::DrawInterface() {
             ImGui::InputText("Name", nameBuf, sizeof(nameBuf));
 
             if (ImGui::Button("Load Scene")) {
-                m_PendingSceneLoad = SceneProperties{
-                    PathUtils::Join(SCENE_PATH, nameBuf, SCENE_FILE_EXTENSION)
+                m_PendingSceneLoad = Scenes::SceneProperties{
+                    Core::PathUtils::Join(Core::SCENE_PATH, nameBuf, Core::SCENE_FILE_EXTENSION)
                 };
             }
             ImGui::SameLine();
             if (ImGui::Button("Save Scene") && m_SceneManager.GetCurrentScene()) {
-                const std::string savePath = PathUtils::Join(SCENE_PATH, nameBuf, SCENE_FILE_EXTENSION);
-                SceneIO::Serialize(savePath, *m_SceneManager.GetCurrentScene());
+                const std::string savePath = Core::PathUtils::Join(Core::SCENE_PATH, nameBuf,
+                                                                   Core::SCENE_FILE_EXTENSION);
+                IO::SceneIO::Serialize(savePath, *m_SceneManager.GetCurrentScene());
             }
 
             if (ImGui::Button("Load Map") && m_SceneManager.GetCurrentScene()) {
                 auto &scene = *m_SceneManager.GetCurrentScene();
                 auto &registry = scene.GetRegistry();
-                registry.ForEach<MapComponent>([&](Entity, MapComponent *mapComp) {
-                    const std::string newPath = PathUtils::Join(MAP_PATH, nameBuf, MAP_FILE_EXTENSION);
-                    mapComp->mapFilePath = newPath;
-                    if (MapIO::Deserialize(newPath, mapComp->grid)) {
-                        MapRuntimeSystem::OnMapChanged(registry, scene.GetContext());
-                    }
-                });
+                registry.ForEach<ECS::Components::MapComponent>(
+                    [&](ECS::Entity, ECS::Components::MapComponent *mapComp) {
+                        const std::string newPath = Core::PathUtils::Join(
+                            Core::MAP_PATH, nameBuf, Core::MAP_FILE_EXTENSION);
+                        mapComp->mapFilePath = newPath;
+                        if (IO::MapIO::Deserialize(newPath, mapComp->grid)) {
+                            ECS::Systems::MapRuntimeSystem::OnMapChanged(registry, scene.GetContext());
+                        }
+                    });
             }
 
             ImGui::SameLine();
             if (ImGui::Button("Save Map") && m_SceneManager.GetCurrentScene()) {
                 auto &scene = *m_SceneManager.GetCurrentScene();
                 auto &registry = scene.GetRegistry();
-                registry.ForEach<MapComponent>([&](Entity, const MapComponent *mapComp) {
-                    const std::string newPath = PathUtils::Join(MAP_PATH, nameBuf, MAP_FILE_EXTENSION);
-                    if ([[maybe_unused]] const bool ok = MapIO::Serialize(newPath, mapComp->grid)) {
-                        std::cout << "Saved!" << "\n";
-                    }
-                });
+                registry.ForEach<ECS::Components::MapComponent>(
+                    [&](ECS::Entity, const ECS::Components::MapComponent *mapComp) {
+                        const std::string newPath = Core::PathUtils::Join(
+                            Core::MAP_PATH, nameBuf, Core::MAP_FILE_EXTENSION);
+                        if ([[maybe_unused]] const bool ok = IO::MapIO::Serialize(newPath, mapComp->grid)) {
+                            std::cout << "Saved!" << "\n";
+                        }
+                    });
             }
         }
         ImGui::End();

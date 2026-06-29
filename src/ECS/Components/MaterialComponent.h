@@ -1,7 +1,9 @@
 #pragma once
 
-#include "Renderer/Material.h"
+#include "Rendering/Material.h"
 
-struct MaterialComponent {
-    std::shared_ptr<Material> material;
-};
+namespace ECS::Components {
+    struct MaterialComponent {
+        std::shared_ptr<Rendering::Material> material;
+    };
+} // namespace ECS::Components

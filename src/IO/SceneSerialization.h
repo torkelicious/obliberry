@@ -4,12 +4,14 @@
 
 #include <nlohmann/json.hpp>
 
-class Scene;
+namespace Scenes {
+    class Scene;
+}
 
-namespace SceneIO {
-    bool Deserialize(const std::string &path, Scene &scene);
+namespace IO::SceneIO {
+    bool Deserialize(const std::string &path, Scenes::Scene &scene);
 
-    bool Serialize(const std::string &path, Scene &scene);
+    bool Serialize(const std::string &path, Scenes::Scene &scene);
 
     template<typename T, typename Func>
     void SerializeAssets(
@@ -20,5 +22,4 @@ namespace SceneIO {
             arr.push_back(serializer(id, asset));
         }
     }
-}
-
+} // namespace IO::SceneIO

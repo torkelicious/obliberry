@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
-using EntityID = uint32_t;
-constexpr EntityID MAX_ENTITIES = 5000;
+namespace ECS {
+    using EntityID = uint32_t;
+    constexpr EntityID MAX_ENTITIES = 5000;
+} // namespace ECS
 

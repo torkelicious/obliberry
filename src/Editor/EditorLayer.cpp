@@ -15,6 +15,7 @@
 #include <memory>
 #include <string>
 
+#include "IO/VFS.h"
 #include "Core/InputManager.h"
 #include "Core/Window.h"
 
@@ -27,28 +28,30 @@
  *  fix mouse offset when running via editor view - kinda done in a hacky way??
  */
 
-bool EditorLayer::s_ShouldBuildDock = true;
+bool Editor::EditorLayer::s_ShouldBuildDock = true;
 
-void EditorLayer::Init(EngineContext &ctx) {
+void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
     m_Context = ctx;
     m_Context.camera = &m_Camera;
     m_Context.sceneManager = &m_SceneManager;
     m_Input = m_Context.input;
     m_Context.scriptEngine->Set_Stdout(m_InterpreterOutput);
-    if (Project::GetActive()) {
-        const std::string startScene = Project::GetActive()->GetConfig().startScenePath;
-        m_SceneManager.LoadScene(std::make_unique<Scene>(m_Context, SceneProperties{.ScenePath = startScene}));
+    if (Core::Project::GetActive()) {
+        const std::string startScene = Core::Project::GetActive()->GetConfig().startScenePath;
+        m_SceneManager.LoadScene(
+            std::make_unique<Scenes::Scene>(m_Context, Scenes::SceneProperties{.ScenePath = startScene}));
 
         m_Scene = m_SceneManager.GetCurrentScene();
         m_Registry = &m_Scene->GetRegistry();
     }
 }
 
-void EditorLayer::Update(const float dt) {
-    if (Project::GetActive() && !m_Scene) {
-        const std::string startScene = Project::GetActive()->GetConfig().startScenePath;
+void Editor::EditorLayer::Update(const float dt) {
+    if (Core::Project::GetActive() && !m_Scene) {
+        const std::string startScene = Core::Project::GetActive()->GetConfig().startScenePath;
 
-        m_SceneManager.LoadScene(std::make_unique<Scene>(m_Context, SceneProperties{.ScenePath = startScene}));
+        m_SceneManager.LoadScene(
+            std::make_unique<Scenes::Scene>(m_Context, Scenes::SceneProperties{.ScenePath = startScene}));
 
         m_Scene = m_SceneManager.GetCurrentScene();
         m_Registry = &m_Scene->GetRegistry();
@@ -63,16 +66,16 @@ void EditorLayer::Update(const float dt) {
     if (m_Playing) {
         m_SceneManager.Update(dt);
     } else {
-        LightingSystem::Update(*m_Registry);
+        ECS::Systems::LightingSystem::Update(*m_Registry);
     }
     HandleInput(dt);
 }
 
-void EditorLayer::Render() {
+void Editor::EditorLayer::Render() {
     ImGuizmo::BeginFrame();
     DrawInterface();
 
-    if (!Project::GetActive())
+    if (!Core::Project::GetActive())
         return;
 
     if (m_Context.camera) {
@@ -83,10 +86,10 @@ void EditorLayer::Render() {
     m_SceneManager.Render();
 }
 
-void EditorLayer::Shutdown() {
+void Editor::EditorLayer::Shutdown() {
 }
 
-void EditorLayer::HandleInput(const float dt) {
+void Editor::EditorLayer::HandleInput(const float dt) {
     if (m_Input->IsKeyPressed("Esc")) {
         m_Context.window->Close();
     }
@@ -134,14 +137,14 @@ void EditorLayer::HandleInput(const float dt) {
     }
 }
 
-void EditorLayer::LoadScene(const std::string &path) {
+void Editor::EditorLayer::LoadScene(const std::string &path) {
 }
 
-void EditorLayer::SaveScene() {
+void Editor::EditorLayer::SaveScene() {
 }
 
-void EditorLayer::DrawInterface() {
-    if (!Project::GetActive()) {
+void Editor::EditorLayer::DrawInterface() {
+    if (!Core::Project::GetActive()) {
         DrawProjectHub();
         return;
     }
@@ -153,7 +156,7 @@ void EditorLayer::DrawInterface() {
     DrawUtilityWindows();
 }
 
-void EditorLayer::DrawProjectHub() {
+void Editor::EditorLayer::DrawProjectHub() {
     ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(600, 400));
 
@@ -164,9 +167,9 @@ void EditorLayer::DrawProjectHub() {
     ImGui::Separator();
 
     if (ImGui::Button("Create New Project (TestGame)", ImVec2(250, 50))) {
-        const char *homeDir = getenv("HOME");
-        const std::string baseDir = homeDir ? std::string(homeDir) + "/OBLI_TEST_Projects" : ".";
-        Project::NewProject(baseDir, "TestGame");
+        const std::filesystem::path homeDir = IO::VFS::GetHomeDirectory();
+        const std::filesystem::path baseDir = homeDir / "OBLI_TEST_Projects";
+        Core::Project::NewProject(baseDir, "TestGame");
     }
 
     // ImGui::SameLine();
@@ -179,7 +182,7 @@ void EditorLayer::DrawProjectHub() {
     ImGui::End();
 }
 
-void EditorLayer::DrawDockSpace() {
+void Editor::EditorLayer::DrawDockSpace() {
     const ImGuiID dockspaceId = ImGui::GetID("EditorDockSpace");
     ImGui::DockSpaceOverViewport(dockspaceId, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
@@ -216,7 +219,7 @@ void EditorLayer::DrawDockSpace() {
 }
 
 
-void EditorLayer::DrawEditorPanels() {
+void Editor::EditorLayer::DrawEditorPanels() {
     m_RegistryPanel.SetContext(m_Scene, m_Context);
     m_InspectorPanel.SetContext(m_Scene, m_Context);
     m_ViewportPanel.SetContext(m_Scene, m_Context);
@@ -224,10 +227,10 @@ void EditorLayer::DrawEditorPanels() {
     const int clickedID = m_ViewportPanel.GetSelectedEntityID();
 
     if (clickedID != -1) {
-        const EntityID eID = static_cast<EntityID>(clickedID);
+        const ECS::EntityID eID = static_cast<ECS::EntityID>(clickedID);
 
         if (m_Registry->IsValid(eID)) {
-            const Entity selectedEntity(eID, m_Registry);
+            const ECS::Entity selectedEntity(eID, m_Registry);
             m_RegistryPanel.SetSelectedEntity(selectedEntity);
         }
 
@@ -241,7 +244,7 @@ void EditorLayer::DrawEditorPanels() {
     m_ViewportPanel.OnImGuiRender();
 }
 
-void EditorLayer::DrawGameView() const {
+void Editor::EditorLayer::DrawGameView() const {
     ImGui::Begin("Game View");
     const ImVec2 gameViewportSize = ImGui::GetContentRegionAvail();
 
@@ -262,7 +265,7 @@ void EditorLayer::DrawGameView() const {
     ImGui::End();
 }
 
-void EditorLayer::DrawUtilityWindows() {
+void Editor::EditorLayer::DrawUtilityWindows() {
     FlushInterpreterOutput();
 
     ImGui::Begin("Console");
@@ -290,7 +293,7 @@ void EditorLayer::DrawUtilityWindows() {
     ImGui::End();
 }
 
-void EditorLayer::DrawToolbar() {
+void Editor::EditorLayer::DrawToolbar() const {
     ImGuiWindowClass window_class;
     window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoTabBar;
     ImGui::SetNextWindowClass(&window_class);
@@ -302,8 +305,8 @@ void EditorLayer::DrawToolbar() {
                  ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse |
                  ImGuiWindowFlags_NoTitleBar);
 
-    float size = ImGui::GetWindowHeight() - 4.0f;
-    ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.5f) - (size * 0.5f));
+    const float size = ImGui::GetWindowHeight() - 4.0f;
+    ImGui::SetCursorPosX(ImGui::GetWindowContentRegionMax().x * 0.5f - size * 0.5f);
 
     if (m_Playing) {
         if (ImGui::Button("Stop", ImVec2(size, size))) {

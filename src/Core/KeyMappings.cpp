@@ -1,7 +1,7 @@
 #include <unordered_map>
 #include "InputManager.h"
 
-int InputManager::GetKeyFromName(const std::string &keyName) {
+int Core::InputManager::GetKeyFromName(const std::string &keyName) {
     static const std::unordered_map<std::string, int> keyMap = {
         // Letters
         {"A", GLFW_KEY_A}, {"B", GLFW_KEY_B}, {"C", GLFW_KEY_C}, {"D", GLFW_KEY_D},

@@ -5,25 +5,27 @@
 #include "../Scenes/SceneManager.h"
 #include "../Core/ApplicationLayer.h"
 
-class GameLayer : public ApplicationLayer {
-public:
-    void Init(EngineContext &ctx) override;
+namespace Game {
+    class GameLayer : public Core::ApplicationLayer {
+    public:
+        void Init(Core::EngineContext &ctx) override;
 
-    void Update(float dt) override;
+        void Update(float dt) override;
 
-    void Render() override;
+        void Render() override;
 
-    void Shutdown() override;
+        void Shutdown() override;
 
-    [[nodiscard]] Camera &GetCamera() const { return *m_Context.camera; }
-    void SetContext(const EngineContext &context) { m_Context = context; }
+        [[nodiscard]] Rendering::Camera &GetCamera() const { return *m_Context.camera; }
+        void SetContext(const Core::EngineContext &context) { m_Context = context; }
 
-private:
-    void DrawInterface();
+    private:
+        void DrawInterface();
 
-    bool m_GameIsRunning = true;
-    SceneManager m_SceneManager;
+        bool m_GameIsRunning = true;
+        Scenes::SceneManager m_SceneManager;
 
-    EngineContext m_Context;
-    std::optional<SceneProperties> m_PendingSceneLoad;
-};
+        Core::EngineContext m_Context;
+        std::optional<Scenes::SceneProperties> m_PendingSceneLoad;
+    };
+} // namespace Game

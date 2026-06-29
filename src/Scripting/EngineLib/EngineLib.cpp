@@ -11,9 +11,9 @@
  */
 
 // Helper Object
-ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, Registry &registry, EntityID id) {
+ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, ECS::Registry &registry, ECS::EntityID id) {
     auto *obj = interpreter->gc.allocate<ObSL::ObSLObject>();
-    EngineLibFactories::GCProtectGuard guard(interpreter, obj);
+    Scripting::EngineLib::EngineLibFactories::GCProtectGuard guard(interpreter, obj);
 
     obj->fields["id"] = static_cast<double>(id);
     obj->fields["name"] = registry.GetEntityName(id);
@@ -32,15 +32,27 @@ ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, Registry &r
         if (args.empty() || !std::holds_alternative<std::string>(args[0])) return std::monostate{};
         const std::string comp_name = std::get<std::string>(args[0]);
 
-        if (comp_name == "Transform") return EngineLibFactories::CreateTransformObject(interp, registry, id);
-        if (comp_name == "PointLight") return EngineLibFactories::CreatePointLightObject(interp, registry, id);
-        if (comp_name == "Movement") return EngineLibFactories::CreateMovementObject(interp, registry, id);
-        if (comp_name == "MapState") return EngineLibFactories::CreateMapStateObject(interp, registry, id);
-        if (comp_name == "DirectionalTexture")
-            return EngineLibFactories::CreateDirectionalTextureObject(
+        if (comp_name == "Transform")
+            return Scripting::EngineLib::EngineLibFactories::CreateTransformObject(
                 interp, registry, id);
-        if (comp_name == "BillboardTag") return EngineLibFactories::CreateBillboardTagObject(interp, registry, id);
-        if (comp_name == "DestroyTag") return EngineLibFactories::CreateDestroyTagObject(interp, registry, id);
+        if (comp_name == "PointLight")
+            return Scripting::EngineLib::EngineLibFactories::CreatePointLightObject(
+                interp, registry, id);
+        if (comp_name == "Movement")
+            return Scripting::EngineLib::EngineLibFactories::CreateMovementObject(
+                interp, registry, id);
+        if (comp_name == "MapState")
+            return Scripting::EngineLib::EngineLibFactories::CreateMapStateObject(
+                interp, registry, id);
+        if (comp_name == "DirectionalTexture")
+            return Scripting::EngineLib::EngineLibFactories::CreateDirectionalTextureObject(
+                interp, registry, id);
+        if (comp_name == "BillboardTag")
+            return Scripting::EngineLib::EngineLibFactories::CreateBillboardTagObject(
+                interp, registry, id);
+        if (comp_name == "DestroyTag")
+            return Scripting::EngineLib::EngineLibFactories::CreateDestroyTagObject(
+                interp, registry, id);
 
         return std::monostate{};
     };
@@ -49,8 +61,8 @@ ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, Registry &r
         if (!registry.IsValid(id)) return std::monostate{};
         if (args.empty() || !std::holds_alternative<std::string>(args[0])) return std::monostate{};
         if (const std::string comp_name = std::get<std::string>(args[0]); comp_name == "DestroyTag") {
-            if (!registry.HasComponent<DestroyTagComponent>(id)) {
-                registry.AddComponent<DestroyTagComponent>(id, DestroyTagComponent{});
+            if (!registry.HasComponent<ECS::Components::DestroyTagComponent>(id)) {
+                registry.AddComponent<ECS::Components::DestroyTagComponent>(id, ECS::Components::DestroyTagComponent{});
             }
         }
         return std::monostate{};
@@ -62,10 +74,10 @@ ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, Registry &r
         if (!registry.IsValid(id)) return std::monostate{};
         // args Component Name , The object/data
         if (args.size() == 2 && std::holds_alternative<std::string>(args[0])) {
-            if (!registry.HasComponent<CustomDataComponent>(id)) {
-                registry.AddComponent<CustomDataComponent>(id, CustomDataComponent{});
+            if (!registry.HasComponent<ECS::Components::CustomDataComponent>(id)) {
+                registry.AddComponent<ECS::Components::CustomDataComponent>(id, ECS::Components::CustomDataComponent{});
             }
-            auto *comp = registry.GetComponent<CustomDataComponent>(id);
+            auto *comp = registry.GetComponent<ECS::Components::CustomDataComponent>(id);
             const std::string compName = std::get<std::string>(args[0]);
 
             comp->script_components[compName] = args[1];
@@ -77,7 +89,7 @@ ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, Registry &r
         if (!registry.IsValid(id)) return std::monostate{};
         //  name
         if (args.size() == 1 && std::holds_alternative<std::string>(args[0])) {
-            if (auto *comp = registry.GetComponent<CustomDataComponent>(id)) {
+            if (auto *comp = registry.GetComponent<ECS::Components::CustomDataComponent>(id)) {
                 if (const auto compName = std::get<std::string>(args[0]); comp->script_components.contains(compName)) {
                     return comp->script_components[compName]; // the script object
                 }
@@ -98,7 +110,7 @@ ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, Registry &r
     return obj;
 }
 
-void EngineLib::register_modules(ObSL::Interpreter &interpreter) {
+void Scripting::EngineLib::EngineLib::register_modules(ObSL::Interpreter &interpreter) {
     register_core_modules(interpreter);
     register_input_modules(interpreter);
     register_camera_modules(interpreter);

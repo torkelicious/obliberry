@@ -1,8 +1,13 @@
 #pragma once
 
 #include <memory>
-class Mesh;
 
-struct MeshComponent {
-    std::shared_ptr<Mesh> mesh;
-};
+namespace Rendering {
+    class Mesh;
+}
+
+namespace ECS::Components {
+    struct MeshComponent {
+        std::shared_ptr<Rendering::Mesh> mesh;
+    };
+} // namespace ECS::Components

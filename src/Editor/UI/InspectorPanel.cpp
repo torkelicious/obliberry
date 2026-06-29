@@ -2,7 +2,7 @@
 #include "EditorWidgets.h"
 #include <imgui.h>
 
-InspectorPanel::InspectorPanel() {
+Editor::UI::InspectorPanel::InspectorPanel() {
     m_Widgets.push_back(std::make_unique<TransformWidget>());
     m_Widgets.push_back(std::make_unique<PointLightWidget>());
     m_Widgets.push_back(std::make_unique<MovementWidget>());
@@ -15,9 +15,9 @@ InspectorPanel::InspectorPanel() {
     m_Widgets.push_back(std::make_unique<CustomDataWidget>());
 }
 
-InspectorPanel::~InspectorPanel() = default;
+Editor::UI::InspectorPanel::~InspectorPanel() = default;
 
-void InspectorPanel::OnImGuiRender() {
+void Editor::UI::InspectorPanel::OnImGuiRender() {
     ImGui::Begin("Inspector");
 
     m_IsHovered = ImGui::IsWindowHovered();
@@ -25,7 +25,7 @@ void InspectorPanel::OnImGuiRender() {
     if (m_SceneContext && static_cast<bool>(m_SelectedEntity)) {
         std::string name = m_SelectedEntity.GetName();
         if (name.empty()) {
-            name = "Entity " + std::to_string(static_cast<EntityID>(m_SelectedEntity));
+            name = "Entity " + std::to_string(static_cast<ECS::EntityID>(m_SelectedEntity));
         }
         ImGui::Text("Entity: %s", name.c_str());
         ImGui::Separator();

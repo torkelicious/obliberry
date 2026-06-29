@@ -2,17 +2,17 @@
 
 #include <iostream>
 #include <stdexcept>
-#include "Renderer/Mesh.h"
-#include "Renderer/Renderer.h"
-#include "Renderer/Shader.h"
-#include "Renderer/Texture.h"
+#include "Rendering/Mesh.h"
+#include "Rendering/Renderer.h"
+#include "Rendering/Shader.h"
+#include "Rendering/Texture.h"
 
-std::unordered_map<std::string, AssetLoader::MeshFactory>
-AssetLoader::s_MeshFactories;
+std::unordered_map<std::string, IO::AssetLoader::MeshFactory>
+IO::AssetLoader::s_MeshFactories;
 
-void AssetLoader::LoadAssets(
+void IO::AssetLoader::LoadAssets(
     const json &assets,
-    ResourceManager &resources) {
+    Core::ResourceManager &resources) {
     if (assets.contains("textures"))
         LoadTextures(assets["textures"], resources);
 
@@ -26,53 +26,53 @@ void AssetLoader::LoadAssets(
         LoadMaterials(assets["materials"], resources);
 }
 
-void AssetLoader::RegisterMeshFactory(
+void IO::AssetLoader::RegisterMeshFactory(
     const std::string &name,
     MeshFactory factory) {
     s_MeshFactories[name] = std::move(factory);
 }
 
-void AssetLoader::LoadTextures(
+void IO::AssetLoader::LoadTextures(
     const json &textures,
-    ResourceManager &resources) {
+    Core::ResourceManager &resources) {
     for (const auto &tex: textures) {
-        auto texture = resources.Load<Texture>(
+        auto texture = resources.Load<Rendering::Texture>(
             tex.at("id").get<std::string>(),
             tex.at("path").get<std::string>()
         );
-        Renderer::SubmitInitTask([texture] {
+        Rendering::Renderer::SubmitInitTask([texture] {
             texture->InitGL();
         });
     }
 }
 
 
-void AssetLoader::LoadShaders(
+void IO::AssetLoader::LoadShaders(
     const json &shaders,
-    ResourceManager &resources) {
+    Core::ResourceManager &resources) {
     for (const auto &shader: shaders) {
-        auto s = resources.Load<Shader>(
+        auto s = resources.Load<Rendering::Shader>(
             shader.at("id").get<std::string>(),
             shader.at("vertex").get<std::string>(),
             shader.at("fragment").get<std::string>()
         );
-        Renderer::SubmitInitTask([s] {
+        Rendering::Renderer::SubmitInitTask([s] {
             s->InitGL();
         });
     }
 }
 
 
-void AssetLoader::LoadMaterials(
+void IO::AssetLoader::LoadMaterials(
     const json &materials,
-    ResourceManager &resources) {
+    Core::ResourceManager &resources) {
     for (const auto &mat: materials) {
         const std::string id = mat.at("id").get<std::string>();
         const std::string shaderId = mat.at("shader").get<std::string>();
         const std::string textureId = mat.at("texture").get<std::string>();
 
-        auto shader = resources.Get<Shader>(shaderId);
-        auto texture = resources.Get<Texture>(textureId);
+        auto shader = resources.Get<Rendering::Shader>(shaderId);
+        auto texture = resources.Get<Rendering::Texture>(textureId);
 
         if (!shader)
             std::cerr << "Missing shader: " + shaderId + "\n";
@@ -88,20 +88,20 @@ void AssetLoader::LoadMaterials(
             };
         }
 
-        resources.LoadFromFactory<Material>(
+        resources.LoadFromFactory<Rendering::Material>(
             id,
             [shader, texture, color] {
-                return std::make_shared<Material>(
-                    Material{shader, texture, color}
+                return std::make_shared<Rendering::Material>(
+                    Rendering::Material{shader, texture, color}
                 );
             }
         );
     }
 }
 
-void AssetLoader::LoadMeshes(
+void IO::AssetLoader::LoadMeshes(
     const json &meshes,
-    ResourceManager &resources) {
+    Core::ResourceManager &resources) {
     for (const auto &mesh: meshes) {
         const std::string id = mesh.at("id").get<std::string>();
         const std::string factoryName = mesh.at("factory").get<std::string>();
@@ -111,7 +111,7 @@ void AssetLoader::LoadMeshes(
                 "AssetLoader: Unknown mesh factory '" + factoryName + "'");
         }
 
-        auto m = resources.LoadFromFactory<Mesh>(
+        auto m = resources.LoadFromFactory<Rendering::Mesh>(
             id,
             [factory = it->second, factoryName] {
                 auto fac_mesh = factory();
@@ -120,7 +120,7 @@ void AssetLoader::LoadMeshes(
             }
         );
 
-        Renderer::SubmitInitTask([m] {
+        Rendering::Renderer::SubmitInitTask([m] {
             m->InitGL();
         });
     }

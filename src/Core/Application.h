@@ -14,50 +14,52 @@
 
 struct ImDrawData;
 
-class Application {
-public:
-    explicit Application(ProjectConfig config, std::unique_ptr<ApplicationLayer> layer);
+namespace Core {
+    class Application {
+    public:
+        explicit Application(ProjectConfig config, std::unique_ptr<ApplicationLayer> layer);
 
-    ~Application() {
-        Shutdown();
-    }
+        ~Application() {
+            Shutdown();
+        }
 
-    void Run();
+        void Run();
 
-    void Shutdown() const;
+        void Shutdown() const;
 
-private:
-    enum class FrameState : uint8_t {
-        Free,
-        Ready,
-        Rendering
+    private:
+        enum class FrameState : uint8_t {
+            Free,
+            Ready,
+            Rendering
+        };
+
+        struct FrameSync {
+            std::mutex mutex;
+            std::condition_variable cv;
+            FrameState state = FrameState::Free;
+        };
+
+        void RenderThreadWorker(Rendering::Renderer *renderer);
+
+        ProjectConfig m_Project;
+        Window m_Window;
+        InputManager m_InputManager;
+        ResourceManager m_ResourceManager;
+        ObSL::Interpreter m_ScriptEngine;
+        std::unique_ptr<Sound::AudioEngine> m_AudioEngine;
+
+        std::unique_ptr<ApplicationLayer> m_Layer;
+
+        std::thread m_RenderThread;
+        std::mutex m_RenderMutex;
+        std::condition_variable m_RenderCV;
+
+        std::atomic<bool> m_Running{true};
+
+        FrameSync m_Frames[2];
+        int m_MainFrameIndex = 0;
+
+        ImDrawData *m_FrameImGuiData[2] = {nullptr, nullptr};
     };
-
-    struct FrameSync {
-        std::mutex mutex;
-        std::condition_variable cv;
-        FrameState state = FrameState::Free;
-    };
-
-    void RenderThreadWorker(Renderer *renderer);
-
-    ProjectConfig m_Project;
-    Window m_Window;
-    InputManager m_InputManager;
-    ResourceManager m_ResourceManager;
-    ObSL::Interpreter m_ScriptEngine;
-    std::unique_ptr<AudioEngine> m_AudioEngine;
-
-    std::unique_ptr<ApplicationLayer> m_Layer;
-
-    std::thread m_RenderThread;
-    std::mutex m_RenderMutex;
-    std::condition_variable m_RenderCV;
-
-    std::atomic<bool> m_Running{true};
-
-    FrameSync m_Frames[2];
-    int m_MainFrameIndex = 0;
-
-    ImDrawData *m_FrameImGuiData[2] = {nullptr, nullptr};
-};
+} // namespace Core

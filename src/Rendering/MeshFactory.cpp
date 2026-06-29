@@ -4,7 +4,7 @@
 
 #include "IO/AssetLoader.h"
 
-namespace MeshFactory {
+namespace Rendering::MeshFactory {
     MeshData CreateQuad() {
         MeshData data;
 
@@ -28,7 +28,7 @@ namespace MeshFactory {
         data.vertices.push_back({{0.0f, 0.0f, 0.0f}, {0.5f, 0.5f}});
 
         for (int i = 0; i < 6; i++) {
-            const float angle = (i * 60.0f - 90.0f) * PI / 180.0f;
+            const float angle = (i * 60.0f - 90.0f) * Core::PI / 180.0f;
 
             float x = std::cos(angle) * size;
             float y = std::sin(angle) * size;
@@ -83,7 +83,7 @@ namespace MeshFactory {
         });
 
         for (unsigned int i = 0; i < segments; i++) {
-            const float theta = 2.0f * PI * i / segments;
+            const float theta = 2.0f * Core::PI * i / segments;
 
             float x = radX * cosf(theta);
             float y = radY * sinf(theta);
@@ -123,7 +123,7 @@ namespace MeshFactory {
         });
 
         for (unsigned int i = 0; i < sides; i++) {
-            const float theta = 2.0f * PI * i / sides;
+            const float theta = 2.0f * Core::PI * i / sides;
 
             float x = radius * cosf(theta);
             float y = radius * sinf(theta);
@@ -156,7 +156,7 @@ namespace MeshFactory {
         MeshData data;
 
         for (unsigned int i = 0; i < segments; i++) {
-            const float theta = 2.0f * PI * i / segments;
+            const float theta = 2.0f * Core::PI * i / segments;
 
             const float c = cosf(theta);
             const float s = sinf(theta);
@@ -264,47 +264,47 @@ namespace MeshFactory {
     }
 
     void RegisterAllMeshFactories() {
-        AssetLoader::RegisterMeshFactory("Quad", []() -> std::shared_ptr<Mesh> {
+        IO::AssetLoader::RegisterMeshFactory("Quad", []() -> std::shared_ptr<Mesh> {
             return std::make_shared<Mesh>(CreateQuad());
         });
 
-        AssetLoader::RegisterMeshFactory("PointTopHex", []() -> std::shared_ptr<Mesh> {
+        IO::AssetLoader::RegisterMeshFactory("PointTopHex", []() -> std::shared_ptr<Mesh> {
             return std::make_shared<Mesh>(CreatePointTopHex(0.5f));
         });
 
-        AssetLoader::RegisterMeshFactory("ETriang", []() -> std::shared_ptr<Mesh> {
+        IO::AssetLoader::RegisterMeshFactory("ETriang", []() -> std::shared_ptr<Mesh> {
             return std::make_shared<Mesh>(CreateEquiTriangle(0.5f));
         });
 
-        AssetLoader::RegisterMeshFactory("Ellipse", []() -> std::shared_ptr<Mesh> {
+        IO::AssetLoader::RegisterMeshFactory("Ellipse", []() -> std::shared_ptr<Mesh> {
             return std::make_shared<Mesh>(CreateEllipse(0.5f, 0.5f, 50));
         });
 
-        AssetLoader::RegisterMeshFactory("Circle", []() -> std::shared_ptr<Mesh> {
+        IO::AssetLoader::RegisterMeshFactory("Circle", []() -> std::shared_ptr<Mesh> {
             return std::make_shared<Mesh>(CreateEllipse(0.5f, 0.5f, 50));
         });
 
-        AssetLoader::RegisterMeshFactory("Pentagon", []() -> std::shared_ptr<Mesh> {
+        IO::AssetLoader::RegisterMeshFactory("Pentagon", []() -> std::shared_ptr<Mesh> {
             return std::make_shared<Mesh>(CreateRegularPolygon(5, 0.5f));
         });
 
-        AssetLoader::RegisterMeshFactory("Hexagon", []() -> std::shared_ptr<Mesh> {
+        IO::AssetLoader::RegisterMeshFactory("Hexagon", []() -> std::shared_ptr<Mesh> {
             return std::make_shared<Mesh>(CreateRegularPolygon(6, 0.5f));
         });
 
-        AssetLoader::RegisterMeshFactory("Octagon", []() -> std::shared_ptr<Mesh> {
+        IO::AssetLoader::RegisterMeshFactory("Octagon", []() -> std::shared_ptr<Mesh> {
             return std::make_shared<Mesh>(CreateRegularPolygon(8, 0.5f));
         });
 
-        AssetLoader::RegisterMeshFactory("Ring", []() -> std::shared_ptr<Mesh> {
+        IO::AssetLoader::RegisterMeshFactory("Ring", []() -> std::shared_ptr<Mesh> {
             return std::make_shared<Mesh>(CreateRing(0.3f, 0.5f, 50));
         });
 
-        AssetLoader::RegisterMeshFactory("Sector", []() -> std::shared_ptr<Mesh> {
-            return std::make_shared<Mesh>(CreateSector(0.5f, 0.0f, PI * 0.5f, 32));
+        IO::AssetLoader::RegisterMeshFactory("Sector", []() -> std::shared_ptr<Mesh> {
+            return std::make_shared<Mesh>(CreateSector(0.5f, 0.0f, Core::PI * 0.5f, 32));
         });
 
-        AssetLoader::RegisterMeshFactory("Diamond", []() -> std::shared_ptr<Mesh> {
+        IO::AssetLoader::RegisterMeshFactory("Diamond", []() -> std::shared_ptr<Mesh> {
             return std::make_shared<Mesh>(CreateDiamond(1.0f, 1.0f));
         });
     }

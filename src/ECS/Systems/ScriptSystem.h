@@ -14,10 +14,11 @@
 #include "Scripting/ObSLCore/Lexer/Lexer.h"
 #include "Scripting/ObSLCore/Parser/Parser.h"
 
-ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, Registry &registry, EntityID id);
+ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, ECS::Registry &registry, ECS::EntityID id);
 
-namespace ScriptSystem {
-    inline void InitializeScript(Registry &registry, EntityID entityId, ScriptComponent *script,
+namespace ECS::Systems::ScriptSystem {
+    inline void InitializeScript(Registry &registry, EntityID entityId,
+                                 Components::ScriptComponent *script,
                                  ObSL::Interpreter *interpreter, size_t scriptIndex = 0) {
         if (scriptIndex >= script->scriptPaths.size() || script->isInitialized[scriptIndex] || !interpreter) return;
 
@@ -94,53 +95,57 @@ namespace ScriptSystem {
         }
     }
 
-    inline void Update(Registry &registry, const EngineContext &ctx) {
+    inline void Update(Registry &registry, const Core::EngineContext &ctx) {
         if (!ctx.scriptEngine) return;
         constexpr ObSL::Token call_token{
             ObSL::TokenType::LEFT_PAREN, "(", 0, 0, 0, 0
         };
 
-        registry.ForEach<ScriptComponent>([&](const Entity entity, ScriptComponent *script) {
-            const auto raw_id = static_cast<EntityID>(entity);
+        registry.ForEach<Components::ScriptComponent>(
+            [&](const Entity entity, Components::ScriptComponent *script) {
+                const auto raw_id = static_cast<EntityID>(entity);
 
-            for (size_t i = 0; i < script->scriptPaths.size(); i++) {
-                if (!script->isInitialized[i]) {
-                    InitializeScript(registry, raw_id, script, ctx.scriptEngine, i);
-                }
+                for (size_t i = 0; i < script->scriptPaths.size(); i++) {
+                    if (!script->isInitialized[i]) {
+                        InitializeScript(registry, raw_id, script, ctx.scriptEngine, i);
+                    }
 
-                try {
-                    std::filesystem::path resolvedPath = IO::VFS::Resolve(script->scriptPaths[i]);
-                    if (std::filesystem::exists(resolvedPath)) {
-                        if (auto current_time = std::filesystem::last_write_time(resolvedPath);
-                            current_time > script->lastModified[i]) {
-                            script->isInitialized[i] = false;
-                            InitializeScript(registry, raw_id, script, ctx.scriptEngine, i);
-                            std::cout << "[ScriptSystem] Hot-reloaded script: " << script->scriptPaths[i] << "\n";
+                    try {
+                        std::filesystem::path resolvedPath = IO::VFS::Resolve(script->scriptPaths[i]);
+                        if (std::filesystem::exists(resolvedPath)) {
+                            if (auto current_time = std::filesystem::last_write_time(resolvedPath);
+                                current_time > script->lastModified[i]) {
+                                script->isInitialized[i] = false;
+                                InitializeScript(registry, raw_id, script, ctx.scriptEngine, i);
+                                std::cout << "[ScriptSystem] Hot-reloaded script: " << script->scriptPaths[i] << "\n";
+                            }
                         }
+                    } catch (const std::exception &e) {
+                        std::cerr << "[ScriptSystem] reload error: " << e.what() << "\n";
                     }
-                } catch (const std::exception &e) {
-                    std::cerr << "[ScriptSystem] reload error: " << e.what() << "\n";
-                }
 
-                try {
-                    if (script->isInitialized[i] && script->on_update_functions[i]) {
-                        const std::vector<ObSL::Value> args = {static_cast<double>(ctx.deltaTime)};
-                        ctx.scriptEngine->set_current_environment(script->instance_envs[i]);
-                        script->on_update_functions[i]->call(ctx.scriptEngine, args, call_token);
+                    try {
+                        if (script->isInitialized[i] && script->on_update_functions[i]) {
+                            const std::vector<ObSL::Value> args = {static_cast<double>(ctx.deltaTime)};
+                            ctx.scriptEngine->set_current_environment(script->instance_envs[i]);
+                            script->on_update_functions[i]->call(ctx.scriptEngine, args, call_token);
+                        }
+                    } catch (const std::exception &e) {
+                        std::cerr << "[ScriptSystem] Exception in script on_update (" << script->scriptPaths[i] << "): "
+                                <<
+                                e.what() << "\n";
+                    } catch (...) {
+                        std::cerr << "[ScriptSystem] Unknown Exception in script on_update loop (" << script->
+                                scriptPaths[i]
+                                << ")\n";
                     }
-                } catch (const std::exception &e) {
-                    std::cerr << "[ScriptSystem] Exception in script on_update (" << script->scriptPaths[i] << "): " <<
-                            e.what() << "\n";
-                } catch (...) {
-                    std::cerr << "[ScriptSystem] Unknown Exception in script on_update loop (" << script->scriptPaths[i]
-                            << ")\n";
                 }
-            }
-        });
+            });
 
-        registry.ForEach<DestroyTagComponent>(
-            [&](const Entity entity, DestroyTagComponent *) {
-                if (const auto script = registry.GetComponent<ScriptComponent>(static_cast<EntityID>(entity))) {
+        registry.ForEach<Components::DestroyTagComponent>(
+            [&](const Entity entity, Components::DestroyTagComponent *) {
+                if (const auto script = registry.GetComponent<Components::ScriptComponent>(
+                    static_cast<EntityID>(entity))) {
                     for (size_t i = 0; i < script->scriptPaths.size(); i++) {
                         try {
                             if (script->isInitialized[i] && script->on_destroy_functions[i]) {
@@ -159,26 +164,28 @@ namespace ScriptSystem {
             });
     }
 
-    inline void OnSceneExit(Registry &registry, const EngineContext &ctx) {
+    inline void OnSceneExit(Registry &registry, const Core::EngineContext &ctx) {
         if (!ctx.scriptEngine) return;
         constexpr ObSL::Token call_token{
             ObSL::TokenType::LEFT_PAREN, "(", 0, 0, 0, 0
         };
-        registry.ForEach<ScriptComponent>([&](const Entity /*entity*/, const ScriptComponent *script) {
-            for (size_t i = 0; i < script->scriptPaths.size(); i++) {
-                try {
-                    if (script->isInitialized[i] && script->on_exit_functions[i]) {
-                        const std::vector<ObSL::Value> args = {static_cast<double>(ctx.deltaTime)};
-                        ctx.scriptEngine->set_current_environment(script->instance_envs[i]);
-                        script->on_exit_functions[i]->call(ctx.scriptEngine, args, call_token);
+        registry.ForEach<Components::ScriptComponent>(
+            [&](const Entity /*entity*/, const Components::ScriptComponent *script) {
+                for (size_t i = 0; i < script->scriptPaths.size(); i++) {
+                    try {
+                        if (script->isInitialized[i] && script->on_exit_functions[i]) {
+                            const std::vector<ObSL::Value> args = {static_cast<double>(ctx.deltaTime)};
+                            ctx.scriptEngine->set_current_environment(script->instance_envs[i]);
+                            script->on_exit_functions[i]->call(ctx.scriptEngine, args, call_token);
+                        }
+                    } catch (const std::exception &e) {
+                        std::cerr << "[ScriptSystem] Exception in on_exit (" << script->scriptPaths[i] << "): " << e.
+                                what()
+                                << "\n";
+                    } catch (...) {
+                        std::cerr << "[ScriptSystem] Unknown Exception in on_exit loop\n";
                     }
-                } catch (const std::exception &e) {
-                    std::cerr << "[ScriptSystem] Exception in on_exit (" << script->scriptPaths[i] << "): " << e.what()
-                            << "\n";
-                } catch (...) {
-                    std::cerr << "[ScriptSystem] Unknown Exception in on_exit loop\n";
                 }
-            }
-        });
+            });
     }
-}
+} // namespace ECS::Systems::ScriptSystem

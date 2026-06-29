@@ -1,19 +1,19 @@
 #define GLFW_INCLUDE_NONE
 #include "../EngineLib.h"
 #include "Core/InputManager.h"
-#include "Renderer/Camera.h"
+#include "Rendering/Camera.h"
 #include "Core/Window.h"
-#include "Renderer/Renderer.h"
+#include "Rendering/Renderer.h"
 #include "Scripting/ObSLCore/Interpreter/Interpreter.h"
 
-void EngineLib::register_input_modules(ObSL::Interpreter &interpreter) {
+void Scripting::EngineLib::EngineLib::register_input_modules(ObSL::Interpreter &interpreter) {
     // KEYBOARD
     interpreter.get_global_environment()->define(
         "Input_IsKeyDown", interpreter.gc.allocate<ObSL::NativeFunction>(
             1,
             [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
                 if (!ctx || !ctx->input || args.empty() || !std::holds_alternative<std::string>(args[0])) return false;
-                return ctx->input->IsKeyDown(InputManager::GetKeyFromName(std::get<std::string>(args[0])));
+                return ctx->input->IsKeyDown(Core::InputManager::GetKeyFromName(std::get<std::string>(args[0])));
             }, "Input_IsKeyDown"));
 
     interpreter.get_global_environment()->define(
@@ -21,7 +21,7 @@ void EngineLib::register_input_modules(ObSL::Interpreter &interpreter) {
             1,
             [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
                 if (!ctx || !ctx->input || args.empty() || !std::holds_alternative<std::string>(args[0])) return false;
-                return ctx->input->IsKeyPressed(InputManager::GetKeyFromName(std::get<std::string>(args[0])));
+                return ctx->input->IsKeyPressed(Core::InputManager::GetKeyFromName(std::get<std::string>(args[0])));
             }, "Input_IsKeyPressed"));
 
     interpreter.get_global_environment()->define(
@@ -29,7 +29,7 @@ void EngineLib::register_input_modules(ObSL::Interpreter &interpreter) {
             1,
             [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
                 if (!ctx || !ctx->input || args.empty() || !std::holds_alternative<std::string>(args[0])) return false;
-                return ctx->input->IsKeyReleased(InputManager::GetKeyFromName(std::get<std::string>(args[0])));
+                return ctx->input->IsKeyReleased(Core::InputManager::GetKeyFromName(std::get<std::string>(args[0])));
             }, "Input_IsKeyReleased"));
 
     // MOUSE BUTTON

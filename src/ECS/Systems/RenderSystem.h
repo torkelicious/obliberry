@@ -6,13 +6,16 @@
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/ECS.h"
 #include "Math/Frustum.h"
-#include "Renderer/Renderer.h"
+#include "Rendering/Renderer.h"
 
-namespace RenderSystem {
-    inline void Render(Registry &registry, Renderer &renderer, const Math::Frustum::FrustumPlanes &frustum3D) noexcept {
-        registry.ForEach<MeshComponent, MaterialComponent, TransformComponent>(
-            [&](const Entity entity, const MeshComponent *meshComp, const MaterialComponent *matComp,
-                const TransformComponent *transComp) {
+namespace ECS::Systems::RenderSystem {
+    inline void Render(Registry &registry, Rendering::Renderer &renderer,
+                       const Math::Frustum::FrustumPlanes &frustum3D) noexcept {
+        registry.ForEach<Components::MeshComponent, Components::MaterialComponent,
+            Components::TransformComponent>(
+            [&](const Entity entity, const Components::MeshComponent *meshComp,
+                const Components::MaterialComponent *matComp,
+                const Components::TransformComponent *transComp) {
                 if (!meshComp || !meshComp->mesh)
                     return;
                 if (!matComp || !matComp->material)
@@ -30,9 +33,9 @@ namespace RenderSystem {
                     return;
                 }
 
-                const Texture *textureOverride = nullptr;
+                const Rendering::Texture *textureOverride = nullptr;
 
-                if (const auto *dir = entity.GetComponent<DirectionalTextureComponent>()) {
+                if (const auto *dir = entity.GetComponent<Components::DirectionalTextureComponent>()) {
                     if (!dir->textures.empty()) {
                         if (const auto idx = dir->index % dir->textures.size(); dir->textures[idx]) {
                             textureOverride = dir->textures[idx].get();
@@ -49,4 +52,4 @@ namespace RenderSystem {
                                 entityInt);
             });
     }
-} // namespace RenderSystem
+} // namespace ECS::Systems::RenderSystem

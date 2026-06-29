@@ -1,7 +1,7 @@
 #include "RegistryPanel.h"
 #include <imgui.h>
 
-void RegistryPanel::OnImGuiRender() {
+void Editor::UI::RegistryPanel::OnImGuiRender() {
     ImGui::Begin("Registry");
 
     m_IsHovered = ImGui::IsWindowHovered();
@@ -14,8 +14,8 @@ void RegistryPanel::OnImGuiRender() {
         ImGui::Separator();
 
         ImGui::BeginChild("Entity List", ImVec2(0, 0), true);
-        for (const EntityID id: livingEntities) {
-            Entity entity(id, &registry);
+        for (const ECS::EntityID id: livingEntities) {
+            ECS::Entity entity(id, &registry);
             std::string label = entity.GetName();
             if (label.empty()) {
                 label = "Entity " + std::to_string(id);

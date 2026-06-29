@@ -1,7 +1,8 @@
 #pragma once
 
 #include <glm/glm.hpp>
-#include "Renderer/Camera.h"
+#include "Rendering/Camera.h"
+#include "Core/Constants.h"
 
 namespace Math::Projection {
     struct AABB {
@@ -33,7 +34,7 @@ namespace Math::Projection {
         return {hit.x, hit.y};
     }
 
-    inline AABB GetCameraGroundAABB(const Camera *camera, const float aspect) {
+    inline AABB GetCameraGroundAABB(const Rendering::Camera *camera, const float aspect) {
         AABB bounds;
         const glm::mat4 invVP = glm::inverse(camera->GetVP(aspect));
 
@@ -44,7 +45,7 @@ namespace Math::Projection {
         bounds.Expand(UnprojectToGround(invVP, -1.0f, 1.0f)); // Top-Left
 
         // padding buffer
-        constexpr float padding = HEX_SIZE * 2;
+        constexpr float padding = Core::HEX_SIZE * 2;
         bounds.min -= glm::vec2(padding);
         bounds.max += glm::vec2(padding);
 

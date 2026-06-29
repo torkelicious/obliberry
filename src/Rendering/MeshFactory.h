@@ -2,7 +2,7 @@
 
 #include "Mesh.h"
 
-namespace MeshFactory {
+namespace Rendering::MeshFactory {
     MeshData CreateQuad();
 
     MeshData CreatePointTopHex(float size = 0.5f);
@@ -37,6 +37,4 @@ namespace MeshFactory {
     void AppendMesh(MeshData &dst, const MeshData &src);
 
     void RegisterAllMeshFactories();
-}
-
-
+} // namespace Rendering::MeshFactory

@@ -3,7 +3,7 @@
 #include <cstdint>
 #include "../Map/Hex.h"
 
-namespace MapIO {
+namespace IO::MapIO {
     // #pragma pack stops the compiler stuffing invisible padding bytes :))
 #pragma pack(push, 1)
     struct MapFileHeader {
@@ -17,15 +17,15 @@ namespace MapIO {
     struct SerializedTile {
         int16_t q;
         int16_t r;
-        TileType type;
+        Map::TileType type;
         bool walkable;
     };
 #pragma pack(pop)
 
     // return true if sucessfull, false if not.
-    [[nodiscard]] bool Serialize(const std::string &path, const HexGrid &grid);
+    [[nodiscard]] bool Serialize(const std::string &path, const Map::HexGrid &grid);
 
-    [[nodiscard]] bool Deserialize(const std::string &path, HexGrid &grid);
+    [[nodiscard]] bool Deserialize(const std::string &path, Map::HexGrid &grid);
 
     bool CheckHeader(const MapFileHeader &header, const std::string &expected);
 
@@ -35,4 +35,4 @@ namespace MapIO {
         const size_t payloadSize = tileCount * sizeof(SerializedTile);
         return headerSize + payloadSize;
     }
-}
+} // namespace IO::MapIO

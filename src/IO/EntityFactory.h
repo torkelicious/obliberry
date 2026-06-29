@@ -9,24 +9,28 @@
 #include <string>
 
 // for asset linking
-using ComponentDeserializer = std::function<void(Entity &, const nlohmann::json &, ResourceManager &)>;
-using ComponentSerializer = std::function<void(Entity &, nlohmann::json &, ResourceManager &)>;
+using ComponentDeserializer = std::function<void(ECS::Entity &, const nlohmann::json &, Core::ResourceManager &)>;
+using ComponentSerializer = std::function<void(ECS::Entity &, nlohmann::json &, Core::ResourceManager &)>;
 
-class EntityFactory {
-public:
-    static void RegisterDeserializers();
+namespace IO {
+    class EntityFactory {
+    public:
+        static void RegisterDeserializers();
 
-    static void RegisterSerializers();
+        static void RegisterSerializers();
 
-    static const std::unordered_map<std::string, ComponentDeserializer> &GetDeserializers();
+        static const std::unordered_map<std::string, ComponentDeserializer> &GetDeserializers();
 
-    static const std::unordered_map<std::string, ComponentSerializer> &GetSerializers();
+        static const std::unordered_map<std::string, ComponentSerializer> &GetSerializers();
 
-    static void DeserializeEntity(Entity &entity, const nlohmann::json &entityData, ResourceManager &resources);
+        static void DeserializeEntity(ECS::Entity &entity, const nlohmann::json &entityData,
+                                      Core::ResourceManager &resources);
 
-    static void SerializeEntity(Entity &entity, nlohmann::json &outEntityData, ResourceManager &resources);
+        static void SerializeEntity(ECS::Entity &entity, nlohmann::json &outEntityData,
+                                    Core::ResourceManager &resources);
 
-private:
-    static std::unordered_map<std::string, ComponentDeserializer> s_Deserializers;
-    static std::unordered_map<std::string, ComponentSerializer> s_Serializers;
-};
+    private:
+        static std::unordered_map<std::string, ComponentDeserializer> s_Deserializers;
+        static std::unordered_map<std::string, ComponentSerializer> s_Serializers;
+    };
+} // namespace IO

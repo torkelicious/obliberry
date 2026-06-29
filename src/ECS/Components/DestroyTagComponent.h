@@ -1,6 +1,8 @@
 #pragma once
 
 
-// also empty tag like billboard
-struct DestroyTagComponent {
-};
+namespace ECS::Components {
+    // also empty tag like billboard
+    struct DestroyTagComponent {
+    };
+} // namespace ECS::Components

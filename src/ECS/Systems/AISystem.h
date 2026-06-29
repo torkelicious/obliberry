@@ -11,16 +11,18 @@
 #include "ECS/Systems/DirectionalAnimationSystem.h"
 #include <random>
 
-namespace AISystem {
+namespace ECS::Systems::AISystem {
     inline void Update(Registry &registry, const float dt) noexcept {
-        const MapComponent *map = nullptr;
-        registry.ForEach<MapComponent>([&](Entity, const MapComponent *m) { map = m; });
+        const Components::MapComponent *map = nullptr;
+        registry.ForEach<Components::MapComponent>([&](Entity, const Components::MapComponent *m) {
+            map = m;
+        });
         if (!map) return;
 
-        HexCoords playerHex{0, 0};
+        Map::HexCoords playerHex{0, 0};
 
-        registry.ForEach<TransformComponent>(
-            [&](const Entity entity, const TransformComponent *pt) {
+        registry.ForEach<Components::TransformComponent>(
+            [&](const Entity entity, const Components::TransformComponent *pt) {
                 if (entity.GetName() == "Player") {
                     const glm::vec3 pos = pt->transform.GetPosition();
                     playerHex = Math::HexMath::PixelToHex({pos.x, pos.y});
@@ -34,16 +36,18 @@ namespace AISystem {
         std::uniform_int_distribution<size_t> dist(0, map->grid.walkableTiles.size() - 1);
         std::uniform_real_distribution timeDist(1.0f, 3.0f);
 
-        registry.ForEach<MovementComponent, TransformComponent, MaterialComponent>(
-            [&](const Entity entity, MovementComponent *move, const TransformComponent *trans,
-                const MaterialComponent *mat) {
+        registry.ForEach<Components::MovementComponent, Components::TransformComponent,
+            Components::MaterialComponent>(
+            [&](const Entity entity, Components::MovementComponent *move,
+                const Components::TransformComponent *trans,
+                const Components::MaterialComponent *mat) {
                 if (entity.GetName() == "Player") return;
 
                 if (!move->isMoving) {
                     move->idleTimer -= dt;
 
                     if (move->idleTimer <= 0.0f) {
-                        HexCoords target;
+                        Map::HexCoords target;
                         bool valid = false;
                         int attempts = 10;
 
@@ -54,7 +58,7 @@ namespace AISystem {
 
                         if (valid) {
                             const glm::vec3 pos3 = trans->transform.GetPosition();
-                            const HexCoords startHex = Math::HexMath::PixelToHex({pos3.x, pos3.y});
+                            const Map::HexCoords startHex = Math::HexMath::PixelToHex({pos3.x, pos3.y});
 
                             map->grid.FindPath(startHex, target, move->currentPath);
 
@@ -76,4 +80,4 @@ namespace AISystem {
             }
         );
     }
-}
+} // namespace ECS::Systems::AISystem

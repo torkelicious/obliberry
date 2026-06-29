@@ -5,13 +5,13 @@
 #include "Constants.h"
 #include "imgui.h"
 
-Window::Window(const unsigned int width, const unsigned int height, const char *title, const bool fullscreen) {
+Core::Window::Window(const unsigned int width, const unsigned int height, const char *title, const bool fullscreen) {
     if (!Init(width, height, title, fullscreen)) {
         throw std::runtime_error("Failed to initialize window");
     }
 }
 
-Window::~Window() {
+Core::Window::~Window() {
     if (m_Window) {
         glfwDestroyWindow(m_Window);
         m_Window = nullptr;
@@ -21,15 +21,15 @@ Window::~Window() {
     }
 }
 
-void Window::PollEvents() {
+void Core::Window::PollEvents() {
     glfwPollEvents();
 }
 
-void Window::SwapBuffers() const {
+void Core::Window::SwapBuffers() const {
     glfwSwapBuffers(m_Window);
 }
 
-bool Window::Init(const unsigned int width, const unsigned int height, const char *title, const bool fullscreen) {
+bool Core::Window::Init(const unsigned int width, const unsigned int height, const char *title, const bool fullscreen) {
     /*
      * TODO: window resizing causes temporary stuttering/freezes
      *   seems to occur specifically on NVIDIA (Proprietary Drivers) on KWin,
@@ -76,7 +76,7 @@ bool Window::Init(const unsigned int width, const unsigned int height, const cha
     return true;
 }
 
-void Window::WindowResizeCallback(GLFWwindow *window, const int width, const int height) {
+void Core::Window::WindowResizeCallback(GLFWwindow *window, const int width, const int height) {
     auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
     if (!self) return;
 
@@ -88,15 +88,15 @@ void Window::WindowResizeCallback(GLFWwindow *window, const int width, const int
     glViewport(0, 0, fbWidth, fbHeight);
 }
 
-void Window::SetInputManager(InputManager *inputManager) {
+void Core::Window::SetInputManager(InputManager *inputManager) {
     m_InputManager = inputManager;
 }
 
-void Window::SetWindowTitle(const std::string &title) const {
+void Core::Window::SetWindowTitle(const std::string &title) const {
     glfwSetWindowTitle(m_Window, title.c_str());
 }
 
-void Window::KeyCallback(GLFWwindow *window, const int key, int scancode, const int action, int mods) {
+void Core::Window::KeyCallback(GLFWwindow *window, const int key, int scancode, const int action, int mods) {
     const auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
     if (!self) return;
 
@@ -105,7 +105,7 @@ void Window::KeyCallback(GLFWwindow *window, const int key, int scancode, const 
     }
 }
 
-void Window::CursorPosCallback(GLFWwindow *window, const double xpos, const double ypos) {
+void Core::Window::CursorPosCallback(GLFWwindow *window, const double xpos, const double ypos) {
     const auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
     if (!self) return;
 
@@ -114,7 +114,7 @@ void Window::CursorPosCallback(GLFWwindow *window, const double xpos, const doub
     }
 }
 
-void Window::MouseButtonCallback(GLFWwindow *window, const int button, const int action, const int mods) {
+void Core::Window::MouseButtonCallback(GLFWwindow *window, const int button, const int action, const int mods) {
     const auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
     if (!self) return;
 
@@ -123,7 +123,7 @@ void Window::MouseButtonCallback(GLFWwindow *window, const int button, const int
     }
 }
 
-void Window::ScrollCallback(GLFWwindow *window, const double xoffset, const double yoffset) {
+void Core::Window::ScrollCallback(GLFWwindow *window, const double xoffset, const double yoffset) {
     const auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
     if (!self) return;
 
@@ -132,7 +132,7 @@ void Window::ScrollCallback(GLFWwindow *window, const double xoffset, const doub
     }
 }
 
-void Window::SetFullscreen(const bool fullscreen) const {
+void Core::Window::SetFullscreen(const bool fullscreen) const {
     if (fullscreen) {
         GLFWmonitor *monitor = glfwGetPrimaryMonitor();
         const GLFWvidmode *mode = glfwGetVideoMode(monitor);

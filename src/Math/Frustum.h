@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <array>
 #include <limits>
-#include "Renderer/Camera.h"
+#include "Rendering/Camera.h"
 #include "Core/Constants.h"
 
 namespace Math::Frustum {
@@ -91,7 +91,7 @@ namespace Math::Frustum {
         }
     };
 
-    inline ViewFrustum FromCamera(const Camera *camera, const float aspect, const float padding = 0.0f) {
+    inline ViewFrustum FromCamera(const Rendering::Camera *camera, const float aspect, const float padding = 0.0f) {
         ViewFrustum frustum;
         if (!camera) return frustum;
 
@@ -162,7 +162,7 @@ namespace Math::Frustum {
         return frustum;
     }
 
-    inline FrustumPlanes FromCamera3D(const Camera *camera, const float aspect) noexcept {
+    inline FrustumPlanes FromCamera3D(const Rendering::Camera *camera, const float aspect) noexcept {
         if (!camera) return FrustumPlanes{};
         return FrustumPlanes::FromVP(camera->GetVP(aspect));
     }

@@ -1,9 +1,9 @@
 #include "ViewportPanel.h"
-#include "Renderer/Renderer.h"
+#include "Rendering/Renderer.h"
 #include <imgui.h>
 #include "Core/InputManager.h"
 
-void ViewportPanel::OnImGuiRender() {
+void Editor::UI::ViewportPanel::OnImGuiRender() {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
     ImGui::Begin("Scene View");
     ImGui::PopStyleVar();
@@ -13,10 +13,16 @@ void ViewportPanel::OnImGuiRender() {
     const ImVec2 boundsMin = ImGui::GetCursorScreenPos();
     const ImVec2 imguiMousePos = ImGui::GetMousePos();
 
-    const double localMouseX = static_cast<double>(imguiMousePos.x - boundsMin.x);
-    const double localMouseY = static_cast<double>(imguiMousePos.y - boundsMin.y);
+    const double localMouseX = imguiMousePos.x - boundsMin.x;
+    const double localMouseY = imguiMousePos.y - boundsMin.y;
 
-    if (m_EngineContext && m_EngineContext->input) {
+    if (m_EngineContext &&m_EngineContext
+
+
+    ->
+    input
+    )
+    {
         if (m_IsHovered) {
             const double offsetX = m_EngineContext->input->RawMousePosX() - localMouseX;
             const double offsetY = m_EngineContext->input->RawMousePosY() - localMouseY;
@@ -28,7 +34,13 @@ void ViewportPanel::OnImGuiRender() {
     }
 
 
-    if (m_EngineContext && m_EngineContext->renderer) {
+    if (m_EngineContext &&m_EngineContext
+
+
+    ->
+    renderer
+    )
+    {
         if (const int pickedEntity = m_EngineContext->renderer->GetLastReadPixel(); pickedEntity != -1) {
             m_SelectedEntityID = pickedEntity;
             m_EngineContext->renderer->ClearPixelReadResult();
@@ -39,7 +51,13 @@ void ViewportPanel::OnImGuiRender() {
         m_ViewportWidth = viewportSize.x;
         m_ViewportHeight = viewportSize.y;
 
-        if (m_EngineContext && m_EngineContext->renderer) {
+        if (m_EngineContext &&m_EngineContext
+
+
+        ->
+        renderer
+        )
+        {
             m_EngineContext->renderer->EnsureFramebufferSize(static_cast<uint32_t>(viewportSize.x),
                                                              static_cast<uint32_t>(viewportSize.y));
 
@@ -48,7 +66,7 @@ void ViewportPanel::OnImGuiRender() {
 
                 ImGui::Image(texId, viewportSize, ImVec2{0, 1}, ImVec2{1, 0});
 
-                if (m_IsHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                if (m_IsHovered &&ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
                     const ImVec2 mousePos = ImGui::GetMousePos();
 
                     const int mouseX = static_cast<int>(mousePos.x - boundsMin.x);

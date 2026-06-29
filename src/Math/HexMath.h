@@ -1,10 +1,21 @@
 #pragma once
 
 #include "Core/Constants.h"
+#include "../Map/HexCoords.h"
 #include <glm/glm.hpp>
 
 // math
 namespace Math::HexMath {
+    using Core::HEX_SIZE;
+    using Core::SQRT_3;
+    using Core::HEX_HEIGHT_MULTIPLIER;
+    using Core::HEX_ODD_ROW_OFFSET;
+    using Core::HEX_HEIGHT_SPACING_RATIO;
+    using Core::HEX_INV_MAT_Q_X;
+    using Core::HEX_INV_MAT_Q_Y;
+    using Core::HEX_INV_MAT_R_Y;
+    using Core::HEX_NEIGHBOR_COUNT;
+
     struct FractionalHex {
         float q, r, s;
 
@@ -17,7 +28,7 @@ namespace Math::HexMath {
     };
 
     // translate Odd-R Offset to Cube
-    inline CubeCoords OddRToCube(const HexCoords hex) {
+    inline CubeCoords OddRToCube(const Map::HexCoords hex) {
         const int32_t x = hex.q - (hex.r - (hex.r & 1)) / 2;
         const int32_t z = hex.r;
         const int32_t y = -x - z;
@@ -25,7 +36,7 @@ namespace Math::HexMath {
     }
 
     // distance calculation on hex grids
-    inline int32_t Distance(const HexCoords a, const HexCoords b) {
+    inline int32_t Distance(const Map::HexCoords a, const Map::HexCoords b) {
         const auto [ax, ay, az] = OddRToCube(a);
         const auto [bx, by, bz] = OddRToCube(b);
         return (std::abs(ax - bx) + std::abs(ay - by) + std::abs(az - bz)) / 2;
@@ -33,7 +44,7 @@ namespace Math::HexMath {
 
 
     // hex pos to world pos
-    inline glm::vec2 HexToWorld(const HexCoords &h, const float size = HEX_SIZE) {
+    inline glm::vec2 HexToWorld(const Map::HexCoords &h, const float size = HEX_SIZE) {
         const float width = SQRT_3 * size;
         const float height = HEX_HEIGHT_MULTIPLIER * size;
 
@@ -52,7 +63,7 @@ namespace Math::HexMath {
     }
 
     // pixel pos to hex
-    inline HexCoords PixelToHex(const glm::vec2 p, const float size = HEX_SIZE) {
+    inline Map::HexCoords PixelToHex(const glm::vec2 p, const float size = HEX_SIZE) {
         const auto h = PixelToHexFractional(p, size);
 
         // cast to int32_t & round
@@ -75,22 +86,22 @@ namespace Math::HexMath {
     }
 
     // alias cuz i can :)
-    inline HexCoords GetClosestHex(const glm::vec2 p, const float size = HEX_SIZE) {
+    inline Map::HexCoords GetClosestHex(const glm::vec2 p, const float size = HEX_SIZE) {
         return PixelToHex(p, size);
     }
 
     // get 6 neighbors (for odd-r grid!!!)
-    inline std::array<HexCoords, HEX_NEIGHBOR_COUNT> GetNeighbors(const HexCoords hex) {
+    inline std::array<Map::HexCoords, HEX_NEIGHBOR_COUNT> GetNeighbors(const Map::HexCoords hex) {
         const int32_t parity = hex.r & 1;
 
-        std::array<HexCoords, HEX_NEIGHBOR_COUNT> neighbors;
+        std::array<Map::HexCoords, HEX_NEIGHBOR_COUNT> neighbors;
         for (std::size_t i = 0; i < HEX_NEIGHBOR_COUNT; i++) {
             constexpr int32_t r_diff[HEX_NEIGHBOR_COUNT] = {0, 1, 1, 0, -1, -1};
             constexpr int32_t q_diff[2][HEX_NEIGHBOR_COUNT] = {
                 {1, 0, -1, -1, -1, 0},
                 {1, 1, 0, -1, 0, 1}
             };
-            neighbors[i] = HexCoords(
+            neighbors[i] = Map::HexCoords(
                 hex.q + q_diff[parity][i],
                 hex.r + r_diff[i]
             );

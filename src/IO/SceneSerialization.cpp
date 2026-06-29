@@ -13,7 +13,7 @@
 #include "ECS/Components/MapStateComponent.h"
 #include "ECS/Systems/MapRuntimeSystem.h"
 
-namespace SceneIO {
+namespace IO::SceneIO {
     using json = nlohmann::json;
 
     void RoundJsonFloats(json &j, const int decimals = 3) {
@@ -29,8 +29,8 @@ namespace SceneIO {
         }
     }
 
-    bool Deserialize(const std::string &path, Scene &scene) {
-        std::filesystem::path resolvedPath = IO::VFS::Resolve(path);
+    bool Deserialize(const std::string &path, Scenes::Scene &scene) {
+        std::filesystem::path resolvedPath = VFS::Resolve(path);
 
         std::ifstream file(resolvedPath);
         if (!file.is_open())
@@ -80,9 +80,9 @@ namespace SceneIO {
             auto mapPath = j["grid"]["map_file"].get<std::string>();
 
             // map entity via ECS
-            Entity mapEntity(scene.GetRegistry().CreateEntity(), &scene.GetRegistry());
+            ECS::Entity mapEntity(scene.GetRegistry().CreateEntity(), &scene.GetRegistry());
             mapEntity.SetName("MAP");
-            MapComponent mapComp;
+            ECS::Components::MapComponent mapComp;
             mapComp.mapFilePath = mapPath;
 
             if (!MapIO::Deserialize(mapPath, mapComp.grid)) {
@@ -95,8 +95,8 @@ namespace SceneIO {
             std::string shaderId = gridJson.value("shader_id", "base_shader");
 
 
-            auto hexMesh = resources.Get<Mesh>(meshId);
-            auto shader = resources.Get<Shader>(shaderId);
+            auto hexMesh = resources.Get<Rendering::Mesh>(meshId);
+            auto shader = resources.Get<Rendering::Shader>(shaderId);
             mapComp.hexMesh = hexMesh;
 
             if (gridJson.contains("types")) {
@@ -104,7 +104,7 @@ namespace SceneIO {
                     uint8_t id = typeElement.value("id", static_cast<uint8_t>(1));
                     std::string textureId = typeElement.value("texture", "hex_tex");
 
-                    auto typeTexture = resources.Get<Texture>(textureId);
+                    auto typeTexture = resources.Get<Rendering::Texture>(textureId);
 
                     glm::vec4 color(1.0f);
                     if (typeElement.contains("color")) {
@@ -112,7 +112,7 @@ namespace SceneIO {
                         color = {c[0], c[1], c[2], c[3]};
                     }
 
-                    Material typeMat{
+                    Rendering::Material typeMat{
                         shader,
                         typeTexture,
                         color
@@ -123,21 +123,25 @@ namespace SceneIO {
             }
 
             if (shader) {
-                mapComp.outlineMat = std::make_shared<Material>(Material{shader, nullptr, {1, 0, 0, 0.5f}});
-                mapComp.pathToMat = std::make_shared<Material>(Material{shader, nullptr, {1, 1, 1, 0.5f}});
+                mapComp.outlineMat = std::make_shared<Rendering::Material>(Rendering::Material{
+                    shader, nullptr, {1, 0, 0, 0.5f}
+                });
+                mapComp.pathToMat = std::make_shared<Rendering::Material>(Rendering::Material{
+                    shader, nullptr, {1, 1, 1, 0.5f}
+                });
             } else {
                 std::cerr << "SceneSerializer: Missing map visual assets!\n";
             }
             mapComp.needsMeshUpdate = true;
             mapComp.lightmap.ambient = AmbientLight;
-            mapEntity.AddComponent<MapComponent>(mapComp);
-            mapEntity.AddComponent<MapStateComponent>();
+            mapEntity.AddComponent<ECS::Components::MapComponent>(mapComp);
+            mapEntity.AddComponent<ECS::Components::MapStateComponent>();
         }
 
         // ENTITIES
         if (j.contains("entities")) {
             for (const auto &entityData: j["entities"]) {
-                Entity entity(
+                ECS::Entity entity(
                     scene.GetRegistry().CreateEntity(),
                     &scene.GetRegistry()
                 );
@@ -146,7 +150,7 @@ namespace SceneIO {
             }
         }
 
-        MapRuntimeSystem::OnMapChanged(scene.GetRegistry(), scene.GetContext());
+        ECS::Systems::MapRuntimeSystem::OnMapChanged(scene.GetRegistry(), scene.GetContext());
         return true;
     }
 
@@ -154,7 +158,7 @@ namespace SceneIO {
     // spacer here so i can more easily ending of deserialize into serialize
     //
 
-    bool Serialize(const std::string &path, Scene &scene) {
+    bool Serialize(const std::string &path, Scenes::Scene &scene) {
         json j;
         auto &resources = *scene.GetContext().resources;
 
@@ -173,48 +177,49 @@ namespace SceneIO {
         j["properties"]["ambient_light"] = sceneProps.AmbientLight;
 
         // ecs query to save grid
-        scene.GetRegistry().ForEach<MapComponent>([&](Entity, const MapComponent *mapComp) {
-            std::string mapFile = mapComp->mapFilePath.empty()
-                                      ? PathUtils::Join(MAP_PATH, "unknown", MAP_FILE_EXTENSION)
-                                      : mapComp->mapFilePath;
+        scene.GetRegistry().ForEach<ECS::Components::MapComponent>(
+            [&](ECS::Entity, const ECS::Components::MapComponent *mapComp) {
+                std::string mapFile = mapComp->mapFilePath.empty()
+                                          ? Core::PathUtils::Join(Core::MAP_PATH, "unknown", Core::MAP_FILE_EXTENSION)
+                                          : mapComp->mapFilePath;
 
-            j["grid"]["map_file"] = mapFile;
-            if (!MapIO::Serialize(mapFile, mapComp->grid)) {
-                std::cerr << "SceneSerializer: Failed to write map file: " << mapFile << "\n";
-            }
-
-            if (mapComp->hexMesh) {
-                j["grid"]["mesh_id"] = resources.GetKey<Mesh>(mapComp->hexMesh);
-            }
-
-            if (!mapComp->typeMats.empty()) {
-                j["grid"]["types"] = json::array();
-
-                std::vector<uint8_t> keys;
-                for (const auto &key: mapComp->typeMats | std::views::keys) keys.push_back(key);
-                std::ranges::sort(keys);
-
-                for (uint8_t id: keys) {
-                    const auto &material = mapComp->typeMats.at(id);
-                    json typeJson;
-                    typeJson["id"] = id;
-
-                    if (material.texture) {
-                        typeJson["texture"] = resources.GetKey(material.texture);
-                    }
-
-                    if (material.color != glm::vec4(1.0f)) {
-                        typeJson["color"] = {
-                            material.color.r,
-                            material.color.g,
-                            material.color.b,
-                            material.color.a
-                        };
-                    }
-                    j["grid"]["types"].push_back(typeJson);
+                j["grid"]["map_file"] = mapFile;
+                if (!MapIO::Serialize(mapFile, mapComp->grid)) {
+                    std::cerr << "SceneSerializer: Failed to write map file: " << mapFile << "\n";
                 }
-            }
-        });
+
+                if (mapComp->hexMesh) {
+                    j["grid"]["mesh_id"] = resources.GetKey<Rendering::Mesh>(mapComp->hexMesh);
+                }
+
+                if (!mapComp->typeMats.empty()) {
+                    j["grid"]["types"] = json::array();
+
+                    std::vector<uint8_t> keys;
+                    for (const auto &key: mapComp->typeMats | std::views::keys) keys.push_back(key);
+                    std::ranges::sort(keys);
+
+                    for (uint8_t id: keys) {
+                        const auto &material = mapComp->typeMats.at(id);
+                        json typeJson;
+                        typeJson["id"] = id;
+
+                        if (material.texture) {
+                            typeJson["texture"] = resources.GetKey(material.texture);
+                        }
+
+                        if (material.color != glm::vec4(1.0f)) {
+                            typeJson["color"] = {
+                                material.color.r,
+                                material.color.g,
+                                material.color.b,
+                                material.color.a
+                            };
+                        }
+                        j["grid"]["types"].push_back(typeJson);
+                    }
+                }
+            });
 
         // ASSETS
         j["assets"]["textures"] = json::array();
@@ -224,8 +229,8 @@ namespace SceneIO {
 
         SerializeAssets(
             j["assets"]["textures"],
-            resources.GetAll<Texture>(),
-            [](const std::string &id, const std::shared_ptr<Texture> &tex) {
+            resources.GetAll<Rendering::Texture>(),
+            [](const std::string &id, const std::shared_ptr<Rendering::Texture> &tex) {
                 return json{
                     {"id", id},
                     {"path", tex->GetPath()}
@@ -235,8 +240,8 @@ namespace SceneIO {
 
         SerializeAssets(
             j["assets"]["shaders"],
-            resources.GetAll<Shader>(),
-            [](const std::string &id, const std::shared_ptr<Shader> &shad) {
+            resources.GetAll<Rendering::Shader>(),
+            [](const std::string &id, const std::shared_ptr<Rendering::Shader> &shad) {
                 return json{
                     {"id", id},
                     {"vertex", shad->GetVertexPath()},
@@ -247,8 +252,8 @@ namespace SceneIO {
 
         SerializeAssets(
             j["assets"]["meshes"],
-            resources.GetAll<Mesh>(),
-            [](const std::string &id, const std::shared_ptr<Mesh> &mesh) {
+            resources.GetAll<Rendering::Mesh>(),
+            [](const std::string &id, const std::shared_ptr<Rendering::Mesh> &mesh) {
                 return json{
                     {"id", id},
                     {"factory", mesh->GetFactoryId()}
@@ -258,8 +263,8 @@ namespace SceneIO {
 
         SerializeAssets(
             j["assets"]["materials"],
-            resources.GetAll<Material>(),
-            [&](const std::string &id, const std::shared_ptr<Material> &mat) {
+            resources.GetAll<Rendering::Material>(),
+            [&](const std::string &id, const std::shared_ptr<Rendering::Material> &mat) {
                 return json{
                     {"id", id},
                     {"shader", resources.GetKey(mat->shader)},
@@ -278,10 +283,11 @@ namespace SceneIO {
 
         // ENTITIES
         j["entities"] = json::array();
-        for (const auto &livingEntities = scene.GetRegistry().GetLivingEntities(); EntityID entityID: livingEntities) {
-            Entity entity(entityID, &scene.GetRegistry());
+        for (const auto &livingEntities = scene.GetRegistry().GetLivingEntities(); ECS::EntityID entityID:
+             livingEntities) {
+            ECS::Entity entity(entityID, &scene.GetRegistry());
 
-            if (entity.HasComponent<MapComponent>()) {
+            if (entity.HasComponent<ECS::Components::MapComponent>()) {
                 continue;
             }
 
@@ -294,7 +300,7 @@ namespace SceneIO {
         }
 
         RoundJsonFloats(j, 3);
-        std::filesystem::path resolvedPath = IO::VFS::Resolve(path);
+        std::filesystem::path resolvedPath = VFS::Resolve(path);
         std::ofstream file(resolvedPath);
         if (!file.is_open()) return false;
         file << j.dump(4);

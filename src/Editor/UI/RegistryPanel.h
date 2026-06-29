@@ -3,13 +3,15 @@
 #include "ECS/Entity.h"
 #include "EditorPanel.h"
 
-class RegistryPanel : public EditorPanel {
-public:
-    void OnImGuiRender() override;
+namespace Editor::UI {
+    class RegistryPanel : public EditorPanel {
+    public:
+        void OnImGuiRender() override;
 
-    Entity GetSelectedEntity() const { return m_SelectedEntity; }
-    void SetSelectedEntity(const Entity entity) { m_SelectedEntity = entity; }
+        ECS::Entity GetSelectedEntity() const { return m_SelectedEntity; }
+        void SetSelectedEntity(const ECS::Entity entity) { m_SelectedEntity = entity; }
 
-private:
-    Entity m_SelectedEntity;
-};
+    private:
+        ECS::Entity m_SelectedEntity;
+    };
+} // namespace Editor::UI

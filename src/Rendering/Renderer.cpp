@@ -9,17 +9,17 @@ constexpr unsigned int MAX_INSTANCES = 100000;
 constexpr size_t INSTANCE_BUFFER_SIZE = MAX_INSTANCES * sizeof(glm::mat4);
 constexpr size_t ID_BUFFER_SIZE = MAX_INSTANCES * sizeof(int);
 
-std::vector<std::function<void()> > Renderer::s_InitQueue;
-std::mutex Renderer::s_InitQueueMutex;
+std::vector<std::function<void()> > Rendering::Renderer::s_InitQueue;
+std::mutex Rendering::Renderer::s_InitQueueMutex;
 
 static glm::vec4 s_ClearColorStaging = {0.0f, 0.0f, 0.0f, 1.0f};
 
-void Renderer::SetCamera(const Camera &camera, const float aspect) {
+void Rendering::Renderer::SetCamera(const Camera &camera, const float aspect) {
     m_Camera = &camera;
     m_Aspect = aspect;
 }
 
-void Renderer::BeginFrame() {
+void Rendering::Renderer::BeginFrame() {
     m_Commands[m_SubmitIndex].clear();
     m_InstancedCommands[m_SubmitIndex].clear();
     m_Lightmap[m_SubmitIndex] = nullptr;
@@ -29,8 +29,9 @@ void Renderer::BeginFrame() {
     }
 }
 
-void Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Material *material, const Transform &transform,
-                      const Texture *textureOverride, const int entityID) {
+void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Material *material,
+                                 const Transform &transform,
+                                 const Texture *textureOverride, const int entityID) {
     const glm::vec3 &pos = transform.GetPosition();
 
     auto packKey = [](const float posX, const float posY, const float posZ) -> int32_t {
@@ -53,8 +54,8 @@ void Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Material *materia
         {mesh.get(), material, effectiveTex, col, transform.GetMatrix(), packKey(pos.x, pos.y, pos.z), entityID});
 }
 
-void Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Material *material,
-                      const std::vector<glm::mat4> &transforms, const std::vector<int> &entityIDs) {
+void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Material *material,
+                                 const std::vector<glm::mat4> &transforms, const std::vector<int> &entityIDs) {
     if (transforms.empty())
         return;
 
@@ -64,7 +65,7 @@ void Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Material *materia
     m_InstancedCommands[m_SubmitIndex].push_back({mesh.get(), material, tex, col, transforms, entityIDs});
 }
 
-void Renderer::Flush(const size_t renderIndex) {
+void Rendering::Renderer::Flush(const size_t renderIndex) {
     if (!m_Commands[renderIndex].empty()) {
         std::ranges::sort(m_Commands[renderIndex], [](const RenderCommand &a, const RenderCommand &b) {
             const auto depthA = static_cast<int16_t>(a.sortKey >> 16);
@@ -198,8 +199,8 @@ void Renderer::Flush(const size_t renderIndex) {
     m_InstancedCommands[renderIndex].clear();
 }
 
-void Renderer::RenderBatch(const BatchKey &key, const std::vector<glm::mat4> &transforms,
-                           const std::vector<int> &entityIDs, const size_t renderIndex) {
+void Rendering::Renderer::RenderBatch(const BatchKey &key, const std::vector<glm::mat4> &transforms,
+                                      const std::vector<int> &entityIDs, const size_t renderIndex) {
     const auto instanceCount = static_cast<unsigned int>(transforms.size());
     if (instanceCount == 0 || instanceCount > MAX_INSTANCES)
         return;
@@ -262,7 +263,7 @@ void Renderer::RenderBatch(const BatchKey &key, const std::vector<glm::mat4> &tr
     glDrawElementsInstanced(GL_TRIANGLES, key.mesh->GetIndexCount(), GL_UNSIGNED_INT, nullptr, instanceCount);
 }
 
-void Renderer::Clean() {
+void Rendering::Renderer::Clean() {
     m_Commands[0].clear();
     m_Commands[1].clear();
     m_InstancedCommands[0].clear();
@@ -273,9 +274,9 @@ void Renderer::Clean() {
     m_LastBoundShader = nullptr;
 }
 
-void Renderer::SetLightmap(const Lightmap *lightmap) { m_Lightmap[m_SubmitIndex] = lightmap; }
+void Rendering::Renderer::SetLightmap(const Lightmap *lightmap) { m_Lightmap[m_SubmitIndex] = lightmap; }
 
-void Renderer::BindLightmap(Shader *shader, const size_t renderIndex) const {
+void Rendering::Renderer::BindLightmap(Shader *shader, const size_t renderIndex) const {
     if (const Lightmap *lm = m_Lightmap[renderIndex]; lm && lm->texture) {
         lm->texture->Bind(1);
         shader->SetUniform1i("u_LightTexture", 1);
@@ -288,23 +289,23 @@ void Renderer::BindLightmap(Shader *shader, const size_t renderIndex) const {
     }
 }
 
-void Renderer::SetClearColor(const glm::vec4 color) { s_ClearColorStaging = color; }
+void Rendering::Renderer::SetClearColor(const glm::vec4 color) { s_ClearColorStaging = color; }
 
-void Renderer::ApplyClearColor() {
+void Rendering::Renderer::ApplyClearColor() {
     glClearColor(s_ClearColorStaging[0], s_ClearColorStaging[1], s_ClearColorStaging[2], s_ClearColorStaging[3]);
 }
 
-void Renderer::SwapBuffers() {
+void Rendering::Renderer::SwapBuffers() {
     m_RenderIndex = m_SubmitIndex;
     m_SubmitIndex = (m_SubmitIndex + 1) % 2;
 }
 
-void Renderer::SubmitInitTask(std::function<void()> task) {
+void Rendering::Renderer::SubmitInitTask(std::function<void()> task) {
     std::lock_guard lock(s_InitQueueMutex);
     s_InitQueue.push_back(std::move(task));
 }
 
-void Renderer::ProcessInitQ() {
+void Rendering::Renderer::ProcessInitQ() {
     std::vector<std::function<void()> > queueCopy;
     {
         std::lock_guard lock(s_InitQueueMutex);
@@ -315,7 +316,7 @@ void Renderer::ProcessInitQ() {
     }
 }
 
-void Renderer::EnsureFramebufferSize(uint32_t width, uint32_t height) {
+void Rendering::Renderer::EnsureFramebufferSize(uint32_t width, uint32_t height) {
     if (m_FboWidth == width && m_FboHeight == height)
         return;
     m_FboWidth = width;

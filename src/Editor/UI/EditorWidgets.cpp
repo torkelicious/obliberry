@@ -2,16 +2,20 @@
 #include "ECS/ECS.h"
 #include <cstring>
 
-PointLightWidget::PointLightWidget() : AutoComponentWidget("Point Light") {
-    m_Fields.push_back({"Color", FieldType::Color3, offsetof(PointLightComponent, color)});
-    m_Fields.push_back({"Radius", FieldType::Float, offsetof(PointLightComponent, radius)});
-    m_Fields.push_back({"Intensity", FieldType::Float, offsetof(PointLightComponent, intensity)});
+Editor::UI::PointLightWidget::PointLightWidget() : AutoComponentWidget("Point Light") {
+    m_Fields.push_back({"Color", FieldType::Color3, offsetof(ECS::Components::PointLightComponent, color)});
+    m_Fields.push_back({
+        "Radius", FieldType::Float, offsetof(ECS::Components::PointLightComponent, radius)
+    });
+    m_Fields.push_back({
+        "Intensity", FieldType::Float, offsetof(ECS::Components::PointLightComponent, intensity)
+    });
 }
 
-TransformWidget::TransformWidget() : AutoComponentWidget("Transform") {
+Editor::UI::TransformWidget::TransformWidget() : AutoComponentWidget("Transform") {
 }
 
-void TransformWidget::DrawExtras(Entity entity, TransformComponent *component) {
+void Editor::UI::TransformWidget::DrawExtras(ECS::Entity entity, ECS::Components::TransformComponent *component) {
     auto pos = component->transform.GetPosition();
     if (ImGui::DragFloat3("Position", &pos.x, 0.1f)) {
         component->transform.SetPosition(pos);
@@ -28,58 +32,66 @@ void TransformWidget::DrawExtras(Entity entity, TransformComponent *component) {
     }
 
     ImGui::Spacing();
-    const bool hasBillboard = entity.HasComponent<BillboardTagComponent>();
+    const bool hasBillboard = entity.HasComponent<ECS::Components::BillboardTagComponent>();
     bool useBillboard = hasBillboard;
 
     if (ImGui::Checkbox("Use Billboard", &useBillboard)) {
         if (useBillboard && !hasBillboard)
-            entity.AddComponent<BillboardTagComponent>();
+            entity.AddComponent<ECS::Components::BillboardTagComponent>();
         else if (!useBillboard && hasBillboard)
-            entity.RemoveComponent<BillboardTagComponent>();
+            entity.RemoveComponent<ECS::Components::BillboardTagComponent>();
     }
 }
 
-MovementWidget::MovementWidget() : AutoComponentWidget("Movement") {
-    m_Fields.push_back({"Time Per Step", FieldType::Float, offsetof(MovementComponent, timePerStep)});
-    m_Fields.push_back({"Step Timer", FieldType::Float, offsetof(MovementComponent, stepTimer)});
-    m_Fields.push_back({"Idle Timer", FieldType::Float, offsetof(MovementComponent, idleTimer)});
-    m_Fields.push_back({"Is Moving", FieldType::Bool, offsetof(MovementComponent, isMoving)});
+Editor::UI::MovementWidget::MovementWidget() : AutoComponentWidget("Movement") {
+    m_Fields.push_back({
+        "Time Per Step", FieldType::Float, offsetof(ECS::Components::MovementComponent, timePerStep)
+    });
+    m_Fields.push_back({
+        "Step Timer", FieldType::Float, offsetof(ECS::Components::MovementComponent, stepTimer)
+    });
+    m_Fields.push_back({
+        "Idle Timer", FieldType::Float, offsetof(ECS::Components::MovementComponent, idleTimer)
+    });
+    m_Fields.push_back({
+        "Is Moving", FieldType::Bool, offsetof(ECS::Components::MovementComponent, isMoving)
+    });
 }
 
-void MovementWidget::DrawExtras(Entity entity, MovementComponent *component) {
+void Editor::UI::MovementWidget::DrawExtras(ECS::Entity entity, ECS::Components::MovementComponent *component) {
     ImGui::Text("Path Nodes: %zu", component->currentPath.size());
     ImGui::Text("Current Path Index: %zu", component->currentPathIndex);
 }
 
-const char *MeshWidget::GetName() const { return "Mesh"; }
+const char *Editor::UI::MeshWidget::GetName() const { return "Mesh"; }
 
-void MeshWidget::Draw(const Entity entity) {
-    if (!entity.HasComponent<MeshComponent>())
+void Editor::UI::MeshWidget::Draw(const ECS::Entity entity) {
+    if (!entity.HasComponent<ECS::Components::MeshComponent>())
         return;
     if (ImGui::CollapsingHeader(GetName(), ImGuiTreeNodeFlags_DefaultOpen)) {
-        const auto *comp = entity.GetComponent<MeshComponent>();
+        const auto *comp = entity.GetComponent<ECS::Components::MeshComponent>();
         ImGui::Text("Mesh Status: %s", comp->mesh ? "Loaded" : "Empty");
     }
 }
 
-const char *MaterialWidget::GetName() const { return "Material"; }
+const char *Editor::UI::MaterialWidget::GetName() const { return "Material"; }
 
-void MaterialWidget::Draw(const Entity entity) {
-    if (!entity.HasComponent<MaterialComponent>())
+void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity) {
+    if (!entity.HasComponent<ECS::Components::MaterialComponent>())
         return;
     if (ImGui::CollapsingHeader(GetName(), ImGuiTreeNodeFlags_DefaultOpen)) {
-        const auto *comp = entity.GetComponent<MaterialComponent>();
+        const auto *comp = entity.GetComponent<ECS::Components::MaterialComponent>();
         ImGui::Text("Material Status: %s", comp->material ? "Assigned" : "Empty");
     }
 }
 
-const char *DirectionalTextureWidget::GetName() const { return "Directional Texture"; }
+const char *Editor::UI::DirectionalTextureWidget::GetName() const { return "Directional Texture"; }
 
-void DirectionalTextureWidget::Draw(const Entity entity) {
-    if (!entity.HasComponent<DirectionalTextureComponent>())
+void Editor::UI::DirectionalTextureWidget::Draw(const ECS::Entity entity) {
+    if (!entity.HasComponent<ECS::Components::DirectionalTextureComponent>())
         return;
     if (ImGui::CollapsingHeader(GetName(), ImGuiTreeNodeFlags_DefaultOpen)) {
-        auto *comp = entity.GetComponent<DirectionalTextureComponent>();
+        auto *comp = entity.GetComponent<ECS::Components::DirectionalTextureComponent>();
         ImGui::SliderInt("Facing Index", &comp->index, 0, 5);
         for (int i = 0; i < 6; i++) {
             ImGui::BulletText("Direction %d: %s", i, comp->textures[i] ? "Loaded" : "Empty");
@@ -87,13 +99,13 @@ void DirectionalTextureWidget::Draw(const Entity entity) {
     }
 }
 
-const char *MapWidget::GetName() const { return "Map"; }
+const char *Editor::UI::MapWidget::GetName() const { return "Map"; }
 
-void MapWidget::Draw(const Entity entity) {
-    if (!entity.HasComponent<MapComponent>())
+void Editor::UI::MapWidget::Draw(const ECS::Entity entity) {
+    if (!entity.HasComponent<ECS::Components::MapComponent>())
         return;
     if (ImGui::CollapsingHeader(GetName(), ImGuiTreeNodeFlags_DefaultOpen)) {
-        auto *comp = entity.GetComponent<MapComponent>();
+        auto *comp = entity.GetComponent<ECS::Components::MapComponent>();
         char buffer[256];
         strncpy(buffer, comp->mapFilePath.c_str(), sizeof(buffer));
         if (ImGui::InputText("File Path", buffer, sizeof(buffer)))
@@ -104,13 +116,13 @@ void MapWidget::Draw(const Entity entity) {
     }
 }
 
-const char *MapStateWidget::GetName() const { return "Map State"; }
+const char *Editor::UI::MapStateWidget::GetName() const { return "Map State"; }
 
-void MapStateWidget::Draw(const Entity entity) {
-    if (!entity.HasComponent<MapStateComponent>())
+void Editor::UI::MapStateWidget::Draw(const ECS::Entity entity) {
+    if (!entity.HasComponent<ECS::Components::MapStateComponent>())
         return;
     if (ImGui::CollapsingHeader(GetName(), ImGuiTreeNodeFlags_DefaultOpen)) {
-        auto *comp = entity.GetComponent<MapStateComponent>();
+        auto *comp = entity.GetComponent<ECS::Components::MapStateComponent>();
         ImGui::Checkbox("Has Selection", &comp->hasSelection);
         if (comp->hasSelection)
             ImGui::Text("Selected Hex: [%d, %d]", comp->selectedHex.q, comp->selectedHex.r);
@@ -120,13 +132,13 @@ void MapStateWidget::Draw(const Entity entity) {
     }
 }
 
-const char *ScriptWidget::GetName() const { return "Scripts"; }
+const char *Editor::UI::ScriptWidget::GetName() const { return "Scripts"; }
 
-void ScriptWidget::Draw(const Entity entity) {
-    if (!entity.HasComponent<ScriptComponent>())
+void Editor::UI::ScriptWidget::Draw(const ECS::Entity entity) {
+    if (!entity.HasComponent<ECS::Components::ScriptComponent>())
         return;
     if (ImGui::CollapsingHeader(GetName(), ImGuiTreeNodeFlags_DefaultOpen)) {
-        auto *comp = entity.GetComponent<ScriptComponent>();
+        auto *comp = entity.GetComponent<ECS::Components::ScriptComponent>();
         ImGui::Text("Attached Scripts: %zu", comp->scriptPaths.size());
         ImGui::Separator();
         for (size_t i = 0; i < comp->scriptPaths.size(); i++) {
@@ -138,13 +150,13 @@ void ScriptWidget::Draw(const Entity entity) {
     }
 }
 
-const char *CustomDataWidget::GetName() const { return "ObSL Custom Data"; }
+const char *Editor::UI::CustomDataWidget::GetName() const { return "ObSL Custom Data"; }
 
-void CustomDataWidget::Draw(const Entity entity) {
-    if (!entity.HasComponent<CustomDataComponent>())
+void Editor::UI::CustomDataWidget::Draw(const ECS::Entity entity) {
+    if (!entity.HasComponent<ECS::Components::CustomDataComponent>())
         return;
     if (ImGui::CollapsingHeader(GetName(), ImGuiTreeNodeFlags_DefaultOpen)) {
-        auto *comp = entity.GetComponent<CustomDataComponent>();
+        auto *comp = entity.GetComponent<ECS::Components::CustomDataComponent>();
         if (comp->script_components.empty()) {
             ImGui::TextDisabled("No script variables defined.");
             return;

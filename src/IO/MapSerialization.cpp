@@ -5,9 +5,9 @@
 
 #include "VFS.h"
 
-namespace MapIO {
-    bool Serialize(const std::string &path, const HexGrid &grid) {
-        std::filesystem::path resolvedPath = IO::VFS::Resolve(path);
+namespace IO::MapIO {
+    bool Serialize(const std::string &path, const Map::HexGrid &grid) {
+        std::filesystem::path resolvedPath = VFS::Resolve(path);
         std::ofstream file(resolvedPath, std::ios::binary);
         if (!file.is_open()) {
             std::cerr << "Failed to open file: " << path << "\n";
@@ -32,8 +32,8 @@ namespace MapIO {
         return true;
     }
 
-    bool Deserialize(const std::string &path, HexGrid &grid) {
-        std::filesystem::path resolvedPath = IO::VFS::Resolve(path);
+    bool Deserialize(const std::string &path, Map::HexGrid &grid) {
+        std::filesystem::path resolvedPath = VFS::Resolve(path);
         std::ifstream file(resolvedPath, std::ios::binary | std::ios::ate);
         if (!file.is_open()) {
             std::cerr << "Failed to open file: " << path << "\n";
@@ -49,7 +49,7 @@ namespace MapIO {
             return false;
         }
 
-        if (!CheckHeader(header, MAP_FILE_MAGIC_STR)) {
+        if (!CheckHeader(header, Core::MAP_FILE_MAGIC_STR)) {
             std::cerr << "Invalid map file format (header mismatch).\n";
             return false;
         }
@@ -67,7 +67,7 @@ namespace MapIO {
                 std::cerr << "Stream read error at tile " << i << "\n";
                 break;
             }
-            HexCoords coords{sTile.q, sTile.r};
+            Map::HexCoords coords{sTile.q, sTile.r};
             grid.EmplaceTile(coords, sTile.type, sTile.walkable);
         }
         file.close();

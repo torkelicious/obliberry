@@ -7,7 +7,7 @@
 
 #include "IO/VFS.h"
 
-std::unique_ptr<AudioEngine> AudioEngine::Create() {
+std::unique_ptr<Sound::AudioEngine> Sound::AudioEngine::Create() {
     std::unique_ptr<AudioEngine> instance(new AudioEngine());
 
     if (!instance->Init()) {
@@ -18,9 +18,9 @@ std::unique_ptr<AudioEngine> AudioEngine::Create() {
     return instance;
 }
 
-AudioEngine::AudioEngine() = default;
+Sound::AudioEngine::AudioEngine() = default;
 
-bool AudioEngine::Init() {
+bool Sound::AudioEngine::Init() {
     m_Engine = new ma_engine();
 
     if (const ma_result result = ma_engine_init(nullptr, m_Engine); result != MA_SUCCESS) {
@@ -33,7 +33,7 @@ bool AudioEngine::Init() {
     return true;
 }
 
-AudioEngine::~AudioEngine() {
+Sound::AudioEngine::~AudioEngine() {
     StopMusic();
 
     // forcing cleanup on any sound effects still playing
@@ -51,7 +51,7 @@ AudioEngine::~AudioEngine() {
     }
 }
 
-void AudioEngine::Update() {
+void Sound::AudioEngine::Update() {
     if (!m_Engine) return;
 
     // cleaning finished sound effects
@@ -66,7 +66,7 @@ void AudioEngine::Update() {
     }
 }
 
-void AudioEngine::PlaySound2D(const std::string &filepath, const float volume) {
+void Sound::AudioEngine::PlaySound2D(const std::string &filepath, const float volume) {
     if (!m_Engine) return;
 
     const std::filesystem::path absolutePath = IO::VFS::Resolve(filepath);
@@ -95,7 +95,7 @@ void AudioEngine::PlaySound2D(const std::string &filepath, const float volume) {
     m_ActiveSounds.push_back(sfx);
 }
 
-void AudioEngine::PlayMusic(const std::string &virtualPath, const float volume) {
+void Sound::AudioEngine::PlayMusic(const std::string &virtualPath, const float volume) {
     if (!m_Engine) return;
 
     // avoid overlapping music
@@ -128,7 +128,7 @@ void AudioEngine::PlayMusic(const std::string &virtualPath, const float volume) 
     ma_sound_start(m_CurrentMusic);
 }
 
-void AudioEngine::StopMusic() {
+void Sound::AudioEngine::StopMusic() {
     if (m_CurrentMusic) {
         ma_sound_stop(m_CurrentMusic);
         ma_sound_uninit(m_CurrentMusic);
@@ -137,7 +137,7 @@ void AudioEngine::StopMusic() {
     }
 }
 
-void AudioEngine::SetMasterVolume(const float volume) const {
+void Sound::AudioEngine::SetMasterVolume(const float volume) const {
     if (!m_Engine) return;
     ma_engine_set_volume(m_Engine, volume);
 }

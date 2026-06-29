@@ -6,42 +6,44 @@
 #include "Core/EngineContext.h"
 #include "ECS/ECS.h"
 
-struct SceneProperties {
-    std::string ScenePath;
-    std::string Name; // unused 4 now
-    std::string BackgroundMusicPath;
-    glm::vec4 BackgroundClearColor = {0, 0, 0, 1};
-    float AmbientLight = 0.2f;
-};
+namespace Scenes {
+    struct SceneProperties {
+        std::string ScenePath;
+        std::string Name; // unused 4 now
+        std::string BackgroundMusicPath;
+        glm::vec4 BackgroundClearColor = {0, 0, 0, 1};
+        float AmbientLight = 0.2f;
+    };
 
-class Scene {
-public:
-    ~Scene() = default;
+    class Scene {
+    public:
+        ~Scene() = default;
 
-    Scene(EngineContext context, SceneProperties props);
+        Scene(Core::EngineContext context, SceneProperties props);
 
-    void OnEnter();
+        void OnEnter();
 
-    void Update(float dt);
+        void Update(float dt);
 
-    void Render();
+        void Render();
 
-    void OnExit();
+        void OnExit();
 
-    [[nodiscard]] Registry &GetRegistry() { return m_Registry; }
-    [[nodiscard]] const Registry &GetRegistry() const { return m_Registry; }
-    [[nodiscard]] EngineContext &GetContext() { return m_Context; }
-    [[nodiscard]] const EngineContext &GetContext() const { return m_Context; }
+        [[nodiscard]] ECS::Registry &GetRegistry() { return m_Registry; }
+        [[nodiscard]] const ECS::Registry &GetRegistry() const { return m_Registry; }
+        [[nodiscard]] Core::EngineContext &GetContext() { return m_Context; }
+        [[nodiscard]] const Core::EngineContext &GetContext() const { return m_Context; }
 
-    [[nodiscard]] const std::string &GetScenePath() const {
-        return m_Properties.ScenePath;
-    }
+        [[nodiscard]] const std::string &GetScenePath() const {
+            return m_Properties.ScenePath;
+        }
 
-    SceneProperties &GetProperties() { return m_Properties; }
+        SceneProperties &GetProperties() { return m_Properties; }
 
-private:
-    SceneProperties m_Properties;
-    EngineContext m_Context;
-    Registry m_Registry;
-};
+    private:
+        SceneProperties m_Properties;
+        Core::EngineContext m_Context;
+        ECS::Registry m_Registry;
+    };
+} // namespace Scenes
 

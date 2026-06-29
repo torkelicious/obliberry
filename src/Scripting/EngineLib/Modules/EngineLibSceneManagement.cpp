@@ -5,7 +5,7 @@
 #include "IO/PrefabManager.h"
 #include "Scripting/ObSLCore/Interpreter/Interpreter.h"
 
-void EngineLib::register_scene_management_modules(ObSL::Interpreter &interpreter) {
+void Scripting::EngineLib::EngineLib::register_scene_management_modules(ObSL::Interpreter &interpreter) {
     interpreter.get_global_environment()->define(
         "LoadScene", interpreter.gc.allocate<ObSL::NativeFunction>(
             1, // scene file path
@@ -24,7 +24,7 @@ void EngineLib::register_scene_management_modules(ObSL::Interpreter &interpreter
             0,
             [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
                 if (ctx && ctx->sceneManager) {
-                    if (const Scene *currentScene = ctx->sceneManager->GetCurrentScene()) {
+                    if (const Scenes::Scene *currentScene = ctx->sceneManager->GetCurrentScene()) {
                         return currentScene->GetScenePath();
                     }
                 }

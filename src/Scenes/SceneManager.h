@@ -4,33 +4,35 @@
 #include <memory>
 #include "Scene.h"
 
-class SceneManager {
-public:
-    void LoadScene(std::unique_ptr<Scene> newScene) {
-        if (m_CurrentScene) {
-            m_CurrentScene->OnExit();
+namespace Scenes {
+    class SceneManager {
+    public:
+        void LoadScene(std::unique_ptr<Scene> newScene) {
+            if (m_CurrentScene) {
+                m_CurrentScene->OnExit();
+            }
+            m_CurrentScene = std::move(newScene);
+            if (m_CurrentScene) {
+                m_CurrentScene->OnEnter();
+            }
         }
-        m_CurrentScene = std::move(newScene);
-        if (m_CurrentScene) {
-            m_CurrentScene->OnEnter();
+
+        void Update(const float dt) const {
+            if (m_CurrentScene) {
+                m_CurrentScene->Update(dt);
+            }
         }
-    }
 
-    void Update(const float dt) const {
-        if (m_CurrentScene) {
-            m_CurrentScene->Update(dt);
+        void Render() const {
+            if (m_CurrentScene) {
+                m_CurrentScene->Render();
+            }
         }
-    }
 
-    void Render() const {
-        if (m_CurrentScene) {
-            m_CurrentScene->Render();
-        }
-    }
+        [[nodiscard]] Scene *GetCurrentScene() const { return m_CurrentScene.get(); }
 
-    [[nodiscard]] Scene *GetCurrentScene() const { return m_CurrentScene.get(); }
-
-private:
-    std::unique_ptr<Scene> m_CurrentScene = nullptr;
-};
+    private:
+        std::unique_ptr<Scene> m_CurrentScene = nullptr;
+    };
+} // namespace Scenes
 

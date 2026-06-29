@@ -1,8 +1,10 @@
 #pragma once
 
-#include "Renderer/Transform.h"
+#include "Rendering/Transform.h"
 
-struct TransformComponent {
-    Transform transform{};
-};
+namespace ECS::Components {
+    struct TransformComponent {
+        Rendering::Transform transform{};
+    };
+} // namespace ECS::Components
 

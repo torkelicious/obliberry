@@ -4,7 +4,7 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
 
-ProjectConfig ProjectConfig::Deserialize(const std::string &filepath) {
+Core::ProjectConfig Core::ProjectConfig::Deserialize(const std::string &filepath) {
     ProjectConfig config;
     std::filesystem::path resolvedPath = IO::VFS::Resolve(filepath);
     std::ifstream file(resolvedPath);
@@ -34,7 +34,7 @@ ProjectConfig ProjectConfig::Deserialize(const std::string &filepath) {
     return config;
 }
 
-bool ProjectConfig::Serialize(const ProjectConfig &conf, const std::string &filepath) {
+bool Core::ProjectConfig::Serialize(const ProjectConfig &conf, const std::string &filepath) {
     try {
         nlohmann::json j;
         j["window"]["width"] = conf.windowWidth;

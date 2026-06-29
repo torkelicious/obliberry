@@ -2,9 +2,11 @@
 
 #include "Map/HexCoords.h"
 
-struct MapStateComponent {
-    HexCoords selectedHex;
-    HexCoords pathTo;
-    bool hasSelection = false;
-    bool hasPathTo = false;
-};
+namespace ECS::Components {
+    struct MapStateComponent {
+        Map::HexCoords selectedHex;
+        Map::HexCoords pathTo;
+        bool hasSelection = false;
+        bool hasPathTo = false;
+    };
+} // namespace ECS::Components

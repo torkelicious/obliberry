@@ -5,19 +5,21 @@
 #include <memory>
 #include <vector>
 
-struct IComponentWidget;
+namespace Editor::UI {
+    struct IComponentWidget;
 
-class InspectorPanel : public EditorPanel {
-public:
-    InspectorPanel();
+    class InspectorPanel : public EditorPanel {
+    public:
+        InspectorPanel();
 
-    ~InspectorPanel() override;
+        ~InspectorPanel() override;
 
-    void OnImGuiRender() override;
+        void OnImGuiRender() override;
 
-    void SetSelectedEntity(const Entity entity) { m_SelectedEntity = entity; }
+        void SetSelectedEntity(const ECS::Entity entity) { m_SelectedEntity = entity; }
 
-private:
-    Entity m_SelectedEntity;
-    std::vector<std::unique_ptr<IComponentWidget> > m_Widgets;
-};
+    private:
+        ECS::Entity m_SelectedEntity;
+        std::vector<std::unique_ptr<IComponentWidget> > m_Widgets;
+    };
+} // namespace Editor::UI

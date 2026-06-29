@@ -1,7 +1,7 @@
 #include "InputManager.h"
 #include <algorithm>
 
-void InputManager::BeginFrame() {
+void Core::InputManager::BeginFrame() {
     std::copy_n(keys, GLFW_KEY_LAST + 1, previousKeys);
     std::copy_n(mouseButtons, GLFW_MOUSE_BUTTON_LAST + 1, previousMouseButtons);
 
@@ -12,77 +12,77 @@ void InputManager::BeginFrame() {
     m_MouseDeltaY = 0.0;
 }
 
-bool InputManager::IsValidKey(const int key) {
+bool Core::InputManager::IsValidKey(const int key) {
     return key >= 0 && key <= GLFW_KEY_LAST;
 }
 
-void InputManager::HandleKeyEvent(const int key, const int action) {
+void Core::InputManager::HandleKeyEvent(const int key, const int action) {
     if (!IsValidKey(key)) return;
     keys[key] = action != GLFW_RELEASE;
 }
 
-bool InputManager::IsKeyDown(const int key) const {
+bool Core::InputManager::IsKeyDown(const int key) const {
     return IsValidKey(key) && keys[key];
 }
 
-bool InputManager::IsKeyDown(const std::string &keyAlias) const {
+bool Core::InputManager::IsKeyDown(const std::string &keyAlias) const {
     return IsKeyDown(GetKeyFromName(keyAlias));
 }
 
-bool InputManager::IsKeyPressed(const int key) const {
+bool Core::InputManager::IsKeyPressed(const int key) const {
     return IsValidKey(key) && keys[key] && !previousKeys[key];
 }
 
-bool InputManager::IsKeyPressed(const std::string &KeyAlias) const {
+bool Core::InputManager::IsKeyPressed(const std::string &KeyAlias) const {
     return IsKeyPressed(GetKeyFromName(KeyAlias));
 }
 
-bool InputManager::IsKeyReleased(const int key) const {
+bool Core::InputManager::IsKeyReleased(const int key) const {
     return IsValidKey(key) && !keys[key] && previousKeys[key];
 }
 
-bool InputManager::IsKeyReleased(const std::string &keyAlias) const {
+bool Core::InputManager::IsKeyReleased(const std::string &keyAlias) const {
     return IsKeyReleased(GetKeyFromName(keyAlias));
 }
 
-bool InputManager::IsValidMouseButton(const int button) {
+bool Core::InputManager::IsValidMouseButton(const int button) {
     return button >= 0 && button <= GLFW_MOUSE_BUTTON_LAST;
 }
 
-void InputManager::HandleClickEvent(const int button, const int action, int mods) {
+void Core::InputManager::HandleClickEvent(const int button, const int action, int mods) {
     if (!IsValidMouseButton(button)) return;
     mouseButtons[button] = action != GLFW_RELEASE;
 }
 
-bool InputManager::IsMouseDown(const int button) const {
+bool Core::InputManager::IsMouseDown(const int button) const {
     return IsValidMouseButton(button) && mouseButtons[button];
 }
 
-bool InputManager::IsMouseDown(const std::string &buttonAlias) const {
+bool Core::InputManager::IsMouseDown(const std::string &buttonAlias) const {
     return IsMouseDown(GetKeyFromName(buttonAlias));
 }
 
-bool InputManager::IsMousePressed(const int button) const {
+bool Core::InputManager::IsMousePressed(const int button) const {
     return IsValidMouseButton(button) &&
            mouseButtons[button] &&
            !previousMouseButtons[button];
 }
 
-bool InputManager::IsMousePressed(const std::string &buttonAlias) const {
+bool Core::InputManager::IsMousePressed(const std::string &buttonAlias) const {
     return IsMousePressed(GetKeyFromName(buttonAlias));
 }
 
-bool InputManager::IsMouseReleased(const int button) const {
+bool Core::InputManager::IsMouseReleased(const int button) const {
     return IsValidMouseButton(button) &&
            !mouseButtons[button] &&
            previousMouseButtons[button];
 }
 
-bool InputManager::IsMouseReleased(const std::string &buttonAlias) const {
+bool Core::InputManager::IsMouseReleased(const std::string &buttonAlias) const {
     return IsMouseReleased(GetKeyFromName(buttonAlias));
 }
 
-void InputManager::SetMousePos(const double xPos, const double yPos) {
+void Core::InputManager::SetMousePos(const double xPos, const double yPos) {
     if (m_FirstMouse) {
         m_MousePosX = xPos;
         m_MousePosY = yPos;
@@ -97,7 +97,7 @@ void InputManager::SetMousePos(const double xPos, const double yPos) {
 }
 
 
-void InputManager::HandleScrollEvent(const double xOffset, const double yOffset) {
+void Core::InputManager::HandleScrollEvent(const double xOffset, const double yOffset) {
     m_ScrollX += xOffset;
     m_ScrollY += yOffset;
 }
