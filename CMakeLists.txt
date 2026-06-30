@@ -185,8 +185,6 @@ add_executable(obliberry_editor
         src/Editor/UI/Panels/ViewportPanel.cpp
         src/Editor/UI/ProjectConfigEditor.cpp
         src/Editor/FileDialogs.cpp
-        src/Editor/UI/Modals/EditorDialog.h
-        src/Editor/UI/Modals/StdDialogs.h
 )
 
 target_link_libraries(obliberry_editor
