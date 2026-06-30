@@ -2,7 +2,6 @@
 
 
 #include <optional>
-#include <vector>
 #include "LightingSystem.h"
 #include "ECS/Components/MapComponent.h"
 #include "ECS/Components/MapStateComponent.h"
@@ -11,7 +10,6 @@
 #include "ECS/Registry.h"
 #include "ECS/Systems/MovementSystem.h"
 #include "../../Math/HexMath.h"
-#include "Rendering/Renderer.h"
 #include "Core/EngineContext.h"
 
 namespace ECS::Systems::MapRuntimeSystem {
@@ -64,13 +62,12 @@ namespace ECS::Systems::MapRuntimeSystem {
     inline void OnMapChanged(Registry &registry, Components::MapComponent &map,
                              Components::MapStateComponent *state,
                              const Core::EngineContext &ctx) {
-        ctx.renderer->Clean();
         map.needsMeshUpdate = true;
 
         if (state != nullptr) {
             ResetInteractionState(*state);
         }
-        ResetMovementEntities(registry, map.grid);
+        //ResetMovementEntities(registry, map.grid);
         LightingSystem::GenerateLightmap(map);
     }
 

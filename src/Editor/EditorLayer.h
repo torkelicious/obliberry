@@ -40,6 +40,12 @@ namespace Editor {
 
         void DrawProjectHub();
 
+        void LoadProject(const std::string &projectFilePath);
+
+        void ClearCurrentProject();
+
+        void LoadStartScene();
+
         void HandleInput(float dt);
 
         void LoadScene(const std::string &path);
@@ -58,6 +64,7 @@ namespace Editor {
 
         Map::HexCoords m_SelectedTile;
 
+        std::string m_PendingSceneToLoad;
         // UI
         static bool s_ShouldBuildDock;
         UI::RegistryPanel m_RegistryPanel;

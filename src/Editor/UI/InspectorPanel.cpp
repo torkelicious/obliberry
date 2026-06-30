@@ -23,16 +23,21 @@ void Editor::UI::InspectorPanel::OnImGuiRender() {
     m_IsHovered = ImGui::IsWindowHovered();
 
     if (m_SceneContext && static_cast<bool>(m_SelectedEntity)) {
-        std::string name = m_SelectedEntity.GetName();
-        if (name.empty()) {
-            name = "Entity " + std::to_string(static_cast<ECS::EntityID>(m_SelectedEntity));
-        }
-        ImGui::Text("Entity: %s", name.c_str());
-        ImGui::Separator();
-        ImGui::Spacing();
+        if (m_SelectedEntity) {
+            std::string name = m_SelectedEntity.GetName();
+            if (name.empty()) {
+                name = "Entity " + std::to_string(static_cast<ECS::EntityID>(m_SelectedEntity));
+            }
+            ImGui::Text("Entity: %s", name.c_str());
+            ImGui::Separator();
+            ImGui::Spacing();
 
-        for (const auto &widget: m_Widgets) {
-            widget->Draw(m_SelectedEntity);
+            for (const auto &widget: m_Widgets) {
+                widget->Draw(m_SelectedEntity);
+            }
+        } else {
+            m_SelectedEntity = ECS::Entity{};
+            ImGui::TextDisabled("Selected entity no longer exists.");
         }
     } else {
         ImGui::TextDisabled("No entity selected.");

@@ -2,5 +2,10 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/build/Debug/_deps/glfw-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/build/Debug/_deps/glm-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/build/Debug/_deps/nfd-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/build/Debug/_deps/nfd-src/3ps/wayland-protocols" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/build/Debug/_deps/nlohmann_json-src" vcs="Git" />
   </component>
 </project>

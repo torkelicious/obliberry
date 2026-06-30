@@ -1,4 +1,6 @@
 #include "Project.h"
+#include "Core/ProjectConfig.h"
+#include "Core/Utils.h"
 #include "IO/VFS.h"
 #include <filesystem>
 #include <iostream>
@@ -11,7 +13,7 @@ namespace Core {
         project->m_Config.windowTitle = name;
         project->m_Config.startScenePath = std::string(SCENE_PATH) + "default.json";
 
-        const std::filesystem::path templateDir = IO::VFS::Resolve("Templates/Default");
+        const std::filesystem::path templateDir = PathUtils::GetExecutableDirectory() / "Templates" / "Default";
         if (!std::filesystem::exists(templateDir)) {
             std::cerr << "[Project] Error: Template directory not found at: " << std::filesystem::absolute(templateDir)
                     << "\n";
@@ -51,5 +53,11 @@ namespace Core {
         return project;
     }
 
-    bool Project::Save() const { return ProjectConfig::Serialize(m_Config, "project.json"); }
+    bool Project::Save() const {
+        if (!ProjectConfig::Serialize(m_Config, "project.json")) {
+            return false;
+        }
+
+        return true;
+    }
 } // namespace Core

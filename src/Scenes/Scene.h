@@ -19,7 +19,7 @@ namespace Scenes {
     public:
         ~Scene() = default;
 
-        Scene(Core::EngineContext context, SceneProperties props);
+        Scene(Core::EngineContext *context, SceneProperties props);
 
         void OnEnter();
 
@@ -31,8 +31,9 @@ namespace Scenes {
 
         [[nodiscard]] ECS::Registry &GetRegistry() { return m_Registry; }
         [[nodiscard]] const ECS::Registry &GetRegistry() const { return m_Registry; }
-        [[nodiscard]] Core::EngineContext &GetContext() { return m_Context; }
-        [[nodiscard]] const Core::EngineContext &GetContext() const { return m_Context; }
+
+        [[nodiscard]] Core::EngineContext &GetContext() { return *m_Context; }
+        [[nodiscard]] const Core::EngineContext &GetContext() const { return *m_Context; }
 
         [[nodiscard]] const std::string &GetScenePath() const {
             return m_Properties.ScenePath;
@@ -40,10 +41,16 @@ namespace Scenes {
 
         SceneProperties &GetProperties() { return m_Properties; }
 
+        void MarkAsChanged() { m_HasUnsavedChanges = true; } // TODO: use
+        bool HasUnsavedChanges() const { return m_HasUnsavedChanges; }
+        void ClearUnsavedChanges() { m_HasUnsavedChanges = false; }
+
+        void OnSaved();
+
     private:
         SceneProperties m_Properties;
-        Core::EngineContext m_Context;
+        Core::EngineContext *m_Context;
         ECS::Registry m_Registry;
+        bool m_HasUnsavedChanges = false;
     };
 } // namespace Scenes
-

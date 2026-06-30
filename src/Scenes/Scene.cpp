@@ -16,62 +16,68 @@
 #include "Scripting/EngineLib/EngineLib.h"
 #include "Sound/AudioEngine.h"
 
-Scenes::Scene::Scene(Core::EngineContext context, SceneProperties props)
-    : m_Properties(std::move(props)), m_Context(std::move(context)) {
+Scenes::Scene::Scene(Core::EngineContext *context, SceneProperties props)
+    : m_Properties(std::move(props)), m_Context(context) {
 }
 
 void Scenes::Scene::OnEnter() {
+    std::cout << "[Scene] Entering scene: " << m_Properties.ScenePath << std::endl;
+
     Scripting::EngineLib::EngineLib lib;
-    lib.register_enginelib(*m_Context.scriptEngine, m_Registry, m_Context);
+    lib.register_enginelib(*m_Context->scriptEngine, m_Registry, *m_Context);
 
     IO::EntityFactory::RegisterDeserializers();
     IO::EntityFactory::RegisterSerializers();
 
+    std::cout << "[Scene] Attempting to deserialize scene from: " << m_Properties.ScenePath << std::endl;
     if (!IO::SceneIO::Deserialize(m_Properties.ScenePath, *this)) {
         std::cerr << "Scene: Failed to load scene file: " << m_Properties.ScenePath
                 << "\n";
+        std::cerr << "Scene: Scene will be empty!" << std::endl;
+    } else {
+        std::cout << "[Scene] Successfully deserialized scene" << std::endl;
     }
 
-    if (m_Context.audioEngine) {
+    if (m_Context->audioEngine) {
         if (!m_Properties.BackgroundMusicPath.empty()) {
-            m_Context.audioEngine->PlayMusic(m_Properties.BackgroundMusicPath);
+            m_Context->audioEngine->PlayMusic(m_Properties.BackgroundMusicPath);
         } else {
-            m_Context.audioEngine->StopMusic();
+            m_Context->audioEngine->StopMusic();
         }
     }
 
-    if (m_Context.renderer) {
-        m_Context.renderer->Clean();
+    if (m_Context->renderer) {
         Rendering::Renderer::SetClearColor(m_Properties.BackgroundClearColor);
     }
+    ECS::Systems::LightingSystem::Update(m_Registry);
 }
 
 void Scenes::Scene::Update(const float dt) {
-    m_Context.deltaTime = dt;
+    m_Context->deltaTime = dt;
 
-    ECS::Systems::PlayerControlSystem::Update(m_Registry, m_Context);
+    ECS::Systems::PlayerControlSystem::Update(m_Registry, *m_Context);
     ECS::Systems::AISystem::Update(m_Registry, dt);
     ECS::Systems::MovementSystem::Update(m_Registry, dt);
-    ECS::Systems::ScriptSystem::Update(m_Registry, m_Context);
+    ECS::Systems::ScriptSystem::Update(m_Registry, *m_Context);
     ECS::Systems::LightingSystem::Update(m_Registry);
 }
 
 void Scenes::Scene::Render() {
-    m_Context.renderer->BeginFrame();
+    m_Context->renderer->BeginFrame();
 
-    const glm::mat4 &vp = m_Context.renderer->GetCurrentVP();
+    const glm::mat4 &vp = m_Context->renderer->GetCurrentVP();
 
-    if (m_Context.camera) {
+    if (m_Context->camera) {
         const Math::Frustum::ViewFrustum frustum =
                 Math::Frustum::FromCameraVP(vp, /*padding=*/ Core::HEX_SIZE * 2.0f);
         const Math::Frustum::FrustumPlanes frustum3D =
                 Math::Frustum::FrustumPlanes::FromVP(vp);
 
-        ECS::Systems::MapRenderSystem::RenderAll(m_Registry, m_Context, frustum);
+        ECS::Systems::MapRenderSystem::RenderAll(m_Registry, *m_Context, frustum);
 
-        ECS::Systems::SpriteBillboardSystem::Update(m_Registry, m_Context.camera);
+        ECS::Systems::SpriteBillboardSystem::Update(m_Registry, m_Context->camera);
 
-        ECS::Systems::RenderSystem::Render(m_Registry, *m_Context.renderer, frustum3D);
+        ECS::Systems::RenderSystem::Render(m_Registry, *m_Context->renderer, frustum3D);
     }
 }
 
@@ -88,10 +94,11 @@ void Scenes::Scene::OnExit() {
         }
     }
 
-    ECS::Systems::ScriptSystem::OnSceneExit(m_Registry, m_Context);
-    if (m_Context.renderer) {
-        m_Context.renderer->Clean();
-    }
+    ECS::Systems::ScriptSystem::OnSceneExit(m_Registry, *m_Context);
     IO::PrefabManager::ClearCache();
     std::cout << "Exiting Scene " << m_Properties.ScenePath << "\n";
+}
+
+void Scenes::Scene::OnSaved() {
+    ClearUnsavedChanges();
 }

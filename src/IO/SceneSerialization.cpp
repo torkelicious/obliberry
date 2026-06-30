@@ -304,6 +304,7 @@ namespace IO::SceneIO {
         std::ofstream file(resolvedPath);
         if (!file.is_open()) return false;
         file << j.dump(4);
+        scene.OnSaved();
         return true;
     }
 }

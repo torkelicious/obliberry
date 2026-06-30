@@ -107,6 +107,7 @@ set(ENGINE_SOURCES
 
         # ECS / Scenes
         src/Scenes/Scene.cpp
+        src/Scenes/SceneManager.cpp
         src/Game/GameLayer.cpp
         src/Game/GameUI.cpp
 
@@ -126,6 +127,7 @@ set(ENGINE_SOURCES
         src/Scripting/EngineLib/Modules/EngineLibCamera.cpp
         src/Scripting/EngineLib/Modules/EngineLibSceneManagement.cpp
         src/Scripting/EngineLib/Modules/EngineLibTime.cpp
+
         src/IO/VFS.cpp
         src/Core/Project.cpp
 )

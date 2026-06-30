@@ -11,14 +11,16 @@
 #include <Scripting/ObSLCore/Interpreter/Interpreter.h>
 #include <cstdint>
 #include <cstdlib>
+#include <filesystem>
 #include <iostream>
 #include <memory>
 #include <string>
 
-#include "FileDialogs.h"
-#include "IO/VFS.h"
 #include "Core/InputManager.h"
 #include "Core/Window.h"
+#include "FileDialogs.h"
+#include "IO/SceneSerialization.h"
+#include "IO/VFS.h"
 
 /* TODO:
  *  implement proper playmode / editmode / mapeditmode or something, enum exists but is unused
@@ -31,44 +33,56 @@
 
 bool Editor::EditorLayer::s_ShouldBuildDock = true;
 
+// Popup state TODO: move to similar system as widgets
+static std::filesystem::path s_PendingNewProjectDir;
+static bool s_ShowNewProjectPrompt = false;
+static bool s_ShowCreateScenePrompt = false;
+static bool s_ShowSaveAsPrompt = false;
+static char s_NewProjectNameBuf[128] = "UntitledProject";
+static char s_CreateSceneNameBuf[128] = "";
+static char s_SaveAsNameBuf[128] = "";
+
 void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
     m_Context = ctx;
+
     m_Context.camera = &m_Camera;
     m_Context.sceneManager = &m_SceneManager;
+
+    ctx.camera = &m_Camera;
+    ctx.sceneManager = &m_SceneManager;
+
+    m_SceneManager.SetContext(m_Context);
+
     m_Input = m_Context.input;
     m_Context.scriptEngine->Set_Stdout(m_InterpreterOutput);
-    if (Core::Project::GetActive()) {
-        const std::string startScene = Core::Project::GetActive()->GetConfig().startScenePath;
-        m_SceneManager.LoadScene(
-            std::make_unique<Scenes::Scene>(m_Context, Scenes::SceneProperties{.ScenePath = startScene}));
 
-        m_Scene = m_SceneManager.GetCurrentScene();
-        m_Registry = &m_Scene->GetRegistry();
+    if (Core::Project::GetActive()) {
+        LoadStartScene();
+        if (!m_PendingSceneToLoad.empty()) {
+            LoadScene(m_PendingSceneToLoad);
+            m_PendingSceneToLoad.clear();
+        }
+    } else {
+        std::cout << "[EditorLayer] No active project" << std::endl;
     }
 }
 
+
 void Editor::EditorLayer::Update(const float dt) {
-    if (Core::Project::GetActive() && !m_Scene) {
-        const std::string startScene = Core::Project::GetActive()->GetConfig().startScenePath;
-
-        m_SceneManager.LoadScene(
-            std::make_unique<Scenes::Scene>(m_Context, Scenes::SceneProperties{.ScenePath = startScene}));
-
-        m_Scene = m_SceneManager.GetCurrentScene();
-        m_Registry = &m_Scene->GetRegistry();
-
-        //m_Playing = true; // TEMP FOR TESTING
+    if (!m_PendingSceneToLoad.empty()) {
+        LoadScene(m_PendingSceneToLoad);
+        m_PendingSceneToLoad.clear();
     }
 
-    if (!m_Scene || !m_Registry) {
-        return;
-    }
+    if (!m_Scene || !m_Registry) return;
 
+    // Update systems
     if (m_Playing) {
         m_SceneManager.Update(dt);
     } else {
         ECS::Systems::LightingSystem::Update(*m_Registry);
     }
+
     HandleInput(dt);
 }
 
@@ -139,49 +153,193 @@ void Editor::EditorLayer::HandleInput(const float dt) {
 }
 
 void Editor::EditorLayer::LoadScene(const std::string &path) {
+    std::cout << "[LoadScene] Loading scene: " << path << std::endl;
+
+    ClearCurrentProject();
+
+    try {
+        m_SceneManager.LoadSceneByPath(path);
+        m_Scene = m_SceneManager.GetCurrentScene();
+
+        if (m_Scene) {
+            m_Registry = &m_Scene->GetRegistry();
+            m_CurrentScenePath = path;
+            m_Scene->GetContext().camera = &m_Camera;
+
+            if (m_Context.renderer) {
+                Rendering::Renderer::SetClearColor(m_Scene->GetProperties().BackgroundClearColor);
+            }
+
+            std::cout << "[LoadScene] Successfully loaded scene with "
+                    << m_Scene->GetRegistry().GetLivingEntities().size() << " entities" << std::endl;
+        } else {
+            std::cerr << "[LoadScene] Failed to load scene: " << path << std::endl;
+            m_Registry = nullptr;
+            m_CurrentScenePath.clear();
+        }
+    } catch (const std::exception &e) {
+        std::cerr << "[LoadScene] Exception while loading scene: " << e.what() << std::endl;
+        m_Registry = nullptr;
+        m_CurrentScenePath.clear();
+    }
+}
+
+void Editor::EditorLayer::ClearCurrentProject() {
+    m_SceneManager.ClearCurrentScene();
+    m_Scene = nullptr;
+    m_Registry = nullptr;
+    m_CurrentScenePath.clear();
+
+    m_RegistryPanel.SetSelectedEntity(ECS::Entity{});
+    m_InspectorPanel.SetSelectedEntity(ECS::Entity{});
+    m_ViewportPanel.ClearSelectedEntityID();
+}
+
+void Editor::EditorLayer::LoadProject(const std::string &projectFilePath) {
+    ClearCurrentProject();
+
+    IO::VFS::UnmountProject();
+
+    Core::Project::Load(projectFilePath);
+
+    LoadStartScene();
+}
+
+void Editor::EditorLayer::LoadStartScene() {
+    if (!Core::Project::GetActive()) {
+        std::cerr << "[LoadStartScene] No active project!" << std::endl;
+        return;
+    }
+
+    const std::string startScene = Core::Project::GetActive()->GetConfig().startScenePath;
+    if (startScene.empty()) {
+        std::cerr << "[LoadStartScene] Warning: startScenePath is empty in project configuration!" << std::endl;
+        return;
+    }
+
+    std::cout << "[LoadStartScene] Loading start scene: " << startScene << std::endl;
+    m_PendingSceneToLoad = startScene;
 }
 
 void Editor::EditorLayer::SaveScene() {
+    m_SceneManager.SaveCurrentScene();
 }
 
 void Editor::EditorLayer::DrawInterface() {
     if (!Core::Project::GetActive()) {
         DrawProjectHub();
-        return;
+    } else {
+        DrawDockSpace();
+        DrawToolbar();
+        DrawEditorPanels();
+        DrawGameView();
+        DrawUtilityWindows();
     }
 
-    DrawDockSpace();
-    DrawToolbar();
-    DrawEditorPanels();
-    DrawGameView();
-    DrawUtilityWindows();
+    // New Project
+    if (s_ShowNewProjectPrompt) {
+        ImGui::OpenPopup("New Project");
+        s_ShowNewProjectPrompt = false;
+    }
+    if (ImGui::BeginPopupModal("New Project", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("Create project in: %s", s_PendingNewProjectDir.string().c_str());
+        ImGui::InputText("Project Name", s_NewProjectNameBuf, sizeof(s_NewProjectNameBuf));
+        if (ImGui::Button("Create")) {
+            const auto newProject = Core::Project::NewProject(s_PendingNewProjectDir, s_NewProjectNameBuf);
+            if (newProject) {
+                LoadProject(newProject->GetProjectPath().string());
+            }
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel")) {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+
+    // Scene management
+    if (Core::Project::GetActive()) {
+        if (s_ShowCreateScenePrompt) {
+            ImGui::OpenPopup("Create Scene");
+            s_ShowCreateScenePrompt = false;
+            s_CreateSceneNameBuf[0] = '\0';
+        }
+        if (ImGui::BeginPopupModal("Create Scene", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::InputText("Scene Name", s_CreateSceneNameBuf, sizeof(s_CreateSceneNameBuf));
+            if (ImGui::Button("Create")) {
+                m_SceneManager.CreateNewScene(s_CreateSceneNameBuf);
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel")) {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+
+        if (s_ShowSaveAsPrompt) {
+            ImGui::OpenPopup("Save Scene As");
+            s_ShowSaveAsPrompt = false;
+            std::string currentName = "scene";
+            if (m_Scene && !m_Scene->GetProperties().Name.empty()) {
+                currentName = m_Scene->GetProperties().Name;
+            }
+            strncpy(s_SaveAsNameBuf, currentName.c_str(), sizeof(s_SaveAsNameBuf) - 1);
+        }
+        if (ImGui::BeginPopupModal("Save Scene As", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::InputText("Scene Name", s_SaveAsNameBuf, sizeof(s_SaveAsNameBuf));
+            if (ImGui::Button("Save")) {
+                std::string safeName = s_SaveAsNameBuf;
+                std::ranges::replace(safeName, ' ', '_');
+                const std::string scenePath = Core::PathUtils::Join(Core::SCENE_PATH, safeName, ".json");
+                if (IO::SceneIO::Serialize(scenePath, *m_Scene)) {
+                    m_Scene->GetProperties().ScenePath = scenePath;
+                    m_Scene->GetProperties().Name = s_SaveAsNameBuf;
+                }
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel")) {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+    }
 }
 
 void Editor::EditorLayer::DrawProjectHub() {
-    //TODO !!!:
-    // Fix Deadlock in hub when trying to close resize or really do anything other than press the button!!!
-
+    const ImVec2 viewportSize = ImGui::GetMainViewport()->Size;
+    const auto hubSize = ImVec2(viewportSize.x * 0.4f, viewportSize.y * 0.5f);
     ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-    ImGui::SetNextWindowSize(ImVec2(600, 400));
-
+    ImGui::SetNextWindowSize(hubSize);
     ImGui::Begin("Obliberry hub", nullptr,
-                 ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
+                 ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
 
     ImGui::Text("welcome :)");
     ImGui::Separator();
 
-    if (ImGui::Button("Create New Project (TestGame)", ImVec2(250, 50))) {
-        const std::filesystem::path homeDir = IO::VFS::GetHomeDirectory();
-        const std::filesystem::path baseDir = homeDir / "OBLI_TEST_Projects";
-        Core::Project::NewProject(baseDir, "TestGame");
+    if (ImGui::Button("Create New Project", ImVec2(250, 50))) {
+        const auto dir = FileDialogs::PickFolder(m_Context);
+        if (dir) {
+            s_PendingNewProjectDir = std::filesystem::path(*dir);
+            s_ShowNewProjectPrompt = true;
+        }
     }
 
-    // ImGui::SameLine();
-    //
-    // if (ImGui::Button("Open Existing Project", ImVec2(250, 50))) {
-    //     std::cout << "not implemented\n";
-    // }
-    //
+    ImGui::Spacing();
+
+    if (ImGui::Button("Open Existing Project", ImVec2(250, 50))) {
+        const auto dir = FileDialogs::PickFolder(m_Context);
+        if (dir) {
+            const std::filesystem::path projectFile = std::filesystem::path(*dir) / "project.json";
+            if (std::filesystem::exists(projectFile)) {
+                LoadProject(projectFile.string());
+            } else {
+                std::cerr << "[Hub] No project.json found in: " << *dir << "\n";
+            }
+        }
+    }
 
     ImGui::End();
 }
@@ -221,7 +379,6 @@ void Editor::EditorLayer::DrawDockSpace() {
     s_ShouldBuildDock = false;
 }
 
-
 void Editor::EditorLayer::DrawEditorPanels() {
     m_RegistryPanel.SetContext(m_Scene, m_Context);
     m_InspectorPanel.SetContext(m_Scene, m_Context);
@@ -230,7 +387,7 @@ void Editor::EditorLayer::DrawEditorPanels() {
     const int clickedID = m_ViewportPanel.GetSelectedEntityID();
 
     if (clickedID != -1) {
-        const ECS::EntityID eID = static_cast<ECS::EntityID>(clickedID);
+        const auto eID = static_cast<ECS::EntityID>(clickedID);
 
         if (m_Registry->IsValid(eID)) {
             const ECS::Entity selectedEntity(eID, m_Registry);
@@ -260,8 +417,7 @@ void Editor::EditorLayer::DrawGameView() const {
         if (gameViewportSize.x > 0.0f && gameViewportSize.y > 0.0f) {
             if (const auto fbo = m_Context.renderer->GetEditorFramebuffer()) {
                 const uint32_t texId = fbo->GetColorAttID();
-                ImGui::Image(texId, gameViewportSize, ImVec2{0, 1},
-                             ImVec2{1, 0});
+                ImGui::Image(texId, gameViewportSize, ImVec2{0, 1}, ImVec2{1, 0});
             }
         }
     }
@@ -299,31 +455,77 @@ void Editor::EditorLayer::DrawUtilityWindows() {
 void Editor::EditorLayer::DrawToolbar() {
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("File")) {
+            if (ImGui::MenuItem("New Project")) {
+                const auto dir = FileDialogs::PickFolder(m_Context);
+                if (dir) {
+                    s_PendingNewProjectDir = std::filesystem::path(*dir);
+                    s_ShowNewProjectPrompt = true;
+                }
+            }
+
             if (ImGui::MenuItem("Open Project")) {
-                auto path = FileDialogs::PickFolder(m_Context);
-                if (path.has_value()) {
-                    //TODO: IMPLEMENT
-                    std::cout << "[Editor] Picked Project Folder: " << path.value() << "\n";
+                const auto dir = FileDialogs::PickFolder(m_Context);
+                if (dir) {
+                    const std::filesystem::path projectFile = std::filesystem::path(*dir) / "project.json";
+                    if (std::filesystem::exists(projectFile)) {
+                        LoadProject(projectFile.string());
+                    } else {
+                        std::cerr << "[Editor] No project.json found in: " << *dir << "\n";
+                    }
                 }
             }
+
             ImGui::Separator();
-            if (ImGui::MenuItem("Save Scene As")) {
-                auto path = FileDialogs::SaveFile(m_Context, "ObliBerry JSON Scene", "json");
-                if (path.has_value()) {
-                    //TODO: IMPLEMENT
-                    std::cout << "[Editor] Saving Scene to: " << path.value() << "\n";
-                }
+
+            if (ImGui::MenuItem("Save Scene", "Ctrl+S")) {
+                SaveScene();
+            }
+
+            if (ImGui::MenuItem("Save Scene As...")) {
+                s_ShowSaveAsPrompt = true;
             }
             ImGui::Separator();
+
+            if (ImGui::MenuItem("Close Project")) {
+                ClearCurrentProject();
+                Core::Project::SetActive(nullptr);
+                IO::VFS::UnmountProject();
+                s_ShouldBuildDock = true;
+            }
+            ImGui::Separator();
+
             if (ImGui::MenuItem("Exit")) {
                 m_Context.window->Close();
             }
             ImGui::EndMenu();
         }
 
-        // the center of the screen minus half the button's width
-        float buttonWidth = 60.0f;
-        float centerPos = (ImGui::GetWindowSize().x * 0.5f) - (buttonWidth * 0.5f);
+        if (ImGui::BeginMenu("Scene")) {
+            if (ImGui::MenuItem("Create Scene")) {
+                s_ShowCreateScenePrompt = true;
+            }
+            ImGui::Separator();
+
+            if (ImGui::BeginMenu("Switch To")) {
+                const auto scenes = m_SceneManager.GetAvailableScenes();
+                if (scenes.empty()) {
+                    ImGui::MenuItem("(no scenes)", nullptr, false, false);
+                } else {
+                    for (const auto &scenePath: scenes) {
+                        const bool isCurrent = (m_Scene && m_Scene->GetScenePath() == scenePath);
+                        if (ImGui::MenuItem(scenePath.c_str(), nullptr, false, !isCurrent)) {
+                            m_PendingSceneToLoad = scenePath;
+                        }
+                    }
+                }
+                ImGui::EndMenu();
+            }
+            ImGui::EndMenu();
+        }
+
+        // Play/Stop button centered
+        const float buttonWidth = 60.0f;
+        const float centerPos = (ImGui::GetWindowSize().x * 0.5f) - (buttonWidth * 0.5f);
 
         ImGui::SetCursorPosX(centerPos);
 
@@ -332,7 +534,7 @@ void Editor::EditorLayer::DrawToolbar() {
 
             if (m_Playing) {
                 std::cout << "[Editor] Entering Play Mode\n";
-                // TODO: Initialize play mode
+                // TODO: Initialize a real play mode
             } else {
                 std::cout << "[Editor] Returning to Edit Mode\n";
                 // TODO: Restore scene state

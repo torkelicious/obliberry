@@ -2,37 +2,47 @@
 
 
 #include <memory>
+#include <vector>
+#include "Core/EngineContext.h"
 #include "Scene.h"
 
 namespace Scenes {
     class SceneManager {
     public:
-        void LoadScene(std::unique_ptr<Scene> newScene) {
-            if (m_CurrentScene) {
-                m_CurrentScene->OnExit();
-            }
-            m_CurrentScene = std::move(newScene);
-            if (m_CurrentScene) {
-                m_CurrentScene->OnEnter();
-            }
-        }
+        std::vector<std::string> GetAvailableScenes() const;
 
-        void Update(const float dt) const {
-            if (m_CurrentScene) {
-                m_CurrentScene->Update(dt);
-            }
-        }
+        bool CreateNewScene(const std::string &sceneName) const;
 
-        void Render() const {
-            if (m_CurrentScene) {
-                m_CurrentScene->Render();
-            }
-        }
+        bool DeleteScene(const std::string &scenePath);
+
+        std::string GetCurrentScenePath() const;
+
+        void SwitchScene(const std::string &newScenePath);
+
+        void LoadSceneByPath(const std::string &scenePath);
+
+        bool SaveCurrentScene() const;
+
+        bool ValidateScenePath(const std::string &scenePath) const;
+
+        void ProcessPendingSceneChange(Core::EngineContext &context);
+
+        void ClearCurrentScene();
+
+        void LoadScene(std::unique_ptr<Scene> newScene);
+
+        void Update(const float dt) const;
+
+        void Render() const;
 
         [[nodiscard]] Scene *GetCurrentScene() const { return m_CurrentScene.get(); }
 
+        void SetContext(Core::EngineContext &ctx) {
+            m_Context = &ctx;
+        }
+
     private:
+        Core::EngineContext *m_Context = nullptr;
         std::unique_ptr<Scene> m_CurrentScene = nullptr;
     };
 } // namespace Scenes
-

@@ -62,7 +62,7 @@ void Game::GameLayer::DrawInterface() {
         if (ImGui::Begin("Performance", &showPerformanceOverlay, overlayFlags)) {
             ImGui::TextColored({0.0f, 1.0f, 0.7f, 1.0f}, "perf");
             ImGui::Separator();
-            const float frameMs = m_Context.deltaTime * 1000.0f;
+            const float frameMs = m_Context->deltaTime * 1000.0f;
             ImGui::Text("FPS:    %.1f", ImGui::GetIO().Framerate);
             ImGui::TextColored(GetThresholdColor(frameMs), "Delta: %.2f ms", frameMs);
         }

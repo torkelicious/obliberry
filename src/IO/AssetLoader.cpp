@@ -86,8 +86,14 @@ void IO::AssetLoader::LoadTextures(
     const json &textures,
     Core::ResourceManager &resources) {
     for (const auto &tex: textures) {
+        const std::string id = tex.at("id").get<std::string>();
+
+        if (resources.Get<Rendering::Texture>(id) != nullptr) {
+            continue;
+        }
+
         auto texture = resources.Load<Rendering::Texture>(
-            tex.at("id").get<std::string>(),
+            id,
             tex.at("path").get<std::string>()
         );
         Rendering::Renderer::SubmitInitTask([texture] {
@@ -101,8 +107,14 @@ void IO::AssetLoader::LoadShaders(
     const json &shaders,
     Core::ResourceManager &resources) {
     for (const auto &shader: shaders) {
+        const std::string id = shader.at("id").get<std::string>();
+
+        if (resources.Get<Rendering::Shader>(id) != nullptr) {
+            continue;
+        }
+
         auto s = resources.Load<Rendering::Shader>(
-            shader.at("id").get<std::string>(),
+            id,
             shader.at("vertex").get<std::string>(),
             shader.at("fragment").get<std::string>()
         );
@@ -154,6 +166,11 @@ void IO::AssetLoader::LoadMeshes(
     Core::ResourceManager &resources) {
     for (const auto &mesh: meshes) {
         const std::string id = mesh.at("id").get<std::string>();
+
+        if (resources.Get<Rendering::Mesh>(id) != nullptr) {
+            continue;
+        }
+
         const std::string factoryName = mesh.at("factory").get<std::string>();
         auto it = s_MeshFactories.find(factoryName);
         if (it == s_MeshFactories.end()) {

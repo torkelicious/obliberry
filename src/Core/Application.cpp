@@ -100,6 +100,8 @@ void Core::Application::Run() {
 
     m_Layer->Init(context);
 
+    if (context.sceneManager) { context.sceneManager->SetContext(context); }
+
     ImGui_ImplOpenGL3_CreateDeviceObjects();
 
     // context handover

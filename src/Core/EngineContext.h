@@ -32,7 +32,7 @@ namespace ObSL {
 namespace Core {
     struct EngineContext {
         std::filesystem::path ProjectRootPath;
-        std::string pendingScenePath;
+        std::string pendingScenePath; // for deferred scene loading (GameLayer, Scripting)
         ProjectConfig *projectConfig = nullptr;
         Window *window = nullptr;
         InputManager *input = nullptr;

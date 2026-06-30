@@ -16,8 +16,8 @@ namespace Game {
 
         void Shutdown() override;
 
-        [[nodiscard]] Rendering::Camera &GetCamera() const { return *m_Context.camera; }
-        void SetContext(const Core::EngineContext &context) { m_Context = context; }
+        [[nodiscard]] Rendering::Camera &GetCamera() const { return *m_Context->camera; }
+        void SetContext(Core::EngineContext &context) { m_Context = &context; }
 
     private:
         void DrawInterface();
@@ -25,7 +25,7 @@ namespace Game {
         bool m_GameIsRunning = true;
         Scenes::SceneManager m_SceneManager;
 
-        Core::EngineContext m_Context;
+        Core::EngineContext *m_Context = nullptr;
         std::optional<Scenes::SceneProperties> m_PendingSceneLoad;
     };
 } // namespace Game

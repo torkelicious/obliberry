@@ -13,11 +13,12 @@
 namespace ECS {
     class Registry {
     private:
-        std::queue<EntityID> m_AvailableEntities;
+        std::queue<uint32_t> m_AvailableEntities;
         std::unordered_map<std::type_index, std::unique_ptr<IPool> > m_ComponentPools;
         std::vector<EntityID> m_LivingEntities;
         std::unordered_map<EntityID, std::string> m_EntityNames;
         std::vector<bool> m_EntityStatus;
+        std::vector<uint32_t> m_EntityVersions;
 
         template<typename T>
         ComponentPool<T> *GetPool() {
@@ -32,34 +33,47 @@ namespace ECS {
     public:
         Registry() {
             m_EntityStatus.resize(MAX_ENTITIES, false);
-            for (EntityID i = 0; i < MAX_ENTITIES; ++i) {
+            m_EntityVersions.resize(MAX_ENTITIES, 0);
+            for (uint32_t i = 0; i < MAX_ENTITIES; ++i) {
                 m_AvailableEntities.push(i);
             }
         }
 
-        bool IsValid(const EntityID id) const {
-            if (id >= MAX_ENTITIES)
-                return false;
-            return m_EntityStatus[id];
-        }
-
         EntityID CreateEntity() {
-            assert(m_LivingEntities.size() < MAX_ENTITIES && "Too many entities");
-            const EntityID id = m_AvailableEntities.front();
+            const uint32_t index = m_AvailableEntities.front();
             m_AvailableEntities.pop();
-            m_LivingEntities.push_back(id);
-            m_EntityStatus[id] = true; // mark as alive
-            return id;
+
+            const uint32_t version = m_EntityVersions[index];
+            const EntityID newId = index | (version << ENTITY_VERSION_SHIFT);
+
+            m_EntityStatus[index] = true;
+            m_LivingEntities.push_back(newId);
+            return newId;
         }
 
-        void DestroyEntity(const EntityID entity) {
+        void DestroyEntity(EntityID id) {
+            if (!IsValid(id)) return;
+
+            const uint32_t index = GetEntityIndex(id);
+
             for (const auto &pool: m_ComponentPools | std::views::values) {
-                pool->EntityDestroyed(entity);
+                pool->EntityDestroyed(id);
             }
-            std::erase(m_LivingEntities, entity);
-            m_EntityNames.erase(entity);
-            m_AvailableEntities.push(entity);
-            m_EntityStatus[entity] = false;
+
+            // Increment generation to invalidate old handles
+            m_EntityVersions[index]++;
+            m_EntityStatus[index] = false;
+            m_AvailableEntities.push(index);
+
+            std::erase(m_LivingEntities, id);
+        }
+
+        bool IsValid(const EntityID id) const {
+            const uint32_t index = GetEntityIndex(id);
+            if (index >= MAX_ENTITIES || !m_EntityStatus[index]) {
+                return false;
+            }
+            return GetEntityVersion(id) == m_EntityVersions[index];
         }
 
         template<typename T>
