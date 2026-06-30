@@ -5,6 +5,7 @@
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Systems/MovementSystem.h"
 #include "Math/HexMath.h"
+#include "Scripting/EngineLib/EngineLibFactories.h"
 #include "Scripting/ObSLCore/Interpreter/Interpreter.h"
 
 void Scripting::EngineLib::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) {
@@ -153,4 +154,46 @@ void Scripting::EngineLib::EngineLib::register_map_modules(ObSL::Interpreter &in
                     });
                 return std::monostate{};
             }, "ClearPathTarget"));
+
+    interpreter.get_global_environment()->define(
+        "Map_IsHexWalkable", interpreter.gc.allocate<ObSL::NativeFunction>(
+            2,
+            [reg = m_registry](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+                if (args.size() < 2 || !std::holds_alternative<double>(args[0]) || !std::holds_alternative<double>(args[1])) {
+                    return false;
+                }
+                const Map::HexCoords pos(
+                    static_cast<int32_t>(std::get<double>(args[0])),
+                    static_cast<int32_t>(std::get<double>(args[1]))
+                );
+                bool isWalkable = false;
+                reg->ForEach<ECS::Components::MapComponent>(
+                    [&](ECS::Entity, ECS::Components::MapComponent *mapComp) {
+                        if (mapComp) {
+                            if (const Map::Tile *tile = mapComp->grid.Get(pos)) {
+                                isWalkable = tile->walkable;
+                            }
+                        }
+                    });
+
+                return isWalkable;
+            }, "Map_IsHexWalkable"));
+
+    interpreter.get_global_environment()->define(
+        "Map_GetMapEntity", interpreter.gc.allocate<ObSL::NativeFunction>(
+            0,
+            [reg = m_registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
+                ECS::EntityID mapId = 0; // 0 is invalid
+
+                reg->ForEach<ECS::Components::MapComponent>(
+                    [&](ECS::Entity entity, ECS::Components::MapComponent *) {
+                        mapId = static_cast<ECS::EntityID>(entity);
+                    });
+
+                if (mapId != 0) {
+                    return CreateEntityObject(interp, *reg, mapId);
+                }
+                return std::monostate{};
+            }, "Map_GetMapEntity"));
+
 }
