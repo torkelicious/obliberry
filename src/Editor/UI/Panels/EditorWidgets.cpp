@@ -1,5 +1,5 @@
-#include "EditorWidgets.h"
 #include "ECS/ECS.h"
+#include "../EditorWidgets.h"
 #include <cstring>
 
 Editor::UI::PointLightWidget::PointLightWidget() : AutoComponentWidget("Point Light") {

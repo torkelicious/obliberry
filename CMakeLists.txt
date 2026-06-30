@@ -130,6 +130,7 @@ set(ENGINE_SOURCES
 
         src/IO/VFS.cpp
         src/Core/Project.cpp
+
 )
 
 # ObSL Core
@@ -178,12 +179,14 @@ target_link_libraries(obliberry_runtime PRIVATE obliberry_engine)
 add_executable(obliberry_editor
         src/Editor/EditorMain.cpp
         src/Editor/EditorLayer.cpp
-        src/Editor/UI/EditorWidgets.cpp
-        src/Editor/UI/InspectorPanel.cpp
-        src/Editor/UI/RegistryPanel.cpp
-        src/Editor/UI/ViewportPanel.cpp
+        src/Editor/UI/Panels/EditorWidgets.cpp
+        src/Editor/UI/Panels/InspectorPanel.cpp
+        src/Editor/UI/Panels/RegistryPanel.cpp
+        src/Editor/UI/Panels/ViewportPanel.cpp
         src/Editor/UI/ProjectConfigEditor.cpp
         src/Editor/FileDialogs.cpp
+        src/Editor/UI/Modals/EditorDialog.h
+        src/Editor/UI/Modals/StdDialogs.h
 )
 
 target_link_libraries(obliberry_editor

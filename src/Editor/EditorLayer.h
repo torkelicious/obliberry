@@ -3,14 +3,15 @@
 #include <memory>
 
 #include "Core/ApplicationLayer.h"
-#include "Editor/UI/InspectorPanel.h"
-#include "Editor/UI/RegistryPanel.h"
-#include "Editor/UI/ViewportPanel.h"
+#include "UI/Panels/InspectorPanel.h"
+#include "UI/Panels/RegistryPanel.h"
+#include "UI/Panels/ViewportPanel.h"
 
 #include "EditorCamera.h"
 #include "Map/HexCoords.h"
 #include "Scenes/Scene.h"
 #include "Scenes/SceneManager.h"
+#include "UI/Modals/StdDialogs.h"
 
 namespace Editor {
     enum EditorMode : uint8_t { EditorMode, MapEditorMode, PlayMode };
@@ -50,7 +51,7 @@ namespace Editor {
 
         void LoadScene(const std::string &path);
 
-        void SaveScene();
+        void SaveScene() const;
 
         Core::EngineContext m_Context;
         Scenes::Scene *m_Scene = nullptr;
@@ -70,6 +71,9 @@ namespace Editor {
         UI::RegistryPanel m_RegistryPanel;
         UI::InspectorPanel m_InspectorPanel;
         UI::ViewportPanel m_ViewportPanel;
+        UI::NewProjectDialog m_NewProjectDialog;
+        UI::CreateSceneDialog m_CreateSceneDialog;
+        UI::SaveSceneAsDialog m_SaveSceneAsDialog;
 
         // Logging
         std::vector<std::string> m_ConsoleLogs;

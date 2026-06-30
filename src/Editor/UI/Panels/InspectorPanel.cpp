@@ -1,5 +1,5 @@
 #include "InspectorPanel.h"
-#include "EditorWidgets.h"
+#include "../EditorWidgets.h"
 #include <imgui.h>
 
 Editor::UI::InspectorPanel::InspectorPanel() {
@@ -23,6 +23,7 @@ void Editor::UI::InspectorPanel::OnImGuiRender() {
     m_IsHovered = ImGui::IsWindowHovered();
 
     if (m_SceneContext && static_cast<bool>(m_SelectedEntity)) {
+        // ReSharper disable once CppDFAConstantConditions
         if (m_SelectedEntity) {
             std::string name = m_SelectedEntity.GetName();
             if (name.empty()) {

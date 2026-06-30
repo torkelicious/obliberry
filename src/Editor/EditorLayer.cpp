@@ -15,6 +15,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <algorithm>
 
 #include "Core/InputManager.h"
 #include "Core/Window.h"
@@ -23,24 +24,15 @@
 #include "IO/VFS.h"
 
 /* TODO:
- *  implement proper playmode / editmode / mapeditmode or something, enum exists but is unused
- *  gizmos and shit
- *  real editing ig
- *  map editor etc etc just an actual editor
- *  -
- *  fix mouse offset when running via editor view - kinda done in a hacky way??
+ * implement proper playmode / editmode / mapeditmode or something, enum exists but is unused
+ * gizmos and shit
+ * real editing ig
+ * map editor etc etc just an actual editor
+ * -
+ * fix mouse offset when running via editor view - kinda done in a hacky way??
  */
 
 bool Editor::EditorLayer::s_ShouldBuildDock = true;
-
-// Popup state TODO: move to similar system as widgets
-static std::filesystem::path s_PendingNewProjectDir;
-static bool s_ShowNewProjectPrompt = false;
-static bool s_ShowCreateScenePrompt = false;
-static bool s_ShowSaveAsPrompt = false;
-static char s_NewProjectNameBuf[128] = "UntitledProject";
-static char s_CreateSceneNameBuf[128] = "";
-static char s_SaveAsNameBuf[128] = "";
 
 void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
     m_Context = ctx;
@@ -221,7 +213,8 @@ void Editor::EditorLayer::LoadStartScene() {
     m_PendingSceneToLoad = startScene;
 }
 
-void Editor::EditorLayer::SaveScene() {
+void Editor::EditorLayer::SaveScene() const {
+    // ReSharper disable once CppExpressionWithoutSideEffects
     m_SceneManager.SaveCurrentScene();
 }
 
@@ -236,75 +229,12 @@ void Editor::EditorLayer::DrawInterface() {
         DrawUtilityWindows();
     }
 
-    // New Project
-    if (s_ShowNewProjectPrompt) {
-        ImGui::OpenPopup("New Project");
-        s_ShowNewProjectPrompt = false;
-    }
-    if (ImGui::BeginPopupModal("New Project", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::Text("Create project in: %s", s_PendingNewProjectDir.string().c_str());
-        ImGui::InputText("Project Name", s_NewProjectNameBuf, sizeof(s_NewProjectNameBuf));
-        if (ImGui::Button("Create")) {
-            const auto newProject = Core::Project::NewProject(s_PendingNewProjectDir, s_NewProjectNameBuf);
-            if (newProject) {
-                LoadProject(newProject->GetProjectPath().string());
-            }
-            ImGui::CloseCurrentPopup();
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("Cancel")) {
-            ImGui::CloseCurrentPopup();
-        }
-        ImGui::EndPopup();
-    }
-
-    // Scene management
+    // encapsulated dialogs
+    // todo: maybe not this?
+    m_NewProjectDialog.Update();
     if (Core::Project::GetActive()) {
-        if (s_ShowCreateScenePrompt) {
-            ImGui::OpenPopup("Create Scene");
-            s_ShowCreateScenePrompt = false;
-            s_CreateSceneNameBuf[0] = '\0';
-        }
-        if (ImGui::BeginPopupModal("Create Scene", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-            ImGui::InputText("Scene Name", s_CreateSceneNameBuf, sizeof(s_CreateSceneNameBuf));
-            if (ImGui::Button("Create")) {
-                m_SceneManager.CreateNewScene(s_CreateSceneNameBuf);
-                ImGui::CloseCurrentPopup();
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("Cancel")) {
-                ImGui::CloseCurrentPopup();
-            }
-            ImGui::EndPopup();
-        }
-
-        if (s_ShowSaveAsPrompt) {
-            ImGui::OpenPopup("Save Scene As");
-            s_ShowSaveAsPrompt = false;
-            std::string currentName = "scene";
-            if (m_Scene && !m_Scene->GetProperties().Name.empty()) {
-                currentName = m_Scene->GetProperties().Name;
-            }
-            strncpy(s_SaveAsNameBuf, currentName.c_str(), sizeof(s_SaveAsNameBuf) - 1);
-        }
-        if (ImGui::BeginPopupModal("Save Scene As", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-            ImGui::InputText("Scene Name", s_SaveAsNameBuf, sizeof(s_SaveAsNameBuf));
-            if (ImGui::Button("Save")) {
-                std::string safeName = s_SaveAsNameBuf;
-                std::ranges::replace(safeName, ' ', '_');
-                const std::string scenePath = Core::PathUtils::Join(Core::SCENE_PATH, safeName, ".json");
-                if (IO::SceneIO::Serialize(scenePath, *m_Scene)) {
-                    m_Scene->GetProperties().ScenePath = scenePath;
-                    m_Scene->GetProperties().Name = s_SaveAsNameBuf;
-                }
-                ImGui::CloseCurrentPopup();
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("Cancel")) {
-                ImGui::CloseCurrentPopup();
-            }
-            ImGui::EndPopup();
-        }
+        m_CreateSceneDialog.Update();
+        m_SaveSceneAsDialog.Update();
     }
 }
 
@@ -322,8 +252,14 @@ void Editor::EditorLayer::DrawProjectHub() {
     if (ImGui::Button("Create New Project", ImVec2(250, 50))) {
         const auto dir = FileDialogs::PickFolder(m_Context);
         if (dir) {
-            s_PendingNewProjectDir = std::filesystem::path(*dir);
-            s_ShowNewProjectPrompt = true;
+            m_NewProjectDialog.SetDirectory(std::filesystem::path(*dir));
+            m_NewProjectDialog.SetOnConfirm([this](const std::filesystem::path &pDir, const std::string &name) {
+                const auto newProject = Core::Project::NewProject(pDir, name);
+                if (newProject) {
+                    LoadProject(newProject->GetProjectPath().string());
+                }
+            });
+            m_NewProjectDialog.Open();
         }
     }
 
@@ -357,9 +293,6 @@ void Editor::EditorLayer::DrawDockSpace() {
     ImGui::DockBuilderSetNodeSize(dockspaceId, ImGui::GetMainViewport()->Size);
 
     ImGuiID dock_id_center = dockspaceId;
-
-    const ImGuiID dock_id_top =
-            ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Up, 0.06f, nullptr, &dock_id_center);
 
     const ImGuiID dock_id_right =
             ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Right, 0.25f, nullptr, &dock_id_center);
@@ -458,8 +391,14 @@ void Editor::EditorLayer::DrawToolbar() {
             if (ImGui::MenuItem("New Project")) {
                 const auto dir = FileDialogs::PickFolder(m_Context);
                 if (dir) {
-                    s_PendingNewProjectDir = std::filesystem::path(*dir);
-                    s_ShowNewProjectPrompt = true;
+                    m_NewProjectDialog.SetDirectory(std::filesystem::path(*dir));
+                    m_NewProjectDialog.SetOnConfirm([this](const std::filesystem::path &pDir, const std::string &name) {
+                        const auto newProject = Core::Project::NewProject(pDir, name);
+                        if (newProject) {
+                            LoadProject(newProject->GetProjectPath().string());
+                        }
+                    });
+                    m_NewProjectDialog.Open();
                 }
             }
 
@@ -482,7 +421,22 @@ void Editor::EditorLayer::DrawToolbar() {
             }
 
             if (ImGui::MenuItem("Save Scene As...")) {
-                s_ShowSaveAsPrompt = true;
+                std::string currentName = "scene";
+                if (m_Scene && !m_Scene->GetProperties().Name.empty()) {
+                    currentName = m_Scene->GetProperties().Name;
+                }
+
+                m_SaveSceneAsDialog.SetCurrentName(currentName);
+                m_SaveSceneAsDialog.SetOnConfirm([this](const std::string &newName) {
+                    std::string safeName = newName;
+                    std::ranges::replace(safeName, ' ', '_');
+                    const std::string scenePath = Core::PathUtils::Join(Core::SCENE_PATH, safeName, ".json");
+                    if (IO::SceneIO::Serialize(scenePath, *m_Scene)) {
+                        m_Scene->GetProperties().ScenePath = scenePath;
+                        m_Scene->GetProperties().Name = newName;
+                    }
+                });
+                m_SaveSceneAsDialog.Open();
             }
             ImGui::Separator();
 
@@ -502,7 +456,12 @@ void Editor::EditorLayer::DrawToolbar() {
 
         if (ImGui::BeginMenu("Scene")) {
             if (ImGui::MenuItem("Create Scene")) {
-                s_ShowCreateScenePrompt = true;
+                m_CreateSceneDialog.Reset();
+                m_CreateSceneDialog.SetOnConfirm([this](const std::string &sceneName) {
+                    // ReSharper disable once CppExpressionWithoutSideEffects
+                    m_SceneManager.CreateNewScene(sceneName);
+                });
+                m_CreateSceneDialog.Open();
             }
             ImGui::Separator();
 
@@ -512,7 +471,7 @@ void Editor::EditorLayer::DrawToolbar() {
                     ImGui::MenuItem("(no scenes)", nullptr, false, false);
                 } else {
                     for (const auto &scenePath: scenes) {
-                        const bool isCurrent = (m_Scene && m_Scene->GetScenePath() == scenePath);
+                        const bool isCurrent = m_Scene && m_Scene->GetScenePath() == scenePath;
                         if (ImGui::MenuItem(scenePath.c_str(), nullptr, false, !isCurrent)) {
                             m_PendingSceneToLoad = scenePath;
                         }
@@ -525,7 +484,7 @@ void Editor::EditorLayer::DrawToolbar() {
 
         // Play/Stop button centered
         const float buttonWidth = 60.0f;
-        const float centerPos = (ImGui::GetWindowSize().x * 0.5f) - (buttonWidth * 0.5f);
+        const float centerPos = ImGui::GetWindowSize().x * 0.5f - buttonWidth * 0.5f;
 
         ImGui::SetCursorPosX(centerPos);
 
