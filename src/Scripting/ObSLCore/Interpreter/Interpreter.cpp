@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iostream>
 #include <memory_resource>
+#include <mutex>
 #include <ranges>
 #include <sstream>
 #include <type_traits>
@@ -32,6 +33,7 @@ namespace ObSL {
     };
 
     void Interpreter::interpret(const std::vector<std::unique_ptr<Stmt> > &statements) {
+        std::unique_lock lock(m_interpreter_mutex);
         try {
             for (const auto &stmt: statements) {
                 if (stmt)
@@ -447,6 +449,7 @@ namespace ObSL {
     }
 
     void Interpreter::execute_using_stmt(const UsingStmt *stmt) {
+        std::unique_lock lock(m_modules_mutex);
         std::string module_name = std::filesystem::path(stmt->path).stem().string();
         if (loaded_modules.contains(stmt->path)) {
             environment->define(module_name, loaded_modules[stmt->path]);
@@ -522,6 +525,7 @@ namespace ObSL {
 
     void Interpreter::execute_block(const std::span<const std::unique_ptr<Stmt>> statements,
                                     std::shared_ptr<Environment> block_env) {
+        std::unique_lock lock(m_interpreter_mutex);
         EnvironmentGuard guard(environment, environment);
         environment = std::move(block_env);
         for (const auto &stmt: statements) {

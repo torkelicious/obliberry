@@ -76,11 +76,11 @@ set(EXTERNAL_SOURCES
 
 # ObSL Core
 set(OBSL_CORE_SOURCES
+        src/Scripting/ObSLCore/ScriptEntry.cpp
         src/Scripting/ObSLCore/Lexer/Lexer.cpp
         src/Scripting/ObSLCore/Parser/Parser.cpp
         src/Scripting/ObSLCore/Interpreter/Interpreter.cpp
         src/Scripting/ObSLCore/Interpreter/Environment.cpp
-        src/Scripting/ObSLCore/ScriptEntry.cpp
         src/Scripting/ObSLCore/StdLib/StdLib.cpp
         src/Scripting/ObSLCore/GarbageCollector.cpp
 )
@@ -137,13 +137,24 @@ set(ENGINE_SOURCES
 # ObSL Core
 add_library(obsl_core STATIC ${OBSL_CORE_SOURCES})
 
-# for linter
 target_include_directories(obsl_core PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-# Link JSON to obsl_core
-target_link_libraries(obsl_core PUBLIC nlohmann_json::nlohmann_json)
+# JSON is only used internally by ObSL
+target_link_libraries(obsl_core PRIVATE
+        nlohmann_json::nlohmann_json
+)
+
+# ObSL Core Runtime
+add_executable(
+        obsl_core_runtime
+        src/Scripting/ObSLCore/ObSLCoreMain.cpp
+)
+
+target_link_libraries(obsl_core_runtime PRIVATE
+        obsl_core
+)
 
 # Engine Library Target
 add_library(obliberry_engine STATIC
@@ -151,36 +162,44 @@ add_library(obliberry_engine STATIC
         ${ENGINE_SOURCES}
 )
 
-target_include_directories(obliberry_engine PUBLIC
+
+target_include_directories(obliberry_engine
+        PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+
+        PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/include
         ${CMAKE_CURRENT_SOURCE_DIR}/external/stb_image
         ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui
         ${CMAKE_CURRENT_SOURCE_DIR}/external/imguizmo
         ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui/backends
         ${CMAKE_CURRENT_SOURCE_DIR}/external/miniaudio
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-# def debug build if building in debug config
+
 target_compile_definitions(obliberry_engine PUBLIC
         $<$<CONFIG:Debug>:DEBUG_BUILD>
 )
 
 
-# Link
-target_link_libraries(obliberry_engine PUBLIC
+target_link_libraries(obliberry_engine PRIVATE
         glfw
         glm::glm
         obsl_core
         nlohmann_json::nlohmann_json
-        nfd # i dont want this here but it is for now
+        nfd
 )
 
-# Targets
 
 # Runtime Executable
-add_executable(obliberry_runtime src/Runtime/RuntimeMain.cpp)
-target_link_libraries(obliberry_runtime PRIVATE obliberry_engine)
+add_executable(obliberry_runtime
+        src/Runtime/RuntimeMain.cpp
+)
+
+target_link_libraries(obliberry_runtime PRIVATE
+        obliberry_engine
+)
+
 
 # Editor Executable
 add_executable(obliberry_editor
@@ -194,10 +213,31 @@ add_executable(obliberry_editor
         src/Editor/FileDialogs.cpp
 )
 
-target_link_libraries(obliberry_editor
-        PRIVATE obliberry_engine
+target_link_libraries(obliberry_editor PRIVATE
+        obliberry_engine
 )
 
+
+# TEMP!!!!
+#  = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# MULTITHREADING TEST
+
+# Thread Safety Test
+add_executable(thread_safety_test src/Scripting/ObSLCore/threading_test.cpp)
+target_link_libraries(thread_safety_test PRIVATE obliberry_engine)
+
+# Copy test script to build directory
+file(COPY ${CMAKE_SOURCE_DIR}/src/Scripting/ObSLCore/Examples/test.obsl
+        DESTINATION ${CMAKE_BINARY_DIR})
+
+# Set working directory to build directory so test can find the script
+set_target_properties(thread_safety_test PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+# MULTITHREADING TEST
+#  = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
 # Post build commands
 file(COPY ${CMAKE_SOURCE_DIR}/Templates DESTINATION ${CMAKE_BINARY_DIR})
