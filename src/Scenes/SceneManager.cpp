@@ -63,12 +63,12 @@ namespace Scenes {
         const std::filesystem::path fullPath = Core::Project::GetActive()->GetRootDirectory() / scenePath;
         if (std::filesystem::exists(fullPath)) {
             //  unload first
-            if (m_CurrentScene &&m_CurrentScene
+            if (m_CurrentScene && m_CurrentScene
 
-            ->
-            GetScenePath() == scenePath
-            )
-            {
+
+                ->
+                GetScenePath() == scenePath
+            ) {
                 m_CurrentScene->OnExit();
                 m_CurrentScene.reset();
             }
@@ -88,7 +88,7 @@ namespace Scenes {
         }
     }
 
-    void SceneManager::SwitchScene(const std::string &scenePath) {
+    void SceneManager::SwitchScene(const std::string &newScenePath) {
         // save current scene if it exists and has changes
         // TODO: add dialog in ui asking if to save type shit
         if (m_CurrentScene) {
@@ -97,7 +97,7 @@ namespace Scenes {
             }
         }
 
-        LoadSceneByPath(scenePath);
+        LoadSceneByPath(newScenePath);
     }
 
     void SceneManager::LoadSceneByPath(const std::string &scenePath) {
@@ -106,9 +106,9 @@ namespace Scenes {
             return;
         }
 
-        auto newScene = std::make_unique<Scenes::Scene>(
+        auto newScene = std::make_unique<Scene>(
             m_Context,
-            Scenes::SceneProperties{.ScenePath = scenePath}
+            SceneProperties{.ScenePath = scenePath}
         );
 
         LoadScene(std::move(newScene));
@@ -186,4 +186,4 @@ namespace Scenes {
             m_CurrentScene->Render();
         }
     }
-}; // namespace Scenes
+} // namespace Scenes

@@ -31,7 +31,7 @@ namespace Scenes {
 
         void LoadScene(std::unique_ptr<Scene> newScene);
 
-        void Update(const float dt) const;
+        void Update(float dt) const;
 
         void Render() const;
 

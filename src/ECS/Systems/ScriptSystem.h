@@ -14,7 +14,9 @@
 #include "Scripting/ObSLCore/Lexer/Lexer.h"
 #include "Scripting/ObSLCore/Parser/Parser.h"
 
-ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, ECS::Registry &registry, ECS::EntityID id);
+namespace Scripting {
+    ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, ECS::Registry &registry, ECS::EntityID id);
+}
 
 namespace ECS::Systems::ScriptSystem {
     inline void InitializeScript(Registry &registry, EntityID entityId,
@@ -31,7 +33,7 @@ namespace ECS::Systems::ScriptSystem {
         script->instance_envs[scriptIndex] = std::make_shared<ObSL::Environment>(interpreter->get_global_environment());
         interpreter->register_environment(script->instance_envs[scriptIndex]);
 
-        auto *entityWrapper = CreateEntityObject(interpreter, registry, entityId);
+        auto *entityWrapper = Scripting::CreateEntityObject(interpreter, registry, entityId);
         script->instance_envs[scriptIndex]->define("this", entityWrapper);
 
         // read file

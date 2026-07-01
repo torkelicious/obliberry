@@ -1,6 +1,5 @@
 #pragma once
 #include <filesystem>
-#include <string>
 
 namespace IO::VFS {
     // the active project root is based on the path of project.json

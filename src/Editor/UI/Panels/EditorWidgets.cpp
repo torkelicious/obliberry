@@ -1,6 +1,12 @@
-#include "ECS/ECS.h"
 #include "../EditorWidgets.h"
 #include <cstring>
+
+#include "ECS/Components/BillboardTagComponent.h"
+#include "ECS/Components/CustomDataComponent.h"
+#include "ECS/Components/DirectionalTextureComponent.h"
+#include "ECS/Components/MapStateComponent.h"
+#include "ECS/Components/MaterialComponent.h"
+#include "ECS/Components/MeshComponent.h"
 
 Editor::UI::PointLightWidget::PointLightWidget() : AutoComponentWidget("Point Light") {
     m_Fields.push_back({"Color", FieldType::Color3, offsetof(ECS::Components::PointLightComponent, color)});

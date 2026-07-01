@@ -6,7 +6,7 @@
 #include "Rendering/Renderer.h"
 #include "Scripting/ObSLCore/Interpreter/Interpreter.h"
 
-void Scripting::EngineLib::EngineLib::register_input_modules(ObSL::Interpreter &interpreter) {
+void Scripting::EngineLib::register_input_modules(ObSL::Interpreter &interpreter) {
     // KEYBOARD
     interpreter.get_global_environment()->define(
         "Input_IsKeyDown", interpreter.gc.allocate<ObSL::NativeFunction>(

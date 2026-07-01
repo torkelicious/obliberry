@@ -127,6 +127,7 @@ set(ENGINE_SOURCES
         src/Scripting/EngineLib/Modules/EngineLibCamera.cpp
         src/Scripting/EngineLib/Modules/EngineLibSceneManagement.cpp
         src/Scripting/EngineLib/Modules/EngineLibTime.cpp
+        src/Scripting/EngineLib/Modules/EngineLibUI.cpp
 
         src/IO/VFS.cpp
         src/Core/Project.cpp
@@ -159,6 +160,12 @@ target_include_directories(obliberry_engine PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/external/miniaudio
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
+
+# def debug build if building in debug config
+target_compile_definitions(obliberry_engine PUBLIC
+        $<$<CONFIG:Debug>:DEBUG_BUILD>
+)
+
 
 # Link
 target_link_libraries(obliberry_engine PUBLIC

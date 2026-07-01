@@ -16,12 +16,14 @@ void Editor::UI::ViewportPanel::OnImGuiRender() {
     const double localMouseX = imguiMousePos.x - boundsMin.x;
     const double localMouseY = imguiMousePos.y - boundsMin.y;
 
-    if (m_EngineContext && m_EngineContext
+    if (m_EngineContext &&m_EngineContext
 
 
-        ->
-        input
-    ) {
+
+    ->
+    input
+    )
+    {
         if (m_IsHovered) {
             const double offsetX = m_EngineContext->input->RawMousePosX() - localMouseX;
             const double offsetY = m_EngineContext->input->RawMousePosY() - localMouseY;
@@ -32,12 +34,14 @@ void Editor::UI::ViewportPanel::OnImGuiRender() {
         }
     }
 
-    if (m_EngineContext && m_EngineContext
+    if (m_EngineContext &&m_EngineContext
 
 
-        ->
-        renderer
-    ) {
+
+    ->
+    renderer
+    )
+    {
         if (const int pickedEntity = m_EngineContext->renderer->GetLastReadPixel(); pickedEntity != -1) {
             m_SelectedEntityID = pickedEntity;
             m_EngineContext->renderer->ClearPixelReadResult();
@@ -48,12 +52,14 @@ void Editor::UI::ViewportPanel::OnImGuiRender() {
         m_ViewportWidth = viewportSize.x;
         m_ViewportHeight = viewportSize.y;
 
-        if (m_EngineContext && m_EngineContext
+        if (m_EngineContext &&m_EngineContext
 
 
-            ->
-            renderer
-        ) {
+
+        ->
+        renderer
+        )
+        {
             m_EngineContext->renderer->EnsureFramebufferSize(static_cast<uint32_t>(viewportSize.x),
                                                              static_cast<uint32_t>(viewportSize.y));
 
@@ -62,7 +68,7 @@ void Editor::UI::ViewportPanel::OnImGuiRender() {
 
                 ImGui::Image(texId, viewportSize, ImVec2{0, 1}, ImVec2{1, 0});
 
-                if (m_IsHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                if (m_IsHovered &&ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
                     const ImVec2 mousePos = ImGui::GetMousePos();
 
                     const int mouseX = static_cast<int>(mousePos.x - boundsMin.x);

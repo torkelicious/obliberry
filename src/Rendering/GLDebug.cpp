@@ -1,7 +1,8 @@
 #include "GLDebug.h"
 #include <iostream>
 
-// I don't remember from where but this code is from somewhere online
+// Heavily based off of;
+// https://learnopengl.com/In-Practice/Debugging
 
 namespace Rendering {
     void APIENTRY GLDebug::glDebugOutput(const GLenum source, const GLenum type,

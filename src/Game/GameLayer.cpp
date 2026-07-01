@@ -1,6 +1,5 @@
 #include "GameLayer.h"
 #include "IO/AssetLoader.h"
-#include "Rendering/MeshFactory.h"
 #include <filesystem>
 #include "Core/ProjectConfig.h"
 #include "Core/Window.h"

@@ -4,7 +4,7 @@
 #include "ECS/Registry.h"
 #include "Scripting/ObSLCore/StdLib/StdLib.h"
 
-namespace Scripting::EngineLib {
+namespace Scripting {
     class EngineLib : public ObSL::Lib {
     public:
         void register_enginelib(ObSL::Interpreter &interpreter, ECS::Registry &registry, Core::EngineContext &ctx) {
@@ -30,8 +30,11 @@ namespace Scripting::EngineLib {
 
         void register_scene_management_modules(ObSL::Interpreter &interpreter);
 
+        //void register_time_modules(ObSL::Interpreter &interpreter); // unused... todo: implement soon
+
+        void register_gui_modules(ObSL::Interpreter &interpreter);
+
         ECS::Registry *m_registry = nullptr;
         Core::EngineContext *m_ctx = nullptr;
     };
-} // namespace Scripting::EngineLib
-
+}

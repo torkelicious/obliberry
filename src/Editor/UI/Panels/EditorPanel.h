@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Core/EngineContext.h"
-#include "ECS/ECS.h"
 #include "Scenes/Scene.h"
 
 namespace Editor::UI {

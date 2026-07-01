@@ -9,8 +9,6 @@
 #define GLFW_EXPOSE_NATIVE_WAYLAND
 #define GLFW_EXPOSE_NATIVE_X11
 #endif
-#include <GLFW/glfw3.h>
-#include <GLFW/glfw3native.h>
 #include <nfd.hpp>
 #include <nfd_glfw3.h>
 

@@ -9,8 +9,6 @@
 #include "imgui_internal.h"
 #include <ImGuizmo.h>
 #include <Scripting/ObSLCore/Interpreter/Interpreter.h>
-#include <cstdint>
-#include <cstdlib>
 #include <filesystem>
 #include <iostream>
 #include <memory>

@@ -2,7 +2,6 @@
 #include "../Core/ProjectConfig.h"
 #include "Core/Project.h"
 #include "EditorLayer.h"
-#include "IO/VFS.h"
 #include <filesystem>
 
 int main(const int argc, char *argv[]) {

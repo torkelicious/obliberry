@@ -1,7 +1,6 @@
 #include "Renderer.h"
 #include "Transform.h"
 #include <algorithm>
-#include <cstdint>
 #include <glm/gtc/type_ptr.hpp>
 #include <memory>
 

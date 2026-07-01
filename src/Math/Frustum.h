@@ -1,12 +1,9 @@
 #pragma once
 
 #include <glm/glm.hpp>
-#include <glm/ext/matrix_clip_space.hpp>
-#include <algorithm>
 #include <array>
 #include <limits>
 #include "Rendering/Camera.h"
-#include "Core/Constants.h"
 
 namespace Math::Frustum {
     struct FrustumPlanes {

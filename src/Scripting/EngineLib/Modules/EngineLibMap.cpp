@@ -6,9 +6,8 @@
 #include "ECS/Systems/MovementSystem.h"
 #include "Math/HexMath.h"
 #include "Scripting/EngineLib/EngineLibFactories.h"
-#include "Scripting/ObSLCore/Interpreter/Interpreter.h"
 
-void Scripting::EngineLib::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) {
+void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) {
     // HEX MATH
     interpreter.get_global_environment()->define(
         "Math_WorldToHex", interpreter.gc.allocate<ObSL::NativeFunction>(
@@ -159,7 +158,8 @@ void Scripting::EngineLib::EngineLib::register_map_modules(ObSL::Interpreter &in
         "Map_IsHexWalkable", interpreter.gc.allocate<ObSL::NativeFunction>(
             2,
             [reg = m_registry](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
-                if (args.size() < 2 || !std::holds_alternative<double>(args[0]) || !std::holds_alternative<double>(args[1])) {
+                if (args.size() < 2 || !std::holds_alternative<double>(args[0]) || !std::holds_alternative<
+                        double>(args[1])) {
                     return false;
                 }
                 const Map::HexCoords pos(
@@ -186,7 +186,7 @@ void Scripting::EngineLib::EngineLib::register_map_modules(ObSL::Interpreter &in
                 ECS::EntityID mapId = 0; // 0 is invalid
 
                 reg->ForEach<ECS::Components::MapComponent>(
-                    [&](ECS::Entity entity, ECS::Components::MapComponent *) {
+                    [&](const ECS::Entity entity, ECS::Components::MapComponent *) {
                         mapId = static_cast<ECS::EntityID>(entity);
                     });
 
@@ -195,5 +195,4 @@ void Scripting::EngineLib::EngineLib::register_map_modules(ObSL::Interpreter &in
                 }
                 return std::monostate{};
             }, "Map_GetMapEntity"));
-
 }

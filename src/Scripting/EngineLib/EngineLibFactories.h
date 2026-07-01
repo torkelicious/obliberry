@@ -8,11 +8,9 @@
 #include "ECS/Components/MovementComponent.h"
 #include "ECS/Components/MapStateComponent.h"
 #include "ECS/Components/DirectionalTextureComponent.h"
-#include "ECS/Components/BillboardTagComponent.h"
-#include "ECS/Components/DestroyTagComponent.h"
 
 
-namespace Scripting::EngineLib {
+namespace Scripting {
     // dec so other files can call it
     ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, ECS::Registry &registry, ECS::EntityID id);
 

@@ -1,20 +1,13 @@
 #pragma once
 
 #include "ECS/Entity.h"
-#include <cstddef>
+#include "ECS/Registry.h"
 #include <imgui.h>
 #include <memory>
 #include <string>
 #include <vector>
 
-#include "ECS/Components/BillboardTagComponent.h"
-#include "ECS/Components/CustomDataComponent.h"
-#include "ECS/Components/DestroyTagComponent.h"
-#include "ECS/Components/DirectionalTextureComponent.h"
 #include "ECS/Components/MapComponent.h"
-#include "ECS/Components/MapStateComponent.h"
-#include "ECS/Components/MaterialComponent.h"
-#include "ECS/Components/MeshComponent.h"
 #include "ECS/Components/MovementComponent.h"
 #include "ECS/Components/PointLightComponent.h"
 #include "ECS/Components/ScriptComponent.h"

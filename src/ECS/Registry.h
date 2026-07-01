@@ -44,14 +44,14 @@ namespace ECS {
             m_AvailableEntities.pop();
 
             const uint32_t version = m_EntityVersions[index];
-            const EntityID newId = index | (version << ENTITY_VERSION_SHIFT);
+            const EntityID newId = index | version << ENTITY_VERSION_SHIFT;
 
             m_EntityStatus[index] = true;
             m_LivingEntities.push_back(newId);
             return newId;
         }
 
-        void DestroyEntity(EntityID id) {
+        void DestroyEntity(const EntityID id) {
             if (!IsValid(id)) return;
 
             const uint32_t index = GetEntityIndex(id);

@@ -1,8 +1,8 @@
 #include "../EngineLib.h"
-#include "Sound/AudioEngine.h"
 #include "Scripting/ObSLCore/Interpreter/Interpreter.h"
+#include "Sound/AudioEngine.h"
 
-void Scripting::EngineLib::EngineLib::register_audio_modules(ObSL::Interpreter &interpreter) {
+void Scripting::EngineLib::register_audio_modules(ObSL::Interpreter &interpreter) {
     interpreter.get_global_environment()->define(
         "PlaySound2D", interpreter.gc.allocate<ObSL::NativeFunction>(
             2,

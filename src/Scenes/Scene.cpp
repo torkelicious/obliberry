@@ -23,7 +23,7 @@ Scenes::Scene::Scene(Core::EngineContext *context, SceneProperties props)
 void Scenes::Scene::OnEnter() {
     std::cout << "[Scene] Entering scene: " << m_Properties.ScenePath << std::endl;
 
-    Scripting::EngineLib::EngineLib lib;
+    Scripting::EngineLib lib;
     lib.register_enginelib(*m_Context->scriptEngine, m_Registry, *m_Context);
 
     IO::EntityFactory::RegisterDeserializers();

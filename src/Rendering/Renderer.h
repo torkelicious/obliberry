@@ -6,7 +6,6 @@
 #include "FrameBuffer.h"
 #include "Transform.h"
 #include <atomic>
-#include <cstdint>
 #include <functional>
 #include <memory>
 #include <mutex>

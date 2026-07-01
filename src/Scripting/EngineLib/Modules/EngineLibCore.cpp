@@ -4,10 +4,11 @@
 #include "IO/PrefabManager.h"
 #include "Scripting/ObSLCore/Interpreter/Interpreter.h"
 
-// forward declaration
-ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, ECS::Registry &registry, ECS::EntityID id);
+namespace Scripting {
+    ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, ECS::Registry &registry, ECS::EntityID id);
+}
 
-void Scripting::EngineLib::EngineLib::register_core_modules(ObSL::Interpreter &interpreter) {
+void Scripting::EngineLib::register_core_modules(ObSL::Interpreter &interpreter) {
     interpreter.get_global_environment()->define(
         "get_dt", interpreter.gc.allocate<ObSL::NativeFunction>(
             0,

@@ -1,5 +1,7 @@
 #include <iostream>
 
+#include "Rendering/GLDebug.h"
+
 
 #if defined(_WIN32)
 #define GLFW_EXPOSE_NATIVE_WIN32
@@ -10,16 +12,12 @@
 #define GLFW_EXPOSE_NATIVE_X11
 #endif
 
-
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
-#include <GLFW/glfw3native.h>
-#include <nfd.hpp>
 #include <nfd_glfw3.h>
 #include <stdexcept>
 #include "Window.h"
 #include "Constants.h"
-#include "imgui.h"
 
 Core::Window::Window(const unsigned int width, const unsigned int height, const char *title, const bool fullscreen) {
     if (!Init(width, height, title, fullscreen)) {
@@ -50,12 +48,16 @@ bool Core::Window::Init(const unsigned int width, const unsigned int height, con
     m_Width = static_cast<int>(width);
     m_Height = static_cast<int>(height);
 
+
     if (!glfwInit()) return false;
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     //glfwWindowHint(GLFW_SAMPLES, 2); // MSAA
+#if defined DEBUG_BUILD
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
+#endif
 
     GLFWmonitor *monitor = fullscreen ? glfwGetPrimaryMonitor() : nullptr;
     m_Window = glfwCreateWindow(m_Width, m_Height, title, monitor, nullptr);
@@ -86,6 +88,11 @@ bool Core::Window::Init(const unsigned int width, const unsigned int height, con
     if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
         return false;
     }
+
+#if defined DEBUG_BUILD
+    // must come after Glad INIT
+    Rendering::GLDebug::InitDebug();
+#endif
 
     int fbWidth, fbHeight;
     glfwGetFramebufferSize(m_Window, &fbWidth, &fbHeight);

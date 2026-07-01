@@ -1,8 +1,9 @@
 #include "../EngineLib.h"
 #include "Rendering/Camera.h"
 #include "Scripting/ObSLCore/Interpreter/Interpreter.h"
+#include "Scripting/ObSLCore/Interpreter/Natives.h"
 
-void Scripting::EngineLib::EngineLib::register_camera_modules(ObSL::Interpreter &interpreter) {
+void Scripting::EngineLib::register_camera_modules(ObSL::Interpreter &interpreter) {
     interpreter.get_global_environment()->define(
         "Camera_GetPosition", interpreter.gc.allocate<ObSL::NativeFunction>(
             0,
