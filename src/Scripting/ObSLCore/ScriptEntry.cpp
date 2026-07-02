@@ -17,7 +17,7 @@ namespace ObSL {
         std::setvbuf(stdout, nullptr, _IONBF, 0);
 
         bool lint_mode = false;
-        std::string file_path = "";
+        std::string file_path;
 
         for (int i = 1; i < argc; ++i) {
             if (std::string arg = argv[i]; arg == "--lint") {

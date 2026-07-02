@@ -47,7 +47,7 @@ namespace Rendering {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, m_EntityIDAtt, 0);
 
-            const GLenum buffers[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+            constexpr GLenum buffers[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
             glDrawBuffers(2, buffers);
 
             if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
@@ -77,7 +77,7 @@ namespace Rendering {
         }
 
         // on click
-        int ReadEntityID(const uint32_t x, const uint32_t y) const {
+        [[nodiscard]] int ReadEntityID(const uint32_t x, const uint32_t y) const {
             if (x >= m_Width || y >= m_Height)
                 return -1;
 

@@ -3,6 +3,8 @@
 #include <iostream>
 #include <istream>
 #include <memory>
+#include <shared_mutex>
+#include <mutex>
 #include <span>
 #include <unordered_map>
 #include <utility>
@@ -19,6 +21,8 @@ namespace ObSL {
         GarbageCollector gc{this};
         std::vector<Value> gc_protect_stack;
 
+        void *user_data = nullptr;
+
         explicit Interpreter(std::ostream &out = std::cout, std::istream &in = std::cin) : m_stdout(out), m_stdin(in) {
             globals = std::make_shared<Environment>();
             register_environment(globals);
@@ -30,6 +34,7 @@ namespace ObSL {
         }
 
         ~Interpreter() {
+            std::unique_lock lock(m_interpreter_mutex);
             if (globals)
                 globals->clear();
             for (auto &weak_env: all_environments) {
@@ -39,6 +44,7 @@ namespace ObSL {
         }
 
         void register_environment(const std::shared_ptr<Environment> &env) {
+            std::unique_lock lock(m_interpreter_mutex);
             if (++m_env_insert_count % prune_interval == 0) {
                 std::erase_if(all_environments, [](const std::weak_ptr<Environment> &wp) { return wp.expired(); });
             }
@@ -59,11 +65,24 @@ namespace ObSL {
 
         std::istream &Get_Stdin() const { return m_stdin.get(); }
         std::ostream &Get_Stdout() const { return m_stdout.get(); }
-        [[nodiscard]] std::shared_ptr<Environment> get_current_environment() const { return environment; }
-        [[nodiscard]] std::shared_ptr<Environment> get_global_environment() const { return globals; }
-        void set_current_environment(std::shared_ptr<Environment> env) { environment = std::move(env); }
+
+        [[nodiscard]] std::shared_ptr<Environment> get_current_environment() const {
+            std::unique_lock lock(m_interpreter_mutex);
+            return environment;
+        }
+
+        [[nodiscard]] std::shared_ptr<Environment> get_global_environment() const {
+            std::unique_lock lock(m_interpreter_mutex);
+            return globals;
+        }
+
+        void set_current_environment(std::shared_ptr<Environment> env) {
+            std::unique_lock lock(m_interpreter_mutex);
+            environment = std::move(env);
+        }
 
         void mark_roots() {
+            std::unique_lock lock(m_interpreter_mutex);
             if (globals)
                 globals->mark();
             for (auto &weak_env: all_environments) {
@@ -87,6 +106,9 @@ namespace ObSL {
     private:
         static constexpr std::size_t prune_interval = 64;
         static constexpr std::size_t max_loaded_modules = 256;
+
+        mutable std::recursive_mutex m_interpreter_mutex;
+        mutable std::shared_mutex m_modules_mutex;
 
         // Stream wrappers must be declared first to ensure they are fully initialized
         // before other members that might use them during construction (e.g., StdLib).

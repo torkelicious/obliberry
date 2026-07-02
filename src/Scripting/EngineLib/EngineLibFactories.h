@@ -1,7 +1,12 @@
 #pragma once
 
+#include <mutex>
+#include <shared_mutex>
+
 #include "ECS/Registry.h"
 #include "Scripting/ObSLCore/Interpreter/Interpreter.h"
+#include "Scripting/ObSLCore/ScriptWorker.h"
+#include "Scripting/EngineLib/ScriptCommandBuffer.h"
 
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Components/PointLightComponent.h"
@@ -11,6 +16,9 @@
 
 
 namespace Scripting {
+    // Protects all ECS registry access during parallel script execution.
+    inline std::shared_mutex g_RegistryMutex;
+
     // dec so other files can call it
     ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, ECS::Registry &registry, ECS::EntityID id);
 
@@ -38,52 +46,65 @@ namespace Scripting {
             auto *obj = interpreter->gc.allocate<ObSL::ObSLObject>();
             GCProtectGuard guard(interpreter, obj);
 
-            auto set_pos = [id, &registry](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+            auto set_pos = [id](const ObSL::Interpreter *interpreter,
+                                const std::vector<ObSL::Value> &args) -> ObSL::Value {
                 if (args.size() >= 3 && std::holds_alternative<double>(args[0]) && std::holds_alternative<double>(
                         args[1])
                     && std::holds_alternative<double>(args[2])) {
-                    if (auto *comp = registry.GetComponent<ECS::Components::TransformComponent>(id)) {
-                        comp->transform.SetPosition({
-                            static_cast<float>(std::get<double>(args[0])),
-                            static_cast<float>(std::get<double>(args[1])),
-                            static_cast<float>(std::get<double>(args[2]))
-                        });
-                    }
+                    auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
+                    float x = static_cast<float>(std::get<double>(args[0]));
+                    float y = static_cast<float>(std::get<double>(args[1]));
+                    float z = static_cast<float>(std::get<double>(args[2]));
+                    auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
+                    cmd_buf->push([id, x, y, z](ECS::Registry &reg) {
+                        if (auto *comp = reg.GetComponent<ECS::Components::TransformComponent>(id)) {
+                            comp->transform.SetPosition({x, y, z});
+                        }
+                    });
                 }
                 return std::monostate{};
             };
 
-            auto set_rot = [id, &registry](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+            auto set_rot = [id](const ObSL::Interpreter *interpreter,
+                                const std::vector<ObSL::Value> &args) -> ObSL::Value {
                 if (args.size() >= 3 && std::holds_alternative<double>(args[0]) && std::holds_alternative<double>(
                         args[1])
                     && std::holds_alternative<double>(args[2])) {
-                    if (auto *comp = registry.GetComponent<ECS::Components::TransformComponent>(id)) {
-                        comp->transform.SetRotation({
-                            static_cast<float>(std::get<double>(args[0])),
-                            static_cast<float>(std::get<double>(args[1])),
-                            static_cast<float>(std::get<double>(args[2]))
-                        });
-                    }
+                    auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
+                    float x = static_cast<float>(std::get<double>(args[0]));
+                    float y = static_cast<float>(std::get<double>(args[1]));
+                    float z = static_cast<float>(std::get<double>(args[2]));
+                    auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
+                    cmd_buf->push([id, x, y, z](ECS::Registry &reg) {
+                        if (auto *comp = reg.GetComponent<ECS::Components::TransformComponent>(id)) {
+                            comp->transform.SetRotation({x, y, z});
+                        }
+                    });
                 }
                 return std::monostate{};
             };
 
-            auto set_scale = [id, &registry](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+            auto set_scale = [id](const ObSL::Interpreter *interpreter,
+                                  const std::vector<ObSL::Value> &args) -> ObSL::Value {
                 if (args.size() >= 3 && std::holds_alternative<double>(args[0]) && std::holds_alternative<double>(
                         args[1])
                     && std::holds_alternative<double>(args[2])) {
-                    if (auto *comp = registry.GetComponent<ECS::Components::TransformComponent>(id)) {
-                        comp->transform.SetScale({
-                            static_cast<float>(std::get<double>(args[0])),
-                            static_cast<float>(std::get<double>(args[1])),
-                            static_cast<float>(std::get<double>(args[2]))
-                        });
-                    }
+                    auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
+                    float x = static_cast<float>(std::get<double>(args[0]));
+                    float y = static_cast<float>(std::get<double>(args[1]));
+                    float z = static_cast<float>(std::get<double>(args[2]));
+                    auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
+                    cmd_buf->push([id, x, y, z](ECS::Registry &reg) {
+                        if (auto *comp = reg.GetComponent<ECS::Components::TransformComponent>(id)) {
+                            comp->transform.SetScale({x, y, z});
+                        }
+                    });
                 }
                 return std::monostate{};
             };
 
             auto get_pos = [id, &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
+                std::shared_lock lock(g_RegistryMutex);
                 if (const auto *comp = registry.GetComponent<ECS::Components::TransformComponent>(id)) {
                     auto *arr = interp->gc.allocate<ObSL::ObSLArray>();
                     const auto &pos = comp->transform.GetPosition();
@@ -96,6 +117,7 @@ namespace Scripting {
             };
 
             auto get_rot = [id, &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
+                std::shared_lock lock(g_RegistryMutex);
                 if (const auto *comp = registry.GetComponent<ECS::Components::TransformComponent>(id)) {
                     auto *arr = interp->gc.allocate<ObSL::ObSLArray>();
                     const auto &rot = comp->transform.GetRotation();
@@ -109,6 +131,7 @@ namespace Scripting {
 
             auto get_scale = [id, &registry
                     ](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
+                std::shared_lock lock(g_RegistryMutex);
                 if (const auto *comp = registry.GetComponent<ECS::Components::TransformComponent>(id)) {
                     auto *arr = interp->gc.allocate<ObSL::ObSLArray>();
                     const auto &scale = comp->transform.GetScale();
@@ -122,6 +145,7 @@ namespace Scripting {
 
             auto is_moving_body = [id, &registry
                     ](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+                std::shared_lock lock(g_RegistryMutex);
                 if (auto *move = registry.GetComponent<ECS::Components::MovementComponent>(id)) {
                     return move->isMoving;
                 }
@@ -152,33 +176,51 @@ namespace Scripting {
             auto *obj = interpreter->gc.allocate<ObSL::ObSLObject>();
             GCProtectGuard guard(interpreter, obj);
 
-            auto set_color = [id, &registry](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+            auto set_color = [id](const ObSL::Interpreter *interpreter,
+                                  const std::vector<ObSL::Value> &args) -> ObSL::Value {
                 if (args.size() >= 3 && std::holds_alternative<double>(args[0]) && std::holds_alternative<double>(
                         args[1])
                     && std::holds_alternative<double>(args[2])) {
-                    if (auto *comp = registry.GetComponent<ECS::Components::PointLightComponent>(id)) {
-                        comp->color.r = static_cast<float>(std::get<double>(args[0]));
-                        comp->color.g = static_cast<float>(std::get<double>(args[1]));
-                        comp->color.b = static_cast<float>(std::get<double>(args[2]));
-                    }
+                    auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
+                    float r = static_cast<float>(std::get<double>(args[0]));
+                    float g = static_cast<float>(std::get<double>(args[1]));
+                    float b = static_cast<float>(std::get<double>(args[2]));
+                    auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
+                    cmd_buf->push([id, r, g, b](ECS::Registry &reg) {
+                        if (auto *comp = reg.GetComponent<ECS::Components::PointLightComponent>(id)) {
+                            comp->color.r = r;
+                            comp->color.g = g;
+                            comp->color.b = b;
+                        }
+                    });
                 }
                 return std::monostate{};
             };
 
-            auto set_intensity = [id, &registry](ObSL::Interpreter *,
-                                                 const std::vector<ObSL::Value> &args) -> ObSL::Value {
+            auto set_intensity = [id](const ObSL::Interpreter *interpreter,
+                                      const std::vector<ObSL::Value> &args) -> ObSL::Value {
                 if (!args.empty() && std::holds_alternative<double>(args[0])) {
-                    if (auto *comp = registry.GetComponent<ECS::Components::PointLightComponent>(id))
-                        comp->intensity = static_cast<float>(std::get<double>(args[0]));
+                    auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
+                    float intensity = static_cast<float>(std::get<double>(args[0]));
+                    auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
+                    cmd_buf->push([id, intensity](ECS::Registry &reg) {
+                        if (auto *comp = reg.GetComponent<ECS::Components::PointLightComponent>(id))
+                            comp->intensity = intensity;
+                    });
                 }
                 return std::monostate{};
             };
 
-            auto set_radius = [id, &registry
-                    ](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+            auto set_radius = [id](const ObSL::Interpreter *interpreter,
+                                   const std::vector<ObSL::Value> &args) -> ObSL::Value {
                 if (!args.empty() && std::holds_alternative<double>(args[0])) {
-                    if (auto *comp = registry.GetComponent<ECS::Components::PointLightComponent>(id))
-                        comp->radius = static_cast<float>(std::get<double>(args[0]));
+                    auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
+                    float radius = static_cast<float>(std::get<double>(args[0]));
+                    auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
+                    cmd_buf->push([id, radius](ECS::Registry &reg) {
+                        if (auto *comp = reg.GetComponent<ECS::Components::PointLightComponent>(id))
+                            comp->radius = radius;
+                    });
                 }
                 return std::monostate{};
             };
@@ -200,24 +242,35 @@ namespace Scripting {
             GCProtectGuard guard(interpreter, obj);
 
             auto get_is_moving = [id, &registry](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+                std::shared_lock lock(g_RegistryMutex);
                 if (auto *comp = registry.GetComponent<ECS::Components::MovementComponent>(id)) return comp->isMoving;
                 return false;
             };
 
-            auto set_is_moving = [id, &registry](ObSL::Interpreter *,
-                                                 const std::vector<ObSL::Value> &args) -> ObSL::Value {
+            auto set_is_moving = [id](const ObSL::Interpreter *interpreter,
+                                      const std::vector<ObSL::Value> &args) -> ObSL::Value {
                 if (!args.empty() && std::holds_alternative<bool>(args[0])) {
-                    if (auto *comp = registry.GetComponent<ECS::Components::MovementComponent>(id))
-                        comp->isMoving = std::get<bool>(args[0]);
+                    auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
+                    bool moving = std::get<bool>(args[0]);
+                    auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
+                    cmd_buf->push([id, moving](ECS::Registry &reg) {
+                        if (auto *comp = reg.GetComponent<ECS::Components::MovementComponent>(id))
+                            comp->isMoving = moving;
+                    });
                 }
                 return std::monostate{};
             };
 
-            auto set_time_per_step = [id, &registry](ObSL::Interpreter *,
-                                                     const std::vector<ObSL::Value> &args) -> ObSL::Value {
+            auto set_time_per_step = [id](const ObSL::Interpreter *interpreter,
+                                          const std::vector<ObSL::Value> &args) -> ObSL::Value {
                 if (!args.empty() && std::holds_alternative<double>(args[0])) {
-                    if (auto *comp = registry.GetComponent<ECS::Components::MovementComponent>(id))
-                        comp->timePerStep = static_cast<float>(std::get<double>(args[0]));
+                    auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
+                    float tps = static_cast<float>(std::get<double>(args[0]));
+                    auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
+                    cmd_buf->push([id, tps](ECS::Registry &reg) {
+                        if (auto *comp = reg.GetComponent<ECS::Components::MovementComponent>(id))
+                            comp->timePerStep = tps;
+                    });
                 }
                 return std::monostate{};
             };
@@ -284,10 +337,16 @@ namespace Scripting {
             auto *obj = interpreter->gc.allocate<ObSL::ObSLObject>();
             GCProtectGuard guard(interpreter, obj);
 
-            auto set_index = [id, &registry](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+            auto set_index = [id](const ObSL::Interpreter *interpreter,
+                                  const std::vector<ObSL::Value> &args) -> ObSL::Value {
                 if (!args.empty() && std::holds_alternative<double>(args[0])) {
-                    if (auto *comp = registry.GetComponent<ECS::Components::DirectionalTextureComponent>(id))
-                        comp->index = static_cast<int>(std::get<double>(args[0]));
+                    auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
+                    int index = static_cast<int>(std::get<double>(args[0]));
+                    auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
+                    cmd_buf->push([id, index](ECS::Registry &reg) {
+                        if (auto *comp = reg.GetComponent<ECS::Components::DirectionalTextureComponent>(id))
+                            comp->index = index;
+                    });
                 }
                 return std::monostate{};
             };

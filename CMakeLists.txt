@@ -5,6 +5,14 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+set(OUTPUT_BIN_DIR ${CMAKE_BINARY_DIR}/bin)
+# place all executables in build/bin
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_BIN_DIR})
+foreach (CONFIG Debug Release RelWithDebInfo MinSizeRel)
+    string(TOUPPER ${CONFIG} CONFIG_UPPER)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${CONFIG_UPPER} ${OUTPUT_BIN_DIR})
+endforeach ()
+
 include(FetchContent)
 
 # Fetch GLFW dep
@@ -49,6 +57,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 endif ()
 
 FetchContent_MakeAvailable(nfd)
+
 # External Sources
 set(EXTERNAL_SOURCES
         # GLAD
@@ -76,13 +85,15 @@ set(EXTERNAL_SOURCES
 
 # ObSL Core
 set(OBSL_CORE_SOURCES
+        src/Scripting/ObSLCore/ScriptEntry.cpp
         src/Scripting/ObSLCore/Lexer/Lexer.cpp
         src/Scripting/ObSLCore/Parser/Parser.cpp
         src/Scripting/ObSLCore/Interpreter/Interpreter.cpp
         src/Scripting/ObSLCore/Interpreter/Environment.cpp
-        src/Scripting/ObSLCore/ScriptEntry.cpp
         src/Scripting/ObSLCore/StdLib/StdLib.cpp
         src/Scripting/ObSLCore/GarbageCollector.cpp
+        src/Scripting/ObSLCore/ScriptWorker.cpp
+        src/Scripting/ObSLCore/ScriptRuntime.cpp
 )
 
 # Engine Core Sources
@@ -128,22 +139,34 @@ set(ENGINE_SOURCES
         src/Scripting/EngineLib/Modules/EngineLibSceneManagement.cpp
         src/Scripting/EngineLib/Modules/EngineLibTime.cpp
         src/Scripting/EngineLib/Modules/EngineLibUI.cpp
+        src/Scripting/EngineLib/ScriptCommandBuffer.cpp
 
         src/IO/VFS.cpp
         src/Core/Project.cpp
-
+        src/Core/ThreadPool.cpp
 )
 
 # ObSL Core
 add_library(obsl_core STATIC ${OBSL_CORE_SOURCES})
 
-# for linter
 target_include_directories(obsl_core PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-# Link JSON to obsl_core
-target_link_libraries(obsl_core PUBLIC nlohmann_json::nlohmann_json)
+# JSON is only used internally by ObSL (linter output)
+target_link_libraries(obsl_core PRIVATE
+        nlohmann_json::nlohmann_json
+)
+
+# ObSL Core Runtime
+add_executable(
+        obsl_core_runtime
+        src/Scripting/ObSLCore/ObSLCoreMain.cpp
+)
+
+target_link_libraries(obsl_core_runtime PRIVATE
+        obsl_core
+)
 
 # Engine Library Target
 add_library(obliberry_engine STATIC
@@ -151,36 +174,39 @@ add_library(obliberry_engine STATIC
         ${ENGINE_SOURCES}
 )
 
-target_include_directories(obliberry_engine PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/external/stb_image
-        ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui
-        ${CMAKE_CURRENT_SOURCE_DIR}/external/imguizmo
-        ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui/backends
-        ${CMAKE_CURRENT_SOURCE_DIR}/external/miniaudio
+target_include_directories(obliberry_engine
+        PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui/backends
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/imguizmo
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/stb_image
+
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/miniaudio
 )
 
-# def debug build if building in debug config
 target_compile_definitions(obliberry_engine PUBLIC
         $<$<CONFIG:Debug>:DEBUG_BUILD>
 )
 
-
-# Link
 target_link_libraries(obliberry_engine PUBLIC
         glfw
         glm::glm
         obsl_core
         nlohmann_json::nlohmann_json
-        nfd # i dont want this here but it is for now
+        nfd
 )
 
-# Targets
-
 # Runtime Executable
-add_executable(obliberry_runtime src/Runtime/RuntimeMain.cpp)
-target_link_libraries(obliberry_runtime PRIVATE obliberry_engine)
+add_executable(obliberry_runtime
+        src/Runtime/RuntimeMain.cpp
+)
+
+target_link_libraries(obliberry_runtime PRIVATE
+        obliberry_engine
+)
 
 # Editor Executable
 add_executable(obliberry_editor
@@ -194,10 +220,9 @@ add_executable(obliberry_editor
         src/Editor/FileDialogs.cpp
 )
 
-target_link_libraries(obliberry_editor
-        PRIVATE obliberry_engine
+target_link_libraries(obliberry_editor PRIVATE
+        obliberry_engine
 )
 
-
 # Post build commands
-file(COPY ${CMAKE_SOURCE_DIR}/Templates DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY ${CMAKE_SOURCE_DIR}/Templates DESTINATION ${OUTPUT_BIN_DIR})

@@ -63,12 +63,14 @@ namespace Scenes {
         const std::filesystem::path fullPath = Core::Project::GetActive()->GetRootDirectory() / scenePath;
         if (std::filesystem::exists(fullPath)) {
             //  unload first
-            if (m_CurrentScene && m_CurrentScene
+            if (m_CurrentScene &&m_CurrentScene
 
 
-                ->
-                GetScenePath() == scenePath
-            ) {
+
+            ->
+            GetScenePath() == scenePath
+            )
+            {
                 m_CurrentScene->OnExit();
                 m_CurrentScene.reset();
             }

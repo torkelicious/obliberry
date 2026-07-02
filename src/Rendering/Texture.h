@@ -20,7 +20,7 @@ namespace Rendering {
 
         // file path constructor
         explicit Texture(
-            const std::string &path,
+            const std::string path,
             GLuint minFilter = GL_NEAREST_MIPMAP_NEAREST,
             GLuint magFilter = GL_NEAREST,
             GLuint wrapS = GL_CLAMP_TO_EDGE,

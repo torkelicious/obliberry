@@ -10,6 +10,7 @@ namespace Core {
     class Window;
     class InputManager;
     class ResourceManager;
+    class ThreadPool;
 }
 
 namespace Scenes {
@@ -26,7 +27,7 @@ namespace Rendering {
 }
 
 namespace ObSL {
-    class Interpreter;
+    class ScriptRuntime;
 }
 
 namespace Core {
@@ -40,7 +41,8 @@ namespace Core {
         Scenes::SceneManager *sceneManager = nullptr;
         Rendering::Renderer *renderer = nullptr;
         Rendering::Camera *camera = nullptr;
-        ObSL::Interpreter *scriptEngine = nullptr;
+        ObSL::ScriptRuntime *scriptPool = nullptr;
+        ThreadPool *threadPool = nullptr;
         Sound::AudioEngine *audioEngine = nullptr;
         float deltaTime = 0.0f;
         std::shared_ptr<Project> activeProject = nullptr;
