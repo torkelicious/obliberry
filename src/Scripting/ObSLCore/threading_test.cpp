@@ -63,12 +63,12 @@ static void test_concurrent_workers(const std::vector<std::unique_ptr<Stmt> > &a
     Core::ThreadPool pool(NUM_WORKERS);
 
     for (size_t w = 0; w < NUM_WORKERS; ++w) {
-        pool.pushToQ([&runtime, &ast, &envs, w]() {
+        pool.enqueue([&runtime, &ast, &envs, w]() {
             runtime.get_worker(w)->execute(ast, envs[w]);
         });
     }
 
-    pool.wait_all();
+    pool.wait();
 
     for (size_t w = 0; w < NUM_WORKERS; ++w) {
         std::cout << "    Worker " << w << " output    \n" << outputs[w].str();
@@ -116,11 +116,11 @@ static void test_independent_environments() {
 
     Core::ThreadPool pool(NUM_WORKERS);
     for (size_t w = 0; w < NUM_WORKERS; ++w) {
-        pool.pushToQ([&runtime, &asts, &envs, w]() {
+        pool.enqueue([&runtime, &asts, &envs, w]() {
             runtime.get_worker(w)->execute(asts[w], envs[w]);
         });
     }
-    pool.wait_all();
+    pool.wait();
 
     for (size_t w = 0; w < NUM_WORKERS; ++w) {
         std::cout << "    Worker " << w << "    \n" << outputs[w].str();

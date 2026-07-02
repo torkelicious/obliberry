@@ -1,4 +1,5 @@
 #include "../EngineLib.h"
+#include <mutex>
 #include "ECS/Components/MapComponent.h"
 #include "ECS/Components/MapStateComponent.h"
 #include "ECS/Components/MovementComponent.h"
@@ -6,7 +7,7 @@
 #include "ECS/Systems/MovementSystem.h"
 #include "Math/HexMath.h"
 #include "Scripting/EngineLib/EngineLibFactories.h"
-#include "Scripting/ObSLCore/ScriptWorker.h"
+#include "Scripting/ObSLCore/ScriptRuntime.h"
 #include "Scripting/EngineLib/ScriptCommandBuffer.h"
 
 void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) {
@@ -38,6 +39,7 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
         "GetSelectedHex", interpreter.gc.allocate<ObSL::NativeFunction>(
             0,
             [reg = m_registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
+                std::shared_lock lock(Scripting::g_RegistryMutex);
                 auto *obj = interp->gc.allocate<ObSL::ObSLObject>();
                 obj->fields["hasSelection"] = false;
                 obj->fields["q"] = 0.0;
@@ -65,7 +67,7 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
                 const int q = static_cast<int>(std::get<double>(args[0]));
                 const int r = static_cast<int>(std::get<double>(args[1]));
                 auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
-                auto *cmd_buf = static_cast<Scripting::ScriptCommandBuffer *>(worker->frame_context());
+                auto *cmd_buf = worker->frame_context<Scripting::ScriptCommandBuffer>();
                 cmd_buf->push([q, r](ECS::Registry &reg) {
                     const Map::HexCoords targetHex{q, r};
                     bool isValid = false;
@@ -107,7 +109,7 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
                 const int r = static_cast<int>(std::get<double>(args[2]));
 
                 auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
-                auto *cmd_buf = static_cast<Scripting::ScriptCommandBuffer *>(worker->frame_context());
+                auto *cmd_buf = worker->frame_context<Scripting::ScriptCommandBuffer>();
                 cmd_buf->push([id, q, r](ECS::Registry &reg) {
                     const Map::HexCoords targetHex{q, r};
 
@@ -149,7 +151,7 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
             0,
             [](ObSL::Interpreter *interpreter, const std::vector<ObSL::Value> &) -> ObSL::Value {
                 auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
-                auto *cmd_buf = static_cast<Scripting::ScriptCommandBuffer *>(worker->frame_context());
+                auto *cmd_buf = worker->frame_context<Scripting::ScriptCommandBuffer>();
                 cmd_buf->push([](ECS::Registry &reg) {
                     reg.ForEach<ECS::Components::MapStateComponent>(
                         [&](ECS::Entity, ECS::Components::MapStateComponent *stateComp) {
@@ -164,7 +166,7 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
             0,
             [](ObSL::Interpreter *interpreter, const std::vector<ObSL::Value> &) -> ObSL::Value {
                 auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
-                auto *cmd_buf = static_cast<Scripting::ScriptCommandBuffer *>(worker->frame_context());
+                auto *cmd_buf = worker->frame_context<Scripting::ScriptCommandBuffer>();
                 cmd_buf->push([](ECS::Registry &reg) {
                     reg.ForEach<ECS::Components::MapStateComponent>(
                         [&](ECS::Entity, ECS::Components::MapStateComponent *stateComp) {
@@ -182,6 +184,7 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
                         double>(args[1])) {
                     return false;
                 }
+                std::shared_lock lock(Scripting::g_RegistryMutex);
                 const Map::HexCoords pos(
                     static_cast<int32_t>(std::get<double>(args[0])),
                     static_cast<int32_t>(std::get<double>(args[1]))
@@ -203,7 +206,8 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
         "Map_GetMapEntity", interpreter.gc.allocate<ObSL::NativeFunction>(
             0,
             [reg = m_registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
-                ECS::EntityID mapId = 0; // 0 is invalid
+                std::shared_lock lock(Scripting::g_RegistryMutex);
+                ECS::EntityID mapId = 0;
 
                 reg->ForEach<ECS::Components::MapComponent>(
                     [&](const ECS::Entity entity, ECS::Components::MapComponent *) {

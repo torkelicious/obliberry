@@ -1,7 +1,13 @@
 #include "../EngineLib.h"
+#include <mutex>
 #include "Rendering/Camera.h"
 #include "Scripting/ObSLCore/Interpreter/Interpreter.h"
 #include "Scripting/ObSLCore/Interpreter/Natives.h"
+#include "Scripting/ObSLCore/ScriptWorker.h"
+
+namespace {
+    std::mutex s_CameraMutex;
+}
 
 void Scripting::EngineLib::register_camera_modules(ObSL::Interpreter &interpreter) {
     interpreter.get_global_environment()->define(
@@ -10,6 +16,7 @@ void Scripting::EngineLib::register_camera_modules(ObSL::Interpreter &interprete
             [ctx = m_ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
                 auto *obj = interp->gc.allocate<ObSL::ObSLObject>();
                 if (ctx && ctx->camera) {
+                    std::lock_guard lock(s_CameraMutex);
                     obj->fields["x"] = static_cast<double>(ctx->camera->Position.x);
                     obj->fields["y"] = static_cast<double>(ctx->camera->Position.y);
                     obj->fields["z"] = static_cast<double>(ctx->camera->Position.z);
@@ -29,6 +36,7 @@ void Scripting::EngineLib::register_camera_modules(ObSL::Interpreter &interprete
                     && std::holds_alternative<double>(args[0])
                     && std::holds_alternative<double>(args[1])
                     && std::holds_alternative<double>(args[2])) {
+                    std::lock_guard lock(s_CameraMutex);
                     ctx->camera->Position.x = static_cast<float>(std::get<double>(args[0]));
                     ctx->camera->Position.y = static_cast<float>(std::get<double>(args[1]));
                     ctx->camera->Position.z = static_cast<float>(std::get<double>(args[2]));
@@ -45,6 +53,7 @@ void Scripting::EngineLib::register_camera_modules(ObSL::Interpreter &interprete
                     && std::holds_alternative<double>(args[0])
                     && std::holds_alternative<double>(args[1])
                     && std::holds_alternative<double>(args[2])) {
+                    std::lock_guard lock(s_CameraMutex);
                     ctx->camera->Position.x += static_cast<float>(std::get<double>(args[0]));
                     ctx->camera->Position.y += static_cast<float>(std::get<double>(args[1]));
                     ctx->camera->Position.z += static_cast<float>(std::get<double>(args[2]));
@@ -60,6 +69,7 @@ void Scripting::EngineLib::register_camera_modules(ObSL::Interpreter &interprete
                 if (ctx && ctx->camera && args.size() >= 2
                     && std::holds_alternative<double>(args[0])
                     && std::holds_alternative<double>(args[1])) {
+                    std::lock_guard lock(s_CameraMutex);
                     glm::vec2 screenPan(
                         static_cast<float>(std::get<double>(args[0])),
                         static_cast<float>(std::get<double>(args[1]))
@@ -81,7 +91,11 @@ void Scripting::EngineLib::register_camera_modules(ObSL::Interpreter &interprete
         "Camera_GetZoom", interpreter.gc.allocate<ObSL::NativeFunction>(
             0,
             [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
-                return ctx && ctx->camera ? static_cast<double>(ctx->camera->Zoom) : 0.0;
+                if (ctx && ctx->camera) {
+                    std::lock_guard lock(s_CameraMutex);
+                    return static_cast<double>(ctx->camera->Zoom);
+                }
+                return 0.0;
             }, "Camera_GetZoom"));
 
     interpreter.get_global_environment()->define(
@@ -89,6 +103,7 @@ void Scripting::EngineLib::register_camera_modules(ObSL::Interpreter &interprete
             1,
             [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
                 if (ctx && ctx->camera && !args.empty() && std::holds_alternative<double>(args[0])) {
+                    std::lock_guard lock(s_CameraMutex);
                     ctx->camera->Zoom = static_cast<float>(std::get<double>(args[0]));
                     return true;
                 }

@@ -1,10 +1,16 @@
 #define GLFW_INCLUDE_NONE
 #include "../EngineLib.h"
+#include <mutex>
 #include "Core/InputManager.h"
 #include "Rendering/Camera.h"
 #include "Core/Window.h"
 #include "Rendering/Renderer.h"
 #include "Scripting/ObSLCore/Interpreter/Interpreter.h"
+#include "Scripting/ObSLCore/ScriptWorker.h"
+
+namespace {
+    std::mutex s_InputCameraMutex;
+}
 
 void Scripting::EngineLib::register_input_modules(ObSL::Interpreter &interpreter) {
     // KEYBOARD
@@ -93,6 +99,7 @@ void Scripting::EngineLib::register_input_modules(ObSL::Interpreter &interpreter
             [ctx = m_ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
                 auto *obj = interp->gc.allocate<ObSL::ObSLObject>();
                 if (ctx && ctx->input && ctx->camera && ctx->window) {
+                    std::lock_guard lock(s_InputCameraMutex);
                     float w = static_cast<float>(ctx->window->GetWidth());
                     float h = static_cast<float>(ctx->window->GetHeight());
                     if (ctx->renderer) {

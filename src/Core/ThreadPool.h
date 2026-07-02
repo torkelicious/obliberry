@@ -16,22 +16,23 @@ namespace Core {
 
         ~ThreadPool();
 
-        void pushToQ(std::function<void()> task);
+        ThreadPool(const ThreadPool&) = delete;
+        ThreadPool& operator=(const ThreadPool&) = delete;
+        ThreadPool(ThreadPool&&) = delete;
+        ThreadPool& operator=(ThreadPool&&) = delete;
 
-        void wait_all();
+        void enqueue(std::function<void()> task);
+        void wait();
+        void stop();
 
     private:
         std::vector<std::thread> m_Threads;
-
-        std::queue<std::function<void()> > m_Tasks;
-
+        std::queue<std::function<void()>> m_Tasks;
         std::mutex m_Mutex;
-
         std::condition_variable m_CV;
         std::atomic<size_t> m_TasksPending{0};
-
         std::condition_variable m_DoneCV;
-
-        bool m_ShouldStop = false;
+        std::atomic<bool> m_ShouldStop{false};
+        std::atomic<bool> m_Stopped{false};
     };
 } // Core

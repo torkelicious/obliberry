@@ -25,7 +25,7 @@ namespace Scripting {
         auto set_name_body = [id](ObSL::Interpreter *interpreter, const std::vector<ObSL::Value> &args) -> ObSL::Value {
             if (args.empty() || !std::holds_alternative<std::string>(args[0])) return std::monostate{};
             auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
-            auto *cmd_buf = static_cast<Scripting::ScriptCommandBuffer *>(worker->frame_context());
+            auto *cmd_buf = worker->frame_context<Scripting::ScriptCommandBuffer>();
             std::string name = std::get<std::string>(args[0]);
             cmd_buf->push([id, name = std::move(name)](ECS::Registry &reg) {
                 if (!reg.IsValid(id)) return;
@@ -36,6 +36,7 @@ namespace Scripting {
 
         auto get_comp_body = [id, &registry
                 ](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+            std::shared_lock lock(Scripting::g_RegistryMutex);
             if (!registry.IsValid(id)) return std::monostate{};
             if (args.empty() || !std::holds_alternative<std::string>(args[0])) return std::monostate{};
             const std::string comp_name = std::get<std::string>(args[0]);
@@ -69,7 +70,7 @@ namespace Scripting {
             if (args.empty() || !std::holds_alternative<std::string>(args[0])) return std::monostate{};
             if (std::get<std::string>(args[0]) != "DestroyTag") return std::monostate{};
             auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
-            auto *cmd_buf = static_cast<Scripting::ScriptCommandBuffer *>(worker->frame_context());
+            auto *cmd_buf = worker->frame_context<Scripting::ScriptCommandBuffer>();
             cmd_buf->push([id](ECS::Registry &reg) {
                 if (!reg.IsValid(id)) return;
                 if (!reg.HasComponent<ECS::Components::DestroyTagComponent>(id)) {
@@ -86,7 +87,7 @@ namespace Scripting {
                 ](ObSL::Interpreter *interpreter, const std::vector<ObSL::Value> &args) -> ObSL::Value {
             if (args.size() != 2 || !std::holds_alternative<std::string>(args[0])) return false;
             auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
-            auto *cmd_buf = static_cast<Scripting::ScriptCommandBuffer *>(worker->frame_context());
+            auto *cmd_buf = worker->frame_context<Scripting::ScriptCommandBuffer>();
             std::string compName = std::get<std::string>(args[0]);
             ObSL::Value val = args[1];
             cmd_buf->push(
@@ -103,6 +104,7 @@ namespace Scripting {
         };
         auto get_custom_comp = [id, &registry
                 ](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+            std::shared_lock lock(Scripting::g_RegistryMutex);
             if (!registry.IsValid(id)) return std::monostate{};
             //  name
             if (args.size() == 1 && std::holds_alternative<std::string>(args[0])) {

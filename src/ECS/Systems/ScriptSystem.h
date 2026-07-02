@@ -154,7 +154,8 @@ namespace ECS::Systems::ScriptSystem {
                 const auto entity_id = static_cast<EntityID>(entity);
                 for (size_t i = 0; i < script->scriptPaths.size(); i++) {
                     if (script->isInitialized[i] && script->on_update_functions[i][0]) {
-                        const size_t w = entity_id % num_workers;
+                        // Round-robin for better load balancing
+                        const size_t w = (entity_id + i) % num_workers;
                         buckets[w].push_back({
                             script->on_update_functions[i][w],
                             script->instance_envs[i][w],
@@ -166,7 +167,7 @@ namespace ECS::Systems::ScriptSystem {
 
         const double dt = ctx.deltaTime;
         for (size_t w = 0; w < num_workers; ++w) {
-            ctx.threadPool->pushToQ([&buckets, &ctx, w, dt, &call_token]() {
+            ctx.threadPool->enqueue([&buckets, &ctx, w, dt, &call_token]() {
                 auto *worker = ctx.scriptPool->get_worker(w);
                 auto &interp = worker->GetInterpreter();
                 for (auto &work: buckets[w]) {
@@ -186,7 +187,7 @@ namespace ECS::Systems::ScriptSystem {
             });
         }
 
-        ctx.threadPool->wait_all();
+        ctx.threadPool->wait();
 
         // on_destroy
         std::vector<std::vector<UpdateWork> > destroy_buckets(num_workers);
@@ -197,7 +198,7 @@ namespace ECS::Systems::ScriptSystem {
                 if (const auto script = registry.GetComponent<Components::ScriptComponent>(entity_id)) {
                     for (size_t i = 0; i < script->scriptPaths.size(); i++) {
                         if (script->isInitialized[i] && script->on_destroy_functions[i][0]) {
-                            const size_t w = entity_id % num_workers;
+                            const size_t w = (entity_id + i) % num_workers;
                             destroy_buckets[w].push_back({
                                 script->on_destroy_functions[i][w],
                                 script->instance_envs[i][w],
@@ -209,7 +210,7 @@ namespace ECS::Systems::ScriptSystem {
             });
 
         for (size_t w = 0; w < num_workers; ++w) {
-            ctx.threadPool->pushToQ([&destroy_buckets, &ctx, w, dt, &call_token]() {
+            ctx.threadPool->enqueue([&destroy_buckets, &ctx, w, dt, &call_token]() {
                 auto *worker = ctx.scriptPool->get_worker(w);
                 auto &interp = worker->GetInterpreter();
                 for (auto &work: destroy_buckets[w]) {
@@ -229,13 +230,13 @@ namespace ECS::Systems::ScriptSystem {
             });
         }
 
-        ctx.threadPool->wait_all();
+        ctx.threadPool->wait();
 
         // flush deferred registry writes
         cmd_buf.flush(registry);
 
         for (size_t w = 0; w < num_workers; ++w)
-            ctx.scriptPool->get_worker(w)->set_frame_context(nullptr);
+            ctx.scriptPool->get_worker(w)->clear_frame_context();
     }
 
     inline void OnSceneExit(Registry &registry, const Core::EngineContext &ctx) {
@@ -263,7 +264,7 @@ namespace ECS::Systems::ScriptSystem {
                 const auto entity_id = static_cast<EntityID>(entity);
                 for (size_t i = 0; i < script->scriptPaths.size(); i++) {
                     if (script->isInitialized[i] && script->on_exit_functions[i][0]) {
-                        const size_t w = entity_id % num_workers;
+                        const size_t w = (entity_id + i) % num_workers;
                         buckets[w].push_back({
                             script->on_exit_functions[i][w],
                             script->instance_envs[i][w],
@@ -275,7 +276,7 @@ namespace ECS::Systems::ScriptSystem {
 
         const double dt = ctx.deltaTime;
         for (size_t w = 0; w < num_workers; ++w) {
-            ctx.threadPool->pushToQ([&buckets, &ctx, w, dt, &call_token]() {
+            ctx.threadPool->enqueue([&buckets, &ctx, w, dt, &call_token]() {
                 auto *worker = ctx.scriptPool->get_worker(w);
                 auto &interp = worker->GetInterpreter();
                 for (auto &work: buckets[w]) {
@@ -295,10 +296,10 @@ namespace ECS::Systems::ScriptSystem {
             });
         }
 
-        ctx.threadPool->wait_all();
+        ctx.threadPool->wait();
         cmd_buf.flush(registry);
 
         for (size_t w = 0; w < num_workers; ++w)
-            ctx.scriptPool->get_worker(w)->set_frame_context(nullptr);
+            ctx.scriptPool->get_worker(w)->clear_frame_context();
     }
 } // namespace ECS::Systems::ScriptSystem
