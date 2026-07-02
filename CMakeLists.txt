@@ -224,26 +224,5 @@ target_link_libraries(obliberry_editor PRIVATE
         obliberry_engine
 )
 
-# TEMP!!!!
-#  = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-# MULTITHREADING TEST
-
-# Thread Safety Test
-add_executable(thread_safety_test src/Scripting/ObSLCore/threading_test.cpp)
-target_link_libraries(thread_safety_test PRIVATE obliberry_engine)
-
-# Copy test script to build/bin dir
-file(COPY ${CMAKE_SOURCE_DIR}/src/Scripting/ObSLCore/Examples/test.obsl
-        DESTINATION ${OUTPUT_BIN_DIR})
-
-# Set cwd and output directory to build/bin
-set_target_properties(thread_safety_test PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_BIN_DIR}
-        WORKING_DIRECTORY ${OUTPUT_BIN_DIR}
-)
-
-# MULTITHREADING TEST
-#  = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-
 # Post build commands
 file(COPY ${CMAKE_SOURCE_DIR}/Templates DESTINATION ${OUTPUT_BIN_DIR})
