@@ -213,7 +213,7 @@ void Editor::EditorLayer::LoadStartScene() {
 
 void Editor::EditorLayer::SaveScene() const {
     // ReSharper disable once CppExpressionWithoutSideEffects
-    m_SceneManager.SaveCurrentScene();
+    static_cast<void>(m_SceneManager.SaveCurrentScene());
 }
 
 void Editor::EditorLayer::DrawInterface() {
@@ -457,7 +457,7 @@ void Editor::EditorLayer::DrawToolbar() {
                 m_CreateSceneDialog.Reset();
                 m_CreateSceneDialog.SetOnConfirm([this](const std::string &sceneName) {
                     // ReSharper disable once CppExpressionWithoutSideEffects
-                    m_SceneManager.CreateNewScene(sceneName);
+                    static_cast<void>(m_SceneManager.CreateNewScene(sceneName));
                 });
                 m_CreateSceneDialog.Open();
             }
