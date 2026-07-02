@@ -21,6 +21,8 @@ namespace ObSL {
         GarbageCollector gc{this};
         std::vector<Value> gc_protect_stack;
 
+        void *user_data = nullptr;
+
         explicit Interpreter(std::ostream &out = std::cout, std::istream &in = std::cin) : m_stdout(out), m_stdin(in) {
             globals = std::make_shared<Environment>();
             register_environment(globals);
@@ -63,14 +65,17 @@ namespace ObSL {
 
         std::istream &Get_Stdin() const { return m_stdin.get(); }
         std::ostream &Get_Stdout() const { return m_stdout.get(); }
+
         [[nodiscard]] std::shared_ptr<Environment> get_current_environment() const {
             std::unique_lock lock(m_interpreter_mutex);
             return environment;
         }
+
         [[nodiscard]] std::shared_ptr<Environment> get_global_environment() const {
             std::unique_lock lock(m_interpreter_mutex);
             return globals;
         }
+
         void set_current_environment(std::shared_ptr<Environment> env) {
             std::unique_lock lock(m_interpreter_mutex);
             environment = std::move(env);
@@ -245,7 +250,7 @@ namespace ObSL {
     template<typename F>
     void Interpreter::define_native(std::string name, F &&body) {
         using DecayedF = std::decay_t<F>;
-        if constexpr (std::is_pointer_v<DecayedF> &&std::is_function_v<std::remove_pointer_t<DecayedF> >) {
+        if constexpr (std::is_pointer_v<DecayedF> && std::is_function_v<std::remove_pointer_t<DecayedF> >) {
             using Traits = native_fn_traits<DecayedF>;
             auto wrapped = [body = std::forward<F>(body)](Interpreter *, const std::vector<Value> &args) -> Value {
                 return call_native_helper<DecayedF, Traits>(body, args, std::make_index_sequence<Traits::arity>{});

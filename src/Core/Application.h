@@ -9,7 +9,8 @@
 #include "ResourceManager.h"
 #include "Window.h"
 #include "ApplicationLayer.h"
-#include "Scripting/ObSLCore/Interpreter/Interpreter.h"
+#include "Scripting/ObSLCore/ScriptRuntime.h"
+#include "Core/ThreadPool.h"
 #include "Sound/AudioEngine.h"
 
 struct ImDrawData;
@@ -46,7 +47,8 @@ namespace Core {
         Window m_Window;
         InputManager m_InputManager;
         ResourceManager m_ResourceManager;
-        ObSL::Interpreter m_ScriptEngine;
+        ObSL::ScriptRuntime m_ScriptPool;
+        ThreadPool m_ThreadPool;
         std::unique_ptr<Sound::AudioEngine> m_AudioEngine;
 
         std::unique_ptr<ApplicationLayer> m_Layer;

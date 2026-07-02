@@ -8,7 +8,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 #include <ImGuizmo.h>
-#include <Scripting/ObSLCore/Interpreter/Interpreter.h>
+#include <Scripting/ObSLCore/ScriptRuntime.h>
 #include <filesystem>
 #include <iostream>
 #include <memory>
@@ -44,7 +44,7 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
     m_SceneManager.SetContext(m_Context);
 
     m_Input = m_Context.input;
-    m_Context.scriptEngine->Set_Stdout(m_InterpreterOutput);
+    m_Context.scriptPool->set_stdout(m_InterpreterOutput);
 
     if (Core::Project::GetActive()) {
         LoadStartScene();

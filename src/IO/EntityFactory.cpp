@@ -144,10 +144,11 @@ void IO::EntityFactory::RegisterDeserializers() {
 
                 // Initialize vectors to match the number of scripts
                 const size_t scriptCount = scriptPaths.size();
+                // outer vectors: one inner vector per script (inner sized per-worker during InitializeScript)
                 instance_envs.resize(scriptCount);
-                on_update_functions.resize(scriptCount, nullptr);
-                on_destroy_functions.resize(scriptCount, nullptr);
-                on_exit_functions.resize(scriptCount, nullptr);
+                on_update_functions.resize(scriptCount);
+                on_destroy_functions.resize(scriptCount);
+                on_exit_functions.resize(scriptCount);
                 isInitialized.resize(scriptCount, false);
                 source_codes.resize(scriptCount);
                 ast_nodes.resize(scriptCount);

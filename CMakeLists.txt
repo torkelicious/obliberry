@@ -83,6 +83,8 @@ set(OBSL_CORE_SOURCES
         src/Scripting/ObSLCore/Interpreter/Environment.cpp
         src/Scripting/ObSLCore/StdLib/StdLib.cpp
         src/Scripting/ObSLCore/GarbageCollector.cpp
+        src/Scripting/ObSLCore/ScriptWorker.cpp
+        src/Scripting/ObSLCore/ScriptRuntime.cpp
 )
 
 # Engine Core Sources
@@ -128,9 +130,11 @@ set(ENGINE_SOURCES
         src/Scripting/EngineLib/Modules/EngineLibSceneManagement.cpp
         src/Scripting/EngineLib/Modules/EngineLibTime.cpp
         src/Scripting/EngineLib/Modules/EngineLibUI.cpp
+        src/Scripting/EngineLib/ScriptCommandBuffer.cpp
 
         src/IO/VFS.cpp
         src/Core/Project.cpp
+        src/Core/ThreadPool.cpp
 
 )
 
@@ -141,7 +145,7 @@ target_include_directories(obsl_core PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-# JSON is only used internally by ObSL
+# JSON is only used internally by ObSL (linter output)
 target_link_libraries(obsl_core PRIVATE
         nlohmann_json::nlohmann_json
 )
@@ -166,13 +170,13 @@ add_library(obliberry_engine STATIC
 target_include_directories(obliberry_engine
         PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui/backends
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/imguizmo
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/stb_image
 
         PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/external/stb_image
-        ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui
-        ${CMAKE_CURRENT_SOURCE_DIR}/external/imguizmo
-        ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui/backends
         ${CMAKE_CURRENT_SOURCE_DIR}/external/miniaudio
 )
 
@@ -182,7 +186,7 @@ target_compile_definitions(obliberry_engine PUBLIC
 )
 
 
-target_link_libraries(obliberry_engine PRIVATE
+target_link_libraries(obliberry_engine PUBLIC
         glfw
         glm::glm
         obsl_core
@@ -226,11 +230,11 @@ target_link_libraries(obliberry_editor PRIVATE
 add_executable(thread_safety_test src/Scripting/ObSLCore/threading_test.cpp)
 target_link_libraries(thread_safety_test PRIVATE obliberry_engine)
 
-# Copy test script to build directory
+# Copy test script to build dir
 file(COPY ${CMAKE_SOURCE_DIR}/src/Scripting/ObSLCore/Examples/test.obsl
         DESTINATION ${CMAKE_BINARY_DIR})
 
-# Set working directory to build directory so test can find the script
+# Set cwd
 set_target_properties(thread_safety_test PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
