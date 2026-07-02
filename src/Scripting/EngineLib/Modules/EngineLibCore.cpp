@@ -28,8 +28,8 @@ void Scripting::EngineLib::register_core_modules(ObSL::Interpreter &interpreter)
 
                 const auto id = static_cast<ECS::EntityID>(std::get<double>(args[0]));
 
-                // Read only
-                std::shared_lock lock(Scripting::g_RegistryMutex);
+                // Read-only
+                std::shared_lock lock(g_RegistryMutex);
                 return CreateEntityObject(interp, *reg, id);
             }, "GetEntity"));
 
@@ -40,7 +40,7 @@ void Scripting::EngineLib::register_core_modules(ObSL::Interpreter &interpreter)
                 if (args.empty() || !std::holds_alternative<std::string>(args[0])) return std::monostate{};
                 const auto target_name = std::get<std::string>(args[0]);
 
-                std::shared_lock lock(Scripting::g_RegistryMutex);
+                std::shared_lock lock(g_RegistryMutex);
                 for (const ECS::EntityID id: reg->GetLivingEntities()) {
                     if (reg->GetEntityName(id) == target_name)
                         return CreateEntityObject(interp, *reg, id);
@@ -57,8 +57,8 @@ void Scripting::EngineLib::register_core_modules(ObSL::Interpreter &interpreter)
                     name = std::get<std::string>(args[0]);
                 }
                 auto *worker = interp->user_data ? static_cast<ObSL::ScriptWorker *>(interp->user_data) : nullptr;
-                auto *cmd_buf = worker ? worker->frame_context<Scripting::ScriptCommandBuffer>() : nullptr;
-                std::unique_lock lock(Scripting::g_RegistryMutex);
+                auto *cmd_buf = worker ? worker->frame_context<ScriptCommandBuffer>() : nullptr;
+                std::unique_lock lock(g_RegistryMutex);
                 const ECS::EntityID new_id = reg->CreateEntity();
                 reg->SetEntityName(new_id, name);
                 return CreateEntityObject(interp, *reg, new_id);
@@ -72,8 +72,8 @@ void Scripting::EngineLib::register_core_modules(ObSL::Interpreter &interpreter)
                 if (args.empty() || !std::holds_alternative<std::string>(args[0])) return std::monostate{};
                 const std::string prefab_path = std::get<std::string>(args[0]);
                 auto *worker = interp->user_data ? static_cast<ObSL::ScriptWorker *>(interp->user_data) : nullptr;
-                auto *cmd_buf = worker ? worker->frame_context<Scripting::ScriptCommandBuffer>() : nullptr;
-                std::unique_lock lock(Scripting::g_RegistryMutex);
+                auto *cmd_buf = worker ? worker->frame_context<ScriptCommandBuffer>() : nullptr;
+                std::unique_lock lock(g_RegistryMutex);
                 const ECS::EntityID new_id = IO::PrefabManager::Instantiate(*reg, *ctx->resources, prefab_path);
                 if (new_id == 0) return std::monostate{};
                 return CreateEntityObject(interp, *reg, new_id);

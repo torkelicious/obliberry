@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ECS/Entity.h"
-#include "ECS/Registry.h"
 #include <imgui.h>
 #include <memory>
 #include <string>

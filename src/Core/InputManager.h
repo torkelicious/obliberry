@@ -50,15 +50,15 @@ namespace Core {
 
         [[nodiscard]] bool IsMouseDown(int button) const;
 
-        bool IsMouseDown(const std::string &buttonAlias) const;
+        [[nodiscard]] bool IsMouseDown(const std::string &buttonAlias) const;
 
         [[nodiscard]] bool IsMousePressed(int button) const;
 
-        bool IsMousePressed(const std::string &buttonAlias) const;
+        [[nodiscard]] bool IsMousePressed(const std::string &buttonAlias) const;
 
         [[nodiscard]] bool IsMouseReleased(int button) const;
 
-        bool IsMouseReleased(const std::string &buttonAlias) const;
+        [[nodiscard]] bool IsMouseReleased(const std::string &buttonAlias) const;
 
     private:
         bool keys[GLFW_KEY_LAST + 1]{};

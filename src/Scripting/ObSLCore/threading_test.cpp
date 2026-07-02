@@ -33,7 +33,7 @@ static void test_single_worker(const std::vector<std::unique_ptr<Stmt> > &ast) {
     runtime.set_stdout(out);
 
     auto *worker = runtime.get_worker(0);
-    auto env = worker->copy_globals();
+    const auto env = worker->copy_globals();
     worker->GetInterpreter().register_environment(env);
     worker->execute(ast, env);
 
@@ -63,7 +63,7 @@ static void test_concurrent_workers(const std::vector<std::unique_ptr<Stmt> > &a
     Core::ThreadPool pool(NUM_WORKERS);
 
     for (size_t w = 0; w < NUM_WORKERS; ++w) {
-        pool.enqueue([&runtime, &ast, &envs, w]() {
+        pool.enqueue([&runtime, &ast, &envs, w] {
             runtime.get_worker(w)->execute(ast, envs[w]);
         });
     }
@@ -94,7 +94,7 @@ static void test_independent_environments() {
     std::vector<std::vector<std::unique_ptr<Stmt> > > asts(NUM_WORKERS);
     for (size_t w = 0; w < NUM_WORKERS; ++w) {
         Lexer lexer(scripts[w]);
-        auto tokens = lexer.tokenize();
+        const auto tokens = lexer.tokenize();
         Parser parser(tokens);
         asts[w] = parser.parse();
     }
@@ -116,7 +116,7 @@ static void test_independent_environments() {
 
     Core::ThreadPool pool(NUM_WORKERS);
     for (size_t w = 0; w < NUM_WORKERS; ++w) {
-        pool.enqueue([&runtime, &asts, &envs, w]() {
+        pool.enqueue([&runtime, &asts, &envs, w] {
             runtime.get_worker(w)->execute(asts[w], envs[w]);
         });
     }
@@ -135,9 +135,9 @@ int main() {
         // Parse ONCE
         // AST is readonly ;)
         Lexer lexer(script_content);
-        auto tokens = lexer.tokenize();
+        const auto tokens = lexer.tokenize();
         Parser parser(tokens);
-        auto statements = parser.parse();
+        const auto statements = parser.parse();
 
         test_single_worker(statements);
         test_concurrent_workers(statements);

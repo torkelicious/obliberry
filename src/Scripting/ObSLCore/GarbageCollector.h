@@ -1,7 +1,8 @@
 #pragma once
 
-#include <stdio.h>
+#include <algorithm>
 #include <utility>
+#include <vector>
 
 namespace ObSL {
     class Interpreter;
@@ -22,6 +23,7 @@ namespace ObSL {
         size_t allocated_objs = 0;
         size_t gc_threshold = 1000;
         Interpreter *interpreter;
+        std::vector<GCObject *> m_ExternalRoots;
 
     public:
         explicit GarbageCollector(Interpreter *interpreter) : interpreter(interpreter) {
@@ -49,6 +51,14 @@ namespace ObSL {
         }
 
         void collect();
+
+        void add_root(GCObject *obj) {
+            if (obj) m_ExternalRoots.push_back(obj);
+        }
+
+        void remove_root(GCObject *obj) {
+            std::erase(m_ExternalRoots, obj);
+        }
     };
 } // ObSL
 

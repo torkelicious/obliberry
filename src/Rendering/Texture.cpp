@@ -1,18 +1,19 @@
 #include "Texture.h"
 #include <iostream>
+#include <utility>
 #include <stb_image.h>
 
 #include "IO/VFS.h"
 
 namespace Rendering {
     Texture::Texture(
-        const std::string &path,
+        std::string path,
         const GLuint minFilter,
         const GLuint magFilter,
         const GLuint wrapS,
         const GLuint wrapT
     )
-        : m_FilePath(path),
+        : m_FilePath(std::move(path)),
           m_MinFilter(minFilter), m_MagFilter(magFilter), m_WrapS(wrapS), m_WrapT(wrapT) {
         const std::filesystem::path absolutePath = IO::VFS::Resolve(m_FilePath);
         const std::string ospath = absolutePath.string();

@@ -6,7 +6,6 @@
 #include "Core/Window.h"
 #include "Rendering/Renderer.h"
 #include "Scripting/ObSLCore/Interpreter/Interpreter.h"
-#include "Scripting/ObSLCore/ScriptWorker.h"
 
 namespace {
     std::mutex s_InputCameraMutex;

@@ -46,56 +46,77 @@ namespace ECS::Systems::ScriptSystem {
             ObSL::Parser parser(tokens);
             script->ast_nodes[scriptIndex] = parser.parse();
 
-            // Initialize each and cache function pointers
             size_t num_workers = runtime.worker_count();
-            script->instance_envs[scriptIndex].resize(num_workers);
-            script->on_update_functions[scriptIndex].resize(num_workers, nullptr);
-            script->on_destroy_functions[scriptIndex].resize(num_workers, nullptr);
-            script->on_exit_functions[scriptIndex].resize(num_workers, nullptr);
 
+            // Remove old GC roots before re init
+            const size_t old_count = script->on_update_functions[scriptIndex].size();
+            for (size_t w = 0; w < old_count; ++w) {
+                if (auto *func = script->on_update_functions[scriptIndex][w])
+                    runtime.get_worker(w)->GetInterpreter().gc.remove_root(func);
+                if (auto *func = script->on_destroy_functions[scriptIndex][w])
+                    runtime.get_worker(w)->GetInterpreter().gc.remove_root(func);
+                if (auto *func = script->on_exit_functions[scriptIndex][w])
+                    runtime.get_worker(w)->GetInterpreter().gc.remove_root(func);
+            }
+
+            script->instance_envs[scriptIndex].resize(num_workers);
+            script->on_update_functions[scriptIndex].assign(num_workers, nullptr);
+            script->on_destroy_functions[scriptIndex].assign(num_workers, nullptr);
+            script->on_exit_functions[scriptIndex].assign(num_workers, nullptr);
+
+            // per worker env with entity wrappers
             for (size_t w = 0; w < num_workers; ++w) {
                 auto *worker = runtime.get_worker(w);
                 auto &interp = worker->GetInterpreter();
 
-                // create entity script env as a child of globals
                 script->instance_envs[scriptIndex][w] = worker->copy_globals();
                 interp.register_environment(script->instance_envs[scriptIndex][w]);
 
                 auto *entityWrapper = Scripting::CreateEntityObject(&interp, registry, entityId);
                 script->instance_envs[scriptIndex][w]->define("this", entityWrapper);
-
-                // execute the script in the entity's environment
-                worker->execute(script->ast_nodes[scriptIndex], script->instance_envs[scriptIndex][w]);
-
-                // look for built in hook functions
-                try {
-                    if (const auto val = script->instance_envs[scriptIndex][w]->get("on_update"); std::holds_alternative
-                        <
-                            ObSL::ObSLCallable *>(val)) {
-                        script->on_update_functions[scriptIndex][w] = std::get<ObSL::ObSLCallable *>(val);
-                    }
-                } catch (...) {
-                }
-
-                try {
-                    if (const auto val = script->instance_envs[scriptIndex][w]->get("on_destroy");
-                        std::holds_alternative<
-                            ObSL::ObSLCallable *>(val)) {
-                        script->on_destroy_functions[scriptIndex][w] = std::get<ObSL::ObSLCallable *>(val);
-                    }
-                } catch (...) {
-                }
-
-                try {
-                    if (const auto val = script->instance_envs[scriptIndex][w]->get("on_exit"); std::holds_alternative<
-                        ObSL::ObSLCallable *>(val)) {
-                        script->on_exit_functions[scriptIndex][w] = std::get<ObSL::ObSLCallable *>(val);
-                    }
-                } catch (...) {
-                }
             }
 
+            // run top level code once
+            runtime.get_worker(0)->execute(
+                script->ast_nodes[scriptIndex],
+                script->instance_envs[scriptIndex][0]
+            );
+
+            // Bind hook functions
+            auto bind_hook = [&](const char *name,
+                                 std::vector<ObSL::ObSLCallable *> &target) {
+                try {
+                    const auto val = script->instance_envs[scriptIndex][0]->get(name);
+                    if (!std::holds_alternative<ObSL::ObSLCallable *>(val)) return;
+                    auto *base_func = std::get<ObSL::ObSLCallable *>(val);
+
+                    if (auto *obsl_func = dynamic_cast<ObSL::ObSLFunction *>(base_func)) {
+                        for (size_t w = 0; w < num_workers; ++w) {
+                            auto *worker_w = runtime.get_worker(w);
+                            auto &interp_w = worker_w->GetInterpreter();
+                            auto this_val = script->instance_envs[scriptIndex][w]->get("this");
+                            auto *entity_w = std::get<ObSL::ObSLObject *>(this_val);
+                            auto *bound = obsl_func->bind(entity_w, &interp_w);
+                            target[w] = bound;
+                            interp_w.gc.add_root(bound);
+                        }
+                    } else {
+                        for (size_t w = 0; w < num_workers; ++w) {
+                            target[w] = base_func;
+                            runtime.get_worker(w)->GetInterpreter().gc.add_root(base_func);
+                        }
+                    }
+                } catch (...) {
+                }
+            };
+
+            bind_hook("on_update", script->on_update_functions[scriptIndex]);
+            bind_hook("on_destroy", script->on_destroy_functions[scriptIndex]);
+            bind_hook("on_exit", script->on_exit_functions[scriptIndex]);
+
             script->isInitialized[scriptIndex] = true;
+            std::cout << "[ScriptSystem] Initialized '" << script->scriptPaths[scriptIndex] << "' across "
+                    << num_workers << " worker(s)\n";
         } catch (const std::exception &e) {
             std::cerr << "[ScriptSystem] Error compiling/executing '" << script->scriptPaths[scriptIndex] << "':\n  " <<
                     e.what() << "\n";
@@ -141,21 +162,31 @@ namespace ECS::Systems::ScriptSystem {
                 }
             });
 
+        // to avoid spinning idle workers
+        size_t active_updates = 0;
+        registry.ForEach<Components::ScriptComponent>(
+            [&](const Entity, Components::ScriptComponent *script) {
+                for (size_t i = 0; i < script->scriptPaths.size(); i++) {
+                    if (script->isInitialized[i] && script->on_update_functions[i][0])
+                        ++active_updates;
+                }
+            });
+        const size_t active_workers = std::min(num_workers, std::max(size_t{1}, active_updates));
+
         // on_update parallel
         struct UpdateWork {
             ObSL::ObSLCallable *func;
             std::shared_ptr<ObSL::Environment> env;
             std::string scriptPath;
         };
-        std::vector<std::vector<UpdateWork> > buckets(num_workers);
+        std::vector<std::vector<UpdateWork> > buckets(active_workers);
 
         registry.ForEach<Components::ScriptComponent>(
             [&](const Entity entity, Components::ScriptComponent *script) {
                 const auto entity_id = static_cast<EntityID>(entity);
                 for (size_t i = 0; i < script->scriptPaths.size(); i++) {
                     if (script->isInitialized[i] && script->on_update_functions[i][0]) {
-                        // Round-robin for better load balancing
-                        const size_t w = (entity_id + i) % num_workers;
+                        const size_t w = (entity_id + i) % active_workers;
                         buckets[w].push_back({
                             script->on_update_functions[i][w],
                             script->instance_envs[i][w],
@@ -166,22 +197,22 @@ namespace ECS::Systems::ScriptSystem {
             });
 
         const double dt = ctx.deltaTime;
-        for (size_t w = 0; w < num_workers; ++w) {
-            ctx.threadPool->enqueue([&buckets, &ctx, w, dt, &call_token]() {
+        for (size_t w = 0; w < active_workers; ++w) {
+            ctx.threadPool->enqueue([&buckets, &ctx, w, dt, &call_token] {
                 auto *worker = ctx.scriptPool->get_worker(w);
                 auto &interp = worker->GetInterpreter();
-                for (auto &work: buckets[w]) {
+                for (auto &[func, env, scriptPath]: buckets[w]) {
                     try {
-                        if (work.func && work.env) {
-                            interp.set_current_environment(work.env);
+                        if (func && env) {
+                            interp.set_current_environment(env);
                             const std::vector<ObSL::Value> args = {static_cast<double>(dt)};
-                            work.func->call(&interp, args, call_token);
+                            func->call(&interp, args, call_token);
                         }
                     } catch (const std::exception &e) {
-                        std::cerr << "[ScriptSystem] Exception in on_update (" << work.scriptPath << "): "
+                        std::cerr << "[ScriptSystem] Exception in on_update (" << scriptPath << "): "
                                 << e.what() << "\n";
                     } catch (...) {
-                        std::cerr << "[ScriptSystem] Unknown Exception in on_update (" << work.scriptPath << ")\n";
+                        std::cerr << "[ScriptSystem] Unknown Exception in on_update (" << scriptPath << ")\n";
                     }
                 }
             });
@@ -189,8 +220,22 @@ namespace ECS::Systems::ScriptSystem {
 
         ctx.threadPool->wait();
 
+        // destroyable entities to clamp workers
+        size_t active_destroys = 0;
+        registry.ForEach<Components::DestroyTagComponent>(
+            [&](const Entity entity, Components::DestroyTagComponent *) {
+                const auto entity_id = static_cast<EntityID>(entity);
+                if (const auto script = registry.GetComponent<Components::ScriptComponent>(entity_id)) {
+                    for (size_t i = 0; i < script->scriptPaths.size(); i++) {
+                        if (script->isInitialized[i] && script->on_destroy_functions[i][0])
+                            ++active_destroys;
+                    }
+                }
+            });
+        const size_t destroy_workers = std::min(num_workers, std::max(size_t{1}, active_destroys));
+
         // on_destroy
-        std::vector<std::vector<UpdateWork> > destroy_buckets(num_workers);
+        std::vector<std::vector<UpdateWork> > destroy_buckets(destroy_workers);
 
         registry.ForEach<Components::DestroyTagComponent>(
             [&](const Entity entity, Components::DestroyTagComponent *) {
@@ -198,7 +243,7 @@ namespace ECS::Systems::ScriptSystem {
                 if (const auto script = registry.GetComponent<Components::ScriptComponent>(entity_id)) {
                     for (size_t i = 0; i < script->scriptPaths.size(); i++) {
                         if (script->isInitialized[i] && script->on_destroy_functions[i][0]) {
-                            const size_t w = (entity_id + i) % num_workers;
+                            const size_t w = (entity_id + i) % destroy_workers;
                             destroy_buckets[w].push_back({
                                 script->on_destroy_functions[i][w],
                                 script->instance_envs[i][w],
@@ -209,22 +254,22 @@ namespace ECS::Systems::ScriptSystem {
                 }
             });
 
-        for (size_t w = 0; w < num_workers; ++w) {
-            ctx.threadPool->enqueue([&destroy_buckets, &ctx, w, dt, &call_token]() {
+        for (size_t w = 0; w < destroy_workers; ++w) {
+            ctx.threadPool->enqueue([&destroy_buckets, &ctx, w, dt, &call_token] {
                 auto *worker = ctx.scriptPool->get_worker(w);
                 auto &interp = worker->GetInterpreter();
-                for (auto &work: destroy_buckets[w]) {
+                for (auto &[func, env, scriptPath]: destroy_buckets[w]) {
                     try {
-                        if (work.func && work.env) {
-                            interp.set_current_environment(work.env);
+                        if (func && env) {
+                            interp.set_current_environment(env);
                             const std::vector<ObSL::Value> args = {static_cast<double>(dt)};
-                            work.func->call(&interp, args, call_token);
+                            func->call(&interp, args, call_token);
                         }
                     } catch (const std::exception &e) {
-                        std::cerr << "[ScriptSystem] Exception in on_destroy (" << work.scriptPath << "): "
+                        std::cerr << "[ScriptSystem] Exception in on_destroy (" << scriptPath << "): "
                                 << e.what() << "\n";
                     } catch (...) {
-                        std::cerr << "[ScriptSystem] Unknown Exception in on_destroy (" << work.scriptPath << ")\n";
+                        std::cerr << "[ScriptSystem] Unknown Exception in on_destroy (" << scriptPath << ")\n";
                     }
                 }
             });
@@ -251,20 +296,30 @@ namespace ECS::Systems::ScriptSystem {
         for (size_t w = 0; w < num_workers; ++w)
             ctx.scriptPool->get_worker(w)->set_frame_context(&cmd_buf);
 
-        // collect on_exit  stuff
+        size_t active_exits = 0;
+        registry.ForEach<Components::ScriptComponent>(
+            [&](const Entity, const Components::ScriptComponent *script) {
+                for (size_t i = 0; i < script->scriptPaths.size(); i++) {
+                    if (script->isInitialized[i] && script->on_exit_functions[i][0])
+                        ++active_exits;
+                }
+            });
+        const size_t exit_workers = std::min(num_workers, std::max(size_t{1}, active_exits));
+
+        // collect on_exit stuff
         struct ExitWork {
             ObSL::ObSLCallable *func;
             std::shared_ptr<ObSL::Environment> env;
             std::string scriptPath;
         };
-        std::vector<std::vector<ExitWork> > buckets(num_workers);
+        std::vector<std::vector<ExitWork> > buckets(exit_workers);
 
         registry.ForEach<Components::ScriptComponent>(
             [&](const Entity entity, const Components::ScriptComponent *script) {
                 const auto entity_id = static_cast<EntityID>(entity);
                 for (size_t i = 0; i < script->scriptPaths.size(); i++) {
                     if (script->isInitialized[i] && script->on_exit_functions[i][0]) {
-                        const size_t w = (entity_id + i) % num_workers;
+                        const size_t w = (entity_id + i) % exit_workers;
                         buckets[w].push_back({
                             script->on_exit_functions[i][w],
                             script->instance_envs[i][w],
@@ -275,22 +330,22 @@ namespace ECS::Systems::ScriptSystem {
             });
 
         const double dt = ctx.deltaTime;
-        for (size_t w = 0; w < num_workers; ++w) {
-            ctx.threadPool->enqueue([&buckets, &ctx, w, dt, &call_token]() {
+        for (size_t w = 0; w < exit_workers; ++w) {
+            ctx.threadPool->enqueue([&buckets, &ctx, w, dt, &call_token] {
                 auto *worker = ctx.scriptPool->get_worker(w);
                 auto &interp = worker->GetInterpreter();
-                for (auto &work: buckets[w]) {
+                for (auto &[func, env, scriptPath]: buckets[w]) {
                     try {
-                        if (work.func && work.env) {
-                            interp.set_current_environment(work.env);
+                        if (func && env) {
+                            interp.set_current_environment(env);
                             const std::vector<ObSL::Value> args = {static_cast<double>(dt)};
-                            work.func->call(&interp, args, call_token);
+                            func->call(&interp, args, call_token);
                         }
                     } catch (const std::exception &e) {
-                        std::cerr << "[ScriptSystem] Exception in on_exit (" << work.scriptPath << "): "
+                        std::cerr << "[ScriptSystem] Exception in on_exit (" << scriptPath << "): "
                                 << e.what() << "\n";
                     } catch (...) {
-                        std::cerr << "[ScriptSystem] Unknown Exception in on_exit (" << work.scriptPath << ")\n";
+                        std::cerr << "[ScriptSystem] Unknown Exception in on_exit (" << scriptPath << ")\n";
                     }
                 }
             });

@@ -5,6 +5,14 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+set(OUTPUT_BIN_DIR ${CMAKE_BINARY_DIR}/bin)
+# place all executables in build/bin
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_BIN_DIR})
+foreach (CONFIG Debug Release RelWithDebInfo MinSizeRel)
+    string(TOUPPER ${CONFIG} CONFIG_UPPER)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${CONFIG_UPPER} ${OUTPUT_BIN_DIR})
+endforeach ()
+
 include(FetchContent)
 
 # Fetch GLFW dep
@@ -49,6 +57,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 endif ()
 
 FetchContent_MakeAvailable(nfd)
+
 # External Sources
 set(EXTERNAL_SOURCES
         # GLAD
@@ -135,7 +144,6 @@ set(ENGINE_SOURCES
         src/IO/VFS.cpp
         src/Core/Project.cpp
         src/Core/ThreadPool.cpp
-
 )
 
 # ObSL Core
@@ -166,7 +174,6 @@ add_library(obliberry_engine STATIC
         ${ENGINE_SOURCES}
 )
 
-
 target_include_directories(obliberry_engine
         PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -180,11 +187,9 @@ target_include_directories(obliberry_engine
         ${CMAKE_CURRENT_SOURCE_DIR}/external/miniaudio
 )
 
-
 target_compile_definitions(obliberry_engine PUBLIC
         $<$<CONFIG:Debug>:DEBUG_BUILD>
 )
-
 
 target_link_libraries(obliberry_engine PUBLIC
         glfw
@@ -194,7 +199,6 @@ target_link_libraries(obliberry_engine PUBLIC
         nfd
 )
 
-
 # Runtime Executable
 add_executable(obliberry_runtime
         src/Runtime/RuntimeMain.cpp
@@ -203,7 +207,6 @@ add_executable(obliberry_runtime
 target_link_libraries(obliberry_runtime PRIVATE
         obliberry_engine
 )
-
 
 # Editor Executable
 add_executable(obliberry_editor
@@ -221,7 +224,6 @@ target_link_libraries(obliberry_editor PRIVATE
         obliberry_engine
 )
 
-
 # TEMP!!!!
 #  = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 # MULTITHREADING TEST
@@ -230,18 +232,18 @@ target_link_libraries(obliberry_editor PRIVATE
 add_executable(thread_safety_test src/Scripting/ObSLCore/threading_test.cpp)
 target_link_libraries(thread_safety_test PRIVATE obliberry_engine)
 
-# Copy test script to build dir
+# Copy test script to build/bin dir
 file(COPY ${CMAKE_SOURCE_DIR}/src/Scripting/ObSLCore/Examples/test.obsl
-        DESTINATION ${CMAKE_BINARY_DIR})
+        DESTINATION ${OUTPUT_BIN_DIR})
 
-# Set cwd
+# Set cwd and output directory to build/bin
 set_target_properties(thread_safety_test PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+        RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_BIN_DIR}
+        WORKING_DIRECTORY ${OUTPUT_BIN_DIR}
 )
 
 # MULTITHREADING TEST
 #  = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
 # Post build commands
-file(COPY ${CMAKE_SOURCE_DIR}/Templates DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY ${CMAKE_SOURCE_DIR}/Templates DESTINATION ${OUTPUT_BIN_DIR})

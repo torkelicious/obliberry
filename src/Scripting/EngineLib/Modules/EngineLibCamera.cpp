@@ -3,7 +3,6 @@
 #include "Rendering/Camera.h"
 #include "Scripting/ObSLCore/Interpreter/Interpreter.h"
 #include "Scripting/ObSLCore/Interpreter/Natives.h"
-#include "Scripting/ObSLCore/ScriptWorker.h"
 
 namespace {
     std::mutex s_CameraMutex;

@@ -1,12 +1,14 @@
 #include "ThreadPool.h"
+#include <iostream>
 
 namespace Core {
     ThreadPool::ThreadPool(const size_t count) {
+        std::cout << "[ThreadPool] Initialized with " << count << " thread(s)\n";
         m_Threads.reserve(count);
         for (size_t i = 0; i < count; ++i) {
             m_Threads.emplace_back([this] {
                 while (true) {
-                    std::function<void()> task;
+                    std::function < void() > task;
                     {
                         std::unique_lock lock(m_Mutex);
                         m_CV.wait(lock, [this] {
@@ -36,7 +38,7 @@ namespace Core {
 
     ThreadPool::~ThreadPool() {
         stop();
-        for (auto &thread : m_Threads) {
+        for (auto &thread: m_Threads) {
             if (thread.joinable()) {
                 thread.join();
             }

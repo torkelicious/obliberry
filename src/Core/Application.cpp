@@ -88,7 +88,7 @@ void Core::Application::Run() {
     context.renderer = &renderer;
     context.camera = &camera;
     context.deltaTime = 0.0f;
-    m_ScriptPool.init(4);
+    m_ScriptPool.init();
     context.scriptPool = &m_ScriptPool;
     context.threadPool = &m_ThreadPool;
     context.audioEngine = m_AudioEngine.get();
@@ -101,8 +101,6 @@ void Core::Application::Run() {
     auto previousTime = std::chrono::steady_clock::now();
 
     m_Layer->Init(context);
-
-    if (context.sceneManager) { context.sceneManager->SetContext(context); }
 
     ImGui_ImplOpenGL3_CreateDeviceObjects();
 

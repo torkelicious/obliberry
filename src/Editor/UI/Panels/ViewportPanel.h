@@ -7,10 +7,10 @@ namespace Editor::UI {
     public:
         void OnImGuiRender() override;
 
-        float GetWidth() const { return m_ViewportWidth; }
-        float GetHeight() const { return m_ViewportHeight; }
+        [[nodiscard]] float GetWidth() const { return m_ViewportWidth; }
+        [[nodiscard]] float GetHeight() const { return m_ViewportHeight; }
 
-        int GetSelectedEntityID() const { return m_SelectedEntityID; }
+        [[nodiscard]] int GetSelectedEntityID() const { return m_SelectedEntityID; }
         void ClearSelectedEntityID() { m_SelectedEntityID = -1; }
 
     private:

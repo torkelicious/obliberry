@@ -9,21 +9,21 @@
 namespace Scenes {
     class SceneManager {
     public:
-        std::vector<std::string> GetAvailableScenes() const;
+        [[nodiscard]] std::vector<std::string> GetAvailableScenes() const;
 
-        bool CreateNewScene(const std::string &sceneName) const;
+        [[nodiscard]] bool CreateNewScene(const std::string &sceneName) const;
 
         bool DeleteScene(const std::string &scenePath);
 
-        std::string GetCurrentScenePath() const;
+        [[nodiscard]] std::string GetCurrentScenePath() const;
 
         void SwitchScene(const std::string &newScenePath);
 
         void LoadSceneByPath(const std::string &scenePath);
 
-        bool SaveCurrentScene() const;
+        [[nodiscard]] bool SaveCurrentScene() const;
 
-        bool ValidateScenePath(const std::string &scenePath) const;
+        [[nodiscard]] bool ValidateScenePath(const std::string &scenePath) const;
 
         void ProcessPendingSceneChange(Core::EngineContext &context);
 

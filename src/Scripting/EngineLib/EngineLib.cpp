@@ -22,10 +22,11 @@ namespace Scripting {
         obj->fields["id"] = static_cast<double>(id);
         obj->fields["name"] = registry.GetEntityName(id);
 
-        auto set_name_body = [id](ObSL::Interpreter *interpreter, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        auto set_name_body = [id](const ObSL::Interpreter *interpreter,
+                                  const std::vector<ObSL::Value> &args) -> ObSL::Value {
             if (args.empty() || !std::holds_alternative<std::string>(args[0])) return std::monostate{};
             auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
-            auto *cmd_buf = worker->frame_context<Scripting::ScriptCommandBuffer>();
+            auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
             std::string name = std::get<std::string>(args[0]);
             cmd_buf->push([id, name = std::move(name)](ECS::Registry &reg) {
                 if (!reg.IsValid(id)) return;
@@ -36,7 +37,7 @@ namespace Scripting {
 
         auto get_comp_body = [id, &registry
                 ](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
-            std::shared_lock lock(Scripting::g_RegistryMutex);
+            std::shared_lock lock(g_RegistryMutex);
             if (!registry.IsValid(id)) return std::monostate{};
             if (args.empty() || !std::holds_alternative<std::string>(args[0])) return std::monostate{};
             const std::string comp_name = std::get<std::string>(args[0]);
@@ -66,11 +67,12 @@ namespace Scripting {
             return std::monostate{};
         };
 
-        auto add_comp_body = [id](ObSL::Interpreter *interpreter, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        auto add_comp_body = [id](const ObSL::Interpreter *interpreter,
+                                  const std::vector<ObSL::Value> &args) -> ObSL::Value {
             if (args.empty() || !std::holds_alternative<std::string>(args[0])) return std::monostate{};
             if (std::get<std::string>(args[0]) != "DestroyTag") return std::monostate{};
             auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
-            auto *cmd_buf = worker->frame_context<Scripting::ScriptCommandBuffer>();
+            auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
             cmd_buf->push([id](ECS::Registry &reg) {
                 if (!reg.IsValid(id)) return;
                 if (!reg.HasComponent<ECS::Components::DestroyTagComponent>(id)) {
@@ -84,10 +86,10 @@ namespace Scripting {
 
         // script defined custom components to the ECS
         auto add_custom_comp = [id
-                ](ObSL::Interpreter *interpreter, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+                ](const ObSL::Interpreter *interpreter, const std::vector<ObSL::Value> &args) -> ObSL::Value {
             if (args.size() != 2 || !std::holds_alternative<std::string>(args[0])) return false;
             auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
-            auto *cmd_buf = worker->frame_context<Scripting::ScriptCommandBuffer>();
+            auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
             std::string compName = std::get<std::string>(args[0]);
             ObSL::Value val = args[1];
             cmd_buf->push(
@@ -104,7 +106,7 @@ namespace Scripting {
         };
         auto get_custom_comp = [id, &registry
                 ](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
-            std::shared_lock lock(Scripting::g_RegistryMutex);
+            std::shared_lock lock(g_RegistryMutex);
             if (!registry.IsValid(id)) return std::monostate{};
             //  name
             if (args.size() == 1 && std::holds_alternative<std::string>(args[0])) {
