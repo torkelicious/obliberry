@@ -84,6 +84,7 @@ set(EXTERNAL_SOURCES
 )
 
 # ObSL
+set(OBSL_BUILD_RUNTIME OFF CACHE BOOL "" FORCE)
 add_subdirectory(external/obsl)
 
 

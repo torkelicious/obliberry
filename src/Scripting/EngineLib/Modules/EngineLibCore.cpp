@@ -5,8 +5,8 @@
 #include <shared_mutex>
 #include "Core/Window.h"
 #include "IO/PrefabManager.h"
-#include "Scripting/ObSLCore/Interpreter/Interpreter.h"
-#include "Scripting/ObSLCore/ScriptWorker.h"
+#include <ObSL/Interpreter.h>
+#include <ObSL/ScriptWorker.h>
 
 namespace {
     std::mutex g_WindowMutex;

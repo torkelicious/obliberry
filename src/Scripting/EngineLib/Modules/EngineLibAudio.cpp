@@ -1,6 +1,6 @@
 #include "../EngineLib.h"
 #include <mutex>
-#include "Scripting/ObSLCore/Interpreter/Interpreter.h"
+#include <ObSL/Interpreter.h>
 #include "Sound/AudioEngine.h"
 
 namespace {

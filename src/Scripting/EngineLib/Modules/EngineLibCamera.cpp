@@ -1,8 +1,8 @@
 #include "../EngineLib.h"
 #include <mutex>
 #include "Rendering/Camera.h"
-#include "Scripting/ObSLCore/Interpreter/Interpreter.h"
-#include "Scripting/ObSLCore/Interpreter/Natives.h"
+#include <ObSL/Interpreter.h>
+#include <ObSL/Natives.h>
 
 namespace {
     std::mutex s_CameraMutex;

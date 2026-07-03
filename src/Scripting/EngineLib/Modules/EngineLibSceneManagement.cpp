@@ -4,7 +4,7 @@
 #include "Scenes/Scene.h"
 #include "Core/EngineContext.h"
 #include "IO/PrefabManager.h"
-#include "Scripting/ObSLCore/Interpreter/Interpreter.h"
+#include <ObSL/Interpreter.h>
 
 namespace {
     std::mutex s_SceneMgmtMutex;

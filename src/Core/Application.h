@@ -9,7 +9,7 @@
 #include "ResourceManager.h"
 #include "Window.h"
 #include "ApplicationLayer.h"
-#include "Scripting/ObSLCore/ScriptRuntime.h"
+#include <ObSL/ScriptRuntime.h>
 #include "Core/ThreadPool.h"
 #include "Sound/AudioEngine.h"
 

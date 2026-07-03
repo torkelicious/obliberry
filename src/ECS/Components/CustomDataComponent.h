@@ -2,7 +2,7 @@
 
 #include <unordered_map>
 #include <string>
-#include "Scripting/ObSLCore/Interpreter/Interpreter.h"
+#include <ObSL/Interpreter.h>
 
 
 namespace ECS::Components {
