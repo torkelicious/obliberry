@@ -1,20 +1,36 @@
 BasedOnStyle: LLVM
 Language: Cpp
 
+# formatters love messing up GLAD/GLFW include order...
+SortIncludes: Never
+IncludeBlocks: Preserve
+
 IndentWidth: 4
-TabWidth: 4
 UseTab: Never
+ContinuationIndentWidth: 8
 ColumnLimit: 120
 
-PointerAlignment: Left        
-DerivePointerAlignment: false
-AccessModifierOffset: -4      
-BreakBeforeBraces: Attach     
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: false
+  AfterClass: false
+  AfterControlStatement: false
+  AfterEnum: false
+  AfterFunction: false
+  AfterNamespace: false
+  AfterStruct: false
+  AfterUnion: false
+  AfterExternBlock: false
+  BeforeCatch: false
+  BeforeElse: false
+  BeforeLambdaBody: false
+  BeforeWhile: false
 
-SpaceAfterCStyleCast: false
-SpaceAfterTemplateKeyword: true
-SpaceBeforeAssignmentOperators: true
-SpaceBeforeParens: ControlStatements 
+IndentCaseLabels: true
+NamespaceIndentation: All
+AccessModifierOffset: -4
 
 FixNamespaceComments: true    
 Standard: c++20                
+MaxEmptyLinesToKeep: 2
+InsertNewlineAtEOF: true

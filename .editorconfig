@@ -1,0 +1,41 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+# C/C++
+[*.{cpp,cxx,cc,c,h,hpp,hxx,inl,ipp}]
+indent_style = space
+indent_size = 4
+
+# shaders
+[*.{vert,frag,geom,comp,tesc,tese,glsl}]
+indent_style = space
+indent_size = 4
+
+
+# Use tabs in Makefiles
+[Makefile]
+indent_style = tab
+
+# CMake
+[*.cmake]
+indent_style = space
+indent_size = 4
+
+[CMakeLists.txt]
+indent_style = space
+indent_size = 4
+
+# JSON
+[*.json]
+indent_size = 2
+
+# docs
+[*.md]
+trim_trailing_whitespace = false
