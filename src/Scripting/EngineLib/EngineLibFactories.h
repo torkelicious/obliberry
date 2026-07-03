@@ -294,8 +294,7 @@ namespace Scripting {
             auto get_has_selection = [id, &registry](ObSL::Interpreter *,
                                                      const std::vector<ObSL::Value> &) -> ObSL::Value {
                 if (auto *comp = registry.GetComponent<ECS::Components::MapStateComponent>(id))
-                    return comp->
-                            hasSelection;
+                    return comp->hasSelection;
                 return false;
             };
 
