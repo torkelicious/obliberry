@@ -41,6 +41,9 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
     ctx.camera = &m_Camera;
     ctx.sceneManager = &m_SceneManager;
 
+    m_SceneConfigEditor.SetContext(m_Context);
+    m_ProjectConfigEditor.SetContext(m_Context);
+
     m_SceneManager.SetContext(m_Context);
 
     m_Input = m_Context.input;
@@ -106,14 +109,14 @@ void Editor::EditorLayer::HandleInput(const float dt) {
     if (!m_ViewportPanel.IsHovered())
         return;
 
-    const float scrollDelta = static_cast<float>(m_Input->ScrollY());
+    const auto scrollDelta = static_cast<float>(m_Input->ScrollY());
     if (scrollDelta != 0.0f) {
         const float zoomSens = 0.2f;
         m_Camera.AdjustZoom(scrollDelta * zoomSens);
     }
 
-    const float mouseDeltaX = static_cast<float>(m_Input->GetMouseDeltaX());
-    const float mouseDeltaY = static_cast<float>(m_Input->GetMouseDeltaY());
+    const auto mouseDeltaX = static_cast<float>(m_Input->GetMouseDeltaX());
+    const auto mouseDeltaY = static_cast<float>(m_Input->GetMouseDeltaY());
 
     if (m_Input->IsMouseDown("MouseMiddle") || m_Input->IsMouseDown("MouseRight")) {
         const float mousePanSens = 0.025f;
@@ -155,6 +158,7 @@ void Editor::EditorLayer::LoadScene(const std::string &path) {
             m_Registry = &m_Scene->GetRegistry();
             m_CurrentScenePath = path;
             m_Scene->GetContext().camera = &m_Camera;
+            m_SceneConfigEditor.ReloadFromScene();
 
             if (m_Context.renderer) {
                 Rendering::Renderer::SetClearColor(m_Scene->GetProperties().BackgroundClearColor);
@@ -179,6 +183,8 @@ void Editor::EditorLayer::ClearCurrentProject() {
     m_Scene = nullptr;
     m_Registry = nullptr;
     m_CurrentScenePath.clear();
+    m_ShowSceneConfig = false;
+    m_ShowProjectConfig = false;
 
     m_RegistryPanel.SetSelectedEntity(ECS::Entity{});
     m_InspectorPanel.SetSelectedEntity(ECS::Entity{});
@@ -227,6 +233,10 @@ void Editor::EditorLayer::DrawInterface() {
         DrawUtilityWindows();
     }
 
+    // property windows
+    m_SceneConfigEditor.OnImGuiRender(m_ShowSceneConfig);
+    m_ProjectConfigEditor.OnImGuiRender(m_ShowProjectConfig);
+
     // encapsulated dialogs
     // todo: maybe not this?
     m_NewProjectDialog.Update();
@@ -248,8 +258,7 @@ void Editor::EditorLayer::DrawProjectHub() {
     ImGui::Separator();
 
     if (ImGui::Button("Create New Project", ImVec2(250, 50))) {
-        const auto dir = FileDialogs::PickFolder(m_Context);
-        if (dir) {
+        if (const auto dir = FileDialogs::PickFolder(m_Context)) {
             m_NewProjectDialog.SetDirectory(std::filesystem::path(*dir));
             m_NewProjectDialog.SetOnConfirm([this](const std::filesystem::path &pDir, const std::string &name) {
                 const auto newProject = Core::Project::NewProject(pDir, name);
@@ -264,8 +273,7 @@ void Editor::EditorLayer::DrawProjectHub() {
     ImGui::Spacing();
 
     if (ImGui::Button("Open Existing Project", ImVec2(250, 50))) {
-        const auto dir = FileDialogs::PickFolder(m_Context);
-        if (dir) {
+        if (const auto dir = FileDialogs::PickFolder(m_Context)) {
             const std::filesystem::path projectFile = std::filesystem::path(*dir) / "project.json";
             if (std::filesystem::exists(projectFile)) {
                 LoadProject(projectFile.string());
@@ -387,8 +395,7 @@ void Editor::EditorLayer::DrawToolbar() {
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("File")) {
             if (ImGui::MenuItem("New Project")) {
-                const auto dir = FileDialogs::PickFolder(m_Context);
-                if (dir) {
+                if (const auto dir = FileDialogs::PickFolder(m_Context)) {
                     m_NewProjectDialog.SetDirectory(std::filesystem::path(*dir));
                     m_NewProjectDialog.SetOnConfirm([this](const std::filesystem::path &pDir, const std::string &name) {
                         const auto newProject = Core::Project::NewProject(pDir, name);
@@ -401,8 +408,7 @@ void Editor::EditorLayer::DrawToolbar() {
             }
 
             if (ImGui::MenuItem("Open Project")) {
-                const auto dir = FileDialogs::PickFolder(m_Context);
-                if (dir) {
+                if (const auto dir = FileDialogs::PickFolder(m_Context)) {
                     const std::filesystem::path projectFile = std::filesystem::path(*dir) / "project.json";
                     if (std::filesystem::exists(projectFile)) {
                         LoadProject(projectFile.string());
@@ -438,6 +444,12 @@ void Editor::EditorLayer::DrawToolbar() {
             }
             ImGui::Separator();
 
+            if (ImGui::MenuItem("Project Settings")) {
+                m_ProjectConfigEditor.Reload();
+                m_ShowProjectConfig = true;
+            }
+            ImGui::Separator();
+
             if (ImGui::MenuItem("Close Project")) {
                 ClearCurrentProject();
                 Core::Project::SetActive(nullptr);
@@ -453,6 +465,13 @@ void Editor::EditorLayer::DrawToolbar() {
         }
 
         if (ImGui::BeginMenu("Scene")) {
+            if (ImGui::MenuItem("Edit Scene Properties")) {
+                m_SceneConfigEditor.ReloadFromScene();
+                m_ShowSceneConfig = true;
+            }
+            ImGui::Separator();
+
+
             if (ImGui::MenuItem("Create Scene")) {
                 m_CreateSceneDialog.Reset();
                 m_CreateSceneDialog.SetOnConfirm([this](const std::string &sceneName) {

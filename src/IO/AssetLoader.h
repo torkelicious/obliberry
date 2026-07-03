@@ -28,6 +28,11 @@ namespace IO {
             const std::string &name,
             MeshFactory factory);
 
+        static std::optional<std::string> ImportAsset(
+            const std::string &AbsoultePath,
+            const std::string &TargetSubDir = ""
+        );
+
     private:
         static void LoadTextures(
             const json &textures,
@@ -40,11 +45,6 @@ namespace IO {
         static void LoadMeshes(
             const json &meshes,
             Core::ResourceManager &resources);
-
-        static std::optional<std::string> ImportAsset(
-            const std::string &AbsoultePath,
-            const std::string &TargetSubDir = ""
-        );
 
     private:
         static std::unordered_map<std::string, MeshFactory>

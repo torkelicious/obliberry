@@ -1,5 +1,11 @@
 #include "InspectorPanel.h"
-#include "../EditorWidgets.h"
+#include "EditorWidgets.h"
+#include "ECS/Components/CustomDataComponent.h"
+#include "ECS/Components/DirectionalTextureComponent.h"
+#include "ECS/Components/MapStateComponent.h"
+#include "ECS/Components/MaterialComponent.h"
+#include "ECS/Components/MeshComponent.h"
+#include <functional>
 #include <imgui.h>
 
 Editor::UI::InspectorPanel::InspectorPanel() {
@@ -34,7 +40,78 @@ void Editor::UI::InspectorPanel::OnImGuiRender() {
             ImGui::Spacing();
 
             for (const auto &widget: m_Widgets) {
-                widget->Draw(m_SelectedEntity);
+                widget->Draw(m_SelectedEntity, m_EngineContext);
+            }
+            ImGui::Separator();
+
+            if (ImGui::Button("Add Component")) {
+                ImGui::OpenPopup("AddComponentPopup");
+            }
+            if (ImGui::BeginPopup("AddComponentPopup")) {
+                struct CompEntry {
+                    const char *name;
+                    bool has;
+                    std::function<void()> add;
+                };
+                const CompEntry entries[] = {
+                    {
+                        "Transform", m_SelectedEntity.HasComponent<ECS::Components::TransformComponent>(),
+                        [this] { m_SelectedEntity.AddComponent<ECS::Components::TransformComponent>(); }
+                    },
+                    {
+                        "Point Light", m_SelectedEntity.HasComponent<ECS::Components::PointLightComponent>(),
+                        [this] { m_SelectedEntity.AddComponent<ECS::Components::PointLightComponent>(); }
+                    },
+                    {
+                        "Movement", m_SelectedEntity.HasComponent<ECS::Components::MovementComponent>(),
+                        [this] { m_SelectedEntity.AddComponent<ECS::Components::MovementComponent>(); }
+                    },
+                    {
+                        "Mesh", m_SelectedEntity.HasComponent<ECS::Components::MeshComponent>(),
+                        [this] { m_SelectedEntity.AddComponent<ECS::Components::MeshComponent>(); }
+                    },
+                    {
+                        "Material", m_SelectedEntity.HasComponent<ECS::Components::MaterialComponent>(),
+                        [this] { m_SelectedEntity.AddComponent<ECS::Components::MaterialComponent>(); }
+                    },
+                    {
+                        "Directional Texture",
+                        m_SelectedEntity.HasComponent<ECS::Components::DirectionalTextureComponent>(),
+                        [this] { m_SelectedEntity.AddComponent<ECS::Components::DirectionalTextureComponent>(); }
+                    },
+                    {
+                        "Map", m_SelectedEntity.HasComponent<ECS::Components::MapComponent>(),
+                        [this] { m_SelectedEntity.AddComponent<ECS::Components::MapComponent>(); }
+                    },
+                    {
+                        "Map State", m_SelectedEntity.HasComponent<ECS::Components::MapStateComponent>(),
+                        [this] { m_SelectedEntity.AddComponent<ECS::Components::MapStateComponent>(); }
+                    },
+                    {
+                        "Scripts", m_SelectedEntity.HasComponent<ECS::Components::ScriptComponent>(),
+                        [this] { m_SelectedEntity.AddComponent<ECS::Components::ScriptComponent>(); }
+                    },
+                    {
+                        "ObSL Custom Data", m_SelectedEntity.HasComponent<ECS::Components::CustomDataComponent>(),
+                        [this] { m_SelectedEntity.AddComponent<ECS::Components::CustomDataComponent>(); }
+                    },
+                };
+
+                ImGui::TextDisabled("Available Components");
+                ImGui::Separator();
+                for (const auto &entry: entries) {
+                    ImGui::PushID(entry.name);
+                    if (entry.has) {
+                        ImGui::BeginDisabled();
+                        ImGui::Selectable(entry.name);
+                        ImGui::EndDisabled();
+                    } else if (ImGui::Selectable(entry.name)) {
+                        entry.add();
+                        ImGui::CloseCurrentPopup();
+                    }
+                    ImGui::PopID();
+                }
+                ImGui::EndPopup();
             }
         } else {
             m_SelectedEntity = ECS::Entity{};

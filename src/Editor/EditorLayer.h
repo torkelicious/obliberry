@@ -12,6 +12,8 @@
 #include "Scenes/Scene.h"
 #include "Scenes/SceneManager.h"
 #include "UI/Modals/StdDialogs.h"
+#include "UI/ProjectConfigEditor.h"
+#include "UI/SceneConfigEditor.h"
 
 namespace Editor {
     enum EditorMode : uint8_t { EditorMode, MapEditorMode, PlayMode };
@@ -74,6 +76,10 @@ namespace Editor {
         UI::NewProjectDialog m_NewProjectDialog;
         UI::CreateSceneDialog m_CreateSceneDialog;
         UI::SaveSceneAsDialog m_SaveSceneAsDialog;
+        UI::SceneConfigEditor m_SceneConfigEditor;
+        UI::ProjectConfigEditor m_ProjectConfigEditor;
+        bool m_ShowSceneConfig = false;
+        bool m_ShowProjectConfig = false;
 
         // Logging
         std::vector<std::string> m_ConsoleLogs;

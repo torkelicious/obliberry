@@ -188,6 +188,7 @@ add_executable(obliberry_editor
         src/Editor/UI/Panels/ViewportPanel.cpp
         src/Editor/UI/ProjectConfigEditor.cpp
         src/Editor/FileDialogs.cpp
+        src/Editor/UI/SceneConfigEditor.cpp
 )
 
 target_link_libraries(obliberry_editor PRIVATE

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Core/EngineContext.h"
 #include "ECS/Registry.h"
 #include <imgui.h>
 #include <memory>
@@ -26,7 +27,7 @@ namespace Editor::UI {
 
         [[nodiscard]] virtual const char *GetName() const = 0;
 
-        virtual void Draw(ECS::Entity entity) = 0;
+        virtual void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr) = 0;
     };
 
     template<typename T>
@@ -41,10 +42,10 @@ namespace Editor::UI {
 
         [[nodiscard]] const char *GetName() const override { return m_Name; }
 
-        void Draw(const ECS::Entity entity) override {
+        void Draw(const ECS::Entity entity, Core::EngineContext *engineContext = nullptr) override {
             if (!entity.HasComponent<T>())
                 return;
-            if (ImGui::CollapsingHeader(m_Name, ImGuiTreeNodeFlags_DefaultOpen)) {
+            if (ImGui::CollapsingHeader(m_Name)) {
                 T *component = entity.GetComponent<T>();
                 const auto byte_ptr = reinterpret_cast<uint8_t *>(component);
 
@@ -61,7 +62,7 @@ namespace Editor::UI {
                             ImGui::DragFloat3(Name, static_cast<float *>(fieldAddress), 0.1f);
                             break;
                         case FieldType::Color3:
-                            ImGui::ColorEdit3(Name, static_cast<float *>(fieldAddress));
+                            ImGui::ColorEdit3(Name, static_cast<float *>(fieldAddress), ImGuiColorEditFlags_NoInputs);
                             break;
                         case FieldType::Bool:
                             ImGui::Checkbox(Name, static_cast<bool *>(fieldAddress));
@@ -69,6 +70,16 @@ namespace Editor::UI {
                     }
                 }
                 DrawExtras(entity, component);
+
+                ImGui::Separator();
+                const float buttonWidth = ImGui::CalcTextSize((std::string("Remove ") + m_Name).c_str()).x +
+                                          ImGui::GetStyle()
+                                          .FramePadding.x * 2;
+                const float availWidth = ImGui::GetContentRegionAvail().x;
+                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (availWidth - buttonWidth) * 0.5f);
+                if (ImGui::Button((std::string("Remove ##") + m_Name).c_str(), ImVec2(buttonWidth, 0))) {
+                    entity.RemoveComponent<T>();
+                }
             }
         }
 
@@ -88,12 +99,12 @@ namespace Editor::UI {
 
         [[nodiscard]] const char *GetName() const override { return m_Name; }
 
-        void Draw(const ECS::Entity entity) override {
+        void Draw(const ECS::Entity entity, Core::EngineContext *engineContext = nullptr) override {
             if (!entity.HasComponent<T>())
                 return;
-            if (ImGui::CollapsingHeader(m_Name, ImGuiTreeNodeFlags_DefaultOpen)) {
+            if (ImGui::CollapsingHeader(m_Name)) {
                 ImGui::TextDisabled("Tag Component (No Data)");
-                if (ImGui::Button((std::string("Remove ") + m_Name).c_str())) {
+                if (ImGui::Button((std::string("Remove ##") + m_Name).c_str())) {
                     entity.RemoveComponent<T>();
                 }
             }
@@ -118,44 +129,46 @@ namespace Editor::UI {
     };
 
     struct MeshWidget : public IComponentWidget {
+        int m_SelectedMesh = 0;
+
         [[nodiscard]] const char *GetName() const override;
 
-        void Draw(ECS::Entity entity) override;
+        void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr) override;
     };
 
     struct MaterialWidget : public IComponentWidget {
         [[nodiscard]] const char *GetName() const override;
 
-        void Draw(ECS::Entity entity) override;
+        void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr) override;
     };
 
     struct DirectionalTextureWidget : public IComponentWidget {
         [[nodiscard]] const char *GetName() const override;
 
-        void Draw(ECS::Entity entity) override;
+        void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr) override;
     };
 
     struct MapWidget : public IComponentWidget {
         [[nodiscard]] const char *GetName() const override;
 
-        void Draw(ECS::Entity entity) override;
+        void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr) override;
     };
 
     struct MapStateWidget : public IComponentWidget {
         [[nodiscard]] const char *GetName() const override;
 
-        void Draw(ECS::Entity entity) override;
+        void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr) override;
     };
 
     struct ScriptWidget : public IComponentWidget {
         [[nodiscard]] const char *GetName() const override;
 
-        void Draw(ECS::Entity entity) override;
+        void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr) override;
     };
 
     struct CustomDataWidget : public IComponentWidget {
         [[nodiscard]] const char *GetName() const override;
 
-        void Draw(ECS::Entity entity) override;
+        void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr) override;
     };
 } // namespace Editor::UI
