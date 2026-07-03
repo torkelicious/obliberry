@@ -12,8 +12,8 @@
 #include "Scenes/Scene.h"
 #include "Scenes/SceneManager.h"
 #include "UI/Modals/StdDialogs.h"
-#include "UI/ProjectConfigEditor.h"
-#include "UI/SceneConfigEditor.h"
+#include "UI/ConfigWindows/ProjectConfigEditor.h"
+#include "UI/ConfigWindows/SceneConfigEditor.h"
 
 namespace Editor {
     enum EditorMode : uint8_t { EditorMode, MapEditorMode, PlayMode };

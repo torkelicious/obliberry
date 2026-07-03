@@ -1,7 +1,7 @@
 // ReSharper disable CppDFAConstantConditions
 // ReSharper disable CppDFAUnreachableCode
 // why resharper is lying, i dont know :)
-#include "SceneConfigEditor.h"
+#include "../SceneConfigEditor.h"
 
 #include <cstring>
 #include <filesystem>

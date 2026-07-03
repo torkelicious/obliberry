@@ -186,9 +186,9 @@ add_executable(obliberry_editor
         src/Editor/UI/Panels/InspectorPanel.cpp
         src/Editor/UI/Panels/RegistryPanel.cpp
         src/Editor/UI/Panels/ViewportPanel.cpp
-        src/Editor/UI/ProjectConfigEditor.cpp
+        src/Editor/UI/ConfigWindows/ProjectConfigEditor.cpp
         src/Editor/FileDialogs.cpp
-        src/Editor/UI/SceneConfigEditor.cpp
+        src/Editor/UI/ConfigWindows/SceneConfigEditor.cpp
 )
 
 target_link_libraries(obliberry_editor PRIVATE
