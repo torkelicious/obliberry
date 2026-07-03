@@ -21,12 +21,13 @@
 #include "IO/SceneSerialization.h"
 #include "IO/VFS.h"
 
+#include "States/EditState.h"
+#include "States/PlayState.h"
+#include "States/MapEditState.h"
+
 /* TODO:
- * implement proper playmode / editmode / mapeditmode or something, enum exists but is unused
- * gizmos and shit
- * real editing ig
- * map editor etc etc just an actual editor
- * -
+ * gizmos
+ * map editor
  * fix mouse offset when running via editor view - kinda done in a hacky way??
  */
 
@@ -58,6 +59,9 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
     } else {
         std::cout << "[EditorLayer] No active project" << std::endl;
     }
+
+    m_CurrentState = std::make_unique<EditState>();
+    m_CurrentState->OnEnter(*this);
 }
 
 
@@ -69,12 +73,7 @@ void Editor::EditorLayer::Update(const float dt) {
 
     if (!m_Scene || !m_Registry) return;
 
-    // Update systems
-    if (m_Playing) {
-        m_SceneManager.Update(dt);
-    } else {
-        ECS::Systems::LightingSystem::Update(*m_Registry);
-    }
+    m_CurrentState->OnUpdate(*this, dt);
 
     HandleInput(dt);
 }
@@ -98,51 +97,63 @@ void Editor::EditorLayer::Shutdown() {
 }
 
 void Editor::EditorLayer::HandleInput(const float dt) {
+    // mode-independent hotkeys
     if (m_Input->IsKeyPressed("Esc")) {
-        m_Context.window->Close();
-    }
-
-    if (m_Input->IsKeyPressed("V")) {
-        m_Camera.ToggleViewMode();
-    }
-
-    if (!m_ViewportPanel.IsHovered())
+        const bool hasChanges = (m_Scene && m_Scene->HasUnsavedChanges()) ||
+                                (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges());
+        if (hasChanges) {
+            m_SaveChangesDialog.SetMessage("Do you want to save before quitting?");
+            m_SaveChangesDialog.SetOnSave([this]() {
+                if (m_Scene && m_Scene->HasUnsavedChanges()) {
+                    SaveScene();
+                }
+                if (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges()) {
+                    m_ProjectConfigEditor.SaveConfig();
+                }
+                m_Context.window->Close();
+            });
+            m_SaveChangesDialog.SetOnDiscard([this]() { m_Context.window->Close(); });
+            m_SaveChangesDialog.Open();
+        } else {
+            m_Context.window->Close();
+        }
         return;
-
-    const auto scrollDelta = static_cast<float>(m_Input->ScrollY());
-    if (scrollDelta != 0.0f) {
-        const float zoomSens = 0.2f;
-        m_Camera.AdjustZoom(scrollDelta * zoomSens);
     }
 
-    const auto mouseDeltaX = static_cast<float>(m_Input->GetMouseDeltaX());
-    const auto mouseDeltaY = static_cast<float>(m_Input->GetMouseDeltaY());
-
-    if (m_Input->IsMouseDown("MouseMiddle") || m_Input->IsMouseDown("MouseRight")) {
-        const float mousePanSens = 0.025f;
-        m_Camera.Pan(-mouseDeltaX, mouseDeltaY, mousePanSens);
+    if (m_Input->IsKeyPressed("F1")) {
+        if (m_CurrentState->IsPlayMode())
+            TransitionTo(std::make_unique<EditState>());
+        return;
     }
 
-    float kbPanX = 0.0f;
-    float kbPanY = 0.0f;
-
-    if (m_Input->IsKeyDown("W"))
-        kbPanY += 1.0f;
-    if (m_Input->IsKeyDown("S"))
-        kbPanY -= 1.0f;
-    if (m_Input->IsKeyDown("A"))
-        kbPanX -= 1.0f;
-    if (m_Input->IsKeyDown("D"))
-        kbPanX += 1.0f;
-
-    if (kbPanX != 0.0f || kbPanY != 0.0f) {
-        const float length = std::sqrt(kbPanX * kbPanX + kbPanY * kbPanY);
-        kbPanX /= length;
-        kbPanY /= length;
-        const float speedMod = m_Input->IsKeyDown("LeftShift") ? 3.0f : 1.0f;
-        const float kbPanSpeed = 15.0f * speedMod * dt;
-        m_Camera.Pan(kbPanX, kbPanY, kbPanSpeed);
+    if (m_Input->IsKeyPressed("F5")) {
+        if (m_CurrentState->IsPlayMode()) {
+            TransitionTo(std::make_unique<EditState>());
+        } else {
+            if (m_CurrentScenePath.empty()) {
+                std::cerr << "[Editor] Cannot enter Play Mode: scene has not been saved yet.\n";
+                return;
+            }
+            if (m_Scene && m_Scene->HasUnsavedChanges()) {
+                m_SaveChangesDialog.SetMessage(
+                    "Do you want to save changes to '" + m_Scene->GetProperties().Name
+                    + "' before entering Play Mode?\n\nUnsaved changes will be lost when stopping play.");
+                m_SaveChangesDialog.SetOnSave([this]() {
+                    SaveScene();
+                    TransitionTo(std::make_unique<PlayState>());
+                });
+                m_SaveChangesDialog.SetOnDiscard([this]() {
+                    TransitionTo(std::make_unique<PlayState>());
+                });
+                m_SaveChangesDialog.Open();
+            } else {
+                TransitionTo(std::make_unique<PlayState>());
+            }
+        }
+        return;
     }
+
+    m_CurrentState->OnHandleInput(*this, dt);
 }
 
 void Editor::EditorLayer::LoadScene(const std::string &path) {
@@ -218,8 +229,14 @@ void Editor::EditorLayer::LoadStartScene() {
 }
 
 void Editor::EditorLayer::SaveScene() const {
-    // ReSharper disable once CppExpressionWithoutSideEffects
     static_cast<void>(m_SceneManager.SaveCurrentScene());
+}
+
+void Editor::EditorLayer::TransitionTo(std::unique_ptr<EditorState> newState) {
+    if (m_CurrentState)
+        m_CurrentState->OnExit(*this);
+    m_CurrentState = std::move(newState);
+    m_CurrentState->OnEnter(*this);
 }
 
 void Editor::EditorLayer::DrawInterface() {
@@ -229,7 +246,6 @@ void Editor::EditorLayer::DrawInterface() {
         DrawDockSpace();
         DrawToolbar();
         DrawEditorPanels();
-        DrawGameView();
         DrawUtilityWindows();
     }
 
@@ -238,12 +254,12 @@ void Editor::EditorLayer::DrawInterface() {
     m_ProjectConfigEditor.OnImGuiRender(m_ShowProjectConfig);
 
     // encapsulated dialogs
-    // todo: maybe not this?
     m_NewProjectDialog.Update();
     if (Core::Project::GetActive()) {
         m_CreateSceneDialog.Update();
         m_SaveSceneAsDialog.Update();
     }
+    m_SaveChangesDialog.Update();
 }
 
 void Editor::EditorLayer::DrawProjectHub() {
@@ -312,7 +328,6 @@ void Editor::EditorLayer::DrawDockSpace() {
     ImGui::DockBuilderDockWindow("Console", dock_id_bottom);
     ImGui::DockBuilderDockWindow("Project Browser", dock_id_bottom);
     ImGui::DockBuilderDockWindow("Scene View", dock_id_center);
-    ImGui::DockBuilderDockWindow("Game View", dock_id_center);
 
     ImGui::DockBuilderFinish(dockspaceId);
     s_ShouldBuildDock = false;
@@ -323,45 +338,14 @@ void Editor::EditorLayer::DrawEditorPanels() {
     m_InspectorPanel.SetContext(m_Scene, m_Context);
     m_ViewportPanel.SetContext(m_Scene, m_Context);
 
-    const int clickedID = m_ViewportPanel.GetSelectedEntityID();
-
-    if (clickedID != -1) {
-        const auto eID = static_cast<ECS::EntityID>(clickedID);
-
-        if (m_Registry->IsValid(eID)) {
-            const ECS::Entity selectedEntity(eID, m_Registry);
-            m_RegistryPanel.SetSelectedEntity(selectedEntity);
-        }
-
-        m_ViewportPanel.ClearSelectedEntityID();
-    }
-
     m_InspectorPanel.SetSelectedEntity(m_RegistryPanel.GetSelectedEntity());
 
-    m_RegistryPanel.OnImGuiRender();
-    m_InspectorPanel.OnImGuiRender();
+    m_CurrentState->OnDrawPanels(*this);
+
     m_ViewportPanel.OnImGuiRender();
+    m_ViewportPanel.SetPlayModeIndicator(m_CurrentState->IsPlayMode());
 }
 
-void Editor::EditorLayer::DrawGameView() const {
-    ImGui::Begin("Game View");
-    const ImVec2 gameViewportSize = ImGui::GetContentRegionAvail();
-
-    if (!m_Playing) {
-        if (gameViewportSize.x > 200.0f && gameViewportSize.y > 50.0f) {
-            ImGui::SetCursorPos(ImVec2(gameViewportSize.x * 0.5f - 110.0f, gameViewportSize.y * 0.5f));
-            ImGui::TextDisabled("Game is not running");
-        }
-    } else {
-        if (gameViewportSize.x > 0.0f && gameViewportSize.y > 0.0f) {
-            if (const auto fbo = m_Context.renderer->GetEditorFramebuffer()) {
-                const uint32_t texId = fbo->GetColorAttID();
-                ImGui::Image(texId, gameViewportSize, ImVec2{0, 1}, ImVec2{1, 0});
-            }
-        }
-    }
-    ImGui::End();
-}
 
 void Editor::EditorLayer::DrawUtilityWindows() {
     FlushInterpreterOutput();
@@ -396,35 +380,74 @@ void Editor::EditorLayer::DrawToolbar() {
         if (ImGui::BeginMenu("File")) {
             if (ImGui::MenuItem("New Project")) {
                 if (const auto dir = FileDialogs::PickFolder(m_Context)) {
-                    m_NewProjectDialog.SetDirectory(std::filesystem::path(*dir));
-                    m_NewProjectDialog.SetOnConfirm([this](const std::filesystem::path &pDir, const std::string &name) {
-                        const auto newProject = Core::Project::NewProject(pDir, name);
-                        if (newProject) {
-                            LoadProject(newProject->GetProjectPath().string());
-                        }
-                    });
-                    m_NewProjectDialog.Open();
+                    const std::filesystem::path pickedDir(*dir);
+
+                    auto onProceed = [this, pickedDir]() {
+                        m_NewProjectDialog.SetDirectory(pickedDir);
+                        m_NewProjectDialog.SetOnConfirm(
+                            [this](const std::filesystem::path &pDir, const std::string &name) {
+                                const auto newProject = Core::Project::NewProject(pDir, name);
+                                if (newProject) {
+                                    LoadProject(newProject->GetProjectPath().string());
+                                }
+                            });
+                        m_NewProjectDialog.Open();
+                    };
+
+                    const bool hasChanges =
+                            (m_Scene && m_Scene->HasUnsavedChanges()) ||
+                            (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges());
+                    if (hasChanges) {
+                        m_SaveChangesDialog.SetMessage("Do you want to save before creating a new project?");
+                        m_SaveChangesDialog.SetOnSave([this, onProceed]() {
+                            if (m_Scene && m_Scene->HasUnsavedChanges()) {
+                                SaveScene();
+                            }
+                            if (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges()) {
+                                m_ProjectConfigEditor.SaveConfig();
+                            }
+                            onProceed();
+                        });
+                        m_SaveChangesDialog.SetOnDiscard([this, onProceed]() { onProceed(); });
+                        m_SaveChangesDialog.Open();
+                    } else {
+                        onProceed();
+                    }
                 }
             }
 
             if (ImGui::MenuItem("Open Project")) {
                 if (const auto dir = FileDialogs::PickFolder(m_Context)) {
                     const std::filesystem::path projectFile = std::filesystem::path(*dir) / "project.json";
-                    if (std::filesystem::exists(projectFile)) {
-                        LoadProject(projectFile.string());
-                    } else {
+                    if (!std::filesystem::exists(projectFile)) {
                         std::cerr << "[Editor] No project.json found in: " << *dir << "\n";
+                    } else if ((m_Scene && m_Scene->HasUnsavedChanges()) ||
+                               (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges())) {
+                        m_SaveChangesDialog.SetMessage("Do you want to save before opening another project?");
+                        m_SaveChangesDialog.SetOnSave([this, projectFile]() {
+                            if (m_Scene && m_Scene->HasUnsavedChanges()) {
+                                SaveScene();
+                            }
+                            if (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges()) {
+                                m_ProjectConfigEditor.SaveConfig();
+                            }
+                            LoadProject(projectFile.string());
+                        });
+                        m_SaveChangesDialog.SetOnDiscard([this, projectFile]() { LoadProject(projectFile.string()); });
+                        m_SaveChangesDialog.Open();
+                    } else {
+                        LoadProject(projectFile.string());
                     }
                 }
             }
 
             ImGui::Separator();
 
-            if (ImGui::MenuItem("Save Scene", "Ctrl+S")) {
-                SaveScene();
+            if (ImGui::MenuItem("Save Scene", "Ctrl+S", nullptr, m_CurrentState->CanSaveScene())) {
+                if (m_CurrentState->CanSaveScene()) SaveScene();
             }
 
-            if (ImGui::MenuItem("Save Scene As...")) {
+            if (ImGui::MenuItem("Save Scene As...", nullptr, nullptr, m_CurrentState->CanSaveSceneAs())) {
                 std::string currentName = "scene";
                 if (m_Scene && !m_Scene->GetProperties().Name.empty()) {
                     currentName = m_Scene->GetProperties().Name;
@@ -451,15 +474,59 @@ void Editor::EditorLayer::DrawToolbar() {
             ImGui::Separator();
 
             if (ImGui::MenuItem("Close Project")) {
-                ClearCurrentProject();
-                Core::Project::SetActive(nullptr);
-                IO::VFS::UnmountProject();
-                s_ShouldBuildDock = true;
+                const bool hasChanges =
+                        (m_Scene && m_Scene->HasUnsavedChanges()) ||
+                        (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges());
+                if (hasChanges) {
+                    m_SaveChangesDialog.SetMessage("Do you want to save before closing the project?");
+                    m_SaveChangesDialog.SetOnSave([this]() {
+                        if (m_Scene && m_Scene->HasUnsavedChanges()) {
+                            SaveScene();
+                        }
+                        if (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges()) {
+                            m_ProjectConfigEditor.SaveConfig();
+                        }
+                        ClearCurrentProject();
+                        Core::Project::SetActive(nullptr);
+                        IO::VFS::UnmountProject();
+                        s_ShouldBuildDock = true;
+                    });
+                    m_SaveChangesDialog.SetOnDiscard([this]() {
+                        ClearCurrentProject();
+                        Core::Project::SetActive(nullptr);
+                        IO::VFS::UnmountProject();
+                        s_ShouldBuildDock = true;
+                    });
+                    m_SaveChangesDialog.Open();
+                } else {
+                    ClearCurrentProject();
+                    Core::Project::SetActive(nullptr);
+                    IO::VFS::UnmountProject();
+                    s_ShouldBuildDock = true;
+                }
             }
             ImGui::Separator();
 
             if (ImGui::MenuItem("Exit")) {
-                m_Context.window->Close();
+                const bool hasChanges =
+                        (m_Scene && m_Scene->HasUnsavedChanges()) ||
+                        (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges());
+                if (hasChanges) {
+                    m_SaveChangesDialog.SetMessage("Do you want to save before quitting?");
+                    m_SaveChangesDialog.SetOnSave([this]() {
+                        if (m_Scene && m_Scene->HasUnsavedChanges()) {
+                            SaveScene();
+                        }
+                        if (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges()) {
+                            m_ProjectConfigEditor.SaveConfig();
+                        }
+                        m_Context.window->Close();
+                    });
+                    m_SaveChangesDialog.SetOnDiscard([this]() { m_Context.window->Close(); });
+                    m_SaveChangesDialog.Open();
+                } else {
+                    m_Context.window->Close();
+                }
             }
             ImGui::EndMenu();
         }
@@ -475,7 +542,6 @@ void Editor::EditorLayer::DrawToolbar() {
             if (ImGui::MenuItem("Create Scene")) {
                 m_CreateSceneDialog.Reset();
                 m_CreateSceneDialog.SetOnConfirm([this](const std::string &sceneName) {
-                    // ReSharper disable once CppExpressionWithoutSideEffects
                     static_cast<void>(m_SceneManager.CreateNewScene(sceneName));
                 });
                 m_CreateSceneDialog.Open();
@@ -490,7 +556,19 @@ void Editor::EditorLayer::DrawToolbar() {
                     for (const auto &scenePath: scenes) {
                         const bool isCurrent = m_Scene && m_Scene->GetScenePath() == scenePath;
                         if (ImGui::MenuItem(scenePath.c_str(), nullptr, false, !isCurrent)) {
-                            m_PendingSceneToLoad = scenePath;
+                            if (m_Scene && m_Scene->HasUnsavedChanges()) {
+                                m_SaveChangesDialog.SetMessage(
+                                    "Do you want to save changes to '" + m_Scene->GetProperties().Name
+                                    + "' before switching scenes?");
+                                m_SaveChangesDialog.SetOnSave([this, scenePath]() {
+                                    SaveScene();
+                                    LoadScene(scenePath);
+                                });
+                                m_SaveChangesDialog.SetOnDiscard([this, scenePath]() { LoadScene(scenePath); });
+                                m_SaveChangesDialog.Open();
+                            } else {
+                                m_PendingSceneToLoad = scenePath;
+                            }
                         }
                     }
                 }
@@ -499,21 +577,32 @@ void Editor::EditorLayer::DrawToolbar() {
             ImGui::EndMenu();
         }
 
-        // Play/Stop button centered
-        const float buttonWidth = 60.0f;
+        const float buttonWidth = 70.0f;
         const float centerPos = ImGui::GetWindowSize().x * 0.5f - buttonWidth * 0.5f;
 
         ImGui::SetCursorPosX(centerPos);
 
-        if (ImGui::Button(m_Playing ? "Stop" : "Play", ImVec2(buttonWidth, 0))) {
-            m_Playing = !m_Playing;
-
-            if (m_Playing) {
-                std::cout << "[Editor] Entering Play Mode\n";
-                // TODO: Initialize a real play mode
+        if (ImGui::Button(m_CurrentState->PlayStopLabel(), ImVec2(buttonWidth, 0))) {
+            if (m_CurrentState->IsPlayMode()) {
+                TransitionTo(std::make_unique<EditState>());
             } else {
-                std::cout << "[Editor] Returning to Edit Mode\n";
-                // TODO: Restore scene state
+                if (m_CurrentScenePath.empty()) {
+                    std::cerr << "[Editor] Cannot enter Play Mode: scene has not been saved yet.\n";
+                } else if (m_Scene && m_Scene->HasUnsavedChanges()) {
+                    m_SaveChangesDialog.SetMessage(
+                        "Do you want to save changes to '" + m_Scene->GetProperties().Name
+                        + "' before entering Play Mode?\n\nUnsaved changes will be discarded.");
+                    m_SaveChangesDialog.SetOnSave([this]() {
+                        SaveScene();
+                        TransitionTo(std::make_unique<PlayState>());
+                    });
+                    m_SaveChangesDialog.SetOnDiscard([this]() {
+                        TransitionTo(std::make_unique<PlayState>());
+                    });
+                    m_SaveChangesDialog.Open();
+                } else {
+                    TransitionTo(std::make_unique<PlayState>());
+                }
             }
         }
         ImGui::EndMainMenuBar();

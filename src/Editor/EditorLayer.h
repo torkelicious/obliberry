@@ -8,6 +8,7 @@
 #include "UI/Panels/ViewportPanel.h"
 
 #include "EditorCamera.h"
+#include "EditorState.h"
 #include "Map/HexCoords.h"
 #include "Scenes/Scene.h"
 #include "Scenes/SceneManager.h"
@@ -16,9 +17,16 @@
 #include "UI/ConfigWindows/SceneConfigEditor.h"
 
 namespace Editor {
-    enum EditorMode : uint8_t { EditorMode, MapEditorMode, PlayMode };
+    class EditState;
+    class PlayState;
+    class MapEditState;
 
     class EditorLayer : public Core::ApplicationLayer {
+        friend class EditorState;
+        friend class EditState;
+        friend class PlayState;
+        friend class MapEditState;
+
     public:
         void Init(Core::EngineContext &ctx) override;
 
@@ -34,8 +42,6 @@ namespace Editor {
         void DrawDockSpace();
 
         void DrawEditorPanels();
-
-        void DrawGameView() const;
 
         void DrawUtilityWindows();
 
@@ -55,6 +61,8 @@ namespace Editor {
 
         void SaveScene() const;
 
+        void TransitionTo(std::unique_ptr<EditorState> newState);
+
         Core::EngineContext m_Context;
         Scenes::Scene *m_Scene = nullptr;
         std::string m_CurrentScenePath;
@@ -63,7 +71,7 @@ namespace Editor {
         ECS::Registry *m_Registry = nullptr;
         Scenes::SceneManager m_SceneManager;
 
-        bool m_Playing = false;
+        std::unique_ptr<EditorState> m_CurrentState;
 
         Map::HexCoords m_SelectedTile;
 
@@ -75,6 +83,7 @@ namespace Editor {
         UI::ViewportPanel m_ViewportPanel;
         UI::NewProjectDialog m_NewProjectDialog;
         UI::CreateSceneDialog m_CreateSceneDialog;
+        UI::SaveChangesDialog m_SaveChangesDialog;
         UI::SaveSceneAsDialog m_SaveSceneAsDialog;
         UI::SceneConfigEditor m_SceneConfigEditor;
         UI::ProjectConfigEditor m_ProjectConfigEditor;

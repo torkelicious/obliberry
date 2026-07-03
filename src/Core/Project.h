@@ -28,9 +28,14 @@ namespace Core {
         [[nodiscard]] std::filesystem::path GetRootDirectory() const { return m_ProjectFilepath.parent_path(); }
         [[nodiscard]] std::filesystem::path GetAssetsDirectory() const { return GetRootDirectory() / "assets"; }
 
+        [[nodiscard]] bool HasUnsavedChanges() const { return m_HasUnsavedChanges; }
+        void MarkAsChanged() { m_HasUnsavedChanges = true; }
+        void ClearUnsavedChanges() { m_HasUnsavedChanges = false; }
+
     private:
         ProjectConfig m_Config;
         std::filesystem::path m_ProjectFilepath;
+        mutable bool m_HasUnsavedChanges = false;
         static inline std::shared_ptr<Project> s_ActiveProject = nullptr;
     };
 } // namespace Core

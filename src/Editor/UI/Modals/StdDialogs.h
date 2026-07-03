@@ -62,6 +62,43 @@ namespace Editor::UI {
         std::function<void(std::string)> m_OnConfirmCb;
     };
 
+    // Generic Save Changes Dialog
+    class SaveChangesDialog : public EditorDialog {
+    public:
+        SaveChangesDialog() : EditorDialog("Unsaved Changes") {
+        }
+
+        void SetMessage(const std::string &msg) { m_Message = msg; }
+
+        void SetOnSave(const std::function<void()> &cb) { m_OnSave = cb; }
+        void SetOnDiscard(const std::function<void()> &cb) { m_OnDiscard = cb; }
+
+    protected:
+        void DrawContent() override {
+            ImGui::TextWrapped("%s", m_Message.c_str());
+            ImGui::Separator();
+
+            if (ImGui::Button("Save")) {
+                if (m_OnSave) m_OnSave();
+                Close();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Don't Save")) {
+                if (m_OnDiscard) m_OnDiscard();
+                Close();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel")) {
+                Close();
+            }
+        }
+
+    private:
+        std::string m_Message;
+        std::function<void()> m_OnSave;
+        std::function<void()> m_OnDiscard;
+    };
+
     // Save Scene As Dialog
     class SaveSceneAsDialog : public EditorDialog {
     public:

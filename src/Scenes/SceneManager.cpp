@@ -91,14 +91,6 @@ namespace Scenes {
     }
 
     void SceneManager::SwitchScene(const std::string &newScenePath) {
-        // save current scene if it exists and has changes
-        // TODO: add dialog in ui asking if to save type shit
-        if (m_CurrentScene) {
-            if (m_CurrentScene->HasUnsavedChanges()) {
-                IO::SceneIO::Serialize(m_CurrentScene->GetScenePath(), *m_CurrentScene);
-            }
-        }
-
         LoadSceneByPath(newScenePath);
     }
 

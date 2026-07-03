@@ -16,14 +16,7 @@ void Editor::UI::ViewportPanel::OnImGuiRender() {
     const double localMouseX = imguiMousePos.x - boundsMin.x;
     const double localMouseY = imguiMousePos.y - boundsMin.y;
 
-    if (m_EngineContext &&m_EngineContext
-
-
-
-    ->
-    input
-    )
-    {
+    if (m_EngineContext && m_EngineContext->input) {
         if (m_IsHovered) {
             const double offsetX = m_EngineContext->input->RawMousePosX() - localMouseX;
             const double offsetY = m_EngineContext->input->RawMousePosY() - localMouseY;
@@ -34,14 +27,7 @@ void Editor::UI::ViewportPanel::OnImGuiRender() {
         }
     }
 
-    if (m_EngineContext &&m_EngineContext
-
-
-
-    ->
-    renderer
-    )
-    {
+    if (m_EngineContext && m_EngineContext->renderer) {
         if (const int pickedEntity = m_EngineContext->renderer->GetLastReadPixel(); pickedEntity != -1) {
             m_SelectedEntityID = pickedEntity;
             m_EngineContext->renderer->ClearPixelReadResult();
@@ -52,14 +38,7 @@ void Editor::UI::ViewportPanel::OnImGuiRender() {
         m_ViewportWidth = viewportSize.x;
         m_ViewportHeight = viewportSize.y;
 
-        if (m_EngineContext &&m_EngineContext
-
-
-
-        ->
-        renderer
-        )
-        {
+        if (m_EngineContext && m_EngineContext->renderer) {
             m_EngineContext->renderer->EnsureFramebufferSize(static_cast<uint32_t>(viewportSize.x),
                                                              static_cast<uint32_t>(viewportSize.y));
 
@@ -68,7 +47,21 @@ void Editor::UI::ViewportPanel::OnImGuiRender() {
 
                 ImGui::Image(texId, viewportSize, ImVec2{0, 1}, ImVec2{1, 0});
 
-                if (m_IsHovered &&ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                // play mode badge in top-left corner
+                if (m_ShowPlayIndicator) {
+                    ImDrawList *drawList = ImGui::GetWindowDrawList();
+                    const char *label = "Playing";
+                    const ImVec2 textSize = ImGui::CalcTextSize(label);
+                    const float padding = 6.0f;
+                    const ImVec2 badgeMin(boundsMin.x + 8.0f, boundsMin.y + 8.0f);
+                    const ImVec2 badgeMax(badgeMin.x + textSize.x + padding * 2.0f,
+                                          badgeMin.y + textSize.y + padding * 2.0f);
+                    drawList->AddRectFilled(badgeMin, badgeMax, IM_COL32(200, 40, 40, 200), 4.0f);
+                    drawList->AddText(ImVec2(badgeMin.x + padding, badgeMin.y + padding), IM_COL32(255, 255, 255, 220),
+                                      label);
+                }
+
+                if (m_IsHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
                     const ImVec2 mousePos = ImGui::GetMousePos();
 
                     const int mouseX = static_cast<int>(mousePos.x - boundsMin.x);

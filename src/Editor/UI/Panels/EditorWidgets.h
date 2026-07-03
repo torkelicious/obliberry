@@ -2,6 +2,7 @@
 
 #include "Core/EngineContext.h"
 #include "ECS/Registry.h"
+#include "Scenes/SceneManager.h"
 #include <imgui.h>
 #include <memory>
 #include <string>
@@ -14,6 +15,15 @@
 #include "ECS/Components/TransformComponent.h"
 
 namespace Editor::UI {
+    // Helper — marks the current scene as having unsaved changes
+    inline void MarkSceneChanged(const Core::EngineContext *ctx) {
+        if (ctx && ctx->sceneManager) {
+            if (auto *scene = ctx->sceneManager->GetCurrentScene()) {
+                scene->MarkAsChanged();
+            }
+        }
+    }
+
     enum class FieldType : uint8_t { Float, Int, Bool, Vec3, Color3 };
 
     struct ComponentField {
@@ -68,8 +78,11 @@ namespace Editor::UI {
                             ImGui::Checkbox(Name, static_cast<bool *>(fieldAddress));
                             break;
                     }
+                    if (ImGui::IsItemDeactivatedAfterEdit()) {
+                        MarkSceneChanged(engineContext);
+                    }
                 }
-                DrawExtras(entity, component);
+                DrawExtras(entity, component, engineContext);
 
                 ImGui::Separator();
                 const float buttonWidth = ImGui::CalcTextSize((std::string("Remove ") + m_Name).c_str()).x +
@@ -79,12 +92,13 @@ namespace Editor::UI {
                 ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (availWidth - buttonWidth) * 0.5f);
                 if (ImGui::Button((std::string("Remove ##") + m_Name).c_str(), ImVec2(buttonWidth, 0))) {
                     entity.RemoveComponent<T>();
+                    MarkSceneChanged(engineContext);
                 }
             }
         }
 
     protected:
-        virtual void DrawExtras(ECS::Entity entity, T *component) {
+        virtual void DrawExtras(ECS::Entity entity, T *component, Core::EngineContext *engineContext) {
         }
     };
 
@@ -106,6 +120,7 @@ namespace Editor::UI {
                 ImGui::TextDisabled("Tag Component (No Data)");
                 if (ImGui::Button((std::string("Remove ##") + m_Name).c_str())) {
                     entity.RemoveComponent<T>();
+                    MarkSceneChanged(engineContext);
                 }
             }
         }
@@ -119,13 +134,15 @@ namespace Editor::UI {
     struct TransformWidget : public AutoComponentWidget<ECS::Components::TransformComponent> {
         TransformWidget();
 
-        void DrawExtras(ECS::Entity entity, ECS::Components::TransformComponent *component) override;
+        void DrawExtras(ECS::Entity entity, ECS::Components::TransformComponent *component,
+                        Core::EngineContext *engineContext) override;
     };
 
     struct MovementWidget : public AutoComponentWidget<ECS::Components::MovementComponent> {
         MovementWidget();
 
-        void DrawExtras(ECS::Entity entity, ECS::Components::MovementComponent *component) override;
+        void DrawExtras(ECS::Entity entity, ECS::Components::MovementComponent *component,
+                        Core::EngineContext *engineContext) override;
     };
 
     struct MeshWidget : public IComponentWidget {

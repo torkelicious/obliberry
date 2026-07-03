@@ -58,6 +58,7 @@ namespace Core {
             return false;
         }
 
+        m_HasUnsavedChanges = false;
         return true;
     }
 } // namespace Core

@@ -49,14 +49,19 @@ namespace Editor::UI {
         // title
         if (ImGui::InputText("Window Title", m_TitleBuffer, sizeof(m_TitleBuffer))) {
             m_LocalConfig.windowTitle = m_TitleBuffer;
+            Core::Project::GetActive()->MarkAsChanged();
         }
 
         ImGui::Separator();
 
         ImGui::DragInt("Width", &m_LocalConfig.windowWidth, 1.0f, 640, 7680);
+        if (ImGui::IsItemDeactivatedAfterEdit()) Core::Project::GetActive()->MarkAsChanged();
         ImGui::DragInt("Height", &m_LocalConfig.windowHeight, 1.0f, 480, 4320);
+        if (ImGui::IsItemDeactivatedAfterEdit()) Core::Project::GetActive()->MarkAsChanged();
 
-        ImGui::Checkbox("Fullscreen", &m_LocalConfig.fullscreen);
+        if (ImGui::Checkbox("Fullscreen", &m_LocalConfig.fullscreen)) {
+            Core::Project::GetActive()->MarkAsChanged();
+        }
 
         ImGui::Separator();
 
@@ -72,6 +77,7 @@ namespace Editor::UI {
                         *m_Context, "Scene File", "json", nullptr);
                     if (picked.has_value()) {
                         ResolveStartScenePath(picked.value());
+                        Core::Project::GetActive()->MarkAsChanged();
                     }
                 }
             }
@@ -79,6 +85,7 @@ namespace Editor::UI {
             if (ImGui::Button("Clear##Scene")) {
                 m_LocalConfig.startScenePath.clear();
                 m_StartSceneBuffer[0] = '\0';
+                Core::Project::GetActive()->MarkAsChanged();
             }
         }
 
@@ -116,6 +123,7 @@ namespace Editor::UI {
         // write to disk
         project->GetConfig() = m_LocalConfig;
         if (project->Save()) {
+            project->ClearUnsavedChanges();
             std::cout << "[ProjectConfigEditor] Project properties saved.\n";
         } else {
             std::cerr << "[ProjectConfigEditor] Failed to save project properties.\n";

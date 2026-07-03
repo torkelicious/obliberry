@@ -107,6 +107,7 @@ void Editor::UI::InspectorPanel::OnImGuiRender() {
                         ImGui::EndDisabled();
                     } else if (ImGui::Selectable(entry.name)) {
                         entry.add();
+                        MarkSceneChanged(m_EngineContext);
                         ImGui::CloseCurrentPopup();
                     }
                     ImGui::PopID();

@@ -68,21 +68,25 @@ Editor::UI::PointLightWidget::PointLightWidget() : AutoComponentWidget("Point Li
 Editor::UI::TransformWidget::TransformWidget() : AutoComponentWidget("Transform") {
 }
 
-void Editor::UI::TransformWidget::DrawExtras(ECS::Entity entity, ECS::Components::TransformComponent *component) {
+void Editor::UI::TransformWidget::DrawExtras(ECS::Entity entity, ECS::Components::TransformComponent *component,
+                                             Core::EngineContext *engineContext) {
     auto pos = component->transform.GetPosition();
     if (ImGui::DragFloat3("Position", &pos.x, 0.1f)) {
         component->transform.SetPosition(pos);
     }
+    if (ImGui::IsItemDeactivatedAfterEdit()) MarkSceneChanged(engineContext);
 
     auto rot = component->transform.GetRotation();
     if (ImGui::DragFloat3("Rotation", &rot.x, 0.1f)) {
         component->transform.SetRotation(rot);
     }
+    if (ImGui::IsItemDeactivatedAfterEdit()) MarkSceneChanged(engineContext);
 
     auto scale = component->transform.GetScale();
     if (ImGui::DragFloat3("Scale", &scale.x, 0.1f)) {
         component->transform.SetScale(scale);
     }
+    if (ImGui::IsItemDeactivatedAfterEdit()) MarkSceneChanged(engineContext);
 
     ImGui::Spacing();
     const bool hasBillboard = entity.HasComponent<ECS::Components::BillboardTagComponent>();
@@ -93,6 +97,7 @@ void Editor::UI::TransformWidget::DrawExtras(ECS::Entity entity, ECS::Components
             entity.AddComponent<ECS::Components::BillboardTagComponent>();
         else if (!useBillboard && hasBillboard)
             entity.RemoveComponent<ECS::Components::BillboardTagComponent>();
+        MarkSceneChanged(engineContext);
     }
 }
 
@@ -111,7 +116,8 @@ Editor::UI::MovementWidget::MovementWidget() : AutoComponentWidget("Movement") {
     });
 }
 
-void Editor::UI::MovementWidget::DrawExtras(ECS::Entity entity, ECS::Components::MovementComponent *component) {
+void Editor::UI::MovementWidget::DrawExtras(ECS::Entity entity, ECS::Components::MovementComponent *component,
+                                            Core::EngineContext *engineContext) {
     ImGui::Text("Path Nodes: %zu", component->currentPath.size());
     ImGui::Text("Current Path Index: %zu", component->currentPathIndex);
 }
@@ -171,6 +177,7 @@ void Editor::UI::MeshWidget::Draw(const ECS::Entity entity, Core::EngineContext 
             mesh->SetFactoryId(meshTypes[m_SelectedMesh]);
             Rendering::Renderer::SubmitInitTask([mesh] { mesh->InitGL(); });
             comp->mesh = std::move(mesh);
+            MarkSceneChanged(engineContext);
         }
 
         ImGui::Separator();
@@ -179,6 +186,7 @@ void Editor::UI::MeshWidget::Draw(const ECS::Entity entity, Core::EngineContext 
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (availWidth - buttonWidth) * 0.5f);
         if (ImGui::Button("Remove ##Mesh", ImVec2(buttonWidth, 0))) {
             entity.RemoveComponent<ECS::Components::MeshComponent>();
+            MarkSceneChanged(engineContext);
         }
     }
 }
@@ -195,6 +203,7 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
             {
                 ImGui::PushID("MatColor");
                 ImGui::ColorEdit4("Color", &comp->material->color.x, ImGuiColorEditFlags_NoInputs);
+                if (ImGui::IsItemDeactivatedAfterEdit()) MarkSceneChanged(engineContext);
                 ImGui::PopID();
             }
 
@@ -213,6 +222,7 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
                             auto tex = std::make_shared<Rendering::Texture>(finalPath.value());
                             Rendering::Renderer::SubmitInitTask([tex] { tex->InitGL(); });
                             comp->material->texture = std::move(tex);
+                            MarkSceneChanged(engineContext);
                         }
                     }
                 }
@@ -231,6 +241,7 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
                         const auto finalPath = ResolveOrImportPath(picked.value());
                         if (finalPath.has_value() && comp->material->shader) {
                             comp->material->shader->GetVertexPath() = finalPath.value();
+                            MarkSceneChanged(engineContext);
                         }
                     }
                 }
@@ -248,6 +259,7 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
                         const auto finalPath = ResolveOrImportPath(picked.value());
                         if (finalPath.has_value() && comp->material->shader) {
                             comp->material->shader->GetFragmentPath() = finalPath.value();
+                            MarkSceneChanged(engineContext);
                         }
                     }
                 }
@@ -268,6 +280,7 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
             ImGui::TextDisabled("No material assigned");
             if (ImGui::Button("Create Material")) {
                 comp->material = std::make_shared<Rendering::Material>();
+                MarkSceneChanged(engineContext);
             }
         }
 
@@ -278,6 +291,7 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
                                           2)) * 0.5f);
         if (ImGui::Button("Remove ##Material")) {
             entity.RemoveComponent<ECS::Components::MaterialComponent>();
+            MarkSceneChanged(engineContext);
         }
     }
 }
@@ -291,6 +305,7 @@ void Editor::UI::DirectionalTextureWidget::Draw(const ECS::Entity entity, Core::
         auto *comp = entity.GetComponent<ECS::Components::DirectionalTextureComponent>();
 
         ImGui::SliderInt("Facing Index", &comp->index, 0, 5);
+        if (ImGui::IsItemDeactivatedAfterEdit()) MarkSceneChanged(engineContext);
         ImGui::Spacing();
 
         for (int i = 0; i < 6; i++) {
@@ -307,6 +322,7 @@ void Editor::UI::DirectionalTextureWidget::Draw(const ECS::Entity entity, Core::
                             auto tex = std::make_shared<Rendering::Texture>(finalPath.value());
                             Rendering::Renderer::SubmitInitTask([tex] { tex->InitGL(); });
                             comp->textures[i] = std::move(tex);
+                            MarkSceneChanged(engineContext);
                         }
                     }
                 }
@@ -321,6 +337,7 @@ void Editor::UI::DirectionalTextureWidget::Draw(const ECS::Entity entity, Core::
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (availWidth - buttonWidth) * 0.5f);
         if (ImGui::Button("Remove ##DirectionalTexture", ImVec2(buttonWidth, 0))) {
             entity.RemoveComponent<ECS::Components::DirectionalTextureComponent>();
+            MarkSceneChanged(engineContext);
         }
     }
 }
@@ -334,9 +351,12 @@ void Editor::UI::MapWidget::Draw(const ECS::Entity entity, Core::EngineContext *
         auto *comp = entity.GetComponent<ECS::Components::MapComponent>();
         char buffer[256];
         strncpy(buffer, comp->mapFilePath.c_str(), sizeof(buffer));
-        if (ImGui::InputText("File Path", buffer, sizeof(buffer)))
+        if (ImGui::InputText("File Path", buffer, sizeof(buffer))) {
             comp->mapFilePath = buffer;
+            MarkSceneChanged(engineContext);
+        }
         ImGui::Checkbox("Needs Mesh Update", &comp->needsMeshUpdate);
+        if (ImGui::IsItemDeactivatedAfterEdit()) MarkSceneChanged(engineContext);
         ImGui::Text("Render Visibles: %zu types", comp->visibles.size());
         ImGui::Text("Hex Mesh: %s", comp->hexMesh ? "Loaded" : "Missing");
 
@@ -346,6 +366,7 @@ void Editor::UI::MapWidget::Draw(const ECS::Entity entity, Core::EngineContext *
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (availWidth - buttonWidth) * 0.5f);
         if (ImGui::Button("Remove ##Map", ImVec2(buttonWidth, 0))) {
             entity.RemoveComponent<ECS::Components::MapComponent>();
+            MarkSceneChanged(engineContext);
         }
     }
 }
@@ -358,9 +379,11 @@ void Editor::UI::MapStateWidget::Draw(const ECS::Entity entity, Core::EngineCont
     if (ImGui::CollapsingHeader(GetName())) {
         auto *comp = entity.GetComponent<ECS::Components::MapStateComponent>();
         ImGui::Checkbox("Has Selection", &comp->hasSelection);
+        if (ImGui::IsItemDeactivatedAfterEdit()) MarkSceneChanged(engineContext);
         if (comp->hasSelection)
             ImGui::Text("Selected Hex: [%d, %d]", comp->selectedHex.q, comp->selectedHex.r);
         ImGui::Checkbox("Has Path To", &comp->hasPathTo);
+        if (ImGui::IsItemDeactivatedAfterEdit()) MarkSceneChanged(engineContext);
         if (comp->hasPathTo)
             ImGui::Text("Path Target: [%d, %d]", comp->pathTo.q, comp->pathTo.r);
 
@@ -370,6 +393,7 @@ void Editor::UI::MapStateWidget::Draw(const ECS::Entity entity, Core::EngineCont
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (availWidth - buttonWidth) * 0.5f);
         if (ImGui::Button("Remove ##MapState", ImVec2(buttonWidth, 0))) {
             entity.RemoveComponent<ECS::Components::MapStateComponent>();
+            MarkSceneChanged(engineContext);
         }
     }
 }
@@ -402,6 +426,7 @@ void Editor::UI::ScriptWidget::Draw(ECS::Entity entity, Core::EngineContext *eng
                 if (comp->scriptPaths.empty()) {
                     entity.RemoveComponent<ECS::Components::ScriptComponent>();
                 }
+                MarkSceneChanged(engineContext);
                 ImGui::PopID();
                 break;
             }
@@ -434,6 +459,7 @@ void Editor::UI::ScriptWidget::Draw(ECS::Entity entity, Core::EngineContext *eng
                         comp->source_codes.emplace_back();
                         comp->ast_nodes.emplace_back();
                         comp->lastModified.push_back(std::filesystem::file_time_type::min());
+                        MarkSceneChanged(engineContext);
                     }
                 }
             }
@@ -466,6 +492,7 @@ void Editor::UI::CustomDataWidget::Draw(const ECS::Entity entity, Core::EngineCo
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (availWidth - buttonWidth) * 0.5f);
         if (ImGui::Button("Remove ##CustomData", ImVec2(buttonWidth, 0))) {
             entity.RemoveComponent<ECS::Components::CustomDataComponent>();
+            MarkSceneChanged(engineContext);
         }
     }
 }

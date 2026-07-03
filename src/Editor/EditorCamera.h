@@ -35,5 +35,24 @@ namespace Editor {
             Zoom += delta;
             Zoom = std::clamp(Zoom, minZoom, maxZoom);
         }
+
+        void SaveState() {
+            m_SavedPosition = Position;
+            m_SavedZoom = Zoom;
+            m_SavedAngleX = m_AngleX;
+            m_SavedAngleZ = m_AngleZ;
+        }
+
+        void RestoreState() {
+            Position = m_SavedPosition;
+            Zoom = m_SavedZoom;
+            SetRotation(m_SavedAngleX, m_SavedAngleZ);
+        }
+
+    private:
+        glm::vec3 m_SavedPosition{0.0f};
+        float m_SavedZoom = 1.5f;
+        float m_SavedAngleX = 55.0f;
+        float m_SavedAngleZ = 45.0f;
     };
 } // namespace Editor

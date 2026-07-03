@@ -182,6 +182,9 @@ target_link_libraries(obliberry_runtime PRIVATE
 add_executable(obliberry_editor
         src/Editor/EditorMain.cpp
         src/Editor/EditorLayer.cpp
+        src/Editor/States/EditState.cpp
+        src/Editor/States/PlayState.cpp
+        src/Editor/States/MapEditState.cpp
         src/Editor/UI/Panels/EditorWidgets.cpp
         src/Editor/UI/Panels/InspectorPanel.cpp
         src/Editor/UI/Panels/RegistryPanel.cpp
