@@ -1,7 +1,7 @@
 #include "EngineLib.h"
 #include "EngineLibFactories.h"
 #include "Scripting/EngineLib/ScriptCommandBuffer.h"
-#include "Scripting/ObSLCore/ScriptWorker.h"
+#include <ObSL/ScriptWorker.h>
 #include <string>
 #include "ECS/Components/CustomDataComponent.h"
 #include "ECS/Components/DestroyTagComponent.h"

@@ -8,7 +8,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 #include <ImGuizmo.h>
-#include <Scripting/ObSLCore/ScriptRuntime.h>
+#include <ObSL/ScriptRuntime.h>
 #include <filesystem>
 #include <iostream>
 #include <memory>

@@ -5,7 +5,7 @@
 #include "Rendering/Camera.h"
 #include "Core/Window.h"
 #include "Rendering/Renderer.h"
-#include "Scripting/ObSLCore/Interpreter/Interpreter.h"
+#include <ObSL/Interpreter.h>
 
 namespace {
     std::mutex s_InputCameraMutex;

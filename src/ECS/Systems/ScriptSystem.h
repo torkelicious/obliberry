@@ -10,10 +10,10 @@
 #include "ECS/Components/DestroyTagComponent.h"
 #include "ECS/Components/ScriptComponent.h"
 #include "IO/VFS.h"
-#include "Scripting/ObSLCore/Lexer/Lexer.h"
-#include "Scripting/ObSLCore/ScriptRuntime.h"
-#include "Scripting/ObSLCore/ScriptWorker.h"
-#include "Scripting/ObSLCore/Parser/Parser.h"
+#include <ObSL/Lexer.h>
+#include <ObSL/ScriptRuntime.h>
+#include <ObSL/ScriptWorker.h>
+#include <ObSL/Parser.h>
 #include "Scripting/EngineLib/ScriptCommandBuffer.h"
 #include "Scripting/EngineLib/EngineLibFactories.h"
 #include "Core/ThreadPool.h"

@@ -83,18 +83,10 @@ set(EXTERNAL_SOURCES
         external/miniaudio/miniaudio.c
 )
 
-# ObSL Core
-set(OBSL_CORE_SOURCES
-        src/Scripting/ObSLCore/ScriptEntry.cpp
-        src/Scripting/ObSLCore/Lexer/Lexer.cpp
-        src/Scripting/ObSLCore/Parser/Parser.cpp
-        src/Scripting/ObSLCore/Interpreter/Interpreter.cpp
-        src/Scripting/ObSLCore/Interpreter/Environment.cpp
-        src/Scripting/ObSLCore/StdLib/StdLib.cpp
-        src/Scripting/ObSLCore/GarbageCollector.cpp
-        src/Scripting/ObSLCore/ScriptWorker.cpp
-        src/Scripting/ObSLCore/ScriptRuntime.cpp
-)
+# ObSL
+set(OBSL_BUILD_RUNTIME OFF CACHE BOOL "" FORCE)
+add_subdirectory(external/obsl)
+
 
 # Engine Core Sources
 # NOTE: ObSL EngineLib stay here, but the core language is removed, must be linked later!!!
@@ -146,28 +138,6 @@ set(ENGINE_SOURCES
         src/Core/ThreadPool.cpp
 )
 
-# ObSL Core
-add_library(obsl_core STATIC ${OBSL_CORE_SOURCES})
-
-target_include_directories(obsl_core PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
-)
-
-# JSON is only used internally by ObSL (linter output)
-target_link_libraries(obsl_core PRIVATE
-        nlohmann_json::nlohmann_json
-)
-
-# ObSL Core Runtime
-add_executable(
-        obsl_core_runtime
-        src/Scripting/ObSLCore/ObSLCoreMain.cpp
-)
-
-target_link_libraries(obsl_core_runtime PRIVATE
-        obsl_core
-)
-
 # Engine Library Target
 add_library(obliberry_engine STATIC
         ${EXTERNAL_SOURCES}
@@ -194,7 +164,7 @@ target_compile_definitions(obliberry_engine PUBLIC
 target_link_libraries(obliberry_engine PUBLIC
         glfw
         glm::glm
-        obsl_core
+        obsl
         nlohmann_json::nlohmann_json
         nfd
 )

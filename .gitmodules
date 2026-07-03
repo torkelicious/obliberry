@@ -1,0 +1,3 @@
+[submodule "external/obsl"]
+	path = external/obsl
+	url = https://github.com/torkelicious/ObSL.git

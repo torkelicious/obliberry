@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Scripting/ObSLCore/Interpreter/Environment.h"
-#include "Scripting/ObSLCore/Parser/Parser.h"
+#include <ObSL/Environment.h>
+#include <ObSL/Parser.h>
 #include <filesystem>
 #include <memory>
 

@@ -1,7 +1,7 @@
 #include <imgui.h>
 #include <mutex>
 #include "Scripting/EngineLib/EngineLib.h"
-#include "Scripting/ObSLCore/Interpreter/Interpreter.h"
+#include <ObSL/Interpreter.h>
 
 namespace {
     std::mutex s_GuiMutex;

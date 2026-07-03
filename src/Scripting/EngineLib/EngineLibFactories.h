@@ -4,8 +4,8 @@
 #include <shared_mutex>
 
 #include "ECS/Registry.h"
-#include "Scripting/ObSLCore/Interpreter/Interpreter.h"
-#include "Scripting/ObSLCore/ScriptWorker.h"
+#include <ObSL/Interpreter.h>
+#include <ObSL/ScriptWorker.h>
 #include "Scripting/EngineLib/ScriptCommandBuffer.h"
 
 #include "ECS/Components/TransformComponent.h"

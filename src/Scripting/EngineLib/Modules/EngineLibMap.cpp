@@ -6,7 +6,7 @@
 #include "ECS/Systems/MovementSystem.h"
 #include "Math/HexMath.h"
 #include "Scripting/EngineLib/EngineLibFactories.h"
-#include "Scripting/ObSLCore/ScriptRuntime.h"
+#include <ObSL/ScriptRuntime.h>
 #include "Scripting/EngineLib/ScriptCommandBuffer.h"
 
 void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) {

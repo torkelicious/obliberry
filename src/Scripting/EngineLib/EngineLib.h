@@ -2,7 +2,7 @@
 
 #include "Core/EngineContext.h"
 #include "ECS/Registry.h"
-#include "Scripting/ObSLCore/StdLib/StdLib.h"
+#include <ObSL/StdLib.h>
 
 namespace Scripting {
     class EngineLib : public ObSL::Lib {
