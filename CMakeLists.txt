@@ -83,6 +83,10 @@ set(EXTERNAL_SOURCES
         external/miniaudio/miniaudio.c
 )
 
+# ObSL
+add_subdirectory(external/obsl)
+
+
 # Engine Core Sources
 # NOTE: ObSL EngineLib stay here, but the core language is removed, must be linked later!!!
 set(ENGINE_SOURCES
@@ -159,7 +163,7 @@ target_compile_definitions(obliberry_engine PUBLIC
 target_link_libraries(obliberry_engine PUBLIC
         glfw
         glm::glm
-        obsl # todo add
+        obsl
         nlohmann_json::nlohmann_json
         nfd
 )
