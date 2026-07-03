@@ -1,4 +1,5 @@
-#include "../ProjectConfigEditor.h"
+
+#include "ProjectConfigEditor.h"
 
 #include <cstring>
 #include <filesystem>
