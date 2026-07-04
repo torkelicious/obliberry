@@ -2,30 +2,30 @@
 #include "../EditorLayer.h"
 #include <iostream>
 
-void Editor::PlayState::OnEnter(EditorLayer &editor) {
-    editor.m_PendingSceneToLoad.clear();
-    editor.m_Camera.SaveState();
-    editor.m_ViewportPanel.SetPlayModeIndicator(true);
+void Editor::PlayState::OnEnter() {
+    m_EditorLayer->m_PendingSceneToLoad.clear();
+    m_EditorLayer->m_Camera.SaveState();
+    m_EditorLayer->m_ViewportPanel.SetPlayModeIndicator(true);
     std::cout << "[Editor] Entering Play Mode\n";
-    editor.LoadScene(editor.m_CurrentScenePath);
+    m_EditorLayer->LoadScene(m_EditorLayer->m_CurrentScenePath);
 }
 
-void Editor::PlayState::OnExit(EditorLayer &editor) {
-    editor.m_PendingSceneToLoad.clear();
-    editor.m_ViewportPanel.SetPlayModeIndicator(false);
+void Editor::PlayState::OnExit() {
+    m_EditorLayer->m_PendingSceneToLoad.clear();
+    m_EditorLayer->m_ViewportPanel.SetPlayModeIndicator(false);
     std::cout << "[Editor] Exiting Play Mode, restoring scene state...\n";
-    editor.LoadScene(editor.m_CurrentScenePath);
-    editor.m_Camera.RestoreState();
+    m_EditorLayer->LoadScene(m_EditorLayer->m_CurrentScenePath);
+    m_EditorLayer->m_Camera.RestoreState();
 }
 
-void Editor::PlayState::OnUpdate(EditorLayer &editor, const float dt) {
-    editor.m_SceneManager.Update(dt);
+void Editor::PlayState::OnUpdate(const float dt) {
+    m_EditorLayer->m_SceneManager.Update(dt);
 }
 
-void Editor::PlayState::OnHandleInput(EditorLayer &, float) {
+void Editor::PlayState::OnHandleInput(float dt) {
     // handled by the game scene
 }
 
-void Editor::PlayState::OnDrawPanels(EditorLayer &) {
+void Editor::PlayState::OnDrawPanels() {
     // nothing drawn
 }

@@ -61,7 +61,8 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
     }
 
     m_CurrentState = std::make_unique<EditState>();
-    m_CurrentState->OnEnter(*this);
+    m_CurrentState->SetEditorLayer(this);
+    m_CurrentState->OnEnter();
 }
 
 
@@ -73,7 +74,7 @@ void Editor::EditorLayer::Update(const float dt) {
 
     if (!m_Scene || !m_Registry) return;
 
-    m_CurrentState->OnUpdate(*this, dt);
+    m_CurrentState->OnUpdate(dt);
 
     HandleInput(dt);
 }
@@ -86,7 +87,7 @@ void Editor::EditorLayer::Render() {
         return;
 
     if (m_Context.camera) {
-        const float aspect = m_ViewportPanel.GetWidth() / m_ViewportPanel.GetHeight();
+        aspect = m_ViewportPanel.GetWidth() / m_ViewportPanel.GetHeight();
         m_Context.renderer->SetCamera(*m_Context.camera, aspect);
     }
 
@@ -153,7 +154,7 @@ void Editor::EditorLayer::HandleInput(const float dt) {
         return;
     }
 
-    m_CurrentState->OnHandleInput(*this, dt);
+    m_CurrentState->OnHandleInput(dt);
 }
 
 void Editor::EditorLayer::LoadScene(const std::string &path) {
@@ -234,9 +235,10 @@ void Editor::EditorLayer::SaveScene() const {
 
 void Editor::EditorLayer::TransitionTo(std::unique_ptr<EditorState> newState) {
     if (m_CurrentState)
-        m_CurrentState->OnExit(*this);
+        m_CurrentState->OnExit();
     m_CurrentState = std::move(newState);
-    m_CurrentState->OnEnter(*this);
+    m_CurrentState->SetEditorLayer(this);
+    m_CurrentState->OnEnter();
 }
 
 void Editor::EditorLayer::DrawInterface() {
@@ -340,10 +342,11 @@ void Editor::EditorLayer::DrawEditorPanels() {
 
     m_InspectorPanel.SetSelectedEntity(m_RegistryPanel.GetSelectedEntity());
 
-    m_CurrentState->OnDrawPanels(*this);
-
+    // viewport must be rendered first so ImGuizmo::SetDrawlist/SetRect are called
     m_ViewportPanel.OnImGuiRender();
     m_ViewportPanel.SetPlayModeIndicator(m_CurrentState->IsPlayMode());
+
+    m_CurrentState->OnDrawPanels();
 }
 
 

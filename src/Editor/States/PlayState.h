@@ -4,15 +4,15 @@
 namespace Editor {
     class PlayState : public EditorState {
     public:
-        void OnEnter(EditorLayer &editor) override;
+        void OnEnter() override;
 
-        void OnExit(EditorLayer &editor) override;
+        void OnExit() override;
 
-        void OnUpdate(EditorLayer &editor, float dt) override;
+        void OnUpdate(float dt) override;
 
-        void OnHandleInput(EditorLayer &editor, float dt) override;
+        void OnHandleInput(float dt) override;
 
-        void OnDrawPanels(EditorLayer &editor) override;
+        void OnDrawPanels() override;
 
         bool CanSaveScene() const override { return false; }
         bool CanSaveSceneAs() const override { return false; }

@@ -1,12 +1,22 @@
 #include "ViewportPanel.h"
 #include "Rendering/Renderer.h"
 #include <imgui.h>
+#include <ImGuizmo.h>
+
 #include "Core/InputManager.h"
 
 void Editor::UI::ViewportPanel::OnImGuiRender() {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
     ImGui::Begin("Scene View");
     ImGui::PopStyleVar();
+
+    // gizmos
+
+    ImGuizmo::SetDrawlist();
+    ImVec2 windowPos = ImGui::GetWindowPos();
+    ImVec2 windowSize = ImGui::GetWindowSize();
+    ImGuizmo::SetRect(windowPos.x, windowPos.y, windowSize.x, windowSize.y);
+
 
     m_IsHovered = ImGui::IsWindowHovered();
 

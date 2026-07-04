@@ -9,21 +9,27 @@ namespace Editor {
 
         // basically same shit scenes / layers do
 
-        virtual void OnEnter(EditorLayer &editor) {
+        virtual void OnEnter() {
         }
 
-        virtual void OnExit(EditorLayer &editor) {
+        virtual void OnExit() {
         }
 
-        virtual void OnUpdate(EditorLayer &editor, float dt) = 0;
+        virtual void OnUpdate(float dt) = 0;
 
-        virtual void OnHandleInput(EditorLayer &editor, float dt) = 0;
+        virtual void OnHandleInput(float dt) = 0;
 
-        virtual void OnDrawPanels(EditorLayer &editor) = 0;
+        virtual void OnDrawPanels() = 0;
 
         virtual bool CanSaveScene() const { return true; }
         virtual bool CanSaveSceneAs() const { return true; }
         virtual bool IsPlayMode() const { return false; }
         virtual const char *PlayStopLabel() const { return "Play"; }
+
+        virtual void SetEditorLayer(EditorLayer *layer) { m_EditorLayer = layer; }
+        virtual EditorLayer *GetEditorLayer() { return m_EditorLayer; }
+
+    protected:
+        EditorLayer *m_EditorLayer = nullptr;
     };
 } // namespace Editor

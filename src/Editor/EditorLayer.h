@@ -89,6 +89,7 @@ namespace Editor {
         UI::ProjectConfigEditor m_ProjectConfigEditor;
         bool m_ShowSceneConfig = false;
         bool m_ShowProjectConfig = false;
+        float aspect = m_ViewportPanel.GetWidth() / m_ViewportPanel.GetHeight();
 
         // Logging
         std::vector<std::string> m_ConsoleLogs;
