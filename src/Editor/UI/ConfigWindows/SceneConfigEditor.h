@@ -14,7 +14,7 @@ namespace Editor::UI {
 
         void OnImGuiRender(bool &isOpen);
 
-        void SaveConfig();
+        void SaveConfig() const;
 
         void ReloadFromScene();
 

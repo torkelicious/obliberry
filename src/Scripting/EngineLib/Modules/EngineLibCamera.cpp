@@ -92,7 +92,7 @@ void Scripting::EngineLib::register_camera_modules(ObSL::Interpreter &interprete
             [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
                 if (ctx && ctx->camera) {
                     std::lock_guard lock(s_CameraMutex);
-                    return static_cast<double>(ctx->camera->Zoom);
+                    return ctx->camera->Zoom;
                 }
                 return 0.0;
             }, "Camera_GetZoom"));

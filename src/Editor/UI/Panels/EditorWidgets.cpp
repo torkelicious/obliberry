@@ -76,7 +76,7 @@ void Editor::UI::TransformWidget::DrawExtras(ECS::Entity entity, ECS::Components
     }
     if (ImGui::IsItemDeactivatedAfterEdit()) MarkSceneChanged(engineContext);
 
-    bool isBillboard = entity.HasComponent<ECS::Components::BillboardTagComponent>();
+    const bool isBillboard = entity.HasComponent<ECS::Components::BillboardTagComponent>();
 
     if (isBillboard) {
         ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), " Rotation has no effect on Billboard Sprites");
@@ -227,7 +227,7 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
             ImGui::SameLine();
             if (ImGui::Button("Load")) {
                 if (engineContext) {
-                    const auto picked = Editor::FileDialogs::OpenFile(*engineContext, "Image", "png,jpg,jpeg,bmp,tga",
+                    const auto picked = FileDialogs::OpenFile(*engineContext, "Image", "png,jpg,jpeg,bmp,tga",
                                                                       nullptr);
                     if (picked.has_value()) {
                         auto finalPath = ResolveOrImportPath(picked.value());
@@ -248,7 +248,7 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
             ImGui::SameLine();
             if (ImGui::Button("Vert##Shader")) {
                 if (engineContext) {
-                    const auto picked = Editor::FileDialogs::OpenFile(*engineContext, "Vertex Shader", "vert,glsl",
+                    const auto picked = FileDialogs::OpenFile(*engineContext, "Vertex Shader", "vert,glsl",
                                                                       nullptr);
                     if (picked.has_value()) {
                         const auto finalPath = ResolveOrImportPath(picked.value());
@@ -266,7 +266,7 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
             ImGui::SameLine();
             if (ImGui::Button("Frag##Shader")) {
                 if (engineContext) {
-                    const auto picked = Editor::FileDialogs::OpenFile(*engineContext, "Fragment Shader", "frag,glsl",
+                    const auto picked = FileDialogs::OpenFile(*engineContext, "Fragment Shader", "frag,glsl",
                                                                       nullptr);
                     if (picked.has_value()) {
                         const auto finalPath = ResolveOrImportPath(picked.value());
@@ -327,7 +327,7 @@ void Editor::UI::DirectionalTextureWidget::Draw(const ECS::Entity entity, Core::
             ImGui::SameLine();
             if (ImGui::Button("Load")) {
                 if (engineContext) {
-                    auto picked = Editor::FileDialogs::OpenFile(*engineContext, "Image", "png,jpg,jpeg,bmp,tga",
+                    auto picked = FileDialogs::OpenFile(*engineContext, "Image", "png,jpg,jpeg,bmp,tga",
                                                                 nullptr);
                     if (picked.has_value()) {
                         auto finalPath = ResolveOrImportPath(picked.value());
@@ -451,7 +451,7 @@ void Editor::UI::ScriptWidget::Draw(ECS::Entity entity, Core::EngineContext *eng
         // add Script button
         if (ImGui::Button("Add Script")) {
             if (engineContext) {
-                const auto scriptPath = Editor::FileDialogs::OpenFile(*engineContext, "Script Files", "obsl,txt",
+                const auto scriptPath = FileDialogs::OpenFile(*engineContext, "Script Files", "obsl,txt",
                                                                       nullptr);
                 if (scriptPath.has_value()) {
                     // resolve to vfs

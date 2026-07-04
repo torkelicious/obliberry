@@ -95,7 +95,7 @@ void Editor::EditState::DrawGizmoForSelected() {
         return;
 
     Rendering::Transform &t = selectedEntity.GetComponent<ECS::Components::TransformComponent>()->transform;
-    bool isBillboard = selectedEntity.HasComponent<ECS::Components::BillboardTagComponent>();
+    const bool isBillboard = selectedEntity.HasComponent<ECS::Components::BillboardTagComponent>();
 
     if (isBillboard && mCurrentGizmoOperation == ImGuizmo::ROTATE) {
         ImGui::Begin("Scene View");
@@ -120,7 +120,7 @@ void Editor::EditState::DrawGizmoForSelected() {
 }
 
 
-void Editor::EditState::EditTransform(Rendering::Transform &transform, bool isBillboard) {
+void Editor::EditState::EditTransform(Rendering::Transform &transform, bool isBillboard) const {
     const auto &camera = m_EditorLayer->m_Camera;
     const float aspect = m_EditorLayer->m_ViewportPanel.GetWidth() / m_EditorLayer->m_ViewportPanel.GetHeight();
 

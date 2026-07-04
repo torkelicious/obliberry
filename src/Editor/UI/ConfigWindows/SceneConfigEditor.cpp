@@ -66,7 +66,7 @@ namespace Editor::UI {
             ImGui::SameLine();
             if (ImGui::Button("Load##Music")) {
                 if (m_Context) {
-                    const auto picked = Editor::FileDialogs::OpenFile(*m_Context, "Audio Files", "wav,mp3,ogg,flac",
+                    const auto picked = FileDialogs::OpenFile(*m_Context, "Audio Files", "wav,mp3,ogg,flac",
                                                                       nullptr);
                     if (picked.has_value()) {
                         ResolveMusicPath(picked.value());
@@ -100,7 +100,7 @@ namespace Editor::UI {
         ImGui::End();
     }
 
-    void SceneConfigEditor::SaveConfig() {
+    void SceneConfigEditor::SaveConfig() const {
         if (!m_Context || !m_Context->sceneManager)
             return;
 

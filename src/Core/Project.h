@@ -29,8 +29,8 @@ namespace Core {
         [[nodiscard]] std::filesystem::path GetAssetsDirectory() const { return GetRootDirectory() / "assets"; }
 
         [[nodiscard]] bool HasUnsavedChanges() const { return m_HasUnsavedChanges; }
-        void MarkAsChanged() { m_HasUnsavedChanges = true; }
-        void ClearUnsavedChanges() { m_HasUnsavedChanges = false; }
+        void MarkAsChanged() const { m_HasUnsavedChanges = true; }
+        void ClearUnsavedChanges() const { m_HasUnsavedChanges = false; }
 
     private:
         ProjectConfig m_Config;
