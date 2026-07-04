@@ -32,11 +32,8 @@ namespace Rendering {
             const float viewHeight = 20.0f / Zoom;
             const float viewWidth = viewHeight * aspect;
 
-            return glm::ortho(
-                -viewWidth * 0.5f, viewWidth * 0.5f,
-                -viewHeight * 0.5f, viewHeight * 0.5f,
-                -100.0f, 100.0f
-            );
+            return glm::ortho(-viewWidth * 0.5f, viewWidth * 0.5f, -viewHeight * 0.5f, viewHeight * 0.5f, -100.0f,
+                              100.0f);
         }
 
         [[nodiscard]] const glm::mat4 &GetRotation() const {
@@ -68,18 +65,18 @@ namespace Rendering {
             const float aspect = viewWidth / viewHeight;
 
             // inverted Y in GLFW
-            float adjustedMx = mx;
-            float adjustedMy = my;
+            const float adjustedMx = mx;
+            const float adjustedMy = my;
 
             // convert mouse pixels to NDC
-            float x = 2.0f * adjustedMx / viewWidth - 1.0f;
-            float y = 1.0f - 2.0f * adjustedMy / viewHeight;
+            const float x = 2.0f * adjustedMx / viewWidth - 1.0f;
+            const float y = 1.0f - 2.0f * adjustedMy / viewHeight;
 
-            glm::vec4 nearClip(x, y, -1.0f, 1.0f);
-            glm::vec4 farClip(x, y, 1.0f, 1.0f);
+            const glm::vec4 nearClip(x, y, -1.0f, 1.0f);
+            const glm::vec4 farClip(x, y, 1.0f, 1.0f);
 
             // unproject
-            glm::mat4 invVP = glm::inverse(GetVP(aspect));
+            const glm::mat4 invVP = glm::inverse(GetVP(aspect));
 
             glm::vec4 nearWorld = invVP * nearClip;
             glm::vec4 farWorld = invVP * farClip;
@@ -87,14 +84,14 @@ namespace Rendering {
             nearWorld /= nearWorld.w;
             farWorld /= farWorld.w;
 
-            glm::vec3 rayDir = glm::vec3(farWorld) - glm::vec3(nearWorld);
+            const glm::vec3 rayDir = glm::vec3(farWorld) - glm::vec3(nearWorld);
 
             if (std::abs(rayDir.z) < 0.0001f) {
                 return {nearWorld.x, nearWorld.y};
             }
 
             // ground plane = z0
-            float t = -nearWorld.z / rayDir.z;
+            const float t = -nearWorld.z / rayDir.z;
             glm::vec3 intersection = glm::vec3(nearWorld) + t * rayDir;
 
             return {intersection.x, intersection.y};
@@ -109,7 +106,7 @@ namespace Rendering {
         }
 
     protected:
-        float m_AngleX = 55.0f; // tilt down
+        float m_AngleX = -55.0f; // tilt down
         float m_AngleZ = 45.0f; // rotate world
 
     private:

@@ -15,8 +15,6 @@ void Editor::UI::ViewportPanel::OnImGuiRender() {
     ImGuizmo::SetDrawlist();
     ImVec2 windowPos = ImGui::GetWindowPos();
     ImVec2 windowSize = ImGui::GetWindowSize();
-    ImGuizmo::SetRect(windowPos.x, windowPos.y, windowSize.x, windowSize.y);
-
 
     m_IsHovered = ImGui::IsWindowHovered();
 
@@ -47,6 +45,8 @@ void Editor::UI::ViewportPanel::OnImGuiRender() {
     if (const ImVec2 viewportSize = ImGui::GetContentRegionAvail(); viewportSize.x > 0.0f && viewportSize.y > 0.0f) {
         m_ViewportWidth = viewportSize.x;
         m_ViewportHeight = viewportSize.y;
+
+        ImGuizmo::SetRect(boundsMin.x, boundsMin.y, viewportSize.x, viewportSize.y);
 
         if (m_EngineContext && m_EngineContext->renderer) {
             m_EngineContext->renderer->EnsureFramebufferSize(static_cast<uint32_t>(viewportSize.x),
