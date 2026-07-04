@@ -26,7 +26,9 @@ namespace Editor {
 
     private:
         void DrawGizmoForSelected();
-        void EditTransform(Rendering::Transform &transform);
+
+        void EditTransform(Rendering::Transform &transform, bool isBillboard);
+
         static ImGuizmo::OPERATION mCurrentGizmoOperation;
         static ImGuizmo::MODE mCurrentGizmoMode;
     };

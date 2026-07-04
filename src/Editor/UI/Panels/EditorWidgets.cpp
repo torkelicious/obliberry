@@ -76,10 +76,23 @@ void Editor::UI::TransformWidget::DrawExtras(ECS::Entity entity, ECS::Components
     }
     if (ImGui::IsItemDeactivatedAfterEdit()) MarkSceneChanged(engineContext);
 
+    bool isBillboard = entity.HasComponent<ECS::Components::BillboardTagComponent>();
+
+    if (isBillboard) {
+        ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), " Rotation has no effect on Billboard Sprites");
+        ImGui::BeginDisabled();
+    }
+
     auto rot = component->transform.GetRotation();
     if (ImGui::DragFloat3("Rotation", &rot.x, 0.1f)) {
         component->transform.SetRotation(rot);
     }
+
+    if (isBillboard) {
+        ImGui::EndDisabled();
+    }
+
+
     if (ImGui::IsItemDeactivatedAfterEdit()) MarkSceneChanged(engineContext);
 
     auto scale = component->transform.GetScale();

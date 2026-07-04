@@ -24,7 +24,11 @@ void Editor::UI::ViewportPanel::OnImGuiRender() {
     const double localMouseX = imguiMousePos.x - boundsMin.x;
     const double localMouseY = imguiMousePos.y - boundsMin.y;
 
-    if (m_EngineContext && m_EngineContext->input) {
+    if (m_EngineContext &&m_EngineContext
+    ->
+    input
+    )
+    {
         if (m_IsHovered) {
             const double offsetX = m_EngineContext->input->RawMousePosX() - localMouseX;
             const double offsetY = m_EngineContext->input->RawMousePosY() - localMouseY;
@@ -35,7 +39,11 @@ void Editor::UI::ViewportPanel::OnImGuiRender() {
         }
     }
 
-    if (m_EngineContext && m_EngineContext->renderer) {
+    if (m_EngineContext &&m_EngineContext
+    ->
+    renderer
+    )
+    {
         if (const int pickedEntity = m_EngineContext->renderer->GetLastReadPixel(); pickedEntity != -1) {
             m_SelectedEntityID = pickedEntity;
             m_EngineContext->renderer->ClearPixelReadResult();
@@ -48,7 +56,11 @@ void Editor::UI::ViewportPanel::OnImGuiRender() {
 
         ImGuizmo::SetRect(boundsMin.x, boundsMin.y, viewportSize.x, viewportSize.y);
 
-        if (m_EngineContext && m_EngineContext->renderer) {
+        if (m_EngineContext &&m_EngineContext
+        ->
+        renderer
+        )
+        {
             m_EngineContext->renderer->EnsureFramebufferSize(static_cast<uint32_t>(viewportSize.x),
                                                              static_cast<uint32_t>(viewportSize.y));
 
@@ -71,7 +83,7 @@ void Editor::UI::ViewportPanel::OnImGuiRender() {
                                       label);
                 }
 
-                if (m_IsHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                if (m_IsHovered &&ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
                     const ImVec2 mousePos = ImGui::GetMousePos();
 
                     const int mouseX = static_cast<int>(mousePos.x - boundsMin.x);

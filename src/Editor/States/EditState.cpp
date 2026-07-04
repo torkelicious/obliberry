@@ -5,6 +5,7 @@
 #include "Core/InputManager.h"
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_access.hpp>
+#include "ECS/Components/BillboardTagComponent.h"
 
 namespace Editor {
     ImGuizmo::OPERATION EditState::mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
@@ -66,14 +67,10 @@ void Editor::EditState::OnHandleInput(const float dt) {
     float kbPanX = 0.0f;
     float kbPanY = 0.0f;
 
-    if (m_EditorLayer->m_Input->IsKeyDown("W"))
-        kbPanY += 1.0f;
-    if (m_EditorLayer->m_Input->IsKeyDown("S"))
-        kbPanY -= 1.0f;
-    if (m_EditorLayer->m_Input->IsKeyDown("A"))
-        kbPanX -= 1.0f;
-    if (m_EditorLayer->m_Input->IsKeyDown("D"))
-        kbPanX += 1.0f;
+    if (m_EditorLayer->m_Input->IsKeyDown("W")) kbPanY += 1.0f;
+    if (m_EditorLayer->m_Input->IsKeyDown("S")) kbPanY -= 1.0f;
+    if (m_EditorLayer->m_Input->IsKeyDown("A")) kbPanX -= 1.0f;
+    if (m_EditorLayer->m_Input->IsKeyDown("D")) kbPanX += 1.0f;
 
     if (kbPanX != 0.0f || kbPanY != 0.0f) {
         const float length = std::sqrt(kbPanX * kbPanX + kbPanY * kbPanY);
@@ -87,8 +84,6 @@ void Editor::EditState::OnHandleInput(const float dt) {
 void Editor::EditState::OnDrawPanels() {
     m_EditorLayer->m_RegistryPanel.OnImGuiRender();
     m_EditorLayer->m_InspectorPanel.OnImGuiRender();
-
-    // draw gizmo for the currently selected entity (must run after SetDrawlist/SetRect)
     DrawGizmoForSelected();
 }
 
@@ -100,47 +95,111 @@ void Editor::EditState::DrawGizmoForSelected() {
         return;
 
     Rendering::Transform &t = selectedEntity.GetComponent<ECS::Components::TransformComponent>()->transform;
-    EditTransform(t);
+    bool isBillboard = selectedEntity.HasComponent<ECS::Components::BillboardTagComponent>();
+
+    if (isBillboard && mCurrentGizmoOperation == ImGuizmo::ROTATE) {
+        ImGui::Begin("Scene View");
+        ImDrawList *drawList = ImGui::GetWindowDrawList();
+
+        const char *warningText = " Rotation has no effect on Billboard Sprites ";
+        const ImVec2 textSize = ImGui::CalcTextSize(warningText);
+        const float padding = 6.0f;
+
+        const ImVec2 windowPos = ImGui::GetWindowPos();
+        const ImVec2 windowSize = ImGui::GetWindowSize();
+        const ImVec2 badgeMin(windowPos.x + (windowSize.x - textSize.x) * 0.5f, windowPos.y + 40.0f);
+        const ImVec2 badgeMax(badgeMin.x + textSize.x + padding * 2.0f, badgeMin.y + textSize.y + padding * 2.0f);
+
+        drawList->AddRectFilled(badgeMin, badgeMax, IM_COL32(200, 150, 20, 220), 4.0f);
+        drawList->AddText(ImVec2(badgeMin.x + padding, badgeMin.y + padding), IM_COL32(255, 255, 255, 255),
+                          warningText);
+        ImGui::End();
+    }
+
+    EditTransform(t, isBillboard);
 }
 
-void Editor::EditState::EditTransform(Rendering::Transform &transform) {
+
+void Editor::EditState::EditTransform(Rendering::Transform &transform, bool isBillboard) {
     const auto &camera = m_EditorLayer->m_Camera;
     const float aspect = m_EditorLayer->m_ViewportPanel.GetWidth() / m_EditorLayer->m_ViewportPanel.GetHeight();
 
-    // use the exact View matrix from the camera
     glm::mat4 gizmoViewMatrix = camera.GetRotation() * camera.GetViewMatrix();
     gizmoViewMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -50.0f)) * gizmoViewMatrix;
 
     const glm::mat4 projMatrix = camera.GetProjectionMatrix(aspect);
 
-    glm::mat4 gizmoMatrix = transform.GetMatrix();
-    auto deltaMatrix = glm::mat4(1.0f);
+    glm::mat4 gizmoMatrix;
 
+    if (isBillboard) {
+        const glm::vec3 right = camera.GetRightVector();
+        const glm::vec3 up = camera.GetUpVector();
+        const glm::vec3 forward = glm::cross(right, up);
+
+        gizmoMatrix = glm::mat4(1.0f);
+        gizmoMatrix[0] = glm::vec4(right * transform.GetScale().x, 0.0f);
+        gizmoMatrix[1] = glm::vec4(up * transform.GetScale().y, 0.0f);
+        gizmoMatrix[2] = glm::vec4(forward * transform.GetScale().z, 0.0f);
+        gizmoMatrix[3] = glm::vec4(transform.GetPosition(), 1.0f);
+    } else {
+        glm::vec3 pos = transform.GetPosition();
+        glm::vec3 rot = glm::degrees(transform.GetRotation());
+        glm::vec3 scale = transform.GetScale();
+        ImGuizmo::RecomposeMatrixFromComponents(
+            glm::value_ptr(pos), glm::value_ptr(rot), glm::value_ptr(scale), glm::value_ptr(gizmoMatrix)
+        );
+    }
+
+    auto deltaMatrix = glm::mat4(1.0f);
     ImGuizmo::SetOrthographic(true);
+
+    ImGuizmo::MODE actualMode = mCurrentGizmoMode;
+
+    if (mCurrentGizmoOperation == ImGuizmo::SCALE) {
+        actualMode = ImGuizmo::LOCAL;
+    }
+
     ImGuizmo::Manipulate(
         glm::value_ptr(gizmoViewMatrix),
         glm::value_ptr(projMatrix),
         mCurrentGizmoOperation,
-        mCurrentGizmoMode,
+        actualMode,
         glm::value_ptr(gizmoMatrix),
         glm::value_ptr(deltaMatrix)
     );
 
     if (ImGuizmo::IsUsing()) {
         if (mCurrentGizmoOperation == ImGuizmo::TRANSLATE) {
-            // for translation use the delta directly.
             const auto deltaPos = glm::vec3(deltaMatrix[3]);
             transform.SetPosition(transform.GetPosition() + deltaPos);
-        } else {
-            // FIXME: probably have to patch more as rotation/scale is still a mess, but translation works.
-            float translation[3], rotation[3], scale[3];
-            ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(gizmoMatrix), translation, rotation, scale);
+        } else if (mCurrentGizmoOperation == ImGuizmo::ROTATE) {
+            float deltaTranslation[3], deltaRotation[3], deltaScale[3];
+            ImGuizmo::DecomposeMatrixToComponents(
+                glm::value_ptr(deltaMatrix),
+                deltaTranslation, deltaRotation, deltaScale
+            );
 
-            transform.SetPosition(glm::vec3(translation[0], translation[1], translation[2]));
-            // transform stores radians
-            transform.SetRotation(
-                glm::vec3(glm::radians(rotation[0]), glm::radians(rotation[1]), glm::radians(rotation[2])));
-            transform.SetScale(glm::vec3(scale[0], scale[1], scale[2]));
+            glm::vec3 currentRot = transform.GetRotation();
+            glm::vec3 dRot = glm::radians(glm::vec3(deltaRotation[0], deltaRotation[1], deltaRotation[2]));
+            transform.SetRotation(currentRot + dRot);
+        } else if (mCurrentGizmoOperation == ImGuizmo::SCALE) {
+            if (isBillboard) {
+                float scaleX = glm::length(glm::vec3(gizmoMatrix[0]));
+                float scaleY = glm::length(glm::vec3(gizmoMatrix[1]));
+                float scaleZ = glm::length(glm::vec3(gizmoMatrix[2]));
+
+                transform.SetScale(glm::vec3(scaleX, scaleY, scaleZ));
+            } else {
+                float deltaTranslation[3], deltaRotation[3], deltaScale[3];
+                ImGuizmo::DecomposeMatrixToComponents(
+                    glm::value_ptr(deltaMatrix),
+                    deltaTranslation, deltaRotation, deltaScale
+                );
+
+                glm::vec3 currentScale = transform.GetScale();
+                glm::vec3 dScale = glm::vec3(deltaScale[0], deltaScale[1], deltaScale[2]);
+                transform.SetScale(currentScale * dScale);
+            }
         }
     }
 }
