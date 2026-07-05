@@ -58,6 +58,15 @@ endif ()
 
 FetchContent_MakeAvailable(nfd)
 
+# Fetch LZ4
+FetchContent_Declare(
+        lz4
+        GIT_REPOSITORY https://github.com/lz4/lz4.git
+        GIT_TAG v1.10.0
+)
+FetchContent_MakeAvailable(lz4)
+
+
 # External Sources
 set(EXTERNAL_SOURCES
         # GLAD
@@ -136,6 +145,9 @@ set(ENGINE_SOURCES
         src/IO/VFS.cpp
         src/Core/Project.cpp
         src/Core/ThreadPool.cpp
+        src/IO/Package/Container.h
+        src/IO/Package/ContainerWriter.cpp
+        src/IO/Package/ContainerReader.cpp
 )
 
 # Engine Library Target
@@ -167,6 +179,7 @@ target_link_libraries(obliberry_engine PUBLIC
         obsl
         nlohmann_json::nlohmann_json
         nfd
+        lz4
 )
 
 # Runtime Executable
@@ -197,6 +210,16 @@ add_executable(obliberry_editor
 target_link_libraries(obliberry_editor PRIVATE
         obliberry_engine
 )
+
+# TEMP
+add_executable(container_tests
+        src/IO/Package/ContainerTestMain.cpp
+)
+target_link_libraries(container_tests PRIVATE
+        obliberry_engine
+)
+# TEMP
+
 
 # Post build commands
 file(COPY ${CMAKE_SOURCE_DIR}/Templates DESTINATION ${OUTPUT_BIN_DIR})

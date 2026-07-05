@@ -19,6 +19,7 @@ namespace Core {
     constexpr auto MAP_FILE_EXTENSION = ".obmap";
     constexpr auto SCENE_FILE_EXTENSION = ".json";
     constexpr auto SCRIPT_FILE_EXTENSION = ".obsl";
+    constexpr auto PACKAGE_FILE_EXTENSION = ".obpak";
     // misc file stuff
     constexpr std::string MAP_FILE_MAGIC_STR = "OBLIHEXM";
     // window config
