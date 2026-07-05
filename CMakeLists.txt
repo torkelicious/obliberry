@@ -5,6 +5,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+option(BUILD_PACK_TOOLS "Build ObSL script packager and runner tools" ON)
+
 set(OUTPUT_BIN_DIR ${CMAKE_BINARY_DIR}/bin)
 # place all executables in build/bin
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_BIN_DIR})
@@ -147,8 +149,8 @@ set(ENGINE_SOURCES
         src/Core/ThreadPool.cpp
         src/IO/Package/ContainerWriter.cpp
         src/IO/Package/ContainerReader.cpp
-        src/Scripting/Compiler/ASTSerializer.cpp
-        src/Scripting/Compiler/ASTDeserializer.cpp
+        src/Scripting/ASTPackager/ASTSerializer.cpp
+        src/Scripting/ASTPackager/ASTDeserializer.cpp
 )
 
 # Engine Library Target
@@ -212,26 +214,20 @@ target_link_libraries(obliberry_editor PRIVATE
         obliberry_engine
 )
 
-# TEMP - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-add_executable(container_tests
-        src/IO/Package/ContainerTestMain.cpp
-)
-target_link_libraries(container_tests PRIVATE
-        obliberry_engine
-)
+# Optional Tools
+if (BUILD_PACK_TOOLS)
+    # Packager Tool
+    add_executable(ob_packer src/IO/Package/Packer.cpp)
+    target_link_libraries(ob_packer PRIVATE obliberry_engine)
 
-add_executable(obsl_pack_runner_test src/Scripting/Compiler/RunPackaged.cpp)
-target_link_libraries(obsl_pack_runner_test PRIVATE
-        obliberry_engine
-)
-# TEMP - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # Unpacker tool
+    add_executable(ob_unpacker src/IO/Package/Unpacker.cpp)
+    target_link_libraries(ob_unpacker PRIVATE obliberry_engine)
 
-
-# maybe also temp idk
-add_executable(obsl_pack src/Scripting/Compiler/ScriptPackager.cpp)
-target_link_libraries(obsl_pack PRIVATE
-        obliberry_engine
-)
+    # Runner Tool (runs script inside package from its premade AST
+    add_executable(obsl_pack_run src/IO/Package/Runner.cpp)
+    target_link_libraries(obsl_pack_run PRIVATE obliberry_engine)
+endif ()
 
 # Post build commands
 file(COPY ${CMAKE_SOURCE_DIR}/Templates DESTINATION ${OUTPUT_BIN_DIR})

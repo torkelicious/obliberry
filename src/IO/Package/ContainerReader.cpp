@@ -1,5 +1,8 @@
+#include <iostream>
+
 #include "Container.h"
 #include <lz4.h>
+#include <ranges>
 
 namespace IO {
     bool ContainerReader::open(const std::filesystem::path &file) {
@@ -52,5 +55,21 @@ namespace IO {
         }
 
         return decompressed;
+    }
+
+    void ContainerReader::print_entries() const {
+        std::cout << "Package Contents:\n";
+        for (const auto &name: m_path_to_index | std::views::keys) {
+            std::cout << "  - " << name << "\n";
+        }
+    }
+
+    std::vector<std::string> ContainerReader::get_entry_paths() const {
+        std::vector<std::string> paths;
+        paths.reserve(m_path_to_index.size());
+        for (const auto &name: m_path_to_index | std::views::keys) {
+            paths.emplace_back(name);
+        }
+        return paths;
     }
 }

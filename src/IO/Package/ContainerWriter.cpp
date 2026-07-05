@@ -2,15 +2,12 @@
 #include <lz4.h>
 
 namespace IO {
-#include <lz4.h>
-
     void ContainerWriter::add_script(const std::string &canonical_path, const std::string &source) {
         Pending p;
         p.path = canonical_path;
         p.uncompressed_size = source.size();
         p.type = Package::EntryType::ScriptSource;
 
-        // LZ4 worst case bound for the compressed buffer
         const int bound = LZ4_compressBound(static_cast<int>(source.size()));
         std::vector<uint8_t> compressed(bound);
 
@@ -19,8 +16,6 @@ namespace IO {
             static_cast<int>(source.size()), bound);
 
         if (compressed_size <= 0) {
-            // compression failed
-            // fall back to storing raw
             p.data.assign(source.begin(), source.end());
             p.flags = Package::EntryFlags::None;
         } else {
@@ -33,25 +28,35 @@ namespace IO {
 
     void ContainerWriter::add_compiled_script(const std::string &canonical_path, std::vector<uint8_t> serialized_ast,
                                               const bool compress) {
+        add_raw_data(canonical_path, std::move(serialized_ast), Package::EntryType::SerializedAST, compress);
+    }
+
+    void ContainerWriter::add_binary_json(const std::string &canonical_path, std::vector<uint8_t> binary_json,
+                                          const bool compress) {
+        add_raw_data(canonical_path, std::move(binary_json), Package::EntryType::BinaryJSON, compress);
+    }
+
+    void ContainerWriter::add_raw_data(const std::string &canonical_path, std::vector<uint8_t> data,
+                                       const Package::EntryType type, const bool compress) {
         Pending p;
         p.path = canonical_path;
-        p.uncompressed_size = serialized_ast.size();
-        p.type = Package::EntryType::SerializedAST;
+        p.uncompressed_size = data.size();
+        p.type = type;
 
         if (!compress) {
-            p.data = std::move(serialized_ast);
+            p.data = std::move(data);
             p.flags = Package::EntryFlags::None;
         } else {
-            const int bound = LZ4_compressBound(static_cast<int>(serialized_ast.size()));
+            const int bound = LZ4_compressBound(static_cast<int>(data.size()));
             std::vector<uint8_t> comp_data(bound);
 
             const int compressed_size = LZ4_compress_default(
-                reinterpret_cast<const char *>(serialized_ast.data()),
+                reinterpret_cast<const char *>(data.data()),
                 reinterpret_cast<char *>(comp_data.data()),
-                static_cast<int>(serialized_ast.size()), bound);
+                static_cast<int>(data.size()), bound);
 
             if (compressed_size <= 0) {
-                p.data = std::move(serialized_ast);
+                p.data = std::move(data);
                 p.flags = Package::EntryFlags::None;
             } else {
                 comp_data.resize(compressed_size);
@@ -62,15 +67,15 @@ namespace IO {
         m_entries.push_back(std::move(p));
     }
 
-
     void ContainerWriter::write(const std::filesystem::path &out_file) {
         Package::FileHeader header;
         header.entry_count = static_cast<uint32_t>(m_entries.size());
 
-        // build string table + per entry name offsets
         std::vector<char> string_table;
-        std::vector<uint32_t> name_offsets, name_lengths;
-        for (auto &e: m_entries) {
+        std::vector<uint32_t> name_offsets;
+        std::vector<uint32_t> name_lengths;
+
+        for (const auto &e: m_entries) {
             name_offsets.push_back(static_cast<uint32_t>(string_table.size()));
             name_lengths.push_back(static_cast<uint32_t>(e.path.size()));
             string_table.insert(string_table.end(), e.path.begin(), e.path.end());
@@ -79,7 +84,7 @@ namespace IO {
         // lay out blob data w. per-entry offsets
         std::vector<uint64_t> data_offsets;
         uint64_t running_offset = 0;
-        for (auto &e: m_entries) {
+        for (const auto &e: m_entries) {
             data_offsets.push_back(running_offset);
             running_offset += e.data.size();
         }
@@ -114,8 +119,8 @@ namespace IO {
         out.write(reinterpret_cast<const char *>(&header), sizeof(header));
         out.write(reinterpret_cast<const char *>(toc.data()), toc.size() * sizeof(Package::TocEntry));
         out.write(string_table.data(), string_table.size());
-        for (auto &e: m_entries) {
+        for (const auto &e: m_entries) {
             out.write(reinterpret_cast<const char *>(e.data.data()), e.data.size());
         }
     }
-}
+} // namespace IO
