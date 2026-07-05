@@ -212,21 +212,26 @@ target_link_libraries(obliberry_editor PRIVATE
         obliberry_engine
 )
 
-# TEMP
+# TEMP - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 add_executable(container_tests
         src/IO/Package/ContainerTestMain.cpp
 )
 target_link_libraries(container_tests PRIVATE
         obliberry_engine
 )
-# TEMP
+
+add_executable(obsl_pack_runner_test src/Scripting/Compiler/RunPackaged.cpp)
+target_link_libraries(obsl_pack_runner_test PRIVATE
+        obliberry_engine
+)
+# TEMP - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 
 # maybe also temp idk
 add_executable(obsl_pack src/Scripting/Compiler/ScriptPackager.cpp)
 target_link_libraries(obsl_pack PRIVATE
         obliberry_engine
 )
-
 
 # Post build commands
 file(COPY ${CMAKE_SOURCE_DIR}/Templates DESTINATION ${OUTPUT_BIN_DIR})

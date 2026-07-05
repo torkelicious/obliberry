@@ -79,14 +79,14 @@ namespace ObSL {
             ASTDeserializer deserializer(node_payload, pool);
 
             SerializedModule module;
-            module.string_pool = std::move(pool);
             module.statements.reserve(stmt_count);
 
             for (uint32_t i = 0; i < stmt_count; ++i) {
                 module.statements.push_back(deserializer.deserialize_stmt());
             }
+            module.string_pool = std::move(pool);
 
             return module;
         }
     };
-} // ObSL
+} // namespace ObSL
