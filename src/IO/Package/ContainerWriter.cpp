@@ -1,4 +1,5 @@
 #include "Container.h"
+#include <fstream>
 #include <lz4.h>
 
 namespace IO {

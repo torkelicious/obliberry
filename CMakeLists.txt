@@ -149,8 +149,8 @@ set(ENGINE_SOURCES
         src/Core/ThreadPool.cpp
         src/IO/Package/ContainerWriter.cpp
         src/IO/Package/ContainerReader.cpp
-        src/Scripting/ASTPackager/ASTSerializer.cpp
-        src/Scripting/ASTPackager/ASTDeserializer.cpp
+        src/IO/Package/Tools/CliCommon.h
+        src/IO/Package/Tools/CliCommon.cpp
 )
 
 # Engine Library Target
@@ -217,7 +217,11 @@ target_link_libraries(obliberry_editor PRIVATE
 # Optional Tools
 if (BUILD_PACK_TOOLS)
     # Packager Tool
-    add_executable(ob_packer src/IO/Package/Packer.cpp)
+    add_executable(ob_packer
+            src/IO/Package/Packer.cpp
+            src/IO/Package/Tools/AssetPacking.cpp
+            src/IO/Package/Tools/DependencyGraph.cpp
+    )
     target_link_libraries(ob_packer PRIVATE obliberry_engine)
 
     # Unpacker tool

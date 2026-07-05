@@ -1,7 +1,6 @@
 #pragma once
 #include <cstdint>
 #include <filesystem>
-#include <fstream>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -87,10 +86,9 @@ namespace IO {
         [[nodiscard]] std::vector<std::string> get_entry_paths() const;
 
     private:
-        uint64_t m_blob_data_offset = 0;
         std::vector<Package::TocEntry> m_toc;
         std::vector<char> m_string_table;
+        std::vector<char> m_blob_data;
         std::unordered_map<std::string_view, size_t> m_path_to_index;
-        mutable std::ifstream m_file;
     };
 } // namespace IO

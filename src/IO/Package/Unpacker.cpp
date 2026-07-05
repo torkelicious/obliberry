@@ -4,12 +4,16 @@
 #include <filesystem>
 #include <fstream>
 
+#include "IO/Package/Tools/CliCommon.h"
 #include "IO/Package/Container.h"
 
 const std::string TITLE_NAME = "Obliberry-Working-Name-Unpackager";
 const std::string BINARY_NAME = "ob_unpack";
 constexpr float VERSION = 1.1f;
 namespace fs = std::filesystem;
+
+static void log_info(const std::string &msg) { IO::Package::Tools::log_info(BINARY_NAME, msg); }
+static void log_error(const std::string &msg) { IO::Package::Tools::log_error(BINARY_NAME, msg); }
 
 static void show_help() {
     std::cout << TITLE_NAME << " - Extract contents from a .obpak container\n\n"
@@ -35,18 +39,21 @@ int main(int argc, char *argv[]) {
             show_help();
             return 0;
         } else if (arg == "-v" || arg == "--version") {
-            std::cout << TITLE_NAME << " v" << VERSION << "\n";
+            std::cout << BINARY_NAME << " (" << TITLE_NAME << ") v" << VERSION << "\n";
             return 0;
-        } else if (arg == "-l" || arg == "--list") { list_contents = true; } else if (
-            arg == "-q" || arg == "--quiet") { quiet = true; } else if (arg[0] == '-') {
-            std::cerr << "Unknown option: " << arg << "\n";
+        } else if (arg == "-l" || arg == "--list") {
+            list_contents = true;
+        } else if (arg == "-q" || arg == "--quiet") {
+            quiet = true;
+        } else if (arg[0] == '-') {
+            log_error("Unknown option: " + arg);
             show_help();
             return 1;
         } else {
             if (package_path.empty()) package_path = arg;
             else if (output_dir.empty()) output_dir = arg;
             else {
-                std::cerr << "Unexpected extra argument: " << arg << "\n";
+                log_error("Unexpected extra argument: " + arg);
                 show_help();
                 return 1;
             }
@@ -60,7 +67,7 @@ int main(int argc, char *argv[]) {
 
     IO::ContainerReader reader;
     if (!reader.open(package_path)) {
-        std::cerr << "Fatal Error: Could not open package '" << package_path << "'\n";
+        log_error("Could not open package '" + package_path + "'");
         return 1;
     }
 
@@ -69,19 +76,18 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    // default to a folder named after the package if no output dir is provided
     if (output_dir.empty()) {
         output_dir = fs::path(package_path).stem().string();
     }
 
     auto paths = reader.get_entry_paths();
-    if (!quiet) std::cout << "Extracting " << paths.size() << " files to " << output_dir << "...\n";
+    if (!quiet) log_info("Extracting " + std::to_string(paths.size()) + " files to " + output_dir + "...");
 
     int success_count = 0;
     for (const auto &p: paths) {
         auto data = reader.read(p);
         if (!data) {
-            std::cerr << "  [Error] Failed to decompress: " << p << "\n";
+            log_error("Failed to decompress: " + p);
             continue;
         }
 
@@ -90,13 +96,15 @@ int main(int argc, char *argv[]) {
 
         std::ofstream out(out_path, std::ios::binary);
         if (out.write(data->data(), data->size())) {
-            if (!quiet) std::cout << "  Extracted: " << p << " (" << data->size() << " bytes)\n";
+            if (!quiet) log_info("Extracted: " + p + " (" + std::to_string(data->size()) + " bytes)");
             success_count++;
         } else {
-            std::cerr << "  [Error] Failed to write to disk: " << out_path << "\n";
+            log_error("Failed to write to disk: " + out_path.string());
         }
     }
 
-    if (!quiet) std::cout << "\nFinished extracting " << success_count << "/" << paths.size() << " files.\n";
-    return (success_count == paths.size()) ? 0 : 1;
+    if (!quiet)
+        log_info(
+            "Finished extracting " + std::to_string(success_count) + "/" + std::to_string(paths.size()) + " files.");
+    return (static_cast<size_t>(success_count) == paths.size()) ? 0 : 1;
 }

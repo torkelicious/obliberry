@@ -2,14 +2,18 @@
 #include <string>
 #include <vector>
 #include <filesystem>
+#include "IO/Package/Tools/CliCommon.h"
 #include <ObSL/ScriptRuntime.h>
 #include <ObSL/ScriptWorker.h>
-#include "../../Scripting/ASTPackager/ASTDeserializer.h"
+#include <ObSL/ASTDeserializer.h>
 #include "IO/Package/Container.h"
 
 const std::string TITLE_NAME = "Obliberry-Working-Name-Runner";
 const std::string BINARY_NAME = "obsl_pack_run";
 constexpr float VERSION = 1.0f;
+
+static void log_info(const std::string &msg) { IO::Package::Tools::log_info(BINARY_NAME, msg); }
+static void log_error(const std::string &msg) { IO::Package::Tools::log_error(BINARY_NAME, msg); }
 
 static void show_help() {
     std::cout << TITLE_NAME << " - Run pre-packaged ObSL scripts directly from a .obpak container\n\n"
@@ -33,12 +37,12 @@ int main(int argc, char *argv[]) {
             show_help();
             return 0;
         } else if (arg == "-v" || arg == "--version") {
-            std::cout << TITLE_NAME << " v" << VERSION << "\n";
+            std::cout << BINARY_NAME << " (" << TITLE_NAME << ") v" << VERSION << "\n";
             return 0;
         } else if (arg == "-q" || arg == "--quiet") {
             quiet = true;
         } else if (arg[0] == '-') {
-            std::cerr << "Unknown option: " << arg << "\n";
+            log_error("Unknown option: " + arg);
             show_help();
             return 1;
         } else {
@@ -47,7 +51,7 @@ int main(int argc, char *argv[]) {
             } else if (entry_script.empty()) {
                 entry_script = arg;
             } else {
-                std::cerr << "Unexpected extra argument: " << arg << "\n";
+                log_error("Unexpected extra argument: " + arg);
                 show_help();
                 return 1;
             }
@@ -61,13 +65,13 @@ int main(int argc, char *argv[]) {
 
     IO::ContainerReader reader;
     if (!reader.open(package_path)) {
-        std::cerr << "Fatal Error: Could not open package '" << package_path << "'\n";
+        log_error("Could not open package '" + package_path + "'");
         return 1;
     }
 
     auto raw_data_opt = reader.read(entry_script);
     if (!raw_data_opt) {
-        std::cerr << "Fatal Error: Could not find '" << entry_script << "' in the package.\n";
+        log_error("Could not find '" + entry_script + "' in the package.");
         return 1;
     }
 
@@ -75,9 +79,7 @@ int main(int argc, char *argv[]) {
     std::vector<uint8_t> binary_blob(raw_data.begin(), raw_data.end());
 
     try {
-        if (!quiet) {
-            std::cout << "[ob_run] Deserializing " << binary_blob.size() << " bytes...\n";
-        }
+        if (!quiet) log_info("Deserializing " + std::to_string(binary_blob.size()) + " bytes...");
 
         auto [string_pool, statements] = ObSL::ASTDeserializer::deserialize(binary_blob);
 
@@ -87,17 +89,36 @@ int main(int argc, char *argv[]) {
         ObSL::ScriptWorker *worker = runtime.get_worker(0);
         auto globals = worker->copy_globals();
 
-        if (!quiet) {
-            std::cout << "[ob_run] Executing...\n-----------------------------------\n";
-        }
+        // Install a module loader that reads precompiled ASTs from the package
+        worker->GetInterpreter().set_module_loader(
+            [&reader](const std::string &path) -> std::optional<ObSL::ModuleResult> {
+                auto data = reader.read(path);
+                if (!data) return std::nullopt;
+
+                std::vector<uint8_t> binary_blob(data->begin(), data->end());
+                try {
+                    ObSL::SerializedModule mod = ObSL::ASTDeserializer::deserialize(binary_blob);
+                    ObSL::ModuleResult result;
+                    result.kind = ObSL::ModuleResult::Kind::PrecompiledAst;
+                    result.ast_module = std::move(mod);
+                    return result;
+                } catch (...) {
+                    ObSL::ModuleResult result;
+                    result.kind = ObSL::ModuleResult::Kind::Source;
+                    result.source = std::move(*data);
+                    return result;
+                }
+            }
+        );
+
+        if (!quiet) log_info("Executing...\n-----------------------------------");
 
         worker->execute(statements, globals);
 
-        if (!quiet) {
-            std::cout << "\n-----------------------------------\n[ob_run] Done.\n";
-        }
+        if (!quiet) std::cout << "\n-----------------------------------\n";
+        if (!quiet) log_info("Done.");
     } catch (const std::exception &e) {
-        std::cerr << "\n[Runtime Error]: " << e.what() << "\n";
+        log_error(std::string("Runtime error: ") + e.what());
         return 1;
     }
     return 0;

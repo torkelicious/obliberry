@@ -1,18 +1,11 @@
 #include <iostream>
-#include <fstream>
-#include <sstream>
 #include <filesystem>
-#include <vector>
 #include <string>
 
-#include <ObSL/Lexer.h>
-#include <ObSL/Parser.h>
-#include <ObSL/ScriptEntry.h>
-#include <nlohmann/json.hpp>
-
-#include "../../Scripting/ASTPackager/ASTSerializer.h"
+#include "IO/Package/Tools/CliCommon.h"
+#include "IO/Package/Tools/AssetPacking.h"
+#include "IO/Package/Tools/DependencyGraph.h"
 #include "IO/Package/Container.h"
-
 
 const std::string TITLE_NAME = "Obliberry-Working-Name-Packager";
 const std::string BINARY_NAME = "ob_packer";
@@ -20,42 +13,26 @@ constexpr float VERSION = 1.1f;
 
 namespace fs = std::filesystem;
 
-// Helpers
-static std::vector<uint8_t> read_file_binary(const fs::path &filepath) {
-    std::ifstream file(filepath, std::ios::in | std::ios::binary);
-    if (!file) {
-        throw std::runtime_error("Could not open file: " + filepath.string());
-    }
-    return std::vector<uint8_t>((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-}
-
-static std::string read_file_string(const fs::path &filepath) {
-    auto data = read_file_binary(filepath);
-    return std::string(data.begin(), data.end());
-}
+static void log_info(const std::string &msg) { IO::Package::Tools::log_info(BINARY_NAME, msg); }
+static void log_error(const std::string &msg) { IO::Package::Tools::log_error(BINARY_NAME, msg); }
 
 static void show_help() {
-    std::cout <<
-            TITLE_NAME <<
-            " - Package Obliberry projects into .obpak archives\n"
-            "\n"
-            "Usage: " << BINARY_NAME << " [options] <project_directory>\n"
-            "\n"
-            "Options:\n"
-            "  -o, --output <file>    Output .obpak path\n"
-            "                         (default: <project_directory>.obpak)\n"
-            "  -q, --quiet            Suppress all non-error output\n"
-            "  --verbose              Enable detailed logging per file\n"
-            "  --no-compress          Disable LZ4 compression globally\n"
-            "  -h, --help             Show this help message and exit\n"
-            "  -v, --version          Show version information and exit\n"
-            "\n"
-            "Example:\n"
-            "  " << BINARY_NAME << " -o pkg/game.obpak ./UntitledProject\n";
+    std::cout << TITLE_NAME << " - Package Obliberry projects into .obpak archives\n\n"
+            << "Usage: " << BINARY_NAME << " [options] <project_directory>\n\n"
+            << "Options:\n"
+            << "  -o, --output <file>    Output .obpak path (default: <project_directory>.obpak)\n"
+            << "  -q, --quiet            Suppress all non-error output\n"
+            << "  --verbose              Enable detailed logging per file\n"
+            << "  --no-compress          Disable LZ4 compression globally\n"
+            << "  --strict               Fail packaging on dependency validation errors\n"
+            << "  -h, --help             Show this help message and exit\n"
+            << "  -v, --version          Show version information and exit\n\n"
+            << "Example:\n"
+            << "  " << BINARY_NAME << " -o pkg/game.obpak ./UntitledProject\n";
 }
 
 static void show_version() {
-    std::cout << TITLE_NAME << " v" << VERSION << "\n";
+    std::cout << BINARY_NAME << " (" << TITLE_NAME << ") v" << VERSION << "\n";
 }
 
 int main(int argc, char *argv[]) {
@@ -66,144 +43,80 @@ int main(int argc, char *argv[]) {
 
     std::string output_file;
     fs::path project_dir;
-    bool quiet = false;
-    bool verbose = false;
-    bool global_compress = true;
+    bool quiet = false, verbose = false, global_compress = true, strict_mode = false;
 
-    // Parse Args
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
-
-        if (arg == "-o" || arg == "--output") {
-            if (i + 1 < argc) output_file = argv[++i];
-        } else if (arg == "-q" || arg == "--quiet") {
-            quiet = true;
-        } else if (arg == "--verbose") {
-            verbose = true;
-        } else if (arg == "--no-compress") {
-            global_compress = false;
-        } else if (arg == "-h" || arg == "--help") {
+        if (arg == "-o" || arg == "--output") { if (i + 1 < argc) output_file = argv[++i]; } else if (
+            arg == "-q" || arg == "--quiet") quiet = true;
+        else if (arg == "--verbose") verbose = true;
+        else if (arg == "--no-compress") global_compress = false;
+        else if (arg == "--strict") strict_mode = true;
+        else if (arg == "-h" || arg == "--help") {
             show_help();
             return 0;
         } else if (arg == "-v" || arg == "--version") {
             show_version();
             return 0;
         } else if (arg[0] == '-') {
-            std::cerr << "Unknown option: " << arg << "\n";
+            log_error("Unknown option: " + arg);
             show_help();
             return 1;
-        } else {
-            project_dir = arg;
-        }
+        } else project_dir = arg;
     }
 
     if (project_dir.empty()) {
-        std::cerr << "Error: No project directory specified.\n";
+        log_error("No project directory specified.");
         return 1;
     }
-
     if (!fs::exists(project_dir) || !fs::is_directory(project_dir)) {
-        std::cerr << "Error: Provided path is not a valid directory: " << project_dir.string() << "\n";
+        log_error("Provided path is not a valid directory: " + project_dir.string());
         return 1;
     }
-
-    if (output_file.empty()) {
-        output_file = project_dir.filename().string() + ".obpak";
-    }
+    if (output_file.empty()) output_file = project_dir.filename().string() + ".obpak";
 
     if (!quiet) {
-        std::cout << "Packing project: " << project_dir.string() << "\n";
-        std::cout << "Output file: " << output_file << "\n";
+        log_info("Packing project: " + project_dir.string());
+        log_info("Output file: " + output_file);
     }
 
     IO::ContainerWriter writer;
-    int success_count = 0;
-    int fail_count = 0;
+    IO::Package::Tools::DependencyGraph dep_graph;
+    IO::Package::Tools::PackOptions opts{global_compress, verbose, quiet, BINARY_NAME};
 
-    // recursively scan the project directory
+    int success_count = 0, fail_count = 0;
+
     for (const auto &entry: fs::recursive_directory_iterator(project_dir)) {
-        if (entry.is_directory()) continue; // Skip folders
-
-        const fs::path &filepath = entry.path();
-
-        std::string canonical_path = fs::relative(filepath, project_dir).generic_string();
-        std::string ext = filepath.extension().string();
-
-        // convert extension to lowercase
-        std::ranges::transform(ext, ext.begin(), ::tolower);
-
+        if (entry.is_directory()) continue;
         try {
-            if (ext == ".obsl") {
-                // scripts Lex -> Parse -> AST Serialize
-                std::string source_code = read_file_string(filepath);
-                ObSL::Lexer lexer(source_code);
-                auto tokens = lexer.tokenize();
-                ObSL::Parser parser(std::move(tokens));
-                auto ast = parser.parse();
-                ObSL::ASTSerializer serializer;
-                std::vector<uint8_t> binary_blob = serializer.finalize(ast);
-
-                writer.add_compiled_script(canonical_path, std::move(binary_blob), global_compress);
-                if (verbose && !quiet) std::cout << "[SCRIPT]  " << canonical_path << "\n";
-            } else if (ext == ".json") {
-                // JSON -> MsgPack
-                std::string source_code = read_file_string(filepath);
-                nlohmann::json j = nlohmann::json::parse(source_code);
-                std::vector<uint8_t> binary_msgpack = nlohmann::json::to_msgpack(j);
-
-                writer.add_binary_json(canonical_path, std::move(binary_msgpack), global_compress);
-                if (verbose && !quiet) std::cout << "[JSON]    " << canonical_path << "\n";
-            } else if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".mp3" || ext == ".ogg") {
-                // media is just Raw Bytes, no compression
-                std::vector<uint8_t> raw_data = read_file_binary(filepath);
-                writer.add_raw_data(canonical_path, std::move(raw_data), IO::Package::EntryType::Media, false);
-                if (verbose && !quiet) std::cout << "[MEDIA]   " << canonical_path << "\n";
-            } else if (ext == ".vert" || ext == ".frag" || ext == ".glsl") {
-                // shaders
-                std::vector<uint8_t> raw_data = read_file_binary(filepath);
-                writer.add_raw_data(canonical_path, std::move(raw_data), IO::Package::EntryType::ShaderSource,
-                                    global_compress);
-                if (verbose && !quiet) std::cout << "[SHADER]  " << canonical_path << "\n";
-            } else if (ext == ".obmap") {
-                // binary generic
-                std::vector<uint8_t> raw_data = read_file_binary(filepath);
-                writer.add_raw_data(canonical_path, std::move(raw_data), IO::Package::EntryType::RawBinary,
-                                    global_compress);
-                if (verbose && !quiet) std::cout << "[OBMAP]   " << canonical_path << "\n";
-            } else if (filepath.filename() == "imgui.ini" || filepath.filename() == ".DS_Store") {
-                // ignore list
-                continue;
-            } else {
-                // fallback
-                std::vector<uint8_t> raw_data = read_file_binary(filepath);
-                writer.add_raw_data(canonical_path, std::move(raw_data), IO::Package::EntryType::RawBinary,
-                                    global_compress);
-                if (verbose && !quiet) std::cout << "[RAW]     " << canonical_path << "\n";
-            }
-
-            ++success_count;
+            if (IO::Package::Tools::pack_one_file(entry.path(), project_dir, writer, dep_graph, opts))
+                ++success_count;
         } catch (const std::exception &e) {
-            std::cerr << "FAIL: " << canonical_path << " - " << e.what() << "\n";
+            log_error(entry.path().string() + " - " + e.what());
             ++fail_count;
         }
     }
 
-    // Write the container
+    bool deps_ok = dep_graph.validate(BINARY_NAME);
+    if (!deps_ok && strict_mode) {
+        log_error("Packaging aborted due to validation failures (--strict).");
+        return 1;
+    }
+
     if (success_count > 0) {
         try {
             writer.write(output_file);
-
             if (!quiet) {
-                const auto total = success_count + fail_count;
-                std::cout << "\nSuccess: Wrote " << output_file << "\n";
-                std::cout << "Packed " << success_count << "/" << total << " files.\n";
+                log_info("Wrote " + output_file);
+                log_info("Packed " + std::to_string(success_count) + "/" +
+                         std::to_string(success_count + fail_count) + " files.");
             }
         } catch (const std::exception &e) {
-            std::cerr << "\nFatal: could not write package - " << e.what() << "\n";
+            log_error(std::string("Could not write package - ") + e.what());
             return 1;
         }
     } else {
-        std::cerr << "Error: No files were successfully packed.\n";
+        log_error("No files were successfully packed.");
         return 1;
     }
 
