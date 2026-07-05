@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-option(BUILD_PACK_TOOLS "Build ObSL script packager and runner tools" ON)
+option(BUILD_PACK_TOOLS "Build .obpack packager tools" ON)
 
 set(OUTPUT_BIN_DIR ${CMAKE_BINARY_DIR}/bin)
 # place all executables in build/bin
