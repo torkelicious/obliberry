@@ -228,7 +228,7 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
             if (ImGui::Button("Load")) {
                 if (engineContext) {
                     const auto picked = FileDialogs::OpenFile(*engineContext, "Image", "png,jpg,jpeg,bmp,tga",
-                                                                      nullptr);
+                                                              nullptr);
                     if (picked.has_value()) {
                         auto finalPath = ResolveOrImportPath(picked.value());
                         if (finalPath.has_value()) {
@@ -249,7 +249,7 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
             if (ImGui::Button("Vert##Shader")) {
                 if (engineContext) {
                     const auto picked = FileDialogs::OpenFile(*engineContext, "Vertex Shader", "vert,glsl",
-                                                                      nullptr);
+                                                              nullptr);
                     if (picked.has_value()) {
                         const auto finalPath = ResolveOrImportPath(picked.value());
                         if (finalPath.has_value() && comp->material->shader) {
@@ -267,7 +267,7 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
             if (ImGui::Button("Frag##Shader")) {
                 if (engineContext) {
                     const auto picked = FileDialogs::OpenFile(*engineContext, "Fragment Shader", "frag,glsl",
-                                                                      nullptr);
+                                                              nullptr);
                     if (picked.has_value()) {
                         const auto finalPath = ResolveOrImportPath(picked.value());
                         if (finalPath.has_value() && comp->material->shader) {
@@ -328,7 +328,7 @@ void Editor::UI::DirectionalTextureWidget::Draw(const ECS::Entity entity, Core::
             if (ImGui::Button("Load")) {
                 if (engineContext) {
                     auto picked = FileDialogs::OpenFile(*engineContext, "Image", "png,jpg,jpeg,bmp,tga",
-                                                                nullptr);
+                                                        nullptr);
                     if (picked.has_value()) {
                         auto finalPath = ResolveOrImportPath(picked.value());
                         if (finalPath.has_value()) {
@@ -452,7 +452,7 @@ void Editor::UI::ScriptWidget::Draw(ECS::Entity entity, Core::EngineContext *eng
         if (ImGui::Button("Add Script")) {
             if (engineContext) {
                 const auto scriptPath = FileDialogs::OpenFile(*engineContext, "Script Files", "obsl,txt",
-                                                                      nullptr);
+                                                              nullptr);
                 if (scriptPath.has_value()) {
                     // resolve to vfs
                     const auto finalPath = ResolveOrImportPath(scriptPath.value(), "scripts");

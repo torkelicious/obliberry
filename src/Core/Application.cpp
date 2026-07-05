@@ -14,6 +14,7 @@
 #include <utility>
 
 #include "Editor/EditorLayer.h"
+#include "IO/VFS.h"
 
 Core::Application::Application(ProjectConfig config, std::unique_ptr<ApplicationLayer> layer)
     : m_Project(std::move(config)),
@@ -88,7 +89,6 @@ void Core::Application::Run() {
     context.renderer = &renderer;
     context.camera = &camera;
     context.deltaTime = 0.0f;
-    m_ScriptPool.init();
     context.scriptPool = &m_ScriptPool;
     context.threadPool = &m_ThreadPool;
     context.audioEngine = m_AudioEngine.get();

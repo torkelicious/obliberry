@@ -57,7 +57,7 @@ namespace Editor {
 
         void HandleInput(float dt);
 
-        void LoadScene(const std::string &path);
+        void LoadScene(std::string path);
 
         void SaveScene() const;
 
