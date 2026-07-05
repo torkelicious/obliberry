@@ -145,9 +145,10 @@ set(ENGINE_SOURCES
         src/IO/VFS.cpp
         src/Core/Project.cpp
         src/Core/ThreadPool.cpp
-        src/IO/Package/Container.h
         src/IO/Package/ContainerWriter.cpp
         src/IO/Package/ContainerReader.cpp
+        src/Scripting/Compiler/ASTSerializer.cpp
+        src/Scripting/Compiler/ASTDeserializer.cpp
 )
 
 # Engine Library Target
@@ -219,6 +220,12 @@ target_link_libraries(container_tests PRIVATE
         obliberry_engine
 )
 # TEMP
+
+# maybe also temp idk
+add_executable(obsl_pack src/Scripting/Compiler/ScriptPackager.cpp)
+target_link_libraries(obsl_pack PRIVATE
+        obliberry_engine
+)
 
 
 # Post build commands

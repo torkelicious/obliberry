@@ -45,6 +45,7 @@ namespace ECS::Systems::ScriptSystem {
 
             ObSL::Parser parser(tokens);
             script->ast_nodes[scriptIndex] = parser.parse();
+            // todo: use precomp AST for pkged scripts when i implement dat
 
             size_t num_workers = runtime.worker_count();
 

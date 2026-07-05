@@ -8,6 +8,8 @@ namespace IO {
         Pending p;
         p.path = canonical_path;
         p.uncompressed_size = source.size();
+        p.type = Package::EntryType::ScriptSource;
+
         // LZ4 worst case bound for the compressed buffer
         const int bound = LZ4_compressBound(static_cast<int>(source.size()));
         std::vector<uint8_t> compressed(bound);
@@ -25,6 +27,37 @@ namespace IO {
             compressed.resize(compressed_size);
             p.data = std::move(compressed);
             p.flags = Package::EntryFlags::Compressed;
+        }
+        m_entries.push_back(std::move(p));
+    }
+
+    void ContainerWriter::add_compiled_script(const std::string &canonical_path, std::vector<uint8_t> serialized_ast,
+                                              const bool compress) {
+        Pending p;
+        p.path = canonical_path;
+        p.uncompressed_size = serialized_ast.size();
+        p.type = Package::EntryType::SerializedAST;
+
+        if (!compress) {
+            p.data = std::move(serialized_ast);
+            p.flags = Package::EntryFlags::None;
+        } else {
+            const int bound = LZ4_compressBound(static_cast<int>(serialized_ast.size()));
+            std::vector<uint8_t> comp_data(bound);
+
+            const int compressed_size = LZ4_compress_default(
+                reinterpret_cast<const char *>(serialized_ast.data()),
+                reinterpret_cast<char *>(comp_data.data()),
+                static_cast<int>(serialized_ast.size()), bound);
+
+            if (compressed_size <= 0) {
+                p.data = std::move(serialized_ast);
+                p.flags = Package::EntryFlags::None;
+            } else {
+                comp_data.resize(compressed_size);
+                p.data = std::move(comp_data);
+                p.flags = Package::EntryFlags::Compressed;
+            }
         }
         m_entries.push_back(std::move(p));
     }
@@ -60,7 +93,7 @@ namespace IO {
             t.data_offset = data_offsets[i];
             t.compressed_size = m_entries[i].data.size();
             t.uncompressed_size = m_entries[i].uncompressed_size;
-            t.type = Package::EntryType::ScriptSource;
+            t.type = m_entries[i].type;
             t.flags = m_entries[i].flags;
             toc.push_back(t);
         }

@@ -22,7 +22,10 @@ namespace IO {
             uint64_t blob_data_offset = 0;
         };
 
-        enum class EntryType : uint8_t { ScriptSource = 0 };
+        enum class EntryType : uint8_t {
+            ScriptSource = 0,
+            SerializedAST = 1
+        };
 
         enum class EntryFlags : uint8_t { None = 0, Compressed = 1 << 0 };
 
@@ -46,6 +49,8 @@ namespace IO {
     public:
         void add_script(const std::string &canonical_path, const std::string &source);
 
+        void add_compiled_script(const std::string &canonical_path, std::vector<uint8_t> serialized_ast, bool compress = true);
+
         void write(const std::filesystem::path &out_file);
 
     private:
@@ -54,6 +59,7 @@ namespace IO {
             std::vector<uint8_t> data;
             uint64_t uncompressed_size;
             Package::EntryFlags flags;
+            Package::EntryType type;
         };
 
         std::vector<Pending> m_entries;
