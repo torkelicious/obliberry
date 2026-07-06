@@ -1,12 +1,17 @@
 #include "VFS.h"
 
+#include <fstream>
 #include <iostream>
+
+#include "Package/Container.h"
 
 namespace IO::VFS {
     struct VFSStorage {
         std::filesystem::path rootDir;
         std::filesystem::path assetsDir;
         bool isLoaded = false;
+        bool isPackaged = false;
+        ContainerReader packReader;
     };
 
     static VFSStorage s_State;
@@ -39,6 +44,31 @@ namespace IO::VFS {
         s_State.rootDir.clear();
         s_State.assetsDir.clear();
         s_State.isLoaded = false;
+    }
+
+    void MountPackage(const std::filesystem::path &packagepath) {
+        if (!s_State.packReader.open(packagepath)) {
+            std::cerr << "[VFS] Failed to open package: " << packagepath.string() << "\n";
+            return;
+        }
+        s_State.isPackaged = true;
+        s_State.isLoaded = true;
+        std::cout << "[VFS] Package mounted: " << packagepath.string() << "\n";
+    }
+
+    bool IsPackaged() {
+        return s_State.isPackaged;
+    }
+
+    std::optional<std::string> ReadVirtual(const std::filesystem::path &virtualPath) {
+        if (s_State.isPackaged) {
+            return s_State.packReader.read(virtualPath.generic_string());
+        }
+        std::ifstream file(Resolve(virtualPath), std::ios::binary);
+        if (!file.is_open()) return std::nullopt;
+        std::stringstream ss;
+        ss << file.rdbuf();
+        return ss.str();
     }
 
     std::filesystem::path Resolve(const std::filesystem::path &virtualPath) {

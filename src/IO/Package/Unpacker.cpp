@@ -3,6 +3,7 @@
 #include <vector>
 #include <filesystem>
 #include <fstream>
+#include <nlohmann/json.hpp>
 
 #include "IO/Package/Tools/CliCommon.h"
 #include "IO/Package/Container.h"
@@ -30,6 +31,8 @@ static void show_help() {
 int main(int argc, char *argv[]) {
     bool list_contents = false;
     bool quiet = false;
+    bool readable = false;
+    // only applies to json since i cant be arsed to write a fucking binary ast & de-parser and back to lexemes, well i could, but i dont want too.
     std::string package_path;
     std::string output_dir;
 
@@ -45,6 +48,8 @@ int main(int argc, char *argv[]) {
             list_contents = true;
         } else if (arg == "-q" || arg == "--quiet") {
             quiet = true;
+        } else if (arg == "-r" || arg == "--readable") {
+            readable = true;
         } else if (arg[0] == '-') {
             log_error("Unknown option: " + arg);
             show_help();
@@ -94,6 +99,22 @@ int main(int argc, char *argv[]) {
         fs::path out_path = fs::path(output_dir) / p;
         fs::create_directories(out_path.parent_path());
 
+        if (fs::path(p).extension() == ".json" && readable) {
+            try {
+                std::vector<uint8_t> bytes(data->begin(), data->end());
+                nlohmann::json j = nlohmann::json::from_msgpack(bytes);
+                std::string pretty = j.dump(2);
+                std::ofstream out(out_path, std::ios::binary);
+                out << pretty;
+                if (!quiet) log_info("Extracted (json): " + p + " (" + std::to_string(pretty.size()) + " bytes)");
+                success_count++;
+                continue;
+            } catch (const std::exception &e) {
+                log_error("Failed to decode msgpack for " + p + ": " + e.what());
+                // falls through to standard binary
+            }
+        }
+
         std::ofstream out(out_path, std::ios::binary);
         if (out.write(data->data(), data->size())) {
             if (!quiet) log_info("Extracted: " + p + " (" + std::to_string(data->size()) + " bytes)");
@@ -102,6 +123,7 @@ int main(int argc, char *argv[]) {
             log_error("Failed to write to disk: " + out_path.string());
         }
     }
+
 
     if (!quiet)
         log_info(
