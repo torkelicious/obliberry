@@ -1,6 +1,7 @@
 #include "FileDialogs.h"
 #include "Core/EngineContext.h"
 #include "Core/Window.h"
+
 #if defined(_WIN32)
 #define GLFW_EXPOSE_NATIVE_WIN32
 #elif defined(__APPLE__)
@@ -9,35 +10,55 @@
 #define GLFW_EXPOSE_NATIVE_WAYLAND
 #define GLFW_EXPOSE_NATIVE_X11
 #endif
+
 #include <nfd.hpp>
 #include <nfd_glfw3.h>
 
 namespace Editor {
     static nfdwindowhandle_t GetNativeHandle(const Core::EngineContext &ctx) {
-        nfdwindowhandle_t nativewin;
-        NFD_GetNativeWindowFromGLFWWindow(ctx.window->GetNativeWindow(), &nativewin);
+        nfdwindowhandle_t nativewin = {};
+        if (ctx.window && ctx.window->GetNativeWindow()) {
+            NFD_GetNativeWindowFromGLFWWindow(ctx.window->GetNativeWindow(), &nativewin);
+        }
         return nativewin;
     }
 
-    std::optional<std::string> FileDialogs::OpenFile(const Core::EngineContext &ctx,
-                                                     const char *filterName,
-                                                     const char *filterExt, const char *defaultPath) {
-        const nfdfilteritem_t filterItem[1] = {{filterName, filterExt}};
-        NFD::UniquePath outPath;
+    std::optional<std::string> FileDialogs::OpenFile(const Core::EngineContext &ctx, const FileDialogOptions &options) {
+        const nfdfilteritem_t filterItem[1] = {{options.filterName, options.filterExt}};
 
-        if (NFD::OpenDialog(outPath, filterItem, 1, defaultPath, GetNativeHandle(ctx)) == NFD_OKAY) {
+        nfdopendialogu8args_t args = {nullptr};
+        args.filterList = (options.filterName && options.filterExt) ? filterItem : nullptr;
+        args.filterCount = (options.filterName && options.filterExt) ? 1 : 0;
+        args.defaultPath = options.defaultPath;
+        args.parentWindow = GetNativeHandle(ctx);
+        args.title = options.title;
+        args.acceptLabel = options.acceptBtnLabel;
+        args.cancelLabel = options.cancelBtnLabel;
+
+        nfdnchar_t *outPathRaw = nullptr;
+        if (NFD_OpenDialogU8_With(&outPathRaw, &args) == NFD_OKAY && outPathRaw) {
+            const NFD::UniquePathU8 outPath(outPathRaw);
             return std::string(outPath.get());
         }
         return std::nullopt;
     }
 
-    std::optional<std::string> FileDialogs::SaveFile(const Core::EngineContext &ctx,
-                                                     const char *filterName,
-                                                     const char *filterExt, const char *defaultPath) {
-        const nfdfilteritem_t filterItem[1] = {{filterName, filterExt}};
-        NFD::UniquePath outPath;
+    std::optional<std::string> FileDialogs::SaveFile(const Core::EngineContext &ctx, const FileDialogOptions &options) {
+        const nfdfilteritem_t filterItem[1] = {{options.filterName, options.filterExt}};
 
-        if (NFD::SaveDialog(outPath, filterItem, 1, defaultPath, nullptr, GetNativeHandle(ctx)) == NFD_OKAY) {
+        nfdsavedialogu8args_t args = {nullptr};
+        args.filterList = (options.filterName && options.filterExt) ? filterItem : nullptr;
+        args.filterCount = (options.filterName && options.filterExt) ? 1 : 0;
+        args.defaultPath = options.defaultPath;
+        args.defaultName = options.defaultName;
+        args.parentWindow = GetNativeHandle(ctx);
+        args.title = options.title;
+        args.acceptLabel = options.acceptBtnLabel;
+        args.cancelLabel = options.cancelBtnLabel;
+
+        nfdnchar_t *outPathRaw = nullptr;
+        if (NFD_SaveDialogU8_With(&outPathRaw, &args) == NFD_OKAY && outPathRaw) {
+            const NFD::UniquePathU8 outPath(outPathRaw);
             return std::string(outPath.get());
         }
         return std::nullopt;
@@ -50,14 +71,18 @@ namespace Editor {
         const char *acceptBtnLabel,
         const char *cancelBtnLabel
     ) {
-        (void) title;
-        (void) acceptBtnLabel;
-        (void) cancelBtnLabel;
+        nfdpickfolderu8args_t args = {nullptr};
+        args.defaultPath = defaultPath;
+        args.parentWindow = GetNativeHandle(ctx);
+        args.title = title;
+        args.acceptLabel = acceptBtnLabel;
+        args.cancelLabel = cancelBtnLabel;
 
-        NFD::UniquePath outPath;
-        if (NFD::PickFolder(outPath, defaultPath, GetNativeHandle(ctx)) == NFD_OKAY) {
+        nfdnchar_t *outPathRaw = nullptr;
+        if (NFD_PickFolderU8_With(&outPathRaw, &args) == NFD_OKAY && outPathRaw) {
+            const NFD::UniquePathU8 outPath(outPathRaw);
             return std::string(outPath.get());
         }
         return std::nullopt;
     }
-} // Editor
+} // namespace Editor

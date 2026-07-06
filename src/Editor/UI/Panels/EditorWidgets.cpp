@@ -227,8 +227,10 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
             ImGui::SameLine();
             if (ImGui::Button("Load")) {
                 if (engineContext) {
-                    const auto picked = FileDialogs::OpenFile(*engineContext, "Image", "png,jpg,jpeg,bmp,tga",
-                                                              nullptr);
+                    const auto picked = FileDialogs::OpenFile(*engineContext, {
+                                                                  .filterName = "Image",
+                                                                  .filterExt = "png,jpg,jpeg,bmp,tga"
+                                                              });
                     if (picked.has_value()) {
                         auto finalPath = ResolveOrImportPath(picked.value());
                         if (finalPath.has_value()) {
@@ -248,8 +250,10 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
             ImGui::SameLine();
             if (ImGui::Button("Vert##Shader")) {
                 if (engineContext) {
-                    const auto picked = FileDialogs::OpenFile(*engineContext, "Vertex Shader", "vert,glsl",
-                                                              nullptr);
+                    const auto picked = FileDialogs::OpenFile(*engineContext, {
+                                                                  .filterName = "Vertex Shader",
+                                                                  .filterExt = "vert,glsl"
+                                                              });
                     if (picked.has_value()) {
                         const auto finalPath = ResolveOrImportPath(picked.value());
                         if (finalPath.has_value() && comp->material->shader) {
@@ -266,8 +270,10 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
             ImGui::SameLine();
             if (ImGui::Button("Frag##Shader")) {
                 if (engineContext) {
-                    const auto picked = FileDialogs::OpenFile(*engineContext, "Fragment Shader", "frag,glsl",
-                                                              nullptr);
+                    const auto picked = FileDialogs::OpenFile(*engineContext, {
+                                                                  .filterName = "Fragment Shader",
+                                                                  .filterExt = "frag,glsl"
+                                                              });
                     if (picked.has_value()) {
                         const auto finalPath = ResolveOrImportPath(picked.value());
                         if (finalPath.has_value() && comp->material->shader) {
@@ -327,8 +333,9 @@ void Editor::UI::DirectionalTextureWidget::Draw(const ECS::Entity entity, Core::
             ImGui::SameLine();
             if (ImGui::Button("Load")) {
                 if (engineContext) {
-                    auto picked = FileDialogs::OpenFile(*engineContext, "Image", "png,jpg,jpeg,bmp,tga",
-                                                        nullptr);
+                    auto picked = FileDialogs::OpenFile(*engineContext, {
+                                                            .filterName = "Image", .filterExt = "png,jpg,jpeg,bmp,tga"
+                                                        });
                     if (picked.has_value()) {
                         auto finalPath = ResolveOrImportPath(picked.value());
                         if (finalPath.has_value()) {
@@ -451,8 +458,9 @@ void Editor::UI::ScriptWidget::Draw(ECS::Entity entity, Core::EngineContext *eng
         // add Script button
         if (ImGui::Button("Add Script")) {
             if (engineContext) {
-                const auto scriptPath = FileDialogs::OpenFile(*engineContext, "Script Files", "obsl,txt",
-                                                              nullptr);
+                const auto scriptPath = FileDialogs::OpenFile(*engineContext, {
+                                                                  .filterName = "Script Files", .filterExt = "obsl,txt"
+                                                              });
                 if (scriptPath.has_value()) {
                     // resolve to vfs
                     const auto finalPath = ResolveOrImportPath(scriptPath.value(), "scripts");

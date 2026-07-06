@@ -3,4 +3,6 @@
 
 namespace IO::Package::Tools {
     void PackageCurrentProject(const std::string &outputdir);
+
+    void ExportGame(const std::string &output_dir);
 }

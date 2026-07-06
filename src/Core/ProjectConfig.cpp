@@ -30,7 +30,7 @@ namespace Core {
                 auto &w = j["window"];
                 if (w.contains("width")) config.windowWidth = w["width"];
                 if (w.contains("height")) config.windowHeight = w["height"];
-                if (w.contains("title")) config.windowTitle = w["title"];
+                if (w.contains("title")) config.Title = w["title"];
                 if (w.contains("fullscreen")) config.fullscreen = w["fullscreen"];
             }
             if (j.contains("start_scene")) {
@@ -48,7 +48,7 @@ namespace Core {
             nlohmann::json j;
             j["window"]["width"] = conf.windowWidth;
             j["window"]["height"] = conf.windowHeight;
-            j["window"]["title"] = conf.windowTitle;
+            j["window"]["title"] = conf.Title;
             j["window"]["fullscreen"] = conf.fullscreen;
             j["start_scene"] = conf.startScenePath;
 

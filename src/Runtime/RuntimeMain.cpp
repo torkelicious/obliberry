@@ -6,7 +6,7 @@
 #include <iostream>
 
 int main(const int argc, char *argv[]) {
-    std::filesystem::path targetPackage = "game.obpak";
+    std::filesystem::path targetPackage = "data.obpak";
     std::filesystem::path targetProject = "project.json";
     bool mountSuccess = false;
 

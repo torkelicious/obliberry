@@ -4,7 +4,7 @@
 
 namespace Core {
     struct ProjectConfig {
-        std::string windowTitle = "Obliberry Project";
+        std::string Title = "Obliberry Project";
         std::string startScenePath;
         int windowWidth = WINDOW_WIDTH;
         int windowHeight = WINDOW_HEIGHT;

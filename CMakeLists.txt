@@ -4,77 +4,84 @@ project(obliberry LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-option(BUILD_PACK_TOOLS "Build .obpack packager tools" ON)
+option(BUILD_PACK_TOOLS "Build .obpak packager tools" ON)
+
+set(CONFIG_TYPES Debug Release RelWithDebInfo MinSizeRel)
 
 # Output dirs
 set(OUTPUT_BIN_DIR "${CMAKE_BINARY_DIR}/bin")
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${OUTPUT_BIN_DIR}")
 
-foreach (CONFIG Debug Release RelWithDebInfo MinSizeRel)
+foreach (CONFIG ${CONFIG_TYPES})
     string(TOUPPER "${CONFIG}" CONFIG_UPPER)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${CONFIG_UPPER} "${OUTPUT_BIN_DIR}")
 endforeach ()
 
+# Helper
+function(set_output_subdir SUBDIR)
+    foreach (TGT ${ARGN})
+        set_target_properties(${TGT} PROPERTIES
+                RUNTIME_OUTPUT_DIRECTORY "${OUTPUT_BIN_DIR}/${SUBDIR}")
+        foreach (CONFIG ${CONFIG_TYPES})
+            string(TOUPPER "${CONFIG}" CONFIG_UPPER)
+            set_target_properties(${TGT} PROPERTIES
+                    RUNTIME_OUTPUT_DIRECTORY_${CONFIG_UPPER} "${OUTPUT_BIN_DIR}/${SUBDIR}")
+        endforeach ()
+    endforeach ()
+endfunction()
+
 # Dependencies
 include(FetchContent)
 
-FetchContent_Declare(
-        glfw
-        GIT_REPOSITORY https://github.com/glfw/glfw.git
-        GIT_TAG 3.4
-)
+# Helper
+function(fetch_dep NAME REPO TAG)
+    FetchContent_Declare(
+            ${NAME}
+            GIT_REPOSITORY ${REPO}
+            GIT_TAG ${TAG}
+            GIT_SHALLOW TRUE
+    )
+endfunction()
+
+fetch_dep(glfw https://github.com/glfw/glfw.git 3.4)
 # disable GLFW extras to speed up build
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(glfw)
 
-FetchContent_Declare(
-        glm
-        GIT_REPOSITORY https://github.com/g-truc/glm.git
-        GIT_TAG 1.0.3
-)
+fetch_dep(glm https://github.com/g-truc/glm.git 1.0.3)
 set(GLM_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(glm)
 
-FetchContent_Declare(
-        nlohmann_json
-        GIT_REPOSITORY https://github.com/nlohmann/json.git
-        GIT_TAG v3.12.0
-)
+fetch_dep(nlohmann_json https://github.com/nlohmann/json.git v3.12.0)
 set(JSON_BuildTests OFF CACHE INTERNAL "")
 FetchContent_MakeAvailable(nlohmann_json)
 
-FetchContent_Declare(
-        nfd
-        GIT_REPOSITORY https://github.com/btzy/nativefiledialog-extended.git
-        GIT_TAG master # master for proper glfw / wayland support, since releases are "slow"
-)
+fetch_dep(nfd https://github.com/btzy/nativefiledialog-extended.git 3cd252a)
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     set(NFD_PORTAL ON CACHE BOOL "Enable XDG Desktop Portal for Linux" FORCE)
-    set(NFD_PORTAL ON CACHE BOOL "" FORCE)
 endif ()
 FetchContent_MakeAvailable(nfd)
 
-FetchContent_Declare(
-        lz4
-        GIT_REPOSITORY https://github.com/lz4/lz4.git
-        GIT_TAG v1.10.0
-)
+fetch_dep(lz4 https://github.com/lz4/lz4.git v1.10.0)
+set(LZ4_BUILD_CLI OFF CACHE BOOL "" FORCE)
+set(LZ4_BUILD_LEGACY_LZ4C OFF CACHE BOOL "" FORCE)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(BUILD_STATIC_LIBS ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(lz4)
 
 # ObSL
 set(OBSL_BUILD_RUNTIME OFF CACHE BOOL "" FORCE)
 add_subdirectory(external/obsl)
 
-# Engine target
-add_library(obliberry_engine STATIC
-
-        # External sources
-
+add_library(obliberry_vendor STATIC
         # GLAD
         external/glad/src/glad.c
         external/stb_image/stb_image.cpp
@@ -95,9 +102,24 @@ add_library(obliberry_engine STATIC
         external/imguizmo/ImGradient.cpp
         external/imguizmo/ImSequencer.cpp
         external/imguizmo/ImVectorEditor.cpp
+
         # Miniaudio
         external/miniaudio/miniaudio.c
+)
 
+target_include_directories(obliberry_vendor SYSTEM PUBLIC
+        external/glad/include
+        external/imgui
+        external/imgui/backends
+        external/imguizmo
+        external/stb_image
+        external/miniaudio
+)
+
+target_link_libraries(obliberry_vendor PUBLIC glfw)
+
+# Engine target
+add_library(obliberry_engine STATIC
         # Engine core
         src/Core/Application.cpp
         src/Core/Window.cpp
@@ -156,14 +178,6 @@ add_library(obliberry_engine STATIC
 
 target_include_directories(obliberry_engine PUBLIC
         src
-
-        external/glad/include
-        external/imgui
-        external/imgui/backends
-        external/imguizmo
-        external/stb_image
-        PRIVATE
-        external/miniaudio
 )
 
 target_compile_definitions(obliberry_engine PUBLIC
@@ -171,7 +185,7 @@ target_compile_definitions(obliberry_engine PUBLIC
 )
 
 target_link_libraries(obliberry_engine PUBLIC
-        glfw
+        obliberry_vendor
         glm::glm
         obsl
         nlohmann_json::nlohmann_json
@@ -231,3 +245,10 @@ endif ()
 
 # Post build
 file(COPY "${CMAKE_SOURCE_DIR}/Templates" DESTINATION "${OUTPUT_BIN_DIR}")
+
+# output routing
+set_output_subdir(internal obliberry_runtime)
+
+if (BUILD_PACK_TOOLS)
+    set_output_subdir(tools ob_packer ob_unpacker obsl_pack_run)
+endif ()

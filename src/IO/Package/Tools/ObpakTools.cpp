@@ -5,15 +5,37 @@
 
 #include "AssetPacking.h"
 #include "DependencyGraph.h"
+#include <string>
+#include <cctype>
+#include "Core/Project.h"
 #include "IO/VFS.h"
 #include "IO/Package/Container.h"
 
+
 namespace IO::Package::Tools {
+    std::string SanitizeExecutableName(const std::string &input) {
+        std::string out;
+        bool lastWasUnderscore = false;
+        for (const unsigned char c: input) {
+            if (std::isalnum(c) || c == '-' || c == '_') {
+                out += c;
+                lastWasUnderscore = false;
+            } else if (!lastWasUnderscore) {
+                out += '_';
+                lastWasUnderscore = true;
+            }
+        }
+        if (out.empty())
+            out = "game";
+        return out;
+    }
+
+
     void PackageCurrentProject(const std::string &output_dir) {
         std::filesystem::path project_dir = VFS::GetProjectRoot();
 
-        std::filesystem::path out_file = "game.obpak";
-        const std::string BINARY_NAME = "[obliberry]";
+        std::filesystem::path out_file = "data.obpak";
+        const std::string BINARY_NAME = "obliberry exporter";
 
 
         if (project_dir.empty()) {
@@ -24,7 +46,7 @@ namespace IO::Package::Tools {
             std::cerr << "Provided path is not a valid directory: " + project_dir.string() << "\n";
             return;
         }
-        out_file = output_dir / out_file;
+        out_file = std::filesystem::path(output_dir) / out_file;
 
         std::cout << "Packing project: " + project_dir.string() << "\n";
         std::cout << "Output file: " + out_file.string() << "\n";
@@ -60,7 +82,7 @@ namespace IO::Package::Tools {
         if (success_count > 0) {
             try {
                 writer.write(out_file);
-                std::cout << "Wrote " + out_file.string();
+                std::cout << "Wrote " + out_file.string() << "\n";
                 std::cout << "Packed " + std::to_string(success_count) + "/" +
                         std::to_string(success_count + fail_count) + " files.\n";
             } catch (const std::exception &e) {
@@ -68,8 +90,38 @@ namespace IO::Package::Tools {
                 return;
             }
         } else {
-            std::cerr << "No files were successfully packed.\n";
+            std::cerr << "No valid assets found to pack.\n";
             return;
+        }
+    }
+
+    void ExportGame(const std::string &output_dir) {
+        std::cout << "Exporting game to: " << output_dir << "\n";
+        PackageCurrentProject(output_dir);
+
+        const std::string clean_project_name = SanitizeExecutableName(Core::Project::GetActive()->GetConfig().Title);
+#ifdef _WIN32
+        const std::string runtime_name = "obliberry_runtime.exe";
+        const std::string export_name = clean_project_name + ".exe";
+#else
+        const std::string runtime_name = "obliberry_runtime";
+        const std::string &export_name = clean_project_name;
+#endif
+        // Locate the runtime
+        const std::filesystem::path runtime_src = std::filesystem::current_path() / "internal" / runtime_name;
+        const std::filesystem::path dest_exe = std::filesystem::path(output_dir) / export_name;
+
+        try {
+            if (std::filesystem::exists(runtime_src)) {
+                std::filesystem::copy_file(runtime_src, dest_exe, std::filesystem::copy_options::overwrite_existing);
+                std::cout << "[Export] Successfully copied runtime binary to " << dest_exe.string() << "\n";
+            } else {
+                std::cerr << "[Export] Error: Could not find runtime binary at " << runtime_src.string() << "\n";
+                std::cerr <<
+                        "         Ensure obliberry_runtime is built and located in the 'internal' folder next to the editor.\n";
+            }
+        } catch (const std::exception &e) {
+            std::cerr << "[Export] Exception while copying runtime: " << e.what() << "\n";
         }
     }
 }

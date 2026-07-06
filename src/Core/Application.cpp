@@ -18,7 +18,7 @@
 
 Core::Application::Application(ProjectConfig config, std::unique_ptr<ApplicationLayer> layer)
     : m_Project(std::move(config)),
-      m_Window(m_Project.windowWidth, m_Project.windowHeight, m_Project.windowTitle.c_str(), m_Project.fullscreen),
+      m_Window(m_Project.windowWidth, m_Project.windowHeight, m_Project.Title.c_str(), m_Project.fullscreen),
       m_Layer(std::move(layer)) {
     m_Window.SetInputManager(&m_InputManager);
     m_AudioEngine = Sound::AudioEngine::Create();

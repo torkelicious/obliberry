@@ -1,4 +1,3 @@
-
 #include "ProjectConfigEditor.h"
 
 #include <cstring>
@@ -24,7 +23,7 @@ namespace Editor::UI {
     }
 
     void ProjectConfigEditor::LoadConfigToBuffers() {
-        std::strncpy(m_TitleBuffer, m_LocalConfig.windowTitle.c_str(), sizeof(m_TitleBuffer) - 1);
+        std::strncpy(m_TitleBuffer, m_LocalConfig.Title.c_str(), sizeof(m_TitleBuffer) - 1);
         std::strncpy(m_StartSceneBuffer, m_LocalConfig.startScenePath.c_str(), sizeof(m_StartSceneBuffer) - 1);
     }
 
@@ -34,7 +33,7 @@ namespace Editor::UI {
         if (!m_Context)
             return;
 
-        if (m_TitleBuffer[0] == '\0' && !m_LocalConfig.windowTitle.empty()) {
+        if (m_TitleBuffer[0] == '\0' && !m_LocalConfig.Title.empty()) {
             LoadConfigToBuffers();
         }
 
@@ -48,7 +47,7 @@ namespace Editor::UI {
 
         // title
         if (ImGui::InputText("Window Title", m_TitleBuffer, sizeof(m_TitleBuffer))) {
-            m_LocalConfig.windowTitle = m_TitleBuffer;
+            m_LocalConfig.Title = m_TitleBuffer;
             Core::Project::GetActive()->MarkAsChanged();
         }
 
@@ -74,7 +73,7 @@ namespace Editor::UI {
             if (ImGui::Button("Browse##Scene")) {
                 if (m_Context) {
                     const auto picked = FileDialogs::OpenFile(
-                        *m_Context, "Scene File", "json", nullptr);
+                        *m_Context, {.filterName = "Scene File", .filterExt = "json"});
                     if (picked.has_value()) {
                         ResolveStartScenePath(picked.value());
                         Core::Project::GetActive()->MarkAsChanged();
@@ -117,7 +116,7 @@ namespace Editor::UI {
             return;
 
         // sync
-        m_LocalConfig.windowTitle = m_TitleBuffer;
+        m_LocalConfig.Title = m_TitleBuffer;
         m_LocalConfig.startScenePath = m_StartSceneBuffer;
 
         // write to disk

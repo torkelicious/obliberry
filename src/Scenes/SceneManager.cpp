@@ -65,6 +65,7 @@ namespace Scenes {
             //  unload first
             if (m_CurrentScene &&m_CurrentScene
 
+
             ->
             GetScenePath() == scenePath
             )

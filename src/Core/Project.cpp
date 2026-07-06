@@ -10,7 +10,7 @@ namespace Core {
         auto project = std::make_shared<Project>();
         const std::filesystem::path projectDir = baseDir / name;
         project->m_ProjectFilepath = projectDir / "project.json";
-        project->m_Config.windowTitle = name;
+        project->m_Config.Title = name;
         project->m_Config.startScenePath = std::string(SCENE_PATH) + "default.json";
 
         const std::filesystem::path templateDir = PathUtils::GetExecutableDirectory() / "Templates" / "Default";
