@@ -21,10 +21,10 @@ namespace Editor {
 
         virtual void OnDrawPanels() = 0;
 
-        virtual bool CanSaveScene() const { return true; }
-        virtual bool CanSaveSceneAs() const { return true; }
-        virtual bool IsPlayMode() const { return false; }
-        virtual const char *PlayStopLabel() const { return "Play"; }
+        [[nodiscard]] virtual bool CanSaveScene() const { return true; }
+        [[nodiscard]] virtual bool CanSaveSceneAs() const { return true; }
+        [[nodiscard]] virtual bool IsPlayMode() const { return false; }
+        [[nodiscard]] virtual const char *PlayStopLabel() const { return "Play"; }
 
         virtual void SetEditorLayer(EditorLayer *layer) { m_EditorLayer = layer; }
         virtual EditorLayer *GetEditorLayer() { return m_EditorLayer; }

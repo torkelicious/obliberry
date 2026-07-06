@@ -25,7 +25,7 @@ namespace Editor {
         void OnDrawPanels() override;
 
     private:
-        void DrawGizmoForSelected();
+        void DrawGizmoForSelected() const;
 
         void EditTransform(Rendering::Transform &transform, bool isBillboard) const;
 

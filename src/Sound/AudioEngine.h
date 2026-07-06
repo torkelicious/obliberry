@@ -3,9 +3,11 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <unordered_map>
 
 struct ma_engine;
 struct ma_sound;
+struct ma_decoder;
 
 namespace Sound {
     class AudioEngine {
@@ -36,5 +38,13 @@ namespace Sound {
         ma_engine *m_Engine = nullptr;
         ma_sound *m_CurrentMusic = nullptr;
         std::vector<ma_sound *> m_ActiveSounds;
+
+        struct MemoryAudioContext {
+            std::string buffer;
+            ma_decoder *decoder = nullptr;
+        };
+
+        MemoryAudioContext m_CurrentMusicContext;
+        std::unordered_map<ma_sound *, MemoryAudioContext> m_SoundContexts;
     };
 } // namespace Sound

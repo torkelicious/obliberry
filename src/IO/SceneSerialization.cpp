@@ -30,17 +30,27 @@ namespace IO::SceneIO {
     }
 
     bool Deserialize(const std::string &path, Scenes::Scene &scene) {
-        std::filesystem::path resolvedPath = VFS::Resolve(path);
-
-        std::ifstream file(resolvedPath);
-        if (!file.is_open())
+        auto fileData = VFS::ReadVirtual(path);
+        if (!fileData.has_value()) {
+            std::cerr << "[SceneIO] Failed to open scene through VFS: " << path << "\n";
             return false;
+        }
 
         auto &[ScenePath, Name, BackgroundMusicPath, BackgroundClearColor, AmbientLight] = scene.GetProperties();
         ScenePath = path;
 
         json j;
-        file >> j;
+        try {
+            if (VFS::IsPackaged()) {
+                std::vector<uint8_t> bytes(fileData.value().begin(), fileData.value().end());
+                j = json::from_msgpack(bytes);
+            } else {
+                j = json::parse(fileData.value());
+            }
+        } catch (const std::exception &e) {
+            std::cerr << "[SceneIO] Scene parsing failure: " << e.what() << "\n";
+            return false;
+        }
 
         if (j.contains("properties")) {
             auto &properties = j["properties"];

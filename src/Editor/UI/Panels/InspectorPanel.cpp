@@ -99,14 +99,14 @@ void Editor::UI::InspectorPanel::OnImGuiRender() {
 
                 ImGui::TextDisabled("Available Components");
                 ImGui::Separator();
-                for (const auto &entry: entries) {
-                    ImGui::PushID(entry.name);
-                    if (entry.has) {
+                for (const auto &[name, has, add]: entries) {
+                    ImGui::PushID(name);
+                    if (has) {
                         ImGui::BeginDisabled();
-                        ImGui::Selectable(entry.name);
+                        ImGui::Selectable(name);
                         ImGui::EndDisabled();
-                    } else if (ImGui::Selectable(entry.name)) {
-                        entry.add();
+                    } else if (ImGui::Selectable(name)) {
+                        add();
                         MarkSceneChanged(m_EngineContext);
                         ImGui::CloseCurrentPopup();
                     }

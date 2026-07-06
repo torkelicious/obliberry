@@ -1,6 +1,8 @@
 #include "GameLayer.h"
 #include "IO/AssetLoader.h"
+#include "IO/VFS.h"
 #include <filesystem>
+#include <ObSL/ScriptRuntime.h>
 #include "Core/ProjectConfig.h"
 #include "Core/Window.h"
 #include "Rendering/Renderer.h"
@@ -12,6 +14,10 @@ void Game::GameLayer::Init(Core::EngineContext &ctx) {
     m_Context->sceneManager = &m_SceneManager;
 
     m_SceneManager.SetContext(*m_Context);
+
+    if (m_Context->scriptPool) {
+        m_Context->scriptPool->init(IO::VFS::GetAssetsDirectory() / "scripts");
+    }
 
     std::string startScene;
     if (m_Context->projectConfig) {
@@ -30,7 +36,7 @@ void Game::GameLayer::Update(const float dt) {
 
     m_SceneManager.ProcessPendingSceneChange(*m_Context);
 
-    DrawInterface();
+    //DrawInterface();
     if (m_GameIsRunning) {
         m_SceneManager.Update(dt);
     }

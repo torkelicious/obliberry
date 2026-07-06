@@ -22,21 +22,30 @@ namespace IO {
                 return newId;
             }
 
-            // parse from disk if not cached
-            std::filesystem::path resolvedPath = VFS::Resolve(filepath);
-            std::ifstream file(resolvedPath);
-            if (!file.is_open()) {
+            auto fileData = VFS::ReadVirtual(filepath);
+            if (!fileData.has_value()) {
                 std::cerr << "[PrefabManager] Failed to instantiate: " << filepath
-                        << " (Resolved: " << resolvedPath.string() << ")\n";
+                        << " (Not found in VFS)\n";
+                return 0;
+            }
+
+            nlohmann::json prefabJson;
+            try {
+                if (VFS::IsPackaged()) {
+                    std::vector<uint8_t> bytes(fileData.value().begin(), fileData.value().end());
+                    prefabJson = nlohmann::json::from_msgpack(bytes);
+                } else {
+                    prefabJson = nlohmann::json::parse(fileData.value());
+                }
+            } catch (const std::exception &e) {
+                std::cerr << "[PrefabManager] Core decoding error for " << filepath << ": " << e.what() << "\n";
                 return 0;
             }
 
 
-            nlohmann::json prefabJson;
-            file >> prefabJson;
             s_prefab_cache[filepath] = prefabJson;
 
-            ECS::EntityID newId = registry.CreateEntity();
+            const ECS::EntityID newId = registry.CreateEntity();
             ECS::Entity newEntity(newId, &registry);
             EntityFactory::DeserializeEntity(newEntity, prefabJson, resources);
             return newId;

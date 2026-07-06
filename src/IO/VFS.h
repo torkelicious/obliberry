@@ -1,11 +1,18 @@
 #pragma once
 #include <filesystem>
+#include <optional>
 
 namespace IO::VFS {
     // the active project root is based on the path of project.json
     void MountProject(const std::filesystem::path &projectConfigPath);
 
     void UnmountProject();
+
+    void MountPackage(const std::filesystem::path &packagepath);
+
+    bool IsPackaged();
+
+    std::optional<std::string> ReadVirtual(const std::filesystem::path &virtualPath);
 
     [[nodiscard]] std::filesystem::path Resolve(const std::filesystem::path &virtualPath);
 

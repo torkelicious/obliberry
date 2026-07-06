@@ -4,6 +4,7 @@
 #include <sstream>
 #include <iostream>
 #include <filesystem>
+#include <vector>
 
 #include "Core/EngineContext.h"
 #include "ECS/Registry.h"
@@ -14,39 +15,83 @@
 #include <ObSL/ScriptRuntime.h>
 #include <ObSL/ScriptWorker.h>
 #include <ObSL/Parser.h>
+#include <ObSL/ASTDeserializer.h>
 #include "Scripting/EngineLib/ScriptCommandBuffer.h"
 #include "Scripting/EngineLib/EngineLibFactories.h"
 #include "Core/ThreadPool.h"
 
 namespace ECS::Systems::ScriptSystem {
-    inline void InitializeScript(Registry &registry, EntityID entityId,
+    inline void InitializeScript(Registry &registry, const EntityID entityId,
                                  Components::ScriptComponent *script,
-                                 ObSL::ScriptRuntime &runtime, size_t scriptIndex = 0) {
+                                 ObSL::ScriptRuntime &runtime, const size_t scriptIndex = 0) {
         if (scriptIndex >= script->scriptPaths.size() || script->isInitialized[scriptIndex]) return;
 
-        // read file
-        std::filesystem::path resolvedPath = IO::VFS::Resolve(script->scriptPaths[scriptIndex]);
-        std::ifstream file(resolvedPath);
-        if (!file.is_open()) {
-            std::cerr << "[ScriptSystem] Error: Failed to open script file: " << script->scriptPaths[scriptIndex]
-                    << " (Resolved: " << resolvedPath.string() << ")\n";
+        auto fileData = IO::VFS::ReadVirtual(script->scriptPaths[scriptIndex]);
+        if (!fileData.has_value()) {
+            std::cerr << "[ScriptSystem] Error: Failed to open script via VFS: "
+                    << script->scriptPaths[scriptIndex] << "\n";
             return;
         }
 
-        std::stringstream buffer;
-        buffer << file.rdbuf();
-        script->source_codes[scriptIndex] = buffer.str();
-        script->lastModified[scriptIndex] = std::filesystem::last_write_time(resolvedPath);
-
         try {
-            // parse once & share
-            ObSL::Lexer lexer(script->source_codes[scriptIndex]);
-            std::vector<ObSL::Token> tokens = lexer.tokenize();
+            // configure module loader
+            for (size_t w = 0; w < runtime.worker_count(); ++w) {
+                runtime.get_worker(w)->GetInterpreter().set_module_loader(
+                    [](const std::string &path) -> std::optional<ObSL::ModuleResult> {
+                        auto data = IO::VFS::ReadVirtual(path);
+                        if (!data) return std::nullopt;
 
-            ObSL::Parser parser(tokens);
-            script->ast_nodes[scriptIndex] = parser.parse();
+                        ObSL::ModuleResult result;
+                        if (IO::VFS::IsPackaged()) {
+                            const std::vector<uint8_t> blob(data->begin(), data->end());
+                            result.kind = ObSL::ModuleResult::Kind::PrecompiledAst;
+                            result.ast_module = ObSL::ASTDeserializer::deserialize(blob);
+                        } else {
+                            result.kind = ObSL::ModuleResult::Kind::Source;
+                            result.source = std::move(data.value());
+                        }
+                        return result;
+                    }
+                );
+            }
 
-            size_t num_workers = runtime.worker_count();
+            // Packaged AST
+            if (IO::VFS::IsPackaged()) {
+                const std::vector<uint8_t> binary_blob(fileData->begin(), fileData->end());
+                try {
+                    // static container keeps the deserialized string_pools alive for the application lifetime to avoid pointing at dead mem nce goes oos
+                    static std::vector<decltype(ObSL::ASTDeserializer::deserialize(std::vector<uint8_t>()))>
+                            s_PackagedStringPools;
+
+                    auto &deserialized = s_PackagedStringPools.emplace_back(
+                        ObSL::ASTDeserializer::deserialize(binary_blob));
+                    auto &[string_pool, statements] = deserialized;
+
+                    script->ast_nodes[scriptIndex] = std::move(statements);
+                    script->lastModified[scriptIndex] = std::filesystem::file_time_type::min();
+                } catch (const std::exception &e) {
+                    std::cerr << "[ScriptSystem] AST Deserialization failed for: "
+                            << script->scriptPaths[scriptIndex] << "\n";
+                    return;
+                }
+            } else {
+                // Loose file source code
+                script->source_codes[scriptIndex] = std::move(fileData.value());
+
+                const std::filesystem::path resolvedPath = IO::VFS::Resolve(script->scriptPaths[scriptIndex]);
+                if (std::filesystem::exists(resolvedPath)) {
+                    script->lastModified[scriptIndex] = std::filesystem::last_write_time(resolvedPath);
+                }
+
+                // Parse once & share
+                ObSL::Lexer lexer(script->source_codes[scriptIndex]);
+                const std::vector<ObSL::Token> tokens = lexer.tokenize();
+
+                ObSL::Parser parser(tokens);
+                script->ast_nodes[scriptIndex] = std::move(parser.parse());
+            }
+
+            const size_t num_workers = runtime.worker_count();
 
             // Remove old GC roots before re init
             const size_t old_count = script->on_update_functions[scriptIndex].size();
@@ -147,13 +192,16 @@ namespace ECS::Systems::ScriptSystem {
                     }
 
                     try {
-                        std::filesystem::path resolvedPath = IO::VFS::Resolve(script->scriptPaths[i]);
-                        if (std::filesystem::exists(resolvedPath)) {
-                            if (auto current_time = std::filesystem::last_write_time(resolvedPath);
-                                current_time > script->lastModified[i]) {
-                                script->isInitialized[i] = false;
-                                InitializeScript(registry, raw_id, script, *ctx.scriptPool, i);
-                                std::cout << "[ScriptSystem] Hot-reloaded script: " << script->scriptPaths[i] << "\n";
+                        if (!IO::VFS::IsPackaged()) {
+                            std::filesystem::path resolvedPath = IO::VFS::Resolve(script->scriptPaths[i]);
+                            if (std::filesystem::exists(resolvedPath)) {
+                                if (auto current_time = std::filesystem::last_write_time(resolvedPath);
+                                    current_time > script->lastModified[i]) {
+                                    script->isInitialized[i] = false;
+                                    InitializeScript(registry, raw_id, script, *ctx.scriptPool, i);
+                                    std::cout << "[ScriptSystem] Hot-reloaded script: " << script->scriptPaths[i] <<
+                                            "\n";
+                                }
                             }
                         }
                     } catch (const std::exception &e) {

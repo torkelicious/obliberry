@@ -33,15 +33,14 @@ namespace IO::MapIO {
     }
 
     bool Deserialize(const std::string &path, Map::HexGrid &grid) {
-        std::filesystem::path resolvedPath = VFS::Resolve(path);
-        std::ifstream file(resolvedPath, std::ios::binary | std::ios::ate);
-        if (!file.is_open()) {
-            std::cerr << "Failed to open file: " << path << "\n";
+        const auto fileData = VFS::ReadVirtual(path);
+        if (!fileData.has_value()) {
+            std::cerr << "[MapIO] Failed to read map file from VFS: " << path << "\n";
             return false;
         }
 
-        std::streamsize fileSize = file.tellg();
-        file.seekg(0, std::ios::beg);
+        std::istringstream file(fileData.value(), std::ios::binary);
+        const size_t fileSize = fileData.value().size();
 
         MapFileHeader header;
         if (!file.read(reinterpret_cast<char *>(&header), sizeof(MapFileHeader))) {
@@ -54,8 +53,8 @@ namespace IO::MapIO {
             return false;
         }
 
-        if (size_t expectedSize = CalculateExpectedFileSize(header.tileCount);
-            expectedSize > static_cast<size_t>(fileSize)) {
+        if (const size_t expectedSize = CalculateExpectedFileSize(header.tileCount);
+            expectedSize > fileSize) {
             std::cerr << "Map file truncated or corrupt.\n";
             return false;
         }
@@ -70,13 +69,12 @@ namespace IO::MapIO {
             Map::HexCoords coords{sTile.q, sTile.r};
             grid.EmplaceTile(coords, sTile.type, sTile.walkable);
         }
-        file.close();
-        std::cout << "Successfully loaded " << header.tileCount << " tiles.\n";
+
+        std::cout << "Successfully loaded " << header.tileCount << " tiles via VFS.\n";
         return true;
     }
 
     bool CheckHeader(const MapFileHeader &header, const std::string &expected) {
-        const std::string magicBytes(header.magic, 8);
-        return magicBytes == expected;
+        return std::string_view(header.magic, 8) == expected;
     }
-}
+} // namespace IO::MapIO

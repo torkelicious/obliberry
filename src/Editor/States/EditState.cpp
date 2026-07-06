@@ -87,7 +87,7 @@ void Editor::EditState::OnDrawPanels() {
     DrawGizmoForSelected();
 }
 
-void Editor::EditState::DrawGizmoForSelected() {
+void Editor::EditState::DrawGizmoForSelected() const {
     const ECS::Entity selectedEntity = m_EditorLayer->m_RegistryPanel.GetSelectedEntity();
     if (!selectedEntity)
         return;
