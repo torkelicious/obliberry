@@ -12,22 +12,17 @@ void Core::InputManager::BeginFrame() {
     m_MouseDeltaY = 0.0;
 }
 
-bool Core::InputManager::IsValidKey(const int key) {
-    return key >= 0 && key <= GLFW_KEY_LAST;
-}
+bool Core::InputManager::IsValidKey(const int key) { return key >= 0 && key <= GLFW_KEY_LAST; }
 
 void Core::InputManager::HandleKeyEvent(const int key, const int action) {
-    if (!IsValidKey(key)) return;
+    if (!IsValidKey(key))
+        return;
     keys[key] = action != GLFW_RELEASE;
 }
 
-bool Core::InputManager::IsKeyDown(const int key) const {
-    return IsValidKey(key) && keys[key];
-}
+bool Core::InputManager::IsKeyDown(const int key) const { return IsValidKey(key) && keys[key]; }
 
-bool Core::InputManager::IsKeyDown(const std::string &keyAlias) const {
-    return IsKeyDown(GetKeyFromName(keyAlias));
-}
+bool Core::InputManager::IsKeyDown(const std::string &keyAlias) const { return IsKeyDown(GetKeyFromName(keyAlias)); }
 
 bool Core::InputManager::IsKeyPressed(const int key) const {
     return IsValidKey(key) && keys[key] && !previousKeys[key];
@@ -50,7 +45,8 @@ bool Core::InputManager::IsValidMouseButton(const int button) {
 }
 
 void Core::InputManager::HandleClickEvent(const int button, const int action, int mods) {
-    if (!IsValidMouseButton(button)) return;
+    if (!IsValidMouseButton(button))
+        return;
     mouseButtons[button] = action != GLFW_RELEASE;
 }
 
@@ -63,9 +59,7 @@ bool Core::InputManager::IsMouseDown(const std::string &buttonAlias) const {
 }
 
 bool Core::InputManager::IsMousePressed(const int button) const {
-    return IsValidMouseButton(button) &&
-           mouseButtons[button] &&
-           !previousMouseButtons[button];
+    return IsValidMouseButton(button) && mouseButtons[button] && !previousMouseButtons[button];
 }
 
 bool Core::InputManager::IsMousePressed(const std::string &buttonAlias) const {
@@ -73,9 +67,7 @@ bool Core::InputManager::IsMousePressed(const std::string &buttonAlias) const {
 }
 
 bool Core::InputManager::IsMouseReleased(const int button) const {
-    return IsValidMouseButton(button) &&
-           !mouseButtons[button] &&
-           previousMouseButtons[button];
+    return IsValidMouseButton(button) && !mouseButtons[button] && previousMouseButtons[button];
 }
 
 bool Core::InputManager::IsMouseReleased(const std::string &buttonAlias) const {

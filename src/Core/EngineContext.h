@@ -11,7 +11,7 @@ namespace Core {
     class InputManager;
     class ResourceManager;
     class ThreadPool;
-}
+} // namespace Core
 
 namespace Scenes {
     class SceneManager;
@@ -24,7 +24,7 @@ namespace Sound {
 namespace Rendering {
     class Renderer;
     class Camera;
-}
+} // namespace Rendering
 
 namespace ObSL {
     class ScriptRuntime;

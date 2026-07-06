@@ -18,9 +18,7 @@ void Editor::PlayState::OnExit() {
     m_EditorLayer->m_Camera.RestoreState();
 }
 
-void Editor::PlayState::OnUpdate(const float dt) {
-    m_EditorLayer->m_SceneManager.Update(dt);
-}
+void Editor::PlayState::OnUpdate(const float dt) { m_EditorLayer->m_SceneManager.Update(dt); }
 
 void Editor::PlayState::OnHandleInput(float dt) {
     // handled by the game scene

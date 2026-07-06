@@ -7,11 +7,7 @@
 namespace Editor {
     class EditState : public EditorState {
     public:
-        enum OPERATION : uint8_t {
-            TRANSLATE,
-            ROTATE,
-            SCALE
-        };
+        enum OPERATION : uint8_t { TRANSLATE, ROTATE, SCALE };
 
         // enum MODE : uint8_t {
         //     LOCAL,

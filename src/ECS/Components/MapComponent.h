@@ -29,7 +29,7 @@ namespace ECS::Components {
 
         // monobuffers
         //               // type            transforms
-        std::unordered_map<uint8_t, std::vector<glm::mat4> > visibles;
+        std::unordered_map<uint8_t, std::vector<glm::mat4>> visibles;
 
         // padding bounds
         Math::Projection::AABB bufferedRenderAABB;

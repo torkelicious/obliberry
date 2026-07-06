@@ -11,8 +11,8 @@
 
 namespace IO::Package::Tools {
     const std::filesystem::path ignorelist[] = {
-        "imgui.ini",
-        ".DS_Store",
+            "imgui.ini",
+            ".DS_Store",
     };
 
     static std::string lower_ext(const std::filesystem::path &p) {
@@ -22,13 +22,11 @@ namespace IO::Package::Tools {
     }
 
     // NOLINTBEGIN (*-pro-type-static-cast-downcast)
-    static void resolve_and_collect_using_paths(
-        ObSL::Stmt *stmt,
-        const std::filesystem::path &script_root,
-        const std::filesystem::path &project_dir,
-        std::vector<std::string> &out_deps
-    ) {
-        if (!stmt) return;
+    static void resolve_and_collect_using_paths(ObSL::Stmt *stmt, const std::filesystem::path &script_root,
+                                                const std::filesystem::path &project_dir,
+                                                std::vector<std::string> &out_deps) {
+        if (!stmt)
+            return;
         using ObSL::StmtType;
         switch (stmt->type()) {
             case StmtType::Using: {
@@ -39,14 +37,13 @@ namespace IO::Package::Tools {
                     if (std::filesystem::exists(alt))
                         canonical = std::move(alt);
                 }
-                const std::string project_relative =
-                        std::filesystem::relative(canonical, project_dir).generic_string();
+                const std::string project_relative = std::filesystem::relative(canonical, project_dir).generic_string();
                 using_stmt->path = project_relative;
                 out_deps.push_back(project_relative);
                 break;
             }
             case StmtType::Block:
-                for (auto &s: static_cast<ObSL::BlockStmt *>(stmt)->statements)
+                for (auto &s : static_cast<ObSL::BlockStmt *>(stmt)->statements)
                     resolve_and_collect_using_paths(s.get(), script_root, project_dir, out_deps);
                 break;
             case StmtType::If: {
@@ -56,20 +53,20 @@ namespace IO::Package::Tools {
                 break;
             }
             case StmtType::While:
-                resolve_and_collect_using_paths(
-                    static_cast<ObSL::WhileStmt *>(stmt)->body.get(), script_root, project_dir, out_deps);
+                resolve_and_collect_using_paths(static_cast<ObSL::WhileStmt *>(stmt)->body.get(), script_root,
+                                                project_dir, out_deps);
                 break;
             case StmtType::Foreach:
-                resolve_and_collect_using_paths(
-                    static_cast<ObSL::ForeachStmt *>(stmt)->body.get(), script_root, project_dir, out_deps);
+                resolve_and_collect_using_paths(static_cast<ObSL::ForeachStmt *>(stmt)->body.get(), script_root,
+                                                project_dir, out_deps);
                 break;
             case StmtType::Function:
-                resolve_and_collect_using_paths(
-                    static_cast<ObSL::FunctionStmt *>(stmt)->body.get(), script_root, project_dir, out_deps);
+                resolve_and_collect_using_paths(static_cast<ObSL::FunctionStmt *>(stmt)->body.get(), script_root,
+                                                project_dir, out_deps);
                 break;
             case StmtType::Switch:
-                for (auto &c: static_cast<ObSL::SwitchStmt *>(stmt)->cases)
-                    for (auto &s: c.statements)
+                for (auto &c : static_cast<ObSL::SwitchStmt *>(stmt)->cases)
+                    for (auto &s : c.statements)
                         resolve_and_collect_using_paths(s.get(), script_root, project_dir, out_deps);
                 break;
             case StmtType::TryCatch: {
@@ -86,8 +83,8 @@ namespace IO::Package::Tools {
     // NOLINTEND (*-pro-type-static-cast-downcast)
 
     bool pack_one_file(const std::filesystem::path &filepath, const std::filesystem::path &project_dir,
-                       const std::filesystem::path &script_root,
-                       ContainerWriter &writer, DependencyGraph &dep_graph, const PackOptions &opts) {
+                       const std::filesystem::path &script_root, ContainerWriter &writer, DependencyGraph &dep_graph,
+                       const PackOptions &opts) {
         std::string canonical_path = std::filesystem::relative(filepath, project_dir).generic_string();
         std::string ext = lower_ext(filepath);
 
@@ -103,39 +100,42 @@ namespace IO::Package::Tools {
             auto ast = parser.parse();
 
             std::vector<std::string> deps;
-            for (auto &stmt: ast)
+            for (auto &stmt : ast)
                 resolve_and_collect_using_paths(stmt.get(), script_root, project_dir, deps);
             dep_graph.add_script(canonical_path, std::move(deps));
 
             ObSL::ASTSerializer serializer;
             std::vector<uint8_t> binary_blob = serializer.finalize(ast);
             writer.add_compiled_script(canonical_path, std::move(binary_blob), opts.global_compress);
-            if (opts.verbose && !opts.quiet) log_info(opts.binary_name, "[SCRIPT]  " + canonical_path);
+            if (opts.verbose && !opts.quiet)
+                log_info(opts.binary_name, "[SCRIPT]  " + canonical_path);
         } else if (ext == ".json") {
             std::string source_code = read_file_string(filepath);
             nlohmann::json j = nlohmann::json::parse(source_code);
             std::vector<uint8_t> binary_msgpack = nlohmann::json::to_msgpack(j);
             writer.add_binary_json(canonical_path, std::move(binary_msgpack), opts.global_compress);
-            if (opts.verbose && !opts.quiet) log_info(opts.binary_name, "[JSON]    " + canonical_path);
+            if (opts.verbose && !opts.quiet)
+                log_info(opts.binary_name, "[JSON]    " + canonical_path);
         } else if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".mp3" || ext == ".ogg") {
             auto raw_data = read_file_binary(filepath);
             writer.add_raw_data(canonical_path, std::move(raw_data), EntryType::Media, false);
-            if (opts.verbose && !opts.quiet) log_info(opts.binary_name, "[MEDIA]   " + canonical_path);
+            if (opts.verbose && !opts.quiet)
+                log_info(opts.binary_name, "[MEDIA]   " + canonical_path);
         } else if (ext == ".vert" || ext == ".frag" || ext == ".glsl") {
             auto raw_data = read_file_binary(filepath);
-            writer.add_raw_data(canonical_path, std::move(raw_data), EntryType::ShaderSource,
-                                opts.global_compress);
-            if (opts.verbose && !opts.quiet) log_info(opts.binary_name, "[SHADER]  " + canonical_path);
+            writer.add_raw_data(canonical_path, std::move(raw_data), EntryType::ShaderSource, opts.global_compress);
+            if (opts.verbose && !opts.quiet)
+                log_info(opts.binary_name, "[SHADER]  " + canonical_path);
         } else if (ext == ".obmap") {
             auto raw_data = read_file_binary(filepath);
-            writer.add_raw_data(canonical_path, std::move(raw_data), EntryType::RawBinary,
-                                opts.global_compress);
-            if (opts.verbose && !opts.quiet) log_info(opts.binary_name, "[OBMAP]   " + canonical_path);
+            writer.add_raw_data(canonical_path, std::move(raw_data), EntryType::RawBinary, opts.global_compress);
+            if (opts.verbose && !opts.quiet)
+                log_info(opts.binary_name, "[OBMAP]   " + canonical_path);
         } else {
             auto raw_data = read_file_binary(filepath);
-            writer.add_raw_data(canonical_path, std::move(raw_data), EntryType::RawBinary,
-                                opts.global_compress);
-            if (opts.verbose && !opts.quiet) log_info(opts.binary_name, "[RAW]     " + canonical_path);
+            writer.add_raw_data(canonical_path, std::move(raw_data), EntryType::RawBinary, opts.global_compress);
+            if (opts.verbose && !opts.quiet)
+                log_info(opts.binary_name, "[RAW]     " + canonical_path);
         }
 
         return true;

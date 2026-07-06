@@ -21,15 +21,15 @@
 #include "Core/ThreadPool.h"
 
 namespace ECS::Systems::ScriptSystem {
-    inline void InitializeScript(Registry &registry, const EntityID entityId,
-                                 Components::ScriptComponent *script,
+    inline void InitializeScript(Registry &registry, const EntityID entityId, Components::ScriptComponent *script,
                                  ObSL::ScriptRuntime &runtime, const size_t scriptIndex = 0) {
-        if (scriptIndex >= script->scriptPaths.size() || script->isInitialized[scriptIndex]) return;
+        if (scriptIndex >= script->scriptPaths.size() || script->isInitialized[scriptIndex])
+            return;
 
         auto fileData = IO::VFS::ReadVirtual(script->scriptPaths[scriptIndex]);
         if (!fileData.has_value()) {
-            std::cerr << "[ScriptSystem] Error: Failed to open script via VFS: "
-                    << script->scriptPaths[scriptIndex] << "\n";
+            std::cerr << "[ScriptSystem] Error: Failed to open script via VFS: " << script->scriptPaths[scriptIndex]
+                      << "\n";
             return;
         }
 
@@ -37,41 +37,42 @@ namespace ECS::Systems::ScriptSystem {
             // configure module loader
             for (size_t w = 0; w < runtime.worker_count(); ++w) {
                 runtime.get_worker(w)->GetInterpreter().set_module_loader(
-                    [](const std::string &path) -> std::optional<ObSL::ModuleResult> {
-                        auto data = IO::VFS::ReadVirtual(path);
-                        if (!data) return std::nullopt;
+                        [](const std::string &path) -> std::optional<ObSL::ModuleResult> {
+                            auto data = IO::VFS::ReadVirtual(path);
+                            if (!data)
+                                return std::nullopt;
 
-                        ObSL::ModuleResult result;
-                        if (IO::VFS::IsPackaged()) {
-                            const std::vector<uint8_t> blob(data->begin(), data->end());
-                            result.kind = ObSL::ModuleResult::Kind::PrecompiledAst;
-                            result.ast_module = ObSL::ASTDeserializer::deserialize(blob);
-                        } else {
-                            result.kind = ObSL::ModuleResult::Kind::Source;
-                            result.source = std::move(data.value());
-                        }
-                        return result;
-                    }
-                );
+                            ObSL::ModuleResult result;
+                            if (IO::VFS::IsPackaged()) {
+                                const std::vector<uint8_t> blob(data->begin(), data->end());
+                                result.kind = ObSL::ModuleResult::Kind::PrecompiledAst;
+                                result.ast_module = ObSL::ASTDeserializer::deserialize(blob);
+                            } else {
+                                result.kind = ObSL::ModuleResult::Kind::Source;
+                                result.source = std::move(data.value());
+                            }
+                            return result;
+                        });
             }
 
             // Packaged AST
             if (IO::VFS::IsPackaged()) {
                 const std::vector<uint8_t> binary_blob(fileData->begin(), fileData->end());
                 try {
-                    // static container keeps the deserialized string_pools alive for the application lifetime to avoid pointing at dead mem nce goes oos
+                    // static container keeps the deserialized string_pools alive for the application lifetime to avoid
+                    // pointing at dead mem nce goes oos
                     static std::vector<decltype(ObSL::ASTDeserializer::deserialize(std::vector<uint8_t>()))>
                             s_PackagedStringPools;
 
-                    auto &deserialized = s_PackagedStringPools.emplace_back(
-                        ObSL::ASTDeserializer::deserialize(binary_blob));
+                    auto &deserialized =
+                            s_PackagedStringPools.emplace_back(ObSL::ASTDeserializer::deserialize(binary_blob));
                     auto &[string_pool, statements] = deserialized;
 
                     script->ast_nodes[scriptIndex] = std::move(statements);
                     script->lastModified[scriptIndex] = std::filesystem::file_time_type::min();
                 } catch (const std::exception &e) {
-                    std::cerr << "[ScriptSystem] AST Deserialization failed for: "
-                            << script->scriptPaths[scriptIndex] << "\n";
+                    std::cerr << "[ScriptSystem] AST Deserialization failed for: " << script->scriptPaths[scriptIndex]
+                              << "\n";
                     return;
                 }
             } else {
@@ -122,17 +123,14 @@ namespace ECS::Systems::ScriptSystem {
             }
 
             // run top level code once
-            runtime.get_worker(0)->execute(
-                script->ast_nodes[scriptIndex],
-                script->instance_envs[scriptIndex][0]
-            );
+            runtime.get_worker(0)->execute(script->ast_nodes[scriptIndex], script->instance_envs[scriptIndex][0]);
 
             // Bind hook functions
-            auto bind_hook = [&](const char *name,
-                                 std::vector<ObSL::ObSLCallable *> &target) {
+            auto bind_hook = [&](const char *name, std::vector<ObSL::ObSLCallable *> &target) {
                 try {
                     const auto val = script->instance_envs[scriptIndex][0]->get(name);
-                    if (!std::holds_alternative<ObSL::ObSLCallable *>(val)) return;
+                    if (!std::holds_alternative<ObSL::ObSLCallable *>(val))
+                        return;
                     auto *base_func = std::get<ObSL::ObSLCallable *>(val);
 
                     if (auto *obsl_func = dynamic_cast<ObSL::ObSLFunction *>(base_func)) {
@@ -161,62 +159,58 @@ namespace ECS::Systems::ScriptSystem {
 
             script->isInitialized[scriptIndex] = true;
             std::cout << "[ScriptSystem] Initialized '" << script->scriptPaths[scriptIndex] << "' across "
-                    << num_workers << " worker(s)\n";
+                      << num_workers << " worker(s)\n";
         } catch (const std::exception &e) {
-            std::cerr << "[ScriptSystem] Error compiling/executing '" << script->scriptPaths[scriptIndex] << "':\n  " <<
-                    e.what() << "\n";
+            std::cerr << "[ScriptSystem] Error compiling/executing '" << script->scriptPaths[scriptIndex] << "':\n  "
+                      << e.what() << "\n";
         }
     }
 
     inline void Update(Registry &registry, const Core::EngineContext &ctx) {
-        if (!ctx.scriptPool || !ctx.threadPool) return;
-        constexpr ObSL::Token call_token{
-            ObSL::TokenType::LEFT_PAREN, "(", 0, 0, 0, 0
-        };
+        if (!ctx.scriptPool || !ctx.threadPool)
+            return;
+        constexpr ObSL::Token call_token{ObSL::TokenType::LEFT_PAREN, "(", 0, 0, 0, 0};
 
         Scripting::ScriptCommandBuffer cmd_buf;
         const size_t num_workers = ctx.scriptPool->worker_count();
 
-        registry.ForEach<Components::ScriptComponent>(
-            [&](const Entity entity, Components::ScriptComponent *script) {
-                const auto raw_id = static_cast<EntityID>(entity);
+        registry.ForEach<Components::ScriptComponent>([&](const Entity entity, Components::ScriptComponent *script) {
+            const auto raw_id = static_cast<EntityID>(entity);
 
-                for (size_t i = 0; i < script->scriptPaths.size(); i++) {
-                    if (!script->isInitialized[i]) {
-                        InitializeScript(registry, raw_id, script, *ctx.scriptPool, i);
-                    }
+            for (size_t i = 0; i < script->scriptPaths.size(); i++) {
+                if (!script->isInitialized[i]) {
+                    InitializeScript(registry, raw_id, script, *ctx.scriptPool, i);
+                }
 
-                    try {
-                        if (!IO::VFS::IsPackaged()) {
-                            std::filesystem::path resolvedPath = IO::VFS::Resolve(script->scriptPaths[i]);
-                            if (std::filesystem::exists(resolvedPath)) {
-                                if (auto current_time = std::filesystem::last_write_time(resolvedPath);
-                                    current_time > script->lastModified[i]) {
-                                    script->isInitialized[i] = false;
-                                    InitializeScript(registry, raw_id, script, *ctx.scriptPool, i);
-                                    std::cout << "[ScriptSystem] Hot-reloaded script: " << script->scriptPaths[i] <<
-                                            "\n";
-                                }
+                try {
+                    if (!IO::VFS::IsPackaged()) {
+                        std::filesystem::path resolvedPath = IO::VFS::Resolve(script->scriptPaths[i]);
+                        if (std::filesystem::exists(resolvedPath)) {
+                            if (auto current_time = std::filesystem::last_write_time(resolvedPath);
+                                current_time > script->lastModified[i]) {
+                                script->isInitialized[i] = false;
+                                InitializeScript(registry, raw_id, script, *ctx.scriptPool, i);
+                                std::cout << "[ScriptSystem] Hot-reloaded script: " << script->scriptPaths[i] << "\n";
                             }
                         }
-                    } catch (const std::exception &e) {
-                        std::cerr << "[ScriptSystem] reload error: " << e.what() << "\n";
                     }
+                } catch (const std::exception &e) {
+                    std::cerr << "[ScriptSystem] reload error: " << e.what() << "\n";
                 }
-            });
+            }
+        });
 
         for (size_t w = 0; w < num_workers; ++w)
             ctx.scriptPool->get_worker(w)->set_frame_context(&cmd_buf);
 
         // to avoid spinning idle workers
         size_t active_updates = 0;
-        registry.ForEach<Components::ScriptComponent>(
-            [&](const Entity, Components::ScriptComponent *script) {
-                for (size_t i = 0; i < script->scriptPaths.size(); i++) {
-                    if (script->isInitialized[i] && script->on_update_functions[i][0])
-                        ++active_updates;
-                }
-            });
+        registry.ForEach<Components::ScriptComponent>([&](const Entity, Components::ScriptComponent *script) {
+            for (size_t i = 0; i < script->scriptPaths.size(); i++) {
+                if (script->isInitialized[i] && script->on_update_functions[i][0])
+                    ++active_updates;
+            }
+        });
         const size_t active_workers = std::min(num_workers, std::max(size_t{1}, active_updates));
 
         // on_update parallel
@@ -225,29 +219,25 @@ namespace ECS::Systems::ScriptSystem {
             std::shared_ptr<ObSL::Environment> env;
             std::string scriptPath;
         };
-        std::vector<std::vector<UpdateWork> > buckets(active_workers);
+        std::vector<std::vector<UpdateWork>> buckets(active_workers);
 
-        registry.ForEach<Components::ScriptComponent>(
-            [&](const Entity entity, Components::ScriptComponent *script) {
-                const auto entity_id = static_cast<EntityID>(entity);
-                for (size_t i = 0; i < script->scriptPaths.size(); i++) {
-                    if (script->isInitialized[i] && script->on_update_functions[i][0]) {
-                        const size_t w = (entity_id + i) % active_workers;
-                        buckets[w].push_back({
-                            script->on_update_functions[i][w],
-                            script->instance_envs[i][w],
-                            script->scriptPaths[i]
-                        });
-                    }
+        registry.ForEach<Components::ScriptComponent>([&](const Entity entity, Components::ScriptComponent *script) {
+            const auto entity_id = static_cast<EntityID>(entity);
+            for (size_t i = 0; i < script->scriptPaths.size(); i++) {
+                if (script->isInitialized[i] && script->on_update_functions[i][0]) {
+                    const size_t w = (entity_id + i) % active_workers;
+                    buckets[w].push_back(
+                            {script->on_update_functions[i][w], script->instance_envs[i][w], script->scriptPaths[i]});
                 }
-            });
+            }
+        });
 
         const double dt = ctx.deltaTime;
         for (size_t w = 0; w < active_workers; ++w) {
             ctx.threadPool->enqueue([&buckets, &ctx, w, dt, &call_token] {
                 auto *worker = ctx.scriptPool->get_worker(w);
                 auto &interp = worker->GetInterpreter();
-                for (auto &[func, env, scriptPath]: buckets[w]) {
+                for (auto &[func, env, scriptPath] : buckets[w]) {
                     try {
                         if (func && env) {
                             interp.set_current_environment(env);
@@ -255,8 +245,8 @@ namespace ECS::Systems::ScriptSystem {
                             func->call(&interp, args, call_token);
                         }
                     } catch (const std::exception &e) {
-                        std::cerr << "[ScriptSystem] Exception in on_update (" << scriptPath << "): "
-                                << e.what() << "\n";
+                        std::cerr << "[ScriptSystem] Exception in on_update (" << scriptPath << "): " << e.what()
+                                  << "\n";
                     } catch (...) {
                         std::cerr << "[ScriptSystem] Unknown Exception in on_update (" << scriptPath << ")\n";
                     }
@@ -268,43 +258,38 @@ namespace ECS::Systems::ScriptSystem {
 
         // destroyable entities to clamp workers
         size_t active_destroys = 0;
-        registry.ForEach<Components::DestroyTagComponent>(
-            [&](const Entity entity, Components::DestroyTagComponent *) {
-                const auto entity_id = static_cast<EntityID>(entity);
-                if (const auto script = registry.GetComponent<Components::ScriptComponent>(entity_id)) {
-                    for (size_t i = 0; i < script->scriptPaths.size(); i++) {
-                        if (script->isInitialized[i] && script->on_destroy_functions[i][0])
-                            ++active_destroys;
-                    }
+        registry.ForEach<Components::DestroyTagComponent>([&](const Entity entity, Components::DestroyTagComponent *) {
+            const auto entity_id = static_cast<EntityID>(entity);
+            if (const auto script = registry.GetComponent<Components::ScriptComponent>(entity_id)) {
+                for (size_t i = 0; i < script->scriptPaths.size(); i++) {
+                    if (script->isInitialized[i] && script->on_destroy_functions[i][0])
+                        ++active_destroys;
                 }
-            });
+            }
+        });
         const size_t destroy_workers = std::min(num_workers, std::max(size_t{1}, active_destroys));
 
         // on_destroy
-        std::vector<std::vector<UpdateWork> > destroy_buckets(destroy_workers);
+        std::vector<std::vector<UpdateWork>> destroy_buckets(destroy_workers);
 
-        registry.ForEach<Components::DestroyTagComponent>(
-            [&](const Entity entity, Components::DestroyTagComponent *) {
-                const auto entity_id = static_cast<EntityID>(entity);
-                if (const auto script = registry.GetComponent<Components::ScriptComponent>(entity_id)) {
-                    for (size_t i = 0; i < script->scriptPaths.size(); i++) {
-                        if (script->isInitialized[i] && script->on_destroy_functions[i][0]) {
-                            const size_t w = (entity_id + i) % destroy_workers;
-                            destroy_buckets[w].push_back({
-                                script->on_destroy_functions[i][w],
-                                script->instance_envs[i][w],
-                                script->scriptPaths[i]
-                            });
-                        }
+        registry.ForEach<Components::DestroyTagComponent>([&](const Entity entity, Components::DestroyTagComponent *) {
+            const auto entity_id = static_cast<EntityID>(entity);
+            if (const auto script = registry.GetComponent<Components::ScriptComponent>(entity_id)) {
+                for (size_t i = 0; i < script->scriptPaths.size(); i++) {
+                    if (script->isInitialized[i] && script->on_destroy_functions[i][0]) {
+                        const size_t w = (entity_id + i) % destroy_workers;
+                        destroy_buckets[w].push_back({script->on_destroy_functions[i][w], script->instance_envs[i][w],
+                                                      script->scriptPaths[i]});
                     }
                 }
-            });
+            }
+        });
 
         for (size_t w = 0; w < destroy_workers; ++w) {
             ctx.threadPool->enqueue([&destroy_buckets, &ctx, w, dt, &call_token] {
                 auto *worker = ctx.scriptPool->get_worker(w);
                 auto &interp = worker->GetInterpreter();
-                for (auto &[func, env, scriptPath]: destroy_buckets[w]) {
+                for (auto &[func, env, scriptPath] : destroy_buckets[w]) {
                     try {
                         if (func && env) {
                             interp.set_current_environment(env);
@@ -312,8 +297,8 @@ namespace ECS::Systems::ScriptSystem {
                             func->call(&interp, args, call_token);
                         }
                     } catch (const std::exception &e) {
-                        std::cerr << "[ScriptSystem] Exception in on_destroy (" << scriptPath << "): "
-                                << e.what() << "\n";
+                        std::cerr << "[ScriptSystem] Exception in on_destroy (" << scriptPath << "): " << e.what()
+                                  << "\n";
                     } catch (...) {
                         std::cerr << "[ScriptSystem] Unknown Exception in on_destroy (" << scriptPath << ")\n";
                     }
@@ -331,10 +316,9 @@ namespace ECS::Systems::ScriptSystem {
     }
 
     inline void OnSceneExit(Registry &registry, const Core::EngineContext &ctx) {
-        if (!ctx.scriptPool || !ctx.threadPool) return;
-        constexpr ObSL::Token call_token{
-            ObSL::TokenType::LEFT_PAREN, "(", 0, 0, 0, 0
-        };
+        if (!ctx.scriptPool || !ctx.threadPool)
+            return;
+        constexpr ObSL::Token call_token{ObSL::TokenType::LEFT_PAREN, "(", 0, 0, 0, 0};
 
         Scripting::ScriptCommandBuffer cmd_buf;
         const size_t num_workers = ctx.scriptPool->worker_count();
@@ -343,13 +327,12 @@ namespace ECS::Systems::ScriptSystem {
             ctx.scriptPool->get_worker(w)->set_frame_context(&cmd_buf);
 
         size_t active_exits = 0;
-        registry.ForEach<Components::ScriptComponent>(
-            [&](const Entity, const Components::ScriptComponent *script) {
-                for (size_t i = 0; i < script->scriptPaths.size(); i++) {
-                    if (script->isInitialized[i] && script->on_exit_functions[i][0])
-                        ++active_exits;
-                }
-            });
+        registry.ForEach<Components::ScriptComponent>([&](const Entity, const Components::ScriptComponent *script) {
+            for (size_t i = 0; i < script->scriptPaths.size(); i++) {
+                if (script->isInitialized[i] && script->on_exit_functions[i][0])
+                    ++active_exits;
+            }
+        });
         const size_t exit_workers = std::min(num_workers, std::max(size_t{1}, active_exits));
 
         // collect on_exit stuff
@@ -358,29 +341,26 @@ namespace ECS::Systems::ScriptSystem {
             std::shared_ptr<ObSL::Environment> env;
             std::string scriptPath;
         };
-        std::vector<std::vector<ExitWork> > buckets(exit_workers);
+        std::vector<std::vector<ExitWork>> buckets(exit_workers);
 
         registry.ForEach<Components::ScriptComponent>(
-            [&](const Entity entity, const Components::ScriptComponent *script) {
-                const auto entity_id = static_cast<EntityID>(entity);
-                for (size_t i = 0; i < script->scriptPaths.size(); i++) {
-                    if (script->isInitialized[i] && script->on_exit_functions[i][0]) {
-                        const size_t w = (entity_id + i) % exit_workers;
-                        buckets[w].push_back({
-                            script->on_exit_functions[i][w],
-                            script->instance_envs[i][w],
-                            script->scriptPaths[i]
-                        });
+                [&](const Entity entity, const Components::ScriptComponent *script) {
+                    const auto entity_id = static_cast<EntityID>(entity);
+                    for (size_t i = 0; i < script->scriptPaths.size(); i++) {
+                        if (script->isInitialized[i] && script->on_exit_functions[i][0]) {
+                            const size_t w = (entity_id + i) % exit_workers;
+                            buckets[w].push_back({script->on_exit_functions[i][w], script->instance_envs[i][w],
+                                                  script->scriptPaths[i]});
+                        }
                     }
-                }
-            });
+                });
 
         const double dt = ctx.deltaTime;
         for (size_t w = 0; w < exit_workers; ++w) {
             ctx.threadPool->enqueue([&buckets, &ctx, w, dt, &call_token] {
                 auto *worker = ctx.scriptPool->get_worker(w);
                 auto &interp = worker->GetInterpreter();
-                for (auto &[func, env, scriptPath]: buckets[w]) {
+                for (auto &[func, env, scriptPath] : buckets[w]) {
                     try {
                         if (func && env) {
                             interp.set_current_environment(env);
@@ -388,8 +368,7 @@ namespace ECS::Systems::ScriptSystem {
                             func->call(&interp, args, call_token);
                         }
                     } catch (const std::exception &e) {
-                        std::cerr << "[ScriptSystem] Exception in on_exit (" << scriptPath << "): "
-                                << e.what() << "\n";
+                        std::cerr << "[ScriptSystem] Exception in on_exit (" << scriptPath << "): " << e.what() << "\n";
                     } catch (...) {
                         std::cerr << "[ScriptSystem] Unknown Exception in on_exit (" << scriptPath << ")\n";
                     }

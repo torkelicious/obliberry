@@ -9,11 +9,9 @@ namespace Editor {
 
         // basically same shit scenes / layers do
 
-        virtual void OnEnter() {
-        }
+        virtual void OnEnter() {}
 
-        virtual void OnExit() {
-        }
+        virtual void OnExit() {}
 
         virtual void OnUpdate(float dt) = 0;
 

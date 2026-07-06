@@ -23,11 +23,9 @@ namespace Rendering {
         std::vector<uint32_t> indices;
     };
 
-    template<typename T>
-    struct VertexTraits;
+    template <typename T> struct VertexTraits;
 
-    template<>
-    struct VertexTraits<Vertex> {
+    template <> struct VertexTraits<Vertex> {
         static const VertexBufferLayout &GetLayout() {
             static VertexBufferLayout layout = [] {
                 VertexBufferLayout l;
@@ -52,9 +50,7 @@ namespace Rendering {
 
         Mesh &operator=(Mesh &&) = default;
 
-        explicit Mesh(MeshData data) : m_TempData(std::move(data)) {
-            ComputeBoundingSphere();
-        }
+        explicit Mesh(MeshData data) : m_TempData(std::move(data)) { ComputeBoundingSphere(); }
 
         void InitGL() {
             m_VBO.Init(m_TempData.vertices.data(), static_cast<uint32_t>(m_TempData.vertices.size() * sizeof(Vertex)));
@@ -75,7 +71,7 @@ namespace Rendering {
 
         void ComputeBoundingSphere() noexcept {
             m_BoundingRadius = 0.0f;
-            for (const auto &[Position, UV]: m_TempData.vertices) {
+            for (const auto &[Position, UV] : m_TempData.vertices) {
                 if (const float dist = glm::length(Position); dist > m_BoundingRadius)
                     m_BoundingRadius = dist;
             }
@@ -91,18 +87,14 @@ namespace Rendering {
             glBindVertexArray(0);
         }
 
-        void Bind() const {
-            m_VAO.Bind();
-        }
+        void Bind() const { m_VAO.Bind(); }
 
 
         [[nodiscard]] const VertexArray &GetVertexArray() const { return m_VAO; }
         [[nodiscard]] const VertexBuffer &GetVBO() const { return m_VBO; }
         [[nodiscard]] const IndexBuffer &GetIBO() const { return m_IBO; }
 
-        [[nodiscard]] uint32_t GetIndexCount() const {
-            return m_IBO.GetCount();
-        }
+        [[nodiscard]] uint32_t GetIndexCount() const { return m_IBO.GetCount(); }
 
         std::string &GetFactoryId() { return m_FactoryId; }
         void SetFactoryId(const std::string &facid) { m_FactoryId = facid; }

@@ -18,16 +18,18 @@
 
 namespace {
     [[nodiscard]] ImVec4 GetThresholdColor(const float frameMs) {
-        if (frameMs >= 33.0f) return {1.0f, 0.3f, 0.3f, 1.0f}; // critical (sub-30 FPS)
-        if (frameMs >= 20.0f) return {1.0f, 0.8f, 0.2f, 1.0f}; // warning (sub-50 FPS)
-        return {0.4f, 1.0f, 0.4f, 1.0f}; // Good
+        if (frameMs >= 33.0f)
+            return {1.0f, 0.3f, 0.3f, 1.0f}; // critical (sub-30 FPS)
+        if (frameMs >= 20.0f)
+            return {1.0f, 0.8f, 0.2f, 1.0f}; // warning (sub-50 FPS)
+        return {0.4f, 1.0f, 0.4f, 1.0f};     // Good
     }
 
     bool showPerformanceOverlay = true;
     bool showGameState = true;
     bool showEntityInspector = true;
     bool showSceneSwitcher = true;
-}
+} // namespace
 
 void Game::GameLayer::DrawInterface() {
     if (ImGui::BeginMainMenuBar()) {
@@ -47,17 +49,13 @@ void Game::GameLayer::DrawInterface() {
 
         const float menuBarHeight = ImGui::GetFrameHeight();
 
-        ImGui::SetNextWindowPos(
-            ImVec2(viewport->WorkPos.x + viewport->WorkSize.x - PADDING,
-                   viewport->WorkPos.y + PADDING + menuBarHeight),
-            ImGuiCond_Always,
-            ImVec2(1.0f, 0.0f)
-        );
+        ImGui::SetNextWindowPos(ImVec2(viewport->WorkPos.x + viewport->WorkSize.x - PADDING,
+                                       viewport->WorkPos.y + PADDING + menuBarHeight),
+                                ImGuiCond_Always, ImVec2(1.0f, 0.0f));
         ImGui::SetNextWindowBgAlpha(0.40f);
         constexpr ImGuiWindowFlags overlayFlags =
-                ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
-                ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
-                ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove;
+                ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
+                ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove;
 
         if (ImGui::Begin("Performance", &showPerformanceOverlay, overlayFlags)) {
             ImGui::TextColored({0.0f, 1.0f, 0.7f, 1.0f}, "perf");
@@ -93,7 +91,7 @@ void Game::GameLayer::DrawInterface() {
             }
 
             ImGui::BeginChild("Entity List", ImVec2(150, 0), true);
-            for (const ECS::EntityID id: livingEntities) {
+            for (const ECS::EntityID id : livingEntities) {
                 ECS::Entity entity(id, &registry);
                 std::string label = entity.GetName();
                 if (label.empty()) {
@@ -229,13 +227,12 @@ void Game::GameLayer::DrawInterface() {
 
             if (ImGui::Button("Load Scene")) {
                 m_PendingSceneLoad = Scenes::SceneProperties{
-                    Core::PathUtils::Join(Core::SCENE_PATH, nameBuf, Core::SCENE_FILE_EXTENSION)
-                };
+                        Core::PathUtils::Join(Core::SCENE_PATH, nameBuf, Core::SCENE_FILE_EXTENSION)};
             }
             ImGui::SameLine();
             if (ImGui::Button("Save Scene") && m_SceneManager.GetCurrentScene()) {
-                const std::string savePath = Core::PathUtils::Join(Core::SCENE_PATH, nameBuf,
-                                                                   Core::SCENE_FILE_EXTENSION);
+                const std::string savePath =
+                        Core::PathUtils::Join(Core::SCENE_PATH, nameBuf, Core::SCENE_FILE_EXTENSION);
                 IO::SceneIO::Serialize(savePath, *m_SceneManager.GetCurrentScene());
             }
 
@@ -243,14 +240,14 @@ void Game::GameLayer::DrawInterface() {
                 auto &scene = *m_SceneManager.GetCurrentScene();
                 auto &registry = scene.GetRegistry();
                 registry.ForEach<ECS::Components::MapComponent>(
-                    [&](ECS::Entity, ECS::Components::MapComponent *mapComp) {
-                        const std::string newPath = Core::PathUtils::Join(
-                            Core::MAP_PATH, nameBuf, Core::MAP_FILE_EXTENSION);
-                        mapComp->mapFilePath = newPath;
-                        if (IO::MapIO::Deserialize(newPath, mapComp->grid)) {
-                            ECS::Systems::MapRuntimeSystem::OnMapChanged(registry, scene.GetContext());
-                        }
-                    });
+                        [&](ECS::Entity, ECS::Components::MapComponent *mapComp) {
+                            const std::string newPath =
+                                    Core::PathUtils::Join(Core::MAP_PATH, nameBuf, Core::MAP_FILE_EXTENSION);
+                            mapComp->mapFilePath = newPath;
+                            if (IO::MapIO::Deserialize(newPath, mapComp->grid)) {
+                                ECS::Systems::MapRuntimeSystem::OnMapChanged(registry, scene.GetContext());
+                            }
+                        });
             }
 
             ImGui::SameLine();
@@ -258,13 +255,13 @@ void Game::GameLayer::DrawInterface() {
                 auto &scene = *m_SceneManager.GetCurrentScene();
                 auto &registry = scene.GetRegistry();
                 registry.ForEach<ECS::Components::MapComponent>(
-                    [&](ECS::Entity, const ECS::Components::MapComponent *mapComp) {
-                        const std::string newPath = Core::PathUtils::Join(
-                            Core::MAP_PATH, nameBuf, Core::MAP_FILE_EXTENSION);
-                        if ([[maybe_unused]] const bool ok = IO::MapIO::Serialize(newPath, mapComp->grid)) {
-                            std::cout << "Saved!" << "\n";
-                        }
-                    });
+                        [&](ECS::Entity, const ECS::Components::MapComponent *mapComp) {
+                            const std::string newPath =
+                                    Core::PathUtils::Join(Core::MAP_PATH, nameBuf, Core::MAP_FILE_EXTENSION);
+                            if ([[maybe_unused]] const bool ok = IO::MapIO::Serialize(newPath, mapComp->grid)) {
+                                std::cout << "Saved!" << "\n";
+                            }
+                        });
             }
         }
         ImGui::End();

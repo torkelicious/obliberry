@@ -6,16 +6,12 @@ namespace Core {
     public:
         virtual ~ApplicationLayer() = default;
 
-        virtual void Init(EngineContext &ctx) {
-        }
+        virtual void Init(EngineContext &ctx) {}
 
-        virtual void Update(float dt) {
-        }
+        virtual void Update(float dt) {}
 
-        virtual void Render() {
-        }
+        virtual void Render() {}
 
-        virtual void Shutdown() {
-        }
+        virtual void Shutdown() {}
     };
 } // namespace Core

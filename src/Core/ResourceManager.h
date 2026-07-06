@@ -14,10 +14,9 @@ namespace Core {
     };
 
     // cache per resource type
-    template<typename T>
-    class ResourceCache : public IResourceCache {
+    template <typename T> class ResourceCache : public IResourceCache {
     public:
-        std::unordered_map<std::string, std::shared_ptr<T> > storage;
+        std::unordered_map<std::string, std::shared_ptr<T>> storage;
     };
 
     class ResourceManager {
@@ -32,8 +31,7 @@ namespace Core {
         ResourceManager &operator=(const ResourceManager &) = delete;
 
 
-        template<typename T, typename... Args>
-        std::shared_ptr<T> Load(const std::string &key, Args &&... args) {
+        template <typename T, typename... Args> std::shared_ptr<T> Load(const std::string &key, Args &&...args) {
             auto &cache = GetCache<T>();
             if (auto it = cache.storage.find(key); it != cache.storage.end()) {
                 return it->second;
@@ -41,8 +39,7 @@ namespace Core {
             return cache.storage.emplace(key, std::make_shared<T>(std::forward<Args>(args)...)).first->second;
         }
 
-        template<typename T>
-        std::shared_ptr<T> Get(const std::string &key) {
+        template <typename T> std::shared_ptr<T> Get(const std::string &key) {
             auto &cache = GetCache<T>();
 
             auto it = cache.storage.find(key);
@@ -53,11 +50,11 @@ namespace Core {
             return it->second;
         }
 
-        template<typename T>
-        std::string GetKey(std::shared_ptr<T> resource) {
-            if (!resource) return "";
+        template <typename T> std::string GetKey(std::shared_ptr<T> resource) {
+            if (!resource)
+                return "";
 
-            for (auto &cache = GetCache<T>(); const auto &[key, ptr]: cache.storage) {
+            for (auto &cache = GetCache<T>(); const auto &[key, ptr] : cache.storage) {
                 if (ptr == resource) {
                     return key;
                 }
@@ -65,13 +62,12 @@ namespace Core {
             return "";
         }
 
-        template<typename T>
-        const std::unordered_map<std::string, std::shared_ptr<T> > &GetAll() {
+        template <typename T> const std::unordered_map<std::string, std::shared_ptr<T>> &GetAll() {
             return GetCache<T>().storage;
         }
 
 
-        template<typename T, typename Func>
+        template <typename T, typename Func>
         std::shared_ptr<T> LoadFromFactory(const std::string &key, Func &&factory) {
             auto &cache = GetCache<T>();
             if (auto it = cache.storage.find(key); it != cache.storage.end()) {
@@ -80,21 +76,17 @@ namespace Core {
             return cache.storage.emplace(key, factory()).first->second;
         }
 
-        template<typename T>
-        bool Unload(const std::string &key) {
-            return GetCache<T>().storage.erase(key) > 0;
-        }
+        template <typename T> bool Unload(const std::string &key) { return GetCache<T>().storage.erase(key) > 0; }
 
     private:
         // runtime type tracking
-        std::unordered_map<std::type_index, std::unique_ptr<IResourceCache> > m_Caches;
+        std::unordered_map<std::type_index, std::unique_ptr<IResourceCache>> m_Caches;
 
-        template<typename T>
-        ResourceCache<T> &GetCache() {
+        template <typename T> ResourceCache<T> &GetCache() {
             const auto typeIdx = std::type_index(typeid(T));
             auto [it, inserted] = m_Caches.try_emplace(typeIdx);
             if (inserted) {
-                it->second = std::make_unique<ResourceCache<T> >();
+                it->second = std::make_unique<ResourceCache<T>>();
             }
             return *static_cast<ResourceCache<T> *>(it->second.get());
         }

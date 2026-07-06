@@ -35,9 +35,7 @@ namespace Map {
             walkableTiles.clear();
         }
 
-        bool HasTile(const HexCoords &pos) const {
-            return tiles.contains(pos);
-        }
+        bool HasTile(const HexCoords &pos) const { return tiles.contains(pos); }
 
         Tile *Get(const HexCoords &pos) {
             const auto it = tiles.find(pos);
@@ -85,11 +83,7 @@ namespace Map {
 
             using PQElement = std::pair<int, HexCoords>;
 
-            thread_local std::priority_queue<
-                PQElement,
-                std::vector<PQElement>,
-                std::greater<>
-            > openSet;
+            thread_local std::priority_queue<PQElement, std::vector<PQElement>, std::greater<>> openSet;
             // ensure queue is empty before starting
             openSet = decltype(openSet)();
 
@@ -97,8 +91,8 @@ namespace Map {
             records.clear();
 
             // init start node
-            auto [startIt, startInserted] = records.try_emplace(
-                start, NodeRecord{start, 0, Math::HexMath::Distance(start, goal), false});
+            auto [startIt, startInserted] =
+                    records.try_emplace(start, NodeRecord{start, 0, Math::HexMath::Distance(start, goal), false});
             openSet.emplace(startIt->second.fScore, start);
 
             while (!openSet.empty()) {
@@ -134,12 +128,12 @@ namespace Map {
                 }
 
                 // Loop through all neighbors of currently evaluating tile
-                for (const auto &neighbor: Math::HexMath::GetNeighbors(current)) {
+                for (const auto &neighbor : Math::HexMath::GetNeighbors(current)) {
                     if (const Tile *tile = Get(neighbor); !tile || !tile->walkable)
                         continue;
 
                     auto [nbIt, inserted] = records.try_emplace(
-                        neighbor, NodeRecord{current, Core::P_INFINITY, Core::P_INFINITY, false});
+                            neighbor, NodeRecord{current, Core::P_INFINITY, Core::P_INFINITY, false});
 
                     auto &[parent, gScore, fScore, isClosed] = nbIt->second;
                     if (isClosed)

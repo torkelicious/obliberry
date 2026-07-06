@@ -18,22 +18,20 @@ static void log_error(const std::string &msg) { IO::Package::Tools::log_error(BI
 
 static void show_help() {
     std::cout << TITLE_NAME << " - Package Obliberry projects into .obpak archives\n\n"
-            << "Usage: " << BINARY_NAME << " [options] <project_directory>\n\n"
-            << "Options:\n"
-            << "  -o, --output <file>    Output .obpak path (default: <project_directory>.obpak)\n"
-            << "  -q, --quiet            Suppress all non-error output\n"
-            << "  --verbose              Enable detailed logging per file\n"
-            << "  --no-compress          Disable LZ4 compression globally\n"
-            << "  --strict               Fail packaging on dependency validation errors\n"
-            << "  -h, --help             Show this help message and exit\n"
-            << "  -v, --version          Show version information and exit\n\n"
-            << "Example:\n"
-            << "  " << BINARY_NAME << " -o pkg/game.obpak ./UntitledProject\n";
+              << "Usage: " << BINARY_NAME << " [options] <project_directory>\n\n"
+              << "Options:\n"
+              << "  -o, --output <file>    Output .obpak path (default: <project_directory>.obpak)\n"
+              << "  -q, --quiet            Suppress all non-error output\n"
+              << "  --verbose              Enable detailed logging per file\n"
+              << "  --no-compress          Disable LZ4 compression globally\n"
+              << "  --strict               Fail packaging on dependency validation errors\n"
+              << "  -h, --help             Show this help message and exit\n"
+              << "  -v, --version          Show version information and exit\n\n"
+              << "Example:\n"
+              << "  " << BINARY_NAME << " -o pkg/game.obpak ./UntitledProject\n";
 }
 
-static void show_version() {
-    std::cout << BINARY_NAME << " (" << TITLE_NAME << ") v" << VERSION << "\n";
-}
+static void show_version() { std::cout << BINARY_NAME << " (" << TITLE_NAME << ") v" << VERSION << "\n"; }
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
@@ -47,12 +45,17 @@ int main(int argc, char *argv[]) {
 
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
-        if (arg == "-o" || arg == "--output") { if (i + 1 < argc) output_file = argv[++i]; } else if (
-            arg == "-q" || arg == "--quiet")
+        if (arg == "-o" || arg == "--output") {
+            if (i + 1 < argc)
+                output_file = argv[++i];
+        } else if (arg == "-q" || arg == "--quiet")
             quiet = true;
-        else if (arg == "--verbose") verbose = true;
-        else if (arg == "--no-compress") global_compress = false;
-        else if (arg == "--strict") strict_mode = true;
+        else if (arg == "--verbose")
+            verbose = true;
+        else if (arg == "--no-compress")
+            global_compress = false;
+        else if (arg == "--strict")
+            strict_mode = true;
         else if (arg == "-h" || arg == "--help") {
             show_help();
             return 0;
@@ -63,7 +66,8 @@ int main(int argc, char *argv[]) {
             log_error("Unknown option: " + arg);
             show_help();
             return 1;
-        } else project_dir = arg;
+        } else
+            project_dir = arg;
     }
 
     if (project_dir.empty()) {
@@ -74,7 +78,8 @@ int main(int argc, char *argv[]) {
         log_error("Provided path is not a valid directory: " + project_dir.string());
         return 1;
     }
-    if (output_file.empty()) output_file = project_dir.filename().string() + ".obpak";
+    if (output_file.empty())
+        output_file = project_dir.filename().string() + ".obpak";
 
     if (!quiet) {
         log_info("Packing project: " + project_dir.string());
@@ -93,8 +98,9 @@ int main(int argc, char *argv[]) {
 
     int success_count = 0, fail_count = 0;
 
-    for (const auto &entry: fs::recursive_directory_iterator(project_dir)) {
-        if (entry.is_directory()) continue;
+    for (const auto &entry : fs::recursive_directory_iterator(project_dir)) {
+        if (entry.is_directory())
+            continue;
         try {
             if (IO::Package::Tools::pack_one_file(entry.path(), project_dir, script_root, writer, dep_graph, opts))
                 ++success_count;
@@ -115,8 +121,8 @@ int main(int argc, char *argv[]) {
             writer.write(output_file);
             if (!quiet) {
                 log_info("Wrote " + output_file);
-                log_info("Packed " + std::to_string(success_count) + "/" +
-                         std::to_string(success_count + fail_count) + " files.");
+                log_info("Packed " + std::to_string(success_count) + "/" + std::to_string(success_count + fail_count) +
+                         " files.");
             }
         } catch (const std::exception &e) {
             log_error(std::string("Could not write package - ") + e.what());

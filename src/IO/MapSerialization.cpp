@@ -17,14 +17,10 @@ namespace IO::MapIO {
         header.tileCount = static_cast<uint32_t>(grid.tiles.size());
         file.write(reinterpret_cast<const char *>(&header), sizeof(MapFileHeader));
 
-        for (const auto &[coords,tile]: grid.tiles) {
-            SerializedTile sTile{
-                (coords.q),
-                (coords.r),
-                tile.type,
-                tile.walkable
-            };
-            // reinterpret_cast to force compiler to treat struct as flat array of chars so fstream can write byte by byte
+        for (const auto &[coords, tile] : grid.tiles) {
+            SerializedTile sTile{(coords.q), (coords.r), tile.type, tile.walkable};
+            // reinterpret_cast to force compiler to treat struct as flat array of chars so fstream can write byte by
+            // byte
             file.write(reinterpret_cast<const char *>(&sTile), sizeof(SerializedTile));
         }
         file.close();
@@ -53,8 +49,7 @@ namespace IO::MapIO {
             return false;
         }
 
-        if (const size_t expectedSize = CalculateExpectedFileSize(header.tileCount);
-            expectedSize > fileSize) {
+        if (const size_t expectedSize = CalculateExpectedFileSize(header.tileCount); expectedSize > fileSize) {
             std::cerr << "Map file truncated or corrupt.\n";
             return false;
         }

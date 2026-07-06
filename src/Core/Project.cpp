@@ -16,19 +16,19 @@ namespace Core {
         const std::filesystem::path templateDir = PathUtils::GetExecutableDirectory() / "Templates" / "Default";
         if (!std::filesystem::exists(templateDir)) {
             std::cerr << "[Project] Error: Template directory not found at: " << std::filesystem::absolute(templateDir)
-                    << "\n";
+                      << "\n";
             return nullptr;
         }
 
         try {
             std::filesystem::create_directories(projectDir);
-            for (const auto &entry: std::filesystem::directory_iterator(templateDir)) {
+            for (const auto &entry : std::filesystem::directory_iterator(templateDir)) {
                 const auto &srcPath = entry.path();
                 const auto destPath = projectDir / srcPath.filename();
                 std::filesystem::remove_all(destPath);
                 std::filesystem::copy(srcPath, destPath,
                                       std::filesystem::copy_options::recursive |
-                                      std::filesystem::copy_options::overwrite_existing);
+                                              std::filesystem::copy_options::overwrite_existing);
             }
         } catch (const std::exception &e) {
             std::cerr << "[Project] Failed to copy template project: " << e.what() << "\n";

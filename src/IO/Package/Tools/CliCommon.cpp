@@ -9,4 +9,4 @@ namespace IO::Package::Tools {
     void log_error(const std::string &binary_name, const std::string &msg) {
         std::cerr << "[" << binary_name << "] Error: " << msg << "\n";
     }
-}
+} // namespace IO::Package::Tools

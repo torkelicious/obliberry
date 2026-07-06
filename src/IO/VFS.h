@@ -23,4 +23,4 @@ namespace IO::VFS {
     [[nodiscard]] bool IsProjectLoaded();
 
     [[nodiscard]] std::filesystem::path GetHomeDirectory();
-}
+} // namespace IO::VFS

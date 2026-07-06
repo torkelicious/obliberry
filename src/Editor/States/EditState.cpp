@@ -67,10 +67,14 @@ void Editor::EditState::OnHandleInput(const float dt) {
     float kbPanX = 0.0f;
     float kbPanY = 0.0f;
 
-    if (m_EditorLayer->m_Input->IsKeyDown("W")) kbPanY += 1.0f;
-    if (m_EditorLayer->m_Input->IsKeyDown("S")) kbPanY -= 1.0f;
-    if (m_EditorLayer->m_Input->IsKeyDown("A")) kbPanX -= 1.0f;
-    if (m_EditorLayer->m_Input->IsKeyDown("D")) kbPanX += 1.0f;
+    if (m_EditorLayer->m_Input->IsKeyDown("W"))
+        kbPanY += 1.0f;
+    if (m_EditorLayer->m_Input->IsKeyDown("S"))
+        kbPanY -= 1.0f;
+    if (m_EditorLayer->m_Input->IsKeyDown("A"))
+        kbPanX -= 1.0f;
+    if (m_EditorLayer->m_Input->IsKeyDown("D"))
+        kbPanX += 1.0f;
 
     if (kbPanX != 0.0f || kbPanY != 0.0f) {
         const float length = std::sqrt(kbPanX * kbPanX + kbPanY * kbPanY);
@@ -145,9 +149,8 @@ void Editor::EditState::EditTransform(Rendering::Transform &transform, bool isBi
         glm::vec3 pos = transform.GetPosition();
         glm::vec3 rot = glm::degrees(transform.GetRotation());
         glm::vec3 scale = transform.GetScale();
-        ImGuizmo::RecomposeMatrixFromComponents(
-            glm::value_ptr(pos), glm::value_ptr(rot), glm::value_ptr(scale), glm::value_ptr(gizmoMatrix)
-        );
+        ImGuizmo::RecomposeMatrixFromComponents(glm::value_ptr(pos), glm::value_ptr(rot), glm::value_ptr(scale),
+                                                glm::value_ptr(gizmoMatrix));
     }
 
     auto deltaMatrix = glm::mat4(1.0f);
@@ -159,14 +162,8 @@ void Editor::EditState::EditTransform(Rendering::Transform &transform, bool isBi
         actualMode = ImGuizmo::LOCAL;
     }
 
-    ImGuizmo::Manipulate(
-        glm::value_ptr(gizmoViewMatrix),
-        glm::value_ptr(projMatrix),
-        mCurrentGizmoOperation,
-        actualMode,
-        glm::value_ptr(gizmoMatrix),
-        glm::value_ptr(deltaMatrix)
-    );
+    ImGuizmo::Manipulate(glm::value_ptr(gizmoViewMatrix), glm::value_ptr(projMatrix), mCurrentGizmoOperation,
+                         actualMode, glm::value_ptr(gizmoMatrix), glm::value_ptr(deltaMatrix));
 
     if (ImGuizmo::IsUsing()) {
         if (mCurrentGizmoOperation == ImGuizmo::TRANSLATE) {
@@ -174,10 +171,8 @@ void Editor::EditState::EditTransform(Rendering::Transform &transform, bool isBi
             transform.SetPosition(transform.GetPosition() + deltaPos);
         } else if (mCurrentGizmoOperation == ImGuizmo::ROTATE) {
             float deltaTranslation[3], deltaRotation[3], deltaScale[3];
-            ImGuizmo::DecomposeMatrixToComponents(
-                glm::value_ptr(deltaMatrix),
-                deltaTranslation, deltaRotation, deltaScale
-            );
+            ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(deltaMatrix), deltaTranslation, deltaRotation,
+                                                  deltaScale);
 
             glm::vec3 currentRot = transform.GetRotation();
             glm::vec3 dRot = glm::radians(glm::vec3(deltaRotation[0], deltaRotation[1], deltaRotation[2]));
@@ -191,10 +186,8 @@ void Editor::EditState::EditTransform(Rendering::Transform &transform, bool isBi
                 transform.SetScale(glm::vec3(scaleX, scaleY, scaleZ));
             } else {
                 float deltaTranslation[3], deltaRotation[3], deltaScale[3];
-                ImGuizmo::DecomposeMatrixToComponents(
-                    glm::value_ptr(deltaMatrix),
-                    deltaTranslation, deltaRotation, deltaScale
-                );
+                ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(deltaMatrix), deltaTranslation, deltaRotation,
+                                                      deltaScale);
 
                 glm::vec3 currentScale = transform.GetScale();
                 glm::vec3 dScale = glm::vec3(deltaScale[0], deltaScale[1], deltaScale[2]);

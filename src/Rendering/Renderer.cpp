@@ -8,7 +8,7 @@ constexpr unsigned int MAX_INSTANCES = 100000;
 constexpr size_t INSTANCE_BUFFER_SIZE = MAX_INSTANCES * sizeof(glm::mat4);
 constexpr size_t ID_BUFFER_SIZE = MAX_INSTANCES * sizeof(int);
 
-std::vector<std::function<void()> > Rendering::Renderer::s_InitQueue;
+std::vector<std::function<void()>> Rendering::Renderer::s_InitQueue;
 std::mutex Rendering::Renderer::s_InitQueueMutex;
 
 static glm::vec4 s_ClearColorStaging = {0.0f, 0.0f, 0.0f, 1.0f};
@@ -29,8 +29,7 @@ void Rendering::Renderer::BeginFrame() {
 }
 
 void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Material *material,
-                                 const Transform &transform,
-                                 const Texture *textureOverride, const int entityID) {
+                                 const Transform &transform, const Texture *textureOverride, const int entityID) {
     const glm::vec3 &pos = transform.GetPosition();
 
     auto packKey = [](const float posX, const float posY, const float posZ) -> int32_t {
@@ -42,15 +41,13 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Materi
                                     static_cast<uint32_t>(static_cast<int16_t>(z)));
     };
 
-    const Texture *effectiveTex = textureOverride
-                                      ? textureOverride
-                                      : material && material->texture
-                                            ? material->texture.get()
-                                            : nullptr;
+    const Texture *effectiveTex = textureOverride                 ? textureOverride
+                                  : material && material->texture ? material->texture.get()
+                                                                  : nullptr;
     const glm::vec4 col = material ? material->color : glm::vec4(1.0f);
 
     m_Commands[m_SubmitIndex].push_back(
-        {mesh.get(), material, effectiveTex, col, transform.GetMatrix(), packKey(pos.x, pos.y, pos.z), entityID});
+            {mesh.get(), material, effectiveTex, col, transform.GetMatrix(), packKey(pos.x, pos.y, pos.z), entityID});
 }
 
 void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Material *material,
@@ -103,7 +100,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
 
         std::vector<InstancedEntry> entries;
         entries.reserve(m_InstancedCommands[renderIndex].size());
-        for (const auto &[mesh, material, effectiveTexture, color, transforms, entityIDs]:
+        for (const auto &[mesh, material, effectiveTexture, color, transforms, entityIDs] :
              m_InstancedCommands[renderIndex]) {
             if (!mesh || !material || !material->shader || !material->shader->IsValid())
                 continue;
@@ -159,7 +156,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
     std::vector<glm::mat4> *currentMats = nullptr;
     std::vector<int> *currentIDs = nullptr;
 
-    for (const auto &cmd: m_Commands[renderIndex]) {
+    for (const auto &cmd : m_Commands[renderIndex]) {
         if (!cmd.mesh || !cmd.material || !cmd.material->shader || !cmd.material->shader->IsValid())
             continue;
         if (BatchKey key{cmd.mesh, cmd.material, cmd.effectiveTexture, cmd.color}; !currentMats || currentKey != key) {
@@ -174,7 +171,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
 
     m_LastBoundVAO = nullptr;
     m_LastBoundShader = nullptr;
-    for (const auto &[key, transforms, entityIDs]: batches) {
+    for (const auto &[key, transforms, entityIDs] : batches) {
         RenderBatch(key, transforms, entityIDs, renderIndex);
     }
     m_LastBoundVAO = nullptr;
@@ -305,12 +302,12 @@ void Rendering::Renderer::SubmitInitTask(std::function<void()> task) {
 }
 
 void Rendering::Renderer::ProcessInitQ() {
-    std::vector<std::function<void()> > queueCopy;
+    std::vector<std::function<void()>> queueCopy;
     {
         std::lock_guard lock(s_InitQueueMutex);
         queueCopy = std::move(s_InitQueue);
     }
-    for (auto &task: queueCopy) {
+    for (auto &task : queueCopy) {
         task();
     }
 }

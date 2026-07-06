@@ -35,9 +35,7 @@ namespace Scenes {
         [[nodiscard]] Core::EngineContext &GetContext() { return *m_Context; }
         [[nodiscard]] const Core::EngineContext &GetContext() const { return *m_Context; }
 
-        [[nodiscard]] const std::string &GetScenePath() const {
-            return m_Properties.ScenePath;
-        }
+        [[nodiscard]] const std::string &GetScenePath() const { return m_Properties.ScenePath; }
 
         SceneProperties &GetProperties() { return m_Properties; }
 

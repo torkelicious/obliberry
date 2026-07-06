@@ -16,7 +16,7 @@ namespace IO::Package::Tools {
     std::string SanitizeExecutableName(const std::string &input) {
         std::string out;
         bool lastWasUnderscore = false;
-        for (const unsigned char c: input) {
+        for (const unsigned char c : input) {
             if (std::isalnum(c) || c == '-' || c == '_') {
                 out += c;
                 lastWasUnderscore = false;
@@ -64,8 +64,9 @@ namespace IO::Package::Tools {
 
         int success_count = 0, fail_count = 0;
 
-        for (const auto &entry: std::filesystem::recursive_directory_iterator(project_dir)) {
-            if (entry.is_directory()) continue;
+        for (const auto &entry : std::filesystem::recursive_directory_iterator(project_dir)) {
+            if (entry.is_directory())
+                continue;
             try {
                 if (pack_one_file(entry.path(), project_dir, script_root, writer, dep_graph, opts))
                     ++success_count;
@@ -84,7 +85,7 @@ namespace IO::Package::Tools {
                 writer.write(out_file);
                 std::cout << "Wrote " + out_file.string() << "\n";
                 std::cout << "Packed " + std::to_string(success_count) + "/" +
-                        std::to_string(success_count + fail_count) + " files.\n";
+                                     std::to_string(success_count + fail_count) + " files.\n";
             } catch (const std::exception &e) {
                 std::cerr << std::string("Could not write package - ") + e.what() << "\n";
                 return;
@@ -117,11 +118,11 @@ namespace IO::Package::Tools {
                 std::cout << "[Export] Successfully copied runtime binary to " << dest_exe.string() << "\n";
             } else {
                 std::cerr << "[Export] Error: Could not find runtime binary at " << runtime_src.string() << "\n";
-                std::cerr <<
-                        "         Ensure obliberry_runtime is built and located in the 'internal' folder next to the editor.\n";
+                std::cerr << "         Ensure obliberry_runtime is built and located in the 'internal' folder next to "
+                             "the editor.\n";
             }
         } catch (const std::exception &e) {
             std::cerr << "[Export] Exception while copying runtime: " << e.what() << "\n";
         }
     }
-}
+} // namespace IO::Package::Tools

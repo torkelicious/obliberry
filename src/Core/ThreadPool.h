@@ -11,9 +11,7 @@
 namespace Core {
     class ThreadPool {
     public:
-        explicit ThreadPool(
-            size_t count = std::max(1u, std::thread::hardware_concurrency())
-        );
+        explicit ThreadPool(size_t count = std::max(1u, std::thread::hardware_concurrency()));
 
         ~ThreadPool();
 
@@ -33,7 +31,7 @@ namespace Core {
 
     private:
         std::vector<std::thread> m_Threads;
-        std::queue<std::function<void()> > m_Tasks;
+        std::queue<std::function<void()>> m_Tasks;
         std::mutex m_Mutex;
         std::condition_variable m_CV;
         std::atomic<size_t> m_TasksPending{0};
@@ -41,4 +39,4 @@ namespace Core {
         std::atomic<bool> m_ShouldStop{false};
         std::atomic<bool> m_Stopped{false};
     };
-} // Core
+} // namespace Core

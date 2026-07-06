@@ -17,7 +17,7 @@ namespace Scripting {
         void flush(ECS::Registry &registry);
 
     private:
-        std::vector<std::function<void(ECS::Registry &)> > m_Commands;
+        std::vector<std::function<void(ECS::Registry &)>> m_Commands;
         std::mutex m_Mutex;
     };
-} // Scripting
+} // namespace Scripting

@@ -12,7 +12,7 @@ namespace IO::Package::Tools {
         [[nodiscard]] bool validate(const std::string &binary_name) const;
 
     private:
-        std::unordered_map<std::string, std::vector<std::string> > m_edges;
+        std::unordered_map<std::string, std::vector<std::string>> m_edges;
         std::unordered_set<std::string> m_known_scripts;
     };
-}
+} // namespace IO::Package::Tools

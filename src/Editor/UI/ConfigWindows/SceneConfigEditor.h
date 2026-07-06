@@ -6,9 +6,7 @@
 namespace Editor::UI {
     class SceneConfigEditor {
     public:
-        explicit SceneConfigEditor(Core::EngineContext *context = nullptr)
-            : m_Context(context) {
-        }
+        explicit SceneConfigEditor(Core::EngineContext *context = nullptr) : m_Context(context) {}
 
         void SetContext(Core::EngineContext &ctx) { m_Context = &ctx; }
 

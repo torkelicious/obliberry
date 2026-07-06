@@ -8,8 +8,7 @@
 #include <utility>
 
 namespace ECS {
-    template<typename T>
-    class ComponentPool : public IPool {
+    template <typename T> class ComponentPool : public IPool {
     private:
         std::vector<T> m_Data;
         std::vector<EntityID> m_IndexToEntity;
@@ -17,9 +16,7 @@ namespace ECS {
         static constexpr uint32_t INVALID_INDEX = std::numeric_limits<uint32_t>::max();
 
     public:
-        ComponentPool() {
-            m_EntityToIndex.resize(MAX_ENTITIES, INVALID_INDEX);
-        }
+        ComponentPool() { m_EntityToIndex.resize(MAX_ENTITIES, INVALID_INDEX); }
 
         T &Insert(const EntityID entity, T component) {
             const uint32_t index = GetEntityIndex(entity);
@@ -47,7 +44,8 @@ namespace ECS {
         }
 
         void EntityDestroyed(const EntityID entity) override {
-            if (!Has(entity)) return;
+            if (!Has(entity))
+                return;
 
             const uint32_t entityIdx = GetEntityIndex(entity);
             const uint32_t indexOfRemoved = m_EntityToIndex[entityIdx];
@@ -66,8 +64,7 @@ namespace ECS {
             m_Data.pop_back();
         }
 
-        template<typename... Args>
-        T &Emplace(const EntityID entity, Args &&... args) {
+        template <typename... Args> T &Emplace(const EntityID entity, Args &&...args) {
             return Insert(entity, T(std::forward<Args>(args)...));
         }
 

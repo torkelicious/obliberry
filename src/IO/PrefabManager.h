@@ -24,8 +24,7 @@ namespace IO {
 
             auto fileData = VFS::ReadVirtual(filepath);
             if (!fileData.has_value()) {
-                std::cerr << "[PrefabManager] Failed to instantiate: " << filepath
-                        << " (Not found in VFS)\n";
+                std::cerr << "[PrefabManager] Failed to instantiate: " << filepath << " (Not found in VFS)\n";
                 return 0;
             }
 
@@ -51,13 +50,9 @@ namespace IO {
             return newId;
         }
 
-        static void ClearCache() {
-            s_prefab_cache.clear();
-        }
+        static void ClearCache() { s_prefab_cache.clear(); }
 
-        static void UnloadPrefab(const std::string &filepath) {
-            s_prefab_cache.erase(filepath);
-        }
+        static void UnloadPrefab(const std::string &filepath) { s_prefab_cache.erase(filepath); }
 
     private:
         inline static std::unordered_map<std::string, nlohmann::json> s_prefab_cache;

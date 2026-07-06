@@ -3,10 +3,7 @@
 #include <algorithm>
 
 namespace Editor {
-    enum class CameraViewMode : uint8_t {
-        Isometric,
-        TopDown
-    };
+    enum class CameraViewMode : uint8_t { Isometric, TopDown };
 
     class EditorCamera : public Rendering::Camera {
     public:

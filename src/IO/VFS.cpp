@@ -56,16 +56,15 @@ namespace IO::VFS {
         std::cout << "[VFS] Package mounted: " << packagepath.string() << "\n";
     }
 
-    bool IsPackaged() {
-        return s_State.isPackaged;
-    }
+    bool IsPackaged() { return s_State.isPackaged; }
 
     std::optional<std::string> ReadVirtual(const std::filesystem::path &virtualPath) {
         if (s_State.isPackaged) {
             return s_State.packReader.read(virtualPath.generic_string());
         }
         std::ifstream file(Resolve(virtualPath), std::ios::binary);
-        if (!file.is_open()) return std::nullopt;
+        if (!file.is_open())
+            return std::nullopt;
         std::stringstream ss;
         ss << file.rdbuf();
         return ss.str();

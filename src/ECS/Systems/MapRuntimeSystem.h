@@ -26,13 +26,13 @@ namespace ECS::Systems::MapRuntimeSystem {
             return origin;
         }
 
-        for (const Map::HexCoords &coords: grid.walkableTiles) {
+        for (const Map::HexCoords &coords : grid.walkableTiles) {
             if (grid.Get(coords) != nullptr) {
                 return coords;
             }
         }
 
-        for (const auto &[coords, tile]: grid.tiles) {
+        for (const auto &[coords, tile] : grid.tiles) {
             if (tile.walkable) {
                 return coords;
             }
@@ -40,8 +40,7 @@ namespace ECS::Systems::MapRuntimeSystem {
         return std::nullopt;
     }
 
-    inline bool IsEntityPositionValidForMap(const Map::HexGrid &grid,
-                                            const Components::TransformComponent &transform) {
+    inline bool IsEntityPositionValidForMap(const Map::HexGrid &grid, const Components::TransformComponent &transform) {
         const glm::vec3 worldPosition = transform.transform.GetPosition();
         const Map::HexCoords entityHex = Math::HexMath::PixelToHex({worldPosition.x, worldPosition.y});
         const Map::Tile *tile = grid.Get(entityHex);
@@ -52,22 +51,18 @@ namespace ECS::Systems::MapRuntimeSystem {
         [[maybe_unused]] const std::optional<Map::HexCoords> preferredSpawn = FindPreferredSpawnHex(grid);
 
         registry.ForEach<Components::MovementComponent, Components::TransformComponent>(
-            [&](const Entity e, Components::MovementComponent */*movement*/,
-                Components::TransformComponent */*transform*/) {
-                MovementSystem::MoveToCenter(e);
-            }
-        );
+                [&](const Entity e, Components::MovementComponent * /*movement*/,
+                    Components::TransformComponent * /*transform*/) { MovementSystem::MoveToCenter(e); });
     }
 
-    inline void OnMapChanged(Registry &registry, Components::MapComponent &map,
-                             Components::MapStateComponent *state,
+    inline void OnMapChanged(Registry &registry, Components::MapComponent &map, Components::MapStateComponent *state,
                              const Core::EngineContext &ctx) {
         map.needsMeshUpdate = true;
 
         if (state != nullptr) {
             ResetInteractionState(*state);
         }
-        //ResetMovementEntities(registry, map.grid);
+        // ResetMovementEntities(registry, map.grid);
         LightingSystem::GenerateLightmap(map);
     }
 
@@ -76,13 +71,12 @@ namespace ECS::Systems::MapRuntimeSystem {
         Components::MapStateComponent *state = nullptr;
 
         registry.ForEach<Components::MapComponent, Components::MapStateComponent>(
-            [&](Entity, Components::MapComponent *mapComponent,
-                Components::MapStateComponent *stateComponent) {
-                if (map == nullptr) {
-                    map = mapComponent;
-                    state = stateComponent;
-                }
-            });
+                [&](Entity, Components::MapComponent *mapComponent, Components::MapStateComponent *stateComponent) {
+                    if (map == nullptr) {
+                        map = mapComponent;
+                        state = stateComponent;
+                    }
+                });
 
         if (map == nullptr) {
             return;

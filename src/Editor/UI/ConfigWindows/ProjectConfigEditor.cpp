@@ -10,9 +10,7 @@
 #include "imgui.h"
 
 namespace Editor::UI {
-    void ProjectConfigEditor::SetContext(Core::EngineContext &context) {
-        m_Context = &context;
-    }
+    void ProjectConfigEditor::SetContext(Core::EngineContext &context) { m_Context = &context; }
 
     void ProjectConfigEditor::Reload() {
         const auto project = Core::Project::GetActive();
@@ -54,9 +52,11 @@ namespace Editor::UI {
         ImGui::Separator();
 
         ImGui::DragInt("Width", &m_LocalConfig.windowWidth, 1.0f, 640, 7680);
-        if (ImGui::IsItemDeactivatedAfterEdit()) Core::Project::GetActive()->MarkAsChanged();
+        if (ImGui::IsItemDeactivatedAfterEdit())
+            Core::Project::GetActive()->MarkAsChanged();
         ImGui::DragInt("Height", &m_LocalConfig.windowHeight, 1.0f, 480, 4320);
-        if (ImGui::IsItemDeactivatedAfterEdit()) Core::Project::GetActive()->MarkAsChanged();
+        if (ImGui::IsItemDeactivatedAfterEdit())
+            Core::Project::GetActive()->MarkAsChanged();
 
         if (ImGui::Checkbox("Fullscreen", &m_LocalConfig.fullscreen)) {
             Core::Project::GetActive()->MarkAsChanged();
@@ -66,14 +66,13 @@ namespace Editor::UI {
 
         {
             ImGui::Text("Start Scene");
-            ImGui::TextUnformatted(m_LocalConfig.startScenePath.empty()
-                                       ? "None"
-                                       : m_LocalConfig.startScenePath.c_str());
+            ImGui::TextUnformatted(m_LocalConfig.startScenePath.empty() ? "None"
+                                                                        : m_LocalConfig.startScenePath.c_str());
             ImGui::SameLine();
             if (ImGui::Button("Browse##Scene")) {
                 if (m_Context) {
-                    const auto picked = FileDialogs::OpenFile(
-                        *m_Context, {.filterName = "Scene File", .filterExt = "json"});
+                    const auto picked =
+                            FileDialogs::OpenFile(*m_Context, {.filterName = "Scene File", .filterExt = "json"});
                     if (picked.has_value()) {
                         ResolveStartScenePath(picked.value());
                         Core::Project::GetActive()->MarkAsChanged();
@@ -152,8 +151,9 @@ namespace Editor::UI {
         for (auto p = absNorm; p.has_parent_path() && p != p.root_path(); p = p.parent_path()) {
             if (p == rootNorm) {
                 std::string rel = std::filesystem::proximate(absNorm, rootNorm).string();
-                for (auto &c: rel)
-                    if (c == '\\') c = '/';
+                for (auto &c : rel)
+                    if (c == '\\')
+                        c = '/';
                 m_LocalConfig.startScenePath = rel;
                 std::strncpy(m_StartSceneBuffer, rel.c_str(), sizeof(m_StartSceneBuffer) - 1);
                 return;

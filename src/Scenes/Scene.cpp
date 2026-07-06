@@ -17,8 +17,7 @@
 #include "Sound/AudioEngine.h"
 
 Scenes::Scene::Scene(Core::EngineContext *context, SceneProperties props)
-    : m_Properties(std::move(props)), m_Context(context) {
-}
+    : m_Properties(std::move(props)), m_Context(context) {}
 
 void Scenes::Scene::OnEnter() {
     std::cout << "[Scene] Entering scene: " << m_Properties.ScenePath << std::endl;
@@ -26,11 +25,7 @@ void Scenes::Scene::OnEnter() {
     // Register EngineLib native functions on every worker's interpreter
     for (size_t w = 0; w < m_Context->scriptPool->worker_count(); ++w) {
         Scripting::EngineLib lib;
-        lib.register_enginelib(
-            m_Context->scriptPool->get_worker(w)->GetInterpreter(),
-            m_Registry,
-            *m_Context
-        );
+        lib.register_enginelib(m_Context->scriptPool->get_worker(w)->GetInterpreter(), m_Registry, *m_Context);
     }
 
     IO::EntityFactory::RegisterDeserializers();
@@ -38,8 +33,7 @@ void Scenes::Scene::OnEnter() {
 
     std::cout << "[Scene] Attempting to deserialize scene from: " << m_Properties.ScenePath << std::endl;
     if (!IO::SceneIO::Deserialize(m_Properties.ScenePath, *this)) {
-        std::cerr << "Scene: Failed to load scene file: " << m_Properties.ScenePath
-                << "\n";
+        std::cerr << "Scene: Failed to load scene file: " << m_Properties.ScenePath << "\n";
         std::cerr << "Scene: Scene will be empty!" << std::endl;
     } else {
         std::cout << "[Scene] Successfully deserialized scene" << std::endl;
@@ -76,10 +70,8 @@ void Scenes::Scene::Render() {
     const glm::mat4 &vp = m_Context->renderer->GetCurrentVP();
 
     if (m_Context->camera) {
-        const Math::Frustum::ViewFrustum frustum =
-                Math::Frustum::FromCameraVP(vp, /*padding=*/ Core::HEX_SIZE * 2.0f);
-        const Math::Frustum::FrustumPlanes frustum3D =
-                Math::Frustum::FrustumPlanes::FromVP(vp);
+        const Math::Frustum::ViewFrustum frustum = Math::Frustum::FromCameraVP(vp, /*padding=*/Core::HEX_SIZE * 2.0f);
+        const Math::Frustum::FrustumPlanes frustum3D = Math::Frustum::FrustumPlanes::FromVP(vp);
 
         ECS::Systems::MapRenderSystem::RenderAll(m_Registry, *m_Context, frustum);
 
@@ -92,11 +84,11 @@ void Scenes::Scene::Render() {
 void Scenes::Scene::OnExit() {
     std::vector<ECS::EntityID> deadEntities;
     m_Registry.ForEach<ECS::Components::DestroyTagComponent>(
-        [&](const ECS::Entity entity, ECS::Components::DestroyTagComponent *) {
-            deadEntities.push_back(static_cast<ECS::EntityID>(entity));
-        });
+            [&](const ECS::Entity entity, ECS::Components::DestroyTagComponent *) {
+                deadEntities.push_back(static_cast<ECS::EntityID>(entity));
+            });
 
-    for (const ECS::EntityID id: deadEntities) {
+    for (const ECS::EntityID id : deadEntities) {
         if (m_Registry.IsValid(id)) {
             m_Registry.DestroyEntity(id);
         }
@@ -107,6 +99,4 @@ void Scenes::Scene::OnExit() {
     std::cout << "Exiting Scene " << m_Properties.ScenePath << "\n";
 }
 
-void Scenes::Scene::OnSaved() {
-    ClearUnsavedChanges();
-}
+void Scenes::Scene::OnSaved() { ClearUnsavedChanges(); }

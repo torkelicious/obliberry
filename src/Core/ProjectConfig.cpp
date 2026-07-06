@@ -11,8 +11,7 @@ namespace Core {
 
         auto fileData = IO::VFS::ReadVirtual(filepath);
         if (!fileData.has_value()) {
-            std::cerr << "[ProjectConfig] Project file not found in VFS: " << filepath
-                    << ". Using defaults.\n";
+            std::cerr << "[ProjectConfig] Project file not found in VFS: " << filepath << ". Using defaults.\n";
             return config;
         }
 
@@ -28,10 +27,14 @@ namespace Core {
 
             if (j.contains("window")) {
                 auto &w = j["window"];
-                if (w.contains("width")) config.windowWidth = w["width"];
-                if (w.contains("height")) config.windowHeight = w["height"];
-                if (w.contains("title")) config.Title = w["title"];
-                if (w.contains("fullscreen")) config.fullscreen = w["fullscreen"];
+                if (w.contains("width"))
+                    config.windowWidth = w["width"];
+                if (w.contains("height"))
+                    config.windowHeight = w["height"];
+                if (w.contains("title"))
+                    config.Title = w["title"];
+                if (w.contains("fullscreen"))
+                    config.fullscreen = w["fullscreen"];
             }
             if (j.contains("start_scene")) {
                 config.startScenePath = j["start_scene"];
@@ -56,8 +59,8 @@ namespace Core {
             std::ofstream file(resolvedPath);
 
             if (!file.is_open()) {
-                std::cerr << "[ProjectConfig] Failed to open project file for writing: " << resolvedPath.string() <<
-                        "\n";
+                std::cerr << "[ProjectConfig] Failed to open project file for writing: " << resolvedPath.string()
+                          << "\n";
                 return false;
             }
             file << j.dump(2);

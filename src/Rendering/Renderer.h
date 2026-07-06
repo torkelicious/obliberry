@@ -56,8 +56,7 @@ namespace Rendering {
                     const Texture *textureOverride = nullptr, int entityID = -1);
 
         void Submit(const std::shared_ptr<Mesh> &mesh, const Material *material,
-                    const std::vector<glm::mat4> &transforms,
-                    const std::vector<int> &entityIDs = {});
+                    const std::vector<glm::mat4> &transforms, const std::vector<int> &entityIDs = {});
 
         void Flush(size_t renderIndex);
 
@@ -93,10 +92,9 @@ namespace Rendering {
         void BindLightmap(Shader *shader, size_t renderIndex) const;
 
         void RenderBatch(const BatchKey &key, const std::vector<glm::mat4> &transforms,
-                         const std::vector<int> &entityIDs,
-                         size_t renderIndex);
+                         const std::vector<int> &entityIDs, size_t renderIndex);
 
-        static std::vector<std::function<void()> > s_InitQueue;
+        static std::vector<std::function<void()>> s_InitQueue;
         static std::mutex s_InitQueueMutex;
 
         size_t m_SubmitIndex = 0;

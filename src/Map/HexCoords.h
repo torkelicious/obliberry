@@ -8,18 +8,15 @@ namespace Map {
         int16_t r; // row
 
         // constructor casting
-        HexCoords() : q(0), r(0) {
-        }
+        HexCoords() : q(0), r(0) {}
 
-        HexCoords(const int32_t q_, const int32_t r_) : q(static_cast<int16_t>(q_)), r(static_cast<int16_t>(r_)) {
-        }
+        HexCoords(const int32_t q_, const int32_t r_) : q(static_cast<int16_t>(q_)), r(static_cast<int16_t>(r_)) {}
 
-        bool operator==(const HexCoords &other) const {
-            return q == other.q && r == other.r;
-        }
+        bool operator==(const HexCoords &other) const { return q == other.q && r == other.r; }
 
         bool operator<(const HexCoords &other) const {
-            if (q != other.q) return q < other.q;
+            if (q != other.q)
+                return q < other.q;
             return r < other.r;
         }
     };

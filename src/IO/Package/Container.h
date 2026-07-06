@@ -45,7 +45,7 @@ namespace IO {
 #pragma pack(pop)
 
         static_assert(sizeof(TocEntry) == 40);
-    }
+    } // namespace Package
 
 
     class ContainerWriter {

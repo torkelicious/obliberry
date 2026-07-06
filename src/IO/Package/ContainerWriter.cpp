@@ -12,9 +12,8 @@ namespace IO {
         const int bound = LZ4_compressBound(static_cast<int>(source.size()));
         std::vector<uint8_t> compressed(bound);
 
-        const int compressed_size = LZ4_compress_default(
-            source.data(), reinterpret_cast<char *>(compressed.data()),
-            static_cast<int>(source.size()), bound);
+        const int compressed_size = LZ4_compress_default(source.data(), reinterpret_cast<char *>(compressed.data()),
+                                                         static_cast<int>(source.size()), bound);
 
         if (compressed_size <= 0) {
             p.data.assign(source.begin(), source.end());
@@ -51,10 +50,9 @@ namespace IO {
             const int bound = LZ4_compressBound(static_cast<int>(data.size()));
             std::vector<uint8_t> comp_data(bound);
 
-            const int compressed_size = LZ4_compress_default(
-                reinterpret_cast<const char *>(data.data()),
-                reinterpret_cast<char *>(comp_data.data()),
-                static_cast<int>(data.size()), bound);
+            const int compressed_size = LZ4_compress_default(reinterpret_cast<const char *>(data.data()),
+                                                             reinterpret_cast<char *>(comp_data.data()),
+                                                             static_cast<int>(data.size()), bound);
 
             if (compressed_size <= 0) {
                 p.data = std::move(data);
@@ -76,7 +74,7 @@ namespace IO {
         std::vector<uint32_t> name_offsets;
         std::vector<uint32_t> name_lengths;
 
-        for (const auto &e: m_entries) {
+        for (const auto &e : m_entries) {
             name_offsets.push_back(static_cast<uint32_t>(string_table.size()));
             name_lengths.push_back(static_cast<uint32_t>(e.path.size()));
             string_table.insert(string_table.end(), e.path.begin(), e.path.end());
@@ -85,7 +83,7 @@ namespace IO {
         // lay out blob data w. per-entry offsets
         std::vector<uint64_t> data_offsets;
         uint64_t running_offset = 0;
-        for (const auto &e: m_entries) {
+        for (const auto &e : m_entries) {
             data_offsets.push_back(running_offset);
             running_offset += e.data.size();
         }
@@ -120,7 +118,7 @@ namespace IO {
         out.write(reinterpret_cast<const char *>(&header), sizeof(header));
         out.write(reinterpret_cast<const char *>(toc.data()), toc.size() * sizeof(Package::TocEntry));
         out.write(string_table.data(), string_table.size());
-        for (const auto &e: m_entries) {
+        for (const auto &e : m_entries) {
             out.write(reinterpret_cast<const char *>(e.data.data()), e.data.size());
         }
     }

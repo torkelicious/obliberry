@@ -8,8 +8,7 @@
 namespace Editor::UI {
     class EditorDialog {
     public:
-        explicit EditorDialog(std::string title) : m_Title(std::move(title)), m_IsOpen(false), m_ShouldOpen(false) {
-        }
+        explicit EditorDialog(std::string title) : m_Title(std::move(title)), m_IsOpen(false), m_ShouldOpen(false) {}
 
         virtual ~EditorDialog() = default;
 
@@ -24,7 +23,8 @@ namespace Editor::UI {
         void SetOnConfirm(const std::function<void()> &callback) { m_OnConfirm = callback; }
 
         void Update() {
-            if (!m_IsOpen) return;
+            if (!m_IsOpen)
+                return;
 
             if (m_ShouldOpen) {
                 ImGui::OpenPopup(m_Title.c_str());
@@ -48,12 +48,10 @@ namespace Editor::UI {
         bool m_ShouldOpen;
     };
 
-    template<typename DialogType>
-    class ModalButton {
+    template <typename DialogType> class ModalButton {
     public:
         // label for the button, and the callback for when the dialog succeeds
-        ModalButton(std::string buttonLabel, std::function<void()> action)
-            : m_Label(std::move(buttonLabel)) {
+        ModalButton(std::string buttonLabel, std::function<void()> action) : m_Label(std::move(buttonLabel)) {
             m_Dialog = std::make_unique<DialogType>();
             m_Dialog->SetOnConfirm(action);
         }
@@ -71,4 +69,4 @@ namespace Editor::UI {
         std::string m_Label;
         std::unique_ptr<DialogType> m_Dialog;
     };
-}
+} // namespace Editor::UI

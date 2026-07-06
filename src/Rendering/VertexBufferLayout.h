@@ -17,7 +17,8 @@ namespace Rendering {
                     return 4;
                 case GL_UNSIGNED_BYTE:
                     return 1;
-                default: return 0;
+                default:
+                    return 0;
             }
         }
     };
@@ -28,8 +29,7 @@ namespace Rendering {
         unsigned int m_Stride;
 
     public:
-        VertexBufferLayout() : m_Stride(0) {
-        }
+        VertexBufferLayout() : m_Stride(0) {}
 
         void Push(const unsigned int type, const unsigned int count) {
             m_Elements.push_back({type, count, GL_FALSE});

@@ -17,13 +17,13 @@ static void log_error(const std::string &msg) { IO::Package::Tools::log_error(BI
 
 static void show_help() {
     std::cout << TITLE_NAME << " - Run pre-packaged ObSL scripts directly from a .obpak container\n\n"
-            << "Usage: " << BINARY_NAME << " [options] <package.obpak> <entry_script_path>\n\n"
-            << "Options:\n"
-            << "  -h, --help             Show this help message and exit\n"
-            << "  -v, --version          Show version information and exit\n"
-            << "  -q, --quiet            Suppress runner output (script print output is preserved)\n\n"
-            << "Example:\n"
-            << "  " << BINARY_NAME << " -q game.obpak assets/scripts/engine_integ_test.obsl\n";
+              << "Usage: " << BINARY_NAME << " [options] <package.obpak> <entry_script_path>\n\n"
+              << "Options:\n"
+              << "  -h, --help             Show this help message and exit\n"
+              << "  -v, --version          Show version information and exit\n"
+              << "  -q, --quiet            Suppress runner output (script print output is preserved)\n\n"
+              << "Example:\n"
+              << "  " << BINARY_NAME << " -q game.obpak assets/scripts/engine_integ_test.obsl\n";
 }
 
 int main(int argc, char *argv[]) {
@@ -79,7 +79,8 @@ int main(int argc, char *argv[]) {
     std::vector<uint8_t> binary_blob(raw_data.begin(), raw_data.end());
 
     try {
-        if (!quiet) log_info("Deserializing " + std::to_string(binary_blob.size()) + " bytes...");
+        if (!quiet)
+            log_info("Deserializing " + std::to_string(binary_blob.size()) + " bytes...");
 
         auto [string_pool, statements] = ObSL::ASTDeserializer::deserialize(binary_blob);
 
@@ -91,25 +92,28 @@ int main(int argc, char *argv[]) {
 
         // Install a module loader that reads precompiled ASTs from the package
         worker->GetInterpreter().set_module_loader(
-            [&reader](const std::string &path) -> std::optional<ObSL::ModuleResult> {
-                auto data = reader.read(path);
-                if (!data) return std::nullopt;
+                [&reader](const std::string &path) -> std::optional<ObSL::ModuleResult> {
+                    auto data = reader.read(path);
+                    if (!data)
+                        return std::nullopt;
 
-                const std::vector<uint8_t> binary_blob(data->begin(), data->end());
-                ObSL::ModuleResult result;
-                result.kind = ObSL::ModuleResult::Kind::PrecompiledAst;
-                result.ast_module = ObSL::ASTDeserializer::deserialize(binary_blob);
-                return result;
-            }
-        );
+                    const std::vector<uint8_t> binary_blob(data->begin(), data->end());
+                    ObSL::ModuleResult result;
+                    result.kind = ObSL::ModuleResult::Kind::PrecompiledAst;
+                    result.ast_module = ObSL::ASTDeserializer::deserialize(binary_blob);
+                    return result;
+                });
 
 
-        if (!quiet) log_info("Executing...\n-----------------------------------");
+        if (!quiet)
+            log_info("Executing...\n-----------------------------------");
 
         worker->execute(statements, globals);
 
-        if (!quiet) std::cout << "\n-----------------------------------\n";
-        if (!quiet) log_info("Done.");
+        if (!quiet)
+            std::cout << "\n-----------------------------------\n";
+        if (!quiet)
+            log_info("Done.");
     } catch (const std::exception &e) {
         log_error(std::string("Runtime error: ") + e.what());
         return 1;

@@ -22,15 +22,15 @@ namespace Rendering {
     }
 
     void Shader::InitGL() {
-        if (m_ID != 0) return;
+        if (m_ID != 0)
+            return;
 
         const GLuint vert = Compile(GL_VERTEX_SHADER, m_VertexSrc);
         const GLuint frag = Compile(GL_FRAGMENT_SHADER, m_FragmentSrc);
         m_ID = Link(vert, frag);
 
         if (m_ID == 0) {
-            std::cerr << "[Shader] Failed to create program from:\n  "
-                    << m_vertPath << "\n  " << m_fragPath << "\n";
+            std::cerr << "[Shader] Failed to create program from:\n  " << m_vertPath << "\n  " << m_fragPath << "\n";
         }
 
         m_VertexSrc.clear();
@@ -41,47 +41,52 @@ namespace Rendering {
 
 
     void Shader::Bind() const {
-        if (m_ID == 0) return;
+        if (m_ID == 0)
+            return;
         glUseProgram(m_ID);
     }
 
-    void Shader::Unbind() {
-        glUseProgram(0);
-    }
+    void Shader::Unbind() { glUseProgram(0); }
 
 
     void Shader::SetUniform1i(const char *name, const int value) {
         const GLint loc = GetUniformLocation(name);
-        if (loc == -1) return;
+        if (loc == -1)
+            return;
         glUniform1i(loc, value);
     }
 
     void Shader::SetUniform1f(const char *name, const float value) {
         const GLint loc = GetUniformLocation(name);
-        if (loc == -1) return;
+        if (loc == -1)
+            return;
         glUniform1f(loc, value);
     }
 
     void Shader::SetUniformVec2(const char *name, const glm::vec2 &v) {
         const GLint loc = GetUniformLocation(name);
-        if (loc == -1) return;
+        if (loc == -1)
+            return;
         glUniform2f(loc, v.x, v.y);
     }
 
     void Shader::SetUniformVec4(const char *name, const glm::vec4 &v) {
         const GLint loc = GetUniformLocation(name);
-        if (loc == -1) return;
+        if (loc == -1)
+            return;
         glUniform4f(loc, v.x, v.y, v.z, v.w);
     }
 
     void Shader::SetUniformMat4(const char *name, const glm::mat4 &mat) {
         const GLint loc = GetUniformLocation(name);
-        if (loc == -1) return;
+        if (loc == -1)
+            return;
         glUniformMatrix4fv(loc, 1, GL_FALSE, &mat[0][0]);
     }
 
     GLint Shader::GetUniformLocation(const char *name) {
-        if (m_ID == 0) return -1;
+        if (m_ID == 0)
+            return -1;
 
         if (const auto it = m_UniformCache.find(name); it != m_UniformCache.end())
             return it->second;

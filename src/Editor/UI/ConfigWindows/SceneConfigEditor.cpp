@@ -51,8 +51,7 @@ namespace Editor::UI {
 
         ImGui::Separator();
 
-        ImGui::ColorEdit4("Clear Color", &m_LocalProperties.BackgroundClearColor.x,
-                          ImGuiColorEditFlags_AlphaBar);
+        ImGui::ColorEdit4("Clear Color", &m_LocalProperties.BackgroundClearColor.x, ImGuiColorEditFlags_AlphaBar);
 
         ImGui::SliderFloat("Ambient Light", &m_LocalProperties.AmbientLight, 0.0f, 1.0f, "%.3f");
 
@@ -61,15 +60,13 @@ namespace Editor::UI {
         {
             ImGui::Text("Background Music");
             ImGui::TextUnformatted(m_LocalProperties.BackgroundMusicPath.empty()
-                                       ? "None"
-                                       : m_LocalProperties.BackgroundMusicPath.c_str());
+                                           ? "None"
+                                           : m_LocalProperties.BackgroundMusicPath.c_str());
             ImGui::SameLine();
             if (ImGui::Button("Load##Music")) {
                 if (m_Context) {
-                    const auto picked = FileDialogs::OpenFile(*m_Context, {
-                                                                  .filterName = "Audio Files",
-                                                                  .filterExt = "wav,mp3,ogg,flac"
-                                                              });
+                    const auto picked = FileDialogs::OpenFile(
+                            *m_Context, {.filterName = "Audio Files", .filterExt = "wav,mp3,ogg,flac"});
                     if (picked.has_value()) {
                         ResolveMusicPath(picked.value());
                     }
@@ -151,8 +148,9 @@ namespace Editor::UI {
         for (auto p = absNorm; p.has_parent_path() && p != p.root_path(); p = p.parent_path()) {
             if (p == rootNorm) {
                 std::string rel = std::filesystem::proximate(absNorm, rootNorm).string();
-                for (auto &c: rel)
-                    if (c == '\\') c = '/';
+                for (auto &c : rel)
+                    if (c == '\\')
+                        c = '/';
                 m_LocalProperties.BackgroundMusicPath = rel;
                 return;
             }

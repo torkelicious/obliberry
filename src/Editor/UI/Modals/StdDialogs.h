@@ -9,8 +9,7 @@
 namespace Editor::UI {
     class NewProjectDialog : public EditorDialog {
     public:
-        NewProjectDialog() : EditorDialog("New Project") {
-        }
+        NewProjectDialog() : EditorDialog("New Project") {}
 
         void SetDirectory(const std::filesystem::path &dir) {
             m_Dir = dir;
@@ -24,11 +23,13 @@ namespace Editor::UI {
             ImGui::Text("Create project in: %s", m_Dir.string().c_str());
             ImGui::InputText("Project Name", m_NameBuf, sizeof(m_NameBuf));
             if (ImGui::Button("Create")) {
-                if (m_OnConfirmCb) m_OnConfirmCb(m_Dir, m_NameBuf);
+                if (m_OnConfirmCb)
+                    m_OnConfirmCb(m_Dir, m_NameBuf);
                 Close();
             }
             ImGui::SameLine();
-            if (ImGui::Button("Cancel")) Close();
+            if (ImGui::Button("Cancel"))
+                Close();
         }
 
     private:
@@ -40,8 +41,7 @@ namespace Editor::UI {
     // Create Scene Dialog
     class CreateSceneDialog : public EditorDialog {
     public:
-        CreateSceneDialog() : EditorDialog("Create Scene") {
-        }
+        CreateSceneDialog() : EditorDialog("Create Scene") {}
 
         void Reset() { m_NameBuf[0] = '\0'; }
         void SetOnConfirm(const std::function<void(std::string)> &cb) { m_OnConfirmCb = cb; }
@@ -50,11 +50,13 @@ namespace Editor::UI {
         void DrawContent() override {
             ImGui::InputText("Scene Name", m_NameBuf, sizeof(m_NameBuf));
             if (ImGui::Button("Create")) {
-                if (m_OnConfirmCb) m_OnConfirmCb(m_NameBuf);
+                if (m_OnConfirmCb)
+                    m_OnConfirmCb(m_NameBuf);
                 Close();
             }
             ImGui::SameLine();
-            if (ImGui::Button("Cancel")) Close();
+            if (ImGui::Button("Cancel"))
+                Close();
         }
 
     private:
@@ -65,8 +67,7 @@ namespace Editor::UI {
     // Generic Save Changes Dialog
     class SaveChangesDialog : public EditorDialog {
     public:
-        SaveChangesDialog() : EditorDialog("Unsaved Changes") {
-        }
+        SaveChangesDialog() : EditorDialog("Unsaved Changes") {}
 
         void SetMessage(const std::string &msg) { m_Message = msg; }
 
@@ -79,12 +80,14 @@ namespace Editor::UI {
             ImGui::Separator();
 
             if (ImGui::Button("Save")) {
-                if (m_OnSave) m_OnSave();
+                if (m_OnSave)
+                    m_OnSave();
                 Close();
             }
             ImGui::SameLine();
             if (ImGui::Button("Don't Save")) {
-                if (m_OnDiscard) m_OnDiscard();
+                if (m_OnDiscard)
+                    m_OnDiscard();
                 Close();
             }
             ImGui::SameLine();
@@ -102,12 +105,9 @@ namespace Editor::UI {
     // Save Scene As Dialog
     class SaveSceneAsDialog : public EditorDialog {
     public:
-        SaveSceneAsDialog() : EditorDialog("Save Scene As") {
-        }
+        SaveSceneAsDialog() : EditorDialog("Save Scene As") {}
 
-        void SetCurrentName(const std::string &name) {
-            strncpy(m_NameBuf, name.c_str(), sizeof(m_NameBuf) - 1);
-        }
+        void SetCurrentName(const std::string &name) { strncpy(m_NameBuf, name.c_str(), sizeof(m_NameBuf) - 1); }
 
         void SetOnConfirm(const std::function<void(std::string)> &cb) { m_OnConfirmCb = cb; }
 
@@ -115,15 +115,17 @@ namespace Editor::UI {
         void DrawContent() override {
             ImGui::InputText("Scene Name", m_NameBuf, sizeof(m_NameBuf));
             if (ImGui::Button("Save")) {
-                if (m_OnConfirmCb) m_OnConfirmCb(m_NameBuf);
+                if (m_OnConfirmCb)
+                    m_OnConfirmCb(m_NameBuf);
                 Close();
             }
             ImGui::SameLine();
-            if (ImGui::Button("Cancel")) Close();
+            if (ImGui::Button("Cancel"))
+                Close();
         }
 
     private:
         char m_NameBuf[128] = "";
         std::function<void(std::string)> m_OnConfirmCb;
     };
-}
+} // namespace Editor::UI

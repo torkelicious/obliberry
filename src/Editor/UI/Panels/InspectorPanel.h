@@ -20,6 +20,6 @@ namespace Editor::UI {
 
     private:
         ECS::Entity m_SelectedEntity;
-        std::vector<std::unique_ptr<IComponentWidget> > m_Widgets;
+        std::vector<std::unique_ptr<IComponentWidget>> m_Widgets;
     };
 } // namespace Editor::UI

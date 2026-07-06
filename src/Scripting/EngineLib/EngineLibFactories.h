@@ -31,9 +31,7 @@ namespace Scripting {
                 interpreter->gc_protect_stack.emplace_back(val);
             }
 
-            ~GCProtectGuard() {
-                interpreter->gc_protect_stack.pop_back();
-            }
+            ~GCProtectGuard() { interpreter->gc_protect_stack.pop_back(); }
 
             GCProtectGuard(const GCProtectGuard &) = delete;
 
@@ -48,9 +46,8 @@ namespace Scripting {
 
             auto set_pos = [id, reg_ptr = &registry](const ObSL::Interpreter *interpreter,
                                                      const std::vector<ObSL::Value> &args) -> ObSL::Value {
-                if (args.size() >= 3 && std::holds_alternative<double>(args[0]) && std::holds_alternative<double>(
-                        args[1])
-                    && std::holds_alternative<double>(args[2])) {
+                if (args.size() >= 3 && std::holds_alternative<double>(args[0]) &&
+                    std::holds_alternative<double>(args[1]) && std::holds_alternative<double>(args[2])) {
                     auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
                     float x = static_cast<float>(std::get<double>(args[0]));
                     float y = static_cast<float>(std::get<double>(args[1]));
@@ -74,9 +71,8 @@ namespace Scripting {
 
             auto set_rot = [id, reg_ptr = &registry](const ObSL::Interpreter *interpreter,
                                                      const std::vector<ObSL::Value> &args) -> ObSL::Value {
-                if (args.size() >= 3 && std::holds_alternative<double>(args[0]) && std::holds_alternative<double>(
-                        args[1])
-                    && std::holds_alternative<double>(args[2])) {
+                if (args.size() >= 3 && std::holds_alternative<double>(args[0]) &&
+                    std::holds_alternative<double>(args[1]) && std::holds_alternative<double>(args[2])) {
                     auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
                     float x = static_cast<float>(std::get<double>(args[0]));
                     float y = static_cast<float>(std::get<double>(args[1]));
@@ -100,9 +96,8 @@ namespace Scripting {
 
             auto set_scale = [id, reg_ptr = &registry](const ObSL::Interpreter *interpreter,
                                                        const std::vector<ObSL::Value> &args) -> ObSL::Value {
-                if (args.size() >= 3 && std::holds_alternative<double>(args[0]) && std::holds_alternative<double>(
-                        args[1])
-                    && std::holds_alternative<double>(args[2])) {
+                if (args.size() >= 3 && std::holds_alternative<double>(args[0]) &&
+                    std::holds_alternative<double>(args[1]) && std::holds_alternative<double>(args[2])) {
                     auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
                     float x = static_cast<float>(std::get<double>(args[0]));
                     float y = static_cast<float>(std::get<double>(args[1]));
@@ -150,8 +145,8 @@ namespace Scripting {
                 return std::monostate{};
             };
 
-            auto get_scale = [id, &registry
-                    ](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
+            auto get_scale = [id, &registry](ObSL::Interpreter *interp,
+                                             const std::vector<ObSL::Value> &) -> ObSL::Value {
                 std::shared_lock lock(g_RegistryMutex);
                 if (const auto *comp = registry.GetComponent<ECS::Components::TransformComponent>(id)) {
                     auto *arr = interp->gc.allocate<ObSL::ObSLArray>();
@@ -164,8 +159,8 @@ namespace Scripting {
                 return std::monostate{};
             };
 
-            auto is_moving_body = [id, &registry
-                    ](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+            auto is_moving_body = [id, &registry](ObSL::Interpreter *,
+                                                  const std::vector<ObSL::Value> &) -> ObSL::Value {
                 std::shared_lock lock(g_RegistryMutex);
                 if (auto *move = registry.GetComponent<ECS::Components::MovementComponent>(id)) {
                     return move->isMoving;
@@ -173,20 +168,20 @@ namespace Scripting {
                 return false;
             };
 
-            obj->fields["SetPosition"] = interpreter->gc.allocate<ObSL::NativeFunction>(
-                3, std::move(set_pos), "SetPosition");
-            obj->fields["SetRotation"] = interpreter->gc.allocate<ObSL::NativeFunction>(
-                3, std::move(set_rot), "SetRotation");
-            obj->fields["SetScale"] = interpreter->gc.allocate<ObSL::NativeFunction>(
-                3, std::move(set_scale), "SetScale");
-            obj->fields["GetPosition"] = interpreter->gc.allocate<ObSL::NativeFunction>(
-                0, std::move(get_pos), "GetPosition");
-            obj->fields["GetRotation"] = interpreter->gc.allocate<ObSL::NativeFunction>(
-                0, std::move(get_rot), "GetRotation");
-            obj->fields["GetScale"] = interpreter->gc.allocate<ObSL::NativeFunction>(
-                0, std::move(get_scale), "GetScale");
-            obj->fields["IsMoving"] = interpreter->gc.allocate<ObSL::NativeFunction>(
-                0, std::move(is_moving_body), "IsMoving");
+            obj->fields["SetPosition"] =
+                    interpreter->gc.allocate<ObSL::NativeFunction>(3, std::move(set_pos), "SetPosition");
+            obj->fields["SetRotation"] =
+                    interpreter->gc.allocate<ObSL::NativeFunction>(3, std::move(set_rot), "SetRotation");
+            obj->fields["SetScale"] =
+                    interpreter->gc.allocate<ObSL::NativeFunction>(3, std::move(set_scale), "SetScale");
+            obj->fields["GetPosition"] =
+                    interpreter->gc.allocate<ObSL::NativeFunction>(0, std::move(get_pos), "GetPosition");
+            obj->fields["GetRotation"] =
+                    interpreter->gc.allocate<ObSL::NativeFunction>(0, std::move(get_rot), "GetRotation");
+            obj->fields["GetScale"] =
+                    interpreter->gc.allocate<ObSL::NativeFunction>(0, std::move(get_scale), "GetScale");
+            obj->fields["IsMoving"] =
+                    interpreter->gc.allocate<ObSL::NativeFunction>(0, std::move(is_moving_body), "IsMoving");
 
             return obj;
         }
@@ -199,9 +194,8 @@ namespace Scripting {
 
             auto set_color = [id, reg_ptr = &registry](const ObSL::Interpreter *interpreter,
                                                        const std::vector<ObSL::Value> &args) -> ObSL::Value {
-                if (args.size() >= 3 && std::holds_alternative<double>(args[0]) && std::holds_alternative<double>(
-                        args[1])
-                    && std::holds_alternative<double>(args[2])) {
+                if (args.size() >= 3 && std::holds_alternative<double>(args[0]) &&
+                    std::holds_alternative<double>(args[1]) && std::holds_alternative<double>(args[2])) {
                     auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
                     float r = static_cast<float>(std::get<double>(args[0]));
                     float g = static_cast<float>(std::get<double>(args[1]));
@@ -267,12 +261,12 @@ namespace Scripting {
                 return std::monostate{};
             };
 
-            obj->fields["SetColor"] = interpreter->gc.allocate<ObSL::NativeFunction>(
-                3, std::move(set_color), "SetColor");
-            obj->fields["SetIntensity"] = interpreter->gc.allocate<ObSL::NativeFunction>(
-                1, std::move(set_intensity), "SetIntensity");
-            obj->fields["SetRadius"] = interpreter->gc.allocate<
-                ObSL::NativeFunction>(1, std::move(set_radius), "SetRadius");
+            obj->fields["SetColor"] =
+                    interpreter->gc.allocate<ObSL::NativeFunction>(3, std::move(set_color), "SetColor");
+            obj->fields["SetIntensity"] =
+                    interpreter->gc.allocate<ObSL::NativeFunction>(1, std::move(set_intensity), "SetIntensity");
+            obj->fields["SetRadius"] =
+                    interpreter->gc.allocate<ObSL::NativeFunction>(1, std::move(set_radius), "SetRadius");
 
             return obj;
         }
@@ -285,7 +279,8 @@ namespace Scripting {
 
             auto get_is_moving = [id, &registry](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
                 std::shared_lock lock(g_RegistryMutex);
-                if (auto *comp = registry.GetComponent<ECS::Components::MovementComponent>(id)) return comp->isMoving;
+                if (auto *comp = registry.GetComponent<ECS::Components::MovementComponent>(id))
+                    return comp->isMoving;
                 return false;
             };
 
@@ -329,12 +324,12 @@ namespace Scripting {
                 return std::monostate{};
             };
 
-            obj->fields["GetIsMoving"] = interpreter->gc.allocate<ObSL::NativeFunction>(
-                0, std::move(get_is_moving), "GetIsMoving");
-            obj->fields["SetIsMoving"] = interpreter->gc.allocate<ObSL::NativeFunction>(
-                1, std::move(set_is_moving), "SetIsMoving");
-            obj->fields["SetTimePerStep"] = interpreter->gc.allocate<ObSL::NativeFunction>(
-                1, std::move(set_time_per_step), "SetTimePerStep");
+            obj->fields["GetIsMoving"] =
+                    interpreter->gc.allocate<ObSL::NativeFunction>(0, std::move(get_is_moving), "GetIsMoving");
+            obj->fields["SetIsMoving"] =
+                    interpreter->gc.allocate<ObSL::NativeFunction>(1, std::move(set_is_moving), "SetIsMoving");
+            obj->fields["SetTimePerStep"] =
+                    interpreter->gc.allocate<ObSL::NativeFunction>(1, std::move(set_time_per_step), "SetTimePerStep");
 
             return obj;
         }
@@ -374,12 +369,12 @@ namespace Scripting {
                 return std::monostate{};
             };
 
-            obj->fields["GetHasSelection"] = interpreter->gc.allocate<ObSL::NativeFunction>(
-                0, std::move(get_has_selection), "GetHasSelection");
-            obj->fields["GetSelectedHex"] = interpreter->gc.allocate<ObSL::NativeFunction>(
-                0, std::move(get_selected_hex), "GetSelectedHex");
-            obj->fields["GetPathToHex"] = interpreter->gc.allocate<ObSL::NativeFunction>(
-                0, std::move(get_path_to_hex), "GetPathToHex");
+            obj->fields["GetHasSelection"] =
+                    interpreter->gc.allocate<ObSL::NativeFunction>(0, std::move(get_has_selection), "GetHasSelection");
+            obj->fields["GetSelectedHex"] =
+                    interpreter->gc.allocate<ObSL::NativeFunction>(0, std::move(get_selected_hex), "GetSelectedHex");
+            obj->fields["GetPathToHex"] =
+                    interpreter->gc.allocate<ObSL::NativeFunction>(0, std::move(get_path_to_hex), "GetPathToHex");
 
             return obj;
         }
@@ -410,8 +405,8 @@ namespace Scripting {
                 return std::monostate{};
             };
 
-            obj->fields["SetIndex"] = interpreter->gc.allocate<ObSL::NativeFunction>(
-                1, std::move(set_index), "SetIndex");
+            obj->fields["SetIndex"] =
+                    interpreter->gc.allocate<ObSL::NativeFunction>(1, std::move(set_index), "SetIndex");
             return obj;
         }
 
@@ -421,9 +416,9 @@ namespace Scripting {
             return interpreter->gc.allocate<ObSL::ObSLObject>();
         }
 
-        inline ObSL::ObSLObject *
-        CreateDestroyTagObject(ObSL::Interpreter *interpreter, ECS::Registry &, ECS::EntityID) {
+        inline ObSL::ObSLObject *CreateDestroyTagObject(ObSL::Interpreter *interpreter, ECS::Registry &,
+                                                        ECS::EntityID) {
             return interpreter->gc.allocate<ObSL::ObSLObject>();
         }
     } // namespace EngineLibFactories
-} // namespace Scripting::EngineLib
+} // namespace Scripting

@@ -19,7 +19,7 @@ namespace Scenes {
             const auto scenedir = project->GetAssetsDirectory() / "scenes";
 
             if (std::filesystem::exists(scenedir)) {
-                for (const auto &entry: std::filesystem::directory_iterator(scenedir)) {
+                for (const auto &entry : std::filesystem::directory_iterator(scenedir)) {
                     if (entry.is_regular_file() && entry.path().extension() == ".json") {
                         auto relpath = std::filesystem::relative(entry.path(), project->GetRootDirectory());
                         scenes.push_back(relpath.string());
@@ -42,11 +42,9 @@ namespace Scenes {
             const std::string scenepath = Core::PathUtils::Join(Core::SCENE_PATH, safeName, ".json");
 
             // create
-            Scene tempScene(m_Context, SceneProperties{
-                                .ScenePath = scenepath,
-                                .Name = sceneName,
-                                .BackgroundClearColor = {0.1f, 0.1f, 0.1f, 1.0f}
-                            });
+            Scene tempScene(m_Context, SceneProperties{.ScenePath = scenepath,
+                                                       .Name = sceneName,
+                                                       .BackgroundClearColor = {0.1f, 0.1f, 0.1f, 1.0f}});
 
 
             return IO::SceneIO::Serialize(scenepath, tempScene);
@@ -63,13 +61,10 @@ namespace Scenes {
         const std::filesystem::path fullPath = Core::Project::GetActive()->GetRootDirectory() / scenePath;
         if (std::filesystem::exists(fullPath)) {
             //  unload first
-            if (m_CurrentScene &&m_CurrentScene
+            if (m_CurrentScene && m_CurrentScene
 
 
-            ->
-            GetScenePath() == scenePath
-            )
-            {
+                                                  ->GetScenePath() == scenePath) {
                 m_CurrentScene->OnExit();
                 m_CurrentScene.reset();
             }
@@ -89,9 +84,7 @@ namespace Scenes {
         }
     }
 
-    void SceneManager::SwitchScene(const std::string &newScenePath) {
-        LoadSceneByPath(newScenePath);
-    }
+    void SceneManager::SwitchScene(const std::string &newScenePath) { LoadSceneByPath(newScenePath); }
 
     void SceneManager::LoadSceneByPath(const std::string &scenePath) {
         if (!ValidateScenePath(scenePath)) {
@@ -99,10 +92,7 @@ namespace Scenes {
             return;
         }
 
-        auto newScene = std::make_unique<Scene>(
-            m_Context,
-            SceneProperties{.ScenePath = scenePath}
-        );
+        auto newScene = std::make_unique<Scene>(m_Context, SceneProperties{.ScenePath = scenePath});
 
         LoadScene(std::move(newScene));
     }

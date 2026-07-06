@@ -12,10 +12,7 @@ namespace Rendering {
         VertexBuffer &operator=(const VertexBuffer &) = delete;
 
         // allow moving
-        VertexBuffer(VertexBuffer &&other) noexcept
-            : m_ID(other.m_ID) {
-            other.m_ID = 0;
-        }
+        VertexBuffer(VertexBuffer &&other) noexcept : m_ID(other.m_ID) { other.m_ID = 0; }
 
         VertexBuffer &operator=(VertexBuffer &&other) noexcept {
             if (this != &other) {
@@ -27,8 +24,7 @@ namespace Rendering {
             return *this;
         }
 
-        VertexBuffer() {
-        }
+        VertexBuffer() {}
 
         void Init(const void *data, unsigned int size, GLenum usage = GL_STATIC_DRAW);
 

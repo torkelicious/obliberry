@@ -15,8 +15,7 @@ namespace Math::Projection {
         }
 
         [[nodiscard]] bool Intersects(const AABB &other) const {
-            return min.x <= other.max.x && max.x >= other.min.x &&
-                   min.y <= other.max.y && max.y >= other.min.y;
+            return min.x <= other.max.x && max.x >= other.min.x && min.y <= other.max.y && max.y >= other.min.y;
         }
     };
 
@@ -27,7 +26,8 @@ namespace Math::Projection {
         farWorld /= farWorld.w;
 
         const glm::vec3 rayDir = glm::vec3(farWorld) - glm::vec3(nearWorld);
-        if (std::abs(rayDir.z) < 0.0001f) return {nearWorld.x, nearWorld.y};
+        if (std::abs(rayDir.z) < 0.0001f)
+            return {nearWorld.x, nearWorld.y};
 
         const float t = -nearWorld.z / rayDir.z;
         glm::vec3 hit = glm::vec3(nearWorld) + t * rayDir;
@@ -40,9 +40,9 @@ namespace Math::Projection {
 
         // unproject the corners of the screen down to the z0 grid
         bounds.Expand(UnprojectToGround(invVP, -1.0f, -1.0f)); // Bottom-Left
-        bounds.Expand(UnprojectToGround(invVP, 1.0f, -1.0f)); // Bottom-Right
-        bounds.Expand(UnprojectToGround(invVP, 1.0f, 1.0f)); // Top-Right
-        bounds.Expand(UnprojectToGround(invVP, -1.0f, 1.0f)); // Top-Left
+        bounds.Expand(UnprojectToGround(invVP, 1.0f, -1.0f));  // Bottom-Right
+        bounds.Expand(UnprojectToGround(invVP, 1.0f, 1.0f));   // Top-Right
+        bounds.Expand(UnprojectToGround(invVP, -1.0f, 1.0f));  // Top-Left
 
         // padding buffer
         constexpr float padding = Core::HEX_SIZE * 2;
@@ -51,4 +51,4 @@ namespace Math::Projection {
 
         return bounds;
     }
-}
+} // namespace Math::Projection

@@ -29,18 +29,21 @@ void Editor::MapEditState::OnHandleInput(const float dt) {
     const auto mouseDeltaX = static_cast<float>(m_EditorLayer->m_Input->GetMouseDeltaX());
     const auto mouseDeltaY = static_cast<float>(m_EditorLayer->m_Input->GetMouseDeltaY());
 
-    if (m_EditorLayer->m_Input->IsMouseDown("MouseMiddle") ||
-        m_EditorLayer->m_Input->IsMouseDown("MouseRight")) {
+    if (m_EditorLayer->m_Input->IsMouseDown("MouseMiddle") || m_EditorLayer->m_Input->IsMouseDown("MouseRight")) {
         m_EditorLayer->m_Camera.Pan(-mouseDeltaX, mouseDeltaY, 0.025f);
     }
 
     float kbPanX = 0.0f;
     float kbPanY = 0.0f;
 
-    if (m_EditorLayer->m_Input->IsKeyDown("W")) kbPanY += 1.0f;
-    if (m_EditorLayer->m_Input->IsKeyDown("S")) kbPanY -= 1.0f;
-    if (m_EditorLayer->m_Input->IsKeyDown("A")) kbPanX -= 1.0f;
-    if (m_EditorLayer->m_Input->IsKeyDown("D")) kbPanX += 1.0f;
+    if (m_EditorLayer->m_Input->IsKeyDown("W"))
+        kbPanY += 1.0f;
+    if (m_EditorLayer->m_Input->IsKeyDown("S"))
+        kbPanY -= 1.0f;
+    if (m_EditorLayer->m_Input->IsKeyDown("A"))
+        kbPanX -= 1.0f;
+    if (m_EditorLayer->m_Input->IsKeyDown("D"))
+        kbPanX += 1.0f;
 
     if (kbPanX != 0.0f || kbPanY != 0.0f) {
         const float length = std::sqrt(kbPanX * kbPanX + kbPanY * kbPanY);

@@ -12,8 +12,7 @@ namespace Rendering {
         IndexBuffer &operator=(const IndexBuffer &) = delete;
 
         // allow moving
-        IndexBuffer(IndexBuffer &&other) noexcept
-            : m_ID(other.m_ID), m_Count(other.m_Count) {
+        IndexBuffer(IndexBuffer &&other) noexcept : m_ID(other.m_ID), m_Count(other.m_Count) {
             other.m_ID = 0;
             other.m_Count = 0;
         }
@@ -30,8 +29,7 @@ namespace Rendering {
             return *this;
         }
 
-        IndexBuffer() {
-        }
+        IndexBuffer() {}
 
         ~IndexBuffer();
 

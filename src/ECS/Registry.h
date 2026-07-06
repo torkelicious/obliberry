@@ -14,18 +14,17 @@ namespace ECS {
     class Registry {
     private:
         std::queue<uint32_t> m_AvailableEntities;
-        std::unordered_map<std::type_index, std::unique_ptr<IPool> > m_ComponentPools;
+        std::unordered_map<std::type_index, std::unique_ptr<IPool>> m_ComponentPools;
         std::vector<EntityID> m_LivingEntities;
         std::unordered_map<EntityID, std::string> m_EntityNames;
         std::vector<bool> m_EntityStatus;
         std::vector<uint32_t> m_EntityVersions;
 
-        template<typename T>
-        ComponentPool<T> *GetPool() {
+        template <typename T> ComponentPool<T> *GetPool() {
             const auto type = std::type_index(typeid(T));
             auto [it, inserted] = m_ComponentPools.try_emplace(type);
             if (inserted) {
-                it->second = std::make_unique<ComponentPool<T> >();
+                it->second = std::make_unique<ComponentPool<T>>();
             }
             return static_cast<ComponentPool<T> *>(it->second.get());
         }
@@ -52,11 +51,12 @@ namespace ECS {
         }
 
         void DestroyEntity(const EntityID id) {
-            if (!IsValid(id)) return;
+            if (!IsValid(id))
+                return;
 
             const uint32_t index = GetEntityIndex(id);
 
-            for (const auto &pool: m_ComponentPools | std::views::values) {
+            for (const auto &pool : m_ComponentPools | std::views::values) {
                 pool->EntityDestroyed(id);
             }
 
@@ -76,25 +76,21 @@ namespace ECS {
             return GetEntityVersion(id) == m_EntityVersions[index];
         }
 
-        template<typename T>
-        void RemoveComponent(const EntityID entity) { GetPool<T>()->EntityDestroyed(entity); }
+        template <typename T> void RemoveComponent(const EntityID entity) { GetPool<T>()->EntityDestroyed(entity); }
 
-        template<typename T, typename... Args>
-        T &AddComponent(EntityID entity, Args &&... args) {
+        template <typename T, typename... Args> T &AddComponent(EntityID entity, Args &&...args) {
             assert(IsValid(entity) && "Attempted to add component to an invalid entity");
             return GetPool<T>()->Emplace(entity, std::forward<Args>(args)...);
         }
 
-        template<typename T>
-        T *GetComponent(EntityID entity) {
+        template <typename T> T *GetComponent(EntityID entity) {
             if (!IsValid(entity)) {
                 return nullptr;
             }
             return GetPool<T>()->Get(entity);
         }
 
-        template<typename T>
-        bool HasComponent(EntityID entity) { return GetPool<T>()->Has(entity); }
+        template <typename T> bool HasComponent(EntityID entity) { return GetPool<T>()->Has(entity); }
 
         void SetEntityName(const EntityID id, const std::string &name) { m_EntityNames[id] = name; }
 
@@ -108,9 +104,8 @@ namespace ECS {
 
         const std::vector<EntityID> &GetLivingEntities() const { return m_LivingEntities; }
 
-        template<typename Primary, typename... Rest, typename Func>
-        void ForEach(Func &&func) {
-            for (auto *primaryPool = GetPool<Primary>(); EntityID id: primaryPool->GetDenseEntities()) {
+        template <typename Primary, typename... Rest, typename Func> void ForEach(Func &&func) {
+            for (auto *primaryPool = GetPool<Primary>(); EntityID id : primaryPool->GetDenseEntities()) {
                 if ((HasComponent<Rest>(id) && ...)) {
                     func(Entity(id, this), primaryPool->Get(id), GetComponent<Rest>(id)...);
                 }
@@ -118,19 +113,15 @@ namespace ECS {
         }
     };
 
-    template<typename T, typename... Args>
-    T &Entity::AddComponent(Args &&... args) {
+    template <typename T, typename... Args> T &Entity::AddComponent(Args &&...args) {
         return m_Registry->AddComponent<T>(m_EntityHandle, std::forward<Args>(args)...);
     }
 
-    template<typename T>
-    T *Entity::GetComponent() const { return m_Registry->GetComponent<T>(m_EntityHandle); }
+    template <typename T> T *Entity::GetComponent() const { return m_Registry->GetComponent<T>(m_EntityHandle); }
 
-    template<typename T>
-    bool Entity::HasComponent() const { return m_Registry->HasComponent<T>(m_EntityHandle); }
+    template <typename T> bool Entity::HasComponent() const { return m_Registry->HasComponent<T>(m_EntityHandle); }
 
-    template<typename T>
-    void Entity::RemoveComponent() const { m_Registry->RemoveComponent<T>(m_EntityHandle); }
+    template <typename T> void Entity::RemoveComponent() const { m_Registry->RemoveComponent<T>(m_EntityHandle); }
 
     inline void Entity::SetName(const std::string &name) const { m_Registry->SetEntityName(m_EntityHandle, name); }
 

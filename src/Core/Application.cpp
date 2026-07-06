@@ -149,7 +149,7 @@ void Core::Application::Run() {
             std::unique_lock lock(m_Frames[nextIdx].mutex);
             if (m_Frames[nextIdx].state != FrameState::Free) {
                 m_Frames[nextIdx].cv.wait(
-                    lock, [&] { return m_Frames[nextIdx].state == FrameState::Free || !m_Running.load(); });
+                        lock, [&] { return m_Frames[nextIdx].state == FrameState::Free || !m_Running.load(); });
             }
         }
         if (!m_Running)
@@ -159,13 +159,13 @@ void Core::Application::Run() {
 
     // shutdown
     m_Running = false;
-    for (auto &m_Frame: m_Frames) {
+    for (auto &m_Frame : m_Frames) {
         std::lock_guard lock(m_Frame.mutex);
         if (m_Frame.state != FrameState::Free) {
             m_Frame.state = FrameState::Free;
         }
     }
-    for (auto &i: m_FrameImGuiData) {
+    for (auto &i : m_FrameImGuiData) {
         if (i) {
             FreeImDrawData(i);
             i = nullptr;
@@ -205,7 +205,7 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer) {
             m_RenderCV.wait(lock, [&] {
                 if (!m_Running)
                     return true;
-                for (auto &m_Frame: m_Frames) {
+                for (auto &m_Frame : m_Frames) {
                     std::lock_guard lk(m_Frame.mutex);
                     if (m_Frame.state == FrameState::Ready)
                         return true;
@@ -255,13 +255,13 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer) {
     }
 
     // clean up any leftover
-    for (auto &m_Frame: m_Frames) {
+    for (auto &m_Frame : m_Frames) {
         std::lock_guard lock(m_Frame.mutex);
         if (m_Frame.state == FrameState::Ready || m_Frame.state == FrameState::Rendering) {
             m_Frame.state = FrameState::Free;
         }
     }
-    for (auto &i: m_FrameImGuiData) {
+    for (auto &i : m_FrameImGuiData) {
         if (i) {
             FreeImDrawData(i);
             i = nullptr;

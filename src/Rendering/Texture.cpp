@@ -6,15 +6,9 @@
 #include "IO/VFS.h"
 
 namespace Rendering {
-    Texture::Texture(
-        std::string path,
-        const GLuint minFilter,
-        const GLuint magFilter,
-        const GLuint wrapS,
-        const GLuint wrapT
-    )
-        : m_FilePath(std::move(path)),
-          m_MinFilter(minFilter), m_MagFilter(magFilter), m_WrapS(wrapS), m_WrapT(wrapT) {
+    Texture::Texture(std::string path, const GLuint minFilter, const GLuint magFilter, const GLuint wrapS,
+                     const GLuint wrapT)
+        : m_FilePath(std::move(path)), m_MinFilter(minFilter), m_MagFilter(magFilter), m_WrapS(wrapS), m_WrapT(wrapT) {
         std::cout << "Loading: " << m_FilePath << "\n";
         stbi_set_flip_vertically_on_load(1);
 
@@ -34,17 +28,10 @@ namespace Rendering {
         }
     }
 
-    Texture::Texture(
-        const int width,
-        const int height,
-        const unsigned char *data,
-        const GLuint minFilter,
-        const GLuint magFilter,
-        const GLuint wrapS,
-        const GLuint wrapT
-    )
-        : m_Width(width), m_Height(height), m_BPP(4),
-          m_MinFilter(minFilter), m_MagFilter(magFilter), m_WrapS(wrapS), m_WrapT(wrapT) {
+    Texture::Texture(const int width, const int height, const unsigned char *data, const GLuint minFilter,
+                     const GLuint magFilter, const GLuint wrapS, const GLuint wrapT)
+        : m_Width(width), m_Height(height), m_BPP(4), m_MinFilter(minFilter), m_MagFilter(magFilter), m_WrapS(wrapS),
+          m_WrapT(wrapT) {
         if (data) {
             const auto size = static_cast<size_t>(width * height * 4); // RGBA
             m_PixelData.assign(data, data + size);
@@ -59,7 +46,8 @@ namespace Rendering {
     }
 
     void Texture::InitGL() {
-        if (m_ID != 0) return;
+        if (m_ID != 0)
+            return;
 
         glGenTextures(1, &m_ID);
         glBindTexture(GL_TEXTURE_2D, m_ID);
@@ -101,9 +89,7 @@ namespace Rendering {
         glBindTexture(GL_TEXTURE_2D, m_ID);
     }
 
-    void Texture::Unbind() {
-        glBindTexture(GL_TEXTURE_2D, 0);
-    }
+    void Texture::Unbind() { glBindTexture(GL_TEXTURE_2D, 0); }
 
     void Texture::UpdateData(const unsigned char *data, const int width, const int height) {
         Bind();
@@ -112,10 +98,7 @@ namespace Rendering {
         } else {
             m_Width = width;
             m_Height = height;
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
-                         m_Width, m_Height, 0,
-                         GL_RGBA, GL_UNSIGNED_BYTE,
-                         data);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, m_Width, m_Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
         }
     }
 

@@ -37,4 +37,4 @@ namespace Scripting {
         ECS::Registry *m_registry = nullptr;
         Core::EngineContext *m_ctx = nullptr;
     };
-}
+} // namespace Scripting

@@ -15,13 +15,9 @@ namespace Rendering {
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, count * sizeof(GLuint), data, GL_STATIC_DRAW);
     }
 
-    void IndexBuffer::Bind() const {
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ID);
-    }
+    void IndexBuffer::Bind() const { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ID); }
 
-    void IndexBuffer::Unbind() {
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    }
+    void IndexBuffer::Unbind() { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); }
 
     void IndexBuffer::SetData(const unsigned int *data, const unsigned int count) {
         m_Count = count;

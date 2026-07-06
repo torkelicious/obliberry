@@ -40,15 +40,13 @@ namespace Editor::UI {
         virtual void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr) = 0;
     };
 
-    template<typename T>
-    class AutoComponentWidget : public IComponentWidget {
+    template <typename T> class AutoComponentWidget : public IComponentWidget {
     protected:
         const char *m_Name;
         std::vector<ComponentField> m_Fields;
 
     public:
-        explicit AutoComponentWidget(const char *name) : m_Name(name) {
-        }
+        explicit AutoComponentWidget(const char *name) : m_Name(name) {}
 
         [[nodiscard]] const char *GetName() const override { return m_Name; }
 
@@ -59,7 +57,7 @@ namespace Editor::UI {
                 T *component = entity.GetComponent<T>();
                 const auto byte_ptr = reinterpret_cast<uint8_t *>(component);
 
-                for (const auto &[Name, Type, Offset]: m_Fields) {
+                for (const auto &[Name, Type, Offset] : m_Fields) {
                     void *fieldAddress = byte_ptr + Offset;
                     switch (Type) {
                         case FieldType::Float:
@@ -86,8 +84,7 @@ namespace Editor::UI {
 
                 ImGui::Separator();
                 const float buttonWidth = ImGui::CalcTextSize((std::string("Remove ") + m_Name).c_str()).x +
-                                          ImGui::GetStyle()
-                                          .FramePadding.x * 2;
+                                          ImGui::GetStyle().FramePadding.x * 2;
                 const float availWidth = ImGui::GetContentRegionAvail().x;
                 ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (availWidth - buttonWidth) * 0.5f);
                 if (ImGui::Button((std::string("Remove ##") + m_Name).c_str(), ImVec2(buttonWidth, 0))) {
@@ -98,18 +95,15 @@ namespace Editor::UI {
         }
 
     protected:
-        virtual void DrawExtras(ECS::Entity entity, T *component, Core::EngineContext *engineContext) {
-        }
+        virtual void DrawExtras(ECS::Entity entity, T *component, Core::EngineContext *engineContext) {}
     };
 
-    template<typename T>
-    class TagWidget : public IComponentWidget {
+    template <typename T> class TagWidget : public IComponentWidget {
     protected:
         const char *m_Name;
 
     public:
-        explicit TagWidget(const char *name) : m_Name(name) {
-        }
+        explicit TagWidget(const char *name) : m_Name(name) {}
 
         [[nodiscard]] const char *GetName() const override { return m_Name; }
 

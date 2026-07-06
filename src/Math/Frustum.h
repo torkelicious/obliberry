@@ -25,7 +25,7 @@ namespace Math::Frustum {
             fp.planes[4] = row3 + row2;
             fp.planes[5] = row3 - row2;
 
-            for (auto &p: fp.planes) {
+            for (auto &p : fp.planes) {
                 if (const float len = glm::length(glm::vec3(p)); len > 1e-8f) {
                     p /= len;
                 }
@@ -38,7 +38,7 @@ namespace Math::Frustum {
         }
 
         [[nodiscard]] bool IntersectsSphere(const glm::vec3 &centre, const float radius) const noexcept {
-            for (const auto &plane: planes) {
+            for (const auto &plane : planes) {
                 if (DistanceTo(plane, centre) < -radius)
                     return false;
             }
@@ -46,11 +46,11 @@ namespace Math::Frustum {
         }
 
         [[nodiscard]] bool IntersectsAABB(const glm::vec3 &min, const glm::vec3 &max) const noexcept {
-            for (const auto &plane: planes) {
+            for (const auto &plane : planes) {
                 const glm::vec3 p = {
-                    plane.x >= 0.0f ? min.x : max.x,
-                    plane.y >= 0.0f ? min.y : max.y,
-                    plane.z >= 0.0f ? min.z : max.z,
+                        plane.x >= 0.0f ? min.x : max.x,
+                        plane.y >= 0.0f ? min.y : max.y,
+                        plane.z >= 0.0f ? min.z : max.z,
                 };
                 if (DistanceTo(plane, p) < 0.0f)
                     return false;
@@ -64,33 +64,28 @@ namespace Math::Frustum {
         glm::vec2 maxBounds{std::numeric_limits<float>::lowest()};
 
         [[nodiscard]] bool IsVisible(const glm::vec3 position, const float radius = 0.0f) const noexcept {
-            return position.x + radius >= minBounds.x &&
-                   position.x - radius <= maxBounds.x &&
-                   position.y + radius >= minBounds.y &&
-                   position.y - radius <= maxBounds.y;
+            return position.x + radius >= minBounds.x && position.x - radius <= maxBounds.x &&
+                   position.y + radius >= minBounds.y && position.y - radius <= maxBounds.y;
         }
 
         [[nodiscard]] bool IsVisible(const glm::vec2 position, const float radius = 0.0f) const noexcept {
-            return position.x + radius >= minBounds.x &&
-                   position.x - radius <= maxBounds.x &&
-                   position.y + radius >= minBounds.y &&
-                   position.y - radius <= maxBounds.y;
+            return position.x + radius >= minBounds.x && position.x - radius <= maxBounds.x &&
+                   position.y + radius >= minBounds.y && position.y - radius <= maxBounds.y;
         }
 
         [[nodiscard]] bool Contains(const glm::vec2 point) const noexcept {
-            return point.x >= minBounds.x && point.x <= maxBounds.x &&
-                   point.y >= minBounds.y && point.y <= maxBounds.y;
+            return point.x >= minBounds.x && point.x <= maxBounds.x && point.y >= minBounds.y && point.y <= maxBounds.y;
         }
 
         [[nodiscard]] bool Contains(const glm::vec3 point) const noexcept {
-            return point.x >= minBounds.x && point.x <= maxBounds.x &&
-                   point.y >= minBounds.y && point.y <= maxBounds.y;
+            return point.x >= minBounds.x && point.x <= maxBounds.x && point.y >= minBounds.y && point.y <= maxBounds.y;
         }
     };
 
     inline ViewFrustum FromCamera(const Rendering::Camera *camera, const float aspect, const float padding = 0.0f) {
         ViewFrustum frustum;
-        if (!camera) return frustum;
+        if (!camera)
+            return frustum;
 
         const glm::mat4 invVP = glm::inverse(camera->GetVP(aspect));
 
@@ -101,7 +96,8 @@ namespace Math::Frustum {
             farW /= farW.w;
 
             const glm::vec3 dir = glm::vec3(farW) - glm::vec3(nearW);
-            if (std::abs(dir.z) < 1e-4f) return {nearW.x, nearW.y};
+            if (std::abs(dir.z) < 1e-4f)
+                return {nearW.x, nearW.y};
 
             const float t = -nearW.z / dir.z;
             glm::vec3 hit = glm::vec3(nearW) + t * dir;
@@ -115,9 +111,9 @@ namespace Math::Frustum {
         };
 
         expand(-1.0f, -1.0f); // bottom-left
-        expand(1.0f, -1.0f); // bottom-right
-        expand(1.0f, 1.0f); // top-right
-        expand(-1.0f, 1.0f); // top-left
+        expand(1.0f, -1.0f);  // bottom-right
+        expand(1.0f, 1.0f);   // top-right
+        expand(-1.0f, 1.0f);  // top-left
 
         frustum.minBounds -= glm::vec2(padding);
         frustum.maxBounds += glm::vec2(padding);
@@ -136,7 +132,8 @@ namespace Math::Frustum {
             farW /= farW.w;
 
             const glm::vec3 dir = glm::vec3(farW) - glm::vec3(nearW);
-            if (std::abs(dir.z) < 1e-4f) return {nearW.x, nearW.y};
+            if (std::abs(dir.z) < 1e-4f)
+                return {nearW.x, nearW.y};
 
             const float t = -nearW.z / dir.z;
             glm::vec3 hit = glm::vec3(nearW) + t * dir;
@@ -160,7 +157,8 @@ namespace Math::Frustum {
     }
 
     inline FrustumPlanes FromCamera3D(const Rendering::Camera *camera, const float aspect) noexcept {
-        if (!camera) return FrustumPlanes{};
+        if (!camera)
+            return FrustumPlanes{};
         return FrustumPlanes::FromVP(camera->GetVP(aspect));
     }
-}
+} // namespace Math::Frustum

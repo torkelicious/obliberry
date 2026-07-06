@@ -37,9 +37,7 @@ namespace Scenes {
 
         [[nodiscard]] Scene *GetCurrentScene() const { return m_CurrentScene.get(); }
 
-        void SetContext(Core::EngineContext &ctx) {
-            m_Context = &ctx;
-        }
+        void SetContext(Core::EngineContext &ctx) { m_Context = &ctx; }
 
     private:
         Core::EngineContext *m_Context = nullptr;

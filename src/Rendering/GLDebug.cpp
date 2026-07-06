@@ -5,9 +5,8 @@
 // https://learnopengl.com/In-Practice/Debugging
 
 namespace Rendering {
-    void APIENTRY GLDebug::glDebugOutput(const GLenum source, const GLenum type,
-                                         const unsigned int id, const GLenum severity,
-                                         GLsizei length, const char *message,
+    void APIENTRY GLDebug::glDebugOutput(const GLenum source, const GLenum type, const unsigned int id,
+                                         const GLenum severity, GLsizei length, const char *message,
                                          const void *userParam) {
         // ignore non-significant error/warning codes
         if (id == 131169 || id == 131185 || id == 131218 || id == 131204)
@@ -107,14 +106,7 @@ namespace Rendering {
 
         glDebugMessageCallback(glDebugOutput, nullptr);
 
-        glDebugMessageControl(
-            GL_DONT_CARE,
-            GL_DONT_CARE,
-            GL_DONT_CARE,
-            0,
-            nullptr,
-            GL_TRUE
-        );
+        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 
         return 0;
     }
@@ -122,7 +114,8 @@ namespace Rendering {
     VRAMStats GLDebug::GetVRAMStats() {
         VRAMStats stats;
         const GLubyte *renderer = glGetString(GL_RENDERER);
-        if (!renderer) return stats;
+        if (!renderer)
+            return stats;
         // NVIDIA Path
         if (const std::string rendererStr(reinterpret_cast<const char *>(renderer));
             rendererStr.find("NVIDIA") != std::string::npos) {

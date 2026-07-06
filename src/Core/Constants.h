@@ -35,11 +35,11 @@ namespace Core {
     constexpr float HEX_SIZE = 0.5f;
     constexpr std::size_t HEX_NEIGHBOR_COUNT = 6;
     // matrix math stuff
-    constexpr float HEX_INV_MAT_Q_X = 0.577350269f; // sqrt(3) / 3
+    constexpr float HEX_INV_MAT_Q_X = 0.577350269f;  // sqrt(3) / 3
     constexpr float HEX_INV_MAT_Q_Y = -0.333333333f; // -1.0 / 3.0
-    constexpr float HEX_INV_MAT_R_Y = 0.666666667f; // 2.0 / 3.0
+    constexpr float HEX_INV_MAT_R_Y = 0.666666667f;  // 2.0 / 3.0
     // coord math stuff
-    constexpr float HEX_HEIGHT_MULTIPLIER = 2.0f; // total height is 2 * size
+    constexpr float HEX_HEIGHT_MULTIPLIER = 2.0f;     // total height is 2 * size
     constexpr float HEX_HEIGHT_SPACING_RATIO = 0.75f; // vertical step is 75% of total height
     constexpr float HEX_ODD_ROW_OFFSET = 0.5f;
     constexpr int P_INFINITY = std::numeric_limits<int>::max() / 2;

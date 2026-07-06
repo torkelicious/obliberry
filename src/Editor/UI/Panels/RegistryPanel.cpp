@@ -14,8 +14,9 @@ void Editor::UI::RegistryPanel::OnImGuiRender() {
         ImGui::Separator();
 
         ImGui::BeginChild("Entity List", ImVec2(0, 0), true);
-        for (const ECS::EntityID id: livingEntities) {
-            if (!registry.IsValid(id)) continue;
+        for (const ECS::EntityID id : livingEntities) {
+            if (!registry.IsValid(id))
+                continue;
 
             ECS::Entity entity(id, &registry);
             std::string label = entity.GetName();

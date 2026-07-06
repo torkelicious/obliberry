@@ -18,21 +18,22 @@ static void log_error(const std::string &msg) { IO::Package::Tools::log_error(BI
 
 static void show_help() {
     std::cout << TITLE_NAME << " - Extract contents from a .obpak container\n\n"
-            << "Usage: " << BINARY_NAME << " [options] <package.obpak> [output_directory]\n\n"
-            << "Options:\n"
-            << "  -h, --help             Show this help message and exit\n"
-            << "  -l, --list             List contents of obpak file without extracting\n"
-            << "  -q, --quiet            Suppress output\n"
-            << "  -v, --version          Show version\n\n"
-            << "Example:\n"
-            << "  " << BINARY_NAME << " game.obpak ./extracted_assets\n";
+              << "Usage: " << BINARY_NAME << " [options] <package.obpak> [output_directory]\n\n"
+              << "Options:\n"
+              << "  -h, --help             Show this help message and exit\n"
+              << "  -l, --list             List contents of obpak file without extracting\n"
+              << "  -q, --quiet            Suppress output\n"
+              << "  -v, --version          Show version\n\n"
+              << "Example:\n"
+              << "  " << BINARY_NAME << " game.obpak ./extracted_assets\n";
 }
 
 int main(int argc, char *argv[]) {
     bool list_contents = false;
     bool quiet = false;
     bool readable = false;
-    // only applies to json since i cant be arsed to write a fucking binary ast & de-parser and back to lexemes, well i could, but i dont want too.
+    // only applies to json since i cant be arsed to write a fucking binary ast & de-parser and back to lexemes, well i
+    // could, but i dont want too.
     std::string package_path;
     std::string output_dir;
 
@@ -55,8 +56,10 @@ int main(int argc, char *argv[]) {
             show_help();
             return 1;
         } else {
-            if (package_path.empty()) package_path = arg;
-            else if (output_dir.empty()) output_dir = arg;
+            if (package_path.empty())
+                package_path = arg;
+            else if (output_dir.empty())
+                output_dir = arg;
             else {
                 log_error("Unexpected extra argument: " + arg);
                 show_help();
@@ -86,10 +89,11 @@ int main(int argc, char *argv[]) {
     }
 
     auto paths = reader.get_entry_paths();
-    if (!quiet) log_info("Extracting " + std::to_string(paths.size()) + " files to " + output_dir + "...");
+    if (!quiet)
+        log_info("Extracting " + std::to_string(paths.size()) + " files to " + output_dir + "...");
 
     int success_count = 0;
-    for (const auto &p: paths) {
+    for (const auto &p : paths) {
         auto data = reader.read(p);
         if (!data) {
             log_error("Failed to decompress: " + p);
@@ -106,7 +110,8 @@ int main(int argc, char *argv[]) {
                 std::string pretty = j.dump(2);
                 std::ofstream out(out_path, std::ios::binary);
                 out << pretty;
-                if (!quiet) log_info("Extracted (json): " + p + " (" + std::to_string(pretty.size()) + " bytes)");
+                if (!quiet)
+                    log_info("Extracted (json): " + p + " (" + std::to_string(pretty.size()) + " bytes)");
                 success_count++;
                 continue;
             } catch (const std::exception &e) {
@@ -117,7 +122,8 @@ int main(int argc, char *argv[]) {
 
         std::ofstream out(out_path, std::ios::binary);
         if (out.write(data->data(), data->size())) {
-            if (!quiet) log_info("Extracted: " + p + " (" + std::to_string(data->size()) + " bytes)");
+            if (!quiet)
+                log_info("Extracted: " + p + " (" + std::to_string(data->size()) + " bytes)");
             success_count++;
         } else {
             log_error("Failed to write to disk: " + out_path.string());
@@ -126,7 +132,7 @@ int main(int argc, char *argv[]) {
 
 
     if (!quiet)
-        log_info(
-            "Finished extracting " + std::to_string(success_count) + "/" + std::to_string(paths.size()) + " files.");
+        log_info("Finished extracting " + std::to_string(success_count) + "/" + std::to_string(paths.size()) +
+                 " files.");
     return (static_cast<size_t>(success_count) == paths.size()) ? 0 : 1;
 }

@@ -29,7 +29,7 @@ bool Sound::AudioEngine::Init() {
 Sound::AudioEngine::~AudioEngine() {
     StopMusic();
 
-    for (ma_sound *sound: m_ActiveSounds) {
+    for (ma_sound *sound : m_ActiveSounds) {
         ma_sound_uninit(sound);
         if (m_SoundContexts.contains(sound)) {
             ma_decoder_uninit(m_SoundContexts[sound].decoder);
@@ -48,7 +48,8 @@ Sound::AudioEngine::~AudioEngine() {
 }
 
 void Sound::AudioEngine::Update() {
-    if (!m_Engine) return;
+    if (!m_Engine)
+        return;
 
     for (auto it = m_ActiveSounds.begin(); it != m_ActiveSounds.end();) {
         ma_sound *sound = *it;
@@ -70,7 +71,8 @@ void Sound::AudioEngine::Update() {
 }
 
 void Sound::AudioEngine::PlaySound2D(const std::string &filepath, const float volume) {
-    if (!m_Engine) return;
+    if (!m_Engine)
+        return;
 
     auto *sfx = new ma_sound();
     ma_result result;
@@ -123,7 +125,8 @@ void Sound::AudioEngine::PlaySound2D(const std::string &filepath, const float vo
 }
 
 void Sound::AudioEngine::PlayMusic(const std::string &filepath, const float volume) {
-    if (!m_Engine) return;
+    if (!m_Engine)
+        return;
 
     StopMusic();
     m_CurrentMusic = new ma_sound();
@@ -198,6 +201,7 @@ void Sound::AudioEngine::StopMusic() {
 }
 
 void Sound::AudioEngine::SetMasterVolume(const float volume) const {
-    if (!m_Engine) return;
+    if (!m_Engine)
+        return;
     ma_engine_set_volume(m_Engine, volume);
 }

@@ -20,20 +20,14 @@ namespace Core {
     public:
         explicit Application(ProjectConfig config, std::unique_ptr<ApplicationLayer> layer);
 
-        ~Application() {
-            Shutdown();
-        }
+        ~Application() { Shutdown(); }
 
         void Run();
 
         void Shutdown() const;
 
     private:
-        enum class FrameState : uint8_t {
-            Free,
-            Ready,
-            Rendering
-        };
+        enum class FrameState : uint8_t { Free, Ready, Rendering };
 
         struct FrameSync {
             std::mutex mutex;

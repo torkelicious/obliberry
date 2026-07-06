@@ -43,10 +43,7 @@ int main(const int argc, char *argv[]) {
 
     const Core::ProjectConfig config = Core::ProjectConfig::Deserialize("project.json");
 
-    Core::Application app(
-        config,
-        std::make_unique<Game::GameLayer>()
-    );
+    Core::Application app(config, std::make_unique<Game::GameLayer>());
     app.Run();
     return 0;
 }

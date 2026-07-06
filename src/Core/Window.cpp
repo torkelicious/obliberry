@@ -36,25 +36,22 @@ Core::Window::~Window() {
     }
 }
 
-void Core::Window::PollEvents() {
-    glfwPollEvents();
-}
+void Core::Window::PollEvents() { glfwPollEvents(); }
 
-void Core::Window::SwapBuffers() const {
-    glfwSwapBuffers(m_Window);
-}
+void Core::Window::SwapBuffers() const { glfwSwapBuffers(m_Window); }
 
 bool Core::Window::Init(const unsigned int width, const unsigned int height, const char *title, const bool fullscreen) {
     m_Width = static_cast<int>(width);
     m_Height = static_cast<int>(height);
 
 
-    if (!glfwInit()) return false;
+    if (!glfwInit())
+        return false;
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    //glfwWindowHint(GLFW_SAMPLES, 2); // MSAA
+    // glfwWindowHint(GLFW_SAMPLES, 2); // MSAA
 #if defined DEBUG_BUILD
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
 #endif
@@ -108,7 +105,8 @@ bool Core::Window::Init(const unsigned int width, const unsigned int height, con
 
 void Core::Window::WindowResizeCallback(GLFWwindow *window, const int width, const int height) {
     auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
-    if (!self) return;
+    if (!self)
+        return;
 
     self->m_Width = width;
     self->m_Height = height;
@@ -118,17 +116,14 @@ void Core::Window::WindowResizeCallback(GLFWwindow *window, const int width, con
     glViewport(0, 0, fbWidth, fbHeight);
 }
 
-void Core::Window::SetInputManager(InputManager *inputManager) {
-    m_InputManager = inputManager;
-}
+void Core::Window::SetInputManager(InputManager *inputManager) { m_InputManager = inputManager; }
 
-void Core::Window::SetWindowTitle(const std::string &title) const {
-    glfwSetWindowTitle(m_Window, title.c_str());
-}
+void Core::Window::SetWindowTitle(const std::string &title) const { glfwSetWindowTitle(m_Window, title.c_str()); }
 
 void Core::Window::KeyCallback(GLFWwindow *window, const int key, int scancode, const int action, int mods) {
     const auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
-    if (!self) return;
+    if (!self)
+        return;
 
     if (self->m_InputManager) {
         self->m_InputManager->HandleKeyEvent(key, action);
@@ -137,7 +132,8 @@ void Core::Window::KeyCallback(GLFWwindow *window, const int key, int scancode, 
 
 void Core::Window::CursorPosCallback(GLFWwindow *window, const double xpos, const double ypos) {
     const auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
-    if (!self) return;
+    if (!self)
+        return;
 
     if (self->m_InputManager) {
         self->m_InputManager->SetMousePos(xpos, ypos);
@@ -146,7 +142,8 @@ void Core::Window::CursorPosCallback(GLFWwindow *window, const double xpos, cons
 
 void Core::Window::MouseButtonCallback(GLFWwindow *window, const int button, const int action, const int mods) {
     const auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
-    if (!self) return;
+    if (!self)
+        return;
 
     if (self->m_InputManager) {
         self->m_InputManager->HandleClickEvent(button, action, mods);
@@ -155,7 +152,8 @@ void Core::Window::MouseButtonCallback(GLFWwindow *window, const int button, con
 
 void Core::Window::ScrollCallback(GLFWwindow *window, const double xoffset, const double yoffset) {
     const auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
-    if (!self) return;
+    if (!self)
+        return;
 
     if (self->m_InputManager) {
         self->m_InputManager->HandleScrollEvent(xoffset, yoffset);
