@@ -64,6 +64,7 @@ namespace Scenes {
         if (std::filesystem::exists(fullPath)) {
             //  unload first
             if (m_CurrentScene &&m_CurrentScene
+
             ->
             GetScenePath() == scenePath
             )

@@ -28,7 +28,7 @@ namespace IO {
             m_path_to_index[name] = i;
         }
 
-        auto blob_size = std::filesystem::file_size(file) - header.blob_data_offset;
+        const auto blob_size = std::filesystem::file_size(file) - header.blob_data_offset;
         m_blob_data.resize(blob_size);
         f.seekg(header.blob_data_offset);
         f.read(m_blob_data.data(), static_cast<std::streamsize>(blob_size));
@@ -53,7 +53,7 @@ namespace IO {
         }
 
         std::string decompressed(entry.uncompressed_size, '\0');
-        int result = LZ4_decompress_safe(
+        const int result = LZ4_decompress_safe(
             raw.data(), decompressed.data(),
             static_cast<int>(entry.compressed_size),
             static_cast<int>(entry.uncompressed_size));

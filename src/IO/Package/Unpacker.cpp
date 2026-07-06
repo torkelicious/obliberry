@@ -21,7 +21,7 @@ static void show_help() {
             << "Usage: " << BINARY_NAME << " [options] <package.obpak> [output_directory]\n\n"
             << "Options:\n"
             << "  -h, --help             Show this help message and exit\n"
-            << "  -l, --list             List contents of obpack file without extracting\n"
+            << "  -l, --list             List contents of obpak file without extracting\n"
             << "  -q, --quiet            Suppress output\n"
             << "  -v, --version          Show version\n\n"
             << "Example:\n"

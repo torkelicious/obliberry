@@ -92,16 +92,14 @@ namespace Rendering {
     }
 
     std::string Shader::LoadFile(const std::string &virtualPath) {
-        std::filesystem::path absolutePath = IO::VFS::Resolve(virtualPath);
-        std::ifstream file(absolutePath);
-        if (!file.is_open()) {
-            std::cerr << "[Shader] Failed to open shader: " << absolutePath.string() << "\n";
+        std::optional<std::string> shaderSource = IO::VFS::ReadVirtual(virtualPath);
+        if (!shaderSource.has_value()) {
+            std::cerr << "[Shader] Failed to open shader through VFS: " << virtualPath << "\n";
             return {};
         }
-        std::stringstream ss;
-        ss << file.rdbuf();
-        return ss.str();
+        return std::move(shaderSource.value());
     }
+
 
     GLuint Shader::Compile(const GLenum type, const std::string &src) {
         if (src.empty()) {

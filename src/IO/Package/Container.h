@@ -61,7 +61,7 @@ namespace IO {
         void add_raw_data(const std::string &canonical_path, std::vector<uint8_t> data, Package::EntryType type,
                           bool compress = true);
 
-        void write(const std::filesystem::path &out_file);
+        void write(const std::filesystem::path &out_file) const;
 
     private:
         struct Pending {

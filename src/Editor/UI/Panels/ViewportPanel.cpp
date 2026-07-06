@@ -26,6 +26,7 @@ void Editor::UI::ViewportPanel::OnImGuiRender() {
 
     if (m_EngineContext &&m_EngineContext
 
+
     ->
     input
     )
@@ -41,6 +42,7 @@ void Editor::UI::ViewportPanel::OnImGuiRender() {
     }
 
     if (m_EngineContext &&m_EngineContext
+
 
     ->
     renderer
@@ -59,6 +61,7 @@ void Editor::UI::ViewportPanel::OnImGuiRender() {
         ImGuizmo::SetRect(boundsMin.x, boundsMin.y, viewportSize.x, viewportSize.y);
 
         if (m_EngineContext &&m_EngineContext
+
 
         ->
         renderer

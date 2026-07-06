@@ -95,7 +95,7 @@ int main(int argc, char *argv[]) {
                 auto data = reader.read(path);
                 if (!data) return std::nullopt;
 
-                std::vector<uint8_t> binary_blob(data->begin(), data->end());
+                const std::vector<uint8_t> binary_blob(data->begin(), data->end());
                 ObSL::ModuleResult result;
                 result.kind = ObSL::ModuleResult::Kind::PrecompiledAst;
                 result.ast_module = ObSL::ASTDeserializer::deserialize(binary_blob);

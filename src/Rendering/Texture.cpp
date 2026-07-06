@@ -15,16 +15,22 @@ namespace Rendering {
     )
         : m_FilePath(std::move(path)),
           m_MinFilter(minFilter), m_MagFilter(magFilter), m_WrapS(wrapS), m_WrapT(wrapT) {
-        const std::filesystem::path absolutePath = IO::VFS::Resolve(m_FilePath);
-        const std::string ospath = absolutePath.string();
-
-        std::cout << "Loading: " << ospath << "\n";
+        std::cout << "Loading: " << m_FilePath << "\n";
         stbi_set_flip_vertically_on_load(1);
 
-        if (unsigned char *loaded = stbi_load(ospath.c_str(), &m_Width, &m_Height, &m_BPP, 4)) {
-            const auto size = static_cast<size_t>(m_Width * m_Height * 4);
-            m_PixelData.assign(loaded, loaded + size);
-            stbi_image_free(loaded);
+        if (const std::optional<std::string> fileData = IO::VFS::ReadVirtual(m_FilePath)) {
+            const auto *buffer = reinterpret_cast<const stbi_uc *>(fileData->data());
+            const int len = static_cast<int>(fileData->size());
+
+            if (unsigned char *loaded = stbi_load_from_memory(buffer, len, &m_Width, &m_Height, &m_BPP, 4)) {
+                const auto size = static_cast<size_t>(m_Width * m_Height * 4);
+                m_PixelData.assign(loaded, loaded + size);
+                stbi_image_free(loaded);
+            } else {
+                std::cerr << "Failed to decode image data for: " << m_FilePath << "\n";
+            }
+        } else {
+            std::cerr << "VFS could not find or read file: " << m_FilePath << "\n";
         }
     }
 

@@ -68,7 +68,7 @@ namespace IO {
         m_entries.push_back(std::move(p));
     }
 
-    void ContainerWriter::write(const std::filesystem::path &out_file) {
+    void ContainerWriter::write(const std::filesystem::path &out_file) const {
         Package::FileHeader header;
         header.entry_count = static_cast<uint32_t>(m_entries.size());
 

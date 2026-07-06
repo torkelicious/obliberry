@@ -16,7 +16,7 @@ namespace IO::Package::Tools {
 
     static std::string lower_ext(const std::filesystem::path &p) {
         std::string ext = p.extension().string();
-        std::ranges::transform(ext, ext.begin(), ::tolower);
+        std::ranges::transform(ext, ext.begin(), tolower);
         return ext;
     }
 
@@ -31,8 +31,8 @@ namespace IO::Package::Tools {
         switch (stmt->type()) {
             case StmtType::Using: {
                 auto *using_stmt = static_cast<ObSL::UsingStmt *>(stmt);
-                std::string canonical = ObSL::canonicalize_module_path(script_root, using_stmt->path);
-                std::string project_relative =
+                const std::string canonical = ObSL::canonicalize_module_path(script_root, using_stmt->path);
+                const std::string project_relative =
                         std::filesystem::relative(canonical, project_dir).generic_string();
                 using_stmt->path = project_relative;
                 out_deps.push_back(project_relative);
@@ -43,7 +43,7 @@ namespace IO::Package::Tools {
                     resolve_and_collect_using_paths(s.get(), script_root, project_dir, out_deps);
                 break;
             case StmtType::If: {
-                auto *n = static_cast<ObSL::IfStmt *>(stmt);
+                const auto *n = static_cast<ObSL::IfStmt *>(stmt);
                 resolve_and_collect_using_paths(n->then_branch.get(), script_root, project_dir, out_deps);
                 resolve_and_collect_using_paths(n->else_branch.get(), script_root, project_dir, out_deps);
                 break;
@@ -66,7 +66,7 @@ namespace IO::Package::Tools {
                         resolve_and_collect_using_paths(s.get(), script_root, project_dir, out_deps);
                 break;
             case StmtType::TryCatch: {
-                auto *n = static_cast<ObSL::TryCatchStmt *>(stmt);
+                const auto *n = static_cast<ObSL::TryCatchStmt *>(stmt);
                 resolve_and_collect_using_paths(n->try_body.get(), script_root, project_dir, out_deps);
                 resolve_and_collect_using_paths(n->catch_body.get(), script_root, project_dir, out_deps);
                 break;
@@ -78,7 +78,7 @@ namespace IO::Package::Tools {
 
     bool pack_one_file(const std::filesystem::path &filepath, const std::filesystem::path &project_dir,
                        const std::filesystem::path &script_root,
-                       IO::ContainerWriter &writer, DependencyGraph &dep_graph, const PackOptions &opts) {
+                       ContainerWriter &writer, DependencyGraph &dep_graph, const PackOptions &opts) {
         std::string canonical_path = std::filesystem::relative(filepath, project_dir).generic_string();
         std::string ext = lower_ext(filepath);
 
