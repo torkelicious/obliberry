@@ -18,7 +18,12 @@ namespace Editor {
                                                    const char *filterName,
                                                    const char *filterExt, const char *defaultPath = nullptr);
 
-        static std::optional<std::string> PickFolder(const Core::EngineContext &ctx,
-                                                     const char *defaultPath = nullptr);
+        static std::optional<std::string> PickFolder(
+            const Core::EngineContext &ctx,
+            const char *defaultPath = nullptr,
+            const char *title = nullptr,
+            const char *acceptBtnLabel = nullptr,
+            const char *cancelBtnLabel = nullptr
+        );
     };
 } // Editor

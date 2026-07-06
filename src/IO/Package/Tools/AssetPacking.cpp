@@ -5,6 +5,7 @@
 #include <ObSL/Parser.h>
 #include <ObSL/ASTSerializer.h>
 #include <ObSL/ModulePath.h>
+#include <filesystem>
 #include <nlohmann/json.hpp>
 #include <algorithm>
 
@@ -20,6 +21,7 @@ namespace IO::Package::Tools {
         return ext;
     }
 
+    // NOLINTBEGIN (*-pro-type-static-cast-downcast)
     static void resolve_and_collect_using_paths(
         ObSL::Stmt *stmt,
         const std::filesystem::path &script_root,
@@ -31,7 +33,12 @@ namespace IO::Package::Tools {
         switch (stmt->type()) {
             case StmtType::Using: {
                 auto *using_stmt = static_cast<ObSL::UsingStmt *>(stmt);
-                const std::string canonical = ObSL::canonicalize_module_path(script_root, using_stmt->path);
+                std::string canonical = ObSL::canonicalize_module_path(script_root, using_stmt->path);
+                if (!std::filesystem::exists(canonical)) {
+                    std::string alt = ObSL::canonicalize_module_path(project_dir, using_stmt->path);
+                    if (std::filesystem::exists(alt))
+                        canonical = std::move(alt);
+                }
                 const std::string project_relative =
                         std::filesystem::relative(canonical, project_dir).generic_string();
                 using_stmt->path = project_relative;
@@ -76,6 +83,8 @@ namespace IO::Package::Tools {
         }
     }
 
+    // NOLINTEND (*-pro-type-static-cast-downcast)
+
     bool pack_one_file(const std::filesystem::path &filepath, const std::filesystem::path &project_dir,
                        const std::filesystem::path &script_root,
                        ContainerWriter &writer, DependencyGraph &dep_graph, const PackOptions &opts) {
@@ -83,7 +92,7 @@ namespace IO::Package::Tools {
         std::string ext = lower_ext(filepath);
 
         if (std::ranges::find(ignorelist, filepath.filename()) != std::end(ignorelist)) {
-            return true; // silently skipped, not a failure
+            return true; // silently skipped not a failure
         }
 
         if (ext == ".obsl") {

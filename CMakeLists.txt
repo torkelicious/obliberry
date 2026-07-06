@@ -150,6 +150,8 @@ add_library(obliberry_engine STATIC
         src/IO/Package/ContainerWriter.cpp
         src/IO/Package/ContainerReader.cpp
         src/IO/Package/Tools/CliCommon.cpp
+        src/IO/Package/Tools/AssetPacking.cpp
+        src/IO/Package/Tools/DependencyGraph.cpp
 )
 
 target_include_directories(obliberry_engine PUBLIC
@@ -200,6 +202,7 @@ add_executable(obliberry_editor
         src/Editor/UI/ConfigWindows/ProjectConfigEditor.cpp
         src/Editor/UI/ConfigWindows/SceneConfigEditor.cpp
         src/Editor/FileDialogs.cpp
+        src/IO/Package/Tools/ObpakTools.cpp
 )
 
 target_link_libraries(obliberry_editor PRIVATE
@@ -211,8 +214,6 @@ if (BUILD_PACK_TOOLS)
 
     add_executable(ob_packer
             src/IO/Package/Packer.cpp
-            src/IO/Package/Tools/AssetPacking.cpp
-            src/IO/Package/Tools/DependencyGraph.cpp
     )
     target_link_libraries(ob_packer PRIVATE obliberry_engine)
 

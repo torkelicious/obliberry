@@ -20,6 +20,7 @@
 #include "FileDialogs.h"
 #include "IO/SceneSerialization.h"
 #include "IO/VFS.h"
+#include "IO/Package/Tools/ObpakTools.h"
 
 #include "States/EditState.h"
 #include "States/PlayState.h"
@@ -105,13 +106,12 @@ void Editor::EditorLayer::HandleInput(const float dt) {
         if (hasChanges) {
             m_SaveChangesDialog.SetMessage("Do you want to save before quitting?");
             m_SaveChangesDialog.SetOnSave([this] {
-                if (m_Scene &&m_Scene
+                if (m_Scene && m_Scene
 
 
-                ->
-                HasUnsavedChanges()
-                )
-                {
+                    ->
+                    HasUnsavedChanges()
+                ) {
                     SaveScene();
                 }
                 if (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges()) {
@@ -141,13 +141,12 @@ void Editor::EditorLayer::HandleInput(const float dt) {
                 std::cerr << "[Editor] Cannot enter Play Mode: scene has not been saved yet.\n";
                 return;
             }
-            if (m_Scene &&m_Scene
+            if (m_Scene && m_Scene
 
 
-            ->
-            HasUnsavedChanges()
-            )
-            {
+                ->
+                HasUnsavedChanges()
+            ) {
                 m_SaveChangesDialog.SetMessage(
                     "Do you want to save changes to '" + m_Scene->GetProperties().Name +
                     "' before entering Play Mode?\n\nUnsaved changes will be lost when stopping play.");
@@ -157,9 +156,7 @@ void Editor::EditorLayer::HandleInput(const float dt) {
                 });
                 m_SaveChangesDialog.SetOnDiscard([this] { TransitionTo(std::make_unique<PlayState>()); });
                 m_SaveChangesDialog.Open();
-            }
-            else
-            {
+            } else {
                 TransitionTo(std::make_unique<PlayState>());
             }
         }
@@ -422,13 +419,7 @@ void Editor::EditorLayer::DrawToolbar() {
                     if (hasChanges) {
                         m_SaveChangesDialog.SetMessage("Do you want to save before creating a new project?");
                         m_SaveChangesDialog.SetOnSave([this, onProceed] {
-                            if (m_Scene &&m_Scene
-
-
-                            ->
-                            HasUnsavedChanges()
-                            )
-                            {
+                            if (m_Scene && m_Scene->HasUnsavedChanges()) {
                                 SaveScene();
                             }
                             if (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges()) {
@@ -453,13 +444,12 @@ void Editor::EditorLayer::DrawToolbar() {
                                (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges())) {
                         m_SaveChangesDialog.SetMessage("Do you want to save before opening another project?");
                         m_SaveChangesDialog.SetOnSave([this, projectFile] {
-                            if (m_Scene &&m_Scene
+                            if (m_Scene && m_Scene
 
 
-                            ->
-                            HasUnsavedChanges()
-                            )
-                            {
+                                ->
+                                HasUnsavedChanges()
+                            ) {
                                 SaveScene();
                             }
                             if (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges()) {
@@ -514,13 +504,12 @@ void Editor::EditorLayer::DrawToolbar() {
                 if (hasChanges) {
                     m_SaveChangesDialog.SetMessage("Do you want to save before closing the project?");
                     m_SaveChangesDialog.SetOnSave([this] {
-                        if (m_Scene &&m_Scene
+                        if (m_Scene && m_Scene
 
 
-                        ->
-                        HasUnsavedChanges()
-                        )
-                        {
+                            ->
+                            HasUnsavedChanges()
+                        ) {
                             SaveScene();
                         }
                         if (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges()) {
@@ -547,19 +536,24 @@ void Editor::EditorLayer::DrawToolbar() {
             }
             ImGui::Separator();
 
+            if (ImGui::MenuItem("Pack Project to obpak")) {
+                auto path = FileDialogs::PickFolder(m_Context, nullptr, "Pick build directory");
+                IO::Package::Tools::PackageCurrentProject(path.value());
+            }
+            ImGui::Separator();
+
             if (ImGui::MenuItem("Exit")) {
                 const bool hasChanges = (m_Scene && m_Scene->HasUnsavedChanges()) ||
                                         (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges());
                 if (hasChanges) {
                     m_SaveChangesDialog.SetMessage("Do you want to save before quitting?");
                     m_SaveChangesDialog.SetOnSave([this] {
-                        if (m_Scene &&m_Scene
+                        if (m_Scene && m_Scene
 
 
-                        ->
-                        HasUnsavedChanges()
-                        )
-                        {
+                            ->
+                            HasUnsavedChanges()
+                        ) {
                             SaveScene();
                         }
                         if (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges()) {
@@ -601,13 +595,12 @@ void Editor::EditorLayer::DrawToolbar() {
                     for (const auto &scenePath: scenes) {
                         const bool isCurrent = m_Scene && m_Scene->GetScenePath() == scenePath;
                         if (ImGui::MenuItem(scenePath.c_str(), nullptr, false, !isCurrent)) {
-                            if (m_Scene &&m_Scene
+                            if (m_Scene && m_Scene
 
 
-                            ->
-                            HasUnsavedChanges()
-                            )
-                            {
+                                ->
+                                HasUnsavedChanges()
+                            ) {
                                 m_SaveChangesDialog.SetMessage("Do you want to save changes to '" +
                                                                m_Scene->GetProperties().Name +
                                                                "' before switching scenes?");
@@ -617,9 +610,7 @@ void Editor::EditorLayer::DrawToolbar() {
                                 });
                                 m_SaveChangesDialog.SetOnDiscard([this, scenePath] { LoadScene(scenePath); });
                                 m_SaveChangesDialog.Open();
-                            }
-                            else
-                            {
+                            } else {
                                 m_PendingSceneToLoad = scenePath;
                             }
                         }
@@ -641,13 +632,12 @@ void Editor::EditorLayer::DrawToolbar() {
             } else {
                 if (m_CurrentScenePath.empty()) {
                     std::cerr << "[Editor] Cannot enter Play Mode: scene has not been saved yet.\n";
-                } else if (m_Scene &&m_Scene
+                } else if (m_Scene && m_Scene
 
 
-                ->
-                HasUnsavedChanges()
-                )
-                {
+                           ->
+                           HasUnsavedChanges()
+                ) {
                     m_SaveChangesDialog.SetMessage(
                         "Do you want to save changes to '" + m_Scene->GetProperties().Name +
                         "' before entering Play Mode?\n\nUnsaved changes will be discarded.");
@@ -657,9 +647,7 @@ void Editor::EditorLayer::DrawToolbar() {
                     });
                     m_SaveChangesDialog.SetOnDiscard([this] { TransitionTo(std::make_unique<PlayState>()); });
                     m_SaveChangesDialog.Open();
-                }
-                else
-                {
+                } else {
                     TransitionTo(std::make_unique<PlayState>());
                 }
             }

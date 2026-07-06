@@ -43,9 +43,18 @@ namespace Editor {
         return std::nullopt;
     }
 
-    std::optional<std::string> FileDialogs::PickFolder(const Core::EngineContext &ctx, const char *defaultPath) {
-        NFD::UniquePath outPath;
+    std::optional<std::string> FileDialogs::PickFolder(
+        const Core::EngineContext &ctx,
+        const char *defaultPath,
+        const char *title,
+        const char *acceptBtnLabel,
+        const char *cancelBtnLabel
+    ) {
+        (void) title;
+        (void) acceptBtnLabel;
+        (void) cancelBtnLabel;
 
+        NFD::UniquePath outPath;
         if (NFD::PickFolder(outPath, defaultPath, GetNativeHandle(ctx)) == NFD_OKAY) {
             return std::string(outPath.get());
         }
