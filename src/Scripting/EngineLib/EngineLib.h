@@ -30,7 +30,7 @@ namespace Scripting {
 
         void register_scene_management_modules(ObSL::Interpreter &interpreter);
 
-        //void register_time_modules(ObSL::Interpreter &interpreter); // unused... todo: implement soon
+        void register_time_modules(ObSL::Interpreter &interpreter);
 
         void register_gui_modules(ObSL::Interpreter &interpreter);
 

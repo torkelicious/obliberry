@@ -108,4 +108,42 @@ void Scripting::EngineLib::register_camera_modules(ObSL::Interpreter &interprete
                 }
                 return false;
             }, "Camera_SetZoom"));
+
+    interpreter.get_global_environment()->define(
+        "Camera_GetAngleX", interpreter.gc.allocate<ObSL::NativeFunction>(
+            0,
+            [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+                if (ctx && ctx->camera) {
+                    std::lock_guard lock(s_CameraMutex);
+                    return static_cast<double>(ctx->camera->GetAngleX());
+                }
+                return 0.0;
+            }, "Camera_GetAngleX"));
+
+    interpreter.get_global_environment()->define(
+        "Camera_GetAngleZ", interpreter.gc.allocate<ObSL::NativeFunction>(
+            0,
+            [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+                if (ctx && ctx->camera) {
+                    std::lock_guard lock(s_CameraMutex);
+                    return static_cast<double>(ctx->camera->GetAngleZ());
+                }
+                return 0.0;
+            }, "Camera_GetAngleZ"));
+
+    interpreter.get_global_environment()->define(
+        "Camera_SetAngle", interpreter.gc.allocate<ObSL::NativeFunction>(
+            2,
+            [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+                if (ctx && ctx->camera && args.size() >= 2
+                    && std::holds_alternative<double>(args[0])
+                    && std::holds_alternative<double>(args[1])) {
+                    std::lock_guard lock(s_CameraMutex);
+                    ctx->camera->SetRotation(
+                        static_cast<float>(std::get<double>(args[0])),
+                        static_cast<float>(std::get<double>(args[1])));
+                    return true;
+                }
+                return false;
+            }, "Camera_SetAngle"));
 }

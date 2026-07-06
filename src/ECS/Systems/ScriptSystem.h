@@ -177,11 +177,6 @@ namespace ECS::Systems::ScriptSystem {
         Scripting::ScriptCommandBuffer cmd_buf;
         const size_t num_workers = ctx.scriptPool->worker_count();
 
-        // Set frame context on all workers so native functions can reach the cmd buf
-        for (size_t w = 0; w < num_workers; ++w)
-            ctx.scriptPool->get_worker(w)->set_frame_context(&cmd_buf);
-
-        //  Init / hot-reload
         registry.ForEach<Components::ScriptComponent>(
             [&](const Entity entity, Components::ScriptComponent *script) {
                 const auto raw_id = static_cast<EntityID>(entity);
@@ -209,6 +204,9 @@ namespace ECS::Systems::ScriptSystem {
                     }
                 }
             });
+
+        for (size_t w = 0; w < num_workers; ++w)
+            ctx.scriptPool->get_worker(w)->set_frame_context(&cmd_buf);
 
         // to avoid spinning idle workers
         size_t active_updates = 0;

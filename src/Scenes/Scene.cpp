@@ -61,6 +61,7 @@ void Scenes::Scene::OnEnter() {
 
 void Scenes::Scene::Update(const float dt) {
     m_Context->deltaTime = dt;
+    m_Context->frameCount++;
 
     ECS::Systems::PlayerControlSystem::Update(m_Registry, *m_Context);
     ECS::Systems::AISystem::Update(m_Registry, dt);

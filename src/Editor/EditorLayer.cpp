@@ -374,20 +374,31 @@ void Editor::EditorLayer::DrawUtilityWindows() {
     if (ImGui::Button("Clear")) {
         m_ConsoleLogs.clear();
     }
+    ImGui::SameLine();
+    if (ImGui::Button("Copy")) {
+        std::string allText;
+        for (const auto &line: m_ConsoleLogs) {
+            allText += line;
+            allText += '\n';
+        }
+        ImGui::SetClipboardText(allText.c_str());
+    }
 
     ImGui::Separator();
 
-    ImGui::BeginChild("LogScroll", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
-
-    for (const auto &logLine: m_ConsoleLogs) {
-        ImGui::TextUnformatted(logLine.c_str());
+    std::string fullText;
+    for (const auto &line: m_ConsoleLogs) {
+        fullText += line;
+        fullText += '\n';
     }
 
-    if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY()) {
-        ImGui::SetScrollHereY(1.0f);
-    }
+    std::vector logBuffer(fullText.begin(), fullText.end());
+    logBuffer.push_back('\0');
 
-    ImGui::EndChild();
+    ImGui::InputTextMultiline("##console_log", logBuffer.data(), logBuffer.size(),
+                              ImVec2(-1, -1),
+                              ImGuiInputTextFlags_ReadOnly);
+
     ImGui::End();
 
     ImGui::Begin("Project Browser");
@@ -420,6 +431,7 @@ void Editor::EditorLayer::DrawToolbar() {
                         m_SaveChangesDialog.SetMessage("Do you want to save before creating a new project?");
                         m_SaveChangesDialog.SetOnSave([this, onProceed] {
                             if (m_Scene &&m_Scene
+
                             ->
                             HasUnsavedChanges()
                             )
@@ -602,9 +614,9 @@ void Editor::EditorLayer::DrawToolbar() {
                             HasUnsavedChanges()
                             )
                             {
-                                m_SaveChangesDialog.SetMessage("Do you want to save changes to '" +
-                                                               m_Scene->GetProperties().Name +
-                                                               "' before switching scenes?");
+                                m_SaveChangesDialog.SetMessage(
+                                    "Do you want to save changes to '" + m_Scene->GetProperties().Name +
+                                    "' before switching scenes?");
                                 m_SaveChangesDialog.SetOnSave([this, scenePath] {
                                     SaveScene();
                                     LoadScene(scenePath);

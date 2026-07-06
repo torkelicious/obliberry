@@ -48,4 +48,15 @@ void Scripting::EngineLib::register_audio_modules(ObSL::Interpreter &interpreter
                 }
                 return std::monostate{};
             }, "StopMusic"));
+
+    interpreter.get_global_environment()->define(
+        "SetMasterVolume", interpreter.gc.allocate<ObSL::NativeFunction>(
+            1,
+            [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+                if (ctx && ctx->audioEngine && !args.empty() && std::holds_alternative<double>(args[0])) {
+                    std::lock_guard lock(s_AudioMutex);
+                    ctx->audioEngine->SetMasterVolume(static_cast<float>(std::get<double>(args[0])));
+                }
+                return std::monostate{};
+            }, "SetMasterVolume"));
 }

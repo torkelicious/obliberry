@@ -17,7 +17,7 @@ void Scripting::EngineLib::register_core_modules(ObSL::Interpreter &interpreter)
         "get_dt", interpreter.gc.allocate<ObSL::NativeFunction>(
             0,
             [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
-                return ctx ? static_cast<double>(ctx->deltaTime) : 0.0;
+                return ctx ? static_cast<double>(ctx->deltaTime * ctx->timeScale) : 0.0;
             }, "get_dt"));
 
     interpreter.get_global_environment()->define(
@@ -50,7 +50,7 @@ void Scripting::EngineLib::register_core_modules(ObSL::Interpreter &interpreter)
 
     interpreter.get_global_environment()->define(
         "CreateEntity", interpreter.gc.allocate<ObSL::NativeFunction>(
-            0,
+            1,
             [reg = m_registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
                 std::string name = "NewEntity";
                 if (!args.empty() && std::holds_alternative<std::string>(args[0])) {
@@ -132,4 +132,24 @@ void Scripting::EngineLib::register_core_modules(ObSL::Interpreter &interpreter)
                 }
                 return std::monostate{};
             }, "CloseWindow"));
+
+    interpreter.get_global_environment()->define(
+        "DestroyEntity", interpreter.gc.allocate<ObSL::NativeFunction>(
+            1,
+            [reg = m_registry](const ObSL::Interpreter *interpreter,
+                               const std::vector<ObSL::Value> &args) -> ObSL::Value {
+                if (args.empty() || !std::holds_alternative<double>(args[0])) return std::monostate{};
+                const auto id = static_cast<ECS::EntityID>(std::get<double>(args[0]));
+                auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
+                auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
+                if (cmd_buf) {
+                    cmd_buf->push([id](ECS::Registry &reg) {
+                        reg.DestroyEntity(id);
+                    });
+                } else if (reg) {
+                    std::unique_lock lock(g_RegistryMutex);
+                    reg->DestroyEntity(id);
+                }
+                return std::monostate{};
+            }, "DestroyEntity"));
 }
