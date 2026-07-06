@@ -48,7 +48,8 @@ int main(int argc, char *argv[]) {
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
         if (arg == "-o" || arg == "--output") { if (i + 1 < argc) output_file = argv[++i]; } else if (
-            arg == "-q" || arg == "--quiet") quiet = true;
+            arg == "-q" || arg == "--quiet")
+            quiet = true;
         else if (arg == "--verbose") verbose = true;
         else if (arg == "--no-compress") global_compress = false;
         else if (arg == "--strict") strict_mode = true;
@@ -80,6 +81,12 @@ int main(int argc, char *argv[]) {
         log_info("Output file: " + output_file);
     }
 
+    fs::path script_root = project_dir / "assets" / "scripts";
+    if (!fs::exists(script_root)) {
+        log_error("Expected scripts folder not found: " + script_root.string());
+        return 1;
+    }
+
     IO::ContainerWriter writer;
     IO::Package::Tools::DependencyGraph dep_graph;
     IO::Package::Tools::PackOptions opts{global_compress, verbose, quiet, BINARY_NAME};
@@ -89,7 +96,7 @@ int main(int argc, char *argv[]) {
     for (const auto &entry: fs::recursive_directory_iterator(project_dir)) {
         if (entry.is_directory()) continue;
         try {
-            if (IO::Package::Tools::pack_one_file(entry.path(), project_dir, writer, dep_graph, opts))
+            if (IO::Package::Tools::pack_one_file(entry.path(), project_dir, script_root, writer, dep_graph, opts))
                 ++success_count;
         } catch (const std::exception &e) {
             log_error(entry.path().string() + " - " + e.what());

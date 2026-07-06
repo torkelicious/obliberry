@@ -28,7 +28,7 @@ namespace IO {
             m_path_to_index[name] = i;
         }
 
-        auto blob_size = static_cast<size_t>(std::filesystem::file_size(file) - header.blob_data_offset);
+        auto blob_size = std::filesystem::file_size(file) - header.blob_data_offset;
         m_blob_data.resize(blob_size);
         f.seekg(header.blob_data_offset);
         f.read(m_blob_data.data(), static_cast<std::streamsize>(blob_size));

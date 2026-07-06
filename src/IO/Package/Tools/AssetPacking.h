@@ -13,5 +13,6 @@ namespace IO::Package::Tools {
     };
 
     bool pack_one_file(const std::filesystem::path &filepath, const std::filesystem::path &project_dir,
-                       IO::ContainerWriter &writer, DependencyGraph &dep_graph, const PackOptions &opts);
+                       const std::filesystem::path &script_root,
+                       ContainerWriter &writer, DependencyGraph &dep_graph, const PackOptions &opts);
 }

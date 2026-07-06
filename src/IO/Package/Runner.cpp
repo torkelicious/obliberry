@@ -96,20 +96,13 @@ int main(int argc, char *argv[]) {
                 if (!data) return std::nullopt;
 
                 std::vector<uint8_t> binary_blob(data->begin(), data->end());
-                try {
-                    ObSL::SerializedModule mod = ObSL::ASTDeserializer::deserialize(binary_blob);
-                    ObSL::ModuleResult result;
-                    result.kind = ObSL::ModuleResult::Kind::PrecompiledAst;
-                    result.ast_module = std::move(mod);
-                    return result;
-                } catch (...) {
-                    ObSL::ModuleResult result;
-                    result.kind = ObSL::ModuleResult::Kind::Source;
-                    result.source = std::move(*data);
-                    return result;
-                }
+                ObSL::ModuleResult result;
+                result.kind = ObSL::ModuleResult::Kind::PrecompiledAst;
+                result.ast_module = ObSL::ASTDeserializer::deserialize(binary_blob);
+                return result;
             }
         );
+
 
         if (!quiet) log_info("Executing...\n-----------------------------------");
 
