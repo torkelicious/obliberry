@@ -2,6 +2,11 @@
 
 #include "EditorPanel.h"
 
+#include <imgui.h>
+#include <ImGuizmo.h>
+
+#include "Rendering/Camera.h"
+
 namespace Editor::UI {
     class ViewportPanel : public EditorPanel {
     public:
@@ -14,11 +19,19 @@ namespace Editor::UI {
 
         [[nodiscard]] int GetSelectedEntityID() const { return m_SelectedEntityID; }
         void ClearSelectedEntityID() { m_SelectedEntityID = -1; }
+        [[nodiscard]] bool HadEmptyClick() const { return m_HadEmptyClick; }
+        void ClearEmptyClick() { m_HadEmptyClick = false; }
+
+        [[nodiscard]] glm::vec2 MousePosToWorld(const Rendering::Camera &camera) const;
 
     private:
         float m_ViewportWidth = 1280.0f;
         float m_ViewportHeight = 720.0f;
         int m_SelectedEntityID = -1;
         bool m_ShowPlayIndicator = false;
+        bool m_ExpectingPick = false;
+        bool m_HadEmptyClick = false;
+
+        ImVec2 m_ViewportBoundsMin{0, 0};
     };
 } // namespace Editor::UI

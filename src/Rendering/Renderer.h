@@ -86,6 +86,7 @@ namespace Rendering {
         }
 
         int GetLastReadPixel() const { return m_PixelReadResult.load(); }
+        bool IsPixelReadRequested() const { return m_PixelReadRequested.load(); }
         void ClearPixelReadResult() { m_PixelReadResult.store(-1); }
 
     private:

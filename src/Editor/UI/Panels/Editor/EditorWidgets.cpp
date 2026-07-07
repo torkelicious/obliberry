@@ -1,8 +1,9 @@
 #include "EditorWidgets.h"
 #include <cstring>
 
+#include "Core/Constants.h"
 #include "Core/EngineContext.h"
-#include "Editor/FileDialogs.h"
+#include "Core/ResourceManager.h"
 #include "ECS/Components/BillboardTagComponent.h"
 #include "ECS/Components/CustomDataComponent.h"
 #include "ECS/Components/DirectionalTextureComponent.h"
@@ -10,57 +11,37 @@
 #include "ECS/Components/MaterialComponent.h"
 #include "ECS/Components/MeshComponent.h"
 #include "ECS/Components/ScriptComponent.h"
-#include "ECS/Systems/ScriptSystem.h"
-#include "IO/AssetLoader.h"
 #include "IO/VFS.h"
-#include "Rendering/MeshFactory.h"
 #include "Rendering/Renderer.h"
 #include "Rendering/Shader.h"
 #include "Rendering/Texture.h"
 #include <filesystem>
 
+
 namespace {
-    // if path is inside the project root return the relative path.
-    // otherwise import the asset via vfs
-    std::optional<std::string> ResolveOrImportPath(const std::string &absolutePath,
-                                                   const std::string &targetSubDir = "") {
-        if (absolutePath.empty())
-            return std::nullopt;
+    bool TextureCombo(const char *label, Core::ResourceManager &resources,
+                      std::shared_ptr<Rendering::Texture> &current);
 
-        const std::filesystem::path projectRoot = IO::VFS::GetProjectRoot();
-        if (projectRoot.empty())
-            return std::nullopt;
+    bool ShaderCombo(const char *label, Core::ResourceManager &resources, std::shared_ptr<Rendering::Shader> &current);
 
-        std::error_code ec;
-        std::filesystem::path absNorm = std::filesystem::absolute(absolutePath, ec);
-        if (ec || absNorm.empty())
-            return std::nullopt;
-        absNorm = absNorm.lexically_normal();
+    bool MeshCombo(const char *label, Core::ResourceManager &resources, std::shared_ptr<Rendering::Mesh> &current);
 
-        std::filesystem::path rootNorm = std::filesystem::absolute(projectRoot, ec);
-        if (ec || rootNorm.empty())
-            return std::nullopt;
-        rootNorm = rootNorm.lexically_normal();
+    bool MaterialCombo(const char *label, Core::ResourceManager &resources,
+                       std::shared_ptr<Rendering::Material> &current);
 
-        for (auto p = absNorm; p.has_parent_path() && p != p.root_path(); p = p.parent_path()) {
-            if (p == rootNorm) {
-                // already inside project
-                std::string rel = std::filesystem::proximate(absNorm, rootNorm).string();
-                for (auto &c : rel)
-                    if (c == '\\')
-                        c = '/';
-                return rel;
-            }
-        }
-        return IO::AssetLoader::ImportAsset(absolutePath, targetSubDir);
-    }
+
+    bool FileCombo(const char *label, const std::string &subDir, const std::string &extension, std::string &current);
 } // namespace
+
+//  PointLightWidget
 
 Editor::UI::PointLightWidget::PointLightWidget() : AutoComponentWidget("Point Light") {
     m_Fields.push_back({"Color", FieldType::Color3, offsetof(ECS::Components::PointLightComponent, color)});
     m_Fields.push_back({"Radius", FieldType::Float, offsetof(ECS::Components::PointLightComponent, radius)});
     m_Fields.push_back({"Intensity", FieldType::Float, offsetof(ECS::Components::PointLightComponent, intensity)});
 }
+
+//  TransformWidget
 
 Editor::UI::TransformWidget::TransformWidget() : AutoComponentWidget("Transform") {}
 
@@ -113,6 +94,8 @@ void Editor::UI::TransformWidget::DrawExtras(ECS::Entity entity, ECS::Components
     }
 }
 
+//  MovementWidget
+
 Editor::UI::MovementWidget::MovementWidget() : AutoComponentWidget("Movement") {
     m_Fields.push_back({"Time Per Step", FieldType::Float, offsetof(ECS::Components::MovementComponent, timePerStep)});
     m_Fields.push_back({"Step Timer", FieldType::Float, offsetof(ECS::Components::MovementComponent, stepTimer)});
@@ -125,6 +108,8 @@ void Editor::UI::MovementWidget::DrawExtras(ECS::Entity entity, ECS::Components:
     ImGui::Text("Path Nodes: %zu", component->currentPath.size());
     ImGui::Text("Current Path Index: %zu", component->currentPathIndex);
 }
+
+//  MeshWidget
 
 const char *Editor::UI::MeshWidget::GetName() const { return "Mesh"; }
 
@@ -143,54 +128,14 @@ void Editor::UI::MeshWidget::Draw(const ECS::Entity entity, Core::EngineContext 
         }
 
         ImGui::Spacing();
+        ImGui::SeparatorText("Asset");
 
-        // Mesh factory selection
-        constexpr const char *meshTypes[] = {"Quad",    "PointTopHex", "ETriang", "Ellipse", "Circle", "Pentagon",
-                                             "Hexagon", "Octagon",     "Ring",    "Sector",  "Diamond"};
-        ImGui::Combo("Type", &m_SelectedMesh, meshTypes, IM_ARRAYSIZE(meshTypes), IM_ARRAYSIZE(meshTypes));
-        ImGui::SameLine();
-        if (ImGui::Button("Assign")) {
-            Rendering::MeshData data;
-            switch (m_SelectedMesh) {
-                case 0:
-                    data = Rendering::MeshFactory::CreateQuad();
-                    break;
-                case 1:
-                    data = Rendering::MeshFactory::CreatePointTopHex();
-                    break;
-                case 2:
-                    data = Rendering::MeshFactory::CreateEquiTriangle(0.5f);
-                    break;
-                case 3:
-                    data = Rendering::MeshFactory::CreateEllipse();
-                    break;
-                case 4:
-                    data = Rendering::MeshFactory::CreateEllipse();
-                    break;
-                case 5:
-                    data = Rendering::MeshFactory::CreateRegularPolygon(5);
-                    break;
-                case 6:
-                    data = Rendering::MeshFactory::CreateRegularPolygon(6);
-                    break;
-                case 7:
-                    data = Rendering::MeshFactory::CreateRegularPolygon(8);
-                    break;
-                case 8:
-                    data = Rendering::MeshFactory::CreateRing();
-                    break;
-                case 9:
-                    data = Rendering::MeshFactory::CreateSector();
-                    break;
-                case 10:
-                    data = Rendering::MeshFactory::CreateDiamond();
-                    break;
+        if (engineContext && engineContext->resources) {
+            ImGui::PushID("MeshCombo");
+            if (MeshCombo("Mesh", *engineContext->resources, comp->mesh)) {
+                MarkSceneChanged(engineContext);
             }
-            auto mesh = std::make_shared<Rendering::Mesh>(std::move(data));
-            mesh->SetFactoryId(meshTypes[m_SelectedMesh]);
-            Rendering::Renderer::SubmitInitTask([mesh] { mesh->InitGL(); });
-            comp->mesh = std::move(mesh);
-            MarkSceneChanged(engineContext);
+            ImGui::PopID();
         }
 
         ImGui::Separator();
@@ -203,6 +148,8 @@ void Editor::UI::MeshWidget::Draw(const ECS::Entity entity, Core::EngineContext 
         }
     }
 }
+
+//  MaterialWidget
 
 const char *Editor::UI::MaterialWidget::GetName() const { return "Material"; }
 
@@ -224,74 +171,39 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
             ImGui::Spacing();
             ImGui::SeparatorText("Texture");
 
-            ImGui::Text("%s", comp->material->texture ? comp->material->texture->GetPath().c_str() : "None");
-            ImGui::SameLine();
-            if (ImGui::Button("Load")) {
-                if (engineContext) {
-                    const auto picked = FileDialogs::OpenFile(
-                            *engineContext, {.filterName = "Image", .filterExt = "png,jpg,jpeg,bmp,tga"});
-                    if (picked.has_value()) {
-                        auto finalPath = ResolveOrImportPath(picked.value());
-                        if (finalPath.has_value()) {
-                            auto tex = std::make_shared<Rendering::Texture>(finalPath.value());
-                            Rendering::Renderer::SubmitInitTask([tex] { tex->InitGL(); });
-                            comp->material->texture = std::move(tex);
-                            MarkSceneChanged(engineContext);
-                        }
-                    }
+            if (engineContext && engineContext->resources) {
+                ImGui::PushID("TextureCombo");
+                if (TextureCombo("Texture", *engineContext->resources, comp->material->texture)) {
+                    MarkSceneChanged(engineContext);
                 }
+                ImGui::PopID();
             }
 
             ImGui::Spacing();
             ImGui::SeparatorText("Shader");
 
-            ImGui::Text("Vert: %s", comp->material->shader ? comp->material->shader->GetVertexPath().c_str() : "None");
-            ImGui::SameLine();
-            if (ImGui::Button("Vert##Shader")) {
-                if (engineContext) {
-                    const auto picked = FileDialogs::OpenFile(
-                            *engineContext, {.filterName = "Vertex Shader", .filterExt = "vert,glsl"});
-                    if (picked.has_value()) {
-                        const auto finalPath = ResolveOrImportPath(picked.value());
-                        if (finalPath.has_value() && comp->material->shader) {
-                            comp->material->shader->GetVertexPath() = finalPath.value();
-                            MarkSceneChanged(engineContext);
-                        }
-                    }
+            if (engineContext && engineContext->resources) {
+                ImGui::PushID("ShaderCombo");
+                if (ShaderCombo("Shader", *engineContext->resources, comp->material->shader)) {
+                    MarkSceneChanged(engineContext);
                 }
+                ImGui::PopID();
             }
 
-            ImGui::Text("Frag: %s",
-                        comp->material->shader ? comp->material->shader->GetFragmentPath().c_str() : "None");
-            ImGui::SameLine();
-            if (ImGui::Button("Frag##Shader")) {
-                if (engineContext) {
-                    const auto picked = FileDialogs::OpenFile(
-                            *engineContext, {.filterName = "Fragment Shader", .filterExt = "frag,glsl"});
-                    if (picked.has_value()) {
-                        const auto finalPath = ResolveOrImportPath(picked.value());
-                        if (finalPath.has_value() && comp->material->shader) {
-                            comp->material->shader->GetFragmentPath() = finalPath.value();
-                            MarkSceneChanged(engineContext);
-                        }
-                    }
-                }
+            if (comp->material->shader) {
+                ImGui::Text("Vert: %s", comp->material->shader->GetVertexPath().c_str());
+                ImGui::Text("Frag: %s", comp->material->shader->GetFragmentPath().c_str());
             }
 
-            ImGui::Spacing();
-            if (ImGui::Button("Compile Shaders")) {
-                if (comp->material->shader) {
-                    auto shader = std::make_shared<Rendering::Shader>(comp->material->shader->GetVertexPath(),
-                                                                      comp->material->shader->GetFragmentPath());
-                    Rendering::Renderer::SubmitInitTask([shader] { shader->InitGL(); });
-                    comp->material->shader = std::move(shader);
-                }
-            }
+            // shader reload is not needed for texture changes.
         } else {
             ImGui::TextDisabled("No material assigned");
-            if (ImGui::Button("Create Material")) {
-                comp->material = std::make_shared<Rendering::Material>();
-                MarkSceneChanged(engineContext);
+            if (engineContext && engineContext->resources) {
+                ImGui::PushID("AssignMaterialCombo");
+                if (MaterialCombo("Assign Material", *engineContext->resources, comp->material)) {
+                    MarkSceneChanged(engineContext);
+                }
+                ImGui::PopID();
             }
         }
 
@@ -307,6 +219,8 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
     }
 }
 
+//  DirectionalTextureWidget
+
 const char *Editor::UI::DirectionalTextureWidget::GetName() const { return "Directional Texture"; }
 
 void Editor::UI::DirectionalTextureWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext) {
@@ -320,26 +234,16 @@ void Editor::UI::DirectionalTextureWidget::Draw(const ECS::Entity entity, Core::
             MarkSceneChanged(engineContext);
         ImGui::Spacing();
 
-        for (int i = 0; i < 6; i++) {
-            ImGui::PushID(i);
-            ImGui::Text("Dir %d: %s", i, comp->textures[i] ? comp->textures[i]->GetPath().c_str() : "None");
-            ImGui::SameLine();
-            if (ImGui::Button("Load")) {
-                if (engineContext) {
-                    auto picked = FileDialogs::OpenFile(*engineContext,
-                                                        {.filterName = "Image", .filterExt = "png,jpg,jpeg,bmp,tga"});
-                    if (picked.has_value()) {
-                        auto finalPath = ResolveOrImportPath(picked.value());
-                        if (finalPath.has_value()) {
-                            auto tex = std::make_shared<Rendering::Texture>(finalPath.value());
-                            Rendering::Renderer::SubmitInitTask([tex] { tex->InitGL(); });
-                            comp->textures[i] = std::move(tex);
-                            MarkSceneChanged(engineContext);
-                        }
-                    }
+        if (engineContext && engineContext->resources) {
+            for (int i = 0; i < 6; i++) {
+                ImGui::PushID(i);
+                char label[32];
+                snprintf(label, sizeof(label), "Dir %d Texture", i);
+                if (TextureCombo(label, *engineContext->resources, comp->textures[i])) {
+                    MarkSceneChanged(engineContext);
                 }
+                ImGui::PopID();
             }
-            ImGui::PopID();
         }
 
         ImGui::Separator();
@@ -354,6 +258,8 @@ void Editor::UI::DirectionalTextureWidget::Draw(const ECS::Entity entity, Core::
     }
 }
 
+//  MapWidget
+
 const char *Editor::UI::MapWidget::GetName() const { return "Map"; }
 
 void Editor::UI::MapWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext) {
@@ -361,12 +267,17 @@ void Editor::UI::MapWidget::Draw(const ECS::Entity entity, Core::EngineContext *
         return;
     if (ImGui::CollapsingHeader(GetName())) {
         auto *comp = entity.GetComponent<ECS::Components::MapComponent>();
-        char buffer[256];
-        strncpy(buffer, comp->mapFilePath.c_str(), sizeof(buffer));
-        if (ImGui::InputText("File Path", buffer, sizeof(buffer))) {
-            comp->mapFilePath = buffer;
+
+        ImGui::Spacing();
+        ImGui::SeparatorText("Map File");
+
+        ImGui::PushID("MapFileCombo");
+        if (FileCombo("Map File", std::string(Core::MAP_PATH), std::string(Core::MAP_FILE_EXTENSION),
+                      comp->mapFilePath)) {
             MarkSceneChanged(engineContext);
         }
+        ImGui::PopID();
+
         ImGui::Checkbox("Needs Mesh Update", &comp->needsMeshUpdate);
         if (ImGui::IsItemDeactivatedAfterEdit())
             MarkSceneChanged(engineContext);
@@ -383,6 +294,8 @@ void Editor::UI::MapWidget::Draw(const ECS::Entity entity, Core::EngineContext *
         }
     }
 }
+
+//  MapStateWidget
 
 const char *Editor::UI::MapStateWidget::GetName() const { return "Map State"; }
 
@@ -412,6 +325,8 @@ void Editor::UI::MapStateWidget::Draw(const ECS::Entity entity, Core::EngineCont
         }
     }
 }
+
+//  ScriptWidget
 
 const char *Editor::UI::ScriptWidget::GetName() const { return "Scripts"; }
 
@@ -450,40 +365,43 @@ void Editor::UI::ScriptWidget::Draw(ECS::Entity entity, Core::EngineContext *eng
 
         ImGui::Separator();
 
-        // add Script button
-        if (ImGui::Button("Add Script")) {
-            if (engineContext) {
-                const auto scriptPath =
-                        FileDialogs::OpenFile(*engineContext, {.filterName = "Script Files", .filterExt = "obsl,txt"});
-                if (scriptPath.has_value()) {
-                    // resolve to vfs
-                    const auto finalPath = ResolveOrImportPath(scriptPath.value(), "scripts");
-                    if (finalPath.has_value()) {
-                        // ensure component exists
-                        if (!entity.HasComponent<ECS::Components::ScriptComponent>()) {
-                            entity.AddComponent<ECS::Components::ScriptComponent>();
-                            comp = entity.GetComponent<ECS::Components::ScriptComponent>();
-                        }
-                        // add the script path
-                        comp->scriptPaths.push_back(finalPath.value());
-                        comp->instance_envs.emplace_back();
-                        comp->on_update_functions.emplace_back();
-                        comp->on_destroy_functions.emplace_back();
-                        comp->on_exit_functions.emplace_back();
-                        comp->isInitialized.push_back(false);
-                        comp->source_codes.emplace_back();
-                        comp->ast_nodes.emplace_back();
-                        comp->lastModified.push_back(std::filesystem::file_time_type::min());
-                        MarkSceneChanged(engineContext);
+        // add script picks from existing VFS scripts, maybe update to also auto-import from file
+        // idk whats best?
+        if (engineContext) {
+            static std::string pendingScriptPath;
+            ImGui::PushID("AddScriptCombo");
+            if (FileCombo("Add Script", std::string(Core::SCRIPT_PATH), std::string(Core::SCRIPT_FILE_EXTENSION),
+                          pendingScriptPath)) {
+                if (!pendingScriptPath.empty()) {
+                    // ensure component exists
+                    if (!entity.HasComponent<ECS::Components::ScriptComponent>()) {
+                        entity.AddComponent<ECS::Components::ScriptComponent>();
+                        comp = entity.GetComponent<ECS::Components::ScriptComponent>();
                     }
+                    // add the script path
+                    comp->scriptPaths.push_back(pendingScriptPath);
+                    comp->instance_envs.emplace_back();
+                    comp->on_update_functions.emplace_back();
+                    comp->on_destroy_functions.emplace_back();
+                    comp->on_exit_functions.emplace_back();
+                    comp->isInitialized.push_back(false);
+                    comp->source_codes.emplace_back();
+                    comp->ast_nodes.emplace_back();
+                    comp->lastModified.push_back(std::filesystem::file_time_type::min());
+                    MarkSceneChanged(engineContext);
+                    pendingScriptPath.clear();
                 }
             }
+            ImGui::PopID();
         }
+
         // total count
         ImGui::SameLine();
         ImGui::TextDisabled("Total: %zu script(s)", comp->scriptPaths.size());
     }
 }
+
+//  CustomDataWidget
 
 const char *Editor::UI::CustomDataWidget::GetName() const { return "ObSL Custom Data"; }
 
@@ -511,3 +429,146 @@ void Editor::UI::CustomDataWidget::Draw(const ECS::Entity entity, Core::EngineCo
         }
     }
 }
+
+//  asset combo helper
+namespace {
+    template <typename T, typename GetPreviewText>
+    static bool AssetComboImpl(const char *label, Core::ResourceManager &resources, std::shared_ptr<T> &current,
+                               GetPreviewText &&getPreview) {
+        const auto &all = resources.GetAll<T>();
+
+        // build items and find current index
+        int currentIdx = 0; // none
+        std::vector<std::string> keys;
+        keys.emplace_back("None");
+        int idx = 1;
+        for (const auto &[key, ptr] : all) {
+            keys.push_back(key);
+            if (ptr == current)
+                currentIdx = idx;
+            idx++;
+        }
+
+        std::string preview = "None";
+        if (current) {
+            for (const auto &[key, ptr] : all) {
+                if (ptr == current) {
+                    preview = key;
+                    break;
+                }
+            }
+        }
+
+        bool changed = false;
+        if (ImGui::BeginCombo(label, preview.c_str())) {
+            ImGui::PushID("__none__");
+            bool isSelected = (currentIdx == 0);
+            if (ImGui::Selectable("None", &isSelected)) {
+                current.reset();
+                changed = true;
+            }
+            if (currentIdx == 0)
+                ImGui::SetItemDefaultFocus();
+            ImGui::PopID();
+
+            // Assets
+            idx = 1;
+            for (const auto &[key, ptr] : all) {
+                ImGui::PushID(key.c_str());
+                isSelected = (currentIdx == idx);
+                if (ImGui::Selectable(key.c_str(), &isSelected)) {
+                    current = ptr;
+                    changed = true;
+                }
+                if (currentIdx == idx)
+                    ImGui::SetItemDefaultFocus();
+                ImGui::PopID();
+                idx++;
+            }
+            ImGui::EndCombo();
+        }
+
+        if (current) {
+            getPreview(current);
+        }
+
+        return changed;
+    }
+
+    bool TextureCombo(const char *label, Core::ResourceManager &resources,
+                      std::shared_ptr<Rendering::Texture> &current) {
+        return AssetComboImpl(label, resources, current, [](const std::shared_ptr<Rendering::Texture> &tex) {
+            ImGui::TextDisabled("%s", tex->GetPath().c_str());
+        });
+    }
+
+    bool ShaderCombo(const char *label, Core::ResourceManager &resources, std::shared_ptr<Rendering::Shader> &current) {
+        return AssetComboImpl(label, resources, current, [](const std::shared_ptr<Rendering::Shader> &shader) {
+            ImGui::TextDisabled("Vert: %s  Frag: %s", shader->GetVertexPath().c_str(),
+                                shader->GetFragmentPath().c_str());
+        });
+    }
+
+    bool MeshCombo(const char *label, Core::ResourceManager &resources, std::shared_ptr<Rendering::Mesh> &current) {
+        return AssetComboImpl(label, resources, current, [](const std::shared_ptr<Rendering::Mesh> &mesh) {
+            ImGui::TextDisabled("%s, %u indices", mesh->GetFactoryId().c_str(), mesh->GetIndexCount());
+        });
+    }
+
+    bool MaterialCombo(const char *label, Core::ResourceManager &resources,
+                       std::shared_ptr<Rendering::Material> &current) {
+        return AssetComboImpl(label, resources, current, [&resources](const std::shared_ptr<Rendering::Material> &mat) {
+            const std::string texKey = mat->texture ? resources.GetKey(mat->texture) : "none";
+            const std::string shaderKey = mat->shader ? resources.GetKey(mat->shader) : "none";
+            ImGui::TextDisabled("Texture: %s  Shader: %s", texKey.c_str(), shaderKey.c_str());
+        });
+    }
+
+    bool FileCombo(const char *label, const std::string &subDir, const std::string &extension, std::string &current) {
+        const auto resolved = IO::VFS::Resolve(subDir);
+        std::vector<std::string> files;
+        files.push_back("None");
+        if (std::filesystem::exists(resolved)) {
+            for (const auto &entry : std::filesystem::directory_iterator(resolved)) {
+                if (entry.is_regular_file() && entry.path().extension() == extension) {
+                    auto relPath = std::filesystem::relative(entry.path(), IO::VFS::GetProjectRoot());
+                    std::string relStr = relPath.string();
+                    for (auto &c : relStr)
+                        if (c == '\\')
+                            c = '/';
+                    files.push_back(std::move(relStr));
+                }
+            }
+        }
+
+        int currentIdx = 0;
+        for (int i = 1; i < static_cast<int>(files.size()); ++i) {
+            if (files[i] == current) {
+                currentIdx = i;
+                break;
+            }
+        }
+
+        const std::string preview = current.empty() ? "None" : current;
+        bool changed = false;
+
+        if (ImGui::BeginCombo(label, preview.c_str())) {
+            for (int i = 0; i < static_cast<int>(files.size()); ++i) {
+                const bool isSelected = (currentIdx == i);
+                if (ImGui::Selectable(files[i].c_str(), isSelected)) {
+                    if (i == 0)
+                        current.clear();
+                    else
+                        current = files[i];
+                    changed = true;
+                }
+                if (isSelected)
+                    ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
+
+        return changed;
+    }
+
+} // namespace

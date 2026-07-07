@@ -26,6 +26,8 @@ namespace Rendering {
 
         void InitGL();
 
+        void Reload();
+
         bool IsValid() const { return m_ID != 0; }
 
         void Bind() const;
@@ -45,7 +47,11 @@ namespace Rendering {
         void SetUniformMat4(const char *name, const glm::mat4 &mat);
 
         std::string &GetVertexPath() { return m_vertPath; }
+        const std::string &GetVertexPath() const { return m_vertPath; }
         std::string &GetFragmentPath() { return m_fragPath; }
+        const std::string &GetFragmentPath() const { return m_fragPath; }
+
+        static Shader *Default();
 
     private:
         std::string m_vertPath;

@@ -1,24 +1,24 @@
 #pragma once
 #include "../EditorState.h"
-
+#include <cstdint>
 #include "imgui.h"
 #include "ImGuizmo.h"
 
 namespace Editor {
     class EditState : public EditorState {
     public:
-        enum OPERATION : uint8_t { TRANSLATE, ROTATE, SCALE };
-
-        // enum MODE : uint8_t {
-        //     LOCAL,
-        //     WORLD
-        // };
+        static void SetGizmoOperation(const ImGuizmo::OPERATION op) { mCurrentGizmoOperation = op; }
+        static ImGuizmo::OPERATION GetGizmoOperation() { return mCurrentGizmoOperation; }
 
         void OnUpdate(float dt) override;
 
         void OnHandleInput(float dt) override;
 
         void OnDrawPanels() override;
+
+        void OnRender() override;
+
+        void OnDrawModeToolbar() override;
 
     private:
         void DrawGizmoForSelected() const;

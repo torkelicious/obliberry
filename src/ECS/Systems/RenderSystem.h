@@ -43,9 +43,6 @@ namespace ECS::Systems::RenderSystem {
                     }
                     const auto &shader = matComp->material->shader;
 
-                    if (!shader) {
-                        return;
-                    }
                     const int entityInt = static_cast<int>(static_cast<EntityID>(entity));
                     renderer.Submit(meshComp->mesh, matComp->material.get(), transComp->transform, textureOverride,
                                     entityInt);

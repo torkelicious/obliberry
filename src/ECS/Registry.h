@@ -111,6 +111,19 @@ namespace ECS {
                 }
             }
         }
+        template <typename Primary, typename T = Primary> T *GetFirst() {
+            auto *primaryPool = GetPool<Primary>();
+            if constexpr (std::is_same_v<Primary, T>) {
+                if (!primaryPool->GetDenseEntities().empty())
+                    return primaryPool->Get(primaryPool->GetDenseEntities().front());
+            } else {
+                for (const EntityID id : primaryPool->GetDenseEntities()) {
+                    if (T *comp = GetComponent<T>(id))
+                        return comp;
+                }
+            }
+            return nullptr;
+        }
     };
 
     template <typename T, typename... Args> T &Entity::AddComponent(Args &&...args) {

@@ -15,7 +15,6 @@
 #include "ECS/Components/TransformComponent.h"
 
 namespace Editor::UI {
-    // Helper — marks the current scene as having unsaved changes
     inline void MarkSceneChanged(const Core::EngineContext *ctx) {
         if (ctx && ctx->sceneManager) {
             if (auto *scene = ctx->sceneManager->GetCurrentScene()) {

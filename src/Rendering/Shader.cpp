@@ -39,6 +39,17 @@ namespace Rendering {
         m_FragmentSrc.shrink_to_fit();
     }
 
+    void Shader::Reload() {
+        if (m_ID != 0) {
+            glDeleteProgram(m_ID);
+            m_ID = 0;
+        }
+        m_UniformCache.clear();
+        m_VertexSrc = LoadFile(m_vertPath);
+        m_FragmentSrc = LoadFile(m_fragPath);
+        InitGL();
+    }
+
 
     void Shader::Bind() const {
         if (m_ID == 0)
@@ -158,5 +169,59 @@ namespace Rendering {
         glDeleteShader(frag);
 
         return program;
+    }
+
+    // FIXME/HACK: this is a bit of a hack, i should probably keep default fallbackshaders in internal/ build dir?, not
+    // sure for now
+    Shader *Shader::Default() {
+        static Shader *instance = [] {
+            // Hardcoded fallback
+            auto *shader = new Shader("", "");
+            shader->m_VertexSrc = R"(
+#version 330 core
+layout(location = 0) in vec3 a_Pos;
+layout(location = 1) in vec2 a_UV;
+layout(location = 2) in mat4 a_InstanceMatrix;
+layout(location = 6) in int a_EntityID;
+uniform mat4 u_VP;
+uniform vec2 u_MapSize;
+uniform vec2 u_MapOffset;
+out vec2 v_UV;
+out vec2 v_LightUV;
+flat out int v_EntityID;
+void main() {
+    v_UV = a_UV;
+    vec4 worldPos = a_InstanceMatrix * vec4(a_Pos, 1.0);
+    v_LightUV = (worldPos.xy - u_MapOffset) / u_MapSize;
+    gl_Position = u_VP * worldPos;
+    v_EntityID = a_EntityID;
+}
+)";
+            shader->m_FragmentSrc = R"(
+#version 330 core
+in vec2 v_UV;
+in vec2 v_LightUV;
+uniform sampler2D u_Texture;
+uniform sampler2D u_LightTexture;
+uniform vec4 u_Color;
+uniform float u_Ambient;
+flat in int v_EntityID;
+layout(location = 0) out vec4 FragColor;
+layout(location = 1) out int OutEntityID;
+void main() {
+    vec4 tex = texture(u_Texture, v_UV);
+    float finalAlpha = tex.a * u_Color.a;
+    if (finalAlpha < 0.01) { discard; }
+    vec3 light = texture(u_LightTexture, v_LightUV).rgb;
+    light = max(light, vec3(u_Ambient));
+    vec3 finalColor = tex.rgb * u_Color.rgb * light;
+    FragColor = vec4(finalColor, finalAlpha);
+    OutEntityID = v_EntityID;
+}
+)";
+            shader->InitGL();
+            return shader;
+        }();
+        return instance;
     }
 } // namespace Rendering

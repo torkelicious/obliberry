@@ -7,6 +7,7 @@
 #include "Scenes/Scene.h"
 #include "imgui.h"
 #include "imgui_internal.h"
+
 #include <ImGuizmo.h>
 #include <ObSL/ScriptRuntime.h>
 #include <filesystem>
@@ -25,10 +26,11 @@
 #include "States/EditState.h"
 #include "States/PlayState.h"
 #include "States/MapEditState.h"
+#include "States/HubState.h"
 
 /* TODO:
- * map editor
- * project browser (asset view ig)
+ * map editor - wip
+ * project browser (asset view ig) - wip
  * whatever else an editor needs?
  */
 
@@ -56,11 +58,12 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
             LoadScene(m_PendingSceneToLoad);
             m_PendingSceneToLoad.clear();
         }
+        m_CurrentState = std::make_unique<EditState>();
     } else {
         std::cout << "[EditorLayer] No active project" << std::endl;
+        m_CurrentState = std::make_unique<HubState>();
     }
 
-    m_CurrentState = std::make_unique<EditState>();
     m_CurrentState->SetEditorLayer(this);
     m_CurrentState->OnEnter();
 }
@@ -72,32 +75,40 @@ void Editor::EditorLayer::Update(const float dt) {
         m_PendingSceneToLoad.clear();
     }
 
+    ExecutePendingStateTransfer();
+
     if (!m_Scene || !m_Registry)
         return;
 
     m_CurrentState->OnUpdate(dt);
 
     HandleInput(dt);
+
+    m_Camera.UpdateSmooth(dt);
 }
 
 void Editor::EditorLayer::Render() {
-    ImGuizmo::BeginFrame();
-    DrawInterface();
+    if (m_CurrentState)
+        m_CurrentState->OnRender();
 
-    if (!Core::Project::GetActive())
-        return;
+    // common UI rendered regardless of state
+    m_SceneConfigEditor.OnImGuiRender(m_ShowSceneConfig);
+    m_ProjectConfigEditor.OnImGuiRender(m_ShowProjectConfig);
 
-    if (m_Context.camera) {
-        aspect = m_ViewportPanel.GetWidth() / m_ViewportPanel.GetHeight();
-        m_Context.renderer->SetCamera(*m_Context.camera, aspect);
+    m_NewProjectDialog.Update();
+    if (Core::Project::GetActive()) {
+        m_CreateSceneDialog.Update();
+        m_SaveSceneAsDialog.Update();
     }
-
-    m_SceneManager.Render();
+    m_SaveChangesDialog.Update();
 }
 
 void Editor::EditorLayer::Shutdown() {}
 
 void Editor::EditorLayer::HandleInput(const float dt) {
+    if (ImGui::GetIO().WantCaptureKeyboard)
+        return;
+
     // mode-independent hotkeys
     if (m_Input->IsKeyPressed("Esc")) {
         const bool hasChanges = (m_Scene && m_Scene->HasUnsavedChanges()) ||
@@ -123,13 +134,13 @@ void Editor::EditorLayer::HandleInput(const float dt) {
 
     if (m_Input->IsKeyPressed("F1")) {
         if (m_CurrentState->IsPlayMode())
-            TransitionTo(std::make_unique<EditState>());
+            TransitionTo(m_PreviousState ? std::move(m_PreviousState) : std::make_unique<EditState>());
         return;
     }
 
     if (m_Input->IsKeyPressed("F5")) {
         if (m_CurrentState->IsPlayMode()) {
-            TransitionTo(std::make_unique<EditState>());
+            TransitionTo(m_PreviousState ? std::move(m_PreviousState) : std::make_unique<EditState>());
         } else {
             if (m_CurrentScenePath.empty()) {
                 std::cerr << "[Editor] Cannot enter Play Mode: scene has not been saved yet.\n";
@@ -161,8 +172,6 @@ void Editor::EditorLayer::LoadScene(std::string path) {
 
     ClearCurrentProject();
 
-    // Initialize script pool BEFORE loading the scene so Scene::OnEnter()
-    // can register EngineLib native functions on workers.
     // The script root path requires VFS to be mounted (project must be loaded).
     if (Core::Project::GetActive()) {
         m_Context.scriptPool->init(IO::VFS::GetAssetsDirectory() / "scripts");
@@ -218,6 +227,8 @@ void Editor::EditorLayer::LoadProject(const std::string &projectFilePath) {
     Core::Project::Load(projectFilePath);
 
     LoadStartScene();
+
+    TransitionTo(std::make_unique<EditState>());
 }
 
 void Editor::EditorLayer::LoadStartScene() {
@@ -238,42 +249,45 @@ void Editor::EditorLayer::LoadStartScene() {
 
 void Editor::EditorLayer::SaveScene() const { static_cast<void>(m_SceneManager.SaveCurrentScene()); }
 
-void Editor::EditorLayer::TransitionTo(std::unique_ptr<EditorState> newState) {
+void Editor::EditorLayer::TransitionTo(std::unique_ptr<EditorState> newState) { m_PendingState = std::move(newState); }
+
+void Editor::EditorLayer::ExecutePendingStateTransfer() {
+    if (!m_PendingState)
+        return;
+
     if (m_CurrentState)
         m_CurrentState->OnExit();
-    m_CurrentState = std::move(newState);
+
+    // save the current state  so it can be returned to on exiting play mode
+    if (m_PendingState->IsPlayMode())
+        m_PreviousState = std::move(m_CurrentState);
+
+    m_CurrentState = std::move(m_PendingState);
     m_CurrentState->SetEditorLayer(this);
     m_CurrentState->OnEnter();
+    m_PendingState = nullptr;
 }
 
-void Editor::EditorLayer::DrawInterface() {
-    if (!Core::Project::GetActive()) {
-        DrawProjectHub();
-    } else {
-        DrawDockSpace();
-        DrawToolbar();
-        DrawEditorPanels();
-        DrawUtilityWindows();
-    }
+void Editor::EditorLayer::DrawEditorUI() {
+    DrawDockSpace();
+    DrawToolbar();
+    DrawEditorPanels();
+    DrawUtilityWindows();
 
-    // property windows
-    m_SceneConfigEditor.OnImGuiRender(m_ShowSceneConfig);
-    m_ProjectConfigEditor.OnImGuiRender(m_ShowProjectConfig);
-
-    // encapsulated dialogs
-    m_NewProjectDialog.Update();
-    if (Core::Project::GetActive()) {
-        m_CreateSceneDialog.Update();
-        m_SaveSceneAsDialog.Update();
+    if (m_Context.camera) {
+        const float aspect = m_ViewportPanel.GetWidth() / m_ViewportPanel.GetHeight();
+        m_Context.renderer->SetCamera(*m_Context.camera, aspect);
     }
-    m_SaveChangesDialog.Update();
+}
+
+void Editor::EditorLayer::DrawEditorLayout() {
+    DrawEditorUI();
+    m_SceneManager.Render();
 }
 
 void Editor::EditorLayer::DrawProjectHub() {
-    const ImVec2 viewportSize = ImGui::GetMainViewport()->Size;
-    const auto hubSize = ImVec2(viewportSize.x * 0.4f, viewportSize.y * 0.5f);
     ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-    ImGui::SetNextWindowSize(hubSize);
+    ImGui::SetNextWindowSize(ImGui::GetMainViewport()->Size);
     ImGui::Begin("Obliberry hub", nullptr,
                  ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
 
@@ -343,15 +357,17 @@ void Editor::EditorLayer::DrawDockSpace() {
 void Editor::EditorLayer::DrawEditorPanels() {
     m_RegistryPanel.SetContext(m_Scene, m_Context);
     m_InspectorPanel.SetContext(m_Scene, m_Context);
+    m_ProjectBrowserPanel.SetContext(m_Scene, m_Context);
     m_ViewportPanel.SetContext(m_Scene, m_Context);
 
     m_InspectorPanel.SetSelectedEntity(m_RegistryPanel.GetSelectedEntity());
 
     // viewport must be rendered first so ImGuizmo::SetDrawlist/SetRect are called
     m_ViewportPanel.OnImGuiRender();
-    m_ViewportPanel.SetPlayModeIndicator(m_CurrentState->IsPlayMode());
-
-    m_CurrentState->OnDrawPanels();
+    if (m_CurrentState) {
+        m_ViewportPanel.SetPlayModeIndicator(m_CurrentState->IsPlayMode());
+        m_CurrentState->OnDrawPanels();
+    }
 }
 
 
@@ -389,8 +405,11 @@ void Editor::EditorLayer::DrawUtilityWindows() {
 
     ImGui::End();
 
-    ImGui::Begin("Project Browser");
-    ImGui::End();
+    if (m_CurrentState && m_CurrentState->ShouldDrawProjectBrowser()) {
+        m_ProjectBrowserPanel.OnImGuiRender();
+    }
+
+    m_CurrentState->OnDrawUtilityWindows();
 }
 
 void Editor::EditorLayer::DrawToolbar() {
@@ -418,9 +437,7 @@ void Editor::EditorLayer::DrawToolbar() {
                     if (hasChanges) {
                         m_SaveChangesDialog.SetMessage("Do you want to save before creating a new project?");
                         m_SaveChangesDialog.SetOnSave([this, onProceed] {
-                            if (m_Scene && m_Scene
-
-                                                   ->HasUnsavedChanges()) {
+                            if (m_Scene && m_Scene->HasUnsavedChanges()) {
                                 SaveScene();
                             }
                             if (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges()) {
@@ -510,12 +527,14 @@ void Editor::EditorLayer::DrawToolbar() {
                         Core::Project::SetActive(nullptr);
                         IO::VFS::UnmountProject();
                         s_ShouldBuildDock = true;
+                        TransitionTo(std::make_unique<HubState>());
                     });
                     m_SaveChangesDialog.SetOnDiscard([this] {
                         ClearCurrentProject();
                         Core::Project::SetActive(nullptr);
                         IO::VFS::UnmountProject();
                         s_ShouldBuildDock = true;
+                        TransitionTo(std::make_unique<HubState>());
                     });
                     m_SaveChangesDialog.Open();
                 } else {
@@ -523,6 +542,7 @@ void Editor::EditorLayer::DrawToolbar() {
                     Core::Project::SetActive(nullptr);
                     IO::VFS::UnmountProject();
                     s_ShouldBuildDock = true;
+                    TransitionTo(std::make_unique<HubState>());
                 }
             }
             ImGui::Separator();
@@ -603,6 +623,46 @@ void Editor::EditorLayer::DrawToolbar() {
             ImGui::EndMenu();
         }
 
+        ImGui::Separator();
+
+        m_CurrentState->OnDrawModeToolbar();
+
+        ImGui::SameLine();
+        ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
+        ImGui::SameLine();
+
+        // mode selector
+        {
+            const bool inPlayMode = m_CurrentState->IsPlayMode();
+            ImGui::BeginDisabled(inPlayMode);
+
+            const char *modeItems[] = {"Edit", "Map Edit"};
+            int currentMode = 0;
+            if (dynamic_cast<MapEditState *>(m_CurrentState.get()))
+                currentMode = 1;
+            ImGui::SetNextItemWidth(110.0f);
+            if (ImGui::Combo("##Mode", &currentMode, modeItems, IM_ARRAYSIZE(modeItems))) {
+                switch (currentMode) {
+                    default:
+                    case 0:
+                        TransitionTo(std::make_unique<EditState>());
+                        break;
+                    case 1:
+                        TransitionTo(std::make_unique<MapEditState>());
+                        break;
+                }
+            }
+
+            ImGui::EndDisabled();
+
+            if (inPlayMode && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+                ImGui::SetTooltip("Stop Play mode first to change editor mode");
+        }
+
+        ImGui::SameLine();
+        ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
+        ImGui::SameLine();
+
         const float buttonWidth = 70.0f;
         const float centerPos = ImGui::GetWindowSize().x * 0.5f - buttonWidth * 0.5f;
 
@@ -610,7 +670,7 @@ void Editor::EditorLayer::DrawToolbar() {
 
         if (ImGui::Button(m_CurrentState->PlayStopLabel(), ImVec2(buttonWidth, 0))) {
             if (m_CurrentState->IsPlayMode()) {
-                TransitionTo(std::make_unique<EditState>());
+                TransitionTo(m_PreviousState ? std::move(m_PreviousState) : std::make_unique<EditState>());
             } else {
                 if (m_CurrentScenePath.empty()) {
                     std::cerr << "[Editor] Cannot enter Play Mode: scene has not been saved yet.\n";

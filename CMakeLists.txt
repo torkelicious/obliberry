@@ -209,14 +209,17 @@ add_executable(obliberry_editor
         src/Editor/States/EditState.cpp
         src/Editor/States/PlayState.cpp
         src/Editor/States/MapEditState.cpp
-        src/Editor/UI/Panels/EditorWidgets.cpp
-        src/Editor/UI/Panels/InspectorPanel.cpp
-        src/Editor/UI/Panels/RegistryPanel.cpp
+        src/Editor/States/HubState.cpp
+        src/Editor/UI/Panels/Editor/EditorWidgets.cpp
+        src/Editor/UI/Panels/Editor/InspectorPanel.cpp
+        src/Editor/UI/Panels/Editor/ProjectBrowserPanel.cpp
+        src/Editor/UI/Panels/Editor/RegistryPanel.cpp
         src/Editor/UI/Panels/ViewportPanel.cpp
         src/Editor/UI/ConfigWindows/ProjectConfigEditor.cpp
         src/Editor/UI/ConfigWindows/SceneConfigEditor.cpp
         src/Editor/FileDialogs.cpp
         src/IO/Package/Tools/ObpakTools.cpp
+        src/Editor/UI/Panels/MapEditor/TileEditorPanel.cpp
 )
 
 target_link_libraries(obliberry_editor PRIVATE

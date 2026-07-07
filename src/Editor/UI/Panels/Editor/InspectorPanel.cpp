@@ -5,6 +5,7 @@
 #include "ECS/Components/MapStateComponent.h"
 #include "ECS/Components/MaterialComponent.h"
 #include "ECS/Components/MeshComponent.h"
+#include <cstring>
 #include <functional>
 #include <imgui.h>
 
@@ -31,16 +32,25 @@ void Editor::UI::InspectorPanel::OnImGuiRender() {
     if (m_SceneContext && static_cast<bool>(m_SelectedEntity)) {
         // ReSharper disable once CppDFAConstantConditions
         if (m_SelectedEntity) {
-            std::string name = m_SelectedEntity.GetName();
-            if (name.empty()) {
-                name = "Entity " + std::to_string(static_cast<ECS::EntityID>(m_SelectedEntity));
+            char nameBuffer[256];
+            std::string entityName = m_SelectedEntity.GetName();
+            if (entityName.empty()) {
+                entityName = "Entity " + std::to_string(static_cast<ECS::EntityID>(m_SelectedEntity));
             }
-            ImGui::Text("Entity: %s", name.c_str());
+            strncpy(nameBuffer, entityName.c_str(), sizeof(nameBuffer));
+            nameBuffer[sizeof(nameBuffer) - 1] = '\0';
+
+            if (ImGui::InputText("Name", nameBuffer, sizeof(nameBuffer))) {
+                m_SelectedEntity.SetName(nameBuffer);
+                MarkSceneChanged(m_EngineContext);
+            }
             ImGui::Separator();
             ImGui::Spacing();
 
             for (const auto &widget : m_Widgets) {
+                ImGui::PushID(widget->GetName());
                 widget->Draw(m_SelectedEntity, m_EngineContext);
+                ImGui::PopID();
             }
             ImGui::Separator();
 

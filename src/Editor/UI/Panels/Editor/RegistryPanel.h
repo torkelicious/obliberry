@@ -1,25 +1,17 @@
 #pragma once
 
 #include "ECS/Entity.h"
-#include "EditorPanel.h"
-#include <memory>
-#include <vector>
+#include "../EditorPanel.h"
 
 namespace Editor::UI {
-    struct IComponentWidget;
-
-    class InspectorPanel : public EditorPanel {
+    class RegistryPanel : public EditorPanel {
     public:
-        InspectorPanel();
-
-        ~InspectorPanel() override;
-
         void OnImGuiRender() override;
 
+        [[nodiscard]] ECS::Entity GetSelectedEntity() const { return m_SelectedEntity; }
         void SetSelectedEntity(const ECS::Entity entity) { m_SelectedEntity = entity; }
 
     private:
         ECS::Entity m_SelectedEntity;
-        std::vector<std::unique_ptr<IComponentWidget>> m_Widgets;
     };
 } // namespace Editor::UI

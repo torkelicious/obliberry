@@ -34,7 +34,7 @@ namespace Scripting {
                 return std::monostate{};
             auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
             auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
-            std::string name = std::get<std::string>(args[0]);
+            auto name = std::get<std::string>(args[0]);
             if (cmd_buf) {
                 cmd_buf->push([id, name = std::move(name)](ECS::Registry &reg) {
                     if (!reg.IsValid(id))
@@ -146,7 +146,7 @@ namespace Scripting {
                 return false;
             auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
             auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
-            std::string compName = std::get<std::string>(args[0]);
+            auto compName = std::get<std::string>(args[0]);
             ObSL::Value val = args[1];
             if (cmd_buf) {
                 cmd_buf->push([id, compName = std::move(compName), val = std::move(val)](ECS::Registry &reg) {

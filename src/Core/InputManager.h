@@ -2,6 +2,7 @@
 
 #include <string>
 #include <GLFW/glfw3.h>
+#include <glm/vec2.hpp>
 
 namespace Core {
     class InputManager {
@@ -59,6 +60,8 @@ namespace Core {
         [[nodiscard]] bool IsMouseReleased(int button) const;
 
         [[nodiscard]] bool IsMouseReleased(const std::string &buttonAlias) const;
+
+        [[nodiscard]] glm::vec2 GetMousePosVec2() const { return glm::vec2{m_MousePosX, m_MousePosY}; }
 
     private:
         bool keys[GLFW_KEY_LAST + 1]{};

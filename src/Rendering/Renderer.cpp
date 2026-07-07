@@ -102,7 +102,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
         entries.reserve(m_InstancedCommands[renderIndex].size());
         for (const auto &[mesh, material, effectiveTexture, color, transforms, entityIDs] :
              m_InstancedCommands[renderIndex]) {
-            if (!mesh || !material || !material->shader || !material->shader->IsValid())
+            if (!mesh || !material)
                 continue;
             if (transforms.empty())
                 continue;
@@ -157,7 +157,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
     std::vector<int> *currentIDs = nullptr;
 
     for (const auto &cmd : m_Commands[renderIndex]) {
-        if (!cmd.mesh || !cmd.material || !cmd.material->shader || !cmd.material->shader->IsValid())
+        if (!cmd.mesh || !cmd.material)
             continue;
         if (BatchKey key{cmd.mesh, cmd.material, cmd.effectiveTexture, cmd.color}; !currentMats || currentKey != key) {
             batches.push_back({key, {}, {}});
@@ -201,9 +201,9 @@ void Rendering::Renderer::RenderBatch(const BatchKey &key, const std::vector<glm
     if (instanceCount == 0 || instanceCount > MAX_INSTANCES)
         return;
 
-    Shader *shader = key.material->shader.get();
+    Shader *shader = key.material ? key.material->shader.get() : nullptr;
     if (!shader || !shader->IsValid())
-        return;
+        shader = Shader::Default();
 
     if (m_LastBoundShader != shader) {
         shader->Bind();

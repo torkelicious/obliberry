@@ -23,7 +23,7 @@ namespace ECS::Components {
 
         // visual assets
         std::shared_ptr<Rendering::Mesh> hexMesh;
-        std::unordered_map<uint8_t, Rendering::Material> typeMats;
+        std::unordered_map<uint8_t /* type id */, Rendering::Material /* material associated with that id*/> typeMats;
         std::shared_ptr<Rendering::Material> outlineMat;
         std::shared_ptr<Rendering::Material> pathToMat;
 

@@ -43,6 +43,8 @@ namespace Rendering {
         [[nodiscard]] int GetWidth() const { return m_Width; }
         [[nodiscard]] int GetHeight() const { return m_Height; }
 
+        [[nodiscard]] GLuint GetID() const { return m_ID; }
+
         static Texture *White();
 
     private:

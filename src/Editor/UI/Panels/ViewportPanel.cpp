@@ -1,3 +1,4 @@
+// ReSharper disable CppDFAUnreachableCode
 #include "ViewportPanel.h"
 #include "Rendering/Renderer.h"
 #include <imgui.h>
@@ -7,27 +8,23 @@
 
 void Editor::UI::ViewportPanel::OnImGuiRender() {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
-    ImGui::Begin("Scene View");
+    ImGui::Begin("Scene View", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
     ImGui::PopStyleVar();
 
     // gizmos
 
     ImGuizmo::SetDrawlist();
-    ImVec2 windowPos = ImGui::GetWindowPos();
-    ImVec2 windowSize = ImGui::GetWindowSize();
 
     m_IsHovered = ImGui::IsWindowHovered();
 
     const ImVec2 boundsMin = ImGui::GetCursorScreenPos();
+    m_ViewportBoundsMin = boundsMin;
     const ImVec2 imguiMousePos = ImGui::GetMousePos();
 
     const double localMouseX = imguiMousePos.x - boundsMin.x;
     const double localMouseY = imguiMousePos.y - boundsMin.y;
 
-    if (m_EngineContext && m_EngineContext
-
-
-                                   ->input) {
+    if (m_EngineContext && m_EngineContext->input) {
         if (m_IsHovered) {
             const double offsetX = m_EngineContext->input->RawMousePosX() - localMouseX;
             const double offsetY = m_EngineContext->input->RawMousePosY() - localMouseY;
@@ -38,14 +35,26 @@ void Editor::UI::ViewportPanel::OnImGuiRender() {
         }
     }
 
-    if (m_EngineContext && m_EngineContext
-
-
-                                   ->renderer) {
-        if (const int pickedEntity = m_EngineContext->renderer->GetLastReadPixel(); pickedEntity != -1) {
-            m_SelectedEntityID = pickedEntity;
+    if (m_EngineContext && m_EngineContext->renderer) {
+        // if gizmo is being actively dragged, cancel any pending pick
+        if (ImGuizmo::IsUsing() && m_ExpectingPick) {
+            m_ExpectingPick = false;
             m_EngineContext->renderer->ClearPixelReadResult();
         }
+
+        if (const int pickedEntity = m_EngineContext->renderer->GetLastReadPixel(); pickedEntity != -1) {
+            m_SelectedEntityID = pickedEntity;
+            m_HadEmptyClick = false;
+            m_EngineContext->renderer->ClearPixelReadResult();
+            m_ExpectingPick = false;
+        } else if (m_ExpectingPick && !m_EngineContext->renderer->IsPixelReadRequested() && !ImGuizmo::IsUsing()) {
+            // Pixel read was processed but returned empty space, or gizmo was in use
+            m_SelectedEntityID = -1;
+            m_HadEmptyClick = true;
+            m_EngineContext->renderer->ClearPixelReadResult();
+            m_ExpectingPick = false;
+        }
+        // wait for next frame
     }
 
     if (const ImVec2 viewportSize = ImGui::GetContentRegionAvail(); viewportSize.x > 0.0f && viewportSize.y > 0.0f) {
@@ -54,10 +63,7 @@ void Editor::UI::ViewportPanel::OnImGuiRender() {
 
         ImGuizmo::SetRect(boundsMin.x, boundsMin.y, viewportSize.x, viewportSize.y);
 
-        if (m_EngineContext && m_EngineContext
-
-
-                                       ->renderer) {
+        if (m_EngineContext && m_EngineContext->renderer) {
             m_EngineContext->renderer->EnsureFramebufferSize(static_cast<uint32_t>(viewportSize.x),
                                                              static_cast<uint32_t>(viewportSize.y));
 
@@ -69,7 +75,7 @@ void Editor::UI::ViewportPanel::OnImGuiRender() {
                 // play mode badge in top-left corner
                 if (m_ShowPlayIndicator) {
                     ImDrawList *drawList = ImGui::GetWindowDrawList();
-                    const char *label = "Playing";
+                    const auto label = "Playing";
                     const ImVec2 textSize = ImGui::CalcTextSize(label);
                     const float padding = 6.0f;
                     const ImVec2 badgeMin(boundsMin.x + 8.0f, boundsMin.y + 8.0f);
@@ -80,7 +86,8 @@ void Editor::UI::ViewportPanel::OnImGuiRender() {
                                       label);
                 }
 
-                if (m_IsHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                if (m_IsHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGuizmo::IsOver() &&
+                    !ImGuizmo::IsUsing()) {
                     const ImVec2 mousePos = ImGui::GetMousePos();
 
                     const int mouseX = static_cast<int>(mousePos.x - boundsMin.x);
@@ -91,10 +98,18 @@ void Editor::UI::ViewportPanel::OnImGuiRender() {
                     if (mouseX >= 0 && mouseY >= 0 && mouseX < static_cast<int>(m_ViewportWidth) && glY >= 0 &&
                         glY < static_cast<int>(m_ViewportHeight)) {
                         m_EngineContext->renderer->RequestPixelRead(mouseX, glY);
+                        m_ExpectingPick = true;
                     }
                 }
             }
         }
     }
     ImGui::End();
+}
+
+glm::vec2 Editor::UI::ViewportPanel::MousePosToWorld(const Rendering::Camera &camera) const {
+    const ImVec2 mousePos = ImGui::GetMousePos();
+    const float localX = mousePos.x - m_ViewportBoundsMin.x;
+    const float localY = mousePos.y - m_ViewportBoundsMin.y;
+    return camera.MouseToWorld(localX, localY, m_ViewportWidth, m_ViewportHeight);
 }

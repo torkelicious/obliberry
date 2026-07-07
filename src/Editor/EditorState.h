@@ -7,7 +7,6 @@ namespace Editor {
     public:
         virtual ~EditorState() = default;
 
-        // basically same shit scenes / layers do
 
         virtual void OnEnter() {}
 
@@ -19,10 +18,17 @@ namespace Editor {
 
         virtual void OnDrawPanels() = 0;
 
+        virtual void OnRender() = 0;
+
+        virtual void OnDrawModeToolbar() {}
+
+        virtual void OnDrawUtilityWindows() {}
+
         [[nodiscard]] virtual bool CanSaveScene() const { return true; }
         [[nodiscard]] virtual bool CanSaveSceneAs() const { return true; }
         [[nodiscard]] virtual bool IsPlayMode() const { return false; }
         [[nodiscard]] virtual const char *PlayStopLabel() const { return "Play"; }
+        [[nodiscard]] virtual bool ShouldDrawProjectBrowser() const { return true; }
 
         virtual void SetEditorLayer(EditorLayer *layer) { m_EditorLayer = layer; }
         virtual EditorLayer *GetEditorLayer() { return m_EditorLayer; }

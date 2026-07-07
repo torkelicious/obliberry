@@ -265,7 +265,8 @@ println "Angles: PASS"
 println ""
 println "Audio"
 PlaySound2D("assets/audio/boom.mp3", 0.5)
-Play("assets/audio/music.wav", 0.5)
+//PlayMusic("assets/audio/music.wav", 0.5)
+//StopMusic();
 SetMasterVolume(0.8)
 SetMasterVolume(1.0)
 println "All: PASS"

@@ -20,16 +20,21 @@ void Editor::EditState::OnUpdate(const float dt) {
     // Entity picking
     if (const int clickedID = m_EditorLayer->m_ViewportPanel.GetSelectedEntityID(); clickedID != -1) {
         const auto eID = static_cast<ECS::EntityID>(clickedID);
-
         if (m_EditorLayer->m_Registry->IsValid(eID)) {
             const ECS::Entity selectedEntity(eID, m_EditorLayer->m_Registry);
             m_EditorLayer->m_RegistryPanel.SetSelectedEntity(selectedEntity);
         }
+    } else if (m_EditorLayer->m_ViewportPanel.HadEmptyClick()) {
+        m_EditorLayer->m_RegistryPanel.SetSelectedEntity(ECS::Entity{});
+        m_EditorLayer->m_ViewportPanel.ClearEmptyClick();
     }
     m_EditorLayer->m_ViewportPanel.ClearSelectedEntityID();
 }
 
 void Editor::EditState::OnHandleInput(const float dt) {
+    if (ImGui::GetIO().WantCaptureKeyboard)
+        return;
+
     if (m_EditorLayer->m_Input->IsKeyPressed("V")) {
         m_EditorLayer->m_Camera.ToggleViewMode();
     }
@@ -45,17 +50,21 @@ void Editor::EditState::OnHandleInput(const float dt) {
         mCurrentGizmoOperation = ImGuizmo::SCALE;
     }
 
-    // camera controls require viewport hover, because i dont want to steal input from gui interaction!!!
+    float kbPanX = 0.0f;
+    float kbPanY = 0.0f;
+    m_EditorLayer->m_Camera.StopKeyboardPan();
+
+    // Camera controls require viewport hover to avoid stealing input
     if (!m_EditorLayer->m_ViewportPanel.IsHovered())
         return;
 
-    // scroll zoom
+    // Scroll zoom
     const auto scrollDelta = static_cast<float>(m_EditorLayer->m_Input->ScrollY());
     if (scrollDelta != 0.0f) {
         m_EditorLayer->m_Camera.AdjustZoom(scrollDelta * 0.2f);
     }
 
-    // mouse pan
+    // Mouse pan
     const auto mouseDeltaX = static_cast<float>(m_EditorLayer->m_Input->GetMouseDeltaX());
     const auto mouseDeltaY = static_cast<float>(m_EditorLayer->m_Input->GetMouseDeltaY());
 
@@ -63,10 +72,7 @@ void Editor::EditState::OnHandleInput(const float dt) {
         m_EditorLayer->m_Camera.Pan(-mouseDeltaX, mouseDeltaY, 0.025f);
     }
 
-    // Keyboard pan (WASD)
-    float kbPanX = 0.0f;
-    float kbPanY = 0.0f;
-
+    // Keyboard pan
     if (m_EditorLayer->m_Input->IsKeyDown("W"))
         kbPanY += 1.0f;
     if (m_EditorLayer->m_Input->IsKeyDown("S"))
@@ -80,15 +86,47 @@ void Editor::EditState::OnHandleInput(const float dt) {
         const float length = std::sqrt(kbPanX * kbPanX + kbPanY * kbPanY);
         kbPanX /= length;
         kbPanY /= length;
-        const float speedMod = m_EditorLayer->m_Input->IsKeyDown("LeftShift") ? 3.0f : 1.0f;
-        m_EditorLayer->m_Camera.Pan(kbPanX, kbPanY, 15.0f * speedMod * dt);
     }
+
+    const float speedMod = m_EditorLayer->m_Input->IsKeyDown("LeftShift") ? 3.0f : 1.0f;
+    constexpr float moveAmount = 3.0f;
+    const float vpHeight = m_EditorLayer->m_ViewportPanel.GetHeight();
+    m_EditorLayer->m_Camera.KeyboardPan(kbPanX, kbPanY, 15.0f * speedMod * moveAmount * (600.0f / vpHeight));
 }
 
 void Editor::EditState::OnDrawPanels() {
     m_EditorLayer->m_RegistryPanel.OnImGuiRender();
     m_EditorLayer->m_InspectorPanel.OnImGuiRender();
     DrawGizmoForSelected();
+}
+
+void Editor::EditState::OnRender() {
+    ImGuizmo::BeginFrame();
+    m_EditorLayer->DrawEditorLayout();
+}
+
+void Editor::EditState::OnDrawModeToolbar() {
+    const ImGuizmo::OPERATION currentOp = GetGizmoOperation();
+
+    auto gizmoButton = [&](const char *label, const ImGuizmo::OPERATION op, const char *tooltip,
+                           const ImVec4 &activeColor) {
+        const bool isActive = currentOp == op;
+        if (isActive)
+            ImGui::PushStyleColor(ImGuiCol_Text, activeColor);
+        if (ImGui::Button(label)) {
+            SetGizmoOperation(op);
+        }
+        if (isActive)
+            ImGui::PopStyleColor();
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("%s", tooltip);
+    };
+
+    gizmoButton("T##Gizmo", ImGuizmo::TRANSLATE, "Translate (T)", ImVec4(0.2f, 1.0f, 0.2f, 1.0f));
+    ImGui::SameLine();
+    gizmoButton("R##Gizmo", ImGuizmo::ROTATE, "Rotate (R)", ImVec4(0.2f, 0.6f, 1.0f, 1.0f));
+    ImGui::SameLine();
+    gizmoButton("S##Gizmo", ImGuizmo::SCALE, "Scale (E)", ImVec4(1.0f, 0.8f, 0.2f, 1.0f));
 }
 
 void Editor::EditState::DrawGizmoForSelected() const {
@@ -105,7 +143,7 @@ void Editor::EditState::DrawGizmoForSelected() const {
         ImGui::Begin("Scene View");
         ImDrawList *drawList = ImGui::GetWindowDrawList();
 
-        const char *warningText = " Rotation has no effect on Billboard Sprites ";
+        const auto warningText = " Rotation has no effect on Billboard Sprites ";
         const ImVec2 textSize = ImGui::CalcTextSize(warningText);
         const float padding = 6.0f;
 
@@ -166,6 +204,10 @@ void Editor::EditState::EditTransform(Rendering::Transform &transform, bool isBi
                          actualMode, glm::value_ptr(gizmoMatrix), glm::value_ptr(deltaMatrix));
 
     if (ImGuizmo::IsUsing()) {
+        if (auto *scene = m_EditorLayer->m_Scene) {
+            scene->MarkAsChanged();
+        }
+
         if (mCurrentGizmoOperation == ImGuizmo::TRANSLATE) {
             const auto deltaPos = glm::vec3(deltaMatrix[3]);
             transform.SetPosition(transform.GetPosition() + deltaPos);
@@ -190,7 +232,7 @@ void Editor::EditState::EditTransform(Rendering::Transform &transform, bool isBi
                                                       deltaScale);
 
                 glm::vec3 currentScale = transform.GetScale();
-                glm::vec3 dScale = glm::vec3(deltaScale[0], deltaScale[1], deltaScale[2]);
+                auto dScale = glm::vec3(deltaScale[0], deltaScale[1], deltaScale[2]);
                 transform.SetScale(currentScale * dScale);
             }
         }

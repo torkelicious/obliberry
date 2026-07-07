@@ -3,8 +3,9 @@
 #include <memory>
 
 #include "Core/ApplicationLayer.h"
-#include "UI/Panels/InspectorPanel.h"
-#include "UI/Panels/RegistryPanel.h"
+#include "UI/Panels/Editor/InspectorPanel.h"
+#include "UI/Panels/Editor/ProjectBrowserPanel.h"
+#include "UI/Panels/Editor/RegistryPanel.h"
 #include "UI/Panels/ViewportPanel.h"
 
 #include "EditorCamera.h"
@@ -26,6 +27,7 @@ namespace Editor {
         friend class EditState;
         friend class PlayState;
         friend class MapEditState;
+        friend class HubState;
 
     public:
         void Init(Core::EngineContext &ctx) override;
@@ -37,13 +39,15 @@ namespace Editor {
         void Shutdown() override;
 
     private:
-        void DrawInterface();
-
         void DrawDockSpace();
 
         void DrawEditorPanels();
 
         void DrawUtilityWindows();
+
+        void DrawEditorUI();
+
+        void DrawEditorLayout();
 
         void DrawToolbar();
 
@@ -62,6 +66,7 @@ namespace Editor {
         void SaveScene() const;
 
         void TransitionTo(std::unique_ptr<EditorState> newState);
+        void ExecutePendingStateTransfer();
 
         Core::EngineContext m_Context;
         Scenes::Scene *m_Scene = nullptr;
@@ -72,6 +77,8 @@ namespace Editor {
         Scenes::SceneManager m_SceneManager;
 
         std::unique_ptr<EditorState> m_CurrentState;
+        std::unique_ptr<EditorState> m_PendingState;
+        std::unique_ptr<EditorState> m_PreviousState;
 
         Map::HexCoords m_SelectedTile;
 
@@ -80,6 +87,7 @@ namespace Editor {
         static bool s_ShouldBuildDock;
         UI::RegistryPanel m_RegistryPanel;
         UI::InspectorPanel m_InspectorPanel;
+        UI::ProjectBrowserPanel m_ProjectBrowserPanel;
         UI::ViewportPanel m_ViewportPanel;
         UI::NewProjectDialog m_NewProjectDialog;
         UI::CreateSceneDialog m_CreateSceneDialog;
@@ -89,7 +97,6 @@ namespace Editor {
         UI::ProjectConfigEditor m_ProjectConfigEditor;
         bool m_ShowSceneConfig = false;
         bool m_ShowProjectConfig = false;
-        float aspect = m_ViewportPanel.GetWidth() / m_ViewportPanel.GetHeight();
 
         // Logging
         std::vector<std::string> m_ConsoleLogs;
