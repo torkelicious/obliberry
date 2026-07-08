@@ -211,6 +211,7 @@ add_executable(obliberry_editor
         src/Editor/States/MapEditState.cpp
         src/Editor/States/HubState.cpp
         src/Editor/UI/Panels/Editor/EditorWidgets.cpp
+        src/Editor/UI/Panels/Editor/EditorWidgetsCombo.cpp
         src/Editor/UI/Panels/Editor/InspectorPanel.cpp
         src/Editor/UI/Panels/Editor/ProjectBrowserPanel.cpp
         src/Editor/UI/Panels/Editor/RegistryPanel.cpp

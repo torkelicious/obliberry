@@ -1,6 +1,7 @@
 #include "EditorWidgets.h"
 #include <cstring>
 
+#include "EditorWidgetsCombo.h"
 #include "Core/Constants.h"
 #include "Core/EngineContext.h"
 #include "Core/ResourceManager.h"
@@ -17,21 +18,6 @@
 #include "Rendering/Texture.h"
 #include <filesystem>
 
-
-namespace {
-    bool TextureCombo(const char *label, Core::ResourceManager &resources,
-                      std::shared_ptr<Rendering::Texture> &current);
-
-    bool ShaderCombo(const char *label, Core::ResourceManager &resources, std::shared_ptr<Rendering::Shader> &current);
-
-    bool MeshCombo(const char *label, Core::ResourceManager &resources, std::shared_ptr<Rendering::Mesh> &current);
-
-    bool MaterialCombo(const char *label, Core::ResourceManager &resources,
-                       std::shared_ptr<Rendering::Material> &current);
-
-
-    bool FileCombo(const char *label, const std::string &subDir, const std::string &extension, std::string &current);
-} // namespace
 
 //  PointLightWidget
 
@@ -429,146 +415,3 @@ void Editor::UI::CustomDataWidget::Draw(const ECS::Entity entity, Core::EngineCo
         }
     }
 }
-
-//  asset combo helper
-namespace {
-    template <typename T, typename GetPreviewText>
-    static bool AssetComboImpl(const char *label, Core::ResourceManager &resources, std::shared_ptr<T> &current,
-                               GetPreviewText &&getPreview) {
-        const auto &all = resources.GetAll<T>();
-
-        // build items and find current index
-        int currentIdx = 0; // none
-        std::vector<std::string> keys;
-        keys.emplace_back("None");
-        int idx = 1;
-        for (const auto &[key, ptr] : all) {
-            keys.push_back(key);
-            if (ptr == current)
-                currentIdx = idx;
-            idx++;
-        }
-
-        std::string preview = "None";
-        if (current) {
-            for (const auto &[key, ptr] : all) {
-                if (ptr == current) {
-                    preview = key;
-                    break;
-                }
-            }
-        }
-
-        bool changed = false;
-        if (ImGui::BeginCombo(label, preview.c_str())) {
-            ImGui::PushID("__none__");
-            bool isSelected = (currentIdx == 0);
-            if (ImGui::Selectable("None", &isSelected)) {
-                current.reset();
-                changed = true;
-            }
-            if (currentIdx == 0)
-                ImGui::SetItemDefaultFocus();
-            ImGui::PopID();
-
-            // Assets
-            idx = 1;
-            for (const auto &[key, ptr] : all) {
-                ImGui::PushID(key.c_str());
-                isSelected = (currentIdx == idx);
-                if (ImGui::Selectable(key.c_str(), &isSelected)) {
-                    current = ptr;
-                    changed = true;
-                }
-                if (currentIdx == idx)
-                    ImGui::SetItemDefaultFocus();
-                ImGui::PopID();
-                idx++;
-            }
-            ImGui::EndCombo();
-        }
-
-        if (current) {
-            getPreview(current);
-        }
-
-        return changed;
-    }
-
-    bool TextureCombo(const char *label, Core::ResourceManager &resources,
-                      std::shared_ptr<Rendering::Texture> &current) {
-        return AssetComboImpl(label, resources, current, [](const std::shared_ptr<Rendering::Texture> &tex) {
-            ImGui::TextDisabled("%s", tex->GetPath().c_str());
-        });
-    }
-
-    bool ShaderCombo(const char *label, Core::ResourceManager &resources, std::shared_ptr<Rendering::Shader> &current) {
-        return AssetComboImpl(label, resources, current, [](const std::shared_ptr<Rendering::Shader> &shader) {
-            ImGui::TextDisabled("Vert: %s  Frag: %s", shader->GetVertexPath().c_str(),
-                                shader->GetFragmentPath().c_str());
-        });
-    }
-
-    bool MeshCombo(const char *label, Core::ResourceManager &resources, std::shared_ptr<Rendering::Mesh> &current) {
-        return AssetComboImpl(label, resources, current, [](const std::shared_ptr<Rendering::Mesh> &mesh) {
-            ImGui::TextDisabled("%s, %u indices", mesh->GetFactoryId().c_str(), mesh->GetIndexCount());
-        });
-    }
-
-    bool MaterialCombo(const char *label, Core::ResourceManager &resources,
-                       std::shared_ptr<Rendering::Material> &current) {
-        return AssetComboImpl(label, resources, current, [&resources](const std::shared_ptr<Rendering::Material> &mat) {
-            const std::string texKey = mat->texture ? resources.GetKey(mat->texture) : "none";
-            const std::string shaderKey = mat->shader ? resources.GetKey(mat->shader) : "none";
-            ImGui::TextDisabled("Texture: %s  Shader: %s", texKey.c_str(), shaderKey.c_str());
-        });
-    }
-
-    bool FileCombo(const char *label, const std::string &subDir, const std::string &extension, std::string &current) {
-        const auto resolved = IO::VFS::Resolve(subDir);
-        std::vector<std::string> files;
-        files.push_back("None");
-        if (std::filesystem::exists(resolved)) {
-            for (const auto &entry : std::filesystem::directory_iterator(resolved)) {
-                if (entry.is_regular_file() && entry.path().extension() == extension) {
-                    auto relPath = std::filesystem::relative(entry.path(), IO::VFS::GetProjectRoot());
-                    std::string relStr = relPath.string();
-                    for (auto &c : relStr)
-                        if (c == '\\')
-                            c = '/';
-                    files.push_back(std::move(relStr));
-                }
-            }
-        }
-
-        int currentIdx = 0;
-        for (int i = 1; i < static_cast<int>(files.size()); ++i) {
-            if (files[i] == current) {
-                currentIdx = i;
-                break;
-            }
-        }
-
-        const std::string preview = current.empty() ? "None" : current;
-        bool changed = false;
-
-        if (ImGui::BeginCombo(label, preview.c_str())) {
-            for (int i = 0; i < static_cast<int>(files.size()); ++i) {
-                const bool isSelected = (currentIdx == i);
-                if (ImGui::Selectable(files[i].c_str(), isSelected)) {
-                    if (i == 0)
-                        current.clear();
-                    else
-                        current = files[i];
-                    changed = true;
-                }
-                if (isSelected)
-                    ImGui::SetItemDefaultFocus();
-            }
-            ImGui::EndCombo();
-        }
-
-        return changed;
-    }
-
-} // namespace

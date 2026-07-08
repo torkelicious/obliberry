@@ -17,11 +17,19 @@ void Editor::MapEditState::OnEnter() {
     if (!m_MapState || !m_MapComp) {
         // it is safe to assume each scene only has one map, no less no more.. otherwise something has probably gone
         // seriously wrong
+        // TODO: probably enforce a required map ??
         m_MapState = m_EditorLayer->m_Registry->GetFirst<ECS::Components::MapStateComponent>();
         m_MapComp = m_EditorLayer->m_Registry->GetFirst<ECS::Components::MapComponent>();
         m_MapComp->pathToMat->color = {1, 1, 1, 0.25};
         m_MapComp->outlineMat->color = {0.05, 0.0, 0, 0.15};
         m_CurrentGrid = &m_MapComp->grid;
+        m_selectedTile = m_CurrentGrid->Get(m_selectedHex);
+        m_TileEditorPanel.SetContext(m_EditorLayer->m_Scene, m_EditorLayer->m_Context);
+        m_TileEditorPanel.SetMapComponent(m_MapComp);
+        m_TileEditorPanel.SetCreateTypeFn(
+                [this](const std::shared_ptr<Rendering::Texture> &tex, const glm::vec4 &color) {
+                    return GetOrCreateTypeForMaterial(tex, color);
+                });
     }
 }
 
@@ -56,6 +64,7 @@ void Editor::MapEditState::OnHandleInput(const float dt) {
     // The component names are misleading: "selectedHex" is actually the hovered hex,
     // while "pathTo" represents the real clicked selection.
     m_MapState->selectedHex = m_hoveredHex;
+
 
     // Scroll zoom
     const auto scrollDelta = static_cast<float>(m_EditorLayer->m_Input->ScrollY());
@@ -98,6 +107,7 @@ void Editor::MapEditState::OnDrawPanels() {}
 void Editor::MapEditState::OnRender() {
     ImGuizmo::BeginFrame();
     m_EditorLayer->DrawEditorUI();
+    m_TileEditorPanel.OnImGuiRender();
 
     auto *renderer = m_EditorLayer->m_Context.renderer;
     renderer->BeginFrame();
@@ -120,6 +130,7 @@ void Editor::MapEditState::OnDrawModeToolbar() {
 void Editor::MapEditState::OnDrawUtilityWindows() {}
 void Editor::MapEditState::OnExit() {
     m_MapState = nullptr;
+
     m_EditorLayer->m_Registry->ForEach<ECS::Components::MapStateComponent>(
             [&](ECS::Entity, ECS::Components::MapStateComponent *state) { state->hasSelection = false; });
 }
@@ -129,6 +140,8 @@ void Editor::MapEditState::ToolClickEvent(const int btn) {
         m_selectedHex = m_hoveredHex;
         m_MapState->pathTo = m_selectedHex; // stupid naming strikes again! this is still a hack!
         m_MapState->hasPathTo = true;
+        m_selectedTile = m_CurrentGrid->Get(m_selectedHex);
+        m_TileEditorPanel.SetSelectedTile(m_selectedTile);
 
         switch (m_CurrentTool) {
             case Select:
@@ -143,11 +156,11 @@ void Editor::MapEditState::ToolClickEvent(const int btn) {
     }
 }
 
-uint8_t Editor::MapEditState::GetOrCreateTypeForTexture(const std::shared_ptr<Rendering::Texture> &tex,
-                                                        const glm::vec4 &color) const {
+uint8_t Editor::MapEditState::GetOrCreateTypeForMaterial(const std::shared_ptr<Rendering::Texture> &tex,
+                                                         const glm::vec4 &color) const {
     auto &typeMats = m_MapComp->typeMats;
     for (const auto &[id, mat] : typeMats) {
-        if (mat.texture == tex) {
+        if (mat.texture == tex && mat.color == color) {
             return id;
         }
     }

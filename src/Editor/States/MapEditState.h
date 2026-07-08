@@ -2,6 +2,7 @@
 #include "../EditorState.h"
 #include "ECS/Components/MapComponent.h"
 #include "ECS/Components/MapStateComponent.h"
+#include "Editor/UI/Panels/MapEditor/TileEditorPanel.h"
 #include "Map/Hex.h"
 
 #include <cstdint>
@@ -31,8 +32,9 @@ namespace Editor {
 
         void ToolClickEvent(int btn = 0);
 
-        uint8_t GetOrCreateTypeForTexture(const std::shared_ptr<Rendering::Texture> &tex,
-                                          const glm::vec4 &color = {1, 1, 1, 1}) const;
+
+        [[nodiscard]] uint8_t GetOrCreateTypeForMaterial(const std::shared_ptr<Rendering::Texture> &tex,
+                                                         const glm::vec4 &color = {1, 1, 1, 1}) const;
 
     private:
         Map::HexGrid *m_CurrentGrid = nullptr;
@@ -41,7 +43,12 @@ namespace Editor {
         Tool m_CurrentTool = Paint;
 
         // makes it easier than using the dumb names in the component
-        Map::HexCoords m_hoveredHex;  // what the comp would refer to as "selectedHex", stupid naming.. i know.
-        Map::HexCoords m_selectedHex; // actually clicked hex, not the same as the components "selectedHex"
+        Map::HexCoords m_hoveredHex = {0, 0};  // what the comp would refer to as "selectedHex", stupid naming.. i know.
+        Map::HexCoords m_selectedHex = {0, 0}; // actually clicked hex, not the same as the components "selectedHex"
+
+        Map::Tile *m_selectedTile = nullptr;
+
+        // ui
+        UI::TileEditorPanel m_TileEditorPanel;
     };
 } // namespace Editor

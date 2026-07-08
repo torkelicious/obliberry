@@ -54,10 +54,9 @@ void Editor::UI::RegistryPanel::OnImGuiRender() {
             material = std::make_shared<Rendering::Material>();
             MarkSceneChanged(m_EngineContext);
         }
-
         ImGui::SameLine();
-        if (ImGui::Button("-")) {
-            if (m_SelectedEntity) {
+        if (m_SelectedEntity) {
+            if (ImGui::Button("-")) {
                 registry.DestroyEntity(static_cast<ECS::EntityID>(m_SelectedEntity));
                 m_SelectedEntity = ECS::Entity{};
                 MarkSceneChanged(m_EngineContext);
