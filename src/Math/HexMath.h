@@ -6,21 +6,20 @@
 
 // math
 namespace Math::HexMath {
-    using Core::HEX_SIZE;
-    using Core::SQRT_3;
     using Core::HEX_HEIGHT_MULTIPLIER;
-    using Core::HEX_ODD_ROW_OFFSET;
     using Core::HEX_HEIGHT_SPACING_RATIO;
     using Core::HEX_INV_MAT_Q_X;
     using Core::HEX_INV_MAT_Q_Y;
     using Core::HEX_INV_MAT_R_Y;
     using Core::HEX_NEIGHBOR_COUNT;
+    using Core::HEX_ODD_ROW_OFFSET;
+    using Core::HEX_SIZE;
+    using Core::SQRT_3;
 
     struct FractionalHex {
         float q, r, s;
 
-        FractionalHex(const float q_, const float r_, const float s_) : q(q_), r(r_), s(s_) {
-        }
+        FractionalHex(const float q_, const float r_, const float s_) : q(q_), r(r_), s(s_) {}
     };
 
     struct CubeCoords {
@@ -86,8 +85,61 @@ namespace Math::HexMath {
     }
 
     // alias cuz i can :)
-    inline Map::HexCoords GetClosestHex(const glm::vec2 p, const float size = HEX_SIZE) {
-        return PixelToHex(p, size);
+    inline Map::HexCoords GetClosestHex(const glm::vec2 p, const float size = HEX_SIZE) { return PixelToHex(p, size); }
+
+    // for later evil plans ....
+    inline FractionalHex Lerp(const FractionalHex &a, const FractionalHex &b, const float t) {
+        return {a.q + (b.q - a.q) * t, a.r + (b.r - a.r) * t, a.s + (b.s - a.s) * t};
+    }
+    inline CubeCoords CubeRound(const FractionalHex &h) {
+        auto rx = static_cast<int32_t>(std::lround(h.q));
+        auto ry = static_cast<int32_t>(std::lround(h.r));
+        auto rz = static_cast<int32_t>(std::lround(h.s));
+
+        const float q_diff = std::abs(rx - h.q);
+        const float r_diff = std::abs(ry - h.r);
+        const float s_diff = std::abs(rz - h.s);
+
+        if (q_diff > r_diff && q_diff > s_diff) {
+            rx = -ry - rz;
+        } else if (r_diff > s_diff) {
+            ry = -rx - rz;
+        }
+
+        return {rx, ry, rz};
+    }
+
+    inline Map::HexCoords CubeToOddR(const CubeCoords &cube) {
+        const int32_t col = cube.x + (cube.z - (cube.z & 1)) / 2;
+        const int32_t row = cube.z;
+        return {col, row};
+    }
+
+    inline FractionalHex OddRToFractionalHex(const Map::HexCoords &hex) {
+        const auto cube = OddRToCube(hex);
+        return {static_cast<float>(cube.x), static_cast<float>(cube.y), static_cast<float>(cube.z)};
+    }
+
+    inline std::vector<Map::HexCoords> GetHexLine(const Map::HexCoords &from, const Map::HexCoords &to) {
+        const int32_t dist = Distance(from, to);
+        if (dist == 0)
+            return {};
+
+        const auto a = OddRToFractionalHex(from);
+        const auto b = OddRToFractionalHex(to);
+
+        std::vector<Map::HexCoords> result;
+        result.reserve(static_cast<size_t>(dist));
+
+        for (int32_t i = 1; i <= dist; ++i) {
+            const float t = static_cast<float>(i) / static_cast<float>(dist);
+            const auto hex = CubeToOddR(CubeRound(Lerp(a, b, t)));
+            if (result.empty() || result.back() != hex) {
+                result.push_back(hex);
+            }
+        }
+
+        return result;
     }
 
     // get 6 neighbors (for odd-r grid!!!)
@@ -97,16 +149,9 @@ namespace Math::HexMath {
         std::array<Map::HexCoords, HEX_NEIGHBOR_COUNT> neighbors;
         for (std::size_t i = 0; i < HEX_NEIGHBOR_COUNT; i++) {
             constexpr int32_t r_diff[HEX_NEIGHBOR_COUNT] = {0, 1, 1, 0, -1, -1};
-            constexpr int32_t q_diff[2][HEX_NEIGHBOR_COUNT] = {
-                {1, 0, -1, -1, -1, 0},
-                {1, 1, 0, -1, 0, 1}
-            };
-            neighbors[i] = Map::HexCoords(
-                hex.q + q_diff[parity][i],
-                hex.r + r_diff[i]
-            );
+            constexpr int32_t q_diff[2][HEX_NEIGHBOR_COUNT] = {{1, 0, -1, -1, -1, 0}, {1, 1, 0, -1, 0, 1}};
+            neighbors[i] = Map::HexCoords(hex.q + q_diff[parity][i], hex.r + r_diff[i]);
         }
         return neighbors;
     }
-}
-
+} // namespace Math::HexMath

@@ -106,7 +106,20 @@ void Editor::EditorLayer::Render() {
 void Editor::EditorLayer::Shutdown() {}
 
 void Editor::EditorLayer::HandleInput(const float dt) {
-    if (ImGui::GetIO().WantCaptureKeyboard)
+    // NOTE:
+    // ImGui starts a "window move" when left clicking the Scene View window,
+    // this sets g.ActiveId to the window's MoveId.
+    // Even though the move is cancelled immediately
+    // (the click was on the framebuffer, not the tab),
+    // but, ActiveId remains set for the next frame.
+    // This causes WantCaptureKeyboard to become true and blocks HandleInput()
+    // before it can reach OnHandleInput().
+    //
+    // Use WantTextInput instead since it
+    // only triggers for text input and not any active ImGui ID.
+    // I spent like 4 hours trying to figure out why my clicks werent working..
+    // -.-
+    if (ImGui::GetIO().WantTextInput)
         return;
 
     // mode-independent hotkeys

@@ -1,6 +1,5 @@
 #include "PlayState.h"
 #include "../EditorLayer.h"
-#include <ImGuizmo.h>
 #include <iostream>
 
 void Editor::PlayState::OnEnter() {
@@ -30,6 +29,5 @@ void Editor::PlayState::OnDrawPanels() {
 }
 
 void Editor::PlayState::OnRender() {
-    ImGuizmo::BeginFrame();
     m_EditorLayer->DrawEditorLayout();
 }

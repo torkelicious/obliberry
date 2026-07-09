@@ -96,8 +96,8 @@ bool Core::Window::Init(const unsigned int width, const unsigned int height, con
     glViewport(0, 0, fbWidth, fbHeight);
 
     glfwSetKeyCallback(m_Window, KeyCallback);
-    glfwSetCursorPosCallback(m_Window, CursorPosCallback);
     glfwSetMouseButtonCallback(m_Window, MouseButtonCallback);
+    glfwSetCursorPosCallback(m_Window, CursorPosCallback);
     glfwSetScrollCallback(m_Window, ScrollCallback);
 
     return true;

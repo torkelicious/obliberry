@@ -6,10 +6,9 @@
 #include "Map/Hex.h"
 
 #include <cstdint>
+#include <functional>
 
 namespace Editor {
-
-    struct Brush {};
 
     class MapEditState : public EditorState {
     public:
@@ -30,13 +29,14 @@ namespace Editor {
 
         void OnExit() override;
 
-        void ToolClickEvent(int btn = 0);
-
-
         [[nodiscard]] uint8_t GetOrCreateTypeForMaterial(const std::shared_ptr<Rendering::Texture> &tex,
                                                          const glm::vec4 &color = {1, 1, 1, 1}) const;
 
     private:
+        void ApplyToolAt(const Map::HexCoords &hex);
+        void ForEachHexInRing(Map::HexCoords center, int radius,
+                              const std::function<void(const Map::HexCoords &)> &callback) const;
+
         Map::HexGrid *m_CurrentGrid = nullptr;
         ECS::Components::MapStateComponent *m_MapState = nullptr;
         ECS::Components::MapComponent *m_MapComp = nullptr;
@@ -47,6 +47,10 @@ namespace Editor {
         Map::HexCoords m_selectedHex = {0, 0}; // actually clicked hex, not the same as the components "selectedHex"
 
         Map::Tile *m_selectedTile = nullptr;
+
+        // brush
+        int m_BrushRadius = 1;
+        Map::HexCoords m_lastPaintedHex = {0, 0};
 
         // ui
         UI::TileEditorPanel m_TileEditorPanel;

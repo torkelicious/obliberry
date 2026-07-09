@@ -57,6 +57,26 @@ namespace Map {
             return tile;
         }
 
+        bool RemoveTileAt(const HexCoords &pos) {
+            const bool removed = tiles.erase(pos) > 0;
+            if (removed) {
+                std::erase(walkableTiles, pos);
+            }
+            return removed;
+        }
+
+        void SyncTileWalkableCache(const HexCoords &pos) {
+            if (auto *tile = Get(pos)) {
+                if (tile->walkable) {
+                    if (std::find(walkableTiles.begin(), walkableTiles.end(), pos) == walkableTiles.end()) {
+                        walkableTiles.push_back(pos);
+                    }
+                } else {
+                    std::erase(walkableTiles, pos);
+                }
+            }
+        }
+
         static glm::vec2 GetWorldPos(const HexCoords &pos, const float size = Core::HEX_SIZE) {
             return Math::HexMath::HexToWorld(pos, size);
         }

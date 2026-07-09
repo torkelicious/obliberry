@@ -5,12 +5,10 @@
 #include "Core/InputManager.h"
 #include "Core/ResourceManager.h"
 #include "ECS/Systems/MapRenderSystem.h"
+#include "Math/HexMath.h"
 
 #include <imgui.h>
-#include <ImGuizmo.h>
-
-// TODO: IMPLEMENT MAP EDITING FOR REAL
-//  MOST OF THIS IS JUST SAME AS EDITSTATE SINCE THIS IS PLACEHOLDER FOR NOW!!!
+#include "imgui_internal.h"
 
 void Editor::MapEditState::OnEnter() {
 
@@ -20,8 +18,8 @@ void Editor::MapEditState::OnEnter() {
         // TODO: probably enforce a required map ??
         m_MapState = m_EditorLayer->m_Registry->GetFirst<ECS::Components::MapStateComponent>();
         m_MapComp = m_EditorLayer->m_Registry->GetFirst<ECS::Components::MapComponent>();
-        m_MapComp->pathToMat->color = {1, 1, 1, 0.25};
-        m_MapComp->outlineMat->color = {0.05, 0.0, 0, 0.15};
+        m_MapComp->pathToMat->color = {0.0, 0.8, 1.0, 0.50};   // cyan
+        m_MapComp->outlineMat->color = {1.0, 0.85, 0.0, 0.55}; // gold / yellowish
         m_CurrentGrid = &m_MapComp->grid;
         m_selectedTile = m_CurrentGrid->Get(m_selectedHex);
         m_TileEditorPanel.SetContext(m_EditorLayer->m_Scene, m_EditorLayer->m_Context);
@@ -31,13 +29,17 @@ void Editor::MapEditState::OnEnter() {
                     return GetOrCreateTypeForMaterial(tex, color);
                 });
     }
+    if (!m_MapComp->typeMats.empty()) {
+        m_TileEditorPanel.InitBrushFromFirstType();
+    }
+    m_TileEditorPanel.SetSelectedTile(m_selectedTile);
 }
 
 void Editor::MapEditState::OnUpdate(const float dt) {}
 
 void Editor::MapEditState::OnHandleInput(const float dt) {
-    if (ImGui::GetIO().WantCaptureKeyboard)
-        return;
+
+    const bool viewportHovered = m_EditorLayer->m_ViewportPanel.IsHovered();
 
     if (m_EditorLayer->m_Input->IsKeyPressed("V")) {
         m_EditorLayer->m_Camera.ToggleViewMode();
@@ -48,27 +50,23 @@ void Editor::MapEditState::OnHandleInput(const float dt) {
     float kbPanY = 0.0f;
     m_EditorLayer->m_Camera.StopKeyboardPan();
 
-    if (!m_EditorLayer->m_ViewportPanel.IsHovered())
+    if (!viewportHovered)
         return;
 
-    // Click input
-    if (m_EditorLayer->m_Input->IsMouseDown(0)) {
-        ToolClickEvent();
-    }
-
-    // Hex hover
-    const glm::vec2 worldPos = m_EditorLayer->m_ViewportPanel.MousePosToWorld(m_EditorLayer->m_Camera);
-    m_hoveredHex = Math::HexMath::PixelToHex(worldPos);
+    m_hoveredHex = Math::HexMath::PixelToHex(m_EditorLayer->m_ViewportPanel.MousePosToWorld(m_EditorLayer->m_Camera));
 
     m_MapState->hasSelection = true;
     // The component names are misleading: "selectedHex" is actually the hovered hex,
     // while "pathTo" represents the real clicked selection.
     m_MapState->selectedHex = m_hoveredHex;
 
+    // click &/or drag
+    if (m_EditorLayer->m_Input->IsMouseDown(0)) {
+        ApplyToolAt(m_hoveredHex);
+    }
 
     // Scroll zoom
-    const auto scrollDelta = static_cast<float>(m_EditorLayer->m_Input->ScrollY());
-    if (scrollDelta != 0.0f) {
+    if (const auto scrollDelta = static_cast<float>(m_EditorLayer->m_Input->ScrollY()); scrollDelta != 0.0f) {
         m_EditorLayer->m_Camera.AdjustZoom(scrollDelta * 0.2f);
     }
 
@@ -105,7 +103,6 @@ void Editor::MapEditState::OnHandleInput(const float dt) {
 void Editor::MapEditState::OnDrawPanels() {}
 
 void Editor::MapEditState::OnRender() {
-    ImGuizmo::BeginFrame();
     m_EditorLayer->DrawEditorUI();
     m_TileEditorPanel.OnImGuiRender();
 
@@ -116,18 +113,68 @@ void Editor::MapEditState::OnRender() {
     const Math::Frustum::ViewFrustum frustum = Math::Frustum::FromCameraVP(vp, Core::HEX_SIZE * 2.0f);
 
     ECS::Systems::MapRenderSystem::RenderAll(*m_EditorLayer->m_Registry, m_EditorLayer->m_Context, frustum);
+
+    if (m_CurrentTool != Select && m_BrushRadius > 1 && m_MapComp->hexMesh && m_MapComp->outlineMat) {
+        ForEachHexInRing(m_hoveredHex, m_BrushRadius - 1, [&](const Map::HexCoords &hex) {
+            const auto worldPos = Map::HexGrid::GetWorldPos(hex);
+            Rendering::Transform t;
+            t.SetPosition({worldPos.x, worldPos.y, 0.01f});
+            t.SetScale({1.08f, 1.08f, 1.0f});
+            renderer->Submit(m_MapComp->hexMesh, m_MapComp->outlineMat.get(), t);
+        });
+    }
+
     renderer->SetLightmap(nullptr);
 }
+
 void Editor::MapEditState::OnDrawModeToolbar() {
-    const char *modeItems[] = {"Paint", "Erase", "Select"};
-    int current = static_cast<int>(m_CurrentTool);
-    ImGui::SetNextItemWidth(100.0f);
-    if (ImGui::Combo("##MapEditTool", &current, modeItems, IM_ARRAYSIZE(modeItems))) {
-        m_CurrentTool = static_cast<Tool>(current);
+    {
+        constexpr auto activeCol = ImVec4(0.3f, 0.6f, 1.0f, 0.7f);
+        constexpr auto inactiveCol = ImVec4(0.2f, 0.2f, 0.2f, 0.5f);
+
+        auto drawToolBtn = [&](const char *label, Tool tool, const char *tip) {
+            if (m_CurrentTool == tool) {
+                ImGui::PushStyleColor(ImGuiCol_Button, activeCol);
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, activeCol);
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive, activeCol);
+            } else {
+                ImGui::PushStyleColor(ImGuiCol_Button, inactiveCol);
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 0.6f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.25f, 0.5f, 0.9f, 0.6f));
+            }
+            if (ImGui::Button(label)) {
+                m_CurrentTool = tool;
+            }
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+                ImGui::SetTooltip("%s", tip);
+            }
+            ImGui::PopStyleColor(3);
+        };
+
+        drawToolBtn("  Paint  ", Paint, "Left-click to place tiles. Drag to paint continuously.");
+        ImGui::SameLine();
+        drawToolBtn("  Erase  ", Erase, "Left-click to remove tiles. Drag to erase continuously.");
+        ImGui::SameLine();
+        drawToolBtn("  Select ", Select, "Click a tile to inspect and edit its properties.");
+    }
+
+    ImGui::SameLine();
+    ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
+    ImGui::SameLine();
+    ImGui::Text("Size");
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(60.0f);
+    int radius = m_BrushRadius;
+    if (ImGui::SliderInt("##Radius", &radius, 1, 5, "%d")) {
+        m_BrushRadius = radius;
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Brush radius in hexes. Affects Paint and Erase tools.");
     }
 }
 
 void Editor::MapEditState::OnDrawUtilityWindows() {}
+
 void Editor::MapEditState::OnExit() {
     m_MapState = nullptr;
 
@@ -135,23 +182,48 @@ void Editor::MapEditState::OnExit() {
             [&](ECS::Entity, ECS::Components::MapStateComponent *state) { state->hasSelection = false; });
 }
 
-void Editor::MapEditState::ToolClickEvent(const int btn) {
-    if (btn == 0) {
-        m_selectedHex = m_hoveredHex;
-        m_MapState->pathTo = m_selectedHex; // stupid naming strikes again! this is still a hack!
-        m_MapState->hasPathTo = true;
-        m_selectedTile = m_CurrentGrid->Get(m_selectedHex);
-        m_TileEditorPanel.SetSelectedTile(m_selectedTile);
+void Editor::MapEditState::ApplyToolAt(const Map::HexCoords &hex) {
+    switch (m_CurrentTool) {
+        case Select:
+            m_selectedHex = hex;
+            m_MapState->pathTo = hex;
+            m_MapState->hasPathTo = true;
+            m_selectedTile = m_CurrentGrid->Get(hex);
+            m_TileEditorPanel.SetSelectedTile(m_selectedTile);
+            if (m_selectedTile) {
+                m_TileEditorPanel.CopyBrushFromTile(*m_selectedTile);
+            }
+            break;
 
-        switch (m_CurrentTool) {
-            case Select:
-                break;
-            case Paint:
-                // emplace tile
-                break;
-            case Erase:
-                // remove tile
-                break;
+        case Paint: {
+            const uint8_t brushType = m_TileEditorPanel.GetSourceType();
+            ForEachHexInRing(hex, m_BrushRadius - 1, [&](const Map::HexCoords &h) {
+                m_CurrentGrid->RemoveTileAt(h);
+                m_CurrentGrid->EmplaceTile(h, brushType);
+            });
+            m_MapComp->needsMeshUpdate = true;
+            break;
+        }
+
+        case Erase:
+            ForEachHexInRing(hex, m_BrushRadius - 1, [&](const Map::HexCoords &h) { m_CurrentGrid->RemoveTileAt(h); });
+            m_MapComp->needsMeshUpdate = true;
+            break;
+    }
+}
+
+void Editor::MapEditState::ForEachHexInRing(const Map::HexCoords center, const int radius,
+                                            const std::function<void(const Map::HexCoords &)> &callback) const {
+    const auto [cx, cy, cz] = Math::HexMath::OddRToCube(center);
+
+    for (int dx = -radius; dx <= radius; ++dx) {
+        const int dyMin = std::max(-radius, -dx - radius);
+        const int dyMax = std::min(radius, -dx + radius);
+        for (int dy = dyMin; dy <= dyMax; ++dy) {
+            const int dz = -dx - dy;
+            const int r = cz + dz;
+            const int q = cx + dx + (r - (r & 1)) / 2;
+            callback(Map::HexCoords(q, r));
         }
     }
 }
