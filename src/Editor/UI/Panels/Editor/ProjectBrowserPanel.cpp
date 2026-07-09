@@ -193,6 +193,12 @@ namespace Editor::UI {
                     }
 
                     ImGui::EndGroup();
+                    // card outline
+                    auto *dl = ImGui::GetWindowDrawList();
+                    auto min = ImGui::GetItemRectMin();
+                    auto max = ImGui::GetItemRectMax();
+                    dl->AddRect(ImVec2(min.x - 2, min.y - 2), ImVec2(max.x + 2, max.y + 2),
+                                ImGui::GetColorU32(ImGuiCol_Border));
                     ImGui::PopID();
                     itemCount++;
                 }
@@ -332,6 +338,12 @@ namespace Editor::UI {
                     }
 
                     ImGui::EndGroup();
+                    // card outline
+                    auto *dl = ImGui::GetWindowDrawList();
+                    auto min = ImGui::GetItemRectMin();
+                    auto max = ImGui::GetItemRectMax();
+                    dl->AddRect(ImVec2(min.x - 2, min.y - 2), ImVec2(max.x + 2, max.y + 2),
+                                ImGui::GetColorU32(ImGuiCol_Border));
                     ImGui::PopID();
                     itemCount++;
                 }
@@ -465,6 +477,12 @@ namespace Editor::UI {
                     }
 
                     ImGui::EndGroup();
+                    // card outline
+                    auto *dl = ImGui::GetWindowDrawList();
+                    auto min = ImGui::GetItemRectMin();
+                    auto max = ImGui::GetItemRectMax();
+                    dl->AddRect(ImVec2(min.x - 2, min.y - 2), ImVec2(max.x + 2, max.y + 2),
+                                ImGui::GetColorU32(ImGuiCol_Border));
                     ImGui::PopID();
                     itemCount++;
                 }
@@ -614,6 +632,12 @@ namespace Editor::UI {
                     }
 
                     ImGui::EndGroup();
+                    // card outline
+                    auto *dl = ImGui::GetWindowDrawList();
+                    auto min = ImGui::GetItemRectMin();
+                    auto max = ImGui::GetItemRectMax();
+                    dl->AddRect(ImVec2(min.x - 2, min.y - 2), ImVec2(max.x + 2, max.y + 2),
+                                ImGui::GetColorU32(ImGuiCol_Border));
                     ImGui::PopID();
                     itemCount++;
                 }
@@ -801,6 +825,12 @@ namespace Editor::UI {
                     }
 
                     ImGui::EndGroup();
+                    // card outline
+                    auto *dl = ImGui::GetWindowDrawList();
+                    auto min = ImGui::GetItemRectMin();
+                    auto max = ImGui::GetItemRectMax();
+                    dl->AddRect(ImVec2(min.x - 2, min.y - 2), ImVec2(max.x + 2, max.y + 2),
+                                ImGui::GetColorU32(ImGuiCol_Border));
                     ImGui::PopID(); // entry
                     itemCount++;
                 }
