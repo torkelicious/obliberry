@@ -109,33 +109,29 @@ namespace Editor::UI {
         ImGui::Dummy(size);
     }
 
-
-    void ProjectBrowserPanel::DrawTextureSection(Core::ResourceManager &resources) {
-        const auto &allTextures = resources.GetAll<Rendering::Texture>();
+    template <typename T>
+    void ProjectBrowserPanel::DrawResourceSection(
+            Core::ResourceManager &resources, const std::unordered_map<std::string, std::shared_ptr<T>> &allItems,
+            AssetType assetType, const char *childId, float childHeight, const char *emptyText, const char *typeName,
+            std::type_identity_t<std::function<void(const std::shared_ptr<T> &)>> renderThumbnail,
+            const std::type_identity_t<std::function<void(const std::string &, Core::ResourceManager &)>>
+                    &renderExtraButtons,
+            std::type_identity_t<
+                    std::function<void(const std::string &, const std::shared_ptr<T> &, Core::ResourceManager &)>>
+                    renderTooltip) {
         struct RenameOp {
             std::string oldKey;
             std::string newKey;
         };
         std::vector<RenameOp> pendingRenames;
 
-        // filter by search query
-        bool showSearchClear = false;
-        if (m_SearchBuffer[0] != '\0') {
-            ImGui::SameLine();
-            if (ImGui::SmallButton("Clear")) {
-                m_SearchBuffer[0] = '\0';
-            }
-            showSearchClear = true;
-        }
-
-        if (ImGui::BeginChild("##texList", ImVec2(0, 130), true)) {
+        if (ImGui::BeginChild(childId, ImVec2(0, childHeight), true)) {
             if (m_ViewMode == ViewMode::Grid) {
-                // grid
-                int itemsPerRow = static_cast<int>(ImGui::GetContentRegionAvail().x / 100.0f);
+                int itemsPerRow = static_cast<int>(ImGui::GetContentRegionAvail().x / 180.0f);
                 if (itemsPerRow < 1)
                     itemsPerRow = 1;
                 int itemCount = 0;
-                for (const auto &[id, tex] : allTextures) {
+                for (const auto &[id, asset] : allItems) {
                     if (!ContainsSearch(id.c_str(), m_SearchBuffer))
                         continue;
 
@@ -145,17 +141,13 @@ namespace Editor::UI {
                     ImGui::PushID(id.c_str());
                     ImGui::BeginGroup();
 
-                    // thumbnail
-                    if (tex) {
-                        ImGuiImageFlipped(tex->GetID(), ImVec2(64, 64));
-                    } else {
-                        ImGui::Button("T", ImVec2(64, 64));
-                    }
+                    renderThumbnail(asset);
 
-                    // Label and actions
+                    ImGui::SameLine();
+
+                    ImGui::BeginGroup();
                     ImGui::Text("%s", id.c_str());
 
-                    // action buttons
                     if (m_RenamingKey == id) {
                         if (m_RenameJustActivated) {
                             ImGui::SetKeyboardFocusHere();
@@ -163,9 +155,8 @@ namespace Editor::UI {
                         }
                         ImGui::SetNextItemWidth(80.0f);
                         ImGui::InputText("##rename", m_RenameBuffer, sizeof(m_RenameBuffer));
-                        ImGui::SameLine();
                         if (ImGui::SmallButton("Save")) {
-                            if (m_RenameBuffer[0] != '\0' && !resources.Get<Rendering::Texture>(m_RenameBuffer)) {
+                            if (m_RenameBuffer[0] != '\0' && !resources.Get<T>(m_RenameBuffer)) {
                                 pendingRenames.push_back({id, m_RenameBuffer});
                             }
                             m_RenamingKey.clear();
@@ -181,19 +172,16 @@ namespace Editor::UI {
                             strncpy(m_RenameBuffer, id.c_str(), sizeof(m_RenameBuffer));
                             m_RenameBuffer[sizeof(m_RenameBuffer) - 1] = '\0';
                         }
-                        ImGui::SameLine();
-                        if (ImGui::SmallButton("Replace")) {
-                            ReplaceTexture(resources, id);
-                        }
-                        ImGui::SameLine();
+                        renderExtraButtons(id, resources);
                         if (ImGui::SmallButton("Remove")) {
                             m_DeleteConfirmKey = id;
-                            m_DeleteConfirmType = AssetType::Texture;
+                            m_DeleteConfirmType = assetType;
                         }
                     }
 
                     ImGui::EndGroup();
-                    // card outline
+                    ImGui::EndGroup();
+
                     auto *dl = ImGui::GetWindowDrawList();
                     auto min = ImGui::GetItemRectMin();
                     auto max = ImGui::GetItemRectMax();
@@ -203,8 +191,7 @@ namespace Editor::UI {
                     itemCount++;
                 }
             } else {
-                // list
-                for (const auto &id : allTextures | std::views::keys) {
+                for (const auto &[id, asset] : allItems) {
                     if (!ContainsSearch(id.c_str(), m_SearchBuffer))
                         continue;
 
@@ -219,7 +206,7 @@ namespace Editor::UI {
                         ImGui::InputText("##rename", m_RenameBuffer, sizeof(m_RenameBuffer));
                         ImGui::SameLine();
                         if (ImGui::SmallButton("Save")) {
-                            if (m_RenameBuffer[0] != '\0' && !resources.Get<Rendering::Texture>(m_RenameBuffer)) {
+                            if (m_RenameBuffer[0] != '\0' && !resources.Get<T>(m_RenameBuffer)) {
                                 pendingRenames.push_back({id, m_RenameBuffer});
                             }
                             m_RenamingKey.clear();
@@ -230,6 +217,9 @@ namespace Editor::UI {
                         }
                     } else {
                         ImGui::Text("%s", id.c_str());
+                        if (renderTooltip && ImGui::IsItemHovered()) {
+                            renderTooltip(id, asset, resources);
+                        }
                         ImGui::SameLine();
                         if (ImGui::SmallButton("Rename")) {
                             m_RenamingKey = id;
@@ -238,13 +228,11 @@ namespace Editor::UI {
                             m_RenameBuffer[sizeof(m_RenameBuffer) - 1] = '\0';
                         }
                         ImGui::SameLine();
-                        if (ImGui::SmallButton("Replace")) {
-                            ReplaceTexture(resources, id);
-                        }
+                        renderExtraButtons(id, resources);
                         ImGui::SameLine();
                         if (ImGui::SmallButton("Remove")) {
                             m_DeleteConfirmKey = id;
-                            m_DeleteConfirmType = AssetType::Texture;
+                            m_DeleteConfirmType = assetType;
                         }
                     }
 
@@ -254,17 +242,39 @@ namespace Editor::UI {
         }
         ImGui::EndChild();
 
-        // apply pending renames
         for (const auto &[oldKey, newKey] : pendingRenames) {
-            auto ptr = resources.Get<Rendering::Texture>(oldKey);
-            resources.Unload<Rendering::Texture>(oldKey);
-            resources.LoadFromFactory<Rendering::Texture>(newKey, [ptr] { return ptr; });
-            std::cout << "[ProjectBrowser] Renamed texture '" << oldKey << "' -> '" << newKey << "'\n";
+            auto ptr = resources.Get<T>(oldKey);
+            resources.Unload<T>(oldKey);
+            resources.LoadFromFactory<T>(newKey, [ptr] { return ptr; });
+            std::cout << "[ProjectBrowser] Renamed " << typeName << " '" << oldKey << "' -> '" << newKey << "'\n";
         }
 
-        if (allTextures.empty() || (m_SearchBuffer[0] != '\0' && pendingRenames.empty())) {
-            ImGui::TextDisabled("No textures imported.");
+        if (allItems.empty() || (m_SearchBuffer[0] != '\0' && pendingRenames.empty())) {
+            ImGui::TextDisabled("%s", emptyText);
         }
+    }
+
+    void ProjectBrowserPanel::DrawTextureSection(Core::ResourceManager &resources) {
+        const auto &allTextures = resources.GetAll<Rendering::Texture>();
+        if (m_SearchBuffer[0] != '\0') {
+            ImGui::SameLine();
+            if (ImGui::SmallButton("Clear")) {
+                m_SearchBuffer[0] = '\0';
+            }
+        }
+
+        DrawResourceSection(
+                resources, allTextures, AssetType::Texture, "##texList", 130.0f, "No textures imported.", "texture",
+                [](const std::shared_ptr<Rendering::Texture> &tex) {
+                    if (tex)
+                        ImGuiImageFlipped(tex->GetID(), ImVec2(64, 64));
+                    else
+                        ImGui::Button("T", ImVec2(64, 64));
+                },
+                [this](const std::string &id, Core::ResourceManager &res) {
+                    if (ImGui::SmallButton("Replace"))
+                        ReplaceTexture(res, id);
+                });
 
         ImGui::Spacing();
         if (ImGui::SmallButton("Import Texture")) {
@@ -274,140 +284,14 @@ namespace Editor::UI {
 
     void ProjectBrowserPanel::DrawShaderSection(Core::ResourceManager &resources) {
         const auto &allShaders = resources.GetAll<Rendering::Shader>();
-        struct RenameOp {
-            std::string oldKey;
-            std::string newKey;
-        };
-        std::vector<RenameOp> pendingRenames;
 
-        if (ImGui::BeginChild("##shaderList", ImVec2(0, 130), true)) {
-            if (m_ViewMode == ViewMode::Grid) {
-                int itemsPerRow = static_cast<int>(ImGui::GetContentRegionAvail().x / 100.0f);
-                if (itemsPerRow < 1)
-                    itemsPerRow = 1;
-                int itemCount = 0;
-                for (const auto &id : allShaders | std::views::keys) {
-                    if (!ContainsSearch(id.c_str(), m_SearchBuffer))
-                        continue;
-
-                    if (itemCount % itemsPerRow != 0)
-                        ImGui::SameLine();
-
-                    ImGui::PushID(id.c_str());
-                    ImGui::BeginGroup();
-
-                    ImGui::Button("S", ImVec2(64, 64));
-
-                    ImGui::Text("%s", id.c_str());
-
-                    // actions
-                    if (m_RenamingKey == id) {
-                        if (m_RenameJustActivated) {
-                            ImGui::SetKeyboardFocusHere();
-                            m_RenameJustActivated = false;
-                        }
-                        ImGui::SetNextItemWidth(80.0f);
-                        ImGui::InputText("##rename", m_RenameBuffer, sizeof(m_RenameBuffer));
-                        ImGui::SameLine();
-                        if (ImGui::SmallButton("Save")) {
-                            if (m_RenameBuffer[0] != '\0' && !resources.Get<Rendering::Shader>(m_RenameBuffer)) {
-                                pendingRenames.push_back({id, m_RenameBuffer});
-                            }
-                            m_RenamingKey.clear();
-                        }
-                        ImGui::SameLine();
-                        if (ImGui::SmallButton("Cancel")) {
-                            m_RenamingKey.clear();
-                        }
-                    } else {
-                        if (ImGui::SmallButton("Rename")) {
-                            m_RenamingKey = id;
-                            m_RenameJustActivated = true;
-                            strncpy(m_RenameBuffer, id.c_str(), sizeof(m_RenameBuffer));
-                            m_RenameBuffer[sizeof(m_RenameBuffer) - 1] = '\0';
-                        }
-                        ImGui::SameLine();
-                        if (ImGui::SmallButton("Replace")) {
-                            ReplaceShader(resources, id);
-                        }
-                        ImGui::SameLine();
-                        if (ImGui::SmallButton("Remove")) {
-                            m_DeleteConfirmKey = id;
-                            m_DeleteConfirmType = AssetType::Shader;
-                        }
-                    }
-
-                    ImGui::EndGroup();
-                    // card outline
-                    auto *dl = ImGui::GetWindowDrawList();
-                    auto min = ImGui::GetItemRectMin();
-                    auto max = ImGui::GetItemRectMax();
-                    dl->AddRect(ImVec2(min.x - 2, min.y - 2), ImVec2(max.x + 2, max.y + 2),
-                                ImGui::GetColorU32(ImGuiCol_Border));
-                    ImGui::PopID();
-                    itemCount++;
-                }
-            } else {
-                for (const auto &id : allShaders | std::views::keys) {
-                    if (!ContainsSearch(id.c_str(), m_SearchBuffer))
-                        continue;
-
-                    ImGui::PushID(id.c_str());
-
-                    if (m_RenamingKey == id) {
-                        if (m_RenameJustActivated) {
-                            ImGui::SetKeyboardFocusHere();
-                            m_RenameJustActivated = false;
-                        }
-                        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 100.0f);
-                        ImGui::InputText("##rename", m_RenameBuffer, sizeof(m_RenameBuffer));
-                        ImGui::SameLine();
-                        if (ImGui::SmallButton("Save")) {
-                            if (m_RenameBuffer[0] != '\0' && !resources.Get<Rendering::Shader>(m_RenameBuffer)) {
-                                pendingRenames.push_back({id, m_RenameBuffer});
-                            }
-                            m_RenamingKey.clear();
-                        }
-                        ImGui::SameLine();
-                        if (ImGui::SmallButton("Cancel")) {
-                            m_RenamingKey.clear();
-                        }
-                    } else {
-                        ImGui::Text("%s", id.c_str());
-                        ImGui::SameLine();
-                        if (ImGui::SmallButton("Rename")) {
-                            m_RenamingKey = id;
-                            m_RenameJustActivated = true;
-                            strncpy(m_RenameBuffer, id.c_str(), sizeof(m_RenameBuffer));
-                            m_RenameBuffer[sizeof(m_RenameBuffer) - 1] = '\0';
-                        }
-                        ImGui::SameLine();
-                        if (ImGui::SmallButton("Replace")) {
-                            ReplaceShader(resources, id);
-                        }
-                        ImGui::SameLine();
-                        if (ImGui::SmallButton("Remove")) {
-                            m_DeleteConfirmKey = id;
-                            m_DeleteConfirmType = AssetType::Shader;
-                        }
-                    }
-
-                    ImGui::PopID();
-                }
-            }
-        }
-        ImGui::EndChild();
-
-        for (const auto &[oldKey, newKey] : pendingRenames) {
-            auto ptr = resources.Get<Rendering::Shader>(oldKey);
-            resources.Unload<Rendering::Shader>(oldKey);
-            resources.LoadFromFactory<Rendering::Shader>(newKey, [ptr] { return ptr; });
-            std::cout << "[ProjectBrowser] Renamed shader '" << oldKey << "' -> '" << newKey << "'\n";
-        }
-
-        if (allShaders.empty() || (m_SearchBuffer[0] != '\0' && pendingRenames.empty())) {
-            ImGui::TextDisabled("No shaders imported.");
-        }
+        DrawResourceSection(
+                resources, allShaders, AssetType::Shader, "##shaderList", 130.0f, "No shaders imported.", "shader",
+                [](const std::shared_ptr<Rendering::Shader> &) { ImGui::Button("S", ImVec2(64, 64)); },
+                [this](const std::string &id, Core::ResourceManager &res) {
+                    if (ImGui::SmallButton("Replace"))
+                        ReplaceShader(res, id);
+                });
 
         ImGui::Spacing();
         if (ImGui::SmallButton("Import Shader")) {
@@ -417,132 +301,11 @@ namespace Editor::UI {
 
     void ProjectBrowserPanel::DrawMeshSection(Core::ResourceManager &resources) {
         const auto &allMeshes = resources.GetAll<Rendering::Mesh>();
-        struct RenameOp {
-            std::string oldKey;
-            std::string newKey;
-        };
-        std::vector<RenameOp> pendingRenames;
 
-        if (ImGui::BeginChild("##meshList", ImVec2(0, 100), true)) {
-            if (m_ViewMode == ViewMode::Grid) {
-                int itemsPerRow = static_cast<int>(ImGui::GetContentRegionAvail().x / 100.0f);
-                if (itemsPerRow < 1)
-                    itemsPerRow = 1;
-                int itemCount = 0;
-                for (const auto &id : allMeshes | std::views::keys) {
-                    if (!ContainsSearch(id.c_str(), m_SearchBuffer))
-                        continue;
-
-                    if (itemCount % itemsPerRow != 0)
-                        ImGui::SameLine();
-
-                    ImGui::PushID(id.c_str());
-                    ImGui::BeginGroup();
-
-                    ImGui::Button("M", ImVec2(64, 64));
-
-                    ImGui::Text("%s", id.c_str());
-
-                    // actions
-                    if (m_RenamingKey == id) {
-                        if (m_RenameJustActivated) {
-                            ImGui::SetKeyboardFocusHere();
-                            m_RenameJustActivated = false;
-                        }
-                        ImGui::SetNextItemWidth(80.0f);
-                        ImGui::InputText("##rename", m_RenameBuffer, sizeof(m_RenameBuffer));
-                        ImGui::SameLine();
-                        if (ImGui::SmallButton("Save")) {
-                            if (m_RenameBuffer[0] != '\0' && !resources.Get<Rendering::Mesh>(m_RenameBuffer)) {
-                                pendingRenames.push_back({id, m_RenameBuffer});
-                            }
-                            m_RenamingKey.clear();
-                        }
-                        ImGui::SameLine();
-                        if (ImGui::SmallButton("Cancel")) {
-                            m_RenamingKey.clear();
-                        }
-                    } else {
-                        if (ImGui::SmallButton("Rename")) {
-                            m_RenamingKey = id;
-                            m_RenameJustActivated = true;
-                            strncpy(m_RenameBuffer, id.c_str(), sizeof(m_RenameBuffer));
-                            m_RenameBuffer[sizeof(m_RenameBuffer) - 1] = '\0';
-                        }
-                        ImGui::SameLine();
-                        if (ImGui::SmallButton("Remove")) {
-                            m_DeleteConfirmKey = id;
-                            m_DeleteConfirmType = AssetType::Mesh;
-                        }
-                    }
-
-                    ImGui::EndGroup();
-                    // card outline
-                    auto *dl = ImGui::GetWindowDrawList();
-                    auto min = ImGui::GetItemRectMin();
-                    auto max = ImGui::GetItemRectMax();
-                    dl->AddRect(ImVec2(min.x - 2, min.y - 2), ImVec2(max.x + 2, max.y + 2),
-                                ImGui::GetColorU32(ImGuiCol_Border));
-                    ImGui::PopID();
-                    itemCount++;
-                }
-            } else {
-                for (const auto &id : allMeshes | std::views::keys) {
-                    if (!ContainsSearch(id.c_str(), m_SearchBuffer))
-                        continue;
-
-                    ImGui::PushID(id.c_str());
-
-                    if (m_RenamingKey == id) {
-                        if (m_RenameJustActivated) {
-                            ImGui::SetKeyboardFocusHere();
-                            m_RenameJustActivated = false;
-                        }
-                        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 100.0f);
-                        ImGui::InputText("##rename", m_RenameBuffer, sizeof(m_RenameBuffer));
-                        ImGui::SameLine();
-                        if (ImGui::SmallButton("Save")) {
-                            if (m_RenameBuffer[0] != '\0' && !resources.Get<Rendering::Mesh>(m_RenameBuffer)) {
-                                pendingRenames.push_back({id, m_RenameBuffer});
-                            }
-                            m_RenamingKey.clear();
-                        }
-                        ImGui::SameLine();
-                        if (ImGui::SmallButton("Cancel")) {
-                            m_RenamingKey.clear();
-                        }
-                    } else {
-                        ImGui::Text("%s", id.c_str());
-                        ImGui::SameLine();
-                        if (ImGui::SmallButton("Rename")) {
-                            m_RenamingKey = id;
-                            m_RenameJustActivated = true;
-                            strncpy(m_RenameBuffer, id.c_str(), sizeof(m_RenameBuffer));
-                            m_RenameBuffer[sizeof(m_RenameBuffer) - 1] = '\0';
-                        }
-                        ImGui::SameLine();
-                        if (ImGui::SmallButton("Remove")) {
-                            m_DeleteConfirmKey = id;
-                            m_DeleteConfirmType = AssetType::Mesh;
-                        }
-                    }
-
-                    ImGui::PopID();
-                }
-            }
-        }
-        ImGui::EndChild();
-
-        for (const auto &[oldKey, newKey] : pendingRenames) {
-            auto ptr = resources.Get<Rendering::Mesh>(oldKey);
-            resources.Unload<Rendering::Mesh>(oldKey);
-            resources.LoadFromFactory<Rendering::Mesh>(newKey, [ptr] { return ptr; });
-            std::cout << "[ProjectBrowser] Renamed mesh '" << oldKey << "' -> '" << newKey << "'\n";
-        }
-
-        if (allMeshes.empty() || (m_SearchBuffer[0] != '\0' && pendingRenames.empty())) {
-            ImGui::TextDisabled("No meshes registered.");
-        }
+        DrawResourceSection(
+                resources, allMeshes, AssetType::Mesh, "##meshList", 100.0f, "No meshes registered.", "mesh",
+                [](const std::shared_ptr<Rendering::Mesh> &) { ImGui::Button("M", ImVec2(64, 64)); },
+                [](const std::string &, Core::ResourceManager &) {});
 
         ImGui::Spacing();
         ImGui::SeparatorText("Create Mesh");
@@ -567,143 +330,22 @@ namespace Editor::UI {
 
     void ProjectBrowserPanel::DrawMaterialSection(Core::ResourceManager &resources) {
         const auto &allMaterials = resources.GetAll<Rendering::Material>();
-        struct RenameOp {
-            std::string oldKey;
-            std::string newKey;
-        };
-        std::vector<RenameOp> pendingRenames;
 
-        if (ImGui::BeginChild("##matList", ImVec2(0, 100), true)) {
-            if (m_ViewMode == ViewMode::Grid) {
-                int itemsPerRow = static_cast<int>(ImGui::GetContentRegionAvail().x / 100.0f);
-                if (itemsPerRow < 1)
-                    itemsPerRow = 1;
-                int itemCount = 0;
-                for (const auto &[id, mat] : allMaterials) {
-                    if (!ContainsSearch(id.c_str(), m_SearchBuffer))
-                        continue;
-
-                    if (itemCount % itemsPerRow != 0)
-                        ImGui::SameLine();
-
-                    ImGui::PushID(id.c_str());
-                    ImGui::BeginGroup();
-
-                    if (mat && mat->texture) {
+        DrawResourceSection(
+                resources, allMaterials, AssetType::Material, "##matList", 100.0f, "No materials registered.",
+                "material",
+                [](const std::shared_ptr<Rendering::Material> &mat) {
+                    if (mat && mat->texture)
                         ImGuiImageFlipped(mat->texture->GetID(), ImVec2(64, 64));
-                    } else {
+                    else
                         ImGui::Button("M", ImVec2(64, 64));
-                    }
-
-                    ImGui::Text("%s", id.c_str());
-
-
-                    // actions
-                    if (m_RenamingKey == id) {
-                        if (m_RenameJustActivated) {
-                            ImGui::SetKeyboardFocusHere();
-                            m_RenameJustActivated = false;
-                        }
-                        ImGui::SetNextItemWidth(80.0f);
-                        ImGui::InputText("##rename", m_RenameBuffer, sizeof(m_RenameBuffer));
-                        ImGui::SameLine();
-                        if (ImGui::SmallButton("Save")) {
-                            if (m_RenameBuffer[0] != '\0' && !resources.Get<Rendering::Material>(m_RenameBuffer)) {
-                                pendingRenames.push_back({id, m_RenameBuffer});
-                            }
-                            m_RenamingKey.clear();
-                        }
-                        ImGui::SameLine();
-                        if (ImGui::SmallButton("Cancel")) {
-                            m_RenamingKey.clear();
-                        }
-                    } else {
-                        if (ImGui::SmallButton("Rename")) {
-                            m_RenamingKey = id;
-                            m_RenameJustActivated = true;
-                            strncpy(m_RenameBuffer, id.c_str(), sizeof(m_RenameBuffer));
-                            m_RenameBuffer[sizeof(m_RenameBuffer) - 1] = '\0';
-                        }
-                        ImGui::SameLine();
-                        if (ImGui::SmallButton("Remove")) {
-                            m_DeleteConfirmKey = id;
-                            m_DeleteConfirmType = AssetType::Material;
-                        }
-                    }
-
-                    ImGui::EndGroup();
-                    // card outline
-                    auto *dl = ImGui::GetWindowDrawList();
-                    auto min = ImGui::GetItemRectMin();
-                    auto max = ImGui::GetItemRectMax();
-                    dl->AddRect(ImVec2(min.x - 2, min.y - 2), ImVec2(max.x + 2, max.y + 2),
-                                ImGui::GetColorU32(ImGuiCol_Border));
-                    ImGui::PopID();
-                    itemCount++;
-                }
-            } else {
-                for (const auto &[id, mat] : allMaterials) {
-                    if (!ContainsSearch(id.c_str(), m_SearchBuffer))
-                        continue;
-
-                    ImGui::PushID(id.c_str());
-
-                    if (m_RenamingKey == id) {
-                        if (m_RenameJustActivated) {
-                            ImGui::SetKeyboardFocusHere();
-                            m_RenameJustActivated = false;
-                        }
-                        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 100.0f);
-                        ImGui::InputText("##rename", m_RenameBuffer, sizeof(m_RenameBuffer));
-                        ImGui::SameLine();
-                        if (ImGui::SmallButton("Save")) {
-                            if (m_RenameBuffer[0] != '\0' && !resources.Get<Rendering::Material>(m_RenameBuffer)) {
-                                pendingRenames.push_back({id, m_RenameBuffer});
-                            }
-                            m_RenamingKey.clear();
-                        }
-                        ImGui::SameLine();
-                        if (ImGui::SmallButton("Cancel")) {
-                            m_RenamingKey.clear();
-                        }
-                    } else {
-                        ImGui::Text("%s", id.c_str());
-                        if (ImGui::IsItemHovered()) {
-                            std::string tooltip =
-                                    "Shader: " + (mat->shader ? resources.GetKey(mat->shader) : "none") +
-                                    "\nTexture: " + (mat->texture ? resources.GetKey(mat->texture) : "none");
-                            ImGui::SetTooltip("%s", tooltip.c_str());
-                        }
-                        ImGui::SameLine();
-                        if (ImGui::SmallButton("Rename")) {
-                            m_RenamingKey = id;
-                            m_RenameJustActivated = true;
-                            strncpy(m_RenameBuffer, id.c_str(), sizeof(m_RenameBuffer));
-                            m_RenameBuffer[sizeof(m_RenameBuffer) - 1] = '\0';
-                        }
-                        ImGui::SameLine();
-                        if (ImGui::SmallButton("Remove")) {
-                            m_DeleteConfirmKey = id;
-                            m_DeleteConfirmType = AssetType::Material;
-                        }
-                    }
-
-                    ImGui::PopID();
-                }
-            }
-        }
-        ImGui::EndChild();
-
-        for (const auto &[oldKey, newKey] : pendingRenames) {
-            auto ptr = resources.Get<Rendering::Material>(oldKey);
-            resources.Unload<Rendering::Material>(oldKey);
-            resources.LoadFromFactory<Rendering::Material>(newKey, [ptr] { return ptr; });
-            std::cout << "[ProjectBrowser] Renamed material '" << oldKey << "' -> '" << newKey << "'\n";
-        }
-
-        if (allMaterials.empty() || (m_SearchBuffer[0] != '\0' && pendingRenames.empty())) {
-            ImGui::TextDisabled("No materials registered.");
-        }
+                },
+                [](const std::string &, Core::ResourceManager &) {},
+                [](const std::string &, const std::shared_ptr<Rendering::Material> &mat, Core::ResourceManager &res) {
+                    std::string tooltip = "Shader: " + (mat->shader ? res.GetKey(mat->shader) : "none") +
+                                          "\nTexture: " + (mat->texture ? res.GetKey(mat->texture) : "none");
+                    ImGui::SetTooltip("%s", tooltip.c_str());
+                });
 
         ImGui::Spacing();
         ImGui::SeparatorText("Create Material");
@@ -785,14 +427,11 @@ namespace Editor::UI {
         }
     }
 
-    // file section
-
     void ProjectBrowserPanel::DrawFileSection(const char *label, const std::string &directory,
                                               const std::string &extension, const char *importFilter,
                                               const char *importFilterName) {
         bool isScripts = (std::strcmp(label, "Scripts") == 0);
 
-        // "new script" buffer
         char *newScriptBuf = m_NewScriptBuffer;
 
         auto entries = ScanDirectory(directory, extension);
@@ -800,7 +439,7 @@ namespace Editor::UI {
         ImGui::PushID(label);
         if (ImGui::BeginChild("list", ImVec2(0, 120), true)) {
             if (m_ViewMode == ViewMode::Grid) {
-                int itemsPerRow = static_cast<int>(ImGui::GetContentRegionAvail().x / 100.0f);
+                int itemsPerRow = static_cast<int>(ImGui::GetContentRegionAvail().x / 180.0f);
                 if (itemsPerRow < 1)
                     itemsPerRow = 1;
                 int itemCount = 0;
@@ -816,6 +455,9 @@ namespace Editor::UI {
 
                     ImGui::Button("F", ImVec2(64, 64));
 
+                    ImGui::SameLine();
+
+                    ImGui::BeginGroup();
                     ImGui::Text("%s", virtualPath.c_str());
 
                     if (ImGui::SmallButton("Remove")) {
@@ -825,7 +467,7 @@ namespace Editor::UI {
                     }
 
                     ImGui::EndGroup();
-                    // card outline
+                    ImGui::EndGroup();
                     auto *dl = ImGui::GetWindowDrawList();
                     auto min = ImGui::GetItemRectMin();
                     auto max = ImGui::GetItemRectMax();
@@ -866,7 +508,6 @@ namespace Editor::UI {
             ImportFile(directory, importFilter, importFilterName);
         }
 
-        // create a blank .obsl file
         if (isScripts) {
             ImGui::SameLine();
             ImGui::InputText("##newScript", newScriptBuf, sizeof(m_NewScriptBuffer));
@@ -895,7 +536,6 @@ namespace Editor::UI {
         }
     }
 
-    // delete confirmation
     void ProjectBrowserPanel::DrawDeleteConfirmPopup(Core::ResourceManager &resources) {
         if (m_DeleteConfirmKey.empty())
             return;
@@ -953,7 +593,6 @@ namespace Editor::UI {
         }
     }
 
-    // import / create helpers
     void ProjectBrowserPanel::ImportTexture(Core::ResourceManager &resources) const {
         if (!m_EngineContext)
             return;
@@ -1098,7 +737,7 @@ namespace Editor::UI {
 
         auto mesh = resources.LoadFromFactory<Rendering::Mesh>(
                 id, [data = std::move(data), meshTypes, factoryIdx = m_SelectedMeshFactory] {
-                    auto m = std::make_shared<Rendering::Mesh>(std::move(data));
+                    auto m = std::make_shared<Rendering::Mesh>(data);
                     m->SetFactoryId(meshTypes[factoryIdx]);
                     return m;
                 });
