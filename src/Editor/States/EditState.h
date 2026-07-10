@@ -10,6 +10,8 @@ namespace Editor {
         static void SetGizmoOperation(const ImGuizmo::OPERATION op) { mCurrentGizmoOperation = op; }
         static ImGuizmo::OPERATION GetGizmoOperation() { return mCurrentGizmoOperation; }
 
+        void OnEnter() override;
+
         void OnUpdate(float dt) override;
 
         void OnHandleInput(float dt) override;

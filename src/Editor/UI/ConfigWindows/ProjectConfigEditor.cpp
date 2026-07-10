@@ -16,9 +16,8 @@ namespace Editor::UI {
     void ProjectConfigEditor::SetContext(Core::EngineContext &context) { m_Context = &context; }
 
     void ProjectConfigEditor::Reload() {
-        const auto project = Core::Project::GetActive();
-        if (project) {
-            m_LocalConfig = project->GetConfig();
+        if (m_Context && m_Context->projectConfig) {
+            m_LocalConfig = *m_Context->projectConfig;
             LoadConfigToBuffers();
         }
     }
@@ -121,7 +120,12 @@ namespace Editor::UI {
         m_LocalConfig.Title = m_TitleBuffer;
         m_LocalConfig.startScenePath = m_StartSceneBuffer;
 
-        // write to disk
+        // EngineContext is the source of truth
+        if (m_Context && m_Context->projectConfig) {
+            *m_Context->projectConfig = m_LocalConfig;
+        }
+
+        // write to disk via Project
         project->GetConfig() = m_LocalConfig;
         if (project->Save()) {
             project->ClearUnsavedChanges();

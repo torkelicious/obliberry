@@ -70,6 +70,7 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
 
     m_CurrentState->SetEditorLayer(this);
     m_CurrentState->OnEnter();
+
 }
 
 
@@ -85,6 +86,10 @@ void Editor::EditorLayer::Update(const float dt) {
         return;
 
     m_CurrentState->OnUpdate(dt);
+    if (m_CurrentState->GetWindowTitleDirty()) {
+        m_Context.window->SetWindowTitle(m_CurrentState->GetWindowTitle());
+        m_CurrentState->SetWindowTitleDirty(false);
+    }
 
     HandleInput(dt);
 
@@ -212,6 +217,11 @@ void Editor::EditorLayer::LoadScene(std::string path) {
             LOG_INFO("LoadScene", "Successfully loaded scene with " +
                                           std::to_string(m_Scene->GetRegistry().GetLivingEntities().size()) +
                                           " entities");
+
+            m_CurrentState->SetWindowTitle("Obliberry: " + m_Context.projectConfig->Title + " - Scene - " +
+                                           m_Scene->GetProperties().ScenePath);
+
+
         } else {
             LOG_ERROR("LoadScene", "Failed to load scene: " + path);
             m_Registry = nullptr;
@@ -243,6 +253,9 @@ void Editor::EditorLayer::LoadProject(const std::string &projectFilePath) {
     IO::VFS::UnmountProject();
 
     Core::Project::Load(projectFilePath);
+
+    // sync loaded config into EngineContext
+    *m_Context.projectConfig = Core::Project::GetActive()->GetConfig();
 
     LoadStartScene();
 

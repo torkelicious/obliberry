@@ -12,6 +12,16 @@ namespace Editor {
     ImGuizmo::MODE EditState::mCurrentGizmoMode = ImGuizmo::WORLD;
 } // namespace Editor
 
+void Editor::EditState::OnEnter() {
+    if (!m_EditorLayer || !m_EditorLayer->m_Context.projectConfig)
+        return;
+
+    std::string title = "Obliberry: " + m_EditorLayer->m_Context.projectConfig->Title;
+    if (m_EditorLayer->m_Scene)
+        title += " - Scene - " + m_EditorLayer->m_CurrentScenePath;
+    SetWindowTitle(title);
+}
+
 void Editor::EditState::OnUpdate(const float dt) {
     // Editor mode only runs lighting for accurate scene view
     // full scene update is for play

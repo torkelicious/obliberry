@@ -9,6 +9,12 @@
 
 #include <imgui.h>
 #include "imgui_internal.h"
+#include "Core/Window.h"
+#include "Editor/FileDialogs.h"
+#include "IO/MapSerialization.h"
+
+
+constexpr auto LOG_WHO = "MapEditState";
 
 void Editor::MapEditState::OnEnter() {
 
@@ -33,6 +39,7 @@ void Editor::MapEditState::OnEnter() {
         m_TileEditorPanel.InitBrushFromFirstType();
     }
     m_TileEditorPanel.SetSelectedTile(m_selectedTile);
+    SetWindowTitle(m_MapComp->mapFilePath);
 }
 
 void Editor::MapEditState::OnUpdate(const float dt) {}
@@ -129,10 +136,43 @@ void Editor::MapEditState::OnRender() {
 
 void Editor::MapEditState::OnDrawModeToolbar() {
     {
+        if (ImGui::BeginMenu("Map")) {
+            if (ImGui::MenuItem("Save")) {
+                LOG_INFO(LOG_WHO, "Save requested");
+                if (!IO::MapIO::Serialize(m_MapComp->mapFilePath, *m_CurrentGrid)) {
+                    LOG_ERROR(LOG_WHO, "Failed to save map: " + m_MapComp->mapFilePath);
+                }
+            }
+            if (ImGui::MenuItem("Save As")) {
+                LOG_INFO(LOG_WHO, "Save as requested");
+
+                if (const auto path = FileDialogs::SaveFile(m_EditorLayer->m_Context)) {
+                    if (!IO::MapIO::Serialize(*path, *m_CurrentGrid)) {
+                        LOG_ERROR(LOG_WHO, "Failed to save map to: " + *path);
+                    }
+                }
+            }
+            if (ImGui::MenuItem("Load from file")) {
+                LOG_INFO(LOG_WHO, "Load requested");
+
+                if (const auto path = FileDialogs::OpenFile(m_EditorLayer->m_Context)) {
+                    if (IO::MapIO::Deserialize(*path, *m_CurrentGrid)) {
+                        m_MapComp->mapFilePath = *path;
+                        m_MapComp->needsMeshUpdate = true;
+                        LOG_INFO(LOG_WHO, "Loaded from file: " + *path);
+                        SetWindowTitle(*path);
+                    } else {
+                        LOG_ERROR(LOG_WHO, "Failed to load map into editor");
+                    }
+                }
+            }
+            ImGui::EndMenu();
+        }
+
         constexpr auto activeCol = ImVec4(0.3f, 0.6f, 1.0f, 0.7f);
         constexpr auto inactiveCol = ImVec4(0.2f, 0.2f, 0.2f, 0.5f);
 
-        auto drawToolBtn = [&](const char *label, Tool tool, const char *tip) {
+        auto drawToolBtn = [&](const char *label, const Tool tool, const char *tip) {
             if (m_CurrentTool == tool) {
                 ImGui::PushStyleColor(ImGuiCol_Button, activeCol);
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, activeCol);

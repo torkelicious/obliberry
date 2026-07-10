@@ -48,7 +48,6 @@ namespace Core {
     std::shared_ptr<Project> Project::Load(const std::filesystem::path &projectFilePath) {
         auto project = std::make_shared<Project>();
         project->m_ProjectFilepath = std::filesystem::absolute(projectFilePath);
-
         IO::VFS::MountProject(project->m_ProjectFilepath.string());
         project->m_Config = ProjectConfig::Deserialize("project.json");
         s_ActiveProject = project;
