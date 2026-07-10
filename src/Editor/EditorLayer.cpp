@@ -1,6 +1,7 @@
 #include "EditorLayer.h"
 #include "Core/Project.h"
 #include "Core/ProjectConfig.h"
+#include "Core/LoggerService.h"
 #include "ECS/ECS.h"
 #include "ECS/Entity.h"
 #include "ECS/Systems/LightingSystem.h"
@@ -36,6 +37,9 @@
 
 bool Editor::EditorLayer::s_ShouldBuildDock = true;
 
+
+constexpr auto LOG_WHO = "EditorLayer";
+
 void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
     m_Context = ctx;
 
@@ -60,7 +64,7 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
         }
         m_CurrentState = std::make_unique<EditState>();
     } else {
-        std::cout << "[EditorLayer] No active project" << std::endl;
+        LOG_INFO(LOG_WHO, "No active project");
         m_CurrentState = std::make_unique<HubState>();
     }
 
@@ -156,7 +160,7 @@ void Editor::EditorLayer::HandleInput(const float dt) {
             TransitionTo(m_PreviousState ? std::move(m_PreviousState) : std::make_unique<EditState>());
         } else {
             if (m_CurrentScenePath.empty()) {
-                std::cerr << "[Editor] Cannot enter Play Mode: scene has not been saved yet.\n";
+                LOG_ERROR("Editor", "Cannot enter Play Mode: scene has not been saved yet");
                 return;
             }
             if (m_Scene && m_Scene->HasUnsavedChanges()) {
@@ -181,7 +185,7 @@ void Editor::EditorLayer::HandleInput(const float dt) {
 
 // ReSharper disable once CppPassValueParameterByConstReference
 void Editor::EditorLayer::LoadScene(std::string path) {
-    std::cout << "[LoadScene] Loading scene: " << path << std::endl;
+    LOG_INFO("LoadScene", "Loading scene: " + path);
 
     ClearCurrentProject();
 
@@ -205,15 +209,16 @@ void Editor::EditorLayer::LoadScene(std::string path) {
                 Rendering::Renderer::SetClearColor(m_Scene->GetProperties().BackgroundClearColor);
             }
 
-            std::cout << "[LoadScene] Successfully loaded scene with "
-                      << m_Scene->GetRegistry().GetLivingEntities().size() << " entities" << std::endl;
+            LOG_INFO("LoadScene", "Successfully loaded scene with " +
+                                          std::to_string(m_Scene->GetRegistry().GetLivingEntities().size()) +
+                                          " entities");
         } else {
-            std::cerr << "[LoadScene] Failed to load scene: " << path << std::endl;
+            LOG_ERROR("LoadScene", "Failed to load scene: " + path);
             m_Registry = nullptr;
             m_CurrentScenePath.clear();
         }
     } catch (const std::exception &e) {
-        std::cerr << "[LoadScene] Exception while loading scene: " << e.what() << std::endl;
+        LOG_ERROR("LoadScene", "Exception while loading scene: " + std::string(e.what()));
         m_Registry = nullptr;
         m_CurrentScenePath.clear();
     }
@@ -246,17 +251,17 @@ void Editor::EditorLayer::LoadProject(const std::string &projectFilePath) {
 
 void Editor::EditorLayer::LoadStartScene() {
     if (!Core::Project::GetActive()) {
-        std::cerr << "[LoadStartScene] No active project!" << std::endl;
+        LOG_ERROR("LoadStartScene", "No active project!");
         return;
     }
 
     const std::string startScene = Core::Project::GetActive()->GetConfig().startScenePath;
     if (startScene.empty()) {
-        std::cerr << "[LoadStartScene] Warning: startScenePath is empty in project configuration!" << std::endl;
+        LOG_WARN("LoadStartScene", "startScenePath is empty in project configuration!");
         return;
     }
 
-    std::cout << "[LoadStartScene] Loading start scene: " << startScene << std::endl;
+    LOG_INFO("LoadStartScene", "Loading start scene: " + startScene);
     m_PendingSceneToLoad = startScene;
 }
 
@@ -328,7 +333,7 @@ void Editor::EditorLayer::DrawProjectHub() {
                 std::filesystem::exists(projectFile)) {
                 LoadProject(projectFile.string());
             } else {
-                std::cerr << "[Hub] No project.json found in: " << *dir << "\n";
+                LOG_ERROR("Hub", "No project.json found in: " + *dir);
             }
         }
     }
@@ -470,7 +475,7 @@ void Editor::EditorLayer::DrawToolbar() {
                 if (const auto dir = FileDialogs::PickFolder(m_Context)) {
                     const std::filesystem::path projectFile = std::filesystem::path(*dir) / "project.json";
                     if (!std::filesystem::exists(projectFile)) {
-                        std::cerr << "[Editor] No project.json found in: " << *dir << "\n";
+                        LOG_ERROR("Editor", "No project.json found in: " + *dir);
                     } else if ((m_Scene && m_Scene->HasUnsavedChanges()) ||
                                (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges())) {
                         m_SaveChangesDialog.SetMessage("Do you want to save before opening another project?");
@@ -686,7 +691,7 @@ void Editor::EditorLayer::DrawToolbar() {
                 TransitionTo(m_PreviousState ? std::move(m_PreviousState) : std::make_unique<EditState>());
             } else {
                 if (m_CurrentScenePath.empty()) {
-                    std::cerr << "[Editor] Cannot enter Play Mode: scene has not been saved yet.\n";
+                    LOG_ERROR("Editor", "Cannot enter Play Mode: scene has not been saved yet");
                 } else if (m_Scene && m_Scene->HasUnsavedChanges()) {
                     m_SaveChangesDialog.SetMessage(
                             "Do you want to save changes to '" + m_Scene->GetProperties().Name +

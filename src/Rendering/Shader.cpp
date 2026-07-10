@@ -1,11 +1,12 @@
 #include "Shader.h"
-
 #include <filesystem>
-#include <iostream>
 #include <fstream>
 #include <sstream>
-
+#include "Core/LoggerService.h"
 #include "IO/VFS.h"
+
+
+constexpr auto LOG_WHO = "Shader";
 
 namespace Rendering {
     Shader::Shader(const std::string &vertPath, const std::string &fragPath)
@@ -30,7 +31,7 @@ namespace Rendering {
         m_ID = Link(vert, frag);
 
         if (m_ID == 0) {
-            std::cerr << "[Shader] Failed to create program from:\n  " << m_vertPath << "\n  " << m_fragPath << "\n";
+            LOG_ERROR(LOG_WHO, "Failed to create program from:\n  " + m_vertPath + "\n  " + m_fragPath);
         }
 
         m_VertexSrc.clear();
@@ -110,7 +111,7 @@ namespace Rendering {
     std::string Shader::LoadFile(const std::string &virtualPath) {
         std::optional<std::string> shaderSource = IO::VFS::ReadVirtual(virtualPath);
         if (!shaderSource.has_value()) {
-            std::cerr << "[Shader] Failed to open shader through VFS: " << virtualPath << "\n";
+            LOG_ERROR(LOG_WHO, "Failed to open shader through VFS: " + virtualPath);
             return {};
         }
         return std::move(shaderSource.value());
@@ -133,7 +134,7 @@ namespace Rendering {
         if (!ok) {
             char log[2048];
             glGetShaderInfoLog(shader, 2048, nullptr, log);
-            std::cerr << "[Shader] Compile error:\n" << log << "\n";
+            LOG_ERROR(LOG_WHO, "Compile error:\n" + std::string(log));
             glDeleteShader(shader);
             return 0;
         }
@@ -160,7 +161,7 @@ namespace Rendering {
         if (!ok) {
             char log[2048];
             glGetProgramInfoLog(program, 2048, nullptr, log);
-            std::cerr << "[Shader] Link error:\n" << log << "\n";
+            LOG_ERROR(LOG_WHO, "Link error:\n" + std::string(log));
             glDeleteProgram(program);
             program = 0;
         }

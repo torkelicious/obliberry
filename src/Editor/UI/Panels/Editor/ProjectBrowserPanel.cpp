@@ -1,6 +1,7 @@
 #include "ProjectBrowserPanel.h"
 
 #include "Core/Constants.h"
+#include "Core/LoggerService.h"
 #include "Editor/FileDialogs.h"
 #include "IO/VFS.h"
 #include "IO/AssetLoader.h"
@@ -17,6 +18,9 @@
 #include <fstream>
 
 namespace Editor::UI {
+
+
+    constexpr auto LOG_WHO = "ProjectBrowser";
 
     static bool ContainsSearch(const char *haystack, const char *needle) {
         if (needle[0] == '\0')
@@ -246,7 +250,7 @@ namespace Editor::UI {
             auto ptr = resources.Get<T>(oldKey);
             resources.Unload<T>(oldKey);
             resources.LoadFromFactory<T>(newKey, [ptr] { return ptr; });
-            std::cout << "[ProjectBrowser] Renamed " << typeName << " '" << oldKey << "' -> '" << newKey << "'\n";
+            LOG_INFO(LOG_WHO, std::string("Renamed ") + typeName + " '" + oldKey + "' -> '" + newKey + "'");
         }
 
         if (allItems.empty() || (m_SearchBuffer[0] != '\0' && pendingRenames.empty())) {
@@ -321,7 +325,7 @@ namespace Editor::UI {
             }
             const std::string id(m_MeshNameBuffer);
             if (resources.Get<Rendering::Mesh>(id)) {
-                std::cerr << "[ProjectBrowser] Mesh '" << id << "' already exists.\n";
+                LOG_ERROR(LOG_WHO, "Mesh '" + id + "' already exists");
             } else {
                 CreateMesh(resources);
             }
@@ -393,11 +397,11 @@ namespace Editor::UI {
 
         if (ImGui::Button("Create Material")) {
             if (m_MaterialNameBuffer[0] == '\0') {
-                std::cerr << "[ProjectBrowser] Material name cannot be empty.\n";
+                LOG_ERROR(LOG_WHO, "Material name cannot be empty");
             } else {
                 const std::string id(m_MaterialNameBuffer);
                 if (resources.Get<Rendering::Material>(id)) {
-                    std::cerr << "[ProjectBrowser] Material '" << id << "' already exists.\n";
+                    LOG_ERROR(LOG_WHO, "Material '" + id + "' already exists");
                 } else {
                     std::shared_ptr<Rendering::Shader> shader;
                     if (m_SelectedMaterialShaderIdx > 0 &&
@@ -415,348 +419,347 @@ namespace Editor::UI {
                                                                                          color = m_MaterialColor] {
                         return std::make_shared<Rendering::Material>(Rendering::Material{shader, texture, color});
                     });
-                    (void)mat;
-                    std::cout << "[ProjectBrowser] Created material '" << id << "'\n";
-
-                    m_MaterialNameBuffer[0] = '\0';
-                    m_MaterialColor = {1.0f, 1.0f, 1.0f, 1.0f};
-                    m_SelectedMaterialShaderIdx = 0;
-                    m_SelectedMaterialTextureIdx = 0;
                 }
+                // (void)mat; // mat is inside lambda, no need to suppress unused warning
+                LOG_INFO(LOG_WHO, "Created material '" + id + "'");
+
+                m_MaterialNameBuffer[0] = '\0';
+                m_MaterialColor = {1.0f, 1.0f, 1.0f, 1.0f};
+                m_SelectedMaterialShaderIdx = 0;
+                m_SelectedMaterialTextureIdx = 0;
             }
         }
     }
-
-    void ProjectBrowserPanel::DrawFileSection(const char *label, const std::string &directory,
-                                              const std::string &extension, const char *importFilter,
-                                              const char *importFilterName) {
-        bool isScripts = (std::strcmp(label, "Scripts") == 0);
-
-        char *newScriptBuf = m_NewScriptBuffer;
-
-        auto entries = ScanDirectory(directory, extension);
-
-        ImGui::PushID(label);
-        if (ImGui::BeginChild("list", ImVec2(0, 120), true)) {
-            if (m_ViewMode == ViewMode::Grid) {
-                int itemsPerRow = static_cast<int>(ImGui::GetContentRegionAvail().x / 180.0f);
-                if (itemsPerRow < 1)
-                    itemsPerRow = 1;
-                int itemCount = 0;
-                for (const auto &[name, virtualPath] : entries) {
-                    if (!ContainsSearch(virtualPath.c_str(), m_SearchBuffer))
-                        continue;
-
-                    if (itemCount % itemsPerRow != 0)
-                        ImGui::SameLine();
-
-                    ImGui::PushID(virtualPath.c_str());
-                    ImGui::BeginGroup();
-
-                    ImGui::Button("F", ImVec2(64, 64));
-
-                    ImGui::SameLine();
-
-                    ImGui::BeginGroup();
-                    ImGui::Text("%s", virtualPath.c_str());
-
-                    if (ImGui::SmallButton("Remove")) {
-                        m_DeleteConfirmKey = virtualPath;
-                        m_DeleteConfirmFilePath = virtualPath;
-                        m_DeleteConfirmType = AssetType::Material; // dummy
-                    }
-
-                    ImGui::EndGroup();
-                    ImGui::EndGroup();
-                    auto *dl = ImGui::GetWindowDrawList();
-                    auto min = ImGui::GetItemRectMin();
-                    auto max = ImGui::GetItemRectMax();
-                    dl->AddRect(ImVec2(min.x - 2, min.y - 2), ImVec2(max.x + 2, max.y + 2),
-                                ImGui::GetColorU32(ImGuiCol_Border));
-                    ImGui::PopID(); // entry
-                    itemCount++;
-                }
-            } else {
-                for (const auto &[name, virtualPath] : entries) {
-                    if (!ContainsSearch(virtualPath.c_str(), m_SearchBuffer))
-                        continue;
-
-                    ImGui::PushID(virtualPath.c_str());
-                    ImGui::Text("%s", virtualPath.c_str());
-                    ImGui::SameLine();
-
-                    if (ImGui::SmallButton("Remove")) {
-                        m_DeleteConfirmKey = virtualPath;
-                        m_DeleteConfirmFilePath = virtualPath;
-                        m_DeleteConfirmType = AssetType::Material; // dummy
-                    }
-                    ImGui::PopID(); // entry
-                }
-            }
-        }
-        ImGui::EndChild();
-        ImGui::PopID(); // label
-
-        if (entries.empty() || (m_SearchBuffer[0] != '\0' && std::ranges::all_of(entries, [this](const AssetEntry &e) {
-                                    return !ContainsSearch(e.virtualPath.c_str(), m_SearchBuffer);
-                                }))) {
-            ImGui::TextDisabled("No %s found.", importFilterName);
-        }
-
-        ImGui::Spacing();
-        if (ImGui::SmallButton(("Import " + std::string(importFilterName)).c_str())) {
-            ImportFile(directory, importFilter, importFilterName);
-        }
-
-        if (isScripts) {
-            ImGui::SameLine();
-            ImGui::InputText("##newScript", newScriptBuf, sizeof(m_NewScriptBuffer));
-            ImGui::SameLine();
-            if (ImGui::SmallButton("New Script")) {
-                if (newScriptBuf[0] != '\0') {
-                    std::string filename(newScriptBuf);
-                    if (!filename.ends_with(".obsl"))
-                        filename += ".obsl";
-                    auto dir = IO::VFS::Resolve(std::string(Core::SCRIPT_PATH));
-                    if (!dir.empty()) {
-                        std::filesystem::create_directories(dir);
-                        auto filePath = dir / filename;
-                        if (!std::filesystem::exists(filePath)) {
-                            std::ofstream ofs(filePath);
-                            ofs << "// " << newScriptBuf << "\n";
-                            ofs.close();
-                            std::cout << "[ProjectBrowser] Created script '" << filename << "'\n";
-                        } else {
-                            std::cerr << "[ProjectBrowser] Script '" << filename << "' already exists.\n";
-                        }
-                    }
-                    newScriptBuf[0] = '\0';
-                }
-            }
-        }
-    }
-
-    void ProjectBrowserPanel::DrawDeleteConfirmPopup(Core::ResourceManager &resources) {
-        if (m_DeleteConfirmKey.empty())
-            return;
-
-        ImGui::OpenPopup("Confirm Remove");
-        if (ImGui::BeginPopupModal("Confirm Remove", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-            ImGui::Text("Are you sure you want to remove '%s'?", m_DeleteConfirmKey.c_str());
-            if (!m_DeleteConfirmFilePath.empty()) {
-                ImGui::TextDisabled("This will permanently delete the file from disk.");
-            }
-            ImGui::Separator();
-
-            if (ImGui::Button("Yes, Remove", ImVec2(120, 0))) {
-                // File-based asset
-                if (!m_DeleteConfirmFilePath.empty()) {
-                    const auto absPath = IO::VFS::Resolve(m_DeleteConfirmFilePath);
-                    if (!absPath.empty() && std::filesystem::remove(absPath)) {
-                        std::cout << "[ProjectBrowser] Deleted file '" << m_DeleteConfirmFilePath << "'\n";
-                    } else {
-                        std::cerr << "[ProjectBrowser] Failed to delete '" << m_DeleteConfirmFilePath << "'\n";
-                    }
-                }
-                // RM (as in resource manager, not rm) asset
-                else {
-                    switch (m_DeleteConfirmType) {
-                        case AssetType::Texture:
-                            resources.Unload<Rendering::Texture>(m_DeleteConfirmKey);
-                            std::cout << "[ProjectBrowser] Removed texture '" << m_DeleteConfirmKey << "'\n";
-                            break;
-                        case AssetType::Shader:
-                            resources.Unload<Rendering::Shader>(m_DeleteConfirmKey);
-                            std::cout << "[ProjectBrowser] Removed shader '" << m_DeleteConfirmKey << "'\n";
-                            break;
-                        case AssetType::Mesh:
-                            resources.Unload<Rendering::Mesh>(m_DeleteConfirmKey);
-                            std::cout << "[ProjectBrowser] Removed mesh '" << m_DeleteConfirmKey << "'\n";
-                            break;
-                        case AssetType::Material:
-                            resources.Unload<Rendering::Material>(m_DeleteConfirmKey);
-                            std::cout << "[ProjectBrowser] Removed material '" << m_DeleteConfirmKey << "'\n";
-                            break;
-                    }
-                }
-                ImGui::CloseCurrentPopup();
-                m_DeleteConfirmKey.clear();
-                m_DeleteConfirmFilePath.clear();
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("Cancel", ImVec2(120, 0))) {
-                ImGui::CloseCurrentPopup();
-                m_DeleteConfirmKey.clear();
-                m_DeleteConfirmFilePath.clear();
-            }
-            ImGui::EndPopup();
-        }
-    }
-
-    void ProjectBrowserPanel::ImportTexture(Core::ResourceManager &resources) const {
-        if (!m_EngineContext)
-            return;
-
-        const auto picked =
-                FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Image", .filterExt = "png,jpg,jpeg,bmp,tga"});
-        if (!picked.has_value())
-            return;
-
-        auto finalPath = IO::AssetLoader::ImportAsset(picked.value(), "textures");
-        if (!finalPath.has_value())
-            return;
-
-        const std::string key = KeyFromPath(std::filesystem::path(finalPath.value()));
-        if (resources.Get<Rendering::Texture>(key)) {
-            std::cerr << "[ProjectBrowser] Texture '" << key << "' already exists. Skipping.\n";
-            return;
-        }
-
-        auto tex = resources.Load<Rendering::Texture>(key, finalPath.value());
-        Rendering::Renderer::SubmitInitTask([tex] { tex->InitGL(); });
-        std::cout << "[ProjectBrowser] Imported texture '" << key << "' from " << finalPath.value() << "\n";
-    }
-
-    void ProjectBrowserPanel::ImportShader(Core::ResourceManager &resources) const {
-        if (!m_EngineContext)
-            return;
-
-        const auto vertPicked =
-                FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Vertex Shader", .filterExt = "vert,glsl"});
-        if (!vertPicked.has_value())
-            return;
-
-        const auto fragPicked =
-                FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Fragment Shader", .filterExt = "frag,glsl"});
-        if (!fragPicked.has_value())
-            return;
-
-        auto finalVert = IO::AssetLoader::ImportAsset(vertPicked.value(), "shaders");
-        auto finalFrag = IO::AssetLoader::ImportAsset(fragPicked.value(), "shaders");
-        if (!finalVert.has_value() || !finalFrag.has_value())
-            return;
-
-        const std::string key = KeyFromPath(std::filesystem::path(finalVert.value()));
-        if (resources.Get<Rendering::Shader>(key)) {
-            std::cerr << "[ProjectBrowser] Shader '" << key << "' already exists. Skipping.\n";
-            return;
-        }
-
-        auto shader = resources.Load<Rendering::Shader>(key, finalVert.value(), finalFrag.value());
-        Rendering::Renderer::SubmitInitTask([shader] { shader->InitGL(); });
-        std::cout << "[ProjectBrowser] Imported shader '" << key << "'\n";
-    }
-
-    void ProjectBrowserPanel::ReplaceTexture(Core::ResourceManager &resources, const std::string &key) const {
-        if (!m_EngineContext)
-            return;
-
-        const auto picked =
-                FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Image", .filterExt = "png,jpg,jpeg,bmp,tga"});
-        if (!picked.has_value())
-            return;
-
-        auto finalPath = IO::AssetLoader::ImportAsset(picked.value(), "textures");
-        if (!finalPath.has_value())
-            return;
-
-        resources.Unload<Rendering::Texture>(key);
-        auto tex = resources.Load<Rendering::Texture>(key, finalPath.value());
-        Rendering::Renderer::SubmitInitTask([tex] { tex->InitGL(); });
-        std::cout << "[ProjectBrowser] Replaced texture '" << key << "'\n";
-    }
-
-    void ProjectBrowserPanel::ReplaceShader(Core::ResourceManager &resources, const std::string &key) const {
-        if (!m_EngineContext)
-            return;
-
-        const auto vertPicked =
-                FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Vertex Shader", .filterExt = "vert,glsl"});
-        if (!vertPicked.has_value())
-            return;
-
-        const auto fragPicked =
-                FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Fragment Shader", .filterExt = "frag,glsl"});
-        if (!fragPicked.has_value())
-            return;
-
-        auto finalVert = IO::AssetLoader::ImportAsset(vertPicked.value(), "shaders");
-        auto finalFrag = IO::AssetLoader::ImportAsset(fragPicked.value(), "shaders");
-        if (!finalVert.has_value() || !finalFrag.has_value())
-            return;
-
-        resources.Unload<Rendering::Shader>(key);
-        auto shader = resources.Load<Rendering::Shader>(key, finalVert.value(), finalFrag.value());
-        Rendering::Renderer::SubmitInitTask([shader] { shader->InitGL(); });
-        std::cout << "[ProjectBrowser] Replaced shader '" << key << "'\n";
-    }
-
-    void ProjectBrowserPanel::CreateMesh(Core::ResourceManager &resources) {
-        const std::string id(m_MeshNameBuffer);
-        if (id.empty())
-            return;
-
-        Rendering::MeshData data;
-        constexpr const char *meshTypes[] = {"Quad",    "PointTopHex", "ETriang", "Ellipse", "Circle", "Pentagon",
-                                             "Hexagon", "Octagon",     "Ring",    "Sector",  "Diamond"};
-        switch (m_SelectedMeshFactory) {
-            case 0:
-                data = Rendering::MeshFactory::CreateQuad();
-                break;
-            case 1:
-                data = Rendering::MeshFactory::CreatePointTopHex();
-                break;
-            case 2:
-                data = Rendering::MeshFactory::CreateEquiTriangle(0.5f);
-                break;
-            case 3:
-                data = Rendering::MeshFactory::CreateEllipse();
-                break;
-            case 4:
-                data = Rendering::MeshFactory::CreateRegularPolygon(32);
-                break;
-            case 5:
-                data = Rendering::MeshFactory::CreateRegularPolygon(5);
-                break;
-            case 6:
-                data = Rendering::MeshFactory::CreateRegularPolygon(6);
-                break;
-            case 7:
-                data = Rendering::MeshFactory::CreateRegularPolygon(8);
-                break;
-            case 8:
-                data = Rendering::MeshFactory::CreateRing();
-                break;
-            case 9:
-                data = Rendering::MeshFactory::CreateSector();
-                break;
-            case 10:
-                data = Rendering::MeshFactory::CreateDiamond();
-                break;
-        }
-
-        auto mesh = resources.LoadFromFactory<Rendering::Mesh>(
-                id, [data = std::move(data), meshTypes, factoryIdx = m_SelectedMeshFactory] {
-                    auto m = std::make_shared<Rendering::Mesh>(data);
-                    m->SetFactoryId(meshTypes[factoryIdx]);
-                    return m;
-                });
-
-        Rendering::Renderer::SubmitInitTask([mesh] { mesh->InitGL(); });
-        m_MeshNameBuffer[0] = '\0';
-        std::cout << "[ProjectBrowser] Created mesh '" << id << "'\n";
-    }
-
-    void ProjectBrowserPanel::ImportFile(const std::string &targetSubDir, const char *filterExt,
-                                         const char *filterName) const {
-        if (!m_EngineContext)
-            return;
-
-        const auto picked = FileDialogs::OpenFile(*m_EngineContext, {.filterName = filterName, .filterExt = filterExt});
-        if (!picked.has_value())
-            return;
-
-        IO::AssetLoader::ImportAsset(picked.value(), targetSubDir);
-    }
-
 } // namespace Editor::UI
+
+void Editor::UI::ProjectBrowserPanel::DrawFileSection(const char *label, const std::string &directory,
+                                                      const std::string &extension, const char *importFilter,
+                                                      const char *importFilterName) {
+    bool isScripts = (std::strcmp(label, "Scripts") == 0);
+
+    char *newScriptBuf = m_NewScriptBuffer;
+
+    auto entries = ScanDirectory(directory, extension);
+
+    ImGui::PushID(label);
+    if (ImGui::BeginChild("list", ImVec2(0, 120), true)) {
+        if (m_ViewMode == ViewMode::Grid) {
+            int itemsPerRow = static_cast<int>(ImGui::GetContentRegionAvail().x / 180.0f);
+            if (itemsPerRow < 1)
+                itemsPerRow = 1;
+            int itemCount = 0;
+            for (const auto &[name, virtualPath] : entries) {
+                if (!ContainsSearch(virtualPath.c_str(), m_SearchBuffer))
+                    continue;
+
+                if (itemCount % itemsPerRow != 0)
+                    ImGui::SameLine();
+
+                ImGui::PushID(virtualPath.c_str());
+                ImGui::BeginGroup();
+
+                ImGui::Button("F", ImVec2(64, 64));
+
+                ImGui::SameLine();
+
+                ImGui::BeginGroup();
+                ImGui::Text("%s", virtualPath.c_str());
+
+                if (ImGui::SmallButton("Remove")) {
+                    m_DeleteConfirmKey = virtualPath;
+                    m_DeleteConfirmFilePath = virtualPath;
+                    m_DeleteConfirmType = AssetType::Material; // dummy
+                }
+
+                ImGui::EndGroup();
+                ImGui::EndGroup();
+                auto *dl = ImGui::GetWindowDrawList();
+                auto min = ImGui::GetItemRectMin();
+                auto max = ImGui::GetItemRectMax();
+                dl->AddRect(ImVec2(min.x - 2, min.y - 2), ImVec2(max.x + 2, max.y + 2),
+                            ImGui::GetColorU32(ImGuiCol_Border));
+                ImGui::PopID(); // entry
+                itemCount++;
+            }
+        } else {
+            for (const auto &[name, virtualPath] : entries) {
+                if (!ContainsSearch(virtualPath.c_str(), m_SearchBuffer))
+                    continue;
+
+                ImGui::PushID(virtualPath.c_str());
+                ImGui::Text("%s", virtualPath.c_str());
+                ImGui::SameLine();
+
+                if (ImGui::SmallButton("Remove")) {
+                    m_DeleteConfirmKey = virtualPath;
+                    m_DeleteConfirmFilePath = virtualPath;
+                    m_DeleteConfirmType = AssetType::Material; // dummy
+                }
+                ImGui::PopID(); // entry
+            }
+        }
+    }
+    ImGui::EndChild();
+    ImGui::PopID(); // label
+
+    if (entries.empty() || (m_SearchBuffer[0] != '\0' && std::ranges::all_of(entries, [this](const AssetEntry &e) {
+                                return !ContainsSearch(e.virtualPath.c_str(), m_SearchBuffer);
+                            }))) {
+        ImGui::TextDisabled("No %s found.", importFilterName);
+    }
+
+    ImGui::Spacing();
+    if (ImGui::SmallButton(("Import " + std::string(importFilterName)).c_str())) {
+        ImportFile(directory, importFilter, importFilterName);
+    }
+
+    if (isScripts) {
+        ImGui::SameLine();
+        ImGui::InputText("##newScript", newScriptBuf, sizeof(m_NewScriptBuffer));
+        ImGui::SameLine();
+        if (ImGui::SmallButton("New Script")) {
+            if (newScriptBuf[0] != '\0') {
+                std::string filename(newScriptBuf);
+                if (!filename.ends_with(".obsl"))
+                    filename += ".obsl";
+                auto dir = IO::VFS::Resolve(std::string(Core::SCRIPT_PATH));
+                if (!dir.empty()) {
+                    std::filesystem::create_directories(dir);
+                    auto filePath = dir / filename;
+                    if (!std::filesystem::exists(filePath)) {
+                        std::ofstream ofs(filePath);
+                        ofs << "// " << newScriptBuf << "\n";
+                        ofs.close();
+                        LOG_INFO(LOG_WHO, "Created script '" + filename + "'");
+                    } else {
+                        LOG_ERROR(LOG_WHO, "Script '" + filename + "' already exists");
+                    }
+                }
+                newScriptBuf[0] = '\0';
+            }
+        }
+    }
+}
+
+void Editor::UI::ProjectBrowserPanel::DrawDeleteConfirmPopup(Core::ResourceManager &resources) {
+    if (m_DeleteConfirmKey.empty())
+        return;
+
+    ImGui::OpenPopup("Confirm Remove");
+    if (ImGui::BeginPopupModal("Confirm Remove", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("Are you sure you want to remove '%s'?", m_DeleteConfirmKey.c_str());
+        if (!m_DeleteConfirmFilePath.empty()) {
+            ImGui::TextDisabled("This will permanently delete the file from disk.");
+        }
+        ImGui::Separator();
+
+        if (ImGui::Button("Yes, Remove", ImVec2(120, 0))) {
+            // File-based asset
+            if (!m_DeleteConfirmFilePath.empty()) {
+                const auto absPath = IO::VFS::Resolve(m_DeleteConfirmFilePath);
+                if (!absPath.empty() && std::filesystem::remove(absPath)) {
+                    LOG_INFO(LOG_WHO, "Deleted file '" + m_DeleteConfirmFilePath + "'");
+                } else {
+                    LOG_ERROR(LOG_WHO, "Failed to delete '" + m_DeleteConfirmFilePath + "'");
+                }
+            }
+            // RM (as in resource manager, not rm) asset
+            else {
+                switch (m_DeleteConfirmType) {
+                    case AssetType::Texture:
+                        resources.Unload<Rendering::Texture>(m_DeleteConfirmKey);
+                        LOG_INFO(LOG_WHO, "Removed texture '" + m_DeleteConfirmKey + "'");
+                        break;
+                    case AssetType::Shader:
+                        resources.Unload<Rendering::Shader>(m_DeleteConfirmKey);
+                        LOG_INFO(LOG_WHO, "Removed shader '" + m_DeleteConfirmKey + "'");
+                        break;
+                    case AssetType::Mesh:
+                        resources.Unload<Rendering::Mesh>(m_DeleteConfirmKey);
+                        LOG_INFO(LOG_WHO, "Removed mesh '" + m_DeleteConfirmKey + "'");
+                        break;
+                    case AssetType::Material:
+                        resources.Unload<Rendering::Material>(m_DeleteConfirmKey);
+                        LOG_INFO(LOG_WHO, "Removed material '" + m_DeleteConfirmKey + "'");
+                        break;
+                }
+            }
+            ImGui::CloseCurrentPopup();
+            m_DeleteConfirmKey.clear();
+            m_DeleteConfirmFilePath.clear();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+            ImGui::CloseCurrentPopup();
+            m_DeleteConfirmKey.clear();
+            m_DeleteConfirmFilePath.clear();
+        }
+        ImGui::EndPopup();
+    }
+}
+
+void Editor::UI::ProjectBrowserPanel::ImportTexture(Core::ResourceManager &resources) const {
+    if (!m_EngineContext)
+        return;
+
+    const auto picked =
+            FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Image", .filterExt = "png,jpg,jpeg,bmp,tga"});
+    if (!picked.has_value())
+        return;
+
+    auto finalPath = IO::AssetLoader::ImportAsset(picked.value(), "textures");
+    if (!finalPath.has_value())
+        return;
+
+    const std::string key = KeyFromPath(std::filesystem::path(finalPath.value()));
+    if (resources.Get<Rendering::Texture>(key)) {
+        LOG_WARN(LOG_WHO, "Texture '" + key + "' already exists. Skipping");
+        return;
+    }
+
+    auto tex = resources.Load<Rendering::Texture>(key, finalPath.value());
+    Rendering::Renderer::SubmitInitTask([tex] { tex->InitGL(); });
+    LOG_INFO(LOG_WHO, "Imported texture '" + key + "' from " + finalPath.value());
+}
+
+void Editor::UI::ProjectBrowserPanel::ImportShader(Core::ResourceManager &resources) const {
+    if (!m_EngineContext)
+        return;
+
+    const auto vertPicked =
+            FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Vertex Shader", .filterExt = "vert,glsl"});
+    if (!vertPicked.has_value())
+        return;
+
+    const auto fragPicked =
+            FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Fragment Shader", .filterExt = "frag,glsl"});
+    if (!fragPicked.has_value())
+        return;
+
+    auto finalVert = IO::AssetLoader::ImportAsset(vertPicked.value(), "shaders");
+    auto finalFrag = IO::AssetLoader::ImportAsset(fragPicked.value(), "shaders");
+    if (!finalVert.has_value() || !finalFrag.has_value())
+        return;
+
+    const std::string key = KeyFromPath(std::filesystem::path(finalVert.value()));
+    if (resources.Get<Rendering::Shader>(key)) {
+        LOG_WARN(LOG_WHO, "Shader '" + key + "' already exists. Skipping");
+        return;
+    }
+
+    auto shader = resources.Load<Rendering::Shader>(key, finalVert.value(), finalFrag.value());
+    Rendering::Renderer::SubmitInitTask([shader] { shader->InitGL(); });
+    LOG_INFO(LOG_WHO, "Imported shader '" + key + "'");
+}
+
+void Editor::UI::ProjectBrowserPanel::ReplaceTexture(Core::ResourceManager &resources, const std::string &key) const {
+    if (!m_EngineContext)
+        return;
+
+    const auto picked =
+            FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Image", .filterExt = "png,jpg,jpeg,bmp,tga"});
+    if (!picked.has_value())
+        return;
+
+    auto finalPath = IO::AssetLoader::ImportAsset(picked.value(), "textures");
+    if (!finalPath.has_value())
+        return;
+
+    resources.Unload<Rendering::Texture>(key);
+    auto tex = resources.Load<Rendering::Texture>(key, finalPath.value());
+    Rendering::Renderer::SubmitInitTask([tex] { tex->InitGL(); });
+    LOG_INFO(LOG_WHO, "Replaced texture '" + key + "'");
+}
+
+void Editor::UI::ProjectBrowserPanel::ReplaceShader(Core::ResourceManager &resources, const std::string &key) const {
+    if (!m_EngineContext)
+        return;
+
+    const auto vertPicked =
+            FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Vertex Shader", .filterExt = "vert,glsl"});
+    if (!vertPicked.has_value())
+        return;
+
+    const auto fragPicked =
+            FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Fragment Shader", .filterExt = "frag,glsl"});
+    if (!fragPicked.has_value())
+        return;
+
+    auto finalVert = IO::AssetLoader::ImportAsset(vertPicked.value(), "shaders");
+    auto finalFrag = IO::AssetLoader::ImportAsset(fragPicked.value(), "shaders");
+    if (!finalVert.has_value() || !finalFrag.has_value())
+        return;
+
+    resources.Unload<Rendering::Shader>(key);
+    auto shader = resources.Load<Rendering::Shader>(key, finalVert.value(), finalFrag.value());
+    Rendering::Renderer::SubmitInitTask([shader] { shader->InitGL(); });
+    LOG_INFO(LOG_WHO, "Replaced shader '" + key + "'");
+}
+
+void Editor::UI::ProjectBrowserPanel::CreateMesh(Core::ResourceManager &resources) {
+    const std::string id(m_MeshNameBuffer);
+    if (id.empty())
+        return;
+
+    Rendering::MeshData data;
+    constexpr const char *meshTypes[] = {"Quad",    "PointTopHex", "ETriang", "Ellipse", "Circle", "Pentagon",
+                                         "Hexagon", "Octagon",     "Ring",    "Sector",  "Diamond"};
+    switch (m_SelectedMeshFactory) {
+        case 0:
+            data = Rendering::MeshFactory::CreateQuad();
+            break;
+        case 1:
+            data = Rendering::MeshFactory::CreatePointTopHex();
+            break;
+        case 2:
+            data = Rendering::MeshFactory::CreateEquiTriangle(0.5f);
+            break;
+        case 3:
+            data = Rendering::MeshFactory::CreateEllipse();
+            break;
+        case 4:
+            data = Rendering::MeshFactory::CreateRegularPolygon(32);
+            break;
+        case 5:
+            data = Rendering::MeshFactory::CreateRegularPolygon(5);
+            break;
+        case 6:
+            data = Rendering::MeshFactory::CreateRegularPolygon(6);
+            break;
+        case 7:
+            data = Rendering::MeshFactory::CreateRegularPolygon(8);
+            break;
+        case 8:
+            data = Rendering::MeshFactory::CreateRing();
+            break;
+        case 9:
+            data = Rendering::MeshFactory::CreateSector();
+            break;
+        case 10:
+            data = Rendering::MeshFactory::CreateDiamond();
+            break;
+    }
+
+    auto mesh = resources.LoadFromFactory<Rendering::Mesh>(
+            id, [data = std::move(data), meshTypes, factoryIdx = m_SelectedMeshFactory] {
+                auto m = std::make_shared<Rendering::Mesh>(data);
+                m->SetFactoryId(meshTypes[factoryIdx]);
+                return m;
+            });
+
+    Rendering::Renderer::SubmitInitTask([mesh] { mesh->InitGL(); });
+    m_MeshNameBuffer[0] = '\0';
+    LOG_INFO(LOG_WHO, "Created mesh '" + id + "'");
+}
+
+void Editor::UI::ProjectBrowserPanel::ImportFile(const std::string &targetSubDir, const char *filterExt,
+                                                 const char *filterName) const {
+    if (!m_EngineContext)
+        return;
+
+    const auto picked = FileDialogs::OpenFile(*m_EngineContext, {.filterName = filterName, .filterExt = filterExt});
+    if (!picked.has_value())
+        return;
+
+    IO::AssetLoader::ImportAsset(picked.value(), targetSubDir);
+}

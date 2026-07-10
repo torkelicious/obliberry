@@ -1,9 +1,11 @@
 #include "ThreadPool.h"
-#include <iostream>
+#include "Core/LoggerService.h"
 
 namespace Core {
+
+    constexpr auto LOG_WHO = "ThreadPool";
     ThreadPool::ThreadPool(const size_t count) {
-        std::cout << "[ThreadPool] Initialized with " << count << " thread(s)\n";
+        LOG_INFO(LOG_WHO, "Initialized with " + std::to_string(count) + " thread(s)");
         m_Threads.reserve(count);
         for (size_t i = 0; i < count; ++i) {
             m_Threads.emplace_back([this] {

@@ -1,11 +1,15 @@
 #include "Project.h"
 #include "Core/ProjectConfig.h"
 #include "Core/Utils.h"
+#include "Core/LoggerService.h"
 #include "IO/VFS.h"
 #include <filesystem>
-#include <iostream>
 
 namespace Core {
+
+
+    constexpr const char *LOG_WHO = "Project";
+
     std::shared_ptr<Project> Project::NewProject(const std::filesystem::path &baseDir, const std::string &name) {
         auto project = std::make_shared<Project>();
         const std::filesystem::path projectDir = baseDir / name;
@@ -15,8 +19,7 @@ namespace Core {
 
         const std::filesystem::path templateDir = PathUtils::GetExecutableDirectory() / "Templates" / "Default";
         if (!std::filesystem::exists(templateDir)) {
-            std::cerr << "[Project] Error: Template directory not found at: " << std::filesystem::absolute(templateDir)
-                      << "\n";
+            LOG_ERROR(LOG_WHO, "Template directory not found at: " + std::filesystem::absolute(templateDir).string());
             return nullptr;
         }
 
@@ -31,7 +34,7 @@ namespace Core {
                                               std::filesystem::copy_options::overwrite_existing);
             }
         } catch (const std::exception &e) {
-            std::cerr << "[Project] Failed to copy template project: " << e.what() << "\n";
+            LOG_ERROR(LOG_WHO, "Failed to copy template project: " + std::string(e.what()));
             return nullptr;
         }
 

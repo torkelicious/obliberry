@@ -1,7 +1,7 @@
 #include "ObpakTools.h"
 
 #include <filesystem>
-#include <iostream>
+#include "Core/LoggerService.h"
 
 #include "AssetPacking.h"
 #include "DependencyGraph.h"
@@ -11,6 +11,7 @@
 #include "IO/VFS.h"
 #include "IO/Package/Container.h"
 
+constexpr auto LOG_WHO = "ObpakTools";
 
 namespace IO::Package::Tools {
     std::string SanitizeExecutableName(const std::string &input) {
@@ -39,11 +40,11 @@ namespace IO::Package::Tools {
 
 
         if (project_dir.empty()) {
-            std::cerr << "No project directory specified.\n";
+            LOG_ERROR(LOG_WHO, "No project directory specified");
             return;
         }
         if (!std::filesystem::exists(project_dir) || !std::filesystem::is_directory(project_dir)) {
-            std::cerr << "Provided path is not a valid directory: " + project_dir.string() << "\n";
+            LOG_ERROR(LOG_WHO, "Provided path is not a valid directory: " + project_dir.string());
             return;
         }
         out_file = std::filesystem::path(output_dir) / out_file;
@@ -71,13 +72,13 @@ namespace IO::Package::Tools {
                 if (pack_one_file(entry.path(), project_dir, script_root, writer, dep_graph, opts))
                     ++success_count;
             } catch (const std::exception &e) {
-                std::cerr << (entry.path().string() + " - " + e.what()) << "\n";
+                LOG_ERROR(LOG_WHO, entry.path().string() + " - " + e.what());
                 ++fail_count;
             }
         }
 
         if (!dep_graph.validate(BINARY_NAME)) {
-            std::cerr << "Dependency validation warnings reported (packing will continue).\n";
+            LOG_WARN(LOG_WHO, "Dependency validation warnings reported (packing will continue)");
         }
 
         if (success_count > 0) {
@@ -87,11 +88,11 @@ namespace IO::Package::Tools {
                 std::cout << "Packed " + std::to_string(success_count) + "/" +
                                      std::to_string(success_count + fail_count) + " files.\n";
             } catch (const std::exception &e) {
-                std::cerr << std::string("Could not write package - ") + e.what() << "\n";
+                LOG_ERROR(LOG_WHO, std::string("Could not write package - ") + e.what());
                 return;
             }
         } else {
-            std::cerr << "No valid assets found to pack.\n";
+            LOG_ERROR(LOG_WHO, "No valid assets found to pack");
             return;
         }
     }
@@ -117,12 +118,12 @@ namespace IO::Package::Tools {
                 std::filesystem::copy_file(runtime_src, dest_exe, std::filesystem::copy_options::overwrite_existing);
                 std::cout << "[Export] Successfully copied runtime binary to " << dest_exe.string() << "\n";
             } else {
-                std::cerr << "[Export] Error: Could not find runtime binary at " << runtime_src.string() << "\n";
-                std::cerr << "         Ensure obliberry_runtime is built and located in the 'internal' folder next to "
-                             "the editor.\n";
+                LOG_ERROR(LOG_WHO, "Error: Could not find runtime binary at " + runtime_src.string());
+                LOG_ERROR(LOG_WHO,
+                          "Ensure obliberry_runtime is built and located in the 'internal' folder next to the editor");
             }
         } catch (const std::exception &e) {
-            std::cerr << "[Export] Exception while copying runtime: " << e.what() << "\n";
+            LOG_ERROR(LOG_WHO, "Exception while copying runtime: " + std::string(e.what()));
         }
     }
 } // namespace IO::Package::Tools

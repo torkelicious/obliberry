@@ -1,6 +1,9 @@
-#include <iostream>
+#include "Core/LoggerService.h"
 
 #include "GameLayer.h"
+
+
+constexpr auto LOG_WHO = "GameUI";
 #include "imgui.h"
 #include "IO/MapSerialization.h"
 #include "ECS/Systems/MapRuntimeSystem.h"
@@ -259,7 +262,7 @@ void Game::GameLayer::DrawInterface() {
                             const std::string newPath =
                                     Core::PathUtils::Join(Core::MAP_PATH, nameBuf, Core::MAP_FILE_EXTENSION);
                             if ([[maybe_unused]] const bool ok = IO::MapIO::Serialize(newPath, mapComp->grid)) {
-                                std::cout << "Saved!" << "\n";
+                                LOG_INFO(LOG_WHO, "Saved!");
                             }
                         });
             }

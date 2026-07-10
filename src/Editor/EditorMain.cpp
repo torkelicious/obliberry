@@ -2,9 +2,15 @@
 #include "../Core/ProjectConfig.h"
 #include "Core/Project.h"
 #include "EditorLayer.h"
+#include "Core/Logger.h"
+#include "Core/LoggerService.h"
+
 #include <filesystem>
 
 int main(const int argc, char *argv[]) {
+    Core::Logging::Logger<1000> logger;
+    Core::Logging::LoggerService::Initialize(&logger);
+    LOG_INFO("EditorMain", "Initialized");
     Core::ProjectConfig startupConfig; // default empty
 
     // CLI

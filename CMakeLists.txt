@@ -128,6 +128,7 @@ add_library(obliberry_engine STATIC
         src/Core/KeyMappings.cpp
         src/Core/Project.cpp
         src/Core/ThreadPool.cpp
+        src/Core/LoggerService.cpp
 
         # Rendering
         src/Rendering/VertexBuffer.cpp
@@ -171,7 +172,6 @@ add_library(obliberry_engine STATIC
         # Packaging
         src/IO/Package/ContainerWriter.cpp
         src/IO/Package/ContainerReader.cpp
-        src/IO/Package/Tools/CliCommon.cpp
         src/IO/Package/Tools/AssetPacking.cpp
         src/IO/Package/Tools/DependencyGraph.cpp
 )

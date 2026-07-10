@@ -1,7 +1,8 @@
 #include "DependencyGraph.h"
-#include "CliCommon.h"
+#include "Core/LoggerService.h"
 #include <functional>
 
+constexpr auto LOG_WHO = "DependencyGraph";
 namespace IO::Package::Tools {
     void DependencyGraph::add_script(const std::string &canonical_path, std::vector<std::string> deps) {
         m_known_scripts.insert(canonical_path);
@@ -15,7 +16,7 @@ namespace IO::Package::Tools {
         for (const auto &[script, deps] : m_edges) {
             for (const auto &dep : deps) {
                 if (!m_known_scripts.contains(dep)) {
-                    log_error(binary_name, script + " -> using target not found: " += dep);
+                    LOG_ERROR(LOG_WHO, script + " -> using target not found: " + dep);
                     ok = false;
                 }
             }
@@ -52,7 +53,7 @@ namespace IO::Package::Tools {
                     for (auto &p : path)
                         chain += p + " -> ";
                     chain += path.front();
-                    log_error(binary_name, "Circular using dependency: " + chain);
+                    LOG_ERROR(LOG_WHO, "Circular using dependency: " + chain);
                     ok = false;
                 }
             }

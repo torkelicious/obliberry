@@ -1,5 +1,5 @@
 #include "EntityFactory.h"
-#include <iostream>
+#include "Core/LoggerService.h"
 
 #include "ECS/ECS.h"
 #include "ECS/Components/TransformComponent.h"
@@ -11,6 +11,8 @@
 #include "Rendering/Mesh.h"
 #include "ECS/Components/PointLightComponent.h"
 #include "ECS/Components/ScriptComponent.h"
+
+constexpr auto LOG_WHO = "EntityFactory";
 
 std::unordered_map<std::string, ComponentDeserializer> IO::EntityFactory::s_Deserializers;
 std::unordered_map<std::string, ComponentSerializer> IO::EntityFactory::s_Serializers;
@@ -72,7 +74,7 @@ void IO::EntityFactory::RegisterDeserializers() {
             const std::string meshId = data["mesh_id"].get<std::string>();
             mc.mesh = resources.Get<Rendering::Mesh>(meshId);
             if (!mc.mesh)
-                std::cerr << "EntityFactory: Failed to find Mesh ID '" << meshId << "'\n";
+                LOG_ERROR(LOG_WHO, "Failed to find Mesh ID '" + meshId + "'");
         }
         entity.AddComponent<ECS::Components::MeshComponent>(mc);
     };
@@ -85,7 +87,7 @@ void IO::EntityFactory::RegisterDeserializers() {
             const std::string matID = data["material_id"].get<std::string>();
             matComp.material = resources.Get<Rendering::Material>(matID);
             if (!matComp.material)
-                std::cerr << "EntityFactory: Failed to find Material ID '" << matID << "'\n";
+                LOG_ERROR(LOG_WHO, "Failed to find Material ID '" + matID + "'");
         }
         entity.AddComponent<ECS::Components::MaterialComponent>(matComp);
     };
@@ -290,7 +292,7 @@ void IO::EntityFactory::DeserializeEntity(ECS::Entity &entity, const nlohmann::j
         if (auto it = s_Deserializers.find(compName); it != s_Deserializers.end()) {
             it->second(entity, compData, resources);
         } else {
-            std::cerr << "EntityFactory: No deserializer found for component '" << compName << "'\n";
+            LOG_ERROR(LOG_WHO, "No deserializer found for component '" + compName + "'");
         }
     }
 }

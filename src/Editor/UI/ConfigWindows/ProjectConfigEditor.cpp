@@ -2,12 +2,15 @@
 
 #include <cstring>
 #include <filesystem>
-#include <iostream>
 
 #include "Core/Project.h"
+#include "Core/LoggerService.h"
 #include "Editor/FileDialogs.h"
 #include "IO/VFS.h"
 #include "imgui.h"
+
+
+constexpr auto LOG_WHO = "ProjectConfigEditor";
 
 namespace Editor::UI {
     void ProjectConfigEditor::SetContext(Core::EngineContext &context) { m_Context = &context; }
@@ -122,9 +125,9 @@ namespace Editor::UI {
         project->GetConfig() = m_LocalConfig;
         if (project->Save()) {
             project->ClearUnsavedChanges();
-            std::cout << "[ProjectConfigEditor] Project properties saved.\n";
+            LOG_INFO(LOG_WHO, "Project properties saved");
         } else {
-            std::cerr << "[ProjectConfigEditor] Failed to save project properties.\n";
+            LOG_ERROR(LOG_WHO, "Failed to save project properties");
         }
     }
 

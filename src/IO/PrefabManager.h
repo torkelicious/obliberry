@@ -2,10 +2,10 @@
 
 #include <fstream>
 #include <iosfwd>
-#include <iostream>
 #include <nlohmann/json.hpp>
 #include <string>
 #include <unordered_map>
+#include "Core/LoggerService.h"
 #include "EntityFactory.h"
 #include "VFS.h"
 #include "ECS/Registry.h"
@@ -24,7 +24,10 @@ namespace IO {
 
             auto fileData = VFS::ReadVirtual(filepath);
             if (!fileData.has_value()) {
-                std::cerr << "[PrefabManager] Failed to instantiate: " << filepath << " (Not found in VFS)\n";
+                if (auto *logger = Core::Logging::LoggerService::Get()) {
+                    logger->log("PrefabManager", "Failed to instantiate: " + filepath + " (Not found in VFS)",
+                                Core::Logging::LogSeverity::Error);
+                }
                 return 0;
             }
 
@@ -37,7 +40,10 @@ namespace IO {
                     prefabJson = nlohmann::json::parse(fileData.value());
                 }
             } catch (const std::exception &e) {
-                std::cerr << "[PrefabManager] Core decoding error for " << filepath << ": " << e.what() << "\n";
+                if (auto *logger = Core::Logging::LoggerService::Get()) {
+                    logger->log("PrefabManager", "Core decoding error for " + filepath + ": " + e.what(),
+                                Core::Logging::LogSeverity::Error);
+                }
                 return 0;
             }
 

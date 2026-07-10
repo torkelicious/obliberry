@@ -1,13 +1,14 @@
 #include "AssetLoader.h"
 
-#include <iostream>
 #include <stdexcept>
-
+#include "Core/LoggerService.h"
 #include "VFS.h"
 #include "Rendering/Mesh.h"
 #include "Rendering/Renderer.h"
 #include "Rendering/Shader.h"
 #include "Rendering/Texture.h"
+
+constexpr auto LOG_WHO = "AssetLoader";
 
 std::unordered_map<std::string, IO::AssetLoader::MeshFactory> IO::AssetLoader::s_MeshFactories;
 
@@ -17,14 +18,13 @@ std::optional<std::string> IO::AssetLoader::ImportAsset(const std::string &Absou
 
     const std::filesystem::path projectAssetsDir = VFS::GetAssetsDirectory();
     if (projectAssetsDir.empty()) {
-        std::cerr << "[AssetLoader] Import failed. No project is currently mounted\n";
+        LOG_ERROR(LOG_WHO, "Import failed. No project is currently mounted");
         return std::nullopt;
     }
 
     const std::filesystem::path assetdir = VFS::GetAssetsDirectory();
     if (assetdir.empty()) {
-        std::cerr << "[AssetLoader] Import failed. "
-                     "Could not resolve Asset Path.\n Is project loaded?\n";
+        LOG_ERROR(LOG_WHO, "Import failed. Could not resolve Asset Path. Is project loaded?");
         return std::nullopt;
     }
 
@@ -43,9 +43,9 @@ std::optional<std::string> IO::AssetLoader::ImportAsset(const std::string &Absou
     // copy the file
     try {
         std::filesystem::copy(srcpath, destinationPath, std::filesystem::copy_options::overwrite_existing);
-        std::cout << "[AssetLoader] Successfully imported asset to: " << destinationPath.string() << "\n";
+        LOG_INFO(LOG_WHO, "Successfully imported asset to: " + destinationPath.string());
     } catch (const std::exception &e) {
-        std::cerr << "[AssetLoader] Failed to copy asset: " << e.what() << "\n";
+        LOG_ERROR(LOG_WHO, "Failed to copy asset: " + std::string(e.what()));
         return std::nullopt;
     }
 
@@ -116,7 +116,7 @@ void IO::AssetLoader::LoadMaterials(const json &materials, Core::ResourceManager
         auto texture = resources.Get<Rendering::Texture>(textureId);
 
         if (!shader)
-            std::cerr << "Missing shader: " + shaderId + "\n";
+            LOG_ERROR(LOG_WHO, "Missing shader: " + shaderId);
 
         if (!texture)
             texture = nullptr;

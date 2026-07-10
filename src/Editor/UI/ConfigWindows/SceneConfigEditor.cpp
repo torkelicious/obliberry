@@ -6,13 +6,17 @@
 
 #include <cstring>
 #include <filesystem>
-#include <iostream>
+
+#include "Core/LoggerService.h"
 
 #include "Editor/FileDialogs.h"
 #include "IO/VFS.h"
 #include "Rendering/Renderer.h"
 #include "Sound/AudioEngine.h"
 #include "imgui.h"
+
+
+constexpr auto LOG_WHO = "SceneConfigEditor";
 
 namespace Editor::UI {
     void SceneConfigEditor::ReloadFromScene() {
@@ -122,7 +126,7 @@ namespace Editor::UI {
             }
         }
 
-        std::cout << "[SceneConfigEditor] Scene properties saved.\n";
+        LOG_INFO(LOG_WHO, "Scene properties saved");
     }
 
     void SceneConfigEditor::ResolveMusicPath(const std::string &absolutePath) {

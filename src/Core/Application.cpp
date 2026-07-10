@@ -1,5 +1,6 @@
 #include "Application.h"
 #include "Core/EngineContext.h"
+#include "Core/LoggerService.h"
 #include "Rendering/MeshFactory.h"
 #include "Rendering/Renderer.h"
 #include "Sound/AudioEngine.h"
@@ -92,6 +93,7 @@ void Core::Application::Run() {
     context.scriptPool = &m_ScriptPool;
     context.threadPool = &m_ThreadPool;
     context.audioEngine = m_AudioEngine.get();
+    context.logger = Logging::LoggerService::Get();
 
     Rendering::MeshFactory::RegisterAllMeshFactories();
 

@@ -1,5 +1,9 @@
 #include "Scene.h"
+#include "Core/LoggerService.h"
 #include "ECS/Systems/AISystem.h"
+
+
+constexpr auto LOG_WHO = "Scene";
 #include "ECS/Systems/MapRenderSystem.h"
 #include "ECS/Systems/MovementSystem.h"
 #include "ECS/Systems/PlayerControlSystem.h"
@@ -20,7 +24,7 @@ Scenes::Scene::Scene(Core::EngineContext *context, SceneProperties props)
     : m_Properties(std::move(props)), m_Context(context) {}
 
 void Scenes::Scene::OnEnter() {
-    std::cout << "[Scene] Entering scene: " << m_Properties.ScenePath << std::endl;
+    LOG_INFO(LOG_WHO, "Entering scene: " + m_Properties.ScenePath);
 
     // Register EngineLib native functions on every worker's interpreter
     for (size_t w = 0; w < m_Context->scriptPool->worker_count(); ++w) {
@@ -31,12 +35,12 @@ void Scenes::Scene::OnEnter() {
     IO::EntityFactory::RegisterDeserializers();
     IO::EntityFactory::RegisterSerializers();
 
-    std::cout << "[Scene] Attempting to deserialize scene from: " << m_Properties.ScenePath << std::endl;
+    LOG_INFO(LOG_WHO, "Attempting to deserialize scene from: " + m_Properties.ScenePath);
     if (!IO::SceneIO::Deserialize(m_Properties.ScenePath, *this)) {
-        std::cerr << "Scene: Failed to load scene file: " << m_Properties.ScenePath << "\n";
-        std::cerr << "Scene: Scene will be empty!" << std::endl;
+        LOG_ERROR(LOG_WHO, "Failed to load scene file: " + m_Properties.ScenePath);
+        LOG_ERROR(LOG_WHO, "Scene will be empty!");
     } else {
-        std::cout << "[Scene] Successfully deserialized scene" << std::endl;
+        LOG_INFO(LOG_WHO, "Successfully deserialized scene");
     }
 
     if (m_Context->audioEngine) {
@@ -96,7 +100,7 @@ void Scenes::Scene::OnExit() {
 
     ECS::Systems::ScriptSystem::OnSceneExit(m_Registry, *m_Context);
     IO::PrefabManager::ClearCache();
-    std::cout << "Exiting Scene " << m_Properties.ScenePath << "\n";
+    LOG_INFO(LOG_WHO, "Exiting Scene " + m_Properties.ScenePath);
 }
 
 void Scenes::Scene::OnSaved() { ClearUnsavedChanges(); }

@@ -1,19 +1,17 @@
-#include <iostream>
 #include <string>
 #include <vector>
 #include <filesystem>
-#include "IO/Package/Tools/CliCommon.h"
 #include <ObSL/ScriptRuntime.h>
 #include <ObSL/ScriptWorker.h>
 #include <ObSL/ASTDeserializer.h>
 #include "IO/Package/Container.h"
+#include "Core/LoggerService.h"
 
 const std::string TITLE_NAME = "Obliberry-Working-Name-Runner";
 const std::string BINARY_NAME = "obsl_pack_run";
 constexpr float VERSION = 1.0f;
 
-static void log_info(const std::string &msg) { IO::Package::Tools::log_info(BINARY_NAME, msg); }
-static void log_error(const std::string &msg) { IO::Package::Tools::log_error(BINARY_NAME, msg); }
+constexpr auto LOG_WHO = "Runner";
 
 static void show_help() {
     std::cout << TITLE_NAME << " - Run pre-packaged ObSL scripts directly from a .obpak container\n\n"
@@ -42,7 +40,7 @@ int main(int argc, char *argv[]) {
         } else if (arg == "-q" || arg == "--quiet") {
             quiet = true;
         } else if (arg[0] == '-') {
-            log_error("Unknown option: " + arg);
+            LOG_ERROR(LOG_WHO, "Unknown option: " + arg);
             show_help();
             return 1;
         } else {
@@ -51,7 +49,7 @@ int main(int argc, char *argv[]) {
             } else if (entry_script.empty()) {
                 entry_script = arg;
             } else {
-                log_error("Unexpected extra argument: " + arg);
+                LOG_ERROR(LOG_WHO, "Unexpected extra argument: " + arg);
                 show_help();
                 return 1;
             }
@@ -65,13 +63,13 @@ int main(int argc, char *argv[]) {
 
     IO::ContainerReader reader;
     if (!reader.open(package_path)) {
-        log_error("Could not open package '" + package_path + "'");
+        LOG_ERROR(LOG_WHO, "Could not open package '" + package_path + "'");
         return 1;
     }
 
     auto raw_data_opt = reader.read(entry_script);
     if (!raw_data_opt) {
-        log_error("Could not find '" + entry_script + "' in the package.");
+        LOG_ERROR(LOG_WHO, "Could not find '" + entry_script + "' in the package");
         return 1;
     }
 
@@ -115,7 +113,7 @@ int main(int argc, char *argv[]) {
         if (!quiet)
             log_info("Done.");
     } catch (const std::exception &e) {
-        log_error(std::string("Runtime error: ") + e.what());
+        LOG_ERROR(LOG_WHO, std::string("Runtime error: ") + e.what());
         return 1;
     }
     return 0;

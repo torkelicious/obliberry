@@ -1,11 +1,12 @@
 #include "VFS.h"
-
 #include <fstream>
-#include <iostream>
-
+#include "Core/LoggerService.h"
 #include "Package/Container.h"
 
 namespace IO::VFS {
+
+    constexpr auto LOG_WHO = "VFS";
+
     struct VFSStorage {
         std::filesystem::path rootDir;
         std::filesystem::path assetsDir;
@@ -33,9 +34,9 @@ namespace IO::VFS {
             s_State.assetsDir = s_State.rootDir / "assets";
             s_State.isLoaded = true;
 
-            std::cout << "[VFS] Project mounted successfully at: " << s_State.rootDir.string() << "\n";
+            LOG_INFO(LOG_WHO, "Project mounted successfully at: " + s_State.rootDir.string());
         } catch (const std::exception &e) {
-            std::cerr << "[VFS] Failed to mount project directory: " << e.what() << "\n";
+            LOG_ERROR(LOG_WHO, "Failed to mount project directory: " + std::string(e.what()));
             s_State.isLoaded = false;
         }
     }
@@ -48,12 +49,12 @@ namespace IO::VFS {
 
     void MountPackage(const std::filesystem::path &packagepath) {
         if (!s_State.packReader.open(packagepath)) {
-            std::cerr << "[VFS] Failed to open package: " << packagepath.string() << "\n";
+            LOG_ERROR(LOG_WHO, "Failed to open package: " + packagepath.string());
             return;
         }
         s_State.isPackaged = true;
         s_State.isLoaded = true;
-        std::cout << "[VFS] Package mounted: " << packagepath.string() << "\n";
+        LOG_INFO(LOG_WHO, "Package mounted: " + packagepath.string());
     }
 
     bool IsPackaged() { return s_State.isPackaged; }

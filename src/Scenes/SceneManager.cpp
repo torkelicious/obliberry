@@ -1,6 +1,10 @@
 #include "SceneManager.h"
+#include "Core/LoggerService.h"
 #include "Core/Constants.h"
 #include "Core/EngineContext.h"
+
+
+constexpr auto LOG_WHO = "SceneManager";
 #include "Core/Project.h"
 #include "Core/Utils.h"
 #include "IO/SceneSerialization.h"
@@ -49,7 +53,7 @@ namespace Scenes {
 
             return IO::SceneIO::Serialize(scenepath, tempScene);
         } catch (const std::exception &e) {
-            std::cerr << "Failed to create scene: " << e.what() << std::endl;
+            LOG_ERROR(LOG_WHO, "Failed to create scene: " + std::string(e.what()));
             return false;
         }
     }
@@ -88,7 +92,7 @@ namespace Scenes {
 
     void SceneManager::LoadSceneByPath(const std::string &scenePath) {
         if (!ValidateScenePath(scenePath)) {
-            std::cerr << "[SceneManager] Invalid scene path: " << scenePath << std::endl;
+            LOG_ERROR(LOG_WHO, "Invalid scene path: " + scenePath);
             return;
         }
 
@@ -99,39 +103,39 @@ namespace Scenes {
 
     bool SceneManager::SaveCurrentScene() const {
         if (!m_CurrentScene) {
-            std::cerr << "[SceneManager] No current scene to save!" << std::endl;
+            LOG_ERROR(LOG_WHO, "No current scene to save!");
             return false;
         }
 
         try {
             const std::string scenePath = m_CurrentScene->GetScenePath();
             if (scenePath.empty()) {
-                std::cerr << "[SceneManager] Current scene has no path!" << std::endl;
+                LOG_ERROR(LOG_WHO, "Current scene has no path!");
                 return false;
             }
 
             const bool success = IO::SceneIO::Serialize(scenePath, *m_CurrentScene);
             if (success) {
                 m_CurrentScene->ClearUnsavedChanges();
-                std::cout << "[SceneManager] Successfully saved scene: " << scenePath << std::endl;
+                LOG_INFO(LOG_WHO, "Successfully saved scene: " + scenePath);
             } else {
-                std::cerr << "[SceneManager] Failed to save scene: " << scenePath << std::endl;
+                LOG_ERROR(LOG_WHO, "Failed to save scene: " + scenePath);
             }
             return success;
         } catch (const std::exception &e) {
-            std::cerr << "[SceneManager] Exception while saving scene: " << e.what() << std::endl;
+            LOG_ERROR(LOG_WHO, "Exception while saving scene: " + std::string(e.what()));
             return false;
         }
     }
 
     bool SceneManager::ValidateScenePath(const std::string &scenePath) const {
         if (scenePath.empty()) {
-            std::cerr << "[SceneManager] Scene path cannot be empty!" << std::endl;
+            LOG_ERROR(LOG_WHO, "Scene path cannot be empty!");
             return false;
         }
 
         if (scenePath.find(".json") == std::string::npos) {
-            std::cerr << "[SceneManager] Scene path should have .json extension: " << scenePath << std::endl;
+            LOG_ERROR(LOG_WHO, "Scene path should have .json extension: " + scenePath);
         }
         return true;
     }
@@ -141,7 +145,7 @@ namespace Scenes {
             const std::string scenePath = std::move(context.pendingScenePath);
             context.pendingScenePath.clear();
 
-            std::cout << "[SceneManager] Processing pending scene change to: " << scenePath << std::endl;
+            LOG_INFO(LOG_WHO, "Processing pending scene change to: " + scenePath);
             LoadSceneByPath(scenePath);
         }
     }

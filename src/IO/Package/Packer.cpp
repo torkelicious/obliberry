@@ -1,11 +1,9 @@
-#include <iostream>
 #include <filesystem>
 #include <string>
-
-#include "IO/Package/Tools/CliCommon.h"
 #include "IO/Package/Tools/AssetPacking.h"
 #include "IO/Package/Tools/DependencyGraph.h"
 #include "IO/Package/Container.h"
+#include "Core/LoggerService.h"
 
 const std::string TITLE_NAME = "Obliberry-Working-Name-Packager";
 const std::string BINARY_NAME = "ob_packer";
@@ -13,8 +11,8 @@ constexpr float VERSION = 1.1f;
 
 namespace fs = std::filesystem;
 
-static void log_info(const std::string &msg) { IO::Package::Tools::log_info(BINARY_NAME, msg); }
-static void log_error(const std::string &msg) { IO::Package::Tools::log_error(BINARY_NAME, msg); }
+
+constexpr auto LOG_WHO = "Packer";
 
 static void show_help() {
     std::cout << TITLE_NAME << " - Package Obliberry projects into .obpak archives\n\n"
@@ -63,7 +61,7 @@ int main(int argc, char *argv[]) {
             show_version();
             return 0;
         } else if (arg[0] == '-') {
-            log_error("Unknown option: " + arg);
+            LOG_ERROR(LOG_WHO, "Unknown option: " + arg);
             show_help();
             return 1;
         } else
@@ -71,24 +69,24 @@ int main(int argc, char *argv[]) {
     }
 
     if (project_dir.empty()) {
-        log_error("No project directory specified.");
+        LOG_ERROR(LOG_WHO, "No project directory specified");
         return 1;
     }
     if (!fs::exists(project_dir) || !fs::is_directory(project_dir)) {
-        log_error("Provided path is not a valid directory: " + project_dir.string());
+        LOG_ERROR(LOG_WHO, "Provided path is not a valid directory: " + project_dir.string());
         return 1;
     }
     if (output_file.empty())
         output_file = project_dir.filename().string() + ".obpak";
 
     if (!quiet) {
-        log_info("Packing project: " + project_dir.string());
-        log_info("Output file: " + output_file);
+        LOG_INFO(LOG_WHO, "Packing project: " + project_dir.string());
+        LOG_INFO(LOG_WHO, "Output file: " + output_file);
     }
 
     fs::path script_root = project_dir / "assets" / "scripts";
     if (!fs::exists(script_root)) {
-        log_error("Expected scripts folder not found: " + script_root.string());
+        LOG_ERROR(LOG_WHO, "Expected scripts folder not found: " + script_root.string());
         return 1;
     }
 
@@ -105,14 +103,14 @@ int main(int argc, char *argv[]) {
             if (IO::Package::Tools::pack_one_file(entry.path(), project_dir, script_root, writer, dep_graph, opts))
                 ++success_count;
         } catch (const std::exception &e) {
-            log_error(entry.path().string() + " - " + e.what());
+            LOG_ERROR(LOG_WHO, entry.path().string() + " - " + e.what());
             ++fail_count;
         }
     }
 
     bool deps_ok = dep_graph.validate(BINARY_NAME);
     if (!deps_ok && strict_mode) {
-        log_error("Packaging aborted due to validation failures (--strict).");
+        LOG_ERROR(LOG_WHO, "Packaging aborted due to validation failures (--strict)");
         return 1;
     }
 
@@ -120,16 +118,16 @@ int main(int argc, char *argv[]) {
         try {
             writer.write(output_file);
             if (!quiet) {
-                log_info("Wrote " + output_file);
-                log_info("Packed " + std::to_string(success_count) + "/" + std::to_string(success_count + fail_count) +
-                         " files.");
+                LOG_INFO(LOG_WHO, "Wrote " + output_file);
+                LOG_INFO(LOG_WHO, "Packed " + std::to_string(success_count) + "/" +
+                                          std::to_string(success_count + fail_count) + " files.");
             }
         } catch (const std::exception &e) {
-            log_error(std::string("Could not write package - ") + e.what());
+            LOG_ERROR(LOG_WHO, std::string("Could not write package - ") + e.what());
             return 1;
         }
     } else {
-        log_error("No files were successfully packed.");
+        LOG_ERROR(LOG_WHO, "No files were successfully packed");
         return 1;
     }
 

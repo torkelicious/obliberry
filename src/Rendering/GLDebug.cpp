@@ -1,8 +1,11 @@
 #include "GLDebug.h"
-#include <iostream>
+#include "Core/LoggerService.h"
 
 // Heavily based off of;
 // https://learnopengl.com/In-Practice/Debugging
+
+
+constexpr auto LOG_WHO = "GLDebug";
 
 namespace Rendering {
     void APIENTRY GLDebug::glDebugOutput(const GLenum source, const GLenum type, const unsigned int id,
@@ -12,28 +15,27 @@ namespace Rendering {
         if (id == 131169 || id == 131185 || id == 131218 || id == 131204)
             return;
 
-        std::cout << "---------------" << "\n";
-        std::cout << "Debug message (" << id << "): " << message << "\n";
+        LOG_INFO(LOG_WHO, std::string("---------------") + "\nDebug message (" + std::to_string(id) + "): " + message);
 
         // ReSharper disable once CppDefaultCaseNotHandledInSwitchStatement
         switch (source) {
             case GL_DEBUG_SOURCE_API:
-                std::cout << "Source: API";
+                LOG_INFO(LOG_WHO, "Source: API");
                 break;
             case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
-                std::cout << "Source: Window System";
+                LOG_INFO(LOG_WHO, "Source: Window System");
                 break;
             case GL_DEBUG_SOURCE_SHADER_COMPILER:
-                std::cout << "Source: Shader Compiler";
+                LOG_INFO(LOG_WHO, "Source: Shader Compiler");
                 break;
             case GL_DEBUG_SOURCE_THIRD_PARTY:
-                std::cout << "Source: Third Party";
+                LOG_INFO(LOG_WHO, "Source: Third Party");
                 break;
             case GL_DEBUG_SOURCE_APPLICATION:
-                std::cout << "Source: Application";
+                LOG_INFO(LOG_WHO, "Source: Application");
                 break;
             case GL_DEBUG_SOURCE_OTHER:
-                std::cout << "Source: Other";
+                LOG_INFO(LOG_WHO, "Source: Other");
                 break;
         }
         std::cout << "\n";
@@ -41,31 +43,31 @@ namespace Rendering {
         // ReSharper disable once CppDefaultCaseNotHandledInSwitchStatement
         switch (type) {
             case GL_DEBUG_TYPE_ERROR:
-                std::cout << "Type: Error";
+                LOG_INFO(LOG_WHO, "Type: Error");
                 break;
             case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
-                std::cout << "Type: Deprecated Behaviour";
+                LOG_INFO(LOG_WHO, "Type: Deprecated Behaviour");
                 break;
             case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
-                std::cout << "Type: Undefined Behaviour";
+                LOG_INFO(LOG_WHO, "Type: Undefined Behaviour");
                 break;
             case GL_DEBUG_TYPE_PORTABILITY:
-                std::cout << "Type: Portability";
+                LOG_INFO(LOG_WHO, "Type: Portability");
                 break;
             case GL_DEBUG_TYPE_PERFORMANCE:
-                std::cout << "Type: Performance";
+                LOG_INFO(LOG_WHO, "Type: Performance");
                 break;
             case GL_DEBUG_TYPE_MARKER:
-                std::cout << "Type: Marker";
+                LOG_INFO(LOG_WHO, "Type: Marker");
                 break;
             case GL_DEBUG_TYPE_PUSH_GROUP:
-                std::cout << "Type: Push Group";
+                LOG_INFO(LOG_WHO, "Type: Push Group");
                 break;
             case GL_DEBUG_TYPE_POP_GROUP:
-                std::cout << "Type: Pop Group";
+                LOG_INFO(LOG_WHO, "Type: Pop Group");
                 break;
             case GL_DEBUG_TYPE_OTHER:
-                std::cout << "Type: Other";
+                LOG_INFO(LOG_WHO, "Type: Other");
                 break;
         }
         std::cout << "\n";
@@ -73,16 +75,16 @@ namespace Rendering {
         // ReSharper disable once CppDefaultCaseNotHandledInSwitchStatement
         switch (severity) {
             case GL_DEBUG_SEVERITY_HIGH:
-                std::cout << "Severity: high";
+                LOG_INFO(LOG_WHO, "Severity: high");
                 break;
             case GL_DEBUG_SEVERITY_MEDIUM:
-                std::cout << "Severity: medium";
+                LOG_INFO(LOG_WHO, "Severity: medium");
                 break;
             case GL_DEBUG_SEVERITY_LOW:
-                std::cout << "Severity: low";
+                LOG_INFO(LOG_WHO, "Severity: low");
                 break;
             case GL_DEBUG_SEVERITY_NOTIFICATION:
-                std::cout << "Severity: notification";
+                LOG_INFO(LOG_WHO, "Severity: notification");
                 break;
         }
         std::cout << "\n";
@@ -91,13 +93,13 @@ namespace Rendering {
 
 
     int GLDebug::InitDebug() {
-        std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << "\n";
-        std::cout << "Renderer: " << glGetString(GL_RENDERER) << "\n";
-        std::cout << "Vendor: " << glGetString(GL_VENDOR) << "\n";
-        std::cout << "\n";
+        LOG_INFO(LOG_WHO, "OpenGL Version: " + std::string(reinterpret_cast<const char *>(glGetString(GL_VERSION))));
+        LOG_INFO(LOG_WHO, "Renderer: " + std::string(reinterpret_cast<const char *>(glGetString(GL_RENDERER))));
+        LOG_INFO(LOG_WHO, "Vendor: " + std::string(reinterpret_cast<const char *>(glGetString(GL_VENDOR))));
+        LOG_INFO(LOG_WHO, "");
 
         if (!glDebugMessageCallback) {
-            std::cerr << "debug not available (glDebugMessageCallback == NULL)\n";
+            LOG_ERROR(LOG_WHO, "debug not available (glDebugMessageCallback == NULL)");
             return -1;
         }
 

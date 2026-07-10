@@ -1,7 +1,7 @@
 #include "SceneSerialization.h"
 #include <fstream>
-#include <iostream>
 #include <nlohmann/json.hpp>
+#include "Core/LoggerService.h"
 #include "MapSerialization.h"
 #include "VFS.h"
 #include "Core/ProjectConfig.h"
@@ -12,6 +12,8 @@
 #include "ECS/Components/MapComponent.h"
 #include "ECS/Components/MapStateComponent.h"
 #include "ECS/Systems/MapRuntimeSystem.h"
+
+constexpr auto LOG_WHO = "SceneIO";
 
 namespace IO::SceneIO {
     using json = nlohmann::json;
@@ -32,7 +34,7 @@ namespace IO::SceneIO {
     bool Deserialize(const std::string &path, Scenes::Scene &scene) {
         auto fileData = VFS::ReadVirtual(path);
         if (!fileData.has_value()) {
-            std::cerr << "[SceneIO] Failed to open scene through VFS: " << path << "\n";
+            LOG_ERROR(LOG_WHO, "Failed to open scene through VFS: " + path);
             return false;
         }
 
@@ -48,7 +50,7 @@ namespace IO::SceneIO {
                 j = json::parse(fileData.value());
             }
         } catch (const std::exception &e) {
-            std::cerr << "[SceneIO] Scene parsing failure: " << e.what() << "\n";
+            LOG_ERROR(LOG_WHO, "Scene parsing failure: " + std::string(e.what()));
             return false;
         }
 
@@ -61,7 +63,7 @@ namespace IO::SceneIO {
                 if (auto &c = properties["clear_color"]; c.is_array() && c.size() >= 4) {
                     BackgroundClearColor = {c[0].get<float>(), c[1].get<float>(), c[2].get<float>(), c[3].get<float>()};
                 } else {
-                    std::cerr << "SceneSerializer Warning: 'clear_color' is malformed. Defaulting to black.\n";
+                    LOG_WARN(LOG_WHO, "'clear_color' is malformed. Defaulting to black");
                 }
             }
 
@@ -91,7 +93,7 @@ namespace IO::SceneIO {
             mapComp.mapFilePath = mapPath;
 
             if (!MapIO::Deserialize(mapPath, mapComp.grid)) {
-                std::cerr << "SceneSerializer: Failed to load map file: " << mapPath << "\n";
+                LOG_ERROR(LOG_WHO, "Failed to load map file: " + mapPath);
             }
 
             // bind visual resources from scene json grid section
@@ -129,7 +131,7 @@ namespace IO::SceneIO {
                 mapComp.pathToMat =
                         std::make_shared<Rendering::Material>(Rendering::Material{shader, nullptr, {1, 1, 1, 0.5f}});
             } else {
-                std::cerr << "SceneSerializer: Missing map visual assets!\n";
+                LOG_ERROR(LOG_WHO, "Missing map visual assets!");
             }
             mapComp.needsMeshUpdate = true;
             mapComp.lightmap.ambient = AmbientLight;
@@ -176,7 +178,7 @@ namespace IO::SceneIO {
 
             j["grid"]["map_file"] = mapFile;
             if (!MapIO::Serialize(mapFile, mapComp->grid)) {
-                std::cerr << "SceneSerializer: Failed to write map file: " << mapFile << "\n";
+                LOG_ERROR(LOG_WHO, "Failed to write map file: " + mapFile);
             }
 
             if (mapComp->hexMesh) {

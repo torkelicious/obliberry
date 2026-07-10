@@ -1,17 +1,19 @@
 #include "ProjectConfig.h"
+#include "Core/LoggerService.h"
 #include "IO/VFS.h"
 #include <fstream>
-#include <iostream>
 #include <vector>
 #include <nlohmann/json.hpp>
 
 namespace Core {
+
+    constexpr auto LOG_WHO = "ProjectConfig";
     ProjectConfig ProjectConfig::Deserialize(const std::string &filepath) {
         ProjectConfig config;
 
         auto fileData = IO::VFS::ReadVirtual(filepath);
         if (!fileData.has_value()) {
-            std::cerr << "[ProjectConfig] Project file not found in VFS: " << filepath << ". Using defaults.\n";
+            LOG_WARN(LOG_WHO, "Project file not found in VFS: " + filepath + ". Using defaults");
             return config;
         }
 
@@ -40,7 +42,7 @@ namespace Core {
                 config.startScenePath = j["start_scene"];
             }
         } catch (const std::exception &e) {
-            std::cerr << "[ProjectConfig] Failed to parse project file: " << e.what() << "\n";
+            LOG_ERROR(LOG_WHO, "Failed to parse project file: " + std::string(e.what()));
         }
 
         return config;
@@ -59,14 +61,13 @@ namespace Core {
             std::ofstream file(resolvedPath);
 
             if (!file.is_open()) {
-                std::cerr << "[ProjectConfig] Failed to open project file for writing: " << resolvedPath.string()
-                          << "\n";
+                LOG_ERROR(LOG_WHO, "Failed to open project file for writing: " + resolvedPath.string());
                 return false;
             }
             file << j.dump(2);
             return true;
         } catch (const std::exception &e) {
-            std::cerr << "[ProjectConfig] Failed to serialize project file: " << e.what() << "\n";
+            LOG_ERROR(LOG_WHO, "Failed to serialize project file: " + std::string(e.what()));
             return false;
         }
     }

@@ -1,15 +1,16 @@
 #include "Texture.h"
-#include <iostream>
 #include <utility>
 #include <stb_image.h>
-
+#include "Core/LoggerService.h"
 #include "IO/VFS.h"
+
+constexpr auto LOG_WHO = "Texture";
 
 namespace Rendering {
     Texture::Texture(std::string path, const GLuint minFilter, const GLuint magFilter, const GLuint wrapS,
                      const GLuint wrapT)
         : m_FilePath(std::move(path)), m_MinFilter(minFilter), m_MagFilter(magFilter), m_WrapS(wrapS), m_WrapT(wrapT) {
-        std::cout << "Loading: " << m_FilePath << "\n";
+        LOG_INFO(LOG_WHO, "Loading: " + m_FilePath);
         stbi_set_flip_vertically_on_load(1);
 
         if (const std::optional<std::string> fileData = IO::VFS::ReadVirtual(m_FilePath)) {
@@ -21,10 +22,10 @@ namespace Rendering {
                 m_PixelData.assign(loaded, loaded + size);
                 stbi_image_free(loaded);
             } else {
-                std::cerr << "Failed to decode image data for: " << m_FilePath << "\n";
+                LOG_ERROR(LOG_WHO, "Failed to decode image data for: " + m_FilePath);
             }
         } else {
-            std::cerr << "VFS could not find or read file: " << m_FilePath << "\n";
+            LOG_ERROR(LOG_WHO, "VFS could not find or read file: " + m_FilePath);
         }
     }
 

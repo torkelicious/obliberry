@@ -1,20 +1,17 @@
-#include <iostream>
 #include <string>
 #include <vector>
 #include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
-
-#include "IO/Package/Tools/CliCommon.h"
 #include "IO/Package/Container.h"
+#include "Core/LoggerService.h"
 
 const std::string TITLE_NAME = "Obliberry-Working-Name-Unpackager";
 const std::string BINARY_NAME = "ob_unpack";
 constexpr float VERSION = 1.1f;
 namespace fs = std::filesystem;
 
-static void log_info(const std::string &msg) { IO::Package::Tools::log_info(BINARY_NAME, msg); }
-static void log_error(const std::string &msg) { IO::Package::Tools::log_error(BINARY_NAME, msg); }
+constexpr auto LOG_WHO = "Unpacker";
 
 static void show_help() {
     std::cout << TITLE_NAME << " - Extract contents from a .obpak container\n\n"
@@ -52,7 +49,7 @@ int main(int argc, char *argv[]) {
         } else if (arg == "-r" || arg == "--readable") {
             readable = true;
         } else if (arg[0] == '-') {
-            log_error("Unknown option: " + arg);
+            LOG_ERROR(LOG_WHO, "Unknown option: " + arg);
             show_help();
             return 1;
         } else {
@@ -61,7 +58,7 @@ int main(int argc, char *argv[]) {
             else if (output_dir.empty())
                 output_dir = arg;
             else {
-                log_error("Unexpected extra argument: " + arg);
+                LOG_ERROR(LOG_WHO, "Unexpected extra argument: " + arg);
                 show_help();
                 return 1;
             }
@@ -75,7 +72,7 @@ int main(int argc, char *argv[]) {
 
     IO::ContainerReader reader;
     if (!reader.open(package_path)) {
-        log_error("Could not open package '" + package_path + "'");
+        LOG_ERROR(LOG_WHO, "Could not open package '" + package_path + "'");
         return 1;
     }
 
@@ -96,7 +93,7 @@ int main(int argc, char *argv[]) {
     for (const auto &p : paths) {
         auto data = reader.read(p);
         if (!data) {
-            log_error("Failed to decompress: " + p);
+            LOG_ERROR(LOG_WHO, "Failed to decompress: " + p);
             continue;
         }
 
@@ -115,7 +112,7 @@ int main(int argc, char *argv[]) {
                 success_count++;
                 continue;
             } catch (const std::exception &e) {
-                log_error("Failed to decode msgpack for " + p + ": " + e.what());
+                LOG_ERROR(LOG_WHO, "Failed to decode msgpack for " + p + ": " + e.what());
                 // falls through to standard binary
             }
         }
@@ -126,7 +123,7 @@ int main(int argc, char *argv[]) {
                 log_info("Extracted: " + p + " (" + std::to_string(data->size()) + " bytes)");
             success_count++;
         } else {
-            log_error("Failed to write to disk: " + out_path.string());
+            LOG_ERROR(LOG_WHO, "Failed to write to disk: " + out_path.string());
         }
     }
 

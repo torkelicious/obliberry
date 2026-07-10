@@ -1,19 +1,21 @@
-#include <iostream>
 #include <string>
 #include <fstream>
 #include <sstream>
-
 #include "Container.h"
+#include "Core/LoggerService.h"
 
 static int g_failures = 0;
 
 #define CHECK(cond)                                                                                                    \
     do {                                                                                                               \
         if (!(cond)) {                                                                                                 \
-            std::cerr << "FAILED: " << #cond << " (line " << __LINE__ << ")\n";                                        \
+            LOG_ERROR("ContainerTest", std::string("FAILED: ") + #cond + " (line " + std::to_string(__LINE__) + ")");  \
             ++g_failures;                                                                                              \
         }                                                                                                              \
     } while (0)
+
+
+constexpr const char *LOG_WHO = "ContainerTest";
 
 int main() {
     // [1] Basic multi-entry roundtrip
@@ -35,7 +37,7 @@ int main() {
         auto missing = reader.read("scripts/nonexistent.obsl");
         CHECK(!missing.has_value());
 
-        std::cout << "[1] Basic multi-entry round-trip passed.\n";
+        LOG_INFO(LOG_WHO, "[1] Basic multi-entry round-trip passed");
     }
 
     // [2] Large compressible payload roundtrip
@@ -55,7 +57,7 @@ int main() {
         auto result = reader.read("scripts/big.obsl");
         CHECK(result && *result == big_source);
 
-        std::cout << "[2] Large compressible payload round-trip passed.\n";
+        LOG_INFO(LOG_WHO, "[2] Large compressible payload round-trip passed");
     }
 
     // [3] Tiny payload round-trip (raw fallback path)
@@ -72,7 +74,7 @@ int main() {
         auto result = reader.read("scripts/tiny.obsl");
         CHECK(result && *result == tiny_source);
 
-        std::cout << "[3] Tiny payload round-trip (raw fallback path) passed.\n";
+        LOG_INFO(LOG_WHO, "[3] Tiny payload round-trip (raw fallback path) passed");
     }
 
     // [4] Missing container file handled cleanly
@@ -80,7 +82,7 @@ int main() {
         IO::ContainerReader reader;
         CHECK(!reader.open("does_not_exist.obpak"));
 
-        std::cout << "[4] Missing container file handled cleanly passed.\n";
+        LOG_INFO(LOG_WHO, "[4] Missing container file handled cleanly passed");
     }
 
     // [5] Empty container handled cleanly
@@ -94,14 +96,14 @@ int main() {
         auto result = reader.read("anything");
         CHECK(!result.has_value());
 
-        std::cout << "[5] Empty container handled cleanly passed.\n";
+        LOG_INFO(LOG_WHO, "[5] Empty container handled cleanly passed");
     }
 
     // [6] External file payload round-trip
     {
         std::ifstream file("test.obsl", std::ios::in | std::ios::binary);
         if (!file) {
-            std::cerr << "Warning: Could not open 'test.obsl'. Skipping Test 6.\n";
+            LOG_WARN(LOG_WHO, "Could not open 'test.obsl'. Skipping Test 6");
         } else {
             std::ostringstream ss;
             ss << file.rdbuf();
@@ -117,15 +119,15 @@ int main() {
             auto result = reader.read("scripts/test.obsl");
             CHECK(result && *result == file_source);
 
-            std::cout << "[6] External file payload round-trip passed.\n";
+            LOG_INFO(LOG_WHO, "[6] External file payload round-trip passed");
         }
     }
 
     if (g_failures == 0) {
-        std::cout << "\nAll tests passed successfully.\n";
+        LOG_INFO(LOG_WHO, "\nAll tests passed successfully");
         return 0;
     }
 
-    std::cerr << "\n" << g_failures << " test(s) failed.\n";
+    LOG_ERROR(LOG_WHO, std::to_string(g_failures) + " test(s) failed");
     return 1;
 }

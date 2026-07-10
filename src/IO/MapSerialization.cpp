@@ -1,16 +1,17 @@
 #include "MapSerialization.h"
 #include <fstream>
 #include <ios>
-#include <iostream>
-
+#include "Core/LoggerService.h"
 #include "VFS.h"
+
+constexpr auto LOG_WHO = "MapIO";
 
 namespace IO::MapIO {
     bool Serialize(const std::string &path, const Map::HexGrid &grid) {
         std::filesystem::path resolvedPath = VFS::Resolve(path);
         std::ofstream file(resolvedPath, std::ios::binary);
         if (!file.is_open()) {
-            std::cerr << "Failed to open file: " << path << "\n";
+            LOG_ERROR(LOG_WHO, "Failed to open file: " + path);
             return false;
         }
         MapFileHeader header;
@@ -24,14 +25,14 @@ namespace IO::MapIO {
             file.write(reinterpret_cast<const char *>(&sTile), sizeof(SerializedTile));
         }
         file.close();
-        std::cout << "Saved " << header.tileCount << " tiles to " << path << "\n";
+        LOG_INFO(LOG_WHO, "Saved " + std::to_string(header.tileCount) + " tiles to " + path);
         return true;
     }
 
     bool Deserialize(const std::string &path, Map::HexGrid &grid) {
         const auto fileData = VFS::ReadVirtual(path);
         if (!fileData.has_value()) {
-            std::cerr << "[MapIO] Failed to read map file from VFS: " << path << "\n";
+            LOG_ERROR(LOG_WHO, "Failed to read map file from VFS: " + path);
             return false;
         }
 
@@ -40,17 +41,17 @@ namespace IO::MapIO {
 
         MapFileHeader header;
         if (!file.read(reinterpret_cast<char *>(&header), sizeof(MapFileHeader))) {
-            std::cerr << "Failed to read header from: " << path << "\n";
+            LOG_ERROR(LOG_WHO, "Failed to read header from: " + path);
             return false;
         }
 
         if (!CheckHeader(header, Core::MAP_FILE_MAGIC_STR)) {
-            std::cerr << "Invalid map file format (header mismatch).\n";
+            LOG_ERROR(LOG_WHO, "Invalid map file format (header mismatch)");
             return false;
         }
 
         if (const size_t expectedSize = CalculateExpectedFileSize(header.tileCount); expectedSize > fileSize) {
-            std::cerr << "Map file truncated or corrupt.\n";
+            LOG_ERROR(LOG_WHO, "Map file truncated or corrupt");
             return false;
         }
 
@@ -58,14 +59,14 @@ namespace IO::MapIO {
         for (uint32_t i = 0; i < header.tileCount; i++) {
             SerializedTile sTile{};
             if (!file.read(reinterpret_cast<char *>(&sTile), sizeof(SerializedTile))) {
-                std::cerr << "Stream read error at tile " << i << "\n";
+                LOG_ERROR(LOG_WHO, "Stream read error at tile " + std::to_string(i));
                 break;
             }
             Map::HexCoords coords{sTile.q, sTile.r};
             grid.EmplaceTile(coords, sTile.type, sTile.walkable);
         }
 
-        std::cout << "Successfully loaded " << header.tileCount << " tiles via VFS.\n";
+        LOG_INFO(LOG_WHO, "Successfully loaded " + std::to_string(header.tileCount) + " tiles via VFS");
         return true;
     }
 

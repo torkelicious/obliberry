@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Core/Logger.h"
 
 #include <filesystem>
 #include <string>
@@ -48,5 +49,8 @@ namespace Core {
         float timeScale = 1.0f;
         uint64_t frameCount = 0;
         std::shared_ptr<Project> activeProject = nullptr;
+
+        // Logging
+        Logging::Logger<1000> *logger = nullptr;
     };
 } // namespace Core

@@ -1,11 +1,8 @@
 #pragma once
 
-#include <fstream>
-#include <sstream>
-#include <iostream>
 #include <filesystem>
 #include <vector>
-
+#include "Core/LoggerService.h"
 #include "Core/EngineContext.h"
 #include "ECS/Registry.h"
 #include "ECS/Components/DestroyTagComponent.h"
@@ -28,8 +25,10 @@ namespace ECS::Systems::ScriptSystem {
 
         auto fileData = IO::VFS::ReadVirtual(script->scriptPaths[scriptIndex]);
         if (!fileData.has_value()) {
-            std::cerr << "[ScriptSystem] Error: Failed to open script via VFS: " << script->scriptPaths[scriptIndex]
-                      << "\n";
+            if (auto *logger = Core::Logging::LoggerService::Get()) {
+                logger->log("ScriptSystem", "Failed to open script via VFS: " + script->scriptPaths[scriptIndex],
+                            Core::Logging::LogSeverity::Error);
+            }
             return;
         }
 
@@ -71,8 +70,11 @@ namespace ECS::Systems::ScriptSystem {
                     script->ast_nodes[scriptIndex] = std::move(statements);
                     script->lastModified[scriptIndex] = std::filesystem::file_time_type::min();
                 } catch (const std::exception &e) {
-                    std::cerr << "[ScriptSystem] AST Deserialization failed for: " << script->scriptPaths[scriptIndex]
-                              << "\n";
+                    if (auto *logger = Core::Logging::LoggerService::Get()) {
+                        logger->log("ScriptSystem",
+                                    "AST Deserialization failed for: " + script->scriptPaths[scriptIndex],
+                                    Core::Logging::LogSeverity::Error);
+                    }
                     return;
                 }
             } else {
@@ -158,11 +160,18 @@ namespace ECS::Systems::ScriptSystem {
             bind_hook("on_exit", script->on_exit_functions[scriptIndex]);
 
             script->isInitialized[scriptIndex] = true;
-            std::cout << "[ScriptSystem] Initialized '" << script->scriptPaths[scriptIndex] << "' across "
-                      << num_workers << " worker(s)\n";
+            if (auto *logger = Core::Logging::LoggerService::Get()) {
+                logger->log("ScriptSystem",
+                            "Initialized '" + script->scriptPaths[scriptIndex] + "' across " +
+                                    std::to_string(num_workers) + " worker(s)",
+                            Core::Logging::LogSeverity::Info);
+            }
         } catch (const std::exception &e) {
-            std::cerr << "[ScriptSystem] Error compiling/executing '" << script->scriptPaths[scriptIndex] << "':\n  "
-                      << e.what() << "\n";
+            if (auto *logger = Core::Logging::LoggerService::Get()) {
+                logger->log("ScriptSystem",
+                            "Error compiling/executing '" + script->scriptPaths[scriptIndex] + "':\n  " + e.what(),
+                            Core::Logging::LogSeverity::Error);
+            }
         }
     }
 
@@ -190,12 +199,18 @@ namespace ECS::Systems::ScriptSystem {
                                 current_time > script->lastModified[i]) {
                                 script->isInitialized[i] = false;
                                 InitializeScript(registry, raw_id, script, *ctx.scriptPool, i);
-                                std::cout << "[ScriptSystem] Hot-reloaded script: " << script->scriptPaths[i] << "\n";
+                                if (auto *logger = Core::Logging::LoggerService::Get()) {
+                                    logger->log("ScriptSystem", "Hot-reloaded script: " + script->scriptPaths[i],
+                                                Core::Logging::LogSeverity::Info);
+                                }
                             }
                         }
                     }
                 } catch (const std::exception &e) {
-                    std::cerr << "[ScriptSystem] reload error: " << e.what() << "\n";
+                    if (auto *logger = Core::Logging::LoggerService::Get()) {
+                        logger->log("ScriptSystem", "reload error: " + std::string(e.what()),
+                                    Core::Logging::LogSeverity::Error);
+                    }
                 }
             }
         });
@@ -245,10 +260,15 @@ namespace ECS::Systems::ScriptSystem {
                             func->call(&interp, args, call_token);
                         }
                     } catch (const std::exception &e) {
-                        std::cerr << "[ScriptSystem] Exception in on_update (" << scriptPath << "): " << e.what()
-                                  << "\n";
+                        if (auto *logger = Core::Logging::LoggerService::Get()) {
+                            logger->log("ScriptSystem", "Exception in on_update (" + scriptPath + ") : " + e.what(),
+                                        Core::Logging::LogSeverity::Error);
+                        }
                     } catch (...) {
-                        std::cerr << "[ScriptSystem] Unknown Exception in on_update (" << scriptPath << ")\n";
+                        if (auto *logger = Core::Logging::LoggerService::Get()) {
+                            logger->log("ScriptSystem", "Unknown Exception in on_update (" + scriptPath + ")",
+                                        Core::Logging::LogSeverity::Error);
+                        }
                     }
                 }
             });
@@ -297,10 +317,15 @@ namespace ECS::Systems::ScriptSystem {
                             func->call(&interp, args, call_token);
                         }
                     } catch (const std::exception &e) {
-                        std::cerr << "[ScriptSystem] Exception in on_destroy (" << scriptPath << "): " << e.what()
-                                  << "\n";
+                        if (auto *logger = Core::Logging::LoggerService::Get()) {
+                            logger->log("ScriptSystem", "Exception in on_destroy (" + scriptPath + ") : " + e.what(),
+                                        Core::Logging::LogSeverity::Error);
+                        }
                     } catch (...) {
-                        std::cerr << "[ScriptSystem] Unknown Exception in on_destroy (" << scriptPath << ")\n";
+                        if (auto *logger = Core::Logging::LoggerService::Get()) {
+                            logger->log("ScriptSystem", "Unknown Exception in on_destroy (" + scriptPath + ")",
+                                        Core::Logging::LogSeverity::Error);
+                        }
                     }
                 }
             });
@@ -368,9 +393,15 @@ namespace ECS::Systems::ScriptSystem {
                             func->call(&interp, args, call_token);
                         }
                     } catch (const std::exception &e) {
-                        std::cerr << "[ScriptSystem] Exception in on_exit (" << scriptPath << "): " << e.what() << "\n";
+                        if (auto *logger = Core::Logging::LoggerService::Get()) {
+                            logger->log("ScriptSystem", "Exception in on_exit (" + scriptPath + ") : " + e.what(),
+                                        Core::Logging::LogSeverity::Error);
+                        }
                     } catch (...) {
-                        std::cerr << "[ScriptSystem] Unknown Exception in on_exit (" << scriptPath << ")\n";
+                        if (auto *logger = Core::Logging::LoggerService::Get()) {
+                            logger->log("ScriptSystem", "Unknown Exception in on_exit (" + scriptPath + ")",
+                                        Core::Logging::LogSeverity::Error);
+                        }
                     }
                 }
             });

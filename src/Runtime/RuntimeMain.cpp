@@ -1,11 +1,14 @@
 #include "../Core/Application.h"
 #include "../Core/ProjectConfig.h"
 #include "../Game/GameLayer.h"
+#include "Core/Logger.h"
+#include "Core/LoggerService.h"
 #include "IO/VFS.h"
 #include <filesystem>
-#include <iostream>
 
 int main(const int argc, char *argv[]) {
+    Core::Logging::Logger<1000> logger;
+    Core::Logging::LoggerService::Initialize(&logger);
     std::filesystem::path targetPackage = "data.obpak";
     std::filesystem::path targetProject = "project.json";
     bool mountSuccess = false;
@@ -31,13 +34,13 @@ int main(const int argc, char *argv[]) {
 
     if (!mountSuccess) {
         if (std::filesystem::exists(targetPackage)) {
-            std::cout << "[Runtime] Autodetected packaged archive: " << targetPackage.string() << "\n";
+            LOG_INFO("Runtime", "Autodetected packaged archive: " + targetPackage.string());
             IO::VFS::MountPackage(targetPackage);
         } else if (std::filesystem::exists(targetProject)) {
-            std::cout << "[Runtime] Autodetected project workspace: " << targetProject.string() << "\n";
+            LOG_INFO("Runtime", "Autodetected project workspace: " + targetProject.string());
             IO::VFS::MountProject(targetProject);
         } else {
-            std::cerr << "[Runtime] Warning: No execution context found. Operating with an empty VFS.\n";
+            LOG_WARN("Runtime", "No execution context found. Operating with an empty VFS");
         }
     }
 

@@ -1,13 +1,16 @@
 #include "AudioEngine.h"
 #include <filesystem>
-#include <iostream>
+#include "Core/LoggerService.h"
 #include "IO/VFS.h"
 #include "miniaudio.h"
+
+
+constexpr auto LOG_WHO = "AudioEngine";
 
 std::unique_ptr<Sound::AudioEngine> Sound::AudioEngine::Create() {
     std::unique_ptr<AudioEngine> instance(new AudioEngine());
     if (!instance->Init()) {
-        std::cerr << "[AudioEngine] Initialization failed.\n";
+        LOG_ERROR(LOG_WHO, "Initialization failed");
         return nullptr;
     }
     return instance;
@@ -18,7 +21,7 @@ Sound::AudioEngine::AudioEngine() = default;
 bool Sound::AudioEngine::Init() {
     m_Engine = new ma_engine();
     if (const ma_result result = ma_engine_init(nullptr, m_Engine); result != MA_SUCCESS) {
-        std::cerr << "[AudioEngine] miniaudio backend failed: Error code: " << result << "\n";
+        LOG_ERROR(LOG_WHO, "miniaudio backend failed: Error code: " + std::to_string(result));
         delete m_Engine;
         m_Engine = nullptr;
         return false;
@@ -80,7 +83,7 @@ void Sound::AudioEngine::PlaySound2D(const std::string &filepath, const float vo
     if (IO::VFS::IsPackaged()) {
         auto rawData = IO::VFS::ReadVirtual(filepath);
         if (!rawData.has_value()) {
-            std::cerr << "[AudioEngine] Sound not found in VFS: " << filepath << "\n";
+            LOG_ERROR(LOG_WHO, "Sound not found in VFS: " + filepath);
             delete sfx;
             return;
         }
@@ -93,7 +96,7 @@ void Sound::AudioEngine::PlaySound2D(const std::string &filepath, const float vo
 
         result = ma_decoder_init_memory(bufferRef.data(), bufferRef.size(), &decoderConfig, decoder);
         if (result != MA_SUCCESS) {
-            std::cerr << "[AudioEngine] Failed to decode memory for: " << filepath << "\n";
+            LOG_ERROR(LOG_WHO, "Failed to decode memory for: " + filepath);
             m_SoundContexts.erase(sfx);
             delete decoder;
             delete sfx;
@@ -109,7 +112,7 @@ void Sound::AudioEngine::PlaySound2D(const std::string &filepath, const float vo
     }
 
     if (result != MA_SUCCESS) {
-        std::cerr << "[AudioEngine] Failed to initialize sound effect: " << filepath << "\n";
+        LOG_ERROR(LOG_WHO, "Failed to initialize sound effect: " + filepath);
         if (m_SoundContexts.contains(sfx)) {
             ma_decoder_uninit(m_SoundContexts[sfx].decoder);
             delete m_SoundContexts[sfx].decoder;
@@ -135,7 +138,7 @@ void Sound::AudioEngine::PlayMusic(const std::string &filepath, const float volu
     if (IO::VFS::IsPackaged()) {
         auto rawData = IO::VFS::ReadVirtual(filepath);
         if (!rawData.has_value()) {
-            std::cerr << "[AudioEngine] Music not found in VFS: " << filepath << "\n";
+            LOG_ERROR(LOG_WHO, "Music not found in VFS: " + filepath);
             delete m_CurrentMusic;
             m_CurrentMusic = nullptr;
             return;
@@ -149,7 +152,7 @@ void Sound::AudioEngine::PlayMusic(const std::string &filepath, const float volu
         result = ma_decoder_init_memory(m_CurrentMusicContext.buffer.data(), m_CurrentMusicContext.buffer.size(),
                                         &decoderConfig, decoder);
         if (result != MA_SUCCESS) {
-            std::cerr << "[AudioEngine] Failed to decode music memory: " << filepath << "\n";
+            LOG_ERROR(LOG_WHO, "Failed to decode music memory: " + filepath);
             delete decoder;
             delete m_CurrentMusic;
             m_CurrentMusic = nullptr;
@@ -167,7 +170,7 @@ void Sound::AudioEngine::PlayMusic(const std::string &filepath, const float volu
     }
 
     if (result != MA_SUCCESS) {
-        std::cerr << "[AudioEngine] Failed to initialize music: " << filepath << "\n";
+        LOG_ERROR(LOG_WHO, "Failed to initialize music: " + filepath);
         if (m_CurrentMusicContext.decoder) {
             ma_decoder_uninit(m_CurrentMusicContext.decoder);
             delete m_CurrentMusicContext.decoder;

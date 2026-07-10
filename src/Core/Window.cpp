@@ -1,4 +1,4 @@
-#include <iostream>
+#include "Core/LoggerService.h"
 
 #include "Rendering/GLDebug.h"
 
@@ -18,6 +18,8 @@
 #include <stdexcept>
 #include "Window.h"
 #include "Constants.h"
+
+constexpr auto LOG_WHO = "Window";
 
 Core::Window::Window(const unsigned int width, const unsigned int height, const char *title, const bool fullscreen) {
     if (!Init(width, height, title, fullscreen)) {
@@ -71,7 +73,7 @@ bool Core::Window::Init(const unsigned int width, const unsigned int height, con
 
 
     if (NFD_Init() != NFD_OKAY) {
-        std::cerr << "Failed to initialize Native File Dialog" << std::endl;
+        LOG_WARN(LOG_WHO, "Failed to initialize Native File Dialog");
     }
 
     // wont do anything on nonlinux/nonwayland displays anyways
