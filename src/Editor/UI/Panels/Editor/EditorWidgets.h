@@ -13,6 +13,8 @@
 #include "ECS/Components/PointLightComponent.h"
 #include "ECS/Components/ScriptComponent.h"
 #include "ECS/Components/TransformComponent.h"
+#include "Editor/Commands/EditorCommands.h"
+#include "Editor/Commands/UndoManager.h"
 
 namespace Editor::UI {
     inline void MarkSceneChanged(const Core::EngineContext *ctx) {
@@ -36,7 +38,8 @@ namespace Editor::UI {
 
         [[nodiscard]] virtual const char *GetName() const = 0;
 
-        virtual void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr) = 0;
+        virtual void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr,
+                          Editor::UndoManager *undoManager = nullptr) = 0;
     };
 
     template <typename T> class AutoComponentWidget : public IComponentWidget {
@@ -49,7 +52,8 @@ namespace Editor::UI {
 
         [[nodiscard]] const char *GetName() const override { return m_Name; }
 
-        void Draw(const ECS::Entity entity, Core::EngineContext *engineContext = nullptr) override {
+        void Draw(const ECS::Entity entity, Core::EngineContext *engineContext = nullptr,
+                  Editor::UndoManager *undoManager = nullptr) override {
             if (!entity.HasComponent<T>())
                 return;
             if (ImGui::CollapsingHeader(m_Name)) {
@@ -79,7 +83,7 @@ namespace Editor::UI {
                         MarkSceneChanged(engineContext);
                     }
                 }
-                DrawExtras(entity, component, engineContext);
+                DrawExtras(entity, component, engineContext, undoManager);
 
                 ImGui::Separator();
                 const float buttonWidth = ImGui::CalcTextSize((std::string("Remove ") + m_Name).c_str()).x +
@@ -87,14 +91,22 @@ namespace Editor::UI {
                 const float availWidth = ImGui::GetContentRegionAvail().x;
                 ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (availWidth - buttonWidth) * 0.5f);
                 if (ImGui::Button((std::string("Remove ##") + m_Name).c_str(), ImVec2(buttonWidth, 0))) {
-                    entity.RemoveComponent<T>();
+                    if (undoManager && engineContext) {
+                        auto data = *entity.GetComponent<T>();
+                        undoManager->Execute(std::make_unique<Commands::RemoveComponentCommand<T>>(
+                                                     static_cast<ECS::EntityID>(entity), data),
+                                             *engineContext);
+                    } else {
+                        entity.RemoveComponent<T>();
+                    }
                     MarkSceneChanged(engineContext);
                 }
             }
         }
 
     protected:
-        virtual void DrawExtras(ECS::Entity entity, T *component, Core::EngineContext *engineContext) {}
+        virtual void DrawExtras(ECS::Entity entity, T *component, Core::EngineContext *engineContext,
+                                Editor::UndoManager *undoManager) {}
     };
 
     template <typename T> class TagWidget : public IComponentWidget {
@@ -106,13 +118,20 @@ namespace Editor::UI {
 
         [[nodiscard]] const char *GetName() const override { return m_Name; }
 
-        void Draw(const ECS::Entity entity, Core::EngineContext *engineContext = nullptr) override {
+        void Draw(const ECS::Entity entity, Core::EngineContext *engineContext = nullptr,
+                  Editor::UndoManager *undoManager = nullptr) override {
             if (!entity.HasComponent<T>())
                 return;
             if (ImGui::CollapsingHeader(m_Name)) {
                 ImGui::TextDisabled("Tag Component (No Data)");
                 if (ImGui::Button((std::string("Remove ##") + m_Name).c_str())) {
-                    entity.RemoveComponent<T>();
+                    if (undoManager && engineContext) {
+                        undoManager->Execute(std::make_unique<Commands::RemoveComponentCommand<T>>(
+                                                     static_cast<ECS::EntityID>(entity), T{}),
+                                             *engineContext);
+                    } else {
+                        entity.RemoveComponent<T>();
+                    }
                     MarkSceneChanged(engineContext);
                 }
             }
@@ -128,14 +147,14 @@ namespace Editor::UI {
         TransformWidget();
 
         void DrawExtras(ECS::Entity entity, ECS::Components::TransformComponent *component,
-                        Core::EngineContext *engineContext) override;
+                        Core::EngineContext *engineContext, Editor::UndoManager *undoManager) override;
     };
 
     struct MovementWidget : public AutoComponentWidget<ECS::Components::MovementComponent> {
         MovementWidget();
 
         void DrawExtras(ECS::Entity entity, ECS::Components::MovementComponent *component,
-                        Core::EngineContext *engineContext) override;
+                        Core::EngineContext *engineContext, Editor::UndoManager *undoManager) override;
     };
 
     struct MeshWidget : public IComponentWidget {
@@ -143,42 +162,49 @@ namespace Editor::UI {
 
         [[nodiscard]] const char *GetName() const override;
 
-        void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr) override;
+        void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr,
+                  Editor::UndoManager *undoManager = nullptr) override;
     };
 
     struct MaterialWidget : public IComponentWidget {
         [[nodiscard]] const char *GetName() const override;
 
-        void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr) override;
+        void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr,
+                  Editor::UndoManager *undoManager = nullptr) override;
     };
 
     struct DirectionalTextureWidget : public IComponentWidget {
         [[nodiscard]] const char *GetName() const override;
 
-        void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr) override;
+        void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr,
+                  Editor::UndoManager *undoManager = nullptr) override;
     };
 
     struct MapWidget : public IComponentWidget {
         [[nodiscard]] const char *GetName() const override;
 
-        void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr) override;
+        void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr,
+                  Editor::UndoManager *undoManager = nullptr) override;
     };
 
     struct MapStateWidget : public IComponentWidget {
         [[nodiscard]] const char *GetName() const override;
 
-        void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr) override;
+        void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr,
+                  Editor::UndoManager *undoManager = nullptr) override;
     };
 
     struct ScriptWidget : public IComponentWidget {
         [[nodiscard]] const char *GetName() const override;
 
-        void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr) override;
+        void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr,
+                  Editor::UndoManager *undoManager = nullptr) override;
     };
 
     struct CustomDataWidget : public IComponentWidget {
         [[nodiscard]] const char *GetName() const override;
 
-        void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr) override;
+        void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr,
+                  Editor::UndoManager *undoManager = nullptr) override;
     };
 } // namespace Editor::UI

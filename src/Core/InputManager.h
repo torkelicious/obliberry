@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 #include <GLFW/glfw3.h>
 #include <glm/vec2.hpp>
 
@@ -25,7 +26,6 @@ namespace Core {
         [[nodiscard]] double GetMouseDeltaX() const { return m_MouseDeltaX; }
         [[nodiscard]] double GetMouseDeltaY() const { return m_MouseDeltaY; }
 
-
         static int GetKeyFromName(const std::string &keyName); // in KeyMappings.cpp
 
         [[nodiscard]] double MousePosX() const noexcept { return m_MousePosX - m_ViewportOffsetX; }
@@ -36,6 +36,10 @@ namespace Core {
 
         [[nodiscard]] double ScrollX() const noexcept { return m_ScrollX; }
         [[nodiscard]] double ScrollY() const noexcept { return m_ScrollY; }
+
+        //
+        // Keyboard
+        //
 
         [[nodiscard]] bool IsKeyDown(int key) const;
 
@@ -48,6 +52,14 @@ namespace Core {
         [[nodiscard]] bool IsKeyReleased(int key) const;
 
         [[nodiscard]] bool IsKeyReleased(const std::string &keyAlias) const;
+
+        [[nodiscard]] bool IsKeyComboDown(const std::vector<std::string> &keyAliases) const;
+
+        [[nodiscard]] bool IsKeyComboPressed(const std::vector<std::string> &keyAliases) const;
+
+        //
+        // Mouse
+        //
 
         [[nodiscard]] bool IsMouseDown(int button) const;
 

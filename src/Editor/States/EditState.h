@@ -24,10 +24,14 @@ namespace Editor {
 
     private:
         void DrawGizmoForSelected() const;
-
-        void EditTransform(Rendering::Transform &transform, bool isBillboard) const;
+        void EditTransform(Rendering::Transform &transform, bool isBillboard);
 
         static ImGuizmo::OPERATION mCurrentGizmoOperation;
         static ImGuizmo::MODE mCurrentGizmoMode;
+
+        bool m_GizmoDragging = false;
+        glm::vec3 m_GizmoStartPos{0.0f};
+        glm::vec3 m_GizmoStartRot{0.0f};
+        glm::vec3 m_GizmoStartScale{1.0f};
     };
 } // namespace Editor

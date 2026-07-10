@@ -1,3 +1,6 @@
+#include "Core/Logger.h"
+
+
 #include <string>
 #include <vector>
 #include <filesystem>
@@ -25,6 +28,8 @@ static void show_help() {
 }
 
 int main(int argc, char *argv[]) {
+    Core::Logging::Logger<256> logger;
+    Core::Logging::LoggerService::Initialize(&logger);
     bool quiet = false;
     std::string package_path;
     std::string entry_script;
@@ -78,7 +83,7 @@ int main(int argc, char *argv[]) {
 
     try {
         if (!quiet)
-            log_info("Deserializing " + std::to_string(binary_blob.size()) + " bytes...");
+            LOG_INFO(LOG_WHO, "Deserializing " + std::to_string(binary_blob.size()) + " bytes...");
 
         auto [string_pool, statements] = ObSL::ASTDeserializer::deserialize(binary_blob);
 
@@ -104,14 +109,14 @@ int main(int argc, char *argv[]) {
 
 
         if (!quiet)
-            log_info("Executing...\n-----------------------------------");
+            LOG_INFO(LOG_WHO, "Executing...\n-----------------------------------");
 
         worker->execute(statements, globals);
 
         if (!quiet)
             std::cout << "\n-----------------------------------\n";
         if (!quiet)
-            log_info("Done.");
+            LOG_INFO(LOG_WHO, "Done.");
     } catch (const std::exception &e) {
         LOG_ERROR(LOG_WHO, std::string("Runtime error: ") + e.what());
         return 1;

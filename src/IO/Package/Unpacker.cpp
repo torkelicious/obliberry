@@ -1,3 +1,4 @@
+#include "Core/Logger.h"
 #include <string>
 #include <vector>
 #include <filesystem>
@@ -26,6 +27,9 @@ static void show_help() {
 }
 
 int main(int argc, char *argv[]) {
+    Core::Logging::Logger<256> logger;
+    Core::Logging::LoggerService::Initialize(&logger);
+
     bool list_contents = false;
     bool quiet = false;
     bool readable = false;
@@ -87,7 +91,7 @@ int main(int argc, char *argv[]) {
 
     auto paths = reader.get_entry_paths();
     if (!quiet)
-        log_info("Extracting " + std::to_string(paths.size()) + " files to " + output_dir + "...");
+        LOG_INFO(LOG_WHO, "Extracting " + std::to_string(paths.size()) + " files to " + output_dir + "...");
 
     int success_count = 0;
     for (const auto &p : paths) {
@@ -108,7 +112,7 @@ int main(int argc, char *argv[]) {
                 std::ofstream out(out_path, std::ios::binary);
                 out << pretty;
                 if (!quiet)
-                    log_info("Extracted (json): " + p + " (" + std::to_string(pretty.size()) + " bytes)");
+                    LOG_INFO(LOG_WHO, "Extracted (json): " + p + " (" + std::to_string(pretty.size()) + " bytes)");
                 success_count++;
                 continue;
             } catch (const std::exception &e) {
@@ -120,7 +124,7 @@ int main(int argc, char *argv[]) {
         std::ofstream out(out_path, std::ios::binary);
         if (out.write(data->data(), data->size())) {
             if (!quiet)
-                log_info("Extracted: " + p + " (" + std::to_string(data->size()) + " bytes)");
+                LOG_INFO(LOG_WHO, "Extracted: " + p + " (" + std::to_string(data->size()) + " bytes)");
             success_count++;
         } else {
             LOG_ERROR(LOG_WHO, "Failed to write to disk: " + out_path.string());
@@ -129,7 +133,7 @@ int main(int argc, char *argv[]) {
 
 
     if (!quiet)
-        log_info("Finished extracting " + std::to_string(success_count) + "/" + std::to_string(paths.size()) +
-                 " files.");
+        LOG_INFO(LOG_WHO, "Finished extracting " + std::to_string(success_count) + "/" + std::to_string(paths.size()) +
+                                  " files.");
     return (static_cast<size_t>(success_count) == paths.size()) ? 0 : 1;
 }

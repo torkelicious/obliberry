@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ILogger.h"
 #include "Utils.h"
 #include <string>
 #include <filesystem>
@@ -21,7 +22,6 @@ namespace Core::Logging {
         return std::format("{:%Y-%m-%d %H:%M:%S}.{:03}", std::chrono::floor<std::chrono::seconds>(local_time),
                            ms.count());
     }
-    enum class LogSeverity : uint8_t { Debug, Info, Warn, Error };
 
     struct Log {
         std::string who;
@@ -30,7 +30,7 @@ namespace Core::Logging {
         LogSeverity severity;
     };
 
-    template <std::size_t QueueSize> class Logger {
+    template <std::size_t QueueSize> class Logger : public ILogger {
     public:
         explicit Logger(const std::filesystem::path &logfile_path) {
             logfile_.open(logfile_path, std::ios::out | std::ios::app);
@@ -39,9 +39,9 @@ namespace Core::Logging {
 
         Logger() { init(); }
 
-        ~Logger() { cv_.notify_all(); }
+        ~Logger() override { cv_.notify_all(); }
 
-        void log(std::string who, std::string what, LogSeverity severity = LogSeverity::Info) {
+        void log(std::string who, std::string what, LogSeverity severity = LogSeverity::Info) override {
             const auto now = std::chrono::system_clock::now();
             std::lock_guard lock(mutex_);
             buffer_.push(Log{std::move(who), std::move(what), now, severity});

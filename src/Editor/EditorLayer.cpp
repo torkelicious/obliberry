@@ -153,6 +153,28 @@ void Editor::EditorLayer::HandleInput(const float dt) {
         return;
     }
 
+    //
+    // 2key Modifier Shortcuts
+    //
+    if (m_Input->IsKeyComboDown({"LeftCtrl", "S"})) {
+        if (m_CurrentState->CanSaveScene()) {
+            SaveScene();
+        }
+    }
+    if (m_Input->IsKeyComboDown({"LeftCtrl", "Z"})) {
+        if (m_UndoManager.CanUndo()) {
+            m_UndoManager.Undo(m_Context);
+        }
+    }
+    if (m_Input->IsKeyComboDown({"LeftCtrl", "Y"})) {
+        if (m_UndoManager.CanRedo()) {
+            m_UndoManager.Redo(m_Context);
+        }
+    }
+
+    //
+    // Function keys
+    //
     if (m_Input->IsKeyPressed("F1")) {
         if (m_CurrentState->IsPlayMode())
             TransitionTo(m_PreviousState ? std::move(m_PreviousState) : std::make_unique<EditState>());
@@ -246,7 +268,6 @@ void Editor::EditorLayer::ClearCurrentProject() {
     m_ViewportPanel.ClearSelectedEntityID();
 
     m_UndoManager.Clear();
-
 }
 
 void Editor::EditorLayer::LoadProject(const std::string &projectFilePath) {
@@ -299,6 +320,8 @@ void Editor::EditorLayer::ExecutePendingStateTransfer() {
     m_CurrentState->SetEditorLayer(this);
     m_CurrentState->OnEnter();
     m_PendingState = nullptr;
+
+    m_UndoManager.Clear();
 }
 
 void Editor::EditorLayer::DrawEditorUI() {
@@ -389,7 +412,7 @@ void Editor::EditorLayer::DrawDockSpace() {
 
 void Editor::EditorLayer::DrawEditorPanels() {
     m_RegistryPanel.SetContext(m_Scene, m_Context);
-    m_InspectorPanel.SetContext(m_Scene, m_Context);
+    m_InspectorPanel.SetContext(m_Scene, m_Context, &m_UndoManager);
     m_ProjectBrowserPanel.SetContext(m_Scene, m_Context);
     m_ViewportPanel.SetContext(m_Scene, m_Context);
 
@@ -447,6 +470,21 @@ void Editor::EditorLayer::DrawUtilityWindows() {
 
 void Editor::EditorLayer::DrawToolbar() {
     if (ImGui::BeginMainMenuBar()) {
+
+        // undomgr btns
+
+        if (ImGui::MenuItem("Undo", "Ctrl+Z", false, m_UndoManager.CanUndo())) {
+            m_UndoManager.Undo(m_Context);
+        }
+
+        if (ImGui::MenuItem("Redo", "Ctrl+Y", false, m_UndoManager.CanRedo())) {
+            m_UndoManager.Redo(m_Context);
+        }
+
+        ImGui::Separator();
+
+        // file
+
         if (ImGui::BeginMenu("File")) {
             if (ImGui::MenuItem("New Project")) {
                 if (const auto dir = FileDialogs::PickFolder(m_Context)) {

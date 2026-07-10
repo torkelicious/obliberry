@@ -51,6 +51,6 @@ namespace Core {
         std::shared_ptr<Project> activeProject = nullptr;
 
         // Logging
-        Logging::Logger<1000> *logger = nullptr;
+        Logging::ILogger *logger = nullptr;
     };
 } // namespace Core

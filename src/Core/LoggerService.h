@@ -1,30 +1,29 @@
 #pragma once
 
-#include "Logger.h"
+#include "ILogger.h"
 
 namespace Core::Logging {
 
     class LoggerService {
     public:
-        static void Initialize(Logger<1000> *logger);
+        static void Initialize(ILogger *logger);
 
-        static Logger<1000> *Get();
+        static ILogger *Get();
 
         static bool IsAvailable();
 
-        // Scoped logger override for testing
         class ScopedOverride {
-            Logger<1000> *oldLogger;
+            ILogger *oldLogger;
 
         public:
-            explicit ScopedOverride(Logger<1000> *newLogger);
+            explicit ScopedOverride(ILogger *newLogger);
             ~ScopedOverride();
             ScopedOverride(const ScopedOverride &) = delete;
             ScopedOverride &operator=(const ScopedOverride &) = delete;
         };
 
     private:
-        static thread_local Logger<1000> *s_currentLogger;
+        static thread_local ILogger *s_currentLogger;
     };
 
 #define LOG_INFO(who, msg)                                                                                             \

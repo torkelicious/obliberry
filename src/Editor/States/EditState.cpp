@@ -6,6 +6,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_access.hpp>
 #include "ECS/Components/BillboardTagComponent.h"
+#include "Editor/Commands/EditorCommands.h"
 
 namespace Editor {
     ImGuizmo::OPERATION EditState::mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
@@ -20,6 +21,7 @@ void Editor::EditState::OnEnter() {
     if (m_EditorLayer->m_Scene)
         title += " - Scene - " + m_EditorLayer->m_CurrentScenePath;
     SetWindowTitle(title);
+    m_EditorLayer->m_UndoManager.Clear();
 }
 
 void Editor::EditState::OnUpdate(const float dt) {
@@ -167,12 +169,10 @@ void Editor::EditState::DrawGizmoForSelected() const {
                           warningText);
         ImGui::End();
     }
-
-    EditTransform(t, isBillboard);
+    const_cast<EditState *>(this)->EditTransform(t, isBillboard);
 }
 
-
-void Editor::EditState::EditTransform(Rendering::Transform &transform, bool isBillboard) const {
+void Editor::EditState::EditTransform(Rendering::Transform &transform, bool isBillboard) {
     const auto &camera = m_EditorLayer->m_Camera;
     const float aspect = m_EditorLayer->m_ViewportPanel.GetWidth() / m_EditorLayer->m_ViewportPanel.GetHeight();
 
@@ -214,6 +214,14 @@ void Editor::EditState::EditTransform(Rendering::Transform &transform, bool isBi
                          actualMode, glm::value_ptr(gizmoMatrix), glm::value_ptr(deltaMatrix));
 
     if (ImGuizmo::IsUsing()) {
+        // just started dragging
+        if (!m_GizmoDragging) {
+            m_GizmoDragging = true;
+            m_GizmoStartPos = transform.GetPosition();
+            m_GizmoStartRot = transform.GetRotation();
+            m_GizmoStartScale = transform.GetScale();
+        }
+
         if (auto *scene = m_EditorLayer->m_Scene) {
             scene->MarkAsChanged();
         }
@@ -244,6 +252,36 @@ void Editor::EditState::EditTransform(Rendering::Transform &transform, bool isBi
                 glm::vec3 currentScale = transform.GetScale();
                 auto dScale = glm::vec3(deltaScale[0], deltaScale[1], deltaScale[2]);
                 transform.SetScale(currentScale * dScale);
+            }
+        }
+    } else {
+        //  we stopped using gizmo, a drag was probably just completed
+        if (m_GizmoDragging) {
+            m_GizmoDragging = false;
+
+            const ECS::Entity selectedEntity = m_EditorLayer->m_RegistryPanel.GetSelectedEntity();
+
+            if (selectedEntity) {
+                const auto entId = static_cast<ECS::EntityID>(selectedEntity);
+                if (mCurrentGizmoOperation == ImGuizmo::TRANSLATE) {
+                    if (m_GizmoStartPos != transform.GetPosition()) {
+                        m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::TranslateEntityCommand>(
+                                                                     entId, m_GizmoStartPos, transform.GetPosition()),
+                                                             m_EditorLayer->m_Context);
+                    }
+                } else if (mCurrentGizmoOperation == ImGuizmo::ROTATE) {
+                    if (m_GizmoStartRot != transform.GetRotation()) {
+                        m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::RotateEntityCommand>(
+                                                                     entId, m_GizmoStartRot, transform.GetRotation()),
+                                                             m_EditorLayer->m_Context);
+                    }
+                } else if (mCurrentGizmoOperation == ImGuizmo::SCALE) {
+                    if (m_GizmoStartScale != transform.GetScale()) {
+                        m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::ScaleEntityCommand>(
+                                                                     entId, m_GizmoStartScale, transform.GetScale()),
+                                                             m_EditorLayer->m_Context);
+                    }
+                }
             }
         }
     }

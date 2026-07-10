@@ -32,13 +32,22 @@ Editor::UI::PointLightWidget::PointLightWidget() : AutoComponentWidget("Point Li
 Editor::UI::TransformWidget::TransformWidget() : AutoComponentWidget("Transform") {}
 
 void Editor::UI::TransformWidget::DrawExtras(ECS::Entity entity, ECS::Components::TransformComponent *component,
-                                             Core::EngineContext *engineContext) {
+                                             Core::EngineContext *engineContext, Editor::UndoManager *undoManager) {
     auto pos = component->transform.GetPosition();
+    static glm::vec3 s_DragStartPos;
     if (ImGui::DragFloat3("Position", &pos.x, 0.1f)) {
         component->transform.SetPosition(pos);
     }
-    if (ImGui::IsItemDeactivatedAfterEdit())
+    if (ImGui::IsItemActivated())
+        s_DragStartPos = component->transform.GetPosition();
+    if (ImGui::IsItemDeactivatedAfterEdit()) {
+        if (undoManager && engineContext) {
+            undoManager->Execute(std::make_unique<Commands::TranslateEntityCommand>(static_cast<ECS::EntityID>(entity),
+                                                                                    s_DragStartPos, pos),
+                                 *engineContext);
+        }
         MarkSceneChanged(engineContext);
+    }
 
     const bool isBillboard = entity.HasComponent<ECS::Components::BillboardTagComponent>();
 
@@ -48,34 +57,67 @@ void Editor::UI::TransformWidget::DrawExtras(ECS::Entity entity, ECS::Components
     }
 
     auto rot = component->transform.GetRotation();
+    static glm::vec3 s_DragStartRot;
     if (ImGui::DragFloat3("Rotation", &rot.x, 0.1f)) {
         component->transform.SetRotation(rot);
     }
+    if (ImGui::IsItemActivated())
+        s_DragStartRot = component->transform.GetRotation();
 
     if (isBillboard) {
         ImGui::EndDisabled();
     }
 
-
-    if (ImGui::IsItemDeactivatedAfterEdit())
+    if (ImGui::IsItemDeactivatedAfterEdit()) {
+        if (undoManager && engineContext) {
+            undoManager->Execute(std::make_unique<Commands::RotateEntityCommand>(static_cast<ECS::EntityID>(entity),
+                                                                                 s_DragStartRot, rot),
+                                 *engineContext);
+        }
         MarkSceneChanged(engineContext);
+    }
 
     auto scale = component->transform.GetScale();
+    static glm::vec3 s_DragStartScale;
     if (ImGui::DragFloat3("Scale", &scale.x, 0.1f)) {
         component->transform.SetScale(scale);
     }
-    if (ImGui::IsItemDeactivatedAfterEdit())
+    if (ImGui::IsItemActivated())
+        s_DragStartScale = component->transform.GetScale();
+    if (ImGui::IsItemDeactivatedAfterEdit()) {
+        if (undoManager && engineContext) {
+            undoManager->Execute(std::make_unique<Commands::ScaleEntityCommand>(static_cast<ECS::EntityID>(entity),
+                                                                                s_DragStartScale, scale),
+                                 *engineContext);
+        }
         MarkSceneChanged(engineContext);
+    }
 
     ImGui::Spacing();
     const bool hasBillboard = entity.HasComponent<ECS::Components::BillboardTagComponent>();
     bool useBillboard = hasBillboard;
 
     if (ImGui::Checkbox("Use Billboard", &useBillboard)) {
-        if (useBillboard && !hasBillboard)
-            entity.AddComponent<ECS::Components::BillboardTagComponent>();
-        else if (!useBillboard && hasBillboard)
-            entity.RemoveComponent<ECS::Components::BillboardTagComponent>();
+        const auto entId = static_cast<ECS::EntityID>(entity);
+        if (useBillboard && !hasBillboard) {
+            if (undoManager && engineContext) {
+                undoManager->Execute(
+                        std::make_unique<Commands::AddComponentCommand<ECS::Components::BillboardTagComponent>>(
+                                entId, ECS::Components::BillboardTagComponent{}),
+                        *engineContext);
+            } else {
+                entity.AddComponent<ECS::Components::BillboardTagComponent>();
+            }
+        } else if (!useBillboard && hasBillboard) {
+            if (undoManager && engineContext) {
+                undoManager->Execute(
+                        std::make_unique<Commands::RemoveComponentCommand<ECS::Components::BillboardTagComponent>>(
+                                entId, ECS::Components::BillboardTagComponent{}),
+                        *engineContext);
+            } else {
+                entity.RemoveComponent<ECS::Components::BillboardTagComponent>();
+            }
+        }
         MarkSceneChanged(engineContext);
     }
 }
@@ -90,7 +132,7 @@ Editor::UI::MovementWidget::MovementWidget() : AutoComponentWidget("Movement") {
 }
 
 void Editor::UI::MovementWidget::DrawExtras(ECS::Entity entity, ECS::Components::MovementComponent *component,
-                                            Core::EngineContext *engineContext) {
+                                            Core::EngineContext *engineContext, Editor::UndoManager *undoManager) {
     ImGui::Text("Path Nodes: %zu", component->currentPath.size());
     ImGui::Text("Current Path Index: %zu", component->currentPathIndex);
 }
@@ -99,7 +141,8 @@ void Editor::UI::MovementWidget::DrawExtras(ECS::Entity entity, ECS::Components:
 
 const char *Editor::UI::MeshWidget::GetName() const { return "Mesh"; }
 
-void Editor::UI::MeshWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext) {
+void Editor::UI::MeshWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext,
+                                  Editor::UndoManager *undoManager) {
     if (!entity.HasComponent<ECS::Components::MeshComponent>())
         return;
     if (ImGui::CollapsingHeader(GetName())) {
@@ -129,7 +172,14 @@ void Editor::UI::MeshWidget::Draw(const ECS::Entity entity, Core::EngineContext 
         const float availWidth = ImGui::GetContentRegionAvail().x;
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (availWidth - buttonWidth) * 0.5f);
         if (ImGui::Button("Remove ##Mesh", ImVec2(buttonWidth, 0))) {
-            entity.RemoveComponent<ECS::Components::MeshComponent>();
+            if (undoManager && engineContext) {
+                auto data = *entity.GetComponent<ECS::Components::MeshComponent>();
+                undoManager->Execute(std::make_unique<Commands::RemoveComponentCommand<ECS::Components::MeshComponent>>(
+                                             static_cast<ECS::EntityID>(entity), data),
+                                     *engineContext);
+            } else {
+                entity.RemoveComponent<ECS::Components::MeshComponent>();
+            }
             MarkSceneChanged(engineContext);
         }
     }
@@ -139,7 +189,8 @@ void Editor::UI::MeshWidget::Draw(const ECS::Entity entity, Core::EngineContext 
 
 const char *Editor::UI::MaterialWidget::GetName() const { return "Material"; }
 
-void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext) {
+void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext,
+                                      Editor::UndoManager *undoManager) {
     if (!entity.HasComponent<ECS::Components::MaterialComponent>())
         return;
     if (ImGui::CollapsingHeader(GetName())) {
@@ -199,7 +250,15 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
                               (ImGui::CalcTextSize("Remove Material").x + ImGui::GetStyle().FramePadding.x * 2)) *
                                      0.5f);
         if (ImGui::Button("Remove ##Material")) {
-            entity.RemoveComponent<ECS::Components::MaterialComponent>();
+            if (undoManager && engineContext) {
+                auto data = *entity.GetComponent<ECS::Components::MaterialComponent>();
+                undoManager->Execute(
+                        std::make_unique<Commands::RemoveComponentCommand<ECS::Components::MaterialComponent>>(
+                                static_cast<ECS::EntityID>(entity), data),
+                        *engineContext);
+            } else {
+                entity.RemoveComponent<ECS::Components::MaterialComponent>();
+            }
             MarkSceneChanged(engineContext);
         }
     }
@@ -209,7 +268,8 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
 
 const char *Editor::UI::DirectionalTextureWidget::GetName() const { return "Directional Texture"; }
 
-void Editor::UI::DirectionalTextureWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext) {
+void Editor::UI::DirectionalTextureWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext,
+                                                Editor::UndoManager *undoManager) {
     if (!entity.HasComponent<ECS::Components::DirectionalTextureComponent>())
         return;
     if (ImGui::CollapsingHeader(GetName())) {
@@ -238,7 +298,16 @@ void Editor::UI::DirectionalTextureWidget::Draw(const ECS::Entity entity, Core::
         const float availWidth = ImGui::GetContentRegionAvail().x;
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (availWidth - buttonWidth) * 0.5f);
         if (ImGui::Button("Remove ##DirectionalTexture", ImVec2(buttonWidth, 0))) {
-            entity.RemoveComponent<ECS::Components::DirectionalTextureComponent>();
+            if (undoManager && engineContext) {
+                auto data = *entity.GetComponent<ECS::Components::DirectionalTextureComponent>();
+                undoManager->Execute(
+                        std::make_unique<
+                                Commands::RemoveComponentCommand<ECS::Components::DirectionalTextureComponent>>(
+                                static_cast<ECS::EntityID>(entity), data),
+                        *engineContext);
+            } else {
+                entity.RemoveComponent<ECS::Components::DirectionalTextureComponent>();
+            }
             MarkSceneChanged(engineContext);
         }
     }
@@ -248,7 +317,8 @@ void Editor::UI::DirectionalTextureWidget::Draw(const ECS::Entity entity, Core::
 
 const char *Editor::UI::MapWidget::GetName() const { return "Map"; }
 
-void Editor::UI::MapWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext) {
+void Editor::UI::MapWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext,
+                                 Editor::UndoManager *undoManager) {
     if (!entity.HasComponent<ECS::Components::MapComponent>())
         return;
     if (ImGui::CollapsingHeader(GetName())) {
@@ -275,7 +345,14 @@ void Editor::UI::MapWidget::Draw(const ECS::Entity entity, Core::EngineContext *
         const float availWidth = ImGui::GetContentRegionAvail().x;
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (availWidth - buttonWidth) * 0.5f);
         if (ImGui::Button("Remove ##Map", ImVec2(buttonWidth, 0))) {
-            entity.RemoveComponent<ECS::Components::MapComponent>();
+            if (undoManager && engineContext) {
+                auto data = *entity.GetComponent<ECS::Components::MapComponent>();
+                undoManager->Execute(std::make_unique<Commands::RemoveComponentCommand<ECS::Components::MapComponent>>(
+                                             static_cast<ECS::EntityID>(entity), data),
+                                     *engineContext);
+            } else {
+                entity.RemoveComponent<ECS::Components::MapComponent>();
+            }
             MarkSceneChanged(engineContext);
         }
     }
@@ -285,7 +362,8 @@ void Editor::UI::MapWidget::Draw(const ECS::Entity entity, Core::EngineContext *
 
 const char *Editor::UI::MapStateWidget::GetName() const { return "Map State"; }
 
-void Editor::UI::MapStateWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext) {
+void Editor::UI::MapStateWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext,
+                                      Editor::UndoManager *undoManager) {
     if (!entity.HasComponent<ECS::Components::MapStateComponent>())
         return;
     if (ImGui::CollapsingHeader(GetName())) {
@@ -306,7 +384,15 @@ void Editor::UI::MapStateWidget::Draw(const ECS::Entity entity, Core::EngineCont
         const float availWidth = ImGui::GetContentRegionAvail().x;
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (availWidth - buttonWidth) * 0.5f);
         if (ImGui::Button("Remove ##MapState", ImVec2(buttonWidth, 0))) {
-            entity.RemoveComponent<ECS::Components::MapStateComponent>();
+            if (undoManager && engineContext) {
+                auto data = *entity.GetComponent<ECS::Components::MapStateComponent>();
+                undoManager->Execute(
+                        std::make_unique<Commands::RemoveComponentCommand<ECS::Components::MapStateComponent>>(
+                                static_cast<ECS::EntityID>(entity), data),
+                        *engineContext);
+            } else {
+                entity.RemoveComponent<ECS::Components::MapStateComponent>();
+            }
             MarkSceneChanged(engineContext);
         }
     }
@@ -316,7 +402,8 @@ void Editor::UI::MapStateWidget::Draw(const ECS::Entity entity, Core::EngineCont
 
 const char *Editor::UI::ScriptWidget::GetName() const { return "Scripts"; }
 
-void Editor::UI::ScriptWidget::Draw(ECS::Entity entity, Core::EngineContext *engineContext) {
+void Editor::UI::ScriptWidget::Draw(ECS::Entity entity, Core::EngineContext *engineContext,
+                                    Editor::UndoManager *undoManager) {
     if (!entity.HasComponent<ECS::Components::ScriptComponent>())
         return;
     if (ImGui::CollapsingHeader(GetName())) {
@@ -391,7 +478,8 @@ void Editor::UI::ScriptWidget::Draw(ECS::Entity entity, Core::EngineContext *eng
 
 const char *Editor::UI::CustomDataWidget::GetName() const { return "ObSL Custom Data"; }
 
-void Editor::UI::CustomDataWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext) {
+void Editor::UI::CustomDataWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext,
+                                        Editor::UndoManager *undoManager) {
     if (!entity.HasComponent<ECS::Components::CustomDataComponent>())
         return;
     if (ImGui::CollapsingHeader(GetName())) {
@@ -410,7 +498,15 @@ void Editor::UI::CustomDataWidget::Draw(const ECS::Entity entity, Core::EngineCo
         const float availWidth = ImGui::GetContentRegionAvail().x;
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (availWidth - buttonWidth) * 0.5f);
         if (ImGui::Button("Remove ##CustomData", ImVec2(buttonWidth, 0))) {
-            entity.RemoveComponent<ECS::Components::CustomDataComponent>();
+            if (undoManager && engineContext) {
+                auto data = *entity.GetComponent<ECS::Components::CustomDataComponent>();
+                undoManager->Execute(
+                        std::make_unique<Commands::RemoveComponentCommand<ECS::Components::CustomDataComponent>>(
+                                static_cast<ECS::EntityID>(entity), data),
+                        *engineContext);
+            } else {
+                entity.RemoveComponent<ECS::Components::CustomDataComponent>();
+            }
             MarkSceneChanged(engineContext);
         }
     }

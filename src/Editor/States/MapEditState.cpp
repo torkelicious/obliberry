@@ -40,6 +40,7 @@ void Editor::MapEditState::OnEnter() {
     }
     m_TileEditorPanel.SetSelectedTile(m_selectedTile);
     SetWindowTitle(m_MapComp->mapFilePath);
+    m_EditorLayer->m_UndoManager.Clear();
 }
 
 void Editor::MapEditState::OnUpdate(const float dt) {}
@@ -142,13 +143,13 @@ void Editor::MapEditState::OnDrawModeToolbar() {
                 // maybe remove
                 LOG_INFO(LOG_WHO, "Create new map requested");
             }
-            if (ImGui::MenuItem("Save")) {
+            if (ImGui::MenuItem("Save Map")) {
                 LOG_INFO(LOG_WHO, "Save requested");
                 if (!IO::MapIO::Serialize(m_MapComp->mapFilePath, *m_CurrentGrid)) {
                     LOG_ERROR(LOG_WHO, "Failed to save map: " + m_MapComp->mapFilePath);
                 }
             }
-            if (ImGui::MenuItem("Save As")) {
+            if (ImGui::MenuItem("Save Map As")) {
                 LOG_INFO(LOG_WHO, "Save as requested");
 
                 if (const auto path = FileDialogs::SaveFile(m_EditorLayer->m_Context)) {
@@ -157,7 +158,7 @@ void Editor::MapEditState::OnDrawModeToolbar() {
                     }
                 }
             }
-            if (ImGui::MenuItem("Load from file")) {
+            if (ImGui::MenuItem("Load Map from file")) {
                 LOG_INFO(LOG_WHO, "Load requested");
 
                 if (const auto path = FileDialogs::OpenFile(m_EditorLayer->m_Context)) {

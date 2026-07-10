@@ -49,7 +49,7 @@ void Editor::UI::InspectorPanel::OnImGuiRender() {
 
             for (const auto &widget : m_Widgets) {
                 ImGui::PushID(widget->GetName());
-                widget->Draw(m_SelectedEntity, m_EngineContext);
+                widget->Draw(m_SelectedEntity, m_EngineContext, m_UndoManager);
                 ImGui::PopID();
             }
             ImGui::Separator();

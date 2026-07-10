@@ -1,4 +1,5 @@
 #include "GLDebug.h"
+#include <iostream>
 #include "Core/LoggerService.h"
 
 // Heavily based off of;

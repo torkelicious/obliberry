@@ -1,4 +1,6 @@
 #include "InputManager.h"
+#include <ranges>
+
 #include <algorithm>
 
 void Core::InputManager::BeginFrame() {
@@ -11,6 +13,11 @@ void Core::InputManager::BeginFrame() {
     m_MouseDeltaX = 0.0;
     m_MouseDeltaY = 0.0;
 }
+
+//
+// Keyboard
+//
+
 
 bool Core::InputManager::IsValidKey(const int key) { return key >= 0 && key <= GLFW_KEY_LAST; }
 
@@ -39,6 +46,27 @@ bool Core::InputManager::IsKeyReleased(const int key) const {
 bool Core::InputManager::IsKeyReleased(const std::string &keyAlias) const {
     return IsKeyReleased(GetKeyFromName(keyAlias));
 }
+
+bool Core::InputManager::IsKeyComboDown(const std::vector<std::string> &keyAliases) const {
+    if (keyAliases.empty())
+        return false;
+
+    return std::ranges::all_of(keyAliases, [this](const std::string &alias) { return IsKeyDown(alias); });
+}
+
+bool Core::InputManager::IsKeyComboPressed(const std::vector<std::string> &keyAliases) const {
+    if (keyAliases.empty())
+        return false;
+
+    const bool modifiersDown = std::ranges::all_of(keyAliases | std::views::take(keyAliases.size() - 1),
+                                                   [this](const std::string &alias) { return IsKeyDown(alias); });
+    return modifiersDown && IsKeyPressed(keyAliases.back());
+}
+
+
+//
+// Mouse
+//
 
 bool Core::InputManager::IsValidMouseButton(const int button) {
     return button >= 0 && button <= GLFW_MOUSE_BUTTON_LAST;

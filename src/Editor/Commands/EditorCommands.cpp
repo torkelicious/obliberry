@@ -46,8 +46,6 @@ namespace Editor::Commands {
         const ECS::Entity ent(m_EntityID, &ctx.sceneManager->GetCurrentScene()->GetRegistry());
         ent.GetComponent<ECS::Components::TransformComponent>()->transform.SetScale(m_OldScale);
     }
-    std::string_view ScaleEntityCommand::Name() const noexcept {
-        return "Scale entity";
-    }
+    std::string_view ScaleEntityCommand::Name() const noexcept { return "Scale entity"; }
 
 } // namespace Editor::Commands

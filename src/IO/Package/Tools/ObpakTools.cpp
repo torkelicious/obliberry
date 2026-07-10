@@ -1,8 +1,7 @@
 #include "ObpakTools.h"
-
 #include <filesystem>
 #include "Core/LoggerService.h"
-
+#include <iostream>
 #include "AssetPacking.h"
 #include "DependencyGraph.h"
 #include <string>

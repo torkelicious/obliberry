@@ -1,3 +1,6 @@
+#include "Core/Logger.h"
+
+
 #include <filesystem>
 #include <string>
 #include "IO/Package/Tools/AssetPacking.h"
@@ -32,6 +35,9 @@ static void show_help() {
 static void show_version() { std::cout << BINARY_NAME << " (" << TITLE_NAME << ") v" << VERSION << "\n"; }
 
 int main(int argc, char *argv[]) {
+    Core::Logging::Logger<256> logger;
+    Core::Logging::LoggerService::Initialize(&logger);
+
     if (argc < 2) {
         show_help();
         return 1;

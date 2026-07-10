@@ -2,15 +2,15 @@
 
 namespace Core::Logging {
 
-    thread_local Logger<1000> *LoggerService::s_currentLogger = nullptr;
+    thread_local ILogger *LoggerService::s_currentLogger = nullptr;
 
-    void LoggerService::Initialize(Logger<1000> *logger) { s_currentLogger = logger; }
+    void LoggerService::Initialize(ILogger *logger) { s_currentLogger = logger; }
 
-    Logger<1000> *LoggerService::Get() { return s_currentLogger; }
+    ILogger *LoggerService::Get() { return s_currentLogger; }
 
     bool LoggerService::IsAvailable() { return s_currentLogger != nullptr; }
 
-    LoggerService::ScopedOverride::ScopedOverride(Logger<1000> *newLogger) : oldLogger(s_currentLogger) {
+    LoggerService::ScopedOverride::ScopedOverride(ILogger *newLogger) : oldLogger(s_currentLogger) {
         s_currentLogger = newLogger;
     }
 
