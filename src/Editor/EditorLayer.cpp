@@ -244,6 +244,9 @@ void Editor::EditorLayer::ClearCurrentProject() {
     m_RegistryPanel.SetSelectedEntity(ECS::Entity{});
     m_InspectorPanel.SetSelectedEntity(ECS::Entity{});
     m_ViewportPanel.ClearSelectedEntityID();
+
+    m_UndoManager.Clear();
+
 }
 
 void Editor::EditorLayer::LoadProject(const std::string &projectFilePath) {

@@ -1,5 +1,8 @@
 #pragma once
 
+#include "Core/EngineContext.h"
+
+
 #include <deque>
 #include <memory>
 #include <cstddef>
@@ -9,15 +12,15 @@ namespace Editor {
 
     class UndoManager {
     public:
-        explicit UndoManager(const size_t maxHistory = 256);
+        explicit UndoManager(size_t maxHistory = 256);
         ~UndoManager();
         UndoManager(const UndoManager &) = delete;
         UndoManager &operator=(const UndoManager &) = delete;
 
-        void Execute(std::unique_ptr<ICommand> command);
+        void Execute(std::unique_ptr<ICommand> command, Core::EngineContext &ctx);
 
-        void Undo();
-        void Redo();
+        void Undo(Core::EngineContext &ctx);
+        void Redo(Core::EngineContext &ctx);
 
         void Clear();
 
