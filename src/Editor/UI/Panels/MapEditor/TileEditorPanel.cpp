@@ -5,6 +5,8 @@
 #include "Core/ResourceManager.h"
 #include "Editor/UI/Panels/Editor/EditorWidgetsCombo.h"
 
+#include "Core/Utils.h"
+
 #include <imgui.h>
 #include <sstream>
 #include <utility>
@@ -115,12 +117,12 @@ namespace Editor::UI {
 
             // Border
             dl->AddRect(cursor, rectEnd, IM_COL32(255, 255, 255, 180));
-
+            const ImVec2 swatchSize(size, size);
             if (texture) {
-                (void)texture; // todo: not this fix later
+                Core::Utils::UI::ImGuiImageFlipped(texture->GetID(), swatchSize);
+            } else {
+                ImGui::Dummy(swatchSize);
             }
-
-            ImGui::Dummy(ImVec2(size, size));
         }
 
     } // namespace

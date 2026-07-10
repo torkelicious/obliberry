@@ -104,14 +104,6 @@ namespace Editor::UI {
         ImGui::End();
     }
 
-    // textures are loaded with stbi flip on so they must be unflipped
-    static void ImGuiImageFlipped(const GLuint textureID, const ImVec2 &size) {
-        ImDrawList *drawList = ImGui::GetWindowDrawList();
-        const ImVec2 cursorPos = ImGui::GetCursorScreenPos();
-        drawList->AddImage(textureID, cursorPos, ImVec2(cursorPos.x + size.x, cursorPos.y + size.y), ImVec2(0, 1),
-                           ImVec2(1, 0));
-        ImGui::Dummy(size);
-    }
 
     template <typename T>
     void ProjectBrowserPanel::DrawResourceSection(
@@ -271,7 +263,7 @@ namespace Editor::UI {
                 resources, allTextures, AssetType::Texture, "##texList", 130.0f, "No textures imported.", "texture",
                 [](const std::shared_ptr<Rendering::Texture> &tex) {
                     if (tex)
-                        ImGuiImageFlipped(tex->GetID(), ImVec2(64, 64));
+                        Core::Utils::UI::ImGuiImageFlipped(tex->GetID(), ImVec2(64, 64));
                     else
                         ImGui::Button("T", ImVec2(64, 64));
                 },
@@ -340,7 +332,7 @@ namespace Editor::UI {
                 "material",
                 [](const std::shared_ptr<Rendering::Material> &mat) {
                     if (mat && mat->texture)
-                        ImGuiImageFlipped(mat->texture->GetID(), ImVec2(64, 64));
+                        Core::Utils::UI::ImGuiImageFlipped(mat->texture->GetID(), ImVec2(64, 64));
                     else
                         ImGui::Button("M", ImVec2(64, 64));
                 },
