@@ -137,6 +137,11 @@ void Editor::MapEditState::OnRender() {
 void Editor::MapEditState::OnDrawModeToolbar() {
     {
         if (ImGui::BeginMenu("Map")) {
+            if (ImGui::MenuItem("Create New Map")) {
+                // todo: implement
+                // maybe remove
+                LOG_INFO(LOG_WHO, "Create new map requested");
+            }
             if (ImGui::MenuItem("Save")) {
                 LOG_INFO(LOG_WHO, "Save requested");
                 if (!IO::MapIO::Serialize(m_MapComp->mapFilePath, *m_CurrentGrid)) {
@@ -223,6 +228,7 @@ void Editor::MapEditState::OnExit() {
 }
 
 void Editor::MapEditState::ApplyToolAt(const Map::HexCoords &hex) {
+    m_MapState->hasPathTo = false;
     switch (m_CurrentTool) {
         case Select:
             m_selectedHex = hex;

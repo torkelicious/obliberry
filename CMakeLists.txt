@@ -221,6 +221,8 @@ add_executable(obliberry_editor
         src/Editor/FileDialogs.cpp
         src/IO/Package/Tools/ObpakTools.cpp
         src/Editor/UI/Panels/MapEditor/TileEditorPanel.cpp
+        src/Editor/Commands/UndoManager.cpp
+        src/Editor/Commands/EditorCommands.cpp
 )
 
 target_link_libraries(obliberry_editor PRIVATE

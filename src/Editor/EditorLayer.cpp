@@ -70,7 +70,6 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
 
     m_CurrentState->SetEditorLayer(this);
     m_CurrentState->OnEnter();
-
 }
 
 

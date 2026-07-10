@@ -10,6 +10,7 @@
 
 #include "EditorCamera.h"
 #include "EditorState.h"
+#include "Commands/UndoManager.h"
 #include "Map/HexCoords.h"
 #include "Scenes/Scene.h"
 #include "Scenes/SceneManager.h"
@@ -97,6 +98,9 @@ namespace Editor {
         UI::ProjectConfigEditor m_ProjectConfigEditor;
         bool m_ShowSceneConfig = false;
         bool m_ShowProjectConfig = false;
+
+        // commands
+        UndoManager m_UndoManager;
 
         // Logging
         std::vector<std::string> m_ConsoleLogs;
