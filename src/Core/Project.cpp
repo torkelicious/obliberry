@@ -7,8 +7,7 @@
 
 namespace Core {
 
-
-    constexpr const char *LOG_WHO = "Project";
+    constexpr auto LOG_WHO = "Project";
 
     std::shared_ptr<Project> Project::NewProject(const std::filesystem::path &baseDir, const std::string &name) {
         auto project = std::make_shared<Project>();

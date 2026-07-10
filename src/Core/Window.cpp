@@ -1,8 +1,3 @@
-#include "Core/LoggerService.h"
-
-#include "Rendering/GLDebug.h"
-
-
 #if defined(_WIN32)
 #define GLFW_EXPOSE_NATIVE_WIN32
 #elif defined(__APPLE__)
@@ -11,7 +6,8 @@
 #define GLFW_EXPOSE_NATIVE_WAYLAND
 #define GLFW_EXPOSE_NATIVE_X11
 #endif
-
+#include "Core/LoggerService.h"
+#include "Rendering/GLDebug.h"
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
 #include <nfd_glfw3.h>
@@ -47,8 +43,10 @@ bool Core::Window::Init(const unsigned int width, const unsigned int height, con
     m_Height = static_cast<int>(height);
 
 
-    if (!glfwInit())
+    if (!glfwInit()) {
+        LOG_ERROR(LOG_WHO, "Failed to initalize GLFW");
         return false;
+    }
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -62,6 +60,7 @@ bool Core::Window::Init(const unsigned int width, const unsigned int height, con
     m_Window = glfwCreateWindow(m_Width, m_Height, title, monitor, nullptr);
 
     if (!m_Window) {
+        LOG_ERROR(LOG_WHO, "Failed to create native Window");
         glfwTerminate();
         return false;
     }
@@ -85,6 +84,7 @@ bool Core::Window::Init(const unsigned int width, const unsigned int height, con
     glfwSetWindowUserPointer(m_Window, this);
 
     if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
+        LOG_ERROR(LOG_WHO, "Failed to initalize GLAD");
         return false;
     }
 
