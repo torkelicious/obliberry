@@ -155,6 +155,7 @@ namespace Editor::Commands {
     // TODO:
     //  Entity Deletion
     //  veri hard because ecs purges dead entities -.-
+    //  Maybe use some sort of "shadow delete" idk
 
     // = = = = //
     // Project //
