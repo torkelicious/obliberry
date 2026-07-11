@@ -153,17 +153,17 @@ void Editor::EditorLayer::HandleInput(const float dt) {
     //
     // 2key Modifier Shortcuts
     //
-    if (m_Input->IsKeyComboDown({"LeftCtrl", "S"})) {
+    if (m_Input->IsKeyComboPressed({"LeftCtrl", "S"})) {
         if (m_CurrentState->CanSaveScene()) {
             SaveScene();
         }
     }
-    if (m_Input->IsKeyComboDown({"LeftCtrl", "Z"})) {
+    if (m_Input->IsKeyComboPressed({"LeftCtrl", "Z"})) {
         if (m_UndoManager.CanUndo()) {
             m_UndoManager.Undo(m_Context);
         }
     }
-    if (m_Input->IsKeyComboDown({"LeftCtrl", "Y"})) {
+    if (m_Input->IsKeyComboPressed({"LeftCtrl", "Y"})) {
         if (m_UndoManager.CanRedo()) {
             m_UndoManager.Redo(m_Context);
         }

@@ -3,8 +3,12 @@
 #include "Core/ProjectConfig.h"
 
 #include <glm/glm.hpp>
+#include <optional>
 #include "ECS/Types.h"
 #include "ECS/Components/ScriptComponent.h"
+#include "Editor/States/MapEditState.h"
+#include "Map/Hex.h"
+#include "Map/HexCoords.h"
 #include "Scenes/SceneManager.h"
 
 namespace Editor::Commands {
@@ -161,6 +165,31 @@ namespace Editor::Commands {
     // = = //
     // Map //
     // = = //
+
+    // Paint / Erase
+    class MapChangeTileCommand : public ICommand {
+    public:
+        using TileState = std::pair<uint8_t, bool>; // {type, walkable}
+        using StateMap = std::unordered_map<Map::HexCoords, std::optional<TileState>, Map::HexCoordsHash>;
+
+        MapChangeTileCommand(
+            StateMap oldState,
+            StateMap newState,
+            Map::HexGrid *grid,
+            bool *meshDirty = nullptr
+            );
+        void Execute(Core::EngineContext &ctx) override;
+        void Undo(Core::EngineContext &ctx) override;
+        [[nodiscard]] std::string_view Name() const noexcept override;
+
+    private:
+        void ApplyStates(const StateMap &states);
+
+        StateMap m_OldState;
+        StateMap m_NewState;
+        Map::HexGrid *m_Grid;
+        bool *m_MeshDirty;
+    };
 
 
 } // namespace Editor::Commands

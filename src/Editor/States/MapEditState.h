@@ -7,6 +7,8 @@
 
 #include <cstdint>
 #include <functional>
+#include <optional>
+#include <unordered_set>
 
 namespace Editor {
 
@@ -34,6 +36,8 @@ namespace Editor {
     private:
         void ApplyToolAt(const Map::HexCoords &hex);
         void ForEachHexInRing(Map::HexCoords center, int radius, const std::function<void(const Map::HexCoords &)> &callback) const;
+        void CommitMapChanges();
+        void CapturePreDragState(const Map::HexCoords &hex);
 
         Map::HexGrid *m_CurrentGrid = nullptr;
         ECS::Components::MapStateComponent *m_MapState = nullptr;
@@ -45,6 +49,13 @@ namespace Editor {
         Map::HexCoords m_selectedHex = {0, 0}; // actually clicked hex, not the same as the components "selectedHex"
 
         Map::Tile *m_selectedTile = nullptr;
+
+        bool m_IsDragging = false;
+
+        bool m_MapDragging = false;
+        using TileState = std::pair<uint8_t, bool>; // {type, walkable}
+        std::unordered_map<Map::HexCoords, std::optional<TileState>, Map::HexCoordsHash> m_PreDragState;
+        std::unordered_map<Map::HexCoords, std::optional<TileState>, Map::HexCoordsHash> m_AccumulatedNew;
 
         // brush
         int m_BrushRadius = 1;

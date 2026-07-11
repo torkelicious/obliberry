@@ -11,6 +11,7 @@
 #include "imgui_internal.h"
 #include "Core/Window.h"
 #include "Editor/FileDialogs.h"
+#include "Editor/Commands/EditorCommands.h"
 #include "IO/MapSerialization.h"
 
 
@@ -55,8 +56,16 @@ void Editor::MapEditState::OnHandleInput(const float dt) {
     float kbPanY = 0.0f;
     m_EditorLayer->m_Camera.StopKeyboardPan();
 
-    if (!viewportHovered)
+    if (!viewportHovered) {
+        if (m_EditorLayer->m_Input->IsMouseReleased(0)) {
+            if (m_MapDragging) {
+                CommitMapChanges();
+                m_MapDragging = false;
+            }
+            m_IsDragging = false;
+        }
         return;
+    }
 
     m_hoveredHex = Math::HexMath::PixelToHex(m_EditorLayer->m_ViewportPanel.MousePosToWorld(m_EditorLayer->m_Camera));
 
@@ -66,8 +75,22 @@ void Editor::MapEditState::OnHandleInput(const float dt) {
     m_MapState->selectedHex = m_hoveredHex;
 
     // click &/or drag
+
     if (m_EditorLayer->m_Input->IsMouseDown(0)) {
+        if (!m_MapDragging) {
+            m_MapDragging = true;
+            m_PreDragState.clear();
+            m_AccumulatedNew.clear();
+        }
         ApplyToolAt(m_hoveredHex);
+        m_IsDragging = true;
+    }
+    if (m_EditorLayer->m_Input->IsMouseReleased(0)) {
+        if (m_MapDragging) {
+            CommitMapChanges();
+            m_MapDragging = false;
+        }
+        m_IsDragging = false;
     }
 
     // Scroll zoom
@@ -224,6 +247,29 @@ void Editor::MapEditState::OnExit() {
     m_EditorLayer->m_Registry->ForEach<ECS::Components::MapStateComponent>([&](ECS::Entity, ECS::Components::MapStateComponent *state) { state->hasSelection = false; });
 }
 
+void Editor::MapEditState::CapturePreDragState(const Map::HexCoords &hex) {
+    ForEachHexInRing(hex, m_BrushRadius - 1, [&](const Map::HexCoords &h) {
+        if (!m_PreDragState.contains(h)) {
+            if (const auto *tile = m_CurrentGrid->Get(h)) {
+                m_PreDragState[h] = TileState{tile->type, tile->walkable};
+            } else {
+                m_PreDragState[h] = std::nullopt;
+            }
+        }
+    });
+}
+
+void Editor::MapEditState::CommitMapChanges() {
+    if (m_PreDragState.empty())
+        return;
+    m_EditorLayer->m_UndoManager.Execute(
+        std::make_unique<Commands::MapChangeTileCommand>(
+            m_PreDragState, m_AccumulatedNew,
+            m_CurrentGrid, &m_MapComp->needsMeshUpdate),
+        m_EditorLayer->m_Context);
+    m_MapComp->needsMeshUpdate = true;
+}
+
 void Editor::MapEditState::ApplyToolAt(const Map::HexCoords &hex) {
     m_MapState->hasPathTo = false;
     switch (m_CurrentTool) {
@@ -240,18 +286,31 @@ void Editor::MapEditState::ApplyToolAt(const Map::HexCoords &hex) {
 
         case Paint: {
             const uint8_t brushType = m_TileEditorPanel.GetSourceType();
+            CapturePreDragState(hex);
             ForEachHexInRing(hex, m_BrushRadius - 1, [&](const Map::HexCoords &h) {
+                bool walkable = true;
+                if (const auto *tile = m_CurrentGrid->Get(h)) {
+                    walkable = tile->walkable;
+                }
                 m_CurrentGrid->RemoveTileAt(h);
-                m_CurrentGrid->EmplaceTile(h, brushType);
+                m_CurrentGrid->EmplaceTile(h, brushType, walkable);
+                m_AccumulatedNew[h] = TileState{brushType, walkable};
             });
             m_MapComp->needsMeshUpdate = true;
             break;
         }
 
-        case Erase:
-            ForEachHexInRing(hex, m_BrushRadius - 1, [&](const Map::HexCoords &h) { m_CurrentGrid->RemoveTileAt(h); });
+        case Erase: {
+            CapturePreDragState(hex);
+            ForEachHexInRing(hex, m_BrushRadius - 1, [&](const Map::HexCoords &h) {
+                if (m_CurrentGrid->HasTile(h)) {
+                    m_CurrentGrid->RemoveTileAt(h);
+                    m_AccumulatedNew[h] = std::nullopt; // erased
+                }
+            });
             m_MapComp->needsMeshUpdate = true;
             break;
+        }
     }
 }
 

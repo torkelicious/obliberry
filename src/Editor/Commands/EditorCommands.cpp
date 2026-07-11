@@ -176,4 +176,39 @@ namespace Editor::Commands {
     }
     std::string_view ProjectConfigUpdateCommand::Name() const noexcept { return "Project Configuration change"; }
 
+    //
+    // Map edit
+    //
+
+    // Paint / Erase
+    MapChangeTileCommand::MapChangeTileCommand(
+        StateMap oldState,
+        StateMap newState,
+        Map::HexGrid *grid,
+        bool *meshDirty)
+        : m_OldState(std::move(oldState)), m_NewState(std::move(newState)), m_Grid(grid), m_MeshDirty(meshDirty) {}
+
+    void MapChangeTileCommand::ApplyStates(const StateMap &states) {
+        for (const auto &[pos, state] : states) {
+            m_Grid->RemoveTileAt(pos);
+            if (state) {
+                m_Grid->EmplaceTile(pos, state->first, state->second);
+            }
+        }
+    }
+
+    void MapChangeTileCommand::Execute(Core::EngineContext &ctx) {
+        ApplyStates(m_NewState);
+        if (m_MeshDirty)
+            *m_MeshDirty = true;
+    }
+
+    void MapChangeTileCommand::Undo(Core::EngineContext &ctx) {
+        ApplyStates(m_OldState);
+        if (m_MeshDirty)
+            *m_MeshDirty = true;
+    }
+    std::string_view MapChangeTileCommand::Name() const noexcept { return "Map paint / erase"; }
+
+
 } // namespace Editor::Commands
