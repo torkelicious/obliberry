@@ -2,17 +2,14 @@
 #include "Core/Project.h"
 #include "Core/ProjectConfig.h"
 #include "Core/LoggerService.h"
-#include "ECS/ECS.h"
 #include "ECS/Entity.h"
 #include "ECS/Systems/LightingSystem.h"
 #include "Scenes/Scene.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 
-#include <ImGuizmo.h>
 #include <ObSL/ScriptRuntime.h>
 #include <filesystem>
-#include <iostream>
 #include <memory>
 #include <string>
 #include <algorithm>
