@@ -181,11 +181,7 @@ namespace Editor::Commands {
     //
 
     // Paint / Erase
-    MapChangeTileCommand::MapChangeTileCommand(
-        StateMap oldState,
-        StateMap newState,
-        Map::HexGrid *grid,
-        bool *meshDirty)
+    MapChangeTileCommand::MapChangeTileCommand(StateMap oldState, StateMap newState, Map::HexGrid *grid, bool *meshDirty)
         : m_OldState(std::move(oldState)), m_NewState(std::move(newState)), m_Grid(grid), m_MeshDirty(meshDirty) {}
 
     void MapChangeTileCommand::ApplyStates(const StateMap &states) {

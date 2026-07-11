@@ -262,11 +262,7 @@ void Editor::MapEditState::CapturePreDragState(const Map::HexCoords &hex) {
 void Editor::MapEditState::CommitMapChanges() {
     if (m_PreDragState.empty())
         return;
-    m_EditorLayer->m_UndoManager.Execute(
-        std::make_unique<Commands::MapChangeTileCommand>(
-            m_PreDragState, m_AccumulatedNew,
-            m_CurrentGrid, &m_MapComp->needsMeshUpdate),
-        m_EditorLayer->m_Context);
+    m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::MapChangeTileCommand>(m_PreDragState, m_AccumulatedNew, m_CurrentGrid, &m_MapComp->needsMeshUpdate), m_EditorLayer->m_Context);
     m_MapComp->needsMeshUpdate = true;
 }
 

@@ -17,9 +17,7 @@ namespace Editor::UI {
 
         void SaveConfig();
 
-        void SetUndoMgr(UndoManager* mgr) {
-            m_Undomgr = mgr;
-        }
+        void SetUndoMgr(UndoManager *mgr) { m_Undomgr = mgr; }
 
     private:
         void ResolveStartScenePath(const std::string &absolutePath);
@@ -27,7 +25,7 @@ namespace Editor::UI {
         void LoadConfigToBuffers();
 
         Core::EngineContext *m_Context = nullptr;
-        UndoManager* m_Undomgr = nullptr;
+        UndoManager *m_Undomgr = nullptr;
 
         // Editable working copy
         Core::ProjectConfig m_LocalConfig;
