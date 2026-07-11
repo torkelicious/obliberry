@@ -164,6 +164,7 @@ namespace Editor::Commands {
                 ctx.audioEngine->StopMusic();
             }
         }
+        RefreshWindowTitle(ctx);
     }
 
     void UpdateScenePropertiesCommand::Undo(Core::EngineContext &ctx) {
@@ -181,6 +182,7 @@ namespace Editor::Commands {
                 ctx.audioEngine->StopMusic();
             }
         }
+        RefreshWindowTitle(ctx);
     }
 
     std::string_view UpdateScenePropertiesCommand::Name() const noexcept { return "Scene properties change"; }
@@ -190,17 +192,6 @@ namespace Editor::Commands {
     // Project
     //
     ProjectConfigUpdateCommand::ProjectConfigUpdateCommand(const Core::ProjectConfig &oldCfg, const Core::ProjectConfig &newCfg) : m_OldData(oldCfg), m_NewData(newCfg) {}
-    // a lil hacky.. but it works :)
-    static void RefreshWindowTitle(Core::EngineContext &ctx) {
-        if (!ctx.window || !ctx.projectConfig)
-            return;
-        std::string title = "Obliberry: " + ctx.projectConfig->Title;
-        if (ctx.sceneManager)
-            if (auto *scene = ctx.sceneManager->GetCurrentScene())
-                title += " - Scene - " + scene->GetProperties().ScenePath;
-        ctx.window->SetWindowTitle(title);
-    }
-
     void ProjectConfigUpdateCommand::Execute(Core::EngineContext &ctx) {
         if (ctx.projectConfig)
             *ctx.projectConfig = m_NewData;

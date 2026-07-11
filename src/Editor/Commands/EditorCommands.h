@@ -1,6 +1,7 @@
 #pragma once
 #include "ICommand.h"
 #include "Core/ProjectConfig.h"
+#include "Core/Window.h"
 
 #include <glm/glm.hpp>
 #include <optional>
@@ -12,6 +13,17 @@
 #include "Scenes/SceneManager.h"
 
 namespace Editor::Commands {
+
+    // hack but whatever
+    static void RefreshWindowTitle(const Core::EngineContext &ctx) {
+        if (!ctx.window || !ctx.projectConfig)
+            return;
+        std::string title = "Obliberry: " + ctx.projectConfig->Title;
+        if (ctx.sceneManager)
+            if (auto *scene = ctx.sceneManager->GetCurrentScene())
+                title += " - Scene - " + scene->GetProperties().ScenePath;
+        ctx.window->SetWindowTitle(title);
+    }
 
     // = = = = = //
     // TRANSFORM //

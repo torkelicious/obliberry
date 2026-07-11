@@ -17,6 +17,7 @@
 #include "Core/InputManager.h"
 #include "Core/Window.h"
 #include "FileDialogs.h"
+#include "Commands/EditorCommands.h"
 #include "IO/SceneSerialization.h"
 #include "IO/VFS.h"
 #include "IO/Package/Tools/ObpakTools.h"
@@ -233,9 +234,7 @@ void Editor::EditorLayer::LoadScene(std::string path) {
             }
 
             LOG_INFO("LoadScene", "Successfully loaded scene with " + std::to_string(m_Scene->GetRegistry().GetLivingEntities().size()) + " entities");
-
-            m_CurrentState->SetWindowTitle("Obliberry: " + m_Context.projectConfig->Title + " - Scene - " + m_Scene->GetProperties().ScenePath);
-
+            Commands::RefreshWindowTitle(m_Context);
 
         } else {
             LOG_ERROR("LoadScene", "Failed to load scene: " + path);
