@@ -20,8 +20,7 @@ namespace Rendering {
         for (unsigned int i = 0; i < elements.size(); i++) {
             const auto &[type, count, normalized] = elements[i];
             glEnableVertexAttribArray(i);
-            glVertexAttribPointer(i, count, type, normalized, layout.GetStride(),
-                                  reinterpret_cast<const void *>(offset));
+            glVertexAttribPointer(i, count, type, normalized, layout.GetStride(), reinterpret_cast<const void *>(offset));
             offset += count * VertexBufferElement::GetSizeOfType(type);
         }
     }
@@ -34,8 +33,7 @@ namespace Rendering {
             constexpr std::size_t stride = sizeof(glm::mat4);
             constexpr std::size_t vec4size = sizeof(glm::vec4);
             glEnableVertexAttribArray(attributeStartLoc + i);
-            glVertexAttribPointer(attributeStartLoc + i, 4, GL_FLOAT, GL_FALSE, stride,
-                                  reinterpret_cast<const void *>(i * vec4size));
+            glVertexAttribPointer(attributeStartLoc + i, 4, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<const void *>(i * vec4size));
             glVertexAttribDivisor(attributeStartLoc + i, 1);
         }
     }

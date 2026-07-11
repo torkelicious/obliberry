@@ -10,9 +10,7 @@ namespace Core::Logging {
 
     bool LoggerService::IsAvailable() { return s_currentLogger != nullptr; }
 
-    LoggerService::ScopedOverride::ScopedOverride(ILogger *newLogger) : oldLogger(s_currentLogger) {
-        s_currentLogger = newLogger;
-    }
+    LoggerService::ScopedOverride::ScopedOverride(ILogger *newLogger) : oldLogger(s_currentLogger) { s_currentLogger = newLogger; }
 
     LoggerService::ScopedOverride::~ScopedOverride() { s_currentLogger = oldLogger; }
 

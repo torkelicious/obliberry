@@ -20,8 +20,7 @@ constexpr auto LOG_WHO = "Scene";
 #include "Scripting/EngineLib/EngineLib.h"
 #include "Sound/AudioEngine.h"
 
-Scenes::Scene::Scene(Core::EngineContext *context, SceneProperties props)
-    : m_Properties(std::move(props)), m_Context(context) {}
+Scenes::Scene::Scene(Core::EngineContext *context, SceneProperties props) : m_Properties(std::move(props)), m_Context(context) {}
 
 void Scenes::Scene::OnEnter() {
     LOG_INFO(LOG_WHO, "Entering scene: " + m_Properties.ScenePath);
@@ -87,10 +86,7 @@ void Scenes::Scene::Render() {
 
 void Scenes::Scene::OnExit() {
     std::vector<ECS::EntityID> deadEntities;
-    m_Registry.ForEach<ECS::Components::DestroyTagComponent>(
-            [&](const ECS::Entity entity, ECS::Components::DestroyTagComponent *) {
-                deadEntities.push_back(static_cast<ECS::EntityID>(entity));
-            });
+    m_Registry.ForEach<ECS::Components::DestroyTagComponent>([&](const ECS::Entity entity, ECS::Components::DestroyTagComponent *) { deadEntities.push_back(static_cast<ECS::EntityID>(entity)); });
 
     for (const ECS::EntityID id : deadEntities) {
         if (m_Registry.IsValid(id)) {

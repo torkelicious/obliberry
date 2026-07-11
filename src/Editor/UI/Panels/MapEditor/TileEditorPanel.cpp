@@ -25,9 +25,7 @@ namespace Editor::UI {
             return counts;
         }
 
-        bool FindTypeIdForMaterial(const ECS::Components::MapComponent &mapComp,
-                                   const std::shared_ptr<Rendering::Texture> &tex, const glm::vec4 &color,
-                                   uint8_t &outId) {
+        bool FindTypeIdForMaterial(const ECS::Components::MapComponent &mapComp, const std::shared_ptr<Rendering::Texture> &tex, const glm::vec4 &color, uint8_t &outId) {
             for (const auto &[id, mat] : mapComp.typeMats) {
                 if (mat.texture == tex && mat.color == color) {
                     outId = id;
@@ -37,8 +35,7 @@ namespace Editor::UI {
             return false;
         }
 
-        std::string FormatTypeLabel(const uint8_t id, const Rendering::Material &mat, Core::ResourceManager &resources,
-                                    const size_t tileCount) {
+        std::string FormatTypeLabel(const uint8_t id, const Rendering::Material &mat, Core::ResourceManager &resources, const size_t tileCount) {
             std::string texName = mat.texture ? resources.GetKey(mat.texture) : "none";
             if (texName.empty())
                 texName = "none";
@@ -51,8 +48,7 @@ namespace Editor::UI {
             return oss.str();
         }
 
-        bool TypeCombo(const char *label, const ECS::Components::MapComponent &mapComp,
-                       Core::ResourceManager &resources, uint8_t &current) {
+        bool TypeCombo(const char *label, const ECS::Components::MapComponent &mapComp, Core::ResourceManager &resources, uint8_t &current) {
             const auto &typeMats = mapComp.typeMats;
             const auto counts = CountTilesPerType(mapComp);
 
@@ -72,9 +68,8 @@ namespace Editor::UI {
                     const size_t count = cit != counts.end() ? cit->second : 0;
                     const std::string labelStr = FormatTypeLabel(id, mat, resources, count);
 
-                    if (const ImVec4 swatchCol(mat.color.r, mat.color.g, mat.color.b, mat.color.a); ImGui::ColorButton(
-                                "##swatch", swatchCol, ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoInputs,
-                                ImVec2(16, 16))) {
+                    if (const ImVec4 swatchCol(mat.color.r, mat.color.g, mat.color.b, mat.color.a);
+                        ImGui::ColorButton("##swatch", swatchCol, ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoInputs, ImVec2(16, 16))) {
                         current = id;
                         changed = true;
                     }
@@ -103,17 +98,13 @@ namespace Editor::UI {
             for (int y = 0; y < static_cast<int>(size); y += checkerSize) {
                 for (int x = 0; x < static_cast<int>(size); x += checkerSize) {
                     const bool light = ((x / checkerSize) + (y / checkerSize)) % 2 == 0;
-                    dl->AddRectFilled(ImVec2(cursor.x + x, cursor.y + y),
-                                      ImVec2(cursor.x + std::min(x + checkerSize, static_cast<int>(size)),
-                                             cursor.y + std::min(y + checkerSize, static_cast<int>(size))),
+                    dl->AddRectFilled(ImVec2(cursor.x + x, cursor.y + y), ImVec2(cursor.x + std::min(x + checkerSize, static_cast<int>(size)), cursor.y + std::min(y + checkerSize, static_cast<int>(size))),
                                       light ? IM_COL32(200, 200, 200, 255) : IM_COL32(120, 120, 120, 255));
                 }
             }
 
             // Tinted colour overlay
-            dl->AddRectFilled(cursor, rectEnd,
-                              IM_COL32(static_cast<int>(color.r * 255.0f), static_cast<int>(color.g * 255.0f),
-                                       static_cast<int>(color.b * 255.0f), static_cast<int>(color.a * 255.0f)));
+            dl->AddRectFilled(cursor, rectEnd, IM_COL32(static_cast<int>(color.r * 255.0f), static_cast<int>(color.g * 255.0f), static_cast<int>(color.b * 255.0f), static_cast<int>(color.a * 255.0f)));
 
             // Border
             dl->AddRect(cursor, rectEnd, IM_COL32(255, 255, 255, 180));
@@ -262,11 +253,8 @@ namespace Editor::UI {
         }
 
         if (brushMatChanged) {
-            if (uint8_t existingId = 0; FindTypeIdForMaterial(*m_MapComp, m_BrushTexture, m_BrushColor, existingId) &&
-                                        existingId != m_BrushType) {
-                ImGui::TextColored(ImVec4(0.9f, 0.8f, 0.4f, 1.0f),
-                                   "Same material as type %u. Use 'Update' to merge, or change texture/colour.",
-                                   static_cast<unsigned>(existingId));
+            if (uint8_t existingId = 0; FindTypeIdForMaterial(*m_MapComp, m_BrushTexture, m_BrushColor, existingId) && existingId != m_BrushType) {
+                ImGui::TextColored(ImVec4(0.9f, 0.8f, 0.4f, 1.0f), "Same material as type %u. Use 'Update' to merge, or change texture/colour.", static_cast<unsigned>(existingId));
             }
         }
 
@@ -294,8 +282,7 @@ namespace Editor::UI {
             const size_t currentTypeCount = countIt != counts.end() ? countIt->second : 0;
 
             ImGui::PushID("TileType");
-            if (uint8_t selectedType = m_CurrentTile->type;
-                TypeCombo("Type##TileType", *m_MapComp, *m_EngineContext->resources, selectedType)) {
+            if (uint8_t selectedType = m_CurrentTile->type; TypeCombo("Type##TileType", *m_MapComp, *m_EngineContext->resources, selectedType)) {
                 m_CurrentTile->type = selectedType;
                 m_MapComp->needsMeshUpdate = true;
             }
@@ -323,8 +310,7 @@ namespace Editor::UI {
             }
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) && materialChanged) {
                 std::ostringstream tip;
-                tip << "Replaces the material of type " << static_cast<int>(m_CurrentTile->type) << " for all "
-                    << currentTypeCount << " tile" << (currentTypeCount != 1 ? "s" : "") << " using it.";
+                tip << "Replaces the material of type " << static_cast<int>(m_CurrentTile->type) << " for all " << currentTypeCount << " tile" << (currentTypeCount != 1 ? "s" : "") << " using it.";
                 ImGui::SetTooltip("%s", tip.str().c_str());
             }
 
@@ -337,8 +323,7 @@ namespace Editor::UI {
                 }
             }
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
-                ImGui::SetTooltip(
-                        "Creates a fresh type id with this material and assigns only the selected tile to it.");
+                ImGui::SetTooltip("Creates a fresh type id with this material and assigns only the selected tile to it.");
             }
 
             if (!materialChanged) {

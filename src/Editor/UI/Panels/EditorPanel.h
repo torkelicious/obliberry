@@ -14,8 +14,7 @@ namespace Editor::UI {
 
         virtual void OnImGuiRender() = 0;
 
-        virtual void SetContext(Scenes::Scene *context, Core::EngineContext &engineCtx,
-                                Editor::UndoManager *undoManager = nullptr) {
+        virtual void SetContext(Scenes::Scene *context, Core::EngineContext &engineCtx, Editor::UndoManager *undoManager = nullptr) {
             m_SceneContext = context;
             m_EngineContext = &engineCtx;
             m_UndoManager = undoManager;

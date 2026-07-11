@@ -77,9 +77,7 @@ namespace Map {
             }
         }
 
-        static glm::vec2 GetWorldPos(const HexCoords &pos, const float size = Core::HEX_SIZE) {
-            return Math::HexMath::HexToWorld(pos, size);
-        }
+        static glm::vec2 GetWorldPos(const HexCoords &pos, const float size = Core::HEX_SIZE) { return Math::HexMath::HexToWorld(pos, size); }
 
         // Performs A* Pathfinding from a start tile to a goal tile
         // Populates an ordered sequence of HexCoords from start to finish
@@ -111,8 +109,7 @@ namespace Map {
             records.clear();
 
             // init start node
-            auto [startIt, startInserted] =
-                    records.try_emplace(start, NodeRecord{start, 0, Math::HexMath::Distance(start, goal), false});
+            auto [startIt, startInserted] = records.try_emplace(start, NodeRecord{start, 0, Math::HexMath::Distance(start, goal), false});
             openSet.emplace(startIt->second.fScore, start);
 
             while (!openSet.empty()) {
@@ -152,8 +149,7 @@ namespace Map {
                     if (const Tile *tile = Get(neighbor); !tile || !tile->walkable)
                         continue;
 
-                    auto [nbIt, inserted] = records.try_emplace(
-                            neighbor, NodeRecord{current, Core::P_INFINITY, Core::P_INFINITY, false});
+                    auto [nbIt, inserted] = records.try_emplace(neighbor, NodeRecord{current, Core::P_INFINITY, Core::P_INFINITY, false});
 
                     auto &[parent, gScore, fScore, isClosed] = nbIt->second;
                     if (isClosed)

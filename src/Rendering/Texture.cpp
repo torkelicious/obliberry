@@ -7,8 +7,7 @@
 constexpr auto LOG_WHO = "Texture";
 
 namespace Rendering {
-    Texture::Texture(std::string path, const GLuint minFilter, const GLuint magFilter, const GLuint wrapS,
-                     const GLuint wrapT)
+    Texture::Texture(std::string path, const GLuint minFilter, const GLuint magFilter, const GLuint wrapS, const GLuint wrapT)
         : m_FilePath(std::move(path)), m_MinFilter(minFilter), m_MagFilter(magFilter), m_WrapS(wrapS), m_WrapT(wrapT) {
         LOG_INFO(LOG_WHO, "Loading: " + m_FilePath);
         stbi_set_flip_vertically_on_load(1);
@@ -29,10 +28,8 @@ namespace Rendering {
         }
     }
 
-    Texture::Texture(const int width, const int height, const unsigned char *data, const GLuint minFilter,
-                     const GLuint magFilter, const GLuint wrapS, const GLuint wrapT)
-        : m_Width(width), m_Height(height), m_BPP(4), m_MinFilter(minFilter), m_MagFilter(magFilter), m_WrapS(wrapS),
-          m_WrapT(wrapT) {
+    Texture::Texture(const int width, const int height, const unsigned char *data, const GLuint minFilter, const GLuint magFilter, const GLuint wrapS, const GLuint wrapT)
+        : m_Width(width), m_Height(height), m_BPP(4), m_MinFilter(minFilter), m_MagFilter(magFilter), m_WrapS(wrapS), m_WrapT(wrapT) {
         if (data) {
             const auto size = static_cast<size_t>(width * height * 4); // RGBA
             m_PixelData.assign(data, data + size);
@@ -67,12 +64,10 @@ namespace Rendering {
         }
         // loaded from disk or dynamic data
         else if (!m_PixelData.empty()) {
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, m_Width, m_Height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
-                         m_PixelData.data());
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, m_Width, m_Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_PixelData.data());
 
             // mipmaps
-            if (m_MinFilter == GL_NEAREST_MIPMAP_NEAREST || m_MinFilter == GL_LINEAR_MIPMAP_NEAREST ||
-                m_MinFilter == GL_NEAREST_MIPMAP_LINEAR || m_MinFilter == GL_LINEAR_MIPMAP_LINEAR) {
+            if (m_MinFilter == GL_NEAREST_MIPMAP_NEAREST || m_MinFilter == GL_LINEAR_MIPMAP_NEAREST || m_MinFilter == GL_NEAREST_MIPMAP_LINEAR || m_MinFilter == GL_LINEAR_MIPMAP_LINEAR) {
                 glGenerateMipmap(GL_TEXTURE_2D);
             }
 

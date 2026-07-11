@@ -14,9 +14,7 @@ namespace Math::Projection {
             max = glm::max(max, p);
         }
 
-        [[nodiscard]] bool Intersects(const AABB &other) const {
-            return min.x <= other.max.x && max.x >= other.min.x && min.y <= other.max.y && max.y >= other.min.y;
-        }
+        [[nodiscard]] bool Intersects(const AABB &other) const { return min.x <= other.max.x && max.x >= other.min.x && min.y <= other.max.y && max.y >= other.min.y; }
     };
 
     inline glm::vec2 UnprojectToGround(const glm::mat4 &invVP, const float ndcX, const float ndcY) {

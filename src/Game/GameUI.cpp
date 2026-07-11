@@ -52,13 +52,10 @@ void Game::GameLayer::DrawInterface() {
 
         const float menuBarHeight = ImGui::GetFrameHeight();
 
-        ImGui::SetNextWindowPos(ImVec2(viewport->WorkPos.x + viewport->WorkSize.x - PADDING,
-                                       viewport->WorkPos.y + PADDING + menuBarHeight),
-                                ImGuiCond_Always, ImVec2(1.0f, 0.0f));
+        ImGui::SetNextWindowPos(ImVec2(viewport->WorkPos.x + viewport->WorkSize.x - PADDING, viewport->WorkPos.y + PADDING + menuBarHeight), ImGuiCond_Always, ImVec2(1.0f, 0.0f));
         ImGui::SetNextWindowBgAlpha(0.40f);
         constexpr ImGuiWindowFlags overlayFlags =
-                ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
-                ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove;
+                ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove;
 
         if (ImGui::Begin("Performance", &showPerformanceOverlay, overlayFlags)) {
             ImGui::TextColored({0.0f, 1.0f, 0.7f, 1.0f}, "perf");
@@ -229,42 +226,36 @@ void Game::GameLayer::DrawInterface() {
             ImGui::InputText("Name", nameBuf, sizeof(nameBuf));
 
             if (ImGui::Button("Load Scene")) {
-                m_PendingSceneLoad = Scenes::SceneProperties{
-                        Core::PathUtils::Join(Core::SCENE_PATH, nameBuf, Core::SCENE_FILE_EXTENSION)};
+                m_PendingSceneLoad = Scenes::SceneProperties{Core::PathUtils::Join(Core::SCENE_PATH, nameBuf, Core::SCENE_FILE_EXTENSION)};
             }
             ImGui::SameLine();
             if (ImGui::Button("Save Scene") && m_SceneManager.GetCurrentScene()) {
-                const std::string savePath =
-                        Core::PathUtils::Join(Core::SCENE_PATH, nameBuf, Core::SCENE_FILE_EXTENSION);
+                const std::string savePath = Core::PathUtils::Join(Core::SCENE_PATH, nameBuf, Core::SCENE_FILE_EXTENSION);
                 IO::SceneIO::Serialize(savePath, *m_SceneManager.GetCurrentScene());
             }
 
             if (ImGui::Button("Load Map") && m_SceneManager.GetCurrentScene()) {
                 auto &scene = *m_SceneManager.GetCurrentScene();
                 auto &registry = scene.GetRegistry();
-                registry.ForEach<ECS::Components::MapComponent>(
-                        [&](ECS::Entity, ECS::Components::MapComponent *mapComp) {
-                            const std::string newPath =
-                                    Core::PathUtils::Join(Core::MAP_PATH, nameBuf, Core::MAP_FILE_EXTENSION);
-                            mapComp->mapFilePath = newPath;
-                            if (IO::MapIO::Deserialize(newPath, mapComp->grid)) {
-                                ECS::Systems::MapRuntimeSystem::OnMapChanged(registry, scene.GetContext());
-                            }
-                        });
+                registry.ForEach<ECS::Components::MapComponent>([&](ECS::Entity, ECS::Components::MapComponent *mapComp) {
+                    const std::string newPath = Core::PathUtils::Join(Core::MAP_PATH, nameBuf, Core::MAP_FILE_EXTENSION);
+                    mapComp->mapFilePath = newPath;
+                    if (IO::MapIO::Deserialize(newPath, mapComp->grid)) {
+                        ECS::Systems::MapRuntimeSystem::OnMapChanged(registry, scene.GetContext());
+                    }
+                });
             }
 
             ImGui::SameLine();
             if (ImGui::Button("Save Map") && m_SceneManager.GetCurrentScene()) {
                 auto &scene = *m_SceneManager.GetCurrentScene();
                 auto &registry = scene.GetRegistry();
-                registry.ForEach<ECS::Components::MapComponent>(
-                        [&](ECS::Entity, const ECS::Components::MapComponent *mapComp) {
-                            const std::string newPath =
-                                    Core::PathUtils::Join(Core::MAP_PATH, nameBuf, Core::MAP_FILE_EXTENSION);
-                            if ([[maybe_unused]] const bool ok = IO::MapIO::Serialize(newPath, mapComp->grid)) {
-                                LOG_INFO(LOG_WHO, "Saved!");
-                            }
-                        });
+                registry.ForEach<ECS::Components::MapComponent>([&](ECS::Entity, const ECS::Components::MapComponent *mapComp) {
+                    const std::string newPath = Core::PathUtils::Join(Core::MAP_PATH, nameBuf, Core::MAP_FILE_EXTENSION);
+                    if ([[maybe_unused]] const bool ok = IO::MapIO::Serialize(newPath, mapComp->grid)) {
+                        LOG_INFO(LOG_WHO, "Saved!");
+                    }
+                });
             }
         }
         ImGui::End();

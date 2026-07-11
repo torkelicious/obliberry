@@ -32,8 +32,7 @@ namespace Rendering {
             const float viewHeight = 20.0f / Zoom;
             const float viewWidth = viewHeight * aspect;
 
-            return glm::ortho(-viewWidth * 0.5f, viewWidth * 0.5f, -viewHeight * 0.5f, viewHeight * 0.5f, -100.0f,
-                              100.0f);
+            return glm::ortho(-viewWidth * 0.5f, viewWidth * 0.5f, -viewHeight * 0.5f, viewHeight * 0.5f, -100.0f, 100.0f);
         }
 
         [[nodiscard]] const glm::mat4 &GetRotation() const {
@@ -57,9 +56,7 @@ namespace Rendering {
             return m_CachedInverseRotation;
         }
 
-        [[nodiscard]] glm::mat4 GetVP(const float aspect) const {
-            return GetProjectionMatrix(aspect) * GetRotation() * GetViewMatrix();
-        }
+        [[nodiscard]] glm::mat4 GetVP(const float aspect) const { return GetProjectionMatrix(aspect) * GetRotation() * GetViewMatrix(); }
 
         [[nodiscard]] glm::vec2 MouseToWorld(float mx, float my, float viewWidth, float viewHeight) const {
             const float aspect = viewWidth / viewHeight;

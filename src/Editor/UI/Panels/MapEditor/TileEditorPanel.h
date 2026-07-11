@@ -15,8 +15,7 @@ namespace Editor::UI {
 
     class TileEditorPanel : public EditorPanel {
     public:
-        using CreateTypeFn =
-                std::function<uint8_t(const std::shared_ptr<Rendering::Texture> &tex, const glm::vec4 &color)>;
+        using CreateTypeFn = std::function<uint8_t(const std::shared_ptr<Rendering::Texture> &tex, const glm::vec4 &color)>;
 
         void OnImGuiRender() override;
 

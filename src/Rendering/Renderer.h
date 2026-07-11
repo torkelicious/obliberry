@@ -38,9 +38,7 @@ namespace Rendering {
         const Texture *texture;
         glm::vec4 color;
 
-        bool operator==(const BatchKey &other) const noexcept {
-            return mesh == other.mesh && material == other.material && texture == other.texture && color == other.color;
-        }
+        bool operator==(const BatchKey &other) const noexcept { return mesh == other.mesh && material == other.material && texture == other.texture && color == other.color; }
     };
 
     class Renderer {
@@ -52,11 +50,9 @@ namespace Rendering {
 
         void BeginFrame();
 
-        void Submit(const std::shared_ptr<Mesh> &mesh, const Material *material, const Transform &transform,
-                    const Texture *textureOverride = nullptr, int entityID = -1);
+        void Submit(const std::shared_ptr<Mesh> &mesh, const Material *material, const Transform &transform, const Texture *textureOverride = nullptr, int entityID = -1);
 
-        void Submit(const std::shared_ptr<Mesh> &mesh, const Material *material,
-                    const std::vector<glm::mat4> &transforms, const std::vector<int> &entityIDs = {});
+        void Submit(const std::shared_ptr<Mesh> &mesh, const Material *material, const std::vector<glm::mat4> &transforms, const std::vector<int> &entityIDs = {});
 
         void Flush(size_t renderIndex);
 
@@ -92,8 +88,7 @@ namespace Rendering {
     private:
         void BindLightmap(Shader *shader, size_t renderIndex) const;
 
-        void RenderBatch(const BatchKey &key, const std::vector<glm::mat4> &transforms,
-                         const std::vector<int> &entityIDs, size_t renderIndex);
+        void RenderBatch(const BatchKey &key, const std::vector<glm::mat4> &transforms, const std::vector<int> &entityIDs, size_t renderIndex);
 
         static std::vector<std::function<void()>> s_InitQueue;
         static std::mutex s_InitQueueMutex;

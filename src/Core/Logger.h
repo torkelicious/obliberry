@@ -19,8 +19,7 @@ namespace Core::Logging {
     inline std::string getTimestamp(std::chrono::system_clock::time_point time) {
         const auto local_time = std::chrono::current_zone()->to_local(time);
         const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(time.time_since_epoch()) % 1000;
-        return std::format("{:%Y-%m-%d %H:%M:%S}.{:03}", std::chrono::floor<std::chrono::seconds>(local_time),
-                           ms.count());
+        return std::format("{:%Y-%m-%d %H:%M:%S}.{:03}", std::chrono::floor<std::chrono::seconds>(local_time), ms.count());
     }
 
     struct Log {

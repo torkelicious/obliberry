@@ -43,11 +43,10 @@ namespace ECS::Systems::LightingSystem {
 
             Rendering::Renderer::SubmitInitTask([tex = texture] { tex->InitGL(); });
         } else {
-            Rendering::Renderer::SubmitInitTask(
-                    [tex = texture, w = texW, h = texH, data = std::move(map.lightmap.pixelBuffer)]() mutable {
-                        tex->UpdateData(data.data(), w, h);
-                        data.clear();
-                    });
+            Rendering::Renderer::SubmitInitTask([tex = texture, w = texW, h = texH, data = std::move(map.lightmap.pixelBuffer)]() mutable {
+                tex->UpdateData(data.data(), w, h);
+                data.clear();
+            });
             map.lightmap.pixelBuffer.assign(texW * texH * 4, 255);
         }
     }
@@ -62,8 +61,7 @@ namespace ECS::Systems::LightingSystem {
             return;
 
         bool hasAnyLight = false;
-        reg.ForEach<Components::PointLightComponent>(
-                [&](Entity, const Components::PointLightComponent *) { hasAnyLight = true; });
+        reg.ForEach<Components::PointLightComponent>([&](Entity, const Components::PointLightComponent *) { hasAnyLight = true; });
         if (!hasAnyLight)
             return;
 
@@ -82,42 +80,40 @@ namespace ECS::Systems::LightingSystem {
         std::ranges::fill(accumulationBuffer, glm::vec3(ambient));
 
         int lightCount = 0;
-        reg.ForEach<Components::PointLightComponent, Components::TransformComponent>(
-                [&](Entity, const Components::PointLightComponent *light,
-                    const Components::TransformComponent *transform) {
-                    lightCount++;
-                    const glm::vec3 pos = transform->transform.GetPosition();
+        reg.ForEach<Components::PointLightComponent, Components::TransformComponent>([&](Entity, const Components::PointLightComponent *light, const Components::TransformComponent *transform) {
+            lightCount++;
+            const glm::vec3 pos = transform->transform.GetPosition();
 
-                    const float lx = (pos.x - mapOffset.x) / mapSize.x * texW;
-                    const float ly = (pos.y - mapOffset.y) / mapSize.y * texH;
+            const float lx = (pos.x - mapOffset.x) / mapSize.x * texW;
+            const float ly = (pos.y - mapOffset.y) / mapSize.y * texH;
 
-                    const float radiusPxX = light->radius / mapSize.x * texW;
-                    const float radiusPxY = light->radius / mapSize.y * texH;
-                    const float radiusPx = std::max(radiusPxX, radiusPxY);
-                    const float radiusSq = radiusPx * radiusPx;
-                    const float invRadiusSq = 1.0f / radiusSq;
+            const float radiusPxX = light->radius / mapSize.x * texW;
+            const float radiusPxY = light->radius / mapSize.y * texH;
+            const float radiusPx = std::max(radiusPxX, radiusPxY);
+            const float radiusSq = radiusPx * radiusPx;
+            const float invRadiusSq = 1.0f / radiusSq;
 
-                    const int minX = std::max(0, static_cast<int>(lx - radiusPx));
-                    const int maxX = std::min(texW - 1, static_cast<int>(lx + radiusPx));
-                    const int minY = std::max(0, static_cast<int>(ly - radiusPx));
-                    const int maxY = std::min(texH - 1, static_cast<int>(ly + radiusPx));
+            const int minX = std::max(0, static_cast<int>(lx - radiusPx));
+            const int maxX = std::min(texW - 1, static_cast<int>(lx + radiusPx));
+            const int minY = std::max(0, static_cast<int>(ly - radiusPx));
+            const int maxY = std::min(texH - 1, static_cast<int>(ly + radiusPx));
 
-                    for (int y = minY; y <= maxY; ++y) {
-                        const float dy = static_cast<float>(y) - ly;
-                        const float dySq = dy * dy;
-                        const int rowIdx = y * texW;
+            for (int y = minY; y <= maxY; ++y) {
+                const float dy = static_cast<float>(y) - ly;
+                const float dySq = dy * dy;
+                const int rowIdx = y * texW;
 
-                        for (int x = minX; x <= maxX; ++x) {
-                            const float dx = static_cast<float>(x) - lx;
+                for (int x = minX; x <= maxX; ++x) {
+                    const float dx = static_cast<float>(x) - lx;
 
-                            if (const float distSq = dx * dx + dySq; distSq <= radiusSq) {
-                                const float falloff = std::max(0.0f, 1.0f - distSq * invRadiusSq);
-                                const float brightness = falloff * light->intensity;
-                                accumulationBuffer[rowIdx + x] += light->color * brightness;
-                            }
-                        }
+                    if (const float distSq = dx * dx + dySq; distSq <= radiusSq) {
+                        const float falloff = std::max(0.0f, 1.0f - distSq * invRadiusSq);
+                        const float brightness = falloff * light->intensity;
+                        accumulationBuffer[rowIdx + x] += light->color * brightness;
                     }
-                });
+                }
+            }
+        });
 
         for (int i = 0; i < pixelCount; ++i) {
             const glm::vec3 clamped = glm::clamp(accumulationBuffer[i], 0.0f, 1.0f);
@@ -127,11 +123,10 @@ namespace ECS::Systems::LightingSystem {
             pixelBuffer[pIdx + 2] = static_cast<unsigned char>(clamped.b * 255.0f);
             pixelBuffer[pIdx + 3] = 255;
         }
-        Rendering::Renderer::SubmitInitTask(
-                [tex = texture, w = texW, h = texH, data = std::move(pixelBuffer)]() mutable {
-                    tex->UpdateData(data.data(), w, h);
-                    data.clear();
-                });
+        Rendering::Renderer::SubmitInitTask([tex = texture, w = texW, h = texH, data = std::move(pixelBuffer)]() mutable {
+            tex->UpdateData(data.data(), w, h);
+            data.clear();
+        });
         pixelBuffer.assign(texW * texH * 4, 255);
     }
 } // namespace ECS::Systems::LightingSystem

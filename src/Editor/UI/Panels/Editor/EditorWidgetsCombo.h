@@ -15,9 +15,7 @@ namespace Rendering {
 } // namespace Rendering
 
 namespace Editor::UI {
-    template <typename T, typename GetPreviewText>
-    bool AssetComboImpl(const char *label, Core::ResourceManager &resources, std::shared_ptr<T> &current,
-                        GetPreviewText &&getPreview) {
+    template <typename T, typename GetPreviewText> bool AssetComboImpl(const char *label, Core::ResourceManager &resources, std::shared_ptr<T> &current, GetPreviewText &&getPreview) {
         const auto &all = resources.GetAll<T>();
 
         // build items and find current index
@@ -80,15 +78,13 @@ namespace Editor::UI {
 
     // typed combos
 
-    bool TextureCombo(const char *label, Core::ResourceManager &resources,
-                      std::shared_ptr<Rendering::Texture> &current);
+    bool TextureCombo(const char *label, Core::ResourceManager &resources, std::shared_ptr<Rendering::Texture> &current);
 
     bool ShaderCombo(const char *label, Core::ResourceManager &resources, std::shared_ptr<Rendering::Shader> &current);
 
     bool MeshCombo(const char *label, Core::ResourceManager &resources, std::shared_ptr<Rendering::Mesh> &current);
 
-    bool MaterialCombo(const char *label, Core::ResourceManager &resources,
-                       std::shared_ptr<Rendering::Material> &current);
+    bool MaterialCombo(const char *label, Core::ResourceManager &resources, std::shared_ptr<Rendering::Material> &current);
 
     bool FileCombo(const char *label, const std::string &subDir, const std::string &extension, std::string &current);
 

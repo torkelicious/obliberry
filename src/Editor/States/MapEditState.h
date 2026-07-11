@@ -29,13 +29,11 @@ namespace Editor {
 
         void OnExit() override;
 
-        [[nodiscard]] uint8_t GetOrCreateTypeForMaterial(const std::shared_ptr<Rendering::Texture> &tex,
-                                                         const glm::vec4 &color = {1, 1, 1, 1}) const;
+        [[nodiscard]] uint8_t GetOrCreateTypeForMaterial(const std::shared_ptr<Rendering::Texture> &tex, const glm::vec4 &color = {1, 1, 1, 1}) const;
 
     private:
         void ApplyToolAt(const Map::HexCoords &hex);
-        void ForEachHexInRing(Map::HexCoords center, int radius,
-                              const std::function<void(const Map::HexCoords &)> &callback) const;
+        void ForEachHexInRing(Map::HexCoords center, int radius, const std::function<void(const Map::HexCoords &)> &callback) const;
 
         Map::HexGrid *m_CurrentGrid = nullptr;
         ECS::Components::MapStateComponent *m_MapState = nullptr;

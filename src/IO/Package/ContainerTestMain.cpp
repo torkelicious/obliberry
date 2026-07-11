@@ -6,12 +6,12 @@
 
 static int g_failures = 0;
 
-#define CHECK(cond)                                                                                                    \
-    do {                                                                                                               \
-        if (!(cond)) {                                                                                                 \
-            LOG_ERROR("ContainerTest", std::string("FAILED: ") + #cond + " (line " + std::to_string(__LINE__) + ")");  \
-            ++g_failures;                                                                                              \
-        }                                                                                                              \
+#define CHECK(cond)                                                                                                                                                                                                        \
+    do {                                                                                                                                                                                                                   \
+        if (!(cond)) {                                                                                                                                                                                                     \
+            LOG_ERROR("ContainerTest", std::string("FAILED: ") + #cond + " (line " + std::to_string(__LINE__) + ")");                                                                                                      \
+            ++g_failures;                                                                                                                                                                                                  \
+        }                                                                                                                                                                                                                  \
     } while (0)
 
 

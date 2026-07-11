@@ -12,8 +12,7 @@ constexpr auto LOG_WHO = "AssetLoader";
 
 std::unordered_map<std::string, IO::AssetLoader::MeshFactory> IO::AssetLoader::s_MeshFactories;
 
-std::optional<std::string> IO::AssetLoader::ImportAsset(const std::string &AbsoultePath,
-                                                        const std::string &TargetSubDir) {
+std::optional<std::string> IO::AssetLoader::ImportAsset(const std::string &AbsoultePath, const std::string &TargetSubDir) {
     const std::filesystem::path srcpath(AbsoultePath);
 
     const std::filesystem::path projectAssetsDir = VFS::GetAssetsDirectory();
@@ -73,9 +72,7 @@ void IO::AssetLoader::LoadAssets(const json &assets, Core::ResourceManager &reso
         LoadMaterials(assets["materials"], resources);
 }
 
-void IO::AssetLoader::RegisterMeshFactory(const std::string &name, MeshFactory factory) {
-    s_MeshFactories[name] = std::move(factory);
-}
+void IO::AssetLoader::RegisterMeshFactory(const std::string &name, MeshFactory factory) { s_MeshFactories[name] = std::move(factory); }
 
 void IO::AssetLoader::LoadTextures(const json &textures, Core::ResourceManager &resources) {
     for (const auto &tex : textures) {
@@ -99,8 +96,7 @@ void IO::AssetLoader::LoadShaders(const json &shaders, Core::ResourceManager &re
             continue;
         }
 
-        auto s = resources.Load<Rendering::Shader>(id, shader.at("vertex").get<std::string>(),
-                                                   shader.at("fragment").get<std::string>());
+        auto s = resources.Load<Rendering::Shader>(id, shader.at("vertex").get<std::string>(), shader.at("fragment").get<std::string>());
         Rendering::Renderer::SubmitInitTask([s] { s->InitGL(); });
     }
 }
@@ -127,9 +123,7 @@ void IO::AssetLoader::LoadMaterials(const json &materials, Core::ResourceManager
             color = {c[0], c[1], c[2], c[3]};
         }
 
-        resources.LoadFromFactory<Rendering::Material>(id, [shader, texture, color] {
-            return std::make_shared<Rendering::Material>(Rendering::Material{shader, texture, color});
-        });
+        resources.LoadFromFactory<Rendering::Material>(id, [shader, texture, color] { return std::make_shared<Rendering::Material>(Rendering::Material{shader, texture, color}); });
     }
 }
 

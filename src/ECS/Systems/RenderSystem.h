@@ -9,11 +9,9 @@
 #include "Rendering/Renderer.h"
 
 namespace ECS::Systems::RenderSystem {
-    inline void Render(Registry &registry, Rendering::Renderer &renderer,
-                       const Math::Frustum::FrustumPlanes &frustum3D) noexcept {
+    inline void Render(Registry &registry, Rendering::Renderer &renderer, const Math::Frustum::FrustumPlanes &frustum3D) noexcept {
         registry.ForEach<Components::MeshComponent, Components::MaterialComponent, Components::TransformComponent>(
-                [&](const Entity entity, const Components::MeshComponent *meshComp,
-                    const Components::MaterialComponent *matComp, const Components::TransformComponent *transComp) {
+                [&](const Entity entity, const Components::MeshComponent *meshComp, const Components::MaterialComponent *matComp, const Components::TransformComponent *transComp) {
                     if (!meshComp || !meshComp->mesh)
                         return;
                     if (!matComp || !matComp->material)
@@ -27,8 +25,7 @@ namespace ECS::Systems::RenderSystem {
                     const float meshRadius = meshComp->mesh->GetBoundingRadius();
                     const float maxScale = std::max({scale.x, scale.y, scale.z, 1.0f});
 
-                    if (const float worldRadius = meshRadius * maxScale;
-                        !frustum3D.IntersectsSphere(pos, worldRadius)) {
+                    if (const float worldRadius = meshRadius * maxScale; !frustum3D.IntersectsSphere(pos, worldRadius)) {
                         return;
                     }
 
@@ -44,8 +41,7 @@ namespace ECS::Systems::RenderSystem {
                     const auto &shader = matComp->material->shader;
 
                     const int entityInt = static_cast<int>(static_cast<EntityID>(entity));
-                    renderer.Submit(meshComp->mesh, matComp->material.get(), transComp->transform, textureOverride,
-                                    entityInt);
+                    renderer.Submit(meshComp->mesh, matComp->material.get(), transComp->transform, textureOverride, entityInt);
                 });
     }
 } // namespace ECS::Systems::RenderSystem

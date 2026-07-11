@@ -28,9 +28,7 @@ namespace Core {
                 const auto &srcPath = entry.path();
                 const auto destPath = projectDir / srcPath.filename();
                 std::filesystem::remove_all(destPath);
-                std::filesystem::copy(srcPath, destPath,
-                                      std::filesystem::copy_options::recursive |
-                                              std::filesystem::copy_options::overwrite_existing);
+                std::filesystem::copy(srcPath, destPath, std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
             }
         } catch (const std::exception &e) {
             LOG_ERROR(LOG_WHO, "Failed to copy template project: " + std::string(e.what()));

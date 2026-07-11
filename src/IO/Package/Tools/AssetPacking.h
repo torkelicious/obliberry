@@ -12,7 +12,6 @@ namespace IO::Package::Tools {
         std::string binary_name;
     };
 
-    bool pack_one_file(const std::filesystem::path &filepath, const std::filesystem::path &project_dir,
-                       const std::filesystem::path &script_root, ContainerWriter &writer, DependencyGraph &dep_graph,
+    bool pack_one_file(const std::filesystem::path &filepath, const std::filesystem::path &project_dir, const std::filesystem::path &script_root, ContainerWriter &writer, DependencyGraph &dep_graph,
                        const PackOptions &opts);
 } // namespace IO::Package::Tools

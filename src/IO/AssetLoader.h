@@ -24,8 +24,7 @@ namespace IO {
 
         static void RegisterMeshFactory(const std::string &name, MeshFactory factory);
 
-        static std::optional<std::string> ImportAsset(const std::string &AbsoultePath,
-                                                      const std::string &TargetSubDir = "");
+        static std::optional<std::string> ImportAsset(const std::string &AbsoultePath, const std::string &TargetSubDir = "");
 
     private:
         static void LoadTextures(const json &textures, Core::ResourceManager &resources);

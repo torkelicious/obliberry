@@ -46,9 +46,7 @@ namespace Scenes {
             const std::string scenepath = Core::PathUtils::Join(Core::SCENE_PATH, safeName, ".json");
 
             // create
-            Scene tempScene(m_Context, SceneProperties{.ScenePath = scenepath,
-                                                       .Name = sceneName,
-                                                       .BackgroundClearColor = {0.1f, 0.1f, 0.1f, 1.0f}});
+            Scene tempScene(m_Context, SceneProperties{.ScenePath = scenepath, .Name = sceneName, .BackgroundClearColor = {0.1f, 0.1f, 0.1f, 1.0f}});
 
 
             return IO::SceneIO::Serialize(scenepath, tempScene);
@@ -77,9 +75,7 @@ namespace Scenes {
         return false;
     }
 
-    std::string SceneManager::GetCurrentScenePath() const {
-        return m_CurrentScene ? m_CurrentScene->GetScenePath() : std::string{};
-    }
+    std::string SceneManager::GetCurrentScenePath() const { return m_CurrentScene ? m_CurrentScene->GetScenePath() : std::string{}; }
 
     void SceneManager::ClearCurrentScene() {
         if (m_CurrentScene) {

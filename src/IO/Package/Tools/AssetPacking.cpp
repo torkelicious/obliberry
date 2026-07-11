@@ -24,9 +24,7 @@ namespace IO::Package::Tools {
     }
 
     // NOLINTBEGIN (*-pro-type-static-cast-downcast)
-    static void resolve_and_collect_using_paths(ObSL::Stmt *stmt, const std::filesystem::path &script_root,
-                                                const std::filesystem::path &project_dir,
-                                                std::vector<std::string> &out_deps) {
+    static void resolve_and_collect_using_paths(ObSL::Stmt *stmt, const std::filesystem::path &script_root, const std::filesystem::path &project_dir, std::vector<std::string> &out_deps) {
         if (!stmt)
             return;
         using ObSL::StmtType;
@@ -55,16 +53,13 @@ namespace IO::Package::Tools {
                 break;
             }
             case StmtType::While:
-                resolve_and_collect_using_paths(static_cast<ObSL::WhileStmt *>(stmt)->body.get(), script_root,
-                                                project_dir, out_deps);
+                resolve_and_collect_using_paths(static_cast<ObSL::WhileStmt *>(stmt)->body.get(), script_root, project_dir, out_deps);
                 break;
             case StmtType::Foreach:
-                resolve_and_collect_using_paths(static_cast<ObSL::ForeachStmt *>(stmt)->body.get(), script_root,
-                                                project_dir, out_deps);
+                resolve_and_collect_using_paths(static_cast<ObSL::ForeachStmt *>(stmt)->body.get(), script_root, project_dir, out_deps);
                 break;
             case StmtType::Function:
-                resolve_and_collect_using_paths(static_cast<ObSL::FunctionStmt *>(stmt)->body.get(), script_root,
-                                                project_dir, out_deps);
+                resolve_and_collect_using_paths(static_cast<ObSL::FunctionStmt *>(stmt)->body.get(), script_root, project_dir, out_deps);
                 break;
             case StmtType::Switch:
                 for (auto &c : static_cast<ObSL::SwitchStmt *>(stmt)->cases)
@@ -84,8 +79,7 @@ namespace IO::Package::Tools {
 
     // NOLINTEND (*-pro-type-static-cast-downcast)
 
-    bool pack_one_file(const std::filesystem::path &filepath, const std::filesystem::path &project_dir,
-                       const std::filesystem::path &script_root, ContainerWriter &writer, DependencyGraph &dep_graph,
+    bool pack_one_file(const std::filesystem::path &filepath, const std::filesystem::path &project_dir, const std::filesystem::path &script_root, ContainerWriter &writer, DependencyGraph &dep_graph,
                        const PackOptions &opts) {
         std::string canonical_path = std::filesystem::relative(filepath, project_dir).generic_string();
         std::string ext = lower_ext(filepath);

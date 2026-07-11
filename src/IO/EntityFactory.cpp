@@ -17,21 +17,16 @@ constexpr auto LOG_WHO = "EntityFactory";
 std::unordered_map<std::string, ComponentDeserializer> IO::EntityFactory::s_Deserializers;
 std::unordered_map<std::string, ComponentSerializer> IO::EntityFactory::s_Serializers;
 
-const std::unordered_map<std::string, ComponentDeserializer> &IO::EntityFactory::GetDeserializers() {
-    return s_Deserializers;
-}
+const std::unordered_map<std::string, ComponentDeserializer> &IO::EntityFactory::GetDeserializers() { return s_Deserializers; }
 
-const std::unordered_map<std::string, ComponentSerializer> &IO::EntityFactory::GetSerializers() {
-    return s_Serializers;
-}
+const std::unordered_map<std::string, ComponentSerializer> &IO::EntityFactory::GetSerializers() { return s_Serializers; }
 
 void IO::EntityFactory::RegisterDeserializers() {
     if (!s_Deserializers.empty())
         return;
 
     // TRANSFORM COMPONENT
-    s_Deserializers["TransformComponent"] = [](ECS::Entity &entity, const nlohmann::json &data,
-                                               Core::ResourceManager & /*resources*/) {
+    s_Deserializers["TransformComponent"] = [](ECS::Entity &entity, const nlohmann::json &data, Core::ResourceManager & /*resources*/) {
         ECS::Components::TransformComponent tc;
         if (data.contains("position")) {
             tc.transform.SetPosition({data["position"][0], data["position"][1], data["position"][2]});
@@ -43,8 +38,7 @@ void IO::EntityFactory::RegisterDeserializers() {
     };
 
     // MOVEMENT COMPONENT
-    s_Deserializers["MovementComponent"] = [](ECS::Entity &entity, const nlohmann::json &data,
-                                              Core::ResourceManager & /*resources*/) {
+    s_Deserializers["MovementComponent"] = [](ECS::Entity &entity, const nlohmann::json &data, Core::ResourceManager & /*resources*/) {
         ECS::Components::MovementComponent mc;
         if (data.contains("timePerStep")) {
             mc.timePerStep = data["timePerStep"].get<float>();
@@ -67,8 +61,7 @@ void IO::EntityFactory::RegisterDeserializers() {
     //        };
 
     // MESH COMPONENT
-    s_Deserializers["MeshComponent"] = [](ECS::Entity &entity, const nlohmann::json &data,
-                                          Core::ResourceManager &resources) {
+    s_Deserializers["MeshComponent"] = [](ECS::Entity &entity, const nlohmann::json &data, Core::ResourceManager &resources) {
         ECS::Components::MeshComponent mc;
         if (data.contains("mesh_id")) {
             const std::string meshId = data["mesh_id"].get<std::string>();
@@ -80,8 +73,7 @@ void IO::EntityFactory::RegisterDeserializers() {
     };
 
     // MATERIAL COMPONENT
-    s_Deserializers["MaterialComponent"] = [](ECS::Entity &entity, const nlohmann::json &data,
-                                              Core::ResourceManager &resources) {
+    s_Deserializers["MaterialComponent"] = [](ECS::Entity &entity, const nlohmann::json &data, Core::ResourceManager &resources) {
         ECS::Components::MaterialComponent matComp;
         if (data.contains("material_id")) {
             const std::string matID = data["material_id"].get<std::string>();
@@ -92,14 +84,10 @@ void IO::EntityFactory::RegisterDeserializers() {
         entity.AddComponent<ECS::Components::MaterialComponent>(matComp);
     };
 
-    s_Deserializers["BillboardTagComponent"] = [](ECS::Entity &entity, const nlohmann::json &,
-                                                  Core::ResourceManager &) {
-        entity.AddComponent<ECS::Components::BillboardTagComponent>();
-    };
+    s_Deserializers["BillboardTagComponent"] = [](ECS::Entity &entity, const nlohmann::json &, Core::ResourceManager &) { entity.AddComponent<ECS::Components::BillboardTagComponent>(); };
 
     // DIRECTIONAL TEXTURE COMPONENT
-    s_Deserializers["DirectionalTextureComponent"] = [](ECS::Entity &entity, const nlohmann::json &data,
-                                                        Core::ResourceManager &resources) {
+    s_Deserializers["DirectionalTextureComponent"] = [](ECS::Entity &entity, const nlohmann::json &data, Core::ResourceManager &resources) {
         ECS::Components::DirectionalTextureComponent dirTex;
         if (data.contains("textures") && data["textures"].is_array()) {
             auto &texArray = data["textures"];
@@ -115,8 +103,7 @@ void IO::EntityFactory::RegisterDeserializers() {
     };
 
     // POINT LIGHT COMPONENT
-    s_Deserializers["PointLightComponent"] = [](ECS::Entity &entity, const nlohmann::json &data,
-                                                Core::ResourceManager &) {
+    s_Deserializers["PointLightComponent"] = [](ECS::Entity &entity, const nlohmann::json &data, Core::ResourceManager &) {
         ECS::Components::PointLightComponent plc;
         if (data.contains("color")) {
             plc.color = {data["color"][0], data["color"][1], data["color"][2]};
@@ -131,10 +118,8 @@ void IO::EntityFactory::RegisterDeserializers() {
     };
 
     // SCRIPT COMPONENT
-    s_Deserializers["ScriptComponent"] = [](ECS::Entity &entity, const nlohmann::json &data,
-                                            Core::ResourceManager & /*resources*/) {
-        auto &[scriptPaths, instance_envs, on_update_functions, on_destroy_functions, on_exit_functions, isInitialized,
-               source_codes, ast_nodes, lastModified] = entity.AddComponent<ECS::Components::ScriptComponent>();
+    s_Deserializers["ScriptComponent"] = [](ECS::Entity &entity, const nlohmann::json &data, Core::ResourceManager & /*resources*/) {
+        auto &[scriptPaths, instance_envs, on_update_functions, on_destroy_functions, on_exit_functions, isInitialized, source_codes, ast_nodes, lastModified] = entity.AddComponent<ECS::Components::ScriptComponent>();
 
         if (data.contains("scriptPath")) {
             // Single script
@@ -165,8 +150,7 @@ void IO::EntityFactory::RegisterSerializers() {
         return;
 
     // TRANSFORM COMPONENT
-    s_Serializers["TransformComponent"] = [](const ECS::Entity &entity, nlohmann::json &data,
-                                             Core::ResourceManager & /*resources*/) {
+    s_Serializers["TransformComponent"] = [](const ECS::Entity &entity, nlohmann::json &data, Core::ResourceManager & /*resources*/) {
         if (entity.HasComponent<ECS::Components::TransformComponent>()) {
             const auto *tc = entity.GetComponent<ECS::Components::TransformComponent>();
             auto pos = tc->transform.GetPosition();
@@ -177,8 +161,7 @@ void IO::EntityFactory::RegisterSerializers() {
     };
 
     // MOVEMENT COMPONENT
-    s_Serializers["MovementComponent"] = [](const ECS::Entity &entity, nlohmann::json &data,
-                                            Core::ResourceManager & /*resources*/) {
+    s_Serializers["MovementComponent"] = [](const ECS::Entity &entity, nlohmann::json &data, Core::ResourceManager & /*resources*/) {
         if (entity.HasComponent<ECS::Components::MovementComponent>()) {
             auto *mc = entity.GetComponent<ECS::Components::MovementComponent>();
             data["MovementComponent"]["timePerStep"] = mc->timePerStep;
@@ -202,8 +185,7 @@ void IO::EntityFactory::RegisterSerializers() {
     //};
 
     // MESH COMPONENT
-    s_Serializers["MeshComponent"] = [](const ECS::Entity &entity, nlohmann::json &data,
-                                        Core::ResourceManager &resources) {
+    s_Serializers["MeshComponent"] = [](const ECS::Entity &entity, nlohmann::json &data, Core::ResourceManager &resources) {
         if (entity.HasComponent<ECS::Components::MeshComponent>()) {
             if (const auto *mc = entity.GetComponent<ECS::Components::MeshComponent>(); mc->mesh) {
                 if (std::string id = resources.GetKey<Rendering::Mesh>(mc->mesh); !id.empty()) {
@@ -214,8 +196,7 @@ void IO::EntityFactory::RegisterSerializers() {
     };
 
     // MATERIAL COMPONENT
-    s_Serializers["MaterialComponent"] = [](const ECS::Entity &entity, nlohmann::json &data,
-                                            Core::ResourceManager &resources) {
+    s_Serializers["MaterialComponent"] = [](const ECS::Entity &entity, nlohmann::json &data, Core::ResourceManager &resources) {
         if (entity.HasComponent<ECS::Components::MaterialComponent>()) {
             if (const auto *mat = entity.GetComponent<ECS::Components::MaterialComponent>(); mat->material) {
                 if (std::string id = resources.GetKey<Rendering::Material>(mat->material); !id.empty()) {
@@ -225,16 +206,14 @@ void IO::EntityFactory::RegisterSerializers() {
         }
     };
 
-    s_Serializers["BillboardTagComponent"] = [](const ECS::Entity &entity, nlohmann::json &data,
-                                                Core::ResourceManager &) {
+    s_Serializers["BillboardTagComponent"] = [](const ECS::Entity &entity, nlohmann::json &data, Core::ResourceManager &) {
         if (entity.HasComponent<ECS::Components::BillboardTagComponent>()) {
             data["BillboardTagComponent"] = nlohmann::json::object();
         }
     };
 
     // DIRECTIONAL TEXTURE COMPONENT
-    s_Serializers["DirectionalTextureComponent"] = [](const ECS::Entity &entity, nlohmann::json &data,
-                                                      Core::ResourceManager &resources) {
+    s_Serializers["DirectionalTextureComponent"] = [](const ECS::Entity &entity, nlohmann::json &data, Core::ResourceManager &resources) {
         if (entity.HasComponent<ECS::Components::DirectionalTextureComponent>()) {
             auto *dt = entity.GetComponent<ECS::Components::DirectionalTextureComponent>();
             data["DirectionalTextureComponent"]["index"] = dt->index;
@@ -251,8 +230,7 @@ void IO::EntityFactory::RegisterSerializers() {
     };
 
     // POINT LIGHT COMPONENT
-    s_Serializers["PointLightComponent"] = [](const ECS::Entity &entity, nlohmann::json &data,
-                                              Core::ResourceManager &) {
+    s_Serializers["PointLightComponent"] = [](const ECS::Entity &entity, nlohmann::json &data, Core::ResourceManager &) {
         if (entity.HasComponent<ECS::Components::PointLightComponent>()) {
             const auto *plc = entity.GetComponent<ECS::Components::PointLightComponent>();
             data["PointLightComponent"]["color"] = {plc->color.x, plc->color.y, plc->color.z};
@@ -264,8 +242,7 @@ void IO::EntityFactory::RegisterSerializers() {
     // SCRIPT COMPONENT
     s_Serializers["ScriptComponent"] = [](const ECS::Entity &entity, nlohmann::json &data, Core::ResourceManager &) {
         if (entity.HasComponent<ECS::Components::ScriptComponent>()) {
-            if (const auto *scriptComp = entity.GetComponent<ECS::Components::ScriptComponent>();
-                scriptComp->scriptPaths.size() == 1) {
+            if (const auto *scriptComp = entity.GetComponent<ECS::Components::ScriptComponent>(); scriptComp->scriptPaths.size() == 1) {
                 // Single script
                 data["ScriptComponent"]["scriptPath"] = scriptComp->scriptPaths[0];
             } else if (scriptComp->scriptPaths.size() > 1) {
@@ -280,8 +257,7 @@ void IO::EntityFactory::RegisterSerializers() {
     };
 }
 
-void IO::EntityFactory::DeserializeEntity(ECS::Entity &entity, const nlohmann::json &entityData,
-                                          Core::ResourceManager &resources) {
+void IO::EntityFactory::DeserializeEntity(ECS::Entity &entity, const nlohmann::json &entityData, Core::ResourceManager &resources) {
     if (!entityData.contains("components")) {
         return;
     }
@@ -297,8 +273,7 @@ void IO::EntityFactory::DeserializeEntity(ECS::Entity &entity, const nlohmann::j
     }
 }
 
-void IO::EntityFactory::SerializeEntity(ECS::Entity &entity, nlohmann::json &outEntityData,
-                                        Core::ResourceManager &resources) {
+void IO::EntityFactory::SerializeEntity(ECS::Entity &entity, nlohmann::json &outEntityData, Core::ResourceManager &resources) {
     if (!entity.GetName().empty()) {
         outEntityData["name"] = entity.GetName();
     }

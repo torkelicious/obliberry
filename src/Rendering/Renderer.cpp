@@ -28,8 +28,7 @@ void Rendering::Renderer::BeginFrame() {
     }
 }
 
-void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Material *material,
-                                 const Transform &transform, const Texture *textureOverride, const int entityID) {
+void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Material *material, const Transform &transform, const Texture *textureOverride, const int entityID) {
     const glm::vec3 &pos = transform.GetPosition();
 
     auto packKey = [](const float posX, const float posY, const float posZ) -> int32_t {
@@ -37,21 +36,16 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Materi
         int z = static_cast<int>(std::lround(posZ * 100.0f));
         d = std::clamp(d, -32767, 32767);
         z = std::clamp(z, -32767, 32767);
-        return static_cast<int32_t>(static_cast<uint32_t>(static_cast<int16_t>(d)) << 16 |
-                                    static_cast<uint32_t>(static_cast<int16_t>(z)));
+        return static_cast<int32_t>(static_cast<uint32_t>(static_cast<int16_t>(d)) << 16 | static_cast<uint32_t>(static_cast<int16_t>(z)));
     };
 
-    const Texture *effectiveTex = textureOverride                 ? textureOverride
-                                  : material && material->texture ? material->texture.get()
-                                                                  : nullptr;
+    const Texture *effectiveTex = textureOverride ? textureOverride : material && material->texture ? material->texture.get() : nullptr;
     const glm::vec4 col = material ? material->color : glm::vec4(1.0f);
 
-    m_Commands[m_SubmitIndex].push_back(
-            {mesh.get(), material, effectiveTex, col, transform.GetMatrix(), packKey(pos.x, pos.y, pos.z), entityID});
+    m_Commands[m_SubmitIndex].push_back({mesh.get(), material, effectiveTex, col, transform.GetMatrix(), packKey(pos.x, pos.y, pos.z), entityID});
 }
 
-void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Material *material,
-                                 const std::vector<glm::mat4> &transforms, const std::vector<int> &entityIDs) {
+void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Material *material, const std::vector<glm::mat4> &transforms, const std::vector<int> &entityIDs) {
     if (transforms.empty())
         return;
 
@@ -100,8 +94,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
 
         std::vector<InstancedEntry> entries;
         entries.reserve(m_InstancedCommands[renderIndex].size());
-        for (const auto &[mesh, material, effectiveTexture, color, transforms, entityIDs] :
-             m_InstancedCommands[renderIndex]) {
+        for (const auto &[mesh, material, effectiveTexture, color, transforms, entityIDs] : m_InstancedCommands[renderIndex]) {
             if (!mesh || !material)
                 continue;
             if (transforms.empty())
@@ -195,8 +188,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
     m_InstancedCommands[renderIndex].clear();
 }
 
-void Rendering::Renderer::RenderBatch(const BatchKey &key, const std::vector<glm::mat4> &transforms,
-                                      const std::vector<int> &entityIDs, const size_t renderIndex) {
+void Rendering::Renderer::RenderBatch(const BatchKey &key, const std::vector<glm::mat4> &transforms, const std::vector<int> &entityIDs, const size_t renderIndex) {
     const auto instanceCount = static_cast<unsigned int>(transforms.size());
     if (instanceCount == 0 || instanceCount > MAX_INSTANCES)
         return;
@@ -287,9 +279,7 @@ void Rendering::Renderer::BindLightmap(Shader *shader, const size_t renderIndex)
 
 void Rendering::Renderer::SetClearColor(const glm::vec4 color) { s_ClearColorStaging = color; }
 
-void Rendering::Renderer::ApplyClearColor() {
-    glClearColor(s_ClearColorStaging[0], s_ClearColorStaging[1], s_ClearColorStaging[2], s_ClearColorStaging[3]);
-}
+void Rendering::Renderer::ApplyClearColor() { glClearColor(s_ClearColorStaging[0], s_ClearColorStaging[1], s_ClearColorStaging[2], s_ClearColorStaging[3]); }
 
 void Rendering::Renderer::SwapBuffers() {
     m_RenderIndex = m_SubmitIndex;

@@ -12,8 +12,7 @@ namespace IO {
         const int bound = LZ4_compressBound(static_cast<int>(source.size()));
         std::vector<uint8_t> compressed(bound);
 
-        const int compressed_size = LZ4_compress_default(source.data(), reinterpret_cast<char *>(compressed.data()),
-                                                         static_cast<int>(source.size()), bound);
+        const int compressed_size = LZ4_compress_default(source.data(), reinterpret_cast<char *>(compressed.data()), static_cast<int>(source.size()), bound);
 
         if (compressed_size <= 0) {
             p.data.assign(source.begin(), source.end());
@@ -26,18 +25,15 @@ namespace IO {
         m_entries.push_back(std::move(p));
     }
 
-    void ContainerWriter::add_compiled_script(const std::string &canonical_path, std::vector<uint8_t> serialized_ast,
-                                              const bool compress) {
+    void ContainerWriter::add_compiled_script(const std::string &canonical_path, std::vector<uint8_t> serialized_ast, const bool compress) {
         add_raw_data(canonical_path, std::move(serialized_ast), Package::EntryType::SerializedAST, compress);
     }
 
-    void ContainerWriter::add_binary_json(const std::string &canonical_path, std::vector<uint8_t> binary_json,
-                                          const bool compress) {
+    void ContainerWriter::add_binary_json(const std::string &canonical_path, std::vector<uint8_t> binary_json, const bool compress) {
         add_raw_data(canonical_path, std::move(binary_json), Package::EntryType::BinaryJSON, compress);
     }
 
-    void ContainerWriter::add_raw_data(const std::string &canonical_path, std::vector<uint8_t> data,
-                                       const Package::EntryType type, const bool compress) {
+    void ContainerWriter::add_raw_data(const std::string &canonical_path, std::vector<uint8_t> data, const Package::EntryType type, const bool compress) {
         Pending p;
         p.path = canonical_path;
         p.uncompressed_size = data.size();
@@ -50,9 +46,7 @@ namespace IO {
             const int bound = LZ4_compressBound(static_cast<int>(data.size()));
             std::vector<uint8_t> comp_data(bound);
 
-            const int compressed_size = LZ4_compress_default(reinterpret_cast<const char *>(data.data()),
-                                                             reinterpret_cast<char *>(comp_data.data()),
-                                                             static_cast<int>(data.size()), bound);
+            const int compressed_size = LZ4_compress_default(reinterpret_cast<const char *>(data.data()), reinterpret_cast<char *>(comp_data.data()), static_cast<int>(data.size()), bound);
 
             if (compressed_size <= 0) {
                 p.data = std::move(data);

@@ -126,9 +126,7 @@ namespace ECS {
         }
     };
 
-    template <typename T, typename... Args> T &Entity::AddComponent(Args &&...args) {
-        return m_Registry->AddComponent<T>(m_EntityHandle, std::forward<Args>(args)...);
-    }
+    template <typename T, typename... Args> T &Entity::AddComponent(Args &&...args) { return m_Registry->AddComponent<T>(m_EntityHandle, std::forward<Args>(args)...); }
 
     template <typename T> T *Entity::GetComponent() const { return m_Registry->GetComponent<T>(m_EntityHandle); }
 

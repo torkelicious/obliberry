@@ -125,8 +125,7 @@ int main(int argc, char *argv[]) {
             writer.write(output_file);
             if (!quiet) {
                 LOG_INFO(LOG_WHO, "Wrote " + output_file);
-                LOG_INFO(LOG_WHO, "Packed " + std::to_string(success_count) + "/" +
-                                          std::to_string(success_count + fail_count) + " files.");
+                LOG_INFO(LOG_WHO, "Packed " + std::to_string(success_count) + "/" + std::to_string(success_count + fail_count) + " files.");
             }
         } catch (const std::exception &e) {
             LOG_ERROR(LOG_WHO, std::string("Could not write package - ") + e.what());

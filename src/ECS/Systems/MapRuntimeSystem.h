@@ -51,12 +51,10 @@ namespace ECS::Systems::MapRuntimeSystem {
         [[maybe_unused]] const std::optional<Map::HexCoords> preferredSpawn = FindPreferredSpawnHex(grid);
 
         registry.ForEach<Components::MovementComponent, Components::TransformComponent>(
-                [&](const Entity e, Components::MovementComponent * /*movement*/,
-                    Components::TransformComponent * /*transform*/) { MovementSystem::MoveToCenter(e); });
+                [&](const Entity e, Components::MovementComponent * /*movement*/, Components::TransformComponent * /*transform*/) { MovementSystem::MoveToCenter(e); });
     }
 
-    inline void OnMapChanged(Registry &registry, Components::MapComponent &map, Components::MapStateComponent *state,
-                             const Core::EngineContext &ctx) {
+    inline void OnMapChanged(Registry &registry, Components::MapComponent &map, Components::MapStateComponent *state, const Core::EngineContext &ctx) {
         map.needsMeshUpdate = true;
 
         if (state != nullptr) {
@@ -70,13 +68,12 @@ namespace ECS::Systems::MapRuntimeSystem {
         Components::MapComponent *map = nullptr;
         Components::MapStateComponent *state = nullptr;
 
-        registry.ForEach<Components::MapComponent, Components::MapStateComponent>(
-                [&](Entity, Components::MapComponent *mapComponent, Components::MapStateComponent *stateComponent) {
-                    if (map == nullptr) {
-                        map = mapComponent;
-                        state = stateComponent;
-                    }
-                });
+        registry.ForEach<Components::MapComponent, Components::MapStateComponent>([&](Entity, Components::MapComponent *mapComponent, Components::MapStateComponent *stateComponent) {
+            if (map == nullptr) {
+                map = mapComponent;
+                state = stateComponent;
+            }
+        });
 
         if (map == nullptr) {
             return;

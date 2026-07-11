@@ -30,10 +30,7 @@ void Editor::MapEditState::OnEnter() {
         m_selectedTile = m_CurrentGrid->Get(m_selectedHex);
         m_TileEditorPanel.SetContext(m_EditorLayer->m_Scene, m_EditorLayer->m_Context);
         m_TileEditorPanel.SetMapComponent(m_MapComp);
-        m_TileEditorPanel.SetCreateTypeFn(
-                [this](const std::shared_ptr<Rendering::Texture> &tex, const glm::vec4 &color) {
-                    return GetOrCreateTypeForMaterial(tex, color);
-                });
+        m_TileEditorPanel.SetCreateTypeFn([this](const std::shared_ptr<Rendering::Texture> &tex, const glm::vec4 &color) { return GetOrCreateTypeForMaterial(tex, color); });
     }
     if (!m_MapComp->typeMats.empty()) {
         m_TileEditorPanel.InitBrushFromFirstType();
@@ -224,8 +221,7 @@ void Editor::MapEditState::OnDrawUtilityWindows() {}
 void Editor::MapEditState::OnExit() {
     m_MapState = nullptr;
 
-    m_EditorLayer->m_Registry->ForEach<ECS::Components::MapStateComponent>(
-            [&](ECS::Entity, ECS::Components::MapStateComponent *state) { state->hasSelection = false; });
+    m_EditorLayer->m_Registry->ForEach<ECS::Components::MapStateComponent>([&](ECS::Entity, ECS::Components::MapStateComponent *state) { state->hasSelection = false; });
 }
 
 void Editor::MapEditState::ApplyToolAt(const Map::HexCoords &hex) {
@@ -259,8 +255,7 @@ void Editor::MapEditState::ApplyToolAt(const Map::HexCoords &hex) {
     }
 }
 
-void Editor::MapEditState::ForEachHexInRing(const Map::HexCoords center, const int radius,
-                                            const std::function<void(const Map::HexCoords &)> &callback) const {
+void Editor::MapEditState::ForEachHexInRing(const Map::HexCoords center, const int radius, const std::function<void(const Map::HexCoords &)> &callback) const {
     const auto [cx, cy, cz] = Math::HexMath::OddRToCube(center);
 
     for (int dx = -radius; dx <= radius; ++dx) {
@@ -275,8 +270,7 @@ void Editor::MapEditState::ForEachHexInRing(const Map::HexCoords center, const i
     }
 }
 
-uint8_t Editor::MapEditState::GetOrCreateTypeForMaterial(const std::shared_ptr<Rendering::Texture> &tex,
-                                                         const glm::vec4 &color) const {
+uint8_t Editor::MapEditState::GetOrCreateTypeForMaterial(const std::shared_ptr<Rendering::Texture> &tex, const glm::vec4 &color) const {
     auto &typeMats = m_MapComp->typeMats;
     for (const auto &[id, mat] : typeMats) {
         if (mat.texture == tex && mat.color == color) {
@@ -289,8 +283,7 @@ uint8_t Editor::MapEditState::GetOrCreateTypeForMaterial(const std::shared_ptr<R
         newId++;
     }
 
-    const auto shader = !typeMats.empty() ? typeMats.begin()->second.shader
-                                          : m_EditorLayer->m_Context.resources->Get<Rendering::Shader>("base_shader");
+    const auto shader = !typeMats.empty() ? typeMats.begin()->second.shader : m_EditorLayer->m_Context.resources->Get<Rendering::Shader>("base_shader");
 
     typeMats.emplace(newId, Rendering::Material{shader, tex, color});
     m_MapComp->needsMeshUpdate = true;

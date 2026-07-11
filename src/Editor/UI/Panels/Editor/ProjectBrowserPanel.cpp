@@ -32,8 +32,7 @@ namespace Editor::UI {
 
     std::string ProjectBrowserPanel::KeyFromPath(const std::filesystem::path &path) { return path.stem().string(); }
 
-    std::vector<AssetEntry> ProjectBrowserPanel::ScanDirectory(const std::string &subDir,
-                                                               const std::string &extension) const {
+    std::vector<AssetEntry> ProjectBrowserPanel::ScanDirectory(const std::string &subDir, const std::string &extension) const {
         std::vector<AssetEntry> entries;
         const auto resolved = IO::VFS::Resolve(subDir);
         if (resolved.empty() || !std::filesystem::exists(resolved))
@@ -88,12 +87,10 @@ namespace Editor::UI {
             DrawMaterialSection(resources);
         }
         if (ImGui::CollapsingHeader("Scripts")) {
-            DrawFileSection("Scripts", std::string(Core::SCRIPT_PATH), std::string(Core::SCRIPT_FILE_EXTENSION),
-                            ".obsl,txt", "Script Files");
+            DrawFileSection("Scripts", std::string(Core::SCRIPT_PATH), std::string(Core::SCRIPT_FILE_EXTENSION), ".obsl,txt", "Script Files");
         }
         if (ImGui::CollapsingHeader("Maps")) {
-            DrawFileSection("Maps", std::string(Core::MAP_PATH), std::string(Core::MAP_FILE_EXTENSION), ".obmap",
-                            "Map Files");
+            DrawFileSection("Maps", std::string(Core::MAP_PATH), std::string(Core::MAP_FILE_EXTENSION), ".obmap", "Map Files");
         }
         if (ImGui::CollapsingHeader("Scenes")) {
             DrawFileSection("Scenes", std::string(Core::SCENE_PATH), ".json", ".json", "Scene Files");
@@ -106,15 +103,10 @@ namespace Editor::UI {
 
 
     template <typename T>
-    void ProjectBrowserPanel::DrawResourceSection(
-            Core::ResourceManager &resources, const std::unordered_map<std::string, std::shared_ptr<T>> &allItems,
-            AssetType assetType, const char *childId, float childHeight, const char *emptyText, const char *typeName,
-            std::type_identity_t<std::function<void(const std::shared_ptr<T> &)>> renderThumbnail,
-            const std::type_identity_t<std::function<void(const std::string &, Core::ResourceManager &)>>
-                    &renderExtraButtons,
-            std::type_identity_t<
-                    std::function<void(const std::string &, const std::shared_ptr<T> &, Core::ResourceManager &)>>
-                    renderTooltip) {
+    void ProjectBrowserPanel::DrawResourceSection(Core::ResourceManager &resources, const std::unordered_map<std::string, std::shared_ptr<T>> &allItems, AssetType assetType, const char *childId, float childHeight,
+                                                  const char *emptyText, const char *typeName, std::type_identity_t<std::function<void(const std::shared_ptr<T> &)>> renderThumbnail,
+                                                  const std::type_identity_t<std::function<void(const std::string &, Core::ResourceManager &)>> &renderExtraButtons,
+                                                  std::type_identity_t<std::function<void(const std::string &, const std::shared_ptr<T> &, Core::ResourceManager &)>> renderTooltip) {
         struct RenameOp {
             std::string oldKey;
             std::string newKey;
@@ -181,8 +173,7 @@ namespace Editor::UI {
                     auto *dl = ImGui::GetWindowDrawList();
                     auto min = ImGui::GetItemRectMin();
                     auto max = ImGui::GetItemRectMax();
-                    dl->AddRect(ImVec2(min.x - 2, min.y - 2), ImVec2(max.x + 2, max.y + 2),
-                                ImGui::GetColorU32(ImGuiCol_Border));
+                    dl->AddRect(ImVec2(min.x - 2, min.y - 2), ImVec2(max.x + 2, max.y + 2), ImGui::GetColorU32(ImGuiCol_Border));
                     ImGui::PopID();
                     itemCount++;
                 }
@@ -282,8 +273,7 @@ namespace Editor::UI {
         const auto &allShaders = resources.GetAll<Rendering::Shader>();
 
         DrawResourceSection(
-                resources, allShaders, AssetType::Shader, "##shaderList", 130.0f, "No shaders imported.", "shader",
-                [](const std::shared_ptr<Rendering::Shader> &) { ImGui::Button("S", ImVec2(64, 64)); },
+                resources, allShaders, AssetType::Shader, "##shaderList", 130.0f, "No shaders imported.", "shader", [](const std::shared_ptr<Rendering::Shader> &) { ImGui::Button("S", ImVec2(64, 64)); },
                 [this](const std::string &id, Core::ResourceManager &res) {
                     if (ImGui::SmallButton("Replace"))
                         ReplaceShader(res, id);
@@ -299,15 +289,13 @@ namespace Editor::UI {
         const auto &allMeshes = resources.GetAll<Rendering::Mesh>();
 
         DrawResourceSection(
-                resources, allMeshes, AssetType::Mesh, "##meshList", 100.0f, "No meshes registered.", "mesh",
-                [](const std::shared_ptr<Rendering::Mesh> &) { ImGui::Button("M", ImVec2(64, 64)); },
+                resources, allMeshes, AssetType::Mesh, "##meshList", 100.0f, "No meshes registered.", "mesh", [](const std::shared_ptr<Rendering::Mesh> &) { ImGui::Button("M", ImVec2(64, 64)); },
                 [](const std::string &, Core::ResourceManager &) {});
 
         ImGui::Spacing();
         ImGui::SeparatorText("Create Mesh");
 
-        constexpr const char *meshTypes[] = {"Quad",    "PointTopHex", "ETriang", "Ellipse", "Circle", "Pentagon",
-                                             "Hexagon", "Octagon",     "Ring",    "Sector",  "Diamond"};
+        constexpr const char *meshTypes[] = {"Quad", "PointTopHex", "ETriang", "Ellipse", "Circle", "Pentagon", "Hexagon", "Octagon", "Ring", "Sector", "Diamond"};
         ImGui::Combo("Type", &m_SelectedMeshFactory, meshTypes, IM_ARRAYSIZE(meshTypes));
         ImGui::InputText("ID##mesh", m_MeshNameBuffer, sizeof(m_MeshNameBuffer));
 
@@ -328,8 +316,7 @@ namespace Editor::UI {
         const auto &allMaterials = resources.GetAll<Rendering::Material>();
 
         DrawResourceSection(
-                resources, allMaterials, AssetType::Material, "##matList", 100.0f, "No materials registered.",
-                "material",
+                resources, allMaterials, AssetType::Material, "##matList", 100.0f, "No materials registered.", "material",
                 [](const std::shared_ptr<Rendering::Material> &mat) {
                     if (mat && mat->texture)
                         Core::Utils::UI::ImGuiImageFlipped(mat->texture->GetID(), ImVec2(64, 64));
@@ -338,8 +325,7 @@ namespace Editor::UI {
                 },
                 [](const std::string &, Core::ResourceManager &) {},
                 [](const std::string &, const std::shared_ptr<Rendering::Material> &mat, Core::ResourceManager &res) {
-                    std::string tooltip = "Shader: " + (mat->shader ? res.GetKey(mat->shader) : "none") +
-                                          "\nTexture: " + (mat->texture ? res.GetKey(mat->texture) : "none");
+                    std::string tooltip = "Shader: " + (mat->shader ? res.GetKey(mat->shader) : "none") + "\nTexture: " + (mat->texture ? res.GetKey(mat->texture) : "none");
                     ImGui::SetTooltip("%s", tooltip.c_str());
                 });
 
@@ -396,21 +382,17 @@ namespace Editor::UI {
                     LOG_ERROR(LOG_WHO, "Material '" + id + "' already exists");
                 } else {
                     std::shared_ptr<Rendering::Shader> shader;
-                    if (m_SelectedMaterialShaderIdx > 0 &&
-                        m_SelectedMaterialShaderIdx < static_cast<int>(shaderKeys.size())) {
+                    if (m_SelectedMaterialShaderIdx > 0 && m_SelectedMaterialShaderIdx < static_cast<int>(shaderKeys.size())) {
                         shader = resources.Get<Rendering::Shader>(shaderKeys[m_SelectedMaterialShaderIdx]);
                     }
 
                     std::shared_ptr<Rendering::Texture> texture;
-                    if (m_SelectedMaterialTextureIdx > 0 &&
-                        m_SelectedMaterialTextureIdx < static_cast<int>(texKeys.size())) {
+                    if (m_SelectedMaterialTextureIdx > 0 && m_SelectedMaterialTextureIdx < static_cast<int>(texKeys.size())) {
                         texture = resources.Get<Rendering::Texture>(texKeys[m_SelectedMaterialTextureIdx]);
                     }
 
-                    const auto mat = resources.LoadFromFactory<Rendering::Material>(id, [shader, texture,
-                                                                                         color = m_MaterialColor] {
-                        return std::make_shared<Rendering::Material>(Rendering::Material{shader, texture, color});
-                    });
+                    const auto mat =
+                            resources.LoadFromFactory<Rendering::Material>(id, [shader, texture, color = m_MaterialColor] { return std::make_shared<Rendering::Material>(Rendering::Material{shader, texture, color}); });
                 }
                 // (void)mat; // mat is inside lambda, no need to suppress unused warning
                 LOG_INFO(LOG_WHO, "Created material '" + id + "'");
@@ -424,9 +406,7 @@ namespace Editor::UI {
     }
 } // namespace Editor::UI
 
-void Editor::UI::ProjectBrowserPanel::DrawFileSection(const char *label, const std::string &directory,
-                                                      const std::string &extension, const char *importFilter,
-                                                      const char *importFilterName) {
+void Editor::UI::ProjectBrowserPanel::DrawFileSection(const char *label, const std::string &directory, const std::string &extension, const char *importFilter, const char *importFilterName) {
     bool isScripts = (std::strcmp(label, "Scripts") == 0);
 
     char *newScriptBuf = m_NewScriptBuffer;
@@ -468,8 +448,7 @@ void Editor::UI::ProjectBrowserPanel::DrawFileSection(const char *label, const s
                 auto *dl = ImGui::GetWindowDrawList();
                 auto min = ImGui::GetItemRectMin();
                 auto max = ImGui::GetItemRectMax();
-                dl->AddRect(ImVec2(min.x - 2, min.y - 2), ImVec2(max.x + 2, max.y + 2),
-                            ImGui::GetColorU32(ImGuiCol_Border));
+                dl->AddRect(ImVec2(min.x - 2, min.y - 2), ImVec2(max.x + 2, max.y + 2), ImGui::GetColorU32(ImGuiCol_Border));
                 ImGui::PopID(); // entry
                 itemCount++;
             }
@@ -494,9 +473,7 @@ void Editor::UI::ProjectBrowserPanel::DrawFileSection(const char *label, const s
     ImGui::EndChild();
     ImGui::PopID(); // label
 
-    if (entries.empty() || (m_SearchBuffer[0] != '\0' && std::ranges::all_of(entries, [this](const AssetEntry &e) {
-                                return !ContainsSearch(e.virtualPath.c_str(), m_SearchBuffer);
-                            }))) {
+    if (entries.empty() || (m_SearchBuffer[0] != '\0' && std::ranges::all_of(entries, [this](const AssetEntry &e) { return !ContainsSearch(e.virtualPath.c_str(), m_SearchBuffer); }))) {
         ImGui::TextDisabled("No %s found.", importFilterName);
     }
 
@@ -594,8 +571,7 @@ void Editor::UI::ProjectBrowserPanel::ImportTexture(Core::ResourceManager &resou
     if (!m_EngineContext)
         return;
 
-    const auto picked =
-            FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Image", .filterExt = "png,jpg,jpeg,bmp,tga"});
+    const auto picked = FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Image", .filterExt = "png,jpg,jpeg,bmp,tga"});
     if (!picked.has_value())
         return;
 
@@ -618,13 +594,11 @@ void Editor::UI::ProjectBrowserPanel::ImportShader(Core::ResourceManager &resour
     if (!m_EngineContext)
         return;
 
-    const auto vertPicked =
-            FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Vertex Shader", .filterExt = "vert,glsl"});
+    const auto vertPicked = FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Vertex Shader", .filterExt = "vert,glsl"});
     if (!vertPicked.has_value())
         return;
 
-    const auto fragPicked =
-            FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Fragment Shader", .filterExt = "frag,glsl"});
+    const auto fragPicked = FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Fragment Shader", .filterExt = "frag,glsl"});
     if (!fragPicked.has_value())
         return;
 
@@ -648,8 +622,7 @@ void Editor::UI::ProjectBrowserPanel::ReplaceTexture(Core::ResourceManager &reso
     if (!m_EngineContext)
         return;
 
-    const auto picked =
-            FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Image", .filterExt = "png,jpg,jpeg,bmp,tga"});
+    const auto picked = FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Image", .filterExt = "png,jpg,jpeg,bmp,tga"});
     if (!picked.has_value())
         return;
 
@@ -667,13 +640,11 @@ void Editor::UI::ProjectBrowserPanel::ReplaceShader(Core::ResourceManager &resou
     if (!m_EngineContext)
         return;
 
-    const auto vertPicked =
-            FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Vertex Shader", .filterExt = "vert,glsl"});
+    const auto vertPicked = FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Vertex Shader", .filterExt = "vert,glsl"});
     if (!vertPicked.has_value())
         return;
 
-    const auto fragPicked =
-            FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Fragment Shader", .filterExt = "frag,glsl"});
+    const auto fragPicked = FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Fragment Shader", .filterExt = "frag,glsl"});
     if (!fragPicked.has_value())
         return;
 
@@ -694,8 +665,7 @@ void Editor::UI::ProjectBrowserPanel::CreateMesh(Core::ResourceManager &resource
         return;
 
     Rendering::MeshData data;
-    constexpr const char *meshTypes[] = {"Quad",    "PointTopHex", "ETriang", "Ellipse", "Circle", "Pentagon",
-                                         "Hexagon", "Octagon",     "Ring",    "Sector",  "Diamond"};
+    constexpr const char *meshTypes[] = {"Quad", "PointTopHex", "ETriang", "Ellipse", "Circle", "Pentagon", "Hexagon", "Octagon", "Ring", "Sector", "Diamond"};
     switch (m_SelectedMeshFactory) {
         case 0:
             data = Rendering::MeshFactory::CreateQuad();
@@ -732,20 +702,18 @@ void Editor::UI::ProjectBrowserPanel::CreateMesh(Core::ResourceManager &resource
             break;
     }
 
-    auto mesh = resources.LoadFromFactory<Rendering::Mesh>(
-            id, [data = std::move(data), meshTypes, factoryIdx = m_SelectedMeshFactory] {
-                auto m = std::make_shared<Rendering::Mesh>(data);
-                m->SetFactoryId(meshTypes[factoryIdx]);
-                return m;
-            });
+    auto mesh = resources.LoadFromFactory<Rendering::Mesh>(id, [data = std::move(data), meshTypes, factoryIdx = m_SelectedMeshFactory] {
+        auto m = std::make_shared<Rendering::Mesh>(data);
+        m->SetFactoryId(meshTypes[factoryIdx]);
+        return m;
+    });
 
     Rendering::Renderer::SubmitInitTask([mesh] { mesh->InitGL(); });
     m_MeshNameBuffer[0] = '\0';
     LOG_INFO(LOG_WHO, "Created mesh '" + id + "'");
 }
 
-void Editor::UI::ProjectBrowserPanel::ImportFile(const std::string &targetSubDir, const char *filterExt,
-                                                 const char *filterName) const {
+void Editor::UI::ProjectBrowserPanel::ImportFile(const std::string &targetSubDir, const char *filterExt, const char *filterName) const {
     if (!m_EngineContext)
         return;
 

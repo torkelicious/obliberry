@@ -149,8 +149,7 @@ void Sound::AudioEngine::PlayMusic(const std::string &filepath, const float volu
         auto *decoder = new ma_decoder();
         const ma_decoder_config decoderConfig = ma_decoder_config_init(ma_format_unknown, 0, 0);
 
-        result = ma_decoder_init_memory(m_CurrentMusicContext.buffer.data(), m_CurrentMusicContext.buffer.size(),
-                                        &decoderConfig, decoder);
+        result = ma_decoder_init_memory(m_CurrentMusicContext.buffer.data(), m_CurrentMusicContext.buffer.size(), &decoderConfig, decoder);
         if (result != MA_SUCCESS) {
             LOG_ERROR(LOG_WHO, "Failed to decode music memory: " + filepath);
             delete decoder;
@@ -165,8 +164,7 @@ void Sound::AudioEngine::PlayMusic(const std::string &filepath, const float volu
         result = ma_sound_init_from_data_source(m_Engine, decoder, MA_SOUND_FLAG_STREAM, nullptr, m_CurrentMusic);
     } else {
         const std::filesystem::path absolutePath = IO::VFS::Resolve(filepath);
-        result = ma_sound_init_from_file(m_Engine, absolutePath.string().c_str(), MA_SOUND_FLAG_STREAM, nullptr,
-                                         nullptr, m_CurrentMusic);
+        result = ma_sound_init_from_file(m_Engine, absolutePath.string().c_str(), MA_SOUND_FLAG_STREAM, nullptr, nullptr, m_CurrentMusic);
     }
 
     if (result != MA_SUCCESS) {

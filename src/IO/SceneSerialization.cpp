@@ -126,10 +126,8 @@ namespace IO::SceneIO {
             }
 
             if (shader) {
-                mapComp.outlineMat =
-                        std::make_shared<Rendering::Material>(Rendering::Material{shader, nullptr, {1, 0, 0, 0.5f}});
-                mapComp.pathToMat =
-                        std::make_shared<Rendering::Material>(Rendering::Material{shader, nullptr, {1, 1, 1, 0.5f}});
+                mapComp.outlineMat = std::make_shared<Rendering::Material>(Rendering::Material{shader, nullptr, {1, 0, 0, 0.5f}});
+                mapComp.pathToMat = std::make_shared<Rendering::Material>(Rendering::Material{shader, nullptr, {1, 1, 1, 0.5f}});
             } else {
                 LOG_ERROR(LOG_WHO, "Missing map visual assets!");
             }
@@ -170,11 +168,8 @@ namespace IO::SceneIO {
         j["properties"]["ambient_light"] = sceneProps.AmbientLight;
 
         // ecs query to save grid
-        scene.GetRegistry().ForEach<ECS::Components::MapComponent>([&](ECS::Entity,
-                                                                       const ECS::Components::MapComponent *mapComp) {
-            std::string mapFile = mapComp->mapFilePath.empty()
-                                          ? Core::PathUtils::Join(Core::MAP_PATH, "unknown", Core::MAP_FILE_EXTENSION)
-                                          : mapComp->mapFilePath;
+        scene.GetRegistry().ForEach<ECS::Components::MapComponent>([&](ECS::Entity, const ECS::Components::MapComponent *mapComp) {
+            std::string mapFile = mapComp->mapFilePath.empty() ? Core::PathUtils::Join(Core::MAP_PATH, "unknown", Core::MAP_FILE_EXTENSION) : mapComp->mapFilePath;
 
             j["grid"]["map_file"] = mapFile;
             if (!MapIO::Serialize(mapFile, mapComp->grid)) {
@@ -216,34 +211,21 @@ namespace IO::SceneIO {
         j["assets"]["meshes"] = json::array();
         j["assets"]["materials"] = json::array();
 
-        SerializeAssets(j["assets"]["textures"], resources.GetAll<Rendering::Texture>(),
-                        [](const std::string &id, const std::shared_ptr<Rendering::Texture> &tex) {
-                            return json{{"id", id}, {"path", tex->GetPath()}};
-                        });
+        SerializeAssets(j["assets"]["textures"], resources.GetAll<Rendering::Texture>(), [](const std::string &id, const std::shared_ptr<Rendering::Texture> &tex) { return json{{"id", id}, {"path", tex->GetPath()}}; });
 
-        SerializeAssets(
-                j["assets"]["shaders"], resources.GetAll<Rendering::Shader>(),
-                [](const std::string &id, const std::shared_ptr<Rendering::Shader> &shad) {
-                    return json{{"id", id}, {"vertex", shad->GetVertexPath()}, {"fragment", shad->GetFragmentPath()}};
-                });
+        SerializeAssets(j["assets"]["shaders"], resources.GetAll<Rendering::Shader>(),
+                        [](const std::string &id, const std::shared_ptr<Rendering::Shader> &shad) { return json{{"id", id}, {"vertex", shad->GetVertexPath()}, {"fragment", shad->GetFragmentPath()}}; });
 
         SerializeAssets(j["assets"]["meshes"], resources.GetAll<Rendering::Mesh>(),
-                        [](const std::string &id, const std::shared_ptr<Rendering::Mesh> &mesh) {
-                            return json{{"id", id}, {"factory", mesh->GetFactoryId()}};
-                        });
+                        [](const std::string &id, const std::shared_ptr<Rendering::Mesh> &mesh) { return json{{"id", id}, {"factory", mesh->GetFactoryId()}}; });
 
-        SerializeAssets(j["assets"]["materials"], resources.GetAll<Rendering::Material>(),
-                        [&](const std::string &id, const std::shared_ptr<Rendering::Material> &mat) {
-                            return json{{"id", id},
-                                        {"shader", resources.GetKey(mat->shader)},
-                                        {"texture", resources.GetKey(mat->texture)},
-                                        {"color", {mat->color.r, mat->color.g, mat->color.b, mat->color.a}}};
-                        });
+        SerializeAssets(j["assets"]["materials"], resources.GetAll<Rendering::Material>(), [&](const std::string &id, const std::shared_ptr<Rendering::Material> &mat) {
+            return json{{"id", id}, {"shader", resources.GetKey(mat->shader)}, {"texture", resources.GetKey(mat->texture)}, {"color", {mat->color.r, mat->color.g, mat->color.b, mat->color.a}}};
+        });
 
         // ENTITIES
         j["entities"] = json::array();
-        for (const auto &livingEntities = scene.GetRegistry().GetLivingEntities();
-             ECS::EntityID entityID : livingEntities) {
+        for (const auto &livingEntities = scene.GetRegistry().GetLivingEntities(); ECS::EntityID entityID : livingEntities) {
             ECS::Entity entity(entityID, &scene.GetRegistry());
 
             if (entity.HasComponent<ECS::Components::MapComponent>()) {

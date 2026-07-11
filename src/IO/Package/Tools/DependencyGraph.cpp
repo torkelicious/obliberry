@@ -24,8 +24,7 @@ namespace IO::Package::Tools {
 
         // cycle detection (DFS, 3-color)
         std::unordered_map<std::string, int> color; // 0=white, 1=gray, 2=black
-        std::function<bool(const std::string &, std::vector<std::string> &)> has_cycle =
-                [&](const std::string &node, std::vector<std::string> &path) -> bool {
+        std::function<bool(const std::string &, std::vector<std::string> &)> has_cycle = [&](const std::string &node, std::vector<std::string> &path) -> bool {
             color[node] = 1;
             path.push_back(node);
             if (const auto it = m_edges.find(node); it != m_edges.end()) {

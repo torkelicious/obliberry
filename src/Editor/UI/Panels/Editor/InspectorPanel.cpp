@@ -64,27 +64,16 @@ void Editor::UI::InspectorPanel::OnImGuiRender() {
                     std::function<void()> add;
                 };
                 const CompEntry entries[] = {
-                        {"Transform", m_SelectedEntity.HasComponent<ECS::Components::TransformComponent>(),
-                         [this] { m_SelectedEntity.AddComponent<ECS::Components::TransformComponent>(); }},
-                        {"Point Light", m_SelectedEntity.HasComponent<ECS::Components::PointLightComponent>(),
-                         [this] { m_SelectedEntity.AddComponent<ECS::Components::PointLightComponent>(); }},
-                        {"Movement", m_SelectedEntity.HasComponent<ECS::Components::MovementComponent>(),
-                         [this] { m_SelectedEntity.AddComponent<ECS::Components::MovementComponent>(); }},
-                        {"Mesh", m_SelectedEntity.HasComponent<ECS::Components::MeshComponent>(),
-                         [this] { m_SelectedEntity.AddComponent<ECS::Components::MeshComponent>(); }},
-                        {"Material", m_SelectedEntity.HasComponent<ECS::Components::MaterialComponent>(),
-                         [this] { m_SelectedEntity.AddComponent<ECS::Components::MaterialComponent>(); }},
-                        {"Directional Texture",
-                         m_SelectedEntity.HasComponent<ECS::Components::DirectionalTextureComponent>(),
-                         [this] { m_SelectedEntity.AddComponent<ECS::Components::DirectionalTextureComponent>(); }},
-                        {"Map", m_SelectedEntity.HasComponent<ECS::Components::MapComponent>(),
-                         [this] { m_SelectedEntity.AddComponent<ECS::Components::MapComponent>(); }},
-                        {"Map State", m_SelectedEntity.HasComponent<ECS::Components::MapStateComponent>(),
-                         [this] { m_SelectedEntity.AddComponent<ECS::Components::MapStateComponent>(); }},
-                        {"Scripts", m_SelectedEntity.HasComponent<ECS::Components::ScriptComponent>(),
-                         [this] { m_SelectedEntity.AddComponent<ECS::Components::ScriptComponent>(); }},
-                        {"ObSL Custom Data", m_SelectedEntity.HasComponent<ECS::Components::CustomDataComponent>(),
-                         [this] { m_SelectedEntity.AddComponent<ECS::Components::CustomDataComponent>(); }},
+                        {"Transform", m_SelectedEntity.HasComponent<ECS::Components::TransformComponent>(), [this] { m_SelectedEntity.AddComponent<ECS::Components::TransformComponent>(); }},
+                        {"Point Light", m_SelectedEntity.HasComponent<ECS::Components::PointLightComponent>(), [this] { m_SelectedEntity.AddComponent<ECS::Components::PointLightComponent>(); }},
+                        {"Movement", m_SelectedEntity.HasComponent<ECS::Components::MovementComponent>(), [this] { m_SelectedEntity.AddComponent<ECS::Components::MovementComponent>(); }},
+                        {"Mesh", m_SelectedEntity.HasComponent<ECS::Components::MeshComponent>(), [this] { m_SelectedEntity.AddComponent<ECS::Components::MeshComponent>(); }},
+                        {"Material", m_SelectedEntity.HasComponent<ECS::Components::MaterialComponent>(), [this] { m_SelectedEntity.AddComponent<ECS::Components::MaterialComponent>(); }},
+                        {"Directional Texture", m_SelectedEntity.HasComponent<ECS::Components::DirectionalTextureComponent>(), [this] { m_SelectedEntity.AddComponent<ECS::Components::DirectionalTextureComponent>(); }},
+                        {"Map", m_SelectedEntity.HasComponent<ECS::Components::MapComponent>(), [this] { m_SelectedEntity.AddComponent<ECS::Components::MapComponent>(); }},
+                        {"Map State", m_SelectedEntity.HasComponent<ECS::Components::MapStateComponent>(), [this] { m_SelectedEntity.AddComponent<ECS::Components::MapStateComponent>(); }},
+                        {"Scripts", m_SelectedEntity.HasComponent<ECS::Components::ScriptComponent>(), [this] { m_SelectedEntity.AddComponent<ECS::Components::ScriptComponent>(); }},
+                        {"ObSL Custom Data", m_SelectedEntity.HasComponent<ECS::Components::CustomDataComponent>(), [this] { m_SelectedEntity.AddComponent<ECS::Components::CustomDataComponent>(); }},
                 };
 
                 ImGui::TextDisabled("Available Components");

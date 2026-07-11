@@ -23,9 +23,6 @@ namespace Map {
 
     // identity hash
     struct HexCoordsHash {
-        std::size_t operator()(const HexCoords &h) const noexcept {
-            return static_cast<uint32_t>(static_cast<uint16_t>(h.q)) << 16 |
-                   static_cast<uint32_t>(static_cast<uint16_t>(h.r));
-        }
+        std::size_t operator()(const HexCoords &h) const noexcept { return static_cast<uint32_t>(static_cast<uint16_t>(h.q)) << 16 | static_cast<uint32_t>(static_cast<uint16_t>(h.r)); }
     };
 } // namespace Map

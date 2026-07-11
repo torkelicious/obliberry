@@ -10,28 +10,20 @@
 
 namespace Editor::UI {
 
-    bool TextureCombo(const char *label, Core::ResourceManager &resources,
-                      std::shared_ptr<Rendering::Texture> &current) {
-        return AssetComboImpl(label, resources, current, [](const std::shared_ptr<Rendering::Texture> &tex) {
-            ImGui::TextDisabled("%s", tex->GetPath().c_str());
-        });
+    bool TextureCombo(const char *label, Core::ResourceManager &resources, std::shared_ptr<Rendering::Texture> &current) {
+        return AssetComboImpl(label, resources, current, [](const std::shared_ptr<Rendering::Texture> &tex) { ImGui::TextDisabled("%s", tex->GetPath().c_str()); });
     }
 
     bool ShaderCombo(const char *label, Core::ResourceManager &resources, std::shared_ptr<Rendering::Shader> &current) {
-        return AssetComboImpl(label, resources, current, [](const std::shared_ptr<Rendering::Shader> &shader) {
-            ImGui::TextDisabled("Vert: %s  Frag: %s", shader->GetVertexPath().c_str(),
-                                shader->GetFragmentPath().c_str());
-        });
+        return AssetComboImpl(label, resources, current,
+                              [](const std::shared_ptr<Rendering::Shader> &shader) { ImGui::TextDisabled("Vert: %s  Frag: %s", shader->GetVertexPath().c_str(), shader->GetFragmentPath().c_str()); });
     }
 
     bool MeshCombo(const char *label, Core::ResourceManager &resources, std::shared_ptr<Rendering::Mesh> &current) {
-        return AssetComboImpl(label, resources, current, [](const std::shared_ptr<Rendering::Mesh> &mesh) {
-            ImGui::TextDisabled("%s, %u indices", mesh->GetFactoryId().c_str(), mesh->GetIndexCount());
-        });
+        return AssetComboImpl(label, resources, current, [](const std::shared_ptr<Rendering::Mesh> &mesh) { ImGui::TextDisabled("%s, %u indices", mesh->GetFactoryId().c_str(), mesh->GetIndexCount()); });
     }
 
-    bool MaterialCombo(const char *label, Core::ResourceManager &resources,
-                       std::shared_ptr<Rendering::Material> &current) {
+    bool MaterialCombo(const char *label, Core::ResourceManager &resources, std::shared_ptr<Rendering::Material> &current) {
         return AssetComboImpl(label, resources, current, [&resources](const std::shared_ptr<Rendering::Material> &mat) {
             const std::string texKey = mat->texture ? resources.GetKey(mat->texture) : "none";
             const std::string shaderKey = mat->shader ? resources.GetKey(mat->shader) : "none";

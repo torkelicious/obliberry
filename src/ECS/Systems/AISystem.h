@@ -20,13 +20,12 @@ namespace ECS::Systems::AISystem {
 
         Map::HexCoords playerHex{0, 0};
 
-        registry.ForEach<Components::TransformComponent>(
-                [&](const Entity entity, const Components::TransformComponent *pt) {
-                    if (entity.GetName() == "Player") {
-                        const glm::vec3 pos = pt->transform.GetPosition();
-                        playerHex = Math::HexMath::PixelToHex({pos.x, pos.y});
-                    }
-                });
+        registry.ForEach<Components::TransformComponent>([&](const Entity entity, const Components::TransformComponent *pt) {
+            if (entity.GetName() == "Player") {
+                const glm::vec3 pos = pt->transform.GetPosition();
+                playerHex = Math::HexMath::PixelToHex({pos.x, pos.y});
+            }
+        });
 
         if (map->grid.walkableTiles.empty())
             return;
@@ -36,8 +35,7 @@ namespace ECS::Systems::AISystem {
         std::uniform_real_distribution timeDist(1.0f, 3.0f);
 
         registry.ForEach<Components::MovementComponent, Components::TransformComponent, Components::MaterialComponent>(
-                [&](const Entity entity, Components::MovementComponent *move,
-                    const Components::TransformComponent *trans, const Components::MaterialComponent *mat) {
+                [&](const Entity entity, Components::MovementComponent *move, const Components::TransformComponent *trans, const Components::MaterialComponent *mat) {
                     if (entity.GetName() == "Player")
                         return;
 

@@ -13,8 +13,7 @@
 namespace IO {
     class PrefabManager {
     public:
-        static ECS::EntityID Instantiate(ECS::Registry &registry, Core::ResourceManager &resources,
-                                         const std::string &filepath) {
+        static ECS::EntityID Instantiate(ECS::Registry &registry, Core::ResourceManager &resources, const std::string &filepath) {
             if (const auto it = s_prefab_cache.find(filepath); it != s_prefab_cache.end()) {
                 const ECS::EntityID newId = registry.CreateEntity();
                 ECS::Entity newEntity(newId, &registry);
@@ -25,8 +24,7 @@ namespace IO {
             auto fileData = VFS::ReadVirtual(filepath);
             if (!fileData.has_value()) {
                 if (auto *logger = Core::Logging::LoggerService::Get()) {
-                    logger->log("PrefabManager", "Failed to instantiate: " + filepath + " (Not found in VFS)",
-                                Core::Logging::LogSeverity::Error);
+                    logger->log("PrefabManager", "Failed to instantiate: " + filepath + " (Not found in VFS)", Core::Logging::LogSeverity::Error);
                 }
                 return 0;
             }
@@ -41,8 +39,7 @@ namespace IO {
                 }
             } catch (const std::exception &e) {
                 if (auto *logger = Core::Logging::LoggerService::Get()) {
-                    logger->log("PrefabManager", "Core decoding error for " + filepath + ": " + e.what(),
-                                Core::Logging::LogSeverity::Error);
+                    logger->log("PrefabManager", "Core decoding error for " + filepath + ": " + e.what(), Core::Logging::LogSeverity::Error);
                 }
                 return 0;
             }

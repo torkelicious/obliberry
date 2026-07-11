@@ -132,8 +132,7 @@ void Editor::EditorLayer::HandleInput(const float dt) {
 
     // mode-independent hotkeys
     if (m_Input->IsKeyPressed("Esc")) {
-        const bool hasChanges = (m_Scene && m_Scene->HasUnsavedChanges()) ||
-                                (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges());
+        const bool hasChanges = (m_Scene && m_Scene->HasUnsavedChanges()) || (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges());
         if (hasChanges) {
             m_SaveChangesDialog.SetMessage("Do you want to save before quitting?");
             m_SaveChangesDialog.SetOnSave([this] {
@@ -190,9 +189,7 @@ void Editor::EditorLayer::HandleInput(const float dt) {
                 return;
             }
             if (m_Scene && m_Scene->HasUnsavedChanges()) {
-                m_SaveChangesDialog.SetMessage(
-                        "Do you want to save changes to '" + m_Scene->GetProperties().Name +
-                        "' before entering Play Mode?\n\nUnsaved changes will be lost when stopping play.");
+                m_SaveChangesDialog.SetMessage("Do you want to save changes to '" + m_Scene->GetProperties().Name + "' before entering Play Mode?\n\nUnsaved changes will be lost when stopping play.");
                 m_SaveChangesDialog.SetOnSave([this] {
                     SaveScene();
                     TransitionTo(std::make_unique<PlayState>());
@@ -235,12 +232,9 @@ void Editor::EditorLayer::LoadScene(std::string path) {
                 Rendering::Renderer::SetClearColor(m_Scene->GetProperties().BackgroundClearColor);
             }
 
-            LOG_INFO("LoadScene", "Successfully loaded scene with " +
-                                          std::to_string(m_Scene->GetRegistry().GetLivingEntities().size()) +
-                                          " entities");
+            LOG_INFO("LoadScene", "Successfully loaded scene with " + std::to_string(m_Scene->GetRegistry().GetLivingEntities().size()) + " entities");
 
-            m_CurrentState->SetWindowTitle("Obliberry: " + m_Context.projectConfig->Title + " - Scene - " +
-                                           m_Scene->GetProperties().ScenePath);
+            m_CurrentState->SetWindowTitle("Obliberry: " + m_Context.projectConfig->Title + " - Scene - " + m_Scene->GetProperties().ScenePath);
 
 
         } else {
@@ -344,8 +338,7 @@ void Editor::EditorLayer::DrawEditorLayout() {
 void Editor::EditorLayer::DrawProjectHub() {
     ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImGui::GetMainViewport()->Size);
-    ImGui::Begin("Obliberry hub", nullptr,
-                 ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
+    ImGui::Begin("Obliberry hub", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
 
     ImGui::Text("welcome :)");
     ImGui::Separator();
@@ -367,8 +360,7 @@ void Editor::EditorLayer::DrawProjectHub() {
 
     if (ImGui::Button("Open Existing Project", ImVec2(250, 50))) {
         if (const auto dir = FileDialogs::PickFolder(m_Context)) {
-            if (const std::filesystem::path projectFile = std::filesystem::path(*dir) / "project.json";
-                std::filesystem::exists(projectFile)) {
+            if (const std::filesystem::path projectFile = std::filesystem::path(*dir) / "project.json"; std::filesystem::exists(projectFile)) {
                 LoadProject(projectFile.string());
             } else {
                 LOG_ERROR("Hub", "No project.json found in: " + *dir);
@@ -387,18 +379,14 @@ void Editor::EditorLayer::DrawDockSpace() {
         return;
 
     ImGui::DockBuilderRemoveNode(dockspaceId);
-    ImGui::DockBuilderAddNode(dockspaceId,
-                              ImGuiDockNodeFlags_PassthruCentralNode | static_cast<int>(ImGuiDockNodeFlags_DockSpace));
+    ImGui::DockBuilderAddNode(dockspaceId, ImGuiDockNodeFlags_PassthruCentralNode | static_cast<int>(ImGuiDockNodeFlags_DockSpace));
     ImGui::DockBuilderSetNodeSize(dockspaceId, ImGui::GetMainViewport()->Size);
 
     ImGuiID dock_id_center = dockspaceId;
 
-    const ImGuiID dock_id_right =
-            ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Right, 0.25f, nullptr, &dock_id_center);
-    const ImGuiID dock_id_left =
-            ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Left, 0.2f, nullptr, &dock_id_center);
-    const ImGuiID dock_id_bottom =
-            ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Down, 0.3f, nullptr, &dock_id_center);
+    const ImGuiID dock_id_right = ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Right, 0.25f, nullptr, &dock_id_center);
+    const ImGuiID dock_id_left = ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Left, 0.2f, nullptr, &dock_id_center);
+    const ImGuiID dock_id_bottom = ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Down, 0.3f, nullptr, &dock_id_center);
 
     ImGui::DockBuilderDockWindow("Registry", dock_id_left);
     ImGui::DockBuilderDockWindow("Inspector", dock_id_right);
@@ -456,8 +444,7 @@ void Editor::EditorLayer::DrawUtilityWindows() {
     std::vector logBuffer(fullText.begin(), fullText.end());
     logBuffer.push_back('\0');
 
-    ImGui::InputTextMultiline("##console_log", logBuffer.data(), logBuffer.size(), ImVec2(-1, -1),
-                              ImGuiInputTextFlags_ReadOnly);
+    ImGui::InputTextMultiline("##console_log", logBuffer.data(), logBuffer.size(), ImVec2(-1, -1), ImGuiInputTextFlags_ReadOnly);
 
     ImGui::End();
 
@@ -492,19 +479,16 @@ void Editor::EditorLayer::DrawToolbar() {
 
                     auto onProceed = [this, pickedDir] {
                         m_NewProjectDialog.SetDirectory(pickedDir);
-                        m_NewProjectDialog.SetOnConfirm(
-                                [this](const std::filesystem::path &pDir, const std::string &name) {
-                                    const auto newProject = Core::Project::NewProject(pDir, name);
-                                    if (newProject) {
-                                        LoadProject(newProject->GetProjectPath().string());
-                                    }
-                                });
+                        m_NewProjectDialog.SetOnConfirm([this](const std::filesystem::path &pDir, const std::string &name) {
+                            const auto newProject = Core::Project::NewProject(pDir, name);
+                            if (newProject) {
+                                LoadProject(newProject->GetProjectPath().string());
+                            }
+                        });
                         m_NewProjectDialog.Open();
                     };
 
-                    const bool hasChanges =
-                            (m_Scene && m_Scene->HasUnsavedChanges()) ||
-                            (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges());
+                    const bool hasChanges = (m_Scene && m_Scene->HasUnsavedChanges()) || (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges());
                     if (hasChanges) {
                         m_SaveChangesDialog.SetMessage("Do you want to save before creating a new project?");
                         m_SaveChangesDialog.SetOnSave([this, onProceed] {
@@ -529,8 +513,7 @@ void Editor::EditorLayer::DrawToolbar() {
                     const std::filesystem::path projectFile = std::filesystem::path(*dir) / "project.json";
                     if (!std::filesystem::exists(projectFile)) {
                         LOG_ERROR("Editor", "No project.json found in: " + *dir);
-                    } else if ((m_Scene && m_Scene->HasUnsavedChanges()) ||
-                               (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges())) {
+                    } else if ((m_Scene && m_Scene->HasUnsavedChanges()) || (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges())) {
                         m_SaveChangesDialog.SetMessage("Do you want to save before opening another project?");
                         m_SaveChangesDialog.SetOnSave([this, projectFile] {
                             if (m_Scene && m_Scene->HasUnsavedChanges()) {
@@ -566,8 +549,7 @@ void Editor::EditorLayer::DrawToolbar() {
                 m_SaveSceneAsDialog.SetOnConfirm([this](const std::string &newName) {
                     std::string safeName = newName;
                     std::ranges::replace(safeName, ' ', '_');
-                    if (const std::string scenePath = Core::PathUtils::Join(Core::SCENE_PATH, safeName, ".json");
-                        IO::SceneIO::Serialize(scenePath, *m_Scene)) {
+                    if (const std::string scenePath = Core::PathUtils::Join(Core::SCENE_PATH, safeName, ".json"); IO::SceneIO::Serialize(scenePath, *m_Scene)) {
                         m_Scene->GetProperties().ScenePath = scenePath;
                         m_Scene->GetProperties().Name = newName;
                     }
@@ -583,8 +565,7 @@ void Editor::EditorLayer::DrawToolbar() {
             ImGui::Separator();
 
             if (ImGui::MenuItem("Close Project")) {
-                const bool hasChanges = (m_Scene && m_Scene->HasUnsavedChanges()) ||
-                                        (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges());
+                const bool hasChanges = (m_Scene && m_Scene->HasUnsavedChanges()) || (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges());
                 if (hasChanges) {
                     m_SaveChangesDialog.SetMessage("Do you want to save before closing the project?");
                     m_SaveChangesDialog.SetOnSave([this] {
@@ -626,8 +607,7 @@ void Editor::EditorLayer::DrawToolbar() {
             ImGui::Separator();
 
             if (ImGui::MenuItem("Exit")) {
-                const bool hasChanges = (m_Scene && m_Scene->HasUnsavedChanges()) ||
-                                        (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges());
+                const bool hasChanges = (m_Scene && m_Scene->HasUnsavedChanges()) || (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges());
                 if (hasChanges) {
                     m_SaveChangesDialog.SetMessage("Do you want to save before quitting?");
                     m_SaveChangesDialog.SetOnSave([this] {
@@ -658,9 +638,7 @@ void Editor::EditorLayer::DrawToolbar() {
 
             if (ImGui::MenuItem("Create Scene")) {
                 m_CreateSceneDialog.Reset();
-                m_CreateSceneDialog.SetOnConfirm([this](const std::string &sceneName) {
-                    static_cast<void>(m_SceneManager.CreateNewScene(sceneName));
-                });
+                m_CreateSceneDialog.SetOnConfirm([this](const std::string &sceneName) { static_cast<void>(m_SceneManager.CreateNewScene(sceneName)); });
                 m_CreateSceneDialog.Open();
             }
             ImGui::Separator();
@@ -674,9 +652,7 @@ void Editor::EditorLayer::DrawToolbar() {
                         const bool isCurrent = m_Scene && m_Scene->GetScenePath() == scenePath;
                         if (ImGui::MenuItem(scenePath.c_str(), nullptr, false, !isCurrent)) {
                             if (m_Scene && m_Scene->HasUnsavedChanges()) {
-                                m_SaveChangesDialog.SetMessage("Do you want to save changes to '" +
-                                                               m_Scene->GetProperties().Name +
-                                                               "' before switching scenes?");
+                                m_SaveChangesDialog.SetMessage("Do you want to save changes to '" + m_Scene->GetProperties().Name + "' before switching scenes?");
                                 m_SaveChangesDialog.SetOnSave([this, scenePath] {
                                     SaveScene();
                                     LoadScene(scenePath);
@@ -746,9 +722,7 @@ void Editor::EditorLayer::DrawToolbar() {
                 if (m_CurrentScenePath.empty()) {
                     LOG_ERROR("Editor", "Cannot enter Play Mode: scene has not been saved yet");
                 } else if (m_Scene && m_Scene->HasUnsavedChanges()) {
-                    m_SaveChangesDialog.SetMessage(
-                            "Do you want to save changes to '" + m_Scene->GetProperties().Name +
-                            "' before entering Play Mode?\n\nUnsaved changes will be discarded.");
+                    m_SaveChangesDialog.SetMessage("Do you want to save changes to '" + m_Scene->GetProperties().Name + "' before entering Play Mode?\n\nUnsaved changes will be discarded.");
                     m_SaveChangesDialog.SetOnSave([this] {
                         SaveScene();
                         TransitionTo(std::make_unique<PlayState>());

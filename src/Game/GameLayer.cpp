@@ -47,8 +47,7 @@ void Game::GameLayer::Render() {
     if (!m_Context)
         return;
     if (m_Context->camera && m_Context->window) {
-        const float aspect =
-                static_cast<float>(m_Context->window->GetWidth()) / static_cast<float>(m_Context->window->GetHeight());
+        const float aspect = static_cast<float>(m_Context->window->GetWidth()) / static_cast<float>(m_Context->window->GetHeight());
         m_Context->renderer->SetCamera(*m_Context->camera, aspect);
     }
     m_SceneManager.Render();

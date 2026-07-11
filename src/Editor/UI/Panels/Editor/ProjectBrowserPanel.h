@@ -24,23 +24,16 @@ namespace Editor::UI {
         enum class AssetType : uint8_t { Texture, Shader, Mesh, Material };
 
         template <typename T>
-        void DrawResourceSection(
-                Core::ResourceManager &resources, const std::unordered_map<std::string, std::shared_ptr<T>> &allItems,
-                AssetType assetType, const char *childId, float childHeight, const char *emptyText,
-                const char *typeName,
-                std::type_identity_t<std::function<void(const std::shared_ptr<T> &)>> renderThumbnail,
-                const std::type_identity_t<std::function<void(const std::string &, Core::ResourceManager &)>>
-                        &renderExtraButtons,
-                std::type_identity_t<
-                        std::function<void(const std::string &, const std::shared_ptr<T> &, Core::ResourceManager &)>>
-                        renderTooltip = nullptr);
+        void DrawResourceSection(Core::ResourceManager &resources, const std::unordered_map<std::string, std::shared_ptr<T>> &allItems, AssetType assetType, const char *childId, float childHeight, const char *emptyText,
+                                 const char *typeName, std::type_identity_t<std::function<void(const std::shared_ptr<T> &)>> renderThumbnail,
+                                 const std::type_identity_t<std::function<void(const std::string &, Core::ResourceManager &)>> &renderExtraButtons,
+                                 std::type_identity_t<std::function<void(const std::string &, const std::shared_ptr<T> &, Core::ResourceManager &)>> renderTooltip = nullptr);
 
         void DrawTextureSection(Core::ResourceManager &resources);
         void DrawShaderSection(Core::ResourceManager &resources);
         void DrawMeshSection(Core::ResourceManager &resources);
         void DrawMaterialSection(Core::ResourceManager &resources);
-        void DrawFileSection(const char *label, const std::string &directory, const std::string &extension,
-                             const char *importFilter, const char *importFilterName);
+        void DrawFileSection(const char *label, const std::string &directory, const std::string &extension, const char *importFilter, const char *importFilterName);
 
         void ImportTexture(Core::ResourceManager &resources) const;
         void ImportShader(Core::ResourceManager &resources) const;
@@ -76,8 +69,7 @@ namespace Editor::UI {
         ViewMode m_ViewMode = ViewMode::Grid;
         char m_SearchBuffer[128] = {};
 
-        [[nodiscard]] std::vector<AssetEntry> ScanDirectory(const std::string &subDir,
-                                                            const std::string &extension) const;
+        [[nodiscard]] std::vector<AssetEntry> ScanDirectory(const std::string &subDir, const std::string &extension) const;
 
         [[nodiscard]] static std::string KeyFromPath(const std::filesystem::path &path);
     };

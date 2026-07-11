@@ -21,14 +21,7 @@ namespace IO {
             uint64_t blob_data_offset = 0;
         };
 
-        enum class EntryType : uint8_t {
-            ScriptSource = 0,
-            SerializedAST = 1,
-            BinaryJSON = 2,
-            RawBinary = 3,
-            Media = 4,
-            ShaderSource = 5
-        };
+        enum class EntryType : uint8_t { ScriptSource = 0, SerializedAST = 1, BinaryJSON = 2, RawBinary = 3, Media = 4, ShaderSource = 5 };
 
         enum class EntryFlags : uint8_t { None = 0, Compressed = 1 << 0 };
 
@@ -52,14 +45,12 @@ namespace IO {
     public:
         void add_script(const std::string &canonical_path, const std::string &source);
 
-        void add_compiled_script(const std::string &canonical_path, std::vector<uint8_t> serialized_ast,
-                                 bool compress = true);
+        void add_compiled_script(const std::string &canonical_path, std::vector<uint8_t> serialized_ast, bool compress = true);
 
         void add_binary_json(const std::string &canonical_path, std::vector<uint8_t> binary_json, bool compress = true);
 
         // media, maps, shaders, etc.
-        void add_raw_data(const std::string &canonical_path, std::vector<uint8_t> data, Package::EntryType type,
-                          bool compress = true);
+        void add_raw_data(const std::string &canonical_path, std::vector<uint8_t> data, Package::EntryType type, bool compress = true);
 
         void write(const std::filesystem::path &out_file) const;
 

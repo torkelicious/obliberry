@@ -29,9 +29,7 @@ namespace Editor {
         [[nodiscard]] virtual bool IsPlayMode() const { return false; }
         [[nodiscard]] virtual const char *PlayStopLabel() const { return "Play"; }
         [[nodiscard]] virtual bool ShouldDrawProjectBrowser() const { return true; }
-        [[nodiscard]] virtual const char *GetWindowTitle() const {
-            return m_windowTitle.c_str();
-        } // GLFW uses C strings
+        [[nodiscard]] virtual const char *GetWindowTitle() const { return m_windowTitle.c_str(); } // GLFW uses C strings
         virtual void SetWindowTitle(const std::string &title) {
             if (title == m_windowTitle) {
                 return;

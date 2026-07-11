@@ -88,8 +88,7 @@ namespace Core::Utils::UI {
     static void ImGuiImageFlipped(const GLuint textureID, const ImVec2 &size) {
         ImDrawList *drawList = ImGui::GetWindowDrawList();
         const ImVec2 cursorPos = ImGui::GetCursorScreenPos();
-        drawList->AddImage(textureID, cursorPos, ImVec2(cursorPos.x + size.x, cursorPos.y + size.y), ImVec2(0, 1),
-                           ImVec2(1, 0));
+        drawList->AddImage(textureID, cursorPos, ImVec2(cursorPos.x + size.x, cursorPos.y + size.y), ImVec2(0, 1), ImVec2(1, 0));
         ImGui::Dummy(size);
     }
 } // namespace Core::Utils::UI

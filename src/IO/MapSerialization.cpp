@@ -70,7 +70,5 @@ namespace IO::MapIO {
         return true;
     }
 
-    bool CheckHeader(const MapFileHeader &header, const std::string &expected) {
-        return std::string_view(header.magic, 8) == expected;
-    }
+    bool CheckHeader(const MapFileHeader &header, const std::string &expected) { return std::string_view(header.magic, 8) == expected; }
 } // namespace IO::MapIO

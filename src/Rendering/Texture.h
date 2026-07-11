@@ -19,13 +19,10 @@ namespace Rendering {
         Texture &operator=(Texture &&) = default;
 
         // file path constructor
-        explicit Texture(const std::string path, GLuint minFilter = GL_NEAREST_MIPMAP_NEAREST,
-                         GLuint magFilter = GL_NEAREST, GLuint wrapS = GL_CLAMP_TO_EDGE,
-                         GLuint wrapT = GL_CLAMP_TO_EDGE);
+        explicit Texture(const std::string path, GLuint minFilter = GL_NEAREST_MIPMAP_NEAREST, GLuint magFilter = GL_NEAREST, GLuint wrapS = GL_CLAMP_TO_EDGE, GLuint wrapT = GL_CLAMP_TO_EDGE);
 
         // raw data
-        Texture(int width, int height, const unsigned char *data, GLuint minFilter = GL_NEAREST,
-                GLuint magFilter = GL_NEAREST, GLuint wrapS = GL_CLAMP_TO_EDGE, GLuint wrapT = GL_CLAMP_TO_EDGE);
+        Texture(int width, int height, const unsigned char *data, GLuint minFilter = GL_NEAREST, GLuint magFilter = GL_NEAREST, GLuint wrapS = GL_CLAMP_TO_EDGE, GLuint wrapT = GL_CLAMP_TO_EDGE);
 
         ~Texture();
 

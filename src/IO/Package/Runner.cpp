@@ -94,18 +94,17 @@ int main(int argc, char *argv[]) {
         auto globals = worker->copy_globals();
 
         // Install a module loader that reads precompiled ASTs from the package
-        worker->GetInterpreter().set_module_loader(
-                [&reader](const std::string &path) -> std::optional<ObSL::ModuleResult> {
-                    auto data = reader.read(path);
-                    if (!data)
-                        return std::nullopt;
+        worker->GetInterpreter().set_module_loader([&reader](const std::string &path) -> std::optional<ObSL::ModuleResult> {
+            auto data = reader.read(path);
+            if (!data)
+                return std::nullopt;
 
-                    const std::vector<uint8_t> binary_blob(data->begin(), data->end());
-                    ObSL::ModuleResult result;
-                    result.kind = ObSL::ModuleResult::Kind::PrecompiledAst;
-                    result.ast_module = ObSL::ASTDeserializer::deserialize(binary_blob);
-                    return result;
-                });
+            const std::vector<uint8_t> binary_blob(data->begin(), data->end());
+            ObSL::ModuleResult result;
+            result.kind = ObSL::ModuleResult::Kind::PrecompiledAst;
+            result.ast_module = ObSL::ASTDeserializer::deserialize(binary_blob);
+            return result;
+        });
 
 
         if (!quiet)

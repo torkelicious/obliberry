@@ -18,16 +18,14 @@
 #include "Core/ThreadPool.h"
 
 namespace ECS::Systems::ScriptSystem {
-    inline void InitializeScript(Registry &registry, const EntityID entityId, Components::ScriptComponent *script,
-                                 ObSL::ScriptRuntime &runtime, const size_t scriptIndex = 0) {
+    inline void InitializeScript(Registry &registry, const EntityID entityId, Components::ScriptComponent *script, ObSL::ScriptRuntime &runtime, const size_t scriptIndex = 0) {
         if (scriptIndex >= script->scriptPaths.size() || script->isInitialized[scriptIndex])
             return;
 
         auto fileData = IO::VFS::ReadVirtual(script->scriptPaths[scriptIndex]);
         if (!fileData.has_value()) {
             if (auto *logger = Core::Logging::LoggerService::Get()) {
-                logger->log("ScriptSystem", "Failed to open script via VFS: " + script->scriptPaths[scriptIndex],
-                            Core::Logging::LogSeverity::Error);
+                logger->log("ScriptSystem", "Failed to open script via VFS: " + script->scriptPaths[scriptIndex], Core::Logging::LogSeverity::Error);
             }
             return;
         }
@@ -35,23 +33,22 @@ namespace ECS::Systems::ScriptSystem {
         try {
             // configure module loader
             for (size_t w = 0; w < runtime.worker_count(); ++w) {
-                runtime.get_worker(w)->GetInterpreter().set_module_loader(
-                        [](const std::string &path) -> std::optional<ObSL::ModuleResult> {
-                            auto data = IO::VFS::ReadVirtual(path);
-                            if (!data)
-                                return std::nullopt;
+                runtime.get_worker(w)->GetInterpreter().set_module_loader([](const std::string &path) -> std::optional<ObSL::ModuleResult> {
+                    auto data = IO::VFS::ReadVirtual(path);
+                    if (!data)
+                        return std::nullopt;
 
-                            ObSL::ModuleResult result;
-                            if (IO::VFS::IsPackaged()) {
-                                const std::vector<uint8_t> blob(data->begin(), data->end());
-                                result.kind = ObSL::ModuleResult::Kind::PrecompiledAst;
-                                result.ast_module = ObSL::ASTDeserializer::deserialize(blob);
-                            } else {
-                                result.kind = ObSL::ModuleResult::Kind::Source;
-                                result.source = std::move(data.value());
-                            }
-                            return result;
-                        });
+                    ObSL::ModuleResult result;
+                    if (IO::VFS::IsPackaged()) {
+                        const std::vector<uint8_t> blob(data->begin(), data->end());
+                        result.kind = ObSL::ModuleResult::Kind::PrecompiledAst;
+                        result.ast_module = ObSL::ASTDeserializer::deserialize(blob);
+                    } else {
+                        result.kind = ObSL::ModuleResult::Kind::Source;
+                        result.source = std::move(data.value());
+                    }
+                    return result;
+                });
             }
 
             // Packaged AST
@@ -60,20 +57,16 @@ namespace ECS::Systems::ScriptSystem {
                 try {
                     // static container keeps the deserialized string_pools alive for the application lifetime to avoid
                     // pointing at dead mem nce goes oos
-                    static std::vector<decltype(ObSL::ASTDeserializer::deserialize(std::vector<uint8_t>()))>
-                            s_PackagedStringPools;
+                    static std::vector<decltype(ObSL::ASTDeserializer::deserialize(std::vector<uint8_t>()))> s_PackagedStringPools;
 
-                    auto &deserialized =
-                            s_PackagedStringPools.emplace_back(ObSL::ASTDeserializer::deserialize(binary_blob));
+                    auto &deserialized = s_PackagedStringPools.emplace_back(ObSL::ASTDeserializer::deserialize(binary_blob));
                     auto &[string_pool, statements] = deserialized;
 
                     script->ast_nodes[scriptIndex] = std::move(statements);
                     script->lastModified[scriptIndex] = std::filesystem::file_time_type::min();
                 } catch (const std::exception &e) {
                     if (auto *logger = Core::Logging::LoggerService::Get()) {
-                        logger->log("ScriptSystem",
-                                    "AST Deserialization failed for: " + script->scriptPaths[scriptIndex],
-                                    Core::Logging::LogSeverity::Error);
+                        logger->log("ScriptSystem", "AST Deserialization failed for: " + script->scriptPaths[scriptIndex], Core::Logging::LogSeverity::Error);
                     }
                     return;
                 }
@@ -161,16 +154,11 @@ namespace ECS::Systems::ScriptSystem {
 
             script->isInitialized[scriptIndex] = true;
             if (auto *logger = Core::Logging::LoggerService::Get()) {
-                logger->log("ScriptSystem",
-                            "Initialized '" + script->scriptPaths[scriptIndex] + "' across " +
-                                    std::to_string(num_workers) + " worker(s)",
-                            Core::Logging::LogSeverity::Info);
+                logger->log("ScriptSystem", "Initialized '" + script->scriptPaths[scriptIndex] + "' across " + std::to_string(num_workers) + " worker(s)", Core::Logging::LogSeverity::Info);
             }
         } catch (const std::exception &e) {
             if (auto *logger = Core::Logging::LoggerService::Get()) {
-                logger->log("ScriptSystem",
-                            "Error compiling/executing '" + script->scriptPaths[scriptIndex] + "':\n  " + e.what(),
-                            Core::Logging::LogSeverity::Error);
+                logger->log("ScriptSystem", "Error compiling/executing '" + script->scriptPaths[scriptIndex] + "':\n  " + e.what(), Core::Logging::LogSeverity::Error);
             }
         }
     }
@@ -195,21 +183,18 @@ namespace ECS::Systems::ScriptSystem {
                     if (!IO::VFS::IsPackaged()) {
                         std::filesystem::path resolvedPath = IO::VFS::Resolve(script->scriptPaths[i]);
                         if (std::filesystem::exists(resolvedPath)) {
-                            if (auto current_time = std::filesystem::last_write_time(resolvedPath);
-                                current_time > script->lastModified[i]) {
+                            if (auto current_time = std::filesystem::last_write_time(resolvedPath); current_time > script->lastModified[i]) {
                                 script->isInitialized[i] = false;
                                 InitializeScript(registry, raw_id, script, *ctx.scriptPool, i);
                                 if (auto *logger = Core::Logging::LoggerService::Get()) {
-                                    logger->log("ScriptSystem", "Hot-reloaded script: " + script->scriptPaths[i],
-                                                Core::Logging::LogSeverity::Info);
+                                    logger->log("ScriptSystem", "Hot-reloaded script: " + script->scriptPaths[i], Core::Logging::LogSeverity::Info);
                                 }
                             }
                         }
                     }
                 } catch (const std::exception &e) {
                     if (auto *logger = Core::Logging::LoggerService::Get()) {
-                        logger->log("ScriptSystem", "reload error: " + std::string(e.what()),
-                                    Core::Logging::LogSeverity::Error);
+                        logger->log("ScriptSystem", "reload error: " + std::string(e.what()), Core::Logging::LogSeverity::Error);
                     }
                 }
             }
@@ -241,8 +226,7 @@ namespace ECS::Systems::ScriptSystem {
             for (size_t i = 0; i < script->scriptPaths.size(); i++) {
                 if (script->isInitialized[i] && script->on_update_functions[i][0]) {
                     const size_t w = (entity_id + i) % active_workers;
-                    buckets[w].push_back(
-                            {script->on_update_functions[i][w], script->instance_envs[i][w], script->scriptPaths[i]});
+                    buckets[w].push_back({script->on_update_functions[i][w], script->instance_envs[i][w], script->scriptPaths[i]});
                 }
             }
         });
@@ -261,13 +245,11 @@ namespace ECS::Systems::ScriptSystem {
                         }
                     } catch (const std::exception &e) {
                         if (auto *logger = Core::Logging::LoggerService::Get()) {
-                            logger->log("ScriptSystem", "Exception in on_update (" + scriptPath + ") : " + e.what(),
-                                        Core::Logging::LogSeverity::Error);
+                            logger->log("ScriptSystem", "Exception in on_update (" + scriptPath + ") : " + e.what(), Core::Logging::LogSeverity::Error);
                         }
                     } catch (...) {
                         if (auto *logger = Core::Logging::LoggerService::Get()) {
-                            logger->log("ScriptSystem", "Unknown Exception in on_update (" + scriptPath + ")",
-                                        Core::Logging::LogSeverity::Error);
+                            logger->log("ScriptSystem", "Unknown Exception in on_update (" + scriptPath + ")", Core::Logging::LogSeverity::Error);
                         }
                     }
                 }
@@ -298,8 +280,7 @@ namespace ECS::Systems::ScriptSystem {
                 for (size_t i = 0; i < script->scriptPaths.size(); i++) {
                     if (script->isInitialized[i] && script->on_destroy_functions[i][0]) {
                         const size_t w = (entity_id + i) % destroy_workers;
-                        destroy_buckets[w].push_back({script->on_destroy_functions[i][w], script->instance_envs[i][w],
-                                                      script->scriptPaths[i]});
+                        destroy_buckets[w].push_back({script->on_destroy_functions[i][w], script->instance_envs[i][w], script->scriptPaths[i]});
                     }
                 }
             }
@@ -318,13 +299,11 @@ namespace ECS::Systems::ScriptSystem {
                         }
                     } catch (const std::exception &e) {
                         if (auto *logger = Core::Logging::LoggerService::Get()) {
-                            logger->log("ScriptSystem", "Exception in on_destroy (" + scriptPath + ") : " + e.what(),
-                                        Core::Logging::LogSeverity::Error);
+                            logger->log("ScriptSystem", "Exception in on_destroy (" + scriptPath + ") : " + e.what(), Core::Logging::LogSeverity::Error);
                         }
                     } catch (...) {
                         if (auto *logger = Core::Logging::LoggerService::Get()) {
-                            logger->log("ScriptSystem", "Unknown Exception in on_destroy (" + scriptPath + ")",
-                                        Core::Logging::LogSeverity::Error);
+                            logger->log("ScriptSystem", "Unknown Exception in on_destroy (" + scriptPath + ")", Core::Logging::LogSeverity::Error);
                         }
                     }
                 }
@@ -368,17 +347,15 @@ namespace ECS::Systems::ScriptSystem {
         };
         std::vector<std::vector<ExitWork>> buckets(exit_workers);
 
-        registry.ForEach<Components::ScriptComponent>(
-                [&](const Entity entity, const Components::ScriptComponent *script) {
-                    const auto entity_id = static_cast<EntityID>(entity);
-                    for (size_t i = 0; i < script->scriptPaths.size(); i++) {
-                        if (script->isInitialized[i] && script->on_exit_functions[i][0]) {
-                            const size_t w = (entity_id + i) % exit_workers;
-                            buckets[w].push_back({script->on_exit_functions[i][w], script->instance_envs[i][w],
-                                                  script->scriptPaths[i]});
-                        }
-                    }
-                });
+        registry.ForEach<Components::ScriptComponent>([&](const Entity entity, const Components::ScriptComponent *script) {
+            const auto entity_id = static_cast<EntityID>(entity);
+            for (size_t i = 0; i < script->scriptPaths.size(); i++) {
+                if (script->isInitialized[i] && script->on_exit_functions[i][0]) {
+                    const size_t w = (entity_id + i) % exit_workers;
+                    buckets[w].push_back({script->on_exit_functions[i][w], script->instance_envs[i][w], script->scriptPaths[i]});
+                }
+            }
+        });
 
         const double dt = ctx.deltaTime;
         for (size_t w = 0; w < exit_workers; ++w) {
@@ -394,13 +371,11 @@ namespace ECS::Systems::ScriptSystem {
                         }
                     } catch (const std::exception &e) {
                         if (auto *logger = Core::Logging::LoggerService::Get()) {
-                            logger->log("ScriptSystem", "Exception in on_exit (" + scriptPath + ") : " + e.what(),
-                                        Core::Logging::LogSeverity::Error);
+                            logger->log("ScriptSystem", "Exception in on_exit (" + scriptPath + ") : " + e.what(), Core::Logging::LogSeverity::Error);
                         }
                     } catch (...) {
                         if (auto *logger = Core::Logging::LoggerService::Get()) {
-                            logger->log("ScriptSystem", "Unknown Exception in on_exit (" + scriptPath + ")",
-                                        Core::Logging::LogSeverity::Error);
+                            logger->log("ScriptSystem", "Unknown Exception in on_exit (" + scriptPath + ")", Core::Logging::LogSeverity::Error);
                         }
                     }
                 }

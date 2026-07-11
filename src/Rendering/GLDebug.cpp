@@ -9,9 +9,7 @@
 constexpr auto LOG_WHO = "GLDebug";
 
 namespace Rendering {
-    void APIENTRY GLDebug::glDebugOutput(const GLenum source, const GLenum type, const unsigned int id,
-                                         const GLenum severity, GLsizei length, const char *message,
-                                         const void *userParam) {
+    void APIENTRY GLDebug::glDebugOutput(const GLenum source, const GLenum type, const unsigned int id, const GLenum severity, GLsizei length, const char *message, const void *userParam) {
         // ignore non-significant error/warning codes
         if (id == 131169 || id == 131185 || id == 131218 || id == 131204)
             return;
@@ -120,8 +118,7 @@ namespace Rendering {
         if (!renderer)
             return stats;
         // NVIDIA Path
-        if (const std::string rendererStr(reinterpret_cast<const char *>(renderer));
-            rendererStr.find("NVIDIA") != std::string::npos) {
+        if (const std::string rendererStr(reinterpret_cast<const char *>(renderer)); rendererStr.find("NVIDIA") != std::string::npos) {
             GLint totalKb = 0;
             GLint currentAvailableKb = 0;
             glGetIntegerv(GL_GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX, &totalKb);

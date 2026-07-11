@@ -64,9 +64,7 @@ namespace Editor {
         return std::nullopt;
     }
 
-    std::optional<std::string> FileDialogs::PickFolder(const Core::EngineContext &ctx, const char *defaultPath,
-                                                       const char *title, const char *acceptBtnLabel,
-                                                       const char *cancelBtnLabel) {
+    std::optional<std::string> FileDialogs::PickFolder(const Core::EngineContext &ctx, const char *defaultPath, const char *title, const char *acceptBtnLabel, const char *cancelBtnLabel) {
         nfdpickfolderu8args_t args = {nullptr};
         args.defaultPath = defaultPath;
         args.parentWindow = GetNativeHandle(ctx);

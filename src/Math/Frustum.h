@@ -33,9 +33,7 @@ namespace Math::Frustum {
             return fp;
         }
 
-        [[nodiscard]] static float DistanceTo(const glm::vec4 &plane, const glm::vec3 &point) noexcept {
-            return plane.x * point.x + plane.y * point.y + plane.z * point.z + plane.w;
-        }
+        [[nodiscard]] static float DistanceTo(const glm::vec4 &plane, const glm::vec3 &point) noexcept { return plane.x * point.x + plane.y * point.y + plane.z * point.z + plane.w; }
 
         [[nodiscard]] bool IntersectsSphere(const glm::vec3 &centre, const float radius) const noexcept {
             for (const auto &plane : planes) {
@@ -64,22 +62,16 @@ namespace Math::Frustum {
         glm::vec2 maxBounds{std::numeric_limits<float>::lowest()};
 
         [[nodiscard]] bool IsVisible(const glm::vec3 position, const float radius = 0.0f) const noexcept {
-            return position.x + radius >= minBounds.x && position.x - radius <= maxBounds.x &&
-                   position.y + radius >= minBounds.y && position.y - radius <= maxBounds.y;
+            return position.x + radius >= minBounds.x && position.x - radius <= maxBounds.x && position.y + radius >= minBounds.y && position.y - radius <= maxBounds.y;
         }
 
         [[nodiscard]] bool IsVisible(const glm::vec2 position, const float radius = 0.0f) const noexcept {
-            return position.x + radius >= minBounds.x && position.x - radius <= maxBounds.x &&
-                   position.y + radius >= minBounds.y && position.y - radius <= maxBounds.y;
+            return position.x + radius >= minBounds.x && position.x - radius <= maxBounds.x && position.y + radius >= minBounds.y && position.y - radius <= maxBounds.y;
         }
 
-        [[nodiscard]] bool Contains(const glm::vec2 point) const noexcept {
-            return point.x >= minBounds.x && point.x <= maxBounds.x && point.y >= minBounds.y && point.y <= maxBounds.y;
-        }
+        [[nodiscard]] bool Contains(const glm::vec2 point) const noexcept { return point.x >= minBounds.x && point.x <= maxBounds.x && point.y >= minBounds.y && point.y <= maxBounds.y; }
 
-        [[nodiscard]] bool Contains(const glm::vec3 point) const noexcept {
-            return point.x >= minBounds.x && point.x <= maxBounds.x && point.y >= minBounds.y && point.y <= maxBounds.y;
-        }
+        [[nodiscard]] bool Contains(const glm::vec3 point) const noexcept { return point.x >= minBounds.x && point.x <= maxBounds.x && point.y >= minBounds.y && point.y <= maxBounds.y; }
     };
 
     inline ViewFrustum FromCamera(const Rendering::Camera *camera, const float aspect, const float padding = 0.0f) {

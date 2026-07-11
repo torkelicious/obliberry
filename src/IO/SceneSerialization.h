@@ -13,9 +13,7 @@ namespace IO::SceneIO {
 
     bool Serialize(const std::string &path, Scenes::Scene &scene);
 
-    template <typename T, typename Func>
-    void SerializeAssets(nlohmann::json &arr, const std::unordered_map<std::string, std::shared_ptr<T>> &assets,
-                         Func serializer) {
+    template <typename T, typename Func> void SerializeAssets(nlohmann::json &arr, const std::unordered_map<std::string, std::shared_ptr<T>> &assets, Func serializer) {
         for (const auto &[id, asset] : assets) {
             arr.push_back(serializer(id, asset));
         }

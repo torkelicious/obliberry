@@ -9,8 +9,7 @@
 constexpr auto LOG_WHO = "Shader";
 
 namespace Rendering {
-    Shader::Shader(const std::string &vertPath, const std::string &fragPath)
-        : m_vertPath(vertPath), m_fragPath(fragPath) {
+    Shader::Shader(const std::string &vertPath, const std::string &fragPath) : m_vertPath(vertPath), m_fragPath(fragPath) {
         m_VertexSrc = LoadFile(vertPath);
         m_FragmentSrc = LoadFile(fragPath);
     }

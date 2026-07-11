@@ -18,9 +18,7 @@
 #include "IO/VFS.h"
 
 Core::Application::Application(ProjectConfig config, std::unique_ptr<ApplicationLayer> layer)
-    : m_Project(std::move(config)),
-      m_Window(m_Project.windowWidth, m_Project.windowHeight, m_Project.Title.c_str(), m_Project.fullscreen),
-      m_Layer(std::move(layer)) {
+    : m_Project(std::move(config)), m_Window(m_Project.windowWidth, m_Project.windowHeight, m_Project.Title.c_str(), m_Project.fullscreen), m_Layer(std::move(layer)) {
     m_Window.SetInputManager(&m_InputManager);
     m_AudioEngine = Sound::AudioEngine::Create();
 }
@@ -150,8 +148,7 @@ void Core::Application::Run() {
         {
             std::unique_lock lock(m_Frames[nextIdx].mutex);
             if (m_Frames[nextIdx].state != FrameState::Free) {
-                m_Frames[nextIdx].cv.wait(
-                        lock, [&] { return m_Frames[nextIdx].state == FrameState::Free || !m_Running.load(); });
+                m_Frames[nextIdx].cv.wait(lock, [&] { return m_Frames[nextIdx].state == FrameState::Free || !m_Running.load(); });
             }
         }
         if (!m_Running)

@@ -63,14 +63,11 @@ namespace Editor::UI {
 
         {
             ImGui::Text("Background Music");
-            ImGui::TextUnformatted(m_LocalProperties.BackgroundMusicPath.empty()
-                                           ? "None"
-                                           : m_LocalProperties.BackgroundMusicPath.c_str());
+            ImGui::TextUnformatted(m_LocalProperties.BackgroundMusicPath.empty() ? "None" : m_LocalProperties.BackgroundMusicPath.c_str());
             ImGui::SameLine();
             if (ImGui::Button("Load##Music")) {
                 if (m_Context) {
-                    const auto picked = FileDialogs::OpenFile(
-                            *m_Context, {.filterName = "Audio Files", .filterExt = "wav,mp3,ogg,flac"});
+                    const auto picked = FileDialogs::OpenFile(*m_Context, {.filterName = "Audio Files", .filterExt = "wav,mp3,ogg,flac"});
                     if (picked.has_value()) {
                         ResolveMusicPath(picked.value());
                     }

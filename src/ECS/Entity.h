@@ -20,9 +20,7 @@ namespace ECS {
 
         template <typename T> void RemoveComponent() const;
 
-        bool operator==(const Entity &other) const {
-            return m_EntityHandle == other.m_EntityHandle && m_Registry == other.m_Registry;
-        }
+        bool operator==(const Entity &other) const { return m_EntityHandle == other.m_EntityHandle && m_Registry == other.m_Registry; }
 
         bool operator!=(const Entity &other) const { return !(*this == other); }
         explicit operator bool() const { return m_EntityHandle != 0; }

@@ -133,7 +133,6 @@ int main(int argc, char *argv[]) {
 
 
     if (!quiet)
-        LOG_INFO(LOG_WHO, "Finished extracting " + std::to_string(success_count) + "/" + std::to_string(paths.size()) +
-                                  " files.");
+        LOG_INFO(LOG_WHO, "Finished extracting " + std::to_string(success_count) + "/" + std::to_string(paths.size()) + " files.");
     return (static_cast<size_t>(success_count) == paths.size()) ? 0 : 1;
 }

@@ -84,8 +84,7 @@ namespace IO::Package::Tools {
             try {
                 writer.write(out_file);
                 std::cout << "Wrote " + out_file.string() << "\n";
-                std::cout << "Packed " + std::to_string(success_count) + "/" +
-                                     std::to_string(success_count + fail_count) + " files.\n";
+                std::cout << "Packed " + std::to_string(success_count) + "/" + std::to_string(success_count + fail_count) + " files.\n";
             } catch (const std::exception &e) {
                 LOG_ERROR(LOG_WHO, std::string("Could not write package - ") + e.what());
                 return;
@@ -118,8 +117,7 @@ namespace IO::Package::Tools {
                 std::cout << "[Export] Successfully copied runtime binary to " << dest_exe.string() << "\n";
             } else {
                 LOG_ERROR(LOG_WHO, "Error: Could not find runtime binary at " + runtime_src.string());
-                LOG_ERROR(LOG_WHO,
-                          "Ensure obliberry_runtime is built and located in the 'internal' folder next to the editor");
+                LOG_ERROR(LOG_WHO, "Ensure obliberry_runtime is built and located in the 'internal' folder next to the editor");
             }
         } catch (const std::exception &e) {
             LOG_ERROR(LOG_WHO, "Exception while copying runtime: " + std::string(e.what()));

@@ -34,8 +34,7 @@ void Editor::UI::RegistryPanel::OnImGuiRender() {
             }
 
             ImGui::PushID(id);
-            if (const bool isSelected = static_cast<bool>(m_SelectedEntity) && m_SelectedEntity == entity;
-                ImGui::Selectable(label.c_str(), isSelected)) {
+            if (const bool isSelected = static_cast<bool>(m_SelectedEntity) && m_SelectedEntity == entity; ImGui::Selectable(label.c_str(), isSelected)) {
                 m_SelectedEntity = entity;
             }
             ImGui::PopID();

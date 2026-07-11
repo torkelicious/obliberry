@@ -57,8 +57,7 @@ namespace IO {
         }
 
         std::string decompressed(entry.uncompressed_size, '\0');
-        const int result = LZ4_decompress_safe(raw.data(), decompressed.data(), static_cast<int>(entry.compressed_size),
-                                               static_cast<int>(entry.uncompressed_size));
+        const int result = LZ4_decompress_safe(raw.data(), decompressed.data(), static_cast<int>(entry.compressed_size), static_cast<int>(entry.uncompressed_size));
 
         if (result < 0 || static_cast<uint64_t>(result) != entry.uncompressed_size) {
             return std::nullopt;

@@ -68,13 +68,11 @@ namespace Editor::UI {
 
         {
             ImGui::Text("Start Scene");
-            ImGui::TextUnformatted(m_LocalConfig.startScenePath.empty() ? "None"
-                                                                        : m_LocalConfig.startScenePath.c_str());
+            ImGui::TextUnformatted(m_LocalConfig.startScenePath.empty() ? "None" : m_LocalConfig.startScenePath.c_str());
             ImGui::SameLine();
             if (ImGui::Button("Browse##Scene")) {
                 if (m_Context) {
-                    const auto picked =
-                            FileDialogs::OpenFile(*m_Context, {.filterName = "Scene File", .filterExt = "json"});
+                    const auto picked = FileDialogs::OpenFile(*m_Context, {.filterName = "Scene File", .filterExt = "json"});
                     if (picked.has_value()) {
                         ResolveStartScenePath(picked.value());
                         Core::Project::GetActive()->MarkAsChanged();
