@@ -105,9 +105,13 @@ namespace ECS {
         const std::vector<EntityID> &GetLivingEntities() const { return m_LivingEntities; }
 
         template <typename Primary, typename... Rest, typename Func> void ForEach(Func &&func) {
-            for (auto *primaryPool = GetPool<Primary>(); EntityID id : primaryPool->GetDenseEntities()) {
-                if ((HasComponent<Rest>(id) && ...)) {
-                    func(Entity(id, this), primaryPool->Get(id), GetComponent<Rest>(id)...);
+            auto *primaryPool = GetPool<Primary>();
+            auto restPools = std::make_tuple(GetPool<Rest>()...);
+
+            for (EntityID id : primaryPool->GetDenseEntities()) {
+                if ((std::get<ComponentPool<Rest> *>(restPools)->Has(id) && ...)) {
+                    func(Entity(id, this), primaryPool->Get(id),
+                         std::get<ComponentPool<Rest> *>(restPools)->Get(id)...);
                 }
             }
         }
@@ -117,8 +121,9 @@ namespace ECS {
                 if (!primaryPool->GetDenseEntities().empty())
                     return primaryPool->Get(primaryPool->GetDenseEntities().front());
             } else {
+                auto *targetPool = GetPool<T>();
                 for (const EntityID id : primaryPool->GetDenseEntities()) {
-                    if (T *comp = GetComponent<T>(id))
+                    if (T *comp = targetPool->Get(id))
                         return comp;
                 }
             }
