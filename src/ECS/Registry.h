@@ -1,38 +1,52 @@
 #pragma once
-
 #include "ComponentPool.h"
 #include "Entity.h"
 #include "Types.h"
+#include <array>
 #include <cassert>
 #include <memory>
 #include <queue>
 #include <ranges>
-#include <typeindex>
-#include <unordered_map>
+#include <string>
 
 namespace ECS {
+    inline uint32_t NextPoolIndex() {
+        static uint32_t counter = 0;
+        return counter++;
+    }
+
+    template <typename T> struct ComponentTypeID {
+        static uint32_t ID() {
+            static uint32_t id = NextPoolIndex();
+            return id;
+        }
+    };
+
+    constexpr uint32_t MAX_COMPONENT_TYPES = 64;
+
     class Registry {
     private:
         std::queue<uint32_t> m_AvailableEntities;
-        std::unordered_map<std::type_index, std::unique_ptr<IPool>> m_ComponentPools;
+        std::array<std::unique_ptr<IPool>, MAX_COMPONENT_TYPES> m_ComponentPools{};
         std::vector<EntityID> m_LivingEntities;
-        std::unordered_map<EntityID, std::string> m_EntityNames;
+        std::vector<std::string> m_EntityNames;
         std::vector<bool> m_EntityStatus;
         std::vector<uint32_t> m_EntityVersions;
 
         template <typename T> ComponentPool<T> *GetPool() {
-            const auto type = std::type_index(typeid(T));
-            auto [it, inserted] = m_ComponentPools.try_emplace(type);
-            if (inserted) {
-                it->second = std::make_unique<ComponentPool<T>>();
+            const uint32_t index = ComponentTypeID<T>::ID();
+            assert(index < MAX_COMPONENT_TYPES && "Too many component types!");
+            if (!m_ComponentPools[index]) {
+                m_ComponentPools[index] = std::make_unique<ComponentPool<T>>();
             }
-            return static_cast<ComponentPool<T> *>(it->second.get());
+            return static_cast<ComponentPool<T> *>(m_ComponentPools[index].get());
         }
 
     public:
         Registry() {
             m_EntityStatus.resize(MAX_ENTITIES, false);
             m_EntityVersions.resize(MAX_ENTITIES, 0);
+            m_EntityNames.resize(MAX_ENTITIES);
             for (uint32_t i = 0; i < MAX_ENTITIES; ++i) {
                 m_AvailableEntities.push(i);
             }
@@ -56,8 +70,9 @@ namespace ECS {
 
             const uint32_t index = GetEntityIndex(id);
 
-            for (const auto &pool : m_ComponentPools | std::views::values) {
-                pool->EntityDestroyed(id);
+            for (uint32_t i = 0; i < MAX_COMPONENT_TYPES; ++i) {
+                if (m_ComponentPools[i])
+                    m_ComponentPools[i]->EntityDestroyed(id);
             }
 
             // Increment generation to invalidate old handles
@@ -65,10 +80,14 @@ namespace ECS {
             m_EntityStatus[index] = false;
             m_AvailableEntities.push(index);
 
-            std::erase(m_LivingEntities, id);
+            auto it = std::ranges::find(m_LivingEntities, id);
+            if (it != m_LivingEntities.end()) {
+                *it = m_LivingEntities.back();
+                m_LivingEntities.pop_back();
+            }
         }
 
-        bool IsValid(const EntityID id) const {
+        [[nodiscard]] bool IsValid(const EntityID id) const {
             const uint32_t index = GetEntityIndex(id);
             if (index >= MAX_ENTITIES || !m_EntityStatus[index]) {
                 return false;
@@ -92,17 +111,11 @@ namespace ECS {
 
         template <typename T> bool HasComponent(EntityID entity) { return GetPool<T>()->Has(entity); }
 
-        void SetEntityName(const EntityID id, const std::string &name) { m_EntityNames[id] = name; }
+        void SetEntityName(const EntityID id, const std::string &name) { m_EntityNames[GetEntityIndex(id)] = name; }
 
-        const std::string &GetEntityName(const EntityID id) const {
-            if (const auto it = m_EntityNames.find(id); it != m_EntityNames.end()) {
-                return it->second;
-            }
-            static std::string empty;
-            return empty;
-        }
+        [[nodiscard]] const std::string &GetEntityName(const EntityID id) const { return m_EntityNames[GetEntityIndex(id)]; }
 
-        const std::vector<EntityID> &GetLivingEntities() const { return m_LivingEntities; }
+        [[nodiscard]] const std::vector<EntityID> &GetLivingEntities() const { return m_LivingEntities; }
 
         template <typename Primary, typename... Rest, typename Func> void ForEach(Func &&func) {
             auto *primaryPool = GetPool<Primary>();
@@ -110,8 +123,7 @@ namespace ECS {
 
             for (EntityID id : primaryPool->GetDenseEntities()) {
                 if ((std::get<ComponentPool<Rest> *>(restPools)->Has(id) && ...)) {
-                    func(Entity(id, this), primaryPool->Get(id),
-                         std::get<ComponentPool<Rest> *>(restPools)->Get(id)...);
+                    func(Entity(id, this), primaryPool->Get(id), std::get<ComponentPool<Rest> *>(restPools)->Get(id)...);
                 }
             }
         }
