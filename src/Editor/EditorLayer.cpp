@@ -19,6 +19,7 @@
 #include "FileDialogs.h"
 #include "Commands/EditorCommands.h"
 #include "IO/SceneSerialization.h"
+#include "IO/MapSerialization.h"
 #include "IO/VFS.h"
 #include "IO/Package/Tools/ObpakTools.h"
 
@@ -31,6 +32,7 @@
  * map editor - wip
  * project browser (asset view ig) - wip
  * whatever else an editor needs?
+ * TODO/FIX: Reload map if changes unsaved, otherwise innacurate scene view in relation to actual file
  */
 
 bool Editor::EditorLayer::s_ShouldBuildDock = true;
@@ -110,6 +112,7 @@ void Editor::EditorLayer::Render() {
         m_SaveSceneAsDialog.Update();
     }
     m_SaveChangesDialog.Update();
+    m_SaveMapDialog.Update();
 }
 
 void Editor::EditorLayer::Shutdown() {}
@@ -315,6 +318,42 @@ void Editor::EditorLayer::ExecutePendingStateTransfer() {
     m_PendingState = nullptr;
 
     m_UndoManager.Clear();
+}
+
+void Editor::EditorLayer::PromptSaveDirtyMap(std::function<void()> onProceed) {
+    auto *mapState = dynamic_cast<MapEditState *>(m_CurrentState.get());
+    if (!mapState || !m_Registry) {
+        onProceed();
+        return;
+    }
+
+    bool isDirty = false;
+    m_Registry->ForEach<ECS::Components::MapComponent>([&](ECS::Entity, ECS::Components::MapComponent *mapComp) {
+        if (mapComp->mapDirty)
+            isDirty = true;
+    });
+
+    if (!isDirty) {
+        onProceed();
+        return;
+    }
+
+    m_SaveMapDialog.SetMessage("Map has unsaved changes. Save before leaving?");
+    m_SaveMapDialog.SetOnSave([this, onProceed] {
+        m_Registry->ForEach<ECS::Components::MapComponent>([&](ECS::Entity, ECS::Components::MapComponent *mapComp) {
+            if (mapComp->mapDirty && !mapComp->mapFilePath.empty()) {
+                if (IO::MapIO::Serialize(mapComp->mapFilePath, mapComp->grid)) {
+                    mapComp->mapDirty = false;
+                }
+            }
+        });
+        onProceed();
+    });
+    m_SaveMapDialog.SetOnDiscard([this, onProceed] {
+        m_Registry->ForEach<ECS::Components::MapComponent>([&](ECS::Entity, ECS::Components::MapComponent *mapComp) { mapComp->mapDirty = false; });
+        onProceed();
+    });
+    m_SaveMapDialog.Open();
 }
 
 void Editor::EditorLayer::DrawEditorUI() {
@@ -589,11 +628,13 @@ void Editor::EditorLayer::DrawToolbar() {
                     });
                     m_SaveChangesDialog.Open();
                 } else {
-                    ClearCurrentProject();
-                    Core::Project::SetActive(nullptr);
-                    IO::VFS::UnmountProject();
-                    s_ShouldBuildDock = true;
-                    TransitionTo(std::make_unique<HubState>());
+                    PromptSaveDirtyMap([this] {
+                        ClearCurrentProject();
+                        Core::Project::SetActive(nullptr);
+                        IO::VFS::UnmountProject();
+                        s_ShouldBuildDock = true;
+                        TransitionTo(std::make_unique<HubState>());
+                    });
                 }
             }
             ImGui::Separator();
@@ -650,19 +691,23 @@ void Editor::EditorLayer::DrawToolbar() {
                     for (const auto &scenePath : scenes) {
                         const bool isCurrent = m_Scene && m_Scene->GetScenePath() == scenePath;
                         if (ImGui::MenuItem(scenePath.c_str(), nullptr, false, !isCurrent)) {
-                            if (m_Scene && m_Scene->HasUnsavedChanges()) {
-                                m_SaveChangesDialog.SetMessage("Do you want to save changes to '" + m_Scene->GetProperties().Name + "' before switching scenes?");
-                                m_SaveChangesDialog.SetOnSave([this, scenePath] {
-                                    SaveScene();
+                            PromptSaveDirtyMap([this, scenePath] {
+                                if (m_Scene && m_Scene->HasUnsavedChanges()) {
+                                    m_SaveChangesDialog.SetMessage("Do you want to save changes to '" + m_Scene->GetProperties().Name + "' before switching scenes?");
+                                    m_SaveChangesDialog.SetOnSave([this, scenePath] {
+                                        SaveScene();
+                                        LoadScene(scenePath);
+                                    });
+                                    m_SaveChangesDialog.SetOnDiscard([this, scenePath] { LoadScene(scenePath); });
+                                    m_SaveChangesDialog.Open();
+                                } else {
                                     LoadScene(scenePath);
-                                });
-                                m_SaveChangesDialog.SetOnDiscard([this, scenePath] { LoadScene(scenePath); });
-                                m_SaveChangesDialog.Open();
-                            } else {
-                                m_PendingSceneToLoad = scenePath;
-                            }
+                                }
+                            });
+                            m_PendingSceneToLoad = scenePath;
                         }
                     }
+                    ImGui::EndMenu();
                 }
                 ImGui::EndMenu();
             }
@@ -691,10 +736,10 @@ void Editor::EditorLayer::DrawToolbar() {
                 switch (currentMode) {
                     default:
                     case 0:
-                        TransitionTo(std::make_unique<EditState>());
+                        PromptSaveDirtyMap([this] { TransitionTo(std::make_unique<EditState>()); });
                         break;
                     case 1:
-                        TransitionTo(std::make_unique<MapEditState>());
+                        PromptSaveDirtyMap([this] { TransitionTo(std::make_unique<MapEditState>()); });
                         break;
                 }
             }
@@ -718,21 +763,21 @@ void Editor::EditorLayer::DrawToolbar() {
             if (m_CurrentState->IsPlayMode()) {
                 TransitionTo(m_PreviousState ? std::move(m_PreviousState) : std::make_unique<EditState>());
             } else {
-                if (m_CurrentScenePath.empty()) {
-                    LOG_ERROR("Editor", "Cannot enter Play Mode: scene has not been saved yet");
-                } else if (m_Scene && m_Scene->HasUnsavedChanges()) {
-                    m_SaveChangesDialog.SetMessage("Do you want to save changes to '" + m_Scene->GetProperties().Name + "' before entering Play Mode?\n\nUnsaved changes will be discarded.");
-                    m_SaveChangesDialog.SetOnSave([this] {
-                        SaveScene();
+                PromptSaveDirtyMap([this] {
+                    if (m_Scene && m_Scene->HasUnsavedChanges()) {
+                        m_SaveChangesDialog.SetMessage("Scene has unsaved changes. Save before playing?");
+                        m_SaveChangesDialog.SetOnSave([this] {
+                            SaveScene();
+                            TransitionTo(std::make_unique<PlayState>());
+                        });
+                        m_SaveChangesDialog.SetOnDiscard([this] { TransitionTo(std::make_unique<PlayState>()); });
+                        m_SaveChangesDialog.Open();
+                    } else {
                         TransitionTo(std::make_unique<PlayState>());
-                    });
-                    m_SaveChangesDialog.SetOnDiscard([this] { TransitionTo(std::make_unique<PlayState>()); });
-                    m_SaveChangesDialog.Open();
-                } else {
-                    TransitionTo(std::make_unique<PlayState>());
-                }
+                    }
+                });
             }
         }
-        ImGui::EndMainMenuBar();
     }
+    ImGui::EndMainMenuBar();
 }

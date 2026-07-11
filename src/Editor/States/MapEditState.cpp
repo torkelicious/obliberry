@@ -157,7 +157,20 @@ void Editor::MapEditState::OnRender() {
 
 void Editor::MapEditState::OnDrawModeToolbar() {
     {
-        if (ImGui::BeginMenu("Map")) {
+        if (m_MapComp) {
+            const std::string &mapPath = m_MapComp->mapFilePath;
+            if (m_MapComp->mapDirty) {
+                ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "* %s", mapPath.c_str());
+            } else {
+                ImGui::TextDisabled("%s", mapPath.c_str());
+            }
+            ImGui::SameLine();
+        }
+
+        if (ImGui::Button("Map##MapMenuBtn")) {
+            ImGui::OpenPopup("MapMenuPopup");
+        }
+        if (ImGui::BeginPopup("MapMenuPopup")) {
             if (ImGui::MenuItem("Create New Map")) {
                 // todo: implement
                 // maybe remove
@@ -167,24 +180,27 @@ void Editor::MapEditState::OnDrawModeToolbar() {
                 LOG_INFO(LOG_WHO, "Save requested");
                 if (!IO::MapIO::Serialize(m_MapComp->mapFilePath, *m_CurrentGrid)) {
                     LOG_ERROR(LOG_WHO, "Failed to save map: " + m_MapComp->mapFilePath);
+                } else {
+                    m_MapComp->mapDirty = false;
                 }
             }
             if (ImGui::MenuItem("Save Map As")) {
                 LOG_INFO(LOG_WHO, "Save as requested");
-
                 if (const auto path = FileDialogs::SaveFile(m_EditorLayer->m_Context)) {
                     if (!IO::MapIO::Serialize(*path, *m_CurrentGrid)) {
                         LOG_ERROR(LOG_WHO, "Failed to save map to: " + *path);
+                    } else {
+                        m_MapComp->mapDirty = false;
                     }
                 }
             }
             if (ImGui::MenuItem("Load Map from file")) {
                 LOG_INFO(LOG_WHO, "Load requested");
-
                 if (const auto path = FileDialogs::OpenFile(m_EditorLayer->m_Context)) {
                     if (IO::MapIO::Deserialize(*path, *m_CurrentGrid)) {
                         m_MapComp->mapFilePath = *path;
                         m_MapComp->needsMeshUpdate = true;
+                        m_MapComp->mapDirty = false;
                         LOG_INFO(LOG_WHO, "Loaded from file: " + *path);
                         SetWindowTitle(*path);
                     } else {
@@ -192,7 +208,7 @@ void Editor::MapEditState::OnDrawModeToolbar() {
                     }
                 }
             }
-            ImGui::EndMenu();
+            ImGui::EndPopup();
         }
 
         constexpr auto activeCol = ImVec4(0.3f, 0.6f, 1.0f, 0.7f);
@@ -264,6 +280,7 @@ void Editor::MapEditState::CommitMapChanges() {
         return;
     m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::MapChangeTileCommand>(m_PreDragState, m_AccumulatedNew, m_CurrentGrid, &m_MapComp->needsMeshUpdate), m_EditorLayer->m_Context);
     m_MapComp->needsMeshUpdate = true;
+    m_MapComp->mapDirty = true;
 }
 
 void Editor::MapEditState::ApplyToolAt(const Map::HexCoords &hex) {

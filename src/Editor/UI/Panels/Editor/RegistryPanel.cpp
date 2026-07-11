@@ -19,7 +19,15 @@ void Editor::UI::RegistryPanel::OnImGuiRender() {
         auto &registry = m_SceneContext->GetRegistry();
         const auto &livingEntities = registry.GetLivingEntities();
 
-        ImGui::Text("Entities: %zu", livingEntities.size());
+        int visibleEntities = 0;
+        for (const ECS::EntityID id : livingEntities) {
+            if (registry.IsValid(id)) {
+                ECS::Entity e(id, &registry);
+                if (!e.HasComponent<ECS::Components::MapComponent>())
+                    visibleEntities++;
+            }
+        }
+        ImGui::Text("Entities: %d", visibleEntities);
         ImGui::Separator();
 
         ImGui::BeginChild("Entity List", ImVec2(0, 0), true);
@@ -28,7 +36,13 @@ void Editor::UI::RegistryPanel::OnImGuiRender() {
                 continue;
 
             ECS::Entity entity(id, &registry);
-            std::string label = entity.GetName();
+            const std::string name = entity.GetName();
+
+            // skip map
+            if (entity.HasComponent<ECS::Components::MapComponent>())
+                continue;
+
+            std::string label = name;
             if (label.empty()) {
                 label = "Entity " + std::to_string(id);
             }

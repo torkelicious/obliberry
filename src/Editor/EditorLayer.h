@@ -68,6 +68,7 @@ namespace Editor {
 
         void TransitionTo(std::unique_ptr<EditorState> newState);
         void ExecutePendingStateTransfer();
+        void PromptSaveDirtyMap(std::function<void()> onProceed);
 
         Core::EngineContext m_Context;
         Scenes::Scene *m_Scene = nullptr;
@@ -93,6 +94,7 @@ namespace Editor {
         UI::NewProjectDialog m_NewProjectDialog;
         UI::CreateSceneDialog m_CreateSceneDialog;
         UI::SaveChangesDialog m_SaveChangesDialog;
+        UI::SaveChangesDialog m_SaveMapDialog;
         UI::SaveSceneAsDialog m_SaveSceneAsDialog;
         UI::SceneConfigEditor m_SceneConfigEditor;
         UI::ProjectConfigEditor m_ProjectConfigEditor;

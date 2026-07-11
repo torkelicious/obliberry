@@ -38,5 +38,6 @@ namespace ECS::Components {
         Rendering::Lightmap lightmap;
 
         bool needsMeshUpdate = true;
+        bool mapDirty = false;
     };
 } // namespace ECS::Components

@@ -7,9 +7,12 @@
 #include <cstring>
 #include <filesystem>
 
+#include "Core/Constants.h"
 #include "Core/LoggerService.h"
 
 #include "Editor/FileDialogs.h"
+#include "Editor/UI/Panels/Editor/EditorWidgetsCombo.h"
+#include "ECS/Components/MapComponent.h"
 #include "IO/VFS.h"
 #include "Rendering/Renderer.h"
 #include "Sound/AudioEngine.h"
@@ -79,6 +82,20 @@ namespace Editor::UI {
             if (ImGui::Button("Clear##Music")) {
                 m_LocalProperties.BackgroundMusicPath.clear();
             }
+        }
+
+        ImGui::Separator();
+
+        if (auto *scene = m_Context->sceneManager->GetCurrentScene()) {
+            scene->GetRegistry().ForEach<ECS::Components::MapComponent>([&](ECS::Entity, ECS::Components::MapComponent *mapComp) {
+                ImGui::SeparatorText("Map");
+                ImGui::PushID("SceneMapFileCombo");
+                if (FileCombo("Map File", std::string(Core::MAP_PATH), std::string(Core::MAP_FILE_EXTENSION), mapComp->mapFilePath)) {
+                    mapComp->mapDirty = true;
+                    scene->MarkAsChanged();
+                }
+                ImGui::PopID();
+            });
         }
 
         ImGui::SeparatorText("");
