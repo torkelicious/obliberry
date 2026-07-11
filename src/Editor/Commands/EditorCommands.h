@@ -2,6 +2,7 @@
 #include "ICommand.h"
 #include <glm/glm.hpp>
 #include "ECS/Types.h"
+#include "ECS/Components/ScriptComponent.h"
 #include "Scenes/SceneManager.h"
 
 namespace Editor::Commands {
@@ -72,16 +73,9 @@ namespace Editor::Commands {
     // Remove Component
     template <typename T> class RemoveComponentCommand final : public ICommand {
     public:
-        RemoveComponentCommand(ECS::EntityID target, const T &componentData)
-            : m_EntityID(target), m_OldData(componentData) {}
-
-        void Execute(Core::EngineContext &ctx) override {
-            ctx.sceneManager->GetCurrentScene()->GetRegistry().RemoveComponent<T>(m_EntityID);
-        }
-        void Undo(Core::EngineContext &ctx) override {
-            // restore component data
-            ctx.sceneManager->GetCurrentScene()->GetRegistry().AddComponent<T>(m_EntityID, m_OldData);
-        }
+        RemoveComponentCommand(ECS::EntityID target, const T &componentData) : m_EntityID(target), m_OldData(componentData) {}
+        void Execute(Core::EngineContext &ctx) override { ctx.sceneManager->GetCurrentScene()->GetRegistry().RemoveComponent<T>(m_EntityID); }
+        void Undo(Core::EngineContext &ctx) override { ctx.sceneManager->GetCurrentScene()->GetRegistry().AddComponent<T>(m_EntityID, m_OldData); }
         [[nodiscard]] std::string_view Name() const noexcept override { return "Remove Component"; }
 
     private:
@@ -93,19 +87,51 @@ namespace Editor::Commands {
     template <typename T> class AddComponentCommand final : public ICommand {
     public:
         AddComponentCommand(ECS::EntityID target, const T &componentData) : m_EntityID(target), m_Data(componentData) {}
-
-        void Execute(Core::EngineContext &ctx) override {
-            ctx.sceneManager->GetCurrentScene()->GetRegistry().AddComponent<T>(m_EntityID, m_Data);
-        }
-        void Undo(Core::EngineContext &ctx) override {
-            ctx.sceneManager->GetCurrentScene()->GetRegistry().RemoveComponent<T>(m_EntityID);
-        }
-        [[nodiscard]] std::string_view Name() const noexcept override { return "Remove Component"; }
+        void Execute(Core::EngineContext &ctx) override { ctx.sceneManager->GetCurrentScene()->GetRegistry().AddComponent<T>(m_EntityID, m_Data); }
+        void Undo(Core::EngineContext &ctx) override { ctx.sceneManager->GetCurrentScene()->GetRegistry().RemoveComponent<T>(m_EntityID); }
+        [[nodiscard]] std::string_view Name() const noexcept override { return "Add Component"; }
 
     private:
         ECS::EntityID m_EntityID;
         T m_Data;
     };
+
+
+    // SCRIPT COMPONENT HAS ITS OWN HANDLER:
+    class RemoveScriptCommand : public ICommand {
+    public:
+        RemoveScriptCommand(ECS::EntityID target, ECS::Components::ScriptComponent &component, int index);
+        void Execute(Core::EngineContext &ctx) override;
+        void Undo(Core::EngineContext &ctx) override;
+        [[nodiscard]] std::string_view Name() const noexcept override;
+
+    private:
+        ECS::EntityID m_EntityID;
+        ECS::Components::ScriptComponent *m_scriptComp = nullptr;
+        int m_Index;
+        bool m_ComponentRemoved = false;
+        // per-entry data
+        std::string m_SavedPath;
+        std::vector<std::shared_ptr<ObSL::Environment>> m_SavedInstanceEnvs;
+        bool m_IsInitialized = false;
+        std::string m_SavedSourceCode;
+        std::filesystem::file_time_type m_SavedLastModified;
+    };
+
+
+    class AddScriptCommand : public ICommand {
+    public:
+        AddScriptCommand(ECS::EntityID target, const std::string &script_path);
+        void Execute(Core::EngineContext &ctx) override;
+        void Undo(Core::EngineContext &ctx) override;
+        [[nodiscard]] std::string_view Name() const noexcept override;
+
+    private:
+        ECS::EntityID m_EntityID;
+        ECS::Components::ScriptComponent *m_Comp = nullptr;
+        std::string m_PendingPath;
+    };
+
 
     // TODO:
     //  Script Component needs its own cmd

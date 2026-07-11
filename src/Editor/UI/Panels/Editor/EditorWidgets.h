@@ -91,14 +91,10 @@ namespace Editor::UI {
                 const float availWidth = ImGui::GetContentRegionAvail().x;
                 ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (availWidth - buttonWidth) * 0.5f);
                 if (ImGui::Button((std::string("Remove ##") + m_Name).c_str(), ImVec2(buttonWidth, 0))) {
-                    if (undoManager && engineContext) {
-                        auto data = *entity.GetComponent<T>();
-                        undoManager->Execute(std::make_unique<Commands::RemoveComponentCommand<T>>(
-                                                     static_cast<ECS::EntityID>(entity), data),
-                                             *engineContext);
-                    } else {
-                        entity.RemoveComponent<T>();
-                    }
+                    auto data = *entity.GetComponent<T>();
+                    undoManager->Execute(std::make_unique<Commands::RemoveComponentCommand<T>>(
+                                                 static_cast<ECS::EntityID>(entity), data),
+                                         *engineContext);
                     MarkSceneChanged(engineContext);
                 }
             }
@@ -125,13 +121,9 @@ namespace Editor::UI {
             if (ImGui::CollapsingHeader(m_Name)) {
                 ImGui::TextDisabled("Tag Component (No Data)");
                 if (ImGui::Button((std::string("Remove ##") + m_Name).c_str())) {
-                    if (undoManager && engineContext) {
-                        undoManager->Execute(std::make_unique<Commands::RemoveComponentCommand<T>>(
-                                                     static_cast<ECS::EntityID>(entity), T{}),
-                                             *engineContext);
-                    } else {
-                        entity.RemoveComponent<T>();
-                    }
+                    undoManager->Execute(std::make_unique<Commands::RemoveComponentCommand<T>>(
+                                                 static_cast<ECS::EntityID>(entity), T{}),
+                                         *engineContext);
                     MarkSceneChanged(engineContext);
                 }
             }

@@ -8,7 +8,7 @@ IncludeBlocks: Preserve
 IndentWidth: 4
 UseTab: Never
 ContinuationIndentWidth: 8
-ColumnLimit: 120
+ColumnLimit: 220
 
 BreakBeforeBraces: Custom
 BraceWrapping:
@@ -30,7 +30,7 @@ IndentCaseLabels: true
 NamespaceIndentation: All
 AccessModifierOffset: -4
 
-FixNamespaceComments: true    
-Standard: c++20                
+FixNamespaceComments: true
+Standard: c++20
 MaxEmptyLinesToKeep: 2
 InsertNewlineAtEOF: true
