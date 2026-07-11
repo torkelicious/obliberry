@@ -24,7 +24,7 @@ namespace Editor::UI {
     private:
         Core::EngineContext *m_Context = nullptr;
 
-        UndoManager* m_Undomgr = nullptr;
+        UndoManager *m_Undomgr = nullptr;
         // Editable copy of the current scene's properties
         Scenes::SceneProperties m_LocalProperties;
 
