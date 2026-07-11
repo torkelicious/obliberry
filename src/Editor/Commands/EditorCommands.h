@@ -1,5 +1,7 @@
 #pragma once
 #include "ICommand.h"
+#include "Core/ProjectConfig.h"
+
 #include <glm/glm.hpp>
 #include "ECS/Types.h"
 #include "ECS/Components/ScriptComponent.h"
@@ -140,6 +142,21 @@ namespace Editor::Commands {
     // = = = = //
     // Project //
     // = = = = //
+
+    //
+    // Project config
+    //
+    class ProjectConfigUpdateCommand : public ICommand {
+    public:
+        ProjectConfigUpdateCommand(const Core::ProjectConfig &oldCfg, const Core::ProjectConfig &newCfg);
+        void Execute(Core::EngineContext &ctx) override;
+        void Undo(Core::EngineContext &ctx) override;
+        [[nodiscard]] std::string_view Name() const noexcept override;
+
+    private:
+        Core::ProjectConfig m_OldData;
+        Core::ProjectConfig m_NewData;
+    };
 
     // = = //
     // Map //

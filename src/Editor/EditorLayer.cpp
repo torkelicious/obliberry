@@ -70,6 +70,7 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
 
     m_CurrentState->SetEditorLayer(this);
     m_CurrentState->OnEnter();
+    m_ProjectConfigEditor.SetUndoMgr(&m_UndoManager);
 }
 
 

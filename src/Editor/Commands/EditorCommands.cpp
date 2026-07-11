@@ -1,9 +1,16 @@
 #include "EditorCommands.h"
+
+#include "Core/Project.h"
+#include "Core/Window.h"
 #include "ECS/Entity.h"
 #include "ECS/Components/TransformComponent.h"
 #include "Editor/UI/Panels/Editor/EditorWidgets.h"
 #include "Scenes/SceneManager.h"
 namespace Editor::Commands {
+
+    //
+    // Transforms
+    //
 
     // Move Transform
     TranslateEntityCommand::TranslateEntityCommand(const ECS::EntityID target, const glm::vec3 oldPos, const glm::vec3 newPos) : m_EntityID(target), m_OldPos(oldPos), m_NewPos(newPos) {}
@@ -18,7 +25,6 @@ namespace Editor::Commands {
         ent.GetComponent<ECS::Components::TransformComponent>()->transform.SetPosition(m_OldPos);
     }
     std::string_view TranslateEntityCommand::Name() const noexcept { return "Move entity"; }
-
 
     // Rotate Transform
     RotateEntityCommand::RotateEntityCommand(const ECS::EntityID target, const glm::vec3 oldRot, const glm::vec3 newRot) : m_EntityID(target), m_OldRot(oldRot), m_NewRot(newRot) {}
@@ -138,5 +144,36 @@ namespace Editor::Commands {
     }
 
     std::string_view AddScriptCommand::Name() const noexcept { return "Add script"; }
+
+    //
+    // Project
+    //
+    ProjectConfigUpdateCommand::ProjectConfigUpdateCommand(const Core::ProjectConfig &oldCfg, const Core::ProjectConfig &newCfg) : m_OldData(oldCfg), m_NewData(newCfg) {}
+    // a lil hacky.. but it works :)
+    static void RefreshWindowTitle(Core::EngineContext &ctx) {
+        if (!ctx.window || !ctx.projectConfig)
+            return;
+        std::string title = "Obliberry: " + ctx.projectConfig->Title;
+        if (ctx.sceneManager)
+            if (auto *scene = ctx.sceneManager->GetCurrentScene())
+                title += " - Scene - " + scene->GetProperties().ScenePath;
+        ctx.window->SetWindowTitle(title);
+    }
+
+    void ProjectConfigUpdateCommand::Execute(Core::EngineContext &ctx) {
+        if (ctx.projectConfig)
+            *ctx.projectConfig = m_NewData;
+        if (ctx.activeProject)
+            ctx.activeProject->MarkAsChanged();
+        RefreshWindowTitle(ctx);
+    }
+    void ProjectConfigUpdateCommand::Undo(Core::EngineContext &ctx) {
+        if (ctx.projectConfig)
+            *ctx.projectConfig = m_OldData;
+        if (ctx.activeProject)
+            ctx.activeProject->MarkAsChanged();
+        RefreshWindowTitle(ctx);
+    }
+    std::string_view ProjectConfigUpdateCommand::Name() const noexcept { return "Project Configuration change"; }
 
 } // namespace Editor::Commands

@@ -2,12 +2,13 @@
 
 #include <cstring>
 #include <filesystem>
-
 #include "Core/Project.h"
 #include "Core/LoggerService.h"
 #include "Editor/FileDialogs.h"
 #include "IO/VFS.h"
 #include "imgui.h"
+#include "Core/Window.h"
+#include "Editor/Commands/EditorCommands.h"
 
 
 constexpr auto LOG_WHO = "ProjectConfigEditor";
@@ -23,6 +24,7 @@ namespace Editor::UI {
     }
 
     void ProjectConfigEditor::LoadConfigToBuffers() {
+        m_OldConfig = m_LocalConfig;
         std::strncpy(m_TitleBuffer, m_LocalConfig.Title.c_str(), sizeof(m_TitleBuffer) - 1);
         std::strncpy(m_StartSceneBuffer, m_LocalConfig.startScenePath.c_str(), sizeof(m_StartSceneBuffer) - 1);
     }
@@ -118,10 +120,7 @@ namespace Editor::UI {
         m_LocalConfig.Title = m_TitleBuffer;
         m_LocalConfig.startScenePath = m_StartSceneBuffer;
 
-        // EngineContext is the source of truth
-        if (m_Context && m_Context->projectConfig) {
-            *m_Context->projectConfig = m_LocalConfig;
-        }
+        m_Undomgr->Execute(std::make_unique<Commands::ProjectConfigUpdateCommand>(m_OldConfig, m_LocalConfig), *m_Context);
 
         // write to disk via Project
         project->GetConfig() = m_LocalConfig;
