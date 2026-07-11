@@ -14,6 +14,7 @@
 #include "Rendering/Renderer.h"
 #include "Sound/AudioEngine.h"
 #include "imgui.h"
+#include "Editor/Commands/EditorCommands.h"
 
 
 constexpr auto LOG_WHO = "SceneConfigEditor";
@@ -26,6 +27,7 @@ namespace Editor::UI {
         if (auto *scene = m_Context->sceneManager->GetCurrentScene()) {
             m_LocalProperties = scene->GetProperties();
         }
+        m_OldProperties = m_LocalProperties;
     }
 
     void SceneConfigEditor::OnImGuiRender(bool &isOpen) {
@@ -100,7 +102,7 @@ namespace Editor::UI {
         ImGui::End();
     }
 
-    void SceneConfigEditor::SaveConfig() const {
+    void SceneConfigEditor::SaveConfig() {
         if (!m_Context || !m_Context->sceneManager)
             return;
 
@@ -108,20 +110,10 @@ namespace Editor::UI {
         if (!scene)
             return;
 
-        scene->GetProperties() = m_LocalProperties;
+        m_Undomgr->Execute(std::make_unique<Commands::UpdateScenePropertiesCommand>(m_OldProperties, m_LocalProperties), *m_Context);
+        m_OldProperties = m_LocalProperties;
+
         scene->MarkAsChanged();
-
-        if (m_Context->renderer) {
-            Rendering::Renderer::SetClearColor(m_LocalProperties.BackgroundClearColor);
-        }
-
-        if (m_Context->audioEngine) {
-            if (!m_LocalProperties.BackgroundMusicPath.empty()) {
-                m_Context->audioEngine->PlayMusic(m_LocalProperties.BackgroundMusicPath);
-            } else {
-                m_Context->audioEngine->StopMusic();
-            }
-        }
 
         LOG_INFO(LOG_WHO, "Scene properties saved");
     }

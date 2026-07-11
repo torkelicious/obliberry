@@ -5,7 +5,9 @@
 #include "ECS/Entity.h"
 #include "ECS/Components/TransformComponent.h"
 #include "Editor/UI/Panels/Editor/EditorWidgets.h"
+#include "Rendering/Renderer.h"
 #include "Scenes/SceneManager.h"
+#include "Sound/AudioEngine.h"
 namespace Editor::Commands {
 
     //
@@ -144,6 +146,45 @@ namespace Editor::Commands {
     }
 
     std::string_view AddScriptCommand::Name() const noexcept { return "Add script"; }
+
+    // Scene Properties
+    UpdateScenePropertiesCommand::UpdateScenePropertiesCommand(const Scenes::SceneProperties &oldCfg, const Scenes::SceneProperties &newCfg) : m_OldData(oldCfg), m_NewData(newCfg) {}
+    void UpdateScenePropertiesCommand::Execute(Core::EngineContext &ctx) {
+        if (ctx.sceneManager->GetCurrentScene()) {
+            ctx.sceneManager->GetCurrentScene()->GetProperties() = m_NewData;
+            ctx.sceneManager->GetCurrentScene()->MarkAsChanged();
+        }
+        if (ctx.renderer) {
+            Rendering::Renderer::SetClearColor(m_NewData.BackgroundClearColor);
+        }
+        if (ctx.audioEngine) {
+            if (!m_NewData.BackgroundMusicPath.empty()) {
+                ctx.audioEngine->PlayMusic(m_NewData.BackgroundMusicPath);
+            } else {
+                ctx.audioEngine->StopMusic();
+            }
+        }
+    }
+
+    void UpdateScenePropertiesCommand::Undo(Core::EngineContext &ctx) {
+        if (ctx.sceneManager->GetCurrentScene()) {
+            ctx.sceneManager->GetCurrentScene()->GetProperties() = m_OldData;
+            ctx.sceneManager->GetCurrentScene()->MarkAsChanged();
+        }
+        if (ctx.renderer) {
+            Rendering::Renderer::SetClearColor(m_OldData.BackgroundClearColor);
+        }
+        if (ctx.audioEngine) {
+            if (!m_OldData.BackgroundMusicPath.empty()) {
+                ctx.audioEngine->PlayMusic(m_OldData.BackgroundMusicPath);
+            } else {
+                ctx.audioEngine->StopMusic();
+            }
+        }
+    }
+
+    std::string_view UpdateScenePropertiesCommand::Name() const noexcept { return "Scene properties change"; }
+
 
     //
     // Project

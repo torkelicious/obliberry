@@ -138,6 +138,19 @@ namespace Editor::Commands {
         std::string m_PendingPath;
     };
 
+    // Scene Config
+    class UpdateScenePropertiesCommand : public ICommand {
+    public:
+        UpdateScenePropertiesCommand(const Scenes::SceneProperties &oldCfg, const Scenes::SceneProperties &newCfg);
+        void Execute(Core::EngineContext &ctx) override;
+        void Undo(Core::EngineContext &ctx) override;
+        [[nodiscard]] std::string_view Name() const noexcept override;
+
+    private:
+        Scenes::SceneProperties m_OldData;
+        Scenes::SceneProperties m_NewData;
+    };
+
 
     // TODO:
     //  Entity Deletion

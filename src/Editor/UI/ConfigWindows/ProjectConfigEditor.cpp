@@ -121,6 +121,7 @@ namespace Editor::UI {
         m_LocalConfig.startScenePath = m_StartSceneBuffer;
 
         m_Undomgr->Execute(std::make_unique<Commands::ProjectConfigUpdateCommand>(m_OldConfig, m_LocalConfig), *m_Context);
+        m_OldConfig = m_LocalConfig;
 
         // write to disk via Project
         project->GetConfig() = m_LocalConfig;
