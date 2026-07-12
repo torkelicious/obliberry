@@ -10,6 +10,7 @@ constexpr size_t ID_BUFFER_SIZE = MAX_INSTANCES * sizeof(int);
 
 std::vector<std::function<void()>> Rendering::Renderer::s_InitQueue;
 std::mutex Rendering::Renderer::s_InitQueueMutex;
+std::atomic<bool> Rendering::Renderer::s_HasInitTasks{false};
 
 static glm::vec4 s_ClearColorStaging = {0.0f, 0.0f, 0.0f, 1.0f};
 
@@ -337,13 +338,21 @@ void Rendering::Renderer::SwapBuffers() {
 void Rendering::Renderer::SubmitInitTask(std::function<void()> task) {
     std::lock_guard lock(s_InitQueueMutex);
     s_InitQueue.push_back(std::move(task));
+    s_HasInitTasks.store(true, std::memory_order_release);
 }
 
 void Rendering::Renderer::ProcessInitQ() {
+    if (!s_HasInitTasks.load(std::memory_order_acquire))
+        return;
     std::vector<std::function<void()>> queueCopy;
     {
         std::lock_guard lock(s_InitQueueMutex);
+        if (s_InitQueue.empty()) {
+            s_HasInitTasks.store(false, std::memory_order_release);
+            return;
+        }
         queueCopy = std::move(s_InitQueue);
+        s_HasInitTasks.store(false, std::memory_order_release);
     }
     for (auto &task : queueCopy) {
         task();

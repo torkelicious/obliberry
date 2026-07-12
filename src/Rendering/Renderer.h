@@ -99,6 +99,7 @@ namespace Rendering {
 
         static std::vector<std::function<void()>> s_InitQueue;
         static std::mutex s_InitQueueMutex;
+        static std::atomic<bool> s_HasInitTasks;
 
         size_t m_SubmitIndex = 0;
         size_t m_RenderIndex = 1;

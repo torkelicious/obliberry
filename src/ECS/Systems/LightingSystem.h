@@ -104,8 +104,8 @@ namespace ECS::Systems::LightingSystem {
 
         auto *transformPool = reg.GetPool<Components::TransformComponent>();
         for (const EntityID id : lightPool->GetDenseEntities()) {
-            const auto *light = lightPool->Get(id);
-            const auto *transform = transformPool ? transformPool->Get(id) : nullptr;
+            auto *light = lightPool->Get(id);
+            auto *transform = transformPool ? transformPool->Get(id) : nullptr;
             if (!light || !transform)
                 continue;
             if (light->intensity <= 0.0f)
@@ -146,6 +146,9 @@ namespace ECS::Systems::LightingSystem {
                     }
                 }
             }
+            // clear dirty flags
+            light->dirty = false;
+            transform->transform.ClearDirty();
         }
 
         for (int i = 0; i < pixelCount; ++i) {
@@ -156,19 +159,12 @@ namespace ECS::Systems::LightingSystem {
             pixelBuffer[pIdx + 2] = static_cast<unsigned char>(final.b * 255.0f);
             pixelBuffer[pIdx + 3] = 255;
         }
-        Rendering::Renderer::SubmitInitTask([tex = texture, w = texW, h = texH, data = pixelBuffer] { tex->UpdateData(data.data(), w, h); });
-        std::memset(pixelBuffer.data(), 255, pixelBuffer.size());
+        Rendering::Renderer::SubmitInitTask([tex = texture, w = texW, h = texH, data = std::move(pixelBuffer)]() mutable {
+            tex->UpdateData(data.data(), w, h);
+        });
+        pixelBuffer.assign(pixelCount * 4, 255);
 
         // rebuild complete
         lastLightCount = lightCount;
-        // dirty clear
-        auto *lightPoolClear = reg.GetPool<Components::PointLightComponent>();
-        auto *transformPoolClear = reg.GetPool<Components::TransformComponent>();
-        for (const EntityID id : lightPoolClear->GetDenseEntities()) {
-            if (auto *light = lightPoolClear->Get(id))
-                light->dirty = false;
-            if (const auto *transform = transformPoolClear ? transformPoolClear->Get(id) : nullptr)
-                transform->transform.ClearDirty();
-        }
     }
 } // namespace ECS::Systems::LightingSystem
