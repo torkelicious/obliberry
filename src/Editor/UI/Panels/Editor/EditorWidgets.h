@@ -45,6 +45,7 @@ namespace Editor::UI {
     protected:
         const char *m_Name;
         std::vector<ComponentField> m_Fields;
+        size_t m_DirtyOffset = 0;
 
     public:
         explicit AutoComponentWidget(const char *name) : m_Name(name) {}
@@ -78,6 +79,8 @@ namespace Editor::UI {
                             break;
                     }
                     if (ImGui::IsItemDeactivatedAfterEdit()) {
+                        if (m_DirtyOffset)
+                            *reinterpret_cast<bool *>(byte_ptr + m_DirtyOffset) = true;
                         MarkSceneChanged(engineContext);
                     }
                 }

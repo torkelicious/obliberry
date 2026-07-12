@@ -37,7 +37,6 @@ namespace Rendering {
         const Material *material;
         const Texture *texture;
         glm::vec4 color;
-
         bool operator==(const BatchKey &other) const noexcept { return mesh == other.mesh && material == other.material && texture == other.texture && color == other.color; }
     };
 

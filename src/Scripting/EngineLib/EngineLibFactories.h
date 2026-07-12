@@ -182,19 +182,13 @@ namespace Scripting {
                     auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
                     if (cmd_buf) {
                         cmd_buf->push([id, r, g, b](ECS::Registry &reg) {
-                            if (auto *comp = reg.GetComponent<ECS::Components::PointLightComponent>(id)) {
-                                comp->color.r = r;
-                                comp->color.g = g;
-                                comp->color.b = b;
-                            }
+                            if (auto *comp = reg.GetComponent<ECS::Components::PointLightComponent>(id))
+                                comp->SetColor({r, g, b});
                         });
                     } else if (reg_ptr) {
                         std::unique_lock lock(g_RegistryMutex);
-                        if (auto *comp = reg_ptr->GetComponent<ECS::Components::PointLightComponent>(id)) {
-                            comp->color.r = r;
-                            comp->color.g = g;
-                            comp->color.b = b;
-                        }
+                        if (auto *comp = reg_ptr->GetComponent<ECS::Components::PointLightComponent>(id))
+                            comp->SetColor({r, g, b});
                     }
                 }
                 return std::monostate{};
@@ -208,12 +202,12 @@ namespace Scripting {
                     if (cmd_buf) {
                         cmd_buf->push([id, intensity](ECS::Registry &reg) {
                             if (auto *comp = reg.GetComponent<ECS::Components::PointLightComponent>(id))
-                                comp->intensity = intensity;
+                                comp->SetIntensity(intensity);
                         });
                     } else if (reg_ptr) {
                         std::unique_lock lock(g_RegistryMutex);
                         if (auto *comp = reg_ptr->GetComponent<ECS::Components::PointLightComponent>(id))
-                            comp->intensity = intensity;
+                            comp->SetIntensity(intensity);
                     }
                 }
                 return std::monostate{};
@@ -227,12 +221,12 @@ namespace Scripting {
                     if (cmd_buf) {
                         cmd_buf->push([id, radius](ECS::Registry &reg) {
                             if (auto *comp = reg.GetComponent<ECS::Components::PointLightComponent>(id))
-                                comp->radius = radius;
+                                comp->SetRadius(radius);
                         });
                     } else if (reg_ptr) {
                         std::unique_lock lock(g_RegistryMutex);
                         if (auto *comp = reg_ptr->GetComponent<ECS::Components::PointLightComponent>(id))
-                            comp->radius = radius;
+                            comp->SetRadius(radius);
                     }
                 }
                 return std::monostate{};

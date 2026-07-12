@@ -53,6 +53,11 @@ void Scenes::Scene::OnEnter() {
     if (m_Context->renderer) {
         Rendering::Renderer::SetClearColor(m_Properties.BackgroundClearColor);
     }
+
+    if (auto *mapComp = m_Registry.GetFirst<ECS::Components::MapComponent>()) {
+        ECS::Systems::LightingSystem::GenerateLightmap(*mapComp);
+    }
+
     ECS::Systems::LightingSystem::Update(m_Registry);
 }
 
@@ -78,7 +83,7 @@ void Scenes::Scene::Render() {
 
         ECS::Systems::MapRenderSystem::RenderAll(m_Registry, *m_Context, frustum);
 
-        ECS::Systems::SpriteBillboardSystem::Update(m_Registry, m_Context->camera);
+        ECS::Systems::SpriteBillboardSystem::Update(m_Registry, m_Context->camera, frustum3D);
 
         ECS::Systems::RenderSystem::Render(m_Registry, *m_Context->renderer, frustum3D);
     }

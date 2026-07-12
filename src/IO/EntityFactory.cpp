@@ -106,13 +106,13 @@ void IO::EntityFactory::RegisterDeserializers() {
     s_Deserializers["PointLightComponent"] = [](ECS::Entity &entity, const nlohmann::json &data, Core::ResourceManager &) {
         ECS::Components::PointLightComponent plc;
         if (data.contains("color")) {
-            plc.color = {data["color"][0], data["color"][1], data["color"][2]};
+            plc.SetColor({data["color"][0], data["color"][1], data["color"][2]});
         }
         if (data.contains("radius")) {
-            plc.radius = data["radius"].get<float>();
+            plc.SetRadius(data["radius"].get<float>());
         }
         if (data.contains("intensity")) {
-            plc.intensity = data["intensity"].get<float>();
+            plc.SetIntensity(data["intensity"].get<float>());
         }
         entity.AddComponent<ECS::Components::PointLightComponent>(plc);
     };

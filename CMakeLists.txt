@@ -12,6 +12,10 @@ option(BUILD_PACK_TOOLS "Build .obpak packager tools" ON)
 
 set(CONFIG_TYPES Debug Release RelWithDebInfo MinSizeRel)
 
+if (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+    add_compile_options(-fno-omit-frame-pointer)
+endif()
+
 # Output dirs
 set(OUTPUT_BIN_DIR "${CMAKE_BINARY_DIR}/bin")
 

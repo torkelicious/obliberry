@@ -161,9 +161,15 @@ void Game::GameLayer::DrawInterface() {
                 if (entity.HasComponent<ECS::Components::PointLightComponent>()) {
                     if (ImGui::CollapsingHeader("Point Light Component")) {
                         auto *plc = entity.GetComponent<ECS::Components::PointLightComponent>();
-                        ImGui::ColorEdit3("Color", &plc->color.x);
-                        ImGui::DragFloat("Radius", &plc->radius, 0.5f, 0.0f, 1000.0f);
-                        ImGui::DragFloat("Intensity", &plc->intensity, 0.05f, 0.0f, 10.0f);
+                        glm::vec3 color = plc->color;
+                        if (ImGui::ColorEdit3("Color", &color.x))
+                            plc->SetColor(color);
+                        float radius = plc->radius;
+                        if (ImGui::DragFloat("Radius", &radius, 0.5f, 0.0f, 1000.0f))
+                            plc->SetRadius(radius);
+                        float intensity = plc->intensity;
+                        if (ImGui::DragFloat("Intensity", &intensity, 0.05f, 0.0f, 10.0f))
+                            plc->SetIntensity(intensity);
                     }
                 }
 

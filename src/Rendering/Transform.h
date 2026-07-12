@@ -31,8 +31,12 @@ namespace Rendering {
         void SetCustomMatrix(const glm::mat4 &matrix) {
             m_CachedMatrix = matrix;
             m_UseCustomMatrix = true;
-            m_IsDirty = false;
+            // m_IsDirty = false; // what?.. I dont remember why i did this, also breaks shit?
         }
+
+        [[nodiscard]] bool IsDirty() const { return m_IsDirty; }
+
+        void ClearDirty() const { m_IsDirty = false; }
 
         const glm::vec3 &GetPosition() const { return m_Position; }
         const glm::vec3 &GetRotation() const { return m_Rotation; }
@@ -54,9 +58,12 @@ namespace Rendering {
         void UpdateMatrix() const {
             glm::mat4 model = glm::translate(glm::mat4(1.0f), m_Position);
 
-            if (m_Rotation.x != 0.0f) model = glm::rotate(model, m_Rotation.x, glm::vec3(1, 0, 0));
-            if (m_Rotation.y != 0.0f) model = glm::rotate(model, m_Rotation.y, glm::vec3(0, 1, 0));
-            if (m_Rotation.z != 0.0f) model = glm::rotate(model, m_Rotation.z, glm::vec3(0, 0, 1));
+            if (m_Rotation.x != 0.0f)
+                model = glm::rotate(model, m_Rotation.x, glm::vec3(1, 0, 0));
+            if (m_Rotation.y != 0.0f)
+                model = glm::rotate(model, m_Rotation.y, glm::vec3(0, 1, 0));
+            if (m_Rotation.z != 0.0f)
+                model = glm::rotate(model, m_Rotation.z, glm::vec3(0, 0, 1));
 
             m_CachedMatrix = glm::scale(model, m_Scale);
         }
@@ -66,11 +73,9 @@ namespace Rendering {
         glm::vec3 m_Rotation{0.0f};
         glm::vec3 m_Scale{1.0f};
 
-        // note2remember: mutable allows member to be changed inside a const function
         mutable glm::mat4 m_CachedMatrix{1.0f};
         mutable bool m_IsDirty{true};
 
         bool m_UseCustomMatrix{false};
     };
 } // namespace Rendering
-

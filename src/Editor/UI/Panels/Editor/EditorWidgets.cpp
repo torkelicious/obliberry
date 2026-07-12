@@ -25,6 +25,7 @@ Editor::UI::PointLightWidget::PointLightWidget() : AutoComponentWidget("Point Li
     m_Fields.push_back({"Color", FieldType::Color3, offsetof(ECS::Components::PointLightComponent, color)});
     m_Fields.push_back({"Radius", FieldType::Float, offsetof(ECS::Components::PointLightComponent, radius)});
     m_Fields.push_back({"Intensity", FieldType::Float, offsetof(ECS::Components::PointLightComponent, intensity)});
+    m_DirtyOffset = offsetof(ECS::Components::PointLightComponent, dirty);
 }
 
 //  TransformWidget
