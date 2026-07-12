@@ -37,7 +37,7 @@ void Game::GameLayer::Update(const float dt) {
 
     m_SceneManager.ProcessPendingSceneChange(*m_Context);
 
-    // DrawInterface();
+     DrawInterface();
     if (m_GameIsRunning) {
         m_SceneManager.Update(dt);
     }

@@ -20,7 +20,7 @@ namespace Game {
         void SetContext(Core::EngineContext &context) { m_Context = &context; }
 
     private:
-        void DrawInterface();
+        void DrawInterface() const;
 
         bool m_GameIsRunning = true;
         Scenes::SceneManager m_SceneManager;
