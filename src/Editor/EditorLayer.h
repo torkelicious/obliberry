@@ -106,6 +106,7 @@ namespace Editor {
 
         // Logging
         std::vector<std::string> m_ConsoleLogs;
+        size_t m_PreviousLogCount = 0;
         std::stringstream m_InterpreterOutput;
 
         void FlushInterpreterOutput() {

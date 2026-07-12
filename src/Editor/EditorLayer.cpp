@@ -473,16 +473,15 @@ void Editor::EditorLayer::DrawUtilityWindows() {
 
     ImGui::Separator();
 
-    std::string fullText;
+    ImGui::BeginChild("##console_scroll", ImVec2(-1, -1), ImGuiChildFlags_None, ImGuiWindowFlags_HorizontalScrollbar);
     for (const auto &line : m_ConsoleLogs) {
-        fullText += line;
-        fullText += '\n';
+        ImGui::TextUnformatted(line.c_str());
     }
-
-    std::vector logBuffer(fullText.begin(), fullText.end());
-    logBuffer.push_back('\0');
-
-    ImGui::InputTextMultiline("##console_log", logBuffer.data(), logBuffer.size(), ImVec2(-1, -1), ImGuiInputTextFlags_ReadOnly);
+    if (m_ConsoleLogs.size() != m_PreviousLogCount) {
+        ImGui::SetScrollHereY(1.0f);
+        m_PreviousLogCount = m_ConsoleLogs.size();
+    }
+    ImGui::EndChild();
 
     ImGui::End();
 
