@@ -1,11 +1,14 @@
 #include "AudioEngine.h"
 #include <filesystem>
+#include "miniaudio.h"
 #include "Core/LoggerService.h"
 #include "IO/VFS.h"
-#include "miniaudio.h"
 
 
 constexpr auto LOG_WHO = "AudioEngine";
+
+// Larger period = fewer IPC roundtrips to the audio daemon per second
+constexpr ma_uint32 AUDIO_PERIOD_FRAMES = 2048;
 
 std::unique_ptr<Sound::AudioEngine> Sound::AudioEngine::Create() {
     std::unique_ptr<AudioEngine> instance(new AudioEngine());
@@ -20,7 +23,11 @@ Sound::AudioEngine::AudioEngine() = default;
 
 bool Sound::AudioEngine::Init() {
     m_Engine = new ma_engine();
-    if (const ma_result result = ma_engine_init(nullptr, m_Engine); result != MA_SUCCESS) {
+
+    ma_engine_config config = ma_engine_config_init();
+    config.periodSizeInFrames = AUDIO_PERIOD_FRAMES;
+
+    if (const ma_result result = ma_engine_init(&config, m_Engine); result != MA_SUCCESS) {
         LOG_ERROR(LOG_WHO, "miniaudio backend failed: Error code: " + std::to_string(result));
         delete m_Engine;
         m_Engine = nullptr;

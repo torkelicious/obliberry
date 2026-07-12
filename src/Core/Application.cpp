@@ -203,7 +203,8 @@ void Core::Application::Shutdown() const {
 
 void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer) {
     glfwMakeContextCurrent(m_Window.GetNativeWindow());
-
+    // Enable VSync specifically for this thread's context
+    glfwSwapInterval(1);
     while (m_Running) {
         int frameIdx = 0;
         {
@@ -223,7 +224,16 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer) {
             m_Frames[frameIdx].state = FrameState::Rendering;
         }
 
-        renderer->ProcessInitQ();
+        // Wayland zerosize safeguard
+        if (m_Window.GetWidth() == 0 || m_Window.GetHeight() == 0) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(16));
+
+            std::lock_guard lock(m_Frames[frameIdx].mutex);
+            m_Frames[frameIdx].state = FrameState::Free;
+            m_Frames[frameIdx].cv.notify_one();
+            continue;
+        }
+        Rendering::Renderer::ProcessInitQ();
 
         if (const auto fbo = renderer->GetEditorFramebuffer()) {
             // Render to FrameBuffer if editor mode
