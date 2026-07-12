@@ -21,8 +21,7 @@ std::optional<std::string> IO::AssetLoader::ImportAsset(const std::string &Absou
         return std::nullopt;
     }
 
-    const std::filesystem::path assetdir = VFS::GetAssetsDirectory();
-    if (assetdir.empty()) {
+    if (const std::filesystem::path assetdir = VFS::GetAssetsDirectory(); assetdir.empty()) {
         LOG_ERROR(LOG_WHO, "Import failed. Could not resolve Asset Path. Is project loaded?");
         return std::nullopt;
     }

@@ -1,7 +1,6 @@
 #include "EditorCommands.h"
 
 #include "Core/Project.h"
-#include "Core/Window.h"
 #include "ECS/Entity.h"
 #include "ECS/Components/TransformComponent.h"
 #include "Editor/UI/Panels/Editor/EditorWidgets.h"
@@ -103,7 +102,7 @@ namespace Editor::Commands {
     std::string_view RemoveScriptCommand::Name() const noexcept { return "Remove Script"; }
 
     // Add script
-    AddScriptCommand::AddScriptCommand(ECS::EntityID target, const std::string &script_path) : m_EntityID(target), m_PendingPath(script_path) {}
+    AddScriptCommand::AddScriptCommand(const ECS::EntityID target, const std::string &script_path) : m_EntityID(target), m_PendingPath(script_path) {}
 
     void AddScriptCommand::Execute(Core::EngineContext &ctx) {
         if (!m_PendingPath.empty()) {
@@ -216,7 +215,7 @@ namespace Editor::Commands {
     MapChangeTileCommand::MapChangeTileCommand(StateMap oldState, StateMap newState, Map::HexGrid *grid, bool *meshDirty)
         : m_OldState(std::move(oldState)), m_NewState(std::move(newState)), m_Grid(grid), m_MeshDirty(meshDirty) {}
 
-    void MapChangeTileCommand::ApplyStates(const StateMap &states) {
+    void MapChangeTileCommand::ApplyStates(const StateMap &states) const {
         for (const auto &[pos, state] : states) {
             m_Grid->RemoveTileAt(pos);
             if (state) {

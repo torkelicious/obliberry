@@ -26,8 +26,7 @@ namespace ECS::Systems::SpriteBillboardSystem {
         registry.ForEach<Components::BillboardTagComponent, Components::TransformComponent>([&](Entity, Components::BillboardTagComponent *, Components::TransformComponent *transComp) {
             const glm::vec3 pos = transComp->transform.GetPosition();
             const glm::vec3 scale = transComp->transform.GetScale();
-            const float radius = std::max(scale.x, scale.y) * 0.5f;
-            if (!frustum3D.IntersectsSphere(pos, radius))
+            if (const float radius = std::max(scale.x, scale.y) * 0.5f; !frustum3D.IntersectsSphere(pos, radius))
                 return;
             transComp->transform.SetCustomMatrix(MakeBillboardMatrix(pos, scale.x, scale.y, right, up));
         });

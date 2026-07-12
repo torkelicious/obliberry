@@ -7,6 +7,7 @@
 
 #include "Core/Utils.h"
 
+#include <algorithm>
 #include <imgui.h>
 #include <sstream>
 #include <utility>
@@ -35,6 +36,10 @@ namespace Editor::UI {
             return false;
         }
 
+        auto FindTypeMat(auto &typeMats, uint8_t id) {
+            return std::find_if(typeMats.begin(), typeMats.end(), [id](const auto &p) { return p.first == id; });
+        }
+
         std::string FormatTypeLabel(const uint8_t id, const Rendering::Material &mat, Core::ResourceManager &resources, const size_t tileCount) {
             std::string texName = mat.texture ? resources.GetKey(mat.texture) : "none";
             if (texName.empty())
@@ -53,7 +58,7 @@ namespace Editor::UI {
             const auto counts = CountTilesPerType(mapComp);
 
             std::string preview = "Unknown type";
-            if (const auto it = typeMats.find(current); it != typeMats.end()) {
+            if (const auto it = FindTypeMat(typeMats, current); it != typeMats.end()) {
                 const auto cit = counts.find(current);
                 const size_t count = cit != counts.end() ? cit->second : 0;
                 preview = FormatTypeLabel(current, it->second, resources, count);
@@ -63,7 +68,7 @@ namespace Editor::UI {
             if (ImGui::BeginCombo(label, preview.c_str())) {
                 for (const auto &[id, mat] : typeMats) {
                     ImGui::PushID(static_cast<int>(id));
-                    const bool isSelected = (id == current);
+                    const bool isSelected = id == current;
                     const auto cit = counts.find(id);
                     const size_t count = cit != counts.end() ? cit->second : 0;
                     const std::string labelStr = FormatTypeLabel(id, mat, resources, count);
@@ -97,7 +102,7 @@ namespace Editor::UI {
             constexpr int checkerSize = 6;
             for (int y = 0; y < static_cast<int>(size); y += checkerSize) {
                 for (int x = 0; x < static_cast<int>(size); x += checkerSize) {
-                    const bool light = ((x / checkerSize) + (y / checkerSize)) % 2 == 0;
+                    const bool light = (x / checkerSize + y / checkerSize) % 2 == 0;
                     dl->AddRectFilled(ImVec2(cursor.x + x, cursor.y + y), ImVec2(cursor.x + std::min(x + checkerSize, static_cast<int>(size)), cursor.y + std::min(y + checkerSize, static_cast<int>(size))),
                                       light ? IM_COL32(200, 200, 200, 255) : IM_COL32(120, 120, 120, 255));
                 }
@@ -126,7 +131,7 @@ namespace Editor::UI {
     void TileEditorPanel::SetBrushType(const uint8_t type) {
         m_BrushType = type;
         if (m_MapComp) {
-            if (const auto it = m_MapComp->typeMats.find(type); it != m_MapComp->typeMats.end()) {
+            if (const auto it = m_MapComp->findTypeMat(type); it != m_MapComp->typeMats.end()) {
                 m_BrushTexture = it->second.texture;
                 m_BrushColor = it->second.color;
             }
@@ -152,7 +157,7 @@ namespace Editor::UI {
         if (!m_MapComp)
             return;
         m_BrushType = tile.type;
-        if (const auto it = m_MapComp->typeMats.find(tile.type); it != m_MapComp->typeMats.end()) {
+        if (const auto it = m_MapComp->findTypeMat(tile.type); it != m_MapComp->typeMats.end()) {
             m_BrushTexture = it->second.texture;
             m_BrushColor = it->second.color;
         }
@@ -187,16 +192,14 @@ namespace Editor::UI {
         ImGui::Text("Type %d", static_cast<int>(m_BrushType));
 
         const auto brushCounts = CountTilesPerType(*m_MapComp);
-        const auto brushCountIt = brushCounts.find(m_BrushType);
-        if (brushCountIt != brushCounts.end()) {
+        if (const auto brushCountIt = brushCounts.find(m_BrushType); brushCountIt != brushCounts.end()) {
             ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "%zu tile(s) on map", brushCountIt->second);
         } else {
             ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "not yet on map");
         }
 
         ImGui::PushID("BrushType");
-        uint8_t selectedBrushType = m_BrushType;
-        if (TypeCombo("##BrushType", *m_MapComp, *m_EngineContext->resources, selectedBrushType)) {
+        if (uint8_t selectedBrushType = m_BrushType; TypeCombo("##BrushType", *m_MapComp, *m_EngineContext->resources, selectedBrushType)) {
             SetBrushType(selectedBrushType);
         }
         ImGui::PopID();
@@ -213,8 +216,8 @@ namespace Editor::UI {
 
         bool brushMatChanged = false;
         {
-            if (const auto it = typeMats.find(m_BrushType); it != typeMats.end()) {
-                brushMatChanged = (m_BrushTexture != it->second.texture) || (m_BrushColor != it->second.color);
+            if (const auto it = FindTypeMat(typeMats, m_BrushType); it != typeMats.end()) {
+                brushMatChanged = m_BrushTexture != it->second.texture || m_BrushColor != it->second.color;
             } else {
                 brushMatChanged = true;
             }
@@ -225,7 +228,7 @@ namespace Editor::UI {
         }
 
         if (ImGui::Button("Update Brush Type")) {
-            if (const auto it = typeMats.find(m_BrushType); it != typeMats.end()) {
+            if (const auto it = FindTypeMat(typeMats, m_BrushType); it != typeMats.end()) {
                 it->second.texture = m_BrushTexture;
                 it->second.color = m_BrushColor;
                 m_MapComp->needsMeshUpdate = true;
@@ -261,7 +264,7 @@ namespace Editor::UI {
         if (m_CurrentTile) {
             ImGui::SeparatorText("Selected Tile");
 
-            const auto typeIt = typeMats.find(m_CurrentTile->type);
+            const auto typeIt = FindTypeMat(typeMats, m_CurrentTile->type);
             if (typeIt == typeMats.end()) {
                 ImGui::TextDisabled("Tile has an unknown type id (%u).", static_cast<unsigned>(m_CurrentTile->type));
                 ImGui::End();
@@ -294,7 +297,7 @@ namespace Editor::UI {
             ImGui::ColorEdit4("Color", &m_EditColor.x, ImGuiColorEditFlags_NoInputs);
             ImGui::PopID();
 
-            const bool materialChanged = (m_EditTexture != currentMat.texture) || (m_EditColor != currentMat.color);
+            const bool materialChanged = m_EditTexture != currentMat.texture || m_EditColor != currentMat.color;
 
             if (!materialChanged) {
                 ImGui::BeginDisabled();

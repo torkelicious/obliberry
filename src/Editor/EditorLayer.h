@@ -68,7 +68,7 @@ namespace Editor {
 
         void TransitionTo(std::unique_ptr<EditorState> newState);
         void ExecutePendingStateTransfer();
-        void PromptSaveDirtyMap(std::function<void()> onProceed);
+        void PromptSaveDirtyMap(const std::function<void()> &onProceed);
 
         Core::EngineContext m_Context;
         Scenes::Scene *m_Scene = nullptr;

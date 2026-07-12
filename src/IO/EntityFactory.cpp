@@ -46,20 +46,6 @@ void IO::EntityFactory::RegisterDeserializers() {
         entity.AddComponent<ECS::Components::MovementComponent>(mc);
     };
 
-    // PLAYER INPUT COMPONENT
-    // s_Deserializers["PlayerInputComponent"] = [
-    //        ](Entity &entity, const nlohmann::json &data, ResourceManager &resources) {
-    //            PlayerInputComponent input;
-    //            if (data.contains("LeftClick")) input.LeftClick = data["LeftClick"].get<int>();
-    //            if (data.contains("RightClick")) input.RightClick = data["RightClick"].get<int>();
-    //            if (data.contains("Up")) input.Up = data["Up"].get<int>();
-    //            if (data.contains("Down")) input.Down = data["Down"].get<int>();
-    //            if (data.contains("Left")) input.Left = data["Left"].get<int>();
-    //            if (data.contains("Right")) input.Right = data["Right"].get<int>();
-    //            if (data.contains("Quit")) input.Quit = data["Quit"].get<int>();
-    //            entity.AddComponent<PlayerInputComponent>(input);
-    //        };
-
     // MESH COMPONENT
     s_Deserializers["MeshComponent"] = [](ECS::Entity &entity, const nlohmann::json &data, Core::ResourceManager &resources) {
         ECS::Components::MeshComponent mc;
@@ -119,7 +105,8 @@ void IO::EntityFactory::RegisterDeserializers() {
 
     // SCRIPT COMPONENT
     s_Deserializers["ScriptComponent"] = [](ECS::Entity &entity, const nlohmann::json &data, Core::ResourceManager & /*resources*/) {
-        auto &[scriptPaths, instance_envs, on_update_functions, on_destroy_functions, on_exit_functions, isInitialized, source_codes, ast_nodes, lastModified] = entity.AddComponent<ECS::Components::ScriptComponent>();
+        auto &[scriptPaths, resolvedScriptPaths, instance_envs, on_update_functions, on_destroy_functions, on_exit_functions, isInitialized, source_codes, ast_nodes, lastModified] =
+                entity.AddComponent<ECS::Components::ScriptComponent>();
 
         if (data.contains("scriptPath")) {
             // Single script
@@ -139,6 +126,7 @@ void IO::EntityFactory::RegisterDeserializers() {
         on_destroy_functions.resize(scriptCount);
         on_exit_functions.resize(scriptCount);
         isInitialized.resize(scriptCount, false);
+        resolvedScriptPaths.resize(scriptCount);
         source_codes.resize(scriptCount);
         ast_nodes.resize(scriptCount);
         lastModified.resize(scriptCount);
@@ -168,21 +156,6 @@ void IO::EntityFactory::RegisterSerializers() {
             // state data is ignored
         }
     };
-
-    // PLAYER INPUT COMPONENT
-    // s_Serializers["PlayerInputComponent"] = [](const Entity &entity, nlohmann::json &data, ResourceManager
-    // &resources) {
-    //    if (entity.HasComponent<PlayerInputComponent>()) {
-    //        auto *pic = entity.GetComponent<PlayerInputComponent>();
-    //        data["PlayerInputComponent"]["LeftClick"] = pic->LeftClick;
-    //        data["PlayerInputComponent"]["RightClick"] = pic->RightClick;
-    //        data["PlayerInputComponent"]["Up"] = pic->Up;
-    //        data["PlayerInputComponent"]["Down"] = pic->Down;
-    //        data["PlayerInputComponent"]["Left"] = pic->Left;
-    //        data["PlayerInputComponent"]["Right"] = pic->Right;
-    //        data["PlayerInputComponent"]["Quit"] = pic->Quit;
-    //    }
-    //};
 
     // MESH COMPONENT
     s_Serializers["MeshComponent"] = [](const ECS::Entity &entity, nlohmann::json &data, Core::ResourceManager &resources) {

@@ -48,8 +48,7 @@ int main(int argc, char *argv[]) {
     bool quiet = false, verbose = false, global_compress = true, strict_mode = false;
 
     for (int i = 1; i < argc; ++i) {
-        std::string arg = argv[i];
-        if (arg == "-o" || arg == "--output") {
+        if (std::string arg = argv[i]; arg == "-o" || arg == "--output") {
             if (i + 1 < argc)
                 output_file = argv[++i];
         } else if (arg == "-q" || arg == "--quiet")
@@ -114,8 +113,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    bool deps_ok = dep_graph.validate(BINARY_NAME);
-    if (!deps_ok && strict_mode) {
+    if (bool deps_ok = dep_graph.validate(BINARY_NAME); !deps_ok && strict_mode) {
         LOG_ERROR(LOG_WHO, "Packaging aborted due to validation failures (--strict)");
         return 1;
     }

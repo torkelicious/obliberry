@@ -46,8 +46,7 @@ namespace IO::Package::Tools {
 
         for (const auto &script : m_known_scripts) {
             if (color[script] == 0) {
-                std::vector<std::string> path;
-                if (has_cycle(script, path)) {
+                if (std::vector<std::string> path; has_cycle(script, path)) {
                     std::string chain;
                     for (auto &p : path)
                         chain += p + " -> ";

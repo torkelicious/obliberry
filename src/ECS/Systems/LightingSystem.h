@@ -8,6 +8,7 @@
 #include "Rendering/Renderer.h"
 #include "Rendering/Texture.h"
 #include <algorithm>
+#include <cstring>
 #include <glm/glm.hpp>
 #include <memory>
 
@@ -55,20 +56,24 @@ namespace ECS::Systems::LightingSystem {
         lm.lastLightCount = std::numeric_limits<size_t>::max();
     }
 
-    // return true if anything relevant to the lightmap changed since the last rebuild.
     inline bool ConsumeDirtyState(Registry &reg, const Components::MapComponent &mapComp, const size_t lightCount) {
-        bool anyDirty = (lightCount != mapComp.lightmap.lastLightCount);
+        if (lightCount != mapComp.lightmap.lastLightCount)
+            return true;
 
-        reg.ForEach<Components::PointLightComponent, Components::TransformComponent>([&](Entity, const Components::PointLightComponent *light, const Components::TransformComponent *transform) {
-            if (light->dirty || transform->transform.IsDirty())
-                anyDirty = true;
-        });
+        // direct pool iteration
+        auto *lightPool = reg.GetPool<Components::PointLightComponent>();
+        auto *transformPool = reg.GetPool<Components::TransformComponent>();
+        for (const EntityID id : lightPool->GetDenseEntities()) {
+            const auto *light = lightPool->Get(id);
+            if (const auto *transform = transformPool ? transformPool->Get(id) : nullptr; light && (light->dirty || (transform && transform->transform.IsDirty())))
+                return true;
+        }
 
-        return anyDirty;
+        return false;
     }
 
     inline void Update(Registry &reg) {
-        Components::MapComponent *mapComp = reg.GetFirst<Components::MapComponent>();
+        auto *mapComp = reg.GetFirst<Components::MapComponent>();
         if (!mapComp || !mapComp->lightmap.texture) {
             return;
         }
@@ -78,6 +83,7 @@ namespace ECS::Systems::LightingSystem {
         if (lightCount == 0)
             return;
 
+        // skip all accumulation if nothing changed
         if (!ConsumeDirtyState(reg, *mapComp, lightCount))
             return;
 
@@ -93,61 +99,76 @@ namespace ECS::Systems::LightingSystem {
             pixelBuffer.resize(pixelCount * 4, 255);
         }
 
-        std::ranges::fill(accumulationBuffer, glm::vec3(ambient));
+        // zero the accumulation buffer
+        std::memset(accumulationBuffer.data(), 0, accumulationBuffer.size() * sizeof(glm::vec3));
 
-        reg.ForEach<Components::PointLightComponent, Components::TransformComponent>([&](Entity, const Components::PointLightComponent *light, const Components::TransformComponent *transform) {
+        auto *transformPool = reg.GetPool<Components::TransformComponent>();
+        for (const EntityID id : lightPool->GetDenseEntities()) {
+            const auto *light = lightPool->Get(id);
+            const auto *transform = transformPool ? transformPool->Get(id) : nullptr;
+            if (!light || !transform)
+                continue;
+            if (light->intensity <= 0.0f)
+                continue;
+
             const glm::vec3 pos = transform->transform.GetPosition();
-
-            const float lx = (pos.x - mapOffset.x) / mapSize.x * texW;
-            const float ly = (pos.y - mapOffset.y) / mapSize.y * texH;
-
             const float radiusPxX = light->radius / mapSize.x * texW;
             const float radiusPxY = light->radius / mapSize.y * texH;
             const float radiusPx = std::max(radiusPxX, radiusPxY);
-            const float radiusSq = radiusPx * radiusPx;
-            const float invRadiusSq = 1.0f / radiusSq;
+            if (radiusPx <= 0.0f)
+                continue;
 
+            const float lx = (pos.x - mapOffset.x) / mapSize.x * texW;
+            const float ly = (pos.y - mapOffset.y) / mapSize.y * texH;
+            const float invRadiusSq = 1.0f / (radiusPx * radiusPx);
+            const float radiusSq = radiusPx * radiusPx;
             const int minX = std::max(0, static_cast<int>(lx - radiusPx));
             const int maxX = std::min(texW - 1, static_cast<int>(lx + radiusPx));
             const int minY = std::max(0, static_cast<int>(ly - radiusPx));
             const int maxY = std::min(texH - 1, static_cast<int>(ly + radiusPx));
+            const glm::vec3 colorBrightness = light->color * light->intensity;
 
             for (int y = minY; y <= maxY; ++y) {
                 const float dy = static_cast<float>(y) - ly;
                 const float dySq = dy * dy;
                 const int rowIdx = y * texW;
+                glm::vec3 *__restrict__ row = &accumulationBuffer[rowIdx];
+
+                // prefetch next row into L1
+                if (y < maxY)
+                    __builtin_prefetch(&accumulationBuffer[(y + 1) * texW], 1, 1);
 
                 for (int x = minX; x <= maxX; ++x) {
                     const float dx = static_cast<float>(x) - lx;
-
                     if (const float distSq = dx * dx + dySq; distSq <= radiusSq) {
-                        const float falloff = std::max(0.0f, 1.0f - distSq * invRadiusSq);
-                        const float brightness = falloff * light->intensity;
-                        accumulationBuffer[rowIdx + x] += light->color * brightness;
+                        const float falloff = 1.0f - distSq * invRadiusSq;
+                        row[x] += colorBrightness * falloff;
                     }
                 }
             }
-        });
+        }
 
         for (int i = 0; i < pixelCount; ++i) {
-            const glm::vec3 clamped = glm::clamp(accumulationBuffer[i], 0.0f, 1.0f);
+            const glm::vec3 final = glm::clamp(accumulationBuffer[i] + ambient, 0.0f, 1.0f);
             const int pIdx = i * 4;
-            pixelBuffer[pIdx + 0] = static_cast<unsigned char>(clamped.r * 255.0f);
-            pixelBuffer[pIdx + 1] = static_cast<unsigned char>(clamped.g * 255.0f);
-            pixelBuffer[pIdx + 2] = static_cast<unsigned char>(clamped.b * 255.0f);
+            pixelBuffer[pIdx + 0] = static_cast<unsigned char>(final.r * 255.0f);
+            pixelBuffer[pIdx + 1] = static_cast<unsigned char>(final.g * 255.0f);
+            pixelBuffer[pIdx + 2] = static_cast<unsigned char>(final.b * 255.0f);
             pixelBuffer[pIdx + 3] = 255;
         }
-        Rendering::Renderer::SubmitInitTask([tex = texture, w = texW, h = texH, data = std::move(pixelBuffer)]() mutable {
-            tex->UpdateData(data.data(), w, h);
-            data.clear();
-        });
-        pixelBuffer.assign(texW * texH * 4, 255);
+        Rendering::Renderer::SubmitInitTask([tex = texture, w = texW, h = texH, data = pixelBuffer] { tex->UpdateData(data.data(), w, h); });
+        std::memset(pixelBuffer.data(), 255, pixelBuffer.size());
 
         // rebuild complete
         lastLightCount = lightCount;
-        reg.ForEach<Components::PointLightComponent, Components::TransformComponent>([&](Entity, Components::PointLightComponent *light, const Components::TransformComponent *transform) {
-            light->dirty = false;
-            transform->transform.ClearDirty();
-        });
+        // dirty clear
+        auto *lightPoolClear = reg.GetPool<Components::PointLightComponent>();
+        auto *transformPoolClear = reg.GetPool<Components::TransformComponent>();
+        for (const EntityID id : lightPoolClear->GetDenseEntities()) {
+            if (auto *light = lightPoolClear->Get(id))
+                light->dirty = false;
+            if (const auto *transform = transformPoolClear ? transformPoolClear->Get(id) : nullptr)
+                transform->transform.ClearDirty();
+        }
     }
 } // namespace ECS::Systems::LightingSystem

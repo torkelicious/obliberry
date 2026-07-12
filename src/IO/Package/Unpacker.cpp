@@ -39,8 +39,7 @@ int main(int argc, char *argv[]) {
     std::string output_dir;
 
     for (int i = 1; i < argc; ++i) {
-        std::string arg = argv[i];
-        if (arg == "-h" || arg == "--help") {
+        if (std::string arg = argv[i]; arg == "-h" || arg == "--help") {
             show_help();
             return 0;
         } else if (arg == "-v" || arg == "--version") {
@@ -121,8 +120,7 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        std::ofstream out(out_path, std::ios::binary);
-        if (out.write(data->data(), data->size())) {
+        if (std::ofstream out(out_path, std::ios::binary); out.write(data->data(), data->size())) {
             if (!quiet)
                 LOG_INFO(LOG_WHO, "Extracted: " + p + " (" + std::to_string(data->size()) + " bytes)");
             success_count++;
@@ -134,5 +132,5 @@ int main(int argc, char *argv[]) {
 
     if (!quiet)
         LOG_INFO(LOG_WHO, "Finished extracting " + std::to_string(success_count) + "/" + std::to_string(paths.size()) + " files.");
-    return (static_cast<size_t>(success_count) == paths.size()) ? 0 : 1;
+    return static_cast<size_t>(success_count) == paths.size() ? 0 : 1;
 }

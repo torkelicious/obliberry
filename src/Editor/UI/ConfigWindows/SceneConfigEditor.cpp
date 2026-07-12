@@ -72,8 +72,7 @@ namespace Editor::UI {
             ImGui::SameLine();
             if (ImGui::Button("Load##Music")) {
                 if (m_Context) {
-                    const auto picked = FileDialogs::OpenFile(*m_Context, {.filterName = "Audio Files", .filterExt = "wav,mp3,ogg,flac"});
-                    if (picked.has_value()) {
+                    if (const auto picked = FileDialogs::OpenFile(*m_Context, {.filterName = "Audio Files", .filterExt = "wav,mp3,ogg,flac"}); picked.has_value()) {
                         ResolveMusicPath(picked.value());
                     }
                 }

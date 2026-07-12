@@ -87,11 +87,9 @@ namespace IO::Package::Tools {
                 std::cout << "Packed " + std::to_string(success_count) + "/" + std::to_string(success_count + fail_count) + " files.\n";
             } catch (const std::exception &e) {
                 LOG_ERROR(LOG_WHO, std::string("Could not write package - ") + e.what());
-                return;
             }
         } else {
             LOG_ERROR(LOG_WHO, "No valid assets found to pack");
-            return;
         }
     }
 

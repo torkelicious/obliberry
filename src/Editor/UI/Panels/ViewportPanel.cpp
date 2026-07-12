@@ -89,9 +89,7 @@ void Editor::UI::ViewportPanel::OnImGuiRender() {
                     const int mouseX = static_cast<int>(mousePos.x - boundsMin.x);
                     const int mouseY = static_cast<int>(mousePos.y - boundsMin.y);
 
-                    const int glY = static_cast<int>(m_ViewportHeight) - mouseY - 1;
-
-                    if (mouseX >= 0 && mouseY >= 0 && mouseX < static_cast<int>(m_ViewportWidth) && glY >= 0 && glY < static_cast<int>(m_ViewportHeight)) {
+                    if (const int glY = static_cast<int>(m_ViewportHeight) - mouseY - 1; mouseX >= 0 && mouseY >= 0 && mouseX < static_cast<int>(m_ViewportWidth) && glY >= 0 && glY < static_cast<int>(m_ViewportHeight)) {
                         m_EngineContext->renderer->RequestPixelRead(mouseX, glY);
                         m_ExpectingPick = true;
                     }

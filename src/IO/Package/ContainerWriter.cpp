@@ -12,9 +12,7 @@ namespace IO {
         const int bound = LZ4_compressBound(static_cast<int>(source.size()));
         std::vector<uint8_t> compressed(bound);
 
-        const int compressed_size = LZ4_compress_default(source.data(), reinterpret_cast<char *>(compressed.data()), static_cast<int>(source.size()), bound);
-
-        if (compressed_size <= 0) {
+        if (const int compressed_size = LZ4_compress_default(source.data(), reinterpret_cast<char *>(compressed.data()), static_cast<int>(source.size()), bound); compressed_size <= 0) {
             p.data.assign(source.begin(), source.end());
             p.flags = Package::EntryFlags::None;
         } else {
@@ -46,9 +44,7 @@ namespace IO {
             const int bound = LZ4_compressBound(static_cast<int>(data.size()));
             std::vector<uint8_t> comp_data(bound);
 
-            const int compressed_size = LZ4_compress_default(reinterpret_cast<const char *>(data.data()), reinterpret_cast<char *>(comp_data.data()), static_cast<int>(data.size()), bound);
-
-            if (compressed_size <= 0) {
+            if (const int compressed_size = LZ4_compress_default(reinterpret_cast<const char *>(data.data()), reinterpret_cast<char *>(comp_data.data()), static_cast<int>(data.size()), bound); compressed_size <= 0) {
                 p.data = std::move(data);
                 p.flags = Package::EntryFlags::None;
             } else {

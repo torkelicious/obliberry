@@ -35,8 +35,7 @@ int main(int argc, char *argv[]) {
     std::string entry_script;
 
     for (int i = 1; i < argc; ++i) {
-        std::string arg = argv[i];
-        if (arg == "-h" || arg == "--help") {
+        if (std::string arg = argv[i]; arg == "-h" || arg == "--help") {
             show_help();
             return 0;
         } else if (arg == "-v" || arg == "--version") {

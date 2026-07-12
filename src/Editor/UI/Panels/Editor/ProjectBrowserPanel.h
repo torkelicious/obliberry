@@ -69,7 +69,7 @@ namespace Editor::UI {
         ViewMode m_ViewMode = ViewMode::Grid;
         char m_SearchBuffer[128] = {};
 
-        [[nodiscard]] std::vector<AssetEntry> ScanDirectory(const std::string &subDir, const std::string &extension) const;
+        [[nodiscard]] static std::vector<AssetEntry> ScanDirectory(const std::string &subDir, const std::string &extension);
 
         [[nodiscard]] static std::string KeyFromPath(const std::filesystem::path &path);
     };

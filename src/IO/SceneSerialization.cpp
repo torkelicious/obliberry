@@ -32,8 +32,14 @@ namespace IO::SceneIO {
     }
 
     bool Deserialize(const std::string &path, Scenes::Scene &scene) {
-        auto fileData = VFS::ReadVirtual(path);
-        if (!fileData.has_value()) {
+        std::string_view dataView;
+        std::string ownedData;
+        if (auto view = VFS::ReadVirtualView(path)) {
+            dataView = *view;
+        } else if (auto owned = VFS::ReadVirtual(path)) {
+            ownedData = std::move(*owned);
+            dataView = ownedData;
+        } else {
             LOG_ERROR(LOG_WHO, "Failed to open scene through VFS: " + path);
             return false;
         }
@@ -44,10 +50,10 @@ namespace IO::SceneIO {
         json j;
         try {
             if (VFS::IsPackaged()) {
-                std::vector<uint8_t> bytes(fileData.value().begin(), fileData.value().end());
+                std::vector<uint8_t> bytes(dataView.begin(), dataView.end());
                 j = json::from_msgpack(bytes);
             } else {
-                j = json::parse(fileData.value());
+                j = json::parse(dataView);
             }
         } catch (const std::exception &e) {
             LOG_ERROR(LOG_WHO, "Scene parsing failure: " + std::string(e.what()));
@@ -121,7 +127,7 @@ namespace IO::SceneIO {
 
                     Rendering::Material typeMat{shader, typeTexture, color};
 
-                    mapComp.typeMats.emplace(id, typeMat);
+                    mapComp.typeMats.emplace_back(id, typeMat);
                 }
             }
 
@@ -189,7 +195,10 @@ namespace IO::SceneIO {
                 std::ranges::sort(keys);
 
                 for (uint8_t id : keys) {
-                    const auto &material = mapComp->typeMats.at(id);
+                    auto it = std::ranges::find_if(mapComp->typeMats, [id](const auto &p) { return p.first == id; });
+                    if (it == mapComp->typeMats.end())
+                        continue;
+                    const auto &material = it->second;
                     json typeJson;
                     typeJson["id"] = id;
 

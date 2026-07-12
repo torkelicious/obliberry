@@ -99,11 +99,13 @@ namespace Rendering {
         if (m_ID == 0)
             return -1;
 
-        if (const auto it = m_UniformCache.find(name); it != m_UniformCache.end())
-            return it->second;
+        for (const auto &[uniformName, loc] : m_UniformCache) {
+            if (uniformName == name)
+                return loc;
+        }
 
         GLint location = glGetUniformLocation(m_ID, name);
-        m_UniformCache.emplace(name, location);
+        m_UniformCache.emplace_back(name, location);
         return location;
     }
 

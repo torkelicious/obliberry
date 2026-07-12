@@ -13,9 +13,7 @@
 #include <nfd.hpp>
 #include <thread>
 #include <utility>
-
 #include "Editor/EditorLayer.h"
-#include "IO/VFS.h"
 
 Core::Application::Application(ProjectConfig config, std::unique_ptr<ApplicationLayer> layer)
     : m_Project(std::move(config)), m_Window(m_Project.windowWidth, m_Project.windowHeight, m_Project.Title.c_str(), m_Project.fullscreen), m_Layer(std::move(layer)) {
@@ -23,11 +21,24 @@ Core::Application::Application(ProjectConfig config, std::unique_ptr<Application
     m_AudioEngine = Sound::AudioEngine::Create();
 }
 
-// a bit goofy but idk what else 2 do
-static ImDrawData *CloneImDrawData(const ImDrawData *src) {
-    if (!src)
-        return nullptr;
-    auto *dst = IM_NEW(ImDrawData)();
+static void UpdateImDrawData(ImDrawData *&dst, const ImDrawData *src) {
+    if (!dst) {
+        dst = IM_NEW(ImDrawData)();
+    }
+
+    for (int i = 0; i < dst->CmdListsCount; ++i) {
+        IM_DELETE(dst->CmdLists[i]);
+    }
+    dst->CmdLists.clear();
+
+    if (!src || src->CmdListsCount == 0) {
+        dst->Valid = false;
+        dst->CmdListsCount = 0;
+        dst->TotalIdxCount = 0;
+        dst->TotalVtxCount = 0;
+        return;
+    }
+
     dst->Valid = src->Valid;
     dst->CmdListsCount = src->CmdListsCount;
     dst->TotalIdxCount = src->TotalIdxCount;
@@ -41,7 +52,6 @@ static ImDrawData *CloneImDrawData(const ImDrawData *src) {
         dst->CmdLists[i] = src->CmdLists[i]->CloneOutput();
     }
     dst->Textures = src->Textures;
-    return dst;
 }
 
 static void FreeImDrawData(ImDrawData *data) {
@@ -95,7 +105,7 @@ void Core::Application::Run() {
 
     Rendering::MeshFactory::RegisterAllMeshFactories();
 
-    float initialAspect = static_cast<float>(m_Window.GetWidth()) / static_cast<float>(m_Window.GetHeight());
+    const float initialAspect = static_cast<float>(m_Window.GetWidth()) / static_cast<float>(m_Window.GetHeight());
     renderer.SetCamera(camera, initialAspect);
 
     auto previousTime = std::chrono::steady_clock::now();
@@ -132,14 +142,16 @@ void Core::Application::Run() {
         renderer.SwapBuffers();
 
         const int writeIdx = m_MainFrameIndex;
-        if (const ImDrawData *imguiDrawData = ImGui::GetDrawData(); imguiDrawData && imguiDrawData->CmdListsCount > 0) {
-            m_FrameImGuiData[writeIdx] = CloneImDrawData(imguiDrawData);
-        }
+        UpdateImDrawData(m_FrameImGuiData[writeIdx], ImGui::GetDrawData());
 
         // hand off frame to render thread
         {
             std::lock_guard lock(m_Frames[writeIdx].mutex);
             m_Frames[writeIdx].state = FrameState::Ready;
+        }
+        {
+            std::lock_guard lock(m_RenderMutex);
+            m_ReadyFrames.push_back(writeIdx);
         }
         m_RenderCV.notify_one();
 
@@ -164,16 +176,22 @@ void Core::Application::Run() {
             m_Frame.state = FrameState::Free;
         }
     }
-    for (auto &i : m_FrameImGuiData) {
-        if (i) {
-            FreeImDrawData(i);
-            i = nullptr;
-        }
+    {
+        std::lock_guard lock(m_RenderMutex);
+        m_ReadyFrames.clear();
     }
     m_RenderCV.notify_all();
 
     if (m_RenderThread.joinable()) {
         m_RenderThread.join();
+    }
+
+    // free ImGui draw data after render thread has exited
+    for (auto &i : m_FrameImGuiData) {
+        if (i) {
+            FreeImDrawData(i);
+            i = nullptr;
+        }
     }
 }
 
@@ -187,33 +205,22 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer) {
     glfwMakeContextCurrent(m_Window.GetNativeWindow());
 
     while (m_Running) {
-        int frameIdx = -1;
-
-        for (int i = 0; i < 2; ++i) {
-            std::lock_guard lock(m_Frames[i].mutex);
-            if (m_Frames[i].state == FrameState::Ready) {
-                m_Frames[i].state = FrameState::Rendering;
-                frameIdx = i;
+        int frameIdx = 0;
+        {
+            std::unique_lock lock(m_RenderMutex);
+            m_RenderCV.wait(lock, [&] { return !m_ReadyFrames.empty() || !m_Running.load(); });
+            if (!m_Running && m_ReadyFrames.empty())
                 break;
-            }
+            frameIdx = m_ReadyFrames.front();
+            m_ReadyFrames.pop_front();
         }
 
-        if (frameIdx == -1) {
-            // sleep until woken
-            std::unique_lock lock(m_RenderMutex);
-            m_RenderCV.wait(lock, [&] {
-                if (!m_Running)
-                    return true;
-                for (auto &m_Frame : m_Frames) {
-                    std::lock_guard lk(m_Frame.mutex);
-                    if (m_Frame.state == FrameState::Ready)
-                        return true;
-                }
-                return false;
-            });
-            if (!m_Running)
-                break;
-            continue;
+        {
+            std::lock_guard lock(m_Frames[frameIdx].mutex);
+            if (m_Frames[frameIdx].state != FrameState::Ready) {
+                continue;
+            }
+            m_Frames[frameIdx].state = FrameState::Rendering;
         }
 
         renderer->ProcessInitQ();
@@ -221,7 +228,7 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer) {
         if (const auto fbo = renderer->GetEditorFramebuffer()) {
             // Render to FrameBuffer if editor mode
             fbo->Bind();
-            renderer->ApplyClearColor();
+            Rendering::Renderer::ApplyClearColor();
             glClear(GL_COLOR_BUFFER_BIT);
 
             renderer->Flush(static_cast<size_t>(frameIdx));
@@ -232,16 +239,14 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer) {
             fbo->ClearEntityIDAttachment();
         } else {
             glViewport(0, 0, m_Window.GetWidth(), m_Window.GetHeight());
-            renderer->ApplyClearColor();
+            Rendering::Renderer::ApplyClearColor();
             glClear(GL_COLOR_BUFFER_BIT);
 
             renderer->Flush(static_cast<size_t>(frameIdx));
         }
 
-        if (m_FrameImGuiData[frameIdx]) {
+        if (m_FrameImGuiData[frameIdx] && m_FrameImGuiData[frameIdx]->CmdListsCount > 0) {
             ImGui_ImplOpenGL3_RenderDrawData(m_FrameImGuiData[frameIdx]);
-            FreeImDrawData(m_FrameImGuiData[frameIdx]);
-            m_FrameImGuiData[frameIdx] = nullptr;
         }
 
         m_Window.SwapBuffers();
@@ -258,12 +263,6 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer) {
         std::lock_guard lock(m_Frame.mutex);
         if (m_Frame.state == FrameState::Ready || m_Frame.state == FrameState::Rendering) {
             m_Frame.state = FrameState::Free;
-        }
-    }
-    for (auto &i : m_FrameImGuiData) {
-        if (i) {
-            FreeImDrawData(i);
-            i = nullptr;
         }
     }
     ImGui_ImplOpenGL3_Shutdown();

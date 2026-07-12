@@ -32,7 +32,7 @@ Editor::UI::PointLightWidget::PointLightWidget() : AutoComponentWidget("Point Li
 
 Editor::UI::TransformWidget::TransformWidget() : AutoComponentWidget("Transform") {}
 
-void Editor::UI::TransformWidget::DrawExtras(ECS::Entity entity, ECS::Components::TransformComponent *component, Core::EngineContext *engineContext, Editor::UndoManager *undoManager) {
+void Editor::UI::TransformWidget::DrawExtras(const ECS::Entity entity, ECS::Components::TransformComponent *component, Core::EngineContext *engineContext, UndoManager *undoManager) {
     auto pos = component->transform.GetPosition();
     static glm::vec3 s_DragStartPos;
     if (ImGui::DragFloat3("Position", &pos.x, 0.1f)) {
@@ -105,7 +105,7 @@ Editor::UI::MovementWidget::MovementWidget() : AutoComponentWidget("Movement") {
     m_Fields.push_back({"Is Moving", FieldType::Bool, offsetof(ECS::Components::MovementComponent, isMoving)});
 }
 
-void Editor::UI::MovementWidget::DrawExtras(ECS::Entity entity, ECS::Components::MovementComponent *component, Core::EngineContext *engineContext, Editor::UndoManager *undoManager) {
+void Editor::UI::MovementWidget::DrawExtras(ECS::Entity entity, ECS::Components::MovementComponent *component, Core::EngineContext *engineContext, UndoManager *undoManager) {
     ImGui::Text("Path Nodes: %zu", component->currentPath.size());
     ImGui::Text("Current Path Index: %zu", component->currentPathIndex);
 }
@@ -114,7 +114,7 @@ void Editor::UI::MovementWidget::DrawExtras(ECS::Entity entity, ECS::Components:
 
 const char *Editor::UI::MeshWidget::GetName() const { return "Mesh"; }
 
-void Editor::UI::MeshWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext, Editor::UndoManager *undoManager) {
+void Editor::UI::MeshWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext, UndoManager *undoManager) {
     if (!entity.HasComponent<ECS::Components::MeshComponent>())
         return;
     if (ImGui::CollapsingHeader(GetName())) {
@@ -154,13 +154,12 @@ void Editor::UI::MeshWidget::Draw(const ECS::Entity entity, Core::EngineContext 
 
 const char *Editor::UI::MaterialWidget::GetName() const { return "Material"; }
 
-void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext, Editor::UndoManager *undoManager) {
+void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext, UndoManager *undoManager) {
     if (!entity.HasComponent<ECS::Components::MaterialComponent>())
         return;
     if (ImGui::CollapsingHeader(GetName())) {
-        auto *comp = entity.GetComponent<ECS::Components::MaterialComponent>();
 
-        if (comp->material) {
+        if (auto *comp = entity.GetComponent<ECS::Components::MaterialComponent>(); comp->material) {
             {
                 ImGui::PushID("MatColor");
                 ImGui::ColorEdit4("Color", &comp->material->color.x, ImGuiColorEditFlags_NoInputs);
@@ -222,7 +221,7 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
 
 const char *Editor::UI::DirectionalTextureWidget::GetName() const { return "Directional Texture"; }
 
-void Editor::UI::DirectionalTextureWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext, Editor::UndoManager *undoManager) {
+void Editor::UI::DirectionalTextureWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext, UndoManager *undoManager) {
     if (!entity.HasComponent<ECS::Components::DirectionalTextureComponent>())
         return;
     if (ImGui::CollapsingHeader(GetName())) {
@@ -261,7 +260,7 @@ void Editor::UI::DirectionalTextureWidget::Draw(const ECS::Entity entity, Core::
 
 const char *Editor::UI::MapWidget::GetName() const { return "Map"; }
 
-void Editor::UI::MapWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext, Editor::UndoManager *undoManager) {
+void Editor::UI::MapWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext, UndoManager *undoManager) {
     if (!entity.HasComponent<ECS::Components::MapComponent>())
         return;
     if (ImGui::CollapsingHeader(GetName())) {
@@ -298,7 +297,7 @@ void Editor::UI::MapWidget::Draw(const ECS::Entity entity, Core::EngineContext *
 
 const char *Editor::UI::MapStateWidget::GetName() const { return "Map State"; }
 
-void Editor::UI::MapStateWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext, Editor::UndoManager *undoManager) {
+void Editor::UI::MapStateWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext, UndoManager *undoManager) {
     if (!entity.HasComponent<ECS::Components::MapStateComponent>())
         return;
     if (ImGui::CollapsingHeader(GetName())) {
@@ -330,7 +329,7 @@ void Editor::UI::MapStateWidget::Draw(const ECS::Entity entity, Core::EngineCont
 
 const char *Editor::UI::ScriptWidget::GetName() const { return "Scripts"; }
 
-void Editor::UI::ScriptWidget::Draw(ECS::Entity entity, Core::EngineContext *engineContext, Editor::UndoManager *undoManager) {
+void Editor::UI::ScriptWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext, UndoManager *undoManager) {
     if (!entity.HasComponent<ECS::Components::ScriptComponent>())
         return;
     if (ImGui::CollapsingHeader(GetName())) {
@@ -373,12 +372,11 @@ void Editor::UI::ScriptWidget::Draw(ECS::Entity entity, Core::EngineContext *eng
 
 const char *Editor::UI::CustomDataWidget::GetName() const { return "ObSL Custom Data"; }
 
-void Editor::UI::CustomDataWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext, Editor::UndoManager *undoManager) {
+void Editor::UI::CustomDataWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext, UndoManager *undoManager) {
     if (!entity.HasComponent<ECS::Components::CustomDataComponent>())
         return;
     if (ImGui::CollapsingHeader(GetName())) {
-        auto *comp = entity.GetComponent<ECS::Components::CustomDataComponent>();
-        if (comp->script_components.empty()) {
+        if (auto *comp = entity.GetComponent<ECS::Components::CustomDataComponent>(); comp->script_components.empty()) {
             ImGui::TextDisabled("No script variables defined.");
         } else {
             for (const auto &varName : comp->script_components | std::views::keys) {

@@ -136,8 +136,7 @@ void Editor::EditorLayer::HandleInput(const float dt) {
 
     // mode-independent hotkeys
     if (m_Input->IsKeyPressed("Esc")) {
-        const bool hasChanges = (m_Scene && m_Scene->HasUnsavedChanges()) || (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges());
-        if (hasChanges) {
+        if (const bool hasChanges = (m_Scene && m_Scene->HasUnsavedChanges()) || (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges())) {
             m_SaveChangesDialog.SetMessage("Do you want to save before quitting?");
             m_SaveChangesDialog.SetOnSave([this] {
                 if (m_Scene && m_Scene->HasUnsavedChanges()) {
@@ -320,15 +319,14 @@ void Editor::EditorLayer::ExecutePendingStateTransfer() {
     m_UndoManager.Clear();
 }
 
-void Editor::EditorLayer::PromptSaveDirtyMap(std::function<void()> onProceed) {
-    auto *mapState = dynamic_cast<MapEditState *>(m_CurrentState.get());
-    if (!mapState || !m_Registry) {
+void Editor::EditorLayer::PromptSaveDirtyMap(const std::function<void()> &onProceed) {
+    if (const auto *mapState = dynamic_cast<MapEditState *>(m_CurrentState.get()); !mapState || !m_Registry) {
         onProceed();
         return;
     }
 
     bool isDirty = false;
-    m_Registry->ForEach<ECS::Components::MapComponent>([&](ECS::Entity, ECS::Components::MapComponent *mapComp) {
+    m_Registry->ForEach<ECS::Components::MapComponent>([&](ECS::Entity, const ECS::Components::MapComponent *mapComp) {
         if (mapComp->mapDirty)
             isDirty = true;
     });
@@ -525,8 +523,7 @@ void Editor::EditorLayer::DrawToolbar() {
                         m_NewProjectDialog.Open();
                     };
 
-                    const bool hasChanges = (m_Scene && m_Scene->HasUnsavedChanges()) || (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges());
-                    if (hasChanges) {
+                    if (const bool hasChanges = (m_Scene && m_Scene->HasUnsavedChanges()) || (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges())) {
                         m_SaveChangesDialog.SetMessage("Do you want to save before creating a new project?");
                         m_SaveChangesDialog.SetOnSave([this, onProceed] {
                             if (m_Scene && m_Scene->HasUnsavedChanges()) {
@@ -547,8 +544,7 @@ void Editor::EditorLayer::DrawToolbar() {
 
             if (ImGui::MenuItem("Open Project")) {
                 if (const auto dir = FileDialogs::PickFolder(m_Context)) {
-                    const std::filesystem::path projectFile = std::filesystem::path(*dir) / "project.json";
-                    if (!std::filesystem::exists(projectFile)) {
+                    if (const std::filesystem::path projectFile = std::filesystem::path(*dir) / "project.json"; !std::filesystem::exists(projectFile)) {
                         LOG_ERROR("Editor", "No project.json found in: " + *dir);
                     } else if ((m_Scene && m_Scene->HasUnsavedChanges()) || (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges())) {
                         m_SaveChangesDialog.SetMessage("Do you want to save before opening another project?");
@@ -602,8 +598,7 @@ void Editor::EditorLayer::DrawToolbar() {
             ImGui::Separator();
 
             if (ImGui::MenuItem("Close Project")) {
-                const bool hasChanges = (m_Scene && m_Scene->HasUnsavedChanges()) || (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges());
-                if (hasChanges) {
+                if (const bool hasChanges = (m_Scene && m_Scene->HasUnsavedChanges()) || (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges())) {
                     m_SaveChangesDialog.SetMessage("Do you want to save before closing the project?");
                     m_SaveChangesDialog.SetOnSave([this] {
                         if (m_Scene && m_Scene->HasUnsavedChanges()) {
@@ -646,8 +641,7 @@ void Editor::EditorLayer::DrawToolbar() {
             ImGui::Separator();
 
             if (ImGui::MenuItem("Exit")) {
-                const bool hasChanges = (m_Scene && m_Scene->HasUnsavedChanges()) || (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges());
-                if (hasChanges) {
+                if (const bool hasChanges = (m_Scene && m_Scene->HasUnsavedChanges()) || (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges())) {
                     m_SaveChangesDialog.SetMessage("Do you want to save before quitting?");
                     m_SaveChangesDialog.SetOnSave([this] {
                         if (m_Scene && m_Scene->HasUnsavedChanges()) {
@@ -683,13 +677,11 @@ void Editor::EditorLayer::DrawToolbar() {
             ImGui::Separator();
 
             if (ImGui::BeginMenu("Switch To")) {
-                const auto scenes = m_SceneManager.GetAvailableScenes();
-                if (scenes.empty()) {
+                if (const auto scenes = Scenes::SceneManager::GetAvailableScenes(); scenes.empty()) {
                     ImGui::MenuItem("(no scenes)", nullptr, false, false);
                 } else {
                     for (const auto &scenePath : scenes) {
-                        const bool isCurrent = m_Scene && m_Scene->GetScenePath() == scenePath;
-                        if (ImGui::MenuItem(scenePath.c_str(), nullptr, false, !isCurrent)) {
+                        if (const bool isCurrent = m_Scene && m_Scene->GetScenePath() == scenePath; ImGui::MenuItem(scenePath.c_str(), nullptr, false, !isCurrent)) {
                             PromptSaveDirtyMap([this, scenePath] {
                                 if (m_Scene && m_Scene->HasUnsavedChanges()) {
                                     m_SaveChangesDialog.SetMessage("Do you want to save changes to '" + m_Scene->GetProperties().Name + "' before switching scenes?");
@@ -706,7 +698,6 @@ void Editor::EditorLayer::DrawToolbar() {
                             m_PendingSceneToLoad = scenePath;
                         }
                     }
-                    ImGui::EndMenu();
                 }
                 ImGui::EndMenu();
             }

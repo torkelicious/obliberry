@@ -61,7 +61,7 @@ namespace Editor::UI {
 
         if (ImGui::BeginCombo(label, preview.c_str())) {
             for (int i = 0; i < static_cast<int>(files.size()); ++i) {
-                const bool isSelected = (currentIdx == i);
+                const bool isSelected = currentIdx == i;
                 if (ImGui::Selectable(files[i].c_str(), isSelected)) {
                     if (i == 0)
                         current.clear();

@@ -22,6 +22,10 @@ namespace ECS::Systems::ScriptSystem {
         if (scriptIndex >= script->scriptPaths.size() || script->isInitialized[scriptIndex])
             return;
 
+        if (script->resolvedScriptPaths.size() != script->scriptPaths.size()) {
+            script->resolvedScriptPaths.resize(script->scriptPaths.size());
+        }
+
         auto fileData = IO::VFS::ReadVirtual(script->scriptPaths[scriptIndex]);
         if (!fileData.has_value()) {
             if (auto *logger = Core::Logging::LoggerService::Get()) {
@@ -34,18 +38,25 @@ namespace ECS::Systems::ScriptSystem {
             // configure module loader
             for (size_t w = 0; w < runtime.worker_count(); ++w) {
                 runtime.get_worker(w)->GetInterpreter().set_module_loader([](const std::string &path) -> std::optional<ObSL::ModuleResult> {
-                    auto data = IO::VFS::ReadVirtual(path);
-                    if (!data)
+                    std::string_view dataView;
+                    std::string ownedData;
+                    if (const auto view = IO::VFS::ReadVirtualView(path)) {
+                        dataView = *view;
+                    } else if (auto owned = IO::VFS::ReadVirtual(path)) {
+                        ownedData = std::move(*owned);
+                        dataView = ownedData;
+                    } else {
                         return std::nullopt;
+                    }
 
                     ObSL::ModuleResult result;
                     if (IO::VFS::IsPackaged()) {
-                        const std::vector<uint8_t> blob(data->begin(), data->end());
+                        const std::vector<uint8_t> blob(dataView.begin(), dataView.end());
                         result.kind = ObSL::ModuleResult::Kind::PrecompiledAst;
                         result.ast_module = ObSL::ASTDeserializer::deserialize(blob);
                     } else {
                         result.kind = ObSL::ModuleResult::Kind::Source;
-                        result.source = std::move(data.value());
+                        result.source = std::string(dataView);
                     }
                     return result;
                 });
@@ -74,8 +85,8 @@ namespace ECS::Systems::ScriptSystem {
                 // Loose file source code
                 script->source_codes[scriptIndex] = std::move(fileData.value());
 
-                const std::filesystem::path resolvedPath = IO::VFS::Resolve(script->scriptPaths[scriptIndex]);
-                if (std::filesystem::exists(resolvedPath)) {
+                script->resolvedScriptPaths[scriptIndex] = IO::VFS::Resolve(script->scriptPaths[scriptIndex]);
+                if (const std::filesystem::path &resolvedPath = script->resolvedScriptPaths[scriptIndex]; std::filesystem::exists(resolvedPath)) {
                     script->lastModified[scriptIndex] = std::filesystem::last_write_time(resolvedPath);
                 }
 
@@ -167,12 +178,17 @@ namespace ECS::Systems::ScriptSystem {
         if (!ctx.scriptPool || !ctx.threadPool)
             return;
         constexpr ObSL::Token call_token{ObSL::TokenType::LEFT_PAREN, "(", 0, 0, 0, 0};
+        constexpr uint64_t kReloadPollIntervalFrames = 300;
+        const bool shouldPollReload = !IO::VFS::IsPackaged() && ctx.frameCount % kReloadPollIntervalFrames == 0;
 
         Scripting::ScriptCommandBuffer cmd_buf;
         const size_t num_workers = ctx.scriptPool->worker_count();
 
         registry.ForEach<Components::ScriptComponent>([&](const Entity entity, Components::ScriptComponent *script) {
             const auto raw_id = static_cast<EntityID>(entity);
+            if (script->resolvedScriptPaths.size() != script->scriptPaths.size()) {
+                script->resolvedScriptPaths.resize(script->scriptPaths.size());
+            }
 
             for (size_t i = 0; i < script->scriptPaths.size(); i++) {
                 if (!script->isInitialized[i]) {
@@ -180,10 +196,12 @@ namespace ECS::Systems::ScriptSystem {
                 }
 
                 try {
-                    if (!IO::VFS::IsPackaged()) {
-                        std::filesystem::path resolvedPath = IO::VFS::Resolve(script->scriptPaths[i]);
-                        if (std::filesystem::exists(resolvedPath)) {
-                            if (auto current_time = std::filesystem::last_write_time(resolvedPath); current_time > script->lastModified[i]) {
+                    if (shouldPollReload) {
+                        if (script->resolvedScriptPaths[i].empty()) {
+                            script->resolvedScriptPaths[i] = IO::VFS::Resolve(script->scriptPaths[i]);
+                        }
+                        if (const std::filesystem::path &resolvedPath = script->resolvedScriptPaths[i]; std::filesystem::exists(resolvedPath)) {
+                            if (const auto current_time = std::filesystem::last_write_time(resolvedPath); current_time > script->lastModified[i]) {
                                 script->isInitialized[i] = false;
                                 InitializeScript(registry, raw_id, script, *ctx.scriptPool, i);
                                 if (auto *logger = Core::Logging::LoggerService::Get()) {
@@ -203,114 +221,71 @@ namespace ECS::Systems::ScriptSystem {
         for (size_t w = 0; w < num_workers; ++w)
             ctx.scriptPool->get_worker(w)->set_frame_context(&cmd_buf);
 
-        // to avoid spinning idle workers
-        size_t active_updates = 0;
-        registry.ForEach<Components::ScriptComponent>([&](const Entity, Components::ScriptComponent *script) {
-            for (size_t i = 0; i < script->scriptPaths.size(); i++) {
-                if (script->isInitialized[i] && script->on_update_functions[i][0])
-                    ++active_updates;
-            }
-        });
-        const size_t active_workers = std::min(num_workers, std::max(size_t{1}, active_updates));
-
-        // on_update parallel
         struct UpdateWork {
             ObSL::ObSLCallable *func;
             std::shared_ptr<ObSL::Environment> env;
-            std::string scriptPath;
+            std::string_view scriptPath;
+            const char *hookName;
         };
-        std::vector<std::vector<UpdateWork>> buckets(active_workers);
+        // persistent across frames
+        static std::vector<std::vector<UpdateWork>> s_Buckets;
+        s_Buckets.resize(num_workers);
+        for (auto &b : s_Buckets)
+            b.clear();
+        size_t totalWork = 0;
 
         registry.ForEach<Components::ScriptComponent>([&](const Entity entity, Components::ScriptComponent *script) {
             const auto entity_id = static_cast<EntityID>(entity);
             for (size_t i = 0; i < script->scriptPaths.size(); i++) {
                 if (script->isInitialized[i] && script->on_update_functions[i][0]) {
-                    const size_t w = (entity_id + i) % active_workers;
-                    buckets[w].push_back({script->on_update_functions[i][w], script->instance_envs[i][w], script->scriptPaths[i]});
+                    const size_t w = (entity_id + i) % num_workers;
+                    s_Buckets[w].push_back({script->on_update_functions[i][w], script->instance_envs[i][w], script->scriptPaths[i], "on_update"});
+                    ++totalWork;
                 }
             }
         });
-
-        const double dt = ctx.deltaTime;
-        for (size_t w = 0; w < active_workers; ++w) {
-            ctx.threadPool->enqueue([&buckets, &ctx, w, dt, &call_token] {
-                auto *worker = ctx.scriptPool->get_worker(w);
-                auto &interp = worker->GetInterpreter();
-                for (auto &[func, env, scriptPath] : buckets[w]) {
-                    try {
-                        if (func && env) {
-                            interp.set_current_environment(env);
-                            const std::vector<ObSL::Value> args = {static_cast<double>(dt)};
-                            func->call(&interp, args, call_token);
-                        }
-                    } catch (const std::exception &e) {
-                        if (auto *logger = Core::Logging::LoggerService::Get()) {
-                            logger->log("ScriptSystem", "Exception in on_update (" + scriptPath + ") : " + e.what(), Core::Logging::LogSeverity::Error);
-                        }
-                    } catch (...) {
-                        if (auto *logger = Core::Logging::LoggerService::Get()) {
-                            logger->log("ScriptSystem", "Unknown Exception in on_update (" + scriptPath + ")", Core::Logging::LogSeverity::Error);
-                        }
-                    }
-                }
-            });
-        }
-
-        ctx.threadPool->wait();
-
-        // destroyable entities to clamp workers
-        size_t active_destroys = 0;
-        registry.ForEach<Components::DestroyTagComponent>([&](const Entity entity, Components::DestroyTagComponent *) {
-            const auto entity_id = static_cast<EntityID>(entity);
-            if (const auto script = registry.GetComponent<Components::ScriptComponent>(entity_id)) {
-                for (size_t i = 0; i < script->scriptPaths.size(); i++) {
-                    if (script->isInitialized[i] && script->on_destroy_functions[i][0])
-                        ++active_destroys;
-                }
-            }
-        });
-        const size_t destroy_workers = std::min(num_workers, std::max(size_t{1}, active_destroys));
-
-        // on_destroy
-        std::vector<std::vector<UpdateWork>> destroy_buckets(destroy_workers);
 
         registry.ForEach<Components::DestroyTagComponent>([&](const Entity entity, Components::DestroyTagComponent *) {
             const auto entity_id = static_cast<EntityID>(entity);
             if (const auto script = registry.GetComponent<Components::ScriptComponent>(entity_id)) {
                 for (size_t i = 0; i < script->scriptPaths.size(); i++) {
                     if (script->isInitialized[i] && script->on_destroy_functions[i][0]) {
-                        const size_t w = (entity_id + i) % destroy_workers;
-                        destroy_buckets[w].push_back({script->on_destroy_functions[i][w], script->instance_envs[i][w], script->scriptPaths[i]});
+                        const size_t w = (entity_id + i) % num_workers;
+                        s_Buckets[w].push_back({script->on_destroy_functions[i][w], script->instance_envs[i][w], script->scriptPaths[i], "on_destroy"});
+                        ++totalWork;
                     }
                 }
             }
         });
 
-        for (size_t w = 0; w < destroy_workers; ++w) {
-            ctx.threadPool->enqueue([&destroy_buckets, &ctx, w, dt, &call_token] {
+        const std::vector<ObSL::Value> args = {static_cast<double>(ctx.deltaTime)};
+        for (size_t w = 0; w < num_workers; ++w) {
+            if (s_Buckets[w].empty())
+                continue;
+            ctx.threadPool->enqueue(static_cast<Core::Task>([&ctx, w, &args, &call_token] {
                 auto *worker = ctx.scriptPool->get_worker(w);
                 auto &interp = worker->GetInterpreter();
-                for (auto &[func, env, scriptPath] : destroy_buckets[w]) {
+                for (auto &[func, env, scriptPath, hookName] : s_Buckets[w]) {
                     try {
                         if (func && env) {
                             interp.set_current_environment(env);
-                            const std::vector<ObSL::Value> args = {static_cast<double>(dt)};
                             func->call(&interp, args, call_token);
                         }
                     } catch (const std::exception &e) {
                         if (auto *logger = Core::Logging::LoggerService::Get()) {
-                            logger->log("ScriptSystem", "Exception in on_destroy (" + scriptPath + ") : " + e.what(), Core::Logging::LogSeverity::Error);
+                            logger->log("ScriptSystem", "Exception in " + std::string(hookName) + " (" + std::string(scriptPath) + ") : " + e.what(), Core::Logging::LogSeverity::Error);
                         }
                     } catch (...) {
                         if (auto *logger = Core::Logging::LoggerService::Get()) {
-                            logger->log("ScriptSystem", "Unknown Exception in on_destroy (" + scriptPath + ")", Core::Logging::LogSeverity::Error);
+                            logger->log("ScriptSystem", "Unknown Exception in " + std::string(hookName) + " (" + std::string(scriptPath) + ")", Core::Logging::LogSeverity::Error);
                         }
                     }
                 }
-            });
+            }));
         }
 
-        ctx.threadPool->wait();
+        if (totalWork > 0)
+            ctx.threadPool->wait();
 
         // flush deferred registry writes
         cmd_buf.flush(registry);
@@ -343,7 +318,7 @@ namespace ECS::Systems::ScriptSystem {
         struct ExitWork {
             ObSL::ObSLCallable *func;
             std::shared_ptr<ObSL::Environment> env;
-            std::string scriptPath;
+            std::string_view scriptPath;
         };
         std::vector<std::vector<ExitWork>> buckets(exit_workers);
 
@@ -359,7 +334,7 @@ namespace ECS::Systems::ScriptSystem {
 
         const double dt = ctx.deltaTime;
         for (size_t w = 0; w < exit_workers; ++w) {
-            ctx.threadPool->enqueue([&buckets, &ctx, w, dt, &call_token] {
+            ctx.threadPool->enqueue(static_cast<Core::Task>([&buckets, &ctx, w, dt, &call_token] {
                 auto *worker = ctx.scriptPool->get_worker(w);
                 auto &interp = worker->GetInterpreter();
                 for (auto &[func, env, scriptPath] : buckets[w]) {
@@ -371,15 +346,15 @@ namespace ECS::Systems::ScriptSystem {
                         }
                     } catch (const std::exception &e) {
                         if (auto *logger = Core::Logging::LoggerService::Get()) {
-                            logger->log("ScriptSystem", "Exception in on_exit (" + scriptPath + ") : " + e.what(), Core::Logging::LogSeverity::Error);
+                            logger->log("ScriptSystem", "Exception in on_exit (" + std::string(scriptPath) + ") : " + e.what(), Core::Logging::LogSeverity::Error);
                         }
                     } catch (...) {
                         if (auto *logger = Core::Logging::LoggerService::Get()) {
-                            logger->log("ScriptSystem", "Unknown Exception in on_exit (" + scriptPath + ")", Core::Logging::LogSeverity::Error);
+                            logger->log("ScriptSystem", "Unknown Exception in on_exit (" + std::string(scriptPath) + ")", Core::Logging::LogSeverity::Error);
                         }
                     }
                 }
-            });
+            }));
         }
 
         ctx.threadPool->wait();

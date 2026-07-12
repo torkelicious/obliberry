@@ -22,8 +22,7 @@ void Editor::UI::RegistryPanel::OnImGuiRender() {
         int visibleEntities = 0;
         for (const ECS::EntityID id : livingEntities) {
             if (registry.IsValid(id)) {
-                ECS::Entity e(id, &registry);
-                if (!e.HasComponent<ECS::Components::MapComponent>())
+                if (ECS::Entity e(id, &registry); !e.HasComponent<ECS::Components::MapComponent>())
                     visibleEntities++;
             }
         }

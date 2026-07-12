@@ -27,8 +27,8 @@ namespace Editor {
         const nfdfilteritem_t filterItem[1] = {{options.filterName, options.filterExt}};
 
         nfdopendialogu8args_t args = {nullptr};
-        args.filterList = (options.filterName && options.filterExt) ? filterItem : nullptr;
-        args.filterCount = (options.filterName && options.filterExt) ? 1 : 0;
+        args.filterList = options.filterName && options.filterExt ? filterItem : nullptr;
+        args.filterCount = options.filterName && options.filterExt ? 1 : 0;
         args.defaultPath = options.defaultPath;
         args.parentWindow = GetNativeHandle(ctx);
         args.title = options.title;
@@ -47,8 +47,8 @@ namespace Editor {
         const nfdfilteritem_t filterItem[1] = {{options.filterName, options.filterExt}};
 
         nfdsavedialogu8args_t args = {nullptr};
-        args.filterList = (options.filterName && options.filterExt) ? filterItem : nullptr;
-        args.filterCount = (options.filterName && options.filterExt) ? 1 : 0;
+        args.filterList = options.filterName && options.filterExt ? filterItem : nullptr;
+        args.filterCount = options.filterName && options.filterExt ? 1 : 0;
         args.defaultPath = options.defaultPath;
         args.defaultName = options.defaultName;
         args.parentWindow = GetNativeHandle(ctx);

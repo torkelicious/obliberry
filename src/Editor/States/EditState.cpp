@@ -31,8 +31,7 @@ void Editor::EditState::OnUpdate(const float dt) {
 
     // Entity picking
     if (const int clickedID = m_EditorLayer->m_ViewportPanel.GetSelectedEntityID(); clickedID != -1) {
-        const auto eID = static_cast<ECS::EntityID>(clickedID);
-        if (m_EditorLayer->m_Registry->IsValid(eID)) {
+        if (const auto eID = static_cast<ECS::EntityID>(clickedID); m_EditorLayer->m_Registry->IsValid(eID)) {
             const ECS::Entity selectedEntity(eID, m_EditorLayer->m_Registry);
             m_EditorLayer->m_RegistryPanel.SetSelectedEntity(selectedEntity);
         }
@@ -71,8 +70,7 @@ void Editor::EditState::OnHandleInput(const float dt) {
         return;
 
     // Scroll zoom
-    const auto scrollDelta = static_cast<float>(m_EditorLayer->m_Input->ScrollY());
-    if (scrollDelta != 0.0f) {
+    if (const auto scrollDelta = static_cast<float>(m_EditorLayer->m_Input->ScrollY()); scrollDelta != 0.0f) {
         m_EditorLayer->m_Camera.AdjustZoom(scrollDelta * 0.2f);
     }
 
@@ -253,9 +251,7 @@ void Editor::EditState::EditTransform(Rendering::Transform &transform, bool isBi
         if (m_GizmoDragging) {
             m_GizmoDragging = false;
 
-            const ECS::Entity selectedEntity = m_EditorLayer->m_RegistryPanel.GetSelectedEntity();
-
-            if (selectedEntity) {
+            if (const ECS::Entity selectedEntity = m_EditorLayer->m_RegistryPanel.GetSelectedEntity()) {
                 const auto entId = static_cast<ECS::EntityID>(selectedEntity);
                 if (mCurrentGizmoOperation == ImGuizmo::TRANSLATE) {
                     if (m_GizmoStartPos != transform.GetPosition()) {

@@ -92,13 +92,12 @@ namespace Math::HexMath {
     inline CubeCoords CubeRound(const FractionalHex &h) {
         auto rx = static_cast<int32_t>(std::lround(h.q));
         auto ry = static_cast<int32_t>(std::lround(h.r));
-        auto rz = static_cast<int32_t>(std::lround(h.s));
+        const auto rz = static_cast<int32_t>(std::lround(h.s));
 
         const float q_diff = std::abs(rx - h.q);
         const float r_diff = std::abs(ry - h.r);
-        const float s_diff = std::abs(rz - h.s);
 
-        if (q_diff > r_diff && q_diff > s_diff) {
+        if (const float s_diff = std::abs(rz - h.s); q_diff > r_diff && q_diff > s_diff) {
             rx = -ry - rz;
         } else if (r_diff > s_diff) {
             ry = -rx - rz;
@@ -114,8 +113,8 @@ namespace Math::HexMath {
     }
 
     inline FractionalHex OddRToFractionalHex(const Map::HexCoords &hex) {
-        const auto cube = OddRToCube(hex);
-        return {static_cast<float>(cube.x), static_cast<float>(cube.y), static_cast<float>(cube.z)};
+        const auto [x, y, z] = OddRToCube(hex);
+        return {static_cast<float>(x), static_cast<float>(y), static_cast<float>(z)};
     }
 
     inline std::vector<Map::HexCoords> GetHexLine(const Map::HexCoords &from, const Map::HexCoords &to) {
@@ -131,8 +130,7 @@ namespace Math::HexMath {
 
         for (int32_t i = 1; i <= dist; ++i) {
             const float t = static_cast<float>(i) / static_cast<float>(dist);
-            const auto hex = CubeToOddR(CubeRound(Lerp(a, b, t)));
-            if (result.empty() || result.back() != hex) {
+            if (const auto hex = CubeToOddR(CubeRound(Lerp(a, b, t))); result.empty() || result.back() != hex) {
                 result.push_back(hex);
             }
         }

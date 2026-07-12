@@ -35,7 +35,7 @@ namespace Editor {
 
     private:
         void ApplyToolAt(const Map::HexCoords &hex);
-        void ForEachHexInRing(Map::HexCoords center, int radius, const std::function<void(const Map::HexCoords &)> &callback) const;
+        static void ForEachHexInRing(Map::HexCoords center, int radius, const std::function<void(const Map::HexCoords &)> &callback);
         void CommitMapChanges();
         void CapturePreDragState(const Map::HexCoords &hex);
 

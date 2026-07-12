@@ -71,6 +71,13 @@ namespace IO::VFS {
         return ss.str();
     }
 
+    std::optional<std::string_view> ReadVirtualView(const std::filesystem::path &virtualPath) {
+        if (s_State.isPackaged) {
+            return s_State.packReader.read_view(virtualPath.generic_string());
+        }
+        return std::nullopt;
+    }
+
     std::filesystem::path Resolve(const std::filesystem::path &virtualPath) {
         if (!s_State.isLoaded) {
             // fallback to the binary folder if no project context is provided yet

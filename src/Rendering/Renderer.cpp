@@ -21,6 +21,8 @@ void Rendering::Renderer::SetCamera(const Camera &camera, const float aspect) {
 void Rendering::Renderer::BeginFrame() {
     m_Commands[m_SubmitIndex].clear();
     m_InstancedCommands[m_SubmitIndex].clear();
+    m_InstancedTransformsStaging[m_SubmitIndex].clear();
+    m_InstancedEntityIDsStaging[m_SubmitIndex].clear();
     m_Lightmap[m_SubmitIndex] = nullptr;
 
     if (m_Camera) {
@@ -52,11 +54,51 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Materi
     const Texture *tex = material && material->texture ? material->texture.get() : nullptr;
     const glm::vec4 col = material ? material->color : glm::vec4(1.0f);
 
-    m_InstancedCommands[m_SubmitIndex].push_back({mesh.get(), material, tex, col, transforms, entityIDs});
+    const size_t transformOffset = m_InstancedTransformsStaging[m_SubmitIndex].size();
+    m_InstancedTransformsStaging[m_SubmitIndex].insert(m_InstancedTransformsStaging[m_SubmitIndex].end(), transforms.begin(), transforms.end());
+
+    const size_t entityIDOffset = m_InstancedEntityIDsStaging[m_SubmitIndex].size();
+    m_InstancedEntityIDsStaging[m_SubmitIndex].insert(m_InstancedEntityIDsStaging[m_SubmitIndex].end(), entityIDs.begin(), entityIDs.end());
+
+    m_InstancedCommands[m_SubmitIndex].push_back({.mesh = mesh.get(),
+                                                  .material = material,
+                                                  .effectiveTexture = tex,
+                                                  .color = col,
+                                                  .transformPtr = nullptr,
+                                                  .transformOffset = transformOffset,
+                                                  .transformCount = transforms.size(),
+                                                  .entityIDPtr = nullptr,
+                                                  .entityIDOffset = entityIDOffset,
+                                                  .entityIDCount = entityIDs.size()});
+}
+
+void Rendering::Renderer::SubmitPersistent(const std::shared_ptr<Mesh> &mesh, const Material *material, const std::vector<glm::mat4> *transforms, const std::vector<int> *entityIDs) {
+    if (!transforms || transforms->empty())
+        return;
+
+    const Texture *tex = material && material->texture ? material->texture.get() : nullptr;
+    const glm::vec4 col = material ? material->color : glm::vec4(1.0f);
+
+    m_InstancedCommands[m_SubmitIndex].push_back({.mesh = mesh.get(),
+                                                  .material = material,
+                                                  .effectiveTexture = tex,
+                                                  .color = col,
+                                                  .transformPtr = transforms->data(),
+                                                  .transformOffset = 0,
+                                                  .transformCount = transforms->size(),
+                                                  .entityIDPtr = entityIDs && !entityIDs->empty() ? entityIDs->data() : nullptr,
+                                                  .entityIDOffset = 0,
+                                                  .entityIDCount = entityIDs ? entityIDs->size() : 0});
 }
 
 void Rendering::Renderer::Flush(const size_t renderIndex) {
-    if (!m_Commands[renderIndex].empty()) {
+    m_LastBoundVAO = nullptr;
+    m_LastBoundShader = nullptr;
+    m_LastBoundTexture = nullptr;
+    m_LastBoundColor = glm::vec4(0.0f);
+
+    // sort single commands by (z, depth, material, texture, mesh)
+    if (m_Commands[renderIndex].size() > 1) {
         std::ranges::sort(m_Commands[renderIndex], [](const RenderCommand &a, const RenderCommand &b) {
             const auto depthA = static_cast<int16_t>(a.sortKey >> 16);
             const auto depthB = static_cast<int16_t>(b.sortKey >> 16);
@@ -75,100 +117,82 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
         });
     }
 
-    struct Batch {
-        BatchKey key;
-        std::vector<glm::mat4> transforms;
-        std::vector<int> entityIDs;
-    };
-
-    std::vector<Batch> batches;
-    batches.reserve(m_InstancedCommands[renderIndex].size() + m_Commands[renderIndex].size());
-
-    // merge
+    // merge and render instanced commands
     {
-        struct InstancedEntry {
-            BatchKey key;
-            const std::vector<glm::mat4> *transforms;
-            const std::vector<int> *entityIDs;
-        };
-
-        std::vector<InstancedEntry> entries;
-        entries.reserve(m_InstancedCommands[renderIndex].size());
-        for (const auto &[mesh, material, effectiveTexture, color, transforms, entityIDs] : m_InstancedCommands[renderIndex]) {
-            if (!mesh || !material)
-                continue;
-            if (transforms.empty())
-                continue;
-            entries.push_back({{mesh, material, effectiveTexture, color}, &transforms, &entityIDs});
-        }
-
-        std::ranges::sort(entries, [](const InstancedEntry &a, const InstancedEntry &b) {
-            if (a.key.mesh != b.key.mesh)
-                return a.key.mesh < b.key.mesh;
-            if (a.key.material != b.key.material)
-                return a.key.material < b.key.material;
-            if (a.key.texture != b.key.texture)
-                return a.key.texture < b.key.texture;
-            if (a.key.color.r != b.key.color.r)
-                return a.key.color.r < b.key.color.r;
-            if (a.key.color.g != b.key.color.g)
-                return a.key.color.g < b.key.color.g;
-            if (a.key.color.b != b.key.color.b)
-                return a.key.color.b < b.key.color.b;
-            return a.key.color.a < b.key.color.a;
-        });
-
-        for (size_t i = 0; i < entries.size();) {
-            Batch b;
-            b.key = entries[i].key;
-            size_t total = entries[i].transforms->size();
-            size_t j = i + 1;
-            while (j < entries.size() && entries[j].key == entries[i].key) {
-                total += entries[j].transforms->size();
-                ++j;
+        if (auto &instCmds = m_InstancedCommands[renderIndex]; !instCmds.empty()) {
+            if (instCmds.size() > 1) {
+                std::ranges::sort(instCmds, [](const InstancedRenderCommand &a, const InstancedRenderCommand &b) {
+                    if (a.mesh != b.mesh)
+                        return a.mesh < b.mesh;
+                    if (a.material != b.material)
+                        return a.material < b.material;
+                    if (a.effectiveTexture != b.effectiveTexture)
+                        return a.effectiveTexture < b.effectiveTexture;
+                    if (a.color.r != b.color.r)
+                        return a.color.r < b.color.r;
+                    if (a.color.g != b.color.g)
+                        return a.color.g < b.color.g;
+                    if (a.color.b != b.color.b)
+                        return a.color.b < b.color.b;
+                    return a.color.a < b.color.a;
+                });
             }
-            b.transforms.reserve(total);
-            b.entityIDs.reserve(total);
-            for (size_t k = i; k < j; ++k) {
-                const auto &srcTrans = *entries[k].transforms;
-                b.transforms.insert(b.transforms.end(), srcTrans.begin(), srcTrans.end());
-                if (entries[k].entityIDs->size() == srcTrans.size()) {
-                    const auto &srcIDs = *entries[k].entityIDs;
-                    b.entityIDs.insert(b.entityIDs.end(), srcIDs.begin(), srcIDs.end());
+
+            for (const auto &[mesh, material, effectiveTexture, color, transformPtr, transformOffset, transformCount, entityIDPtr, entityIDOffset, entityIDCount] : instCmds) {
+                if (!mesh || !material || transformCount == 0)
+                    continue;
+                BatchKey key{mesh, material, effectiveTexture, color};
+                const glm::mat4 *transformsPtr = transformPtr ? transformPtr : m_InstancedTransformsStaging[renderIndex].data() + transformOffset;
+
+                if (entityIDPtr || entityIDCount > 0) {
+                    const int *entityIDsPtr = entityIDPtr ? entityIDPtr : m_InstancedEntityIDsStaging[renderIndex].data() + entityIDOffset;
+                    RenderBatch(key, transformsPtr, entityIDsPtr, transformCount, renderIndex);
                 } else {
-                    b.entityIDs.resize(b.entityIDs.size() + srcTrans.size(), -1);
+                    if (m_DummyEntityIDs.size() < transformCount)
+                        m_DummyEntityIDs.resize(transformCount, -1);
+                    RenderBatch(key, transformsPtr, m_DummyEntityIDs.data(), transformCount, renderIndex);
                 }
             }
-            batches.push_back(std::move(b));
-            i = j;
         }
     }
 
-    // merge
-    BatchKey currentKey{};
-    std::vector<glm::mat4> *currentMats = nullptr;
-    std::vector<int> *currentIDs = nullptr;
+    // merge and render single commands
+    {
+        m_BatchRanges.clear();
+        m_MergedTransforms.clear();
+        m_MergedEntityIDs.clear();
+        m_MergedTransforms.reserve(m_Commands[renderIndex].size());
+        m_MergedEntityIDs.reserve(m_Commands[renderIndex].size());
 
-    for (const auto &cmd : m_Commands[renderIndex]) {
-        if (!cmd.mesh || !cmd.material)
-            continue;
-        if (BatchKey key{cmd.mesh, cmd.material, cmd.effectiveTexture, cmd.color}; !currentMats || currentKey != key) {
-            batches.push_back({key, {}, {}});
-            currentKey = key;
-            currentMats = &batches.back().transforms;
-            currentIDs = &batches.back().entityIDs;
+        BatchKey currentKey{};
+        bool hasCurrent = false;
+        size_t batchStart = 0;
+
+        for (const auto &cmd : m_Commands[renderIndex]) {
+            if (!cmd.mesh || !cmd.material)
+                continue;
+
+            if (BatchKey key{cmd.mesh, cmd.material, cmd.effectiveTexture, cmd.color}; !hasCurrent || currentKey != key) {
+                if (hasCurrent)
+                    m_BatchRanges.push_back({currentKey, batchStart, m_MergedTransforms.size() - batchStart});
+                currentKey = key;
+                hasCurrent = true;
+                batchStart = m_MergedTransforms.size();
+            }
+            m_MergedTransforms.push_back(cmd.model);
+            m_MergedEntityIDs.push_back(cmd.entityID);
         }
-        currentMats->push_back(cmd.model);
-        currentIDs->push_back(cmd.entityID);
+        if (hasCurrent)
+            m_BatchRanges.push_back({currentKey, batchStart, m_MergedTransforms.size() - batchStart});
+
+        for (const auto &[key, offset, count] : m_BatchRanges)
+            RenderBatch(key, m_MergedTransforms.data() + offset, m_MergedEntityIDs.data() + offset, count, renderIndex);
     }
 
     m_LastBoundVAO = nullptr;
     m_LastBoundShader = nullptr;
-    for (const auto &[key, transforms, entityIDs] : batches) {
-        RenderBatch(key, transforms, entityIDs, renderIndex);
-    }
-    m_LastBoundVAO = nullptr;
-    m_LastBoundShader = nullptr;
+    m_LastBoundTexture = nullptr;
+    m_LastBoundColor = glm::vec4(0.0f);
 
     if (m_PixelReadRequested.load()) {
         if (m_EditorFramebuffer) {
@@ -188,9 +212,8 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
     m_InstancedCommands[renderIndex].clear();
 }
 
-void Rendering::Renderer::RenderBatch(const BatchKey &key, const std::vector<glm::mat4> &transforms, const std::vector<int> &entityIDs, const size_t renderIndex) {
-    const auto instanceCount = static_cast<unsigned int>(transforms.size());
-    if (instanceCount == 0 || instanceCount > MAX_INSTANCES)
+void Rendering::Renderer::RenderBatch(const BatchKey &key, const glm::mat4 *transforms, const int *entityIDs, const size_t count, const size_t renderIndex) {
+    if (count == 0 || count > MAX_INSTANCES)
         return;
 
     Shader *shader = key.material ? key.material->shader.get() : nullptr;
@@ -202,28 +225,43 @@ void Rendering::Renderer::RenderBatch(const BatchKey &key, const std::vector<glm
         shader->SetUniformMat4("u_VP", m_VP[renderIndex]);
         BindLightmap(shader, renderIndex);
         m_LastBoundShader = shader;
+        // new shader
+        m_LastBoundTexture = nullptr;
+        m_LastBoundColor = glm::vec4(0.0f);
     }
 
-    if (key.texture) {
-        key.texture->Bind(0);
+    // cache texture binding
+    if (const Texture *tex = key.texture ? key.texture : Texture::White(); m_LastBoundTexture != tex) {
+        tex->Bind(0);
         shader->SetUniform1i("u_Texture", 0);
-    } else {
-        Texture::White()->Bind(0);
-        shader->SetUniform1i("u_Texture", 0);
+        m_LastBoundTexture = tex;
     }
-    shader->SetUniformVec4("u_Color", key.color);
 
-    auto [vao_it, inserted] = m_MeshVAOs.try_emplace(key.mesh);
-    auto &[mesh_vao, instanceAttribReady] = vao_it->second;
-    if (inserted) {
-        mesh_vao = std::make_shared<VertexArray>();
-        mesh_vao->Init();
-        mesh_vao->Bind();
-        mesh_vao->AddBuffer(key.mesh->GetVBO(), VertexTraits<Vertex>::GetLayout());
-        mesh_vao->SetIndexBuffer(key.mesh->GetIBO());
+    // cache color uniform
+    if (m_LastBoundColor != key.color) {
+        shader->SetUniformVec4("u_Color", key.color);
+        m_LastBoundColor = key.color;
+    }
+
+    // find or create VAO for this mesh
+    MeshVAO *meshVAOEntry = nullptr;
+    for (auto &[mesh, entry] : m_MeshVAOs) {
+        if (mesh == key.mesh) {
+            meshVAOEntry = &entry;
+            break;
+        }
+    }
+    if (!meshVAOEntry) {
+        auto vao = std::make_shared<VertexArray>();
+        vao->Init();
+        vao->Bind();
+        vao->AddBuffer(key.mesh->GetVBO(), VertexTraits<Vertex>::GetLayout());
+        vao->SetIndexBuffer(key.mesh->GetIBO());
         glBindVertexArray(0);
+        m_MeshVAOs.emplace_back(key.mesh, MeshVAO{std::move(vao), false});
+        meshVAOEntry = &m_MeshVAOs.back().second;
     }
-    const VertexArray *vao = mesh_vao.get();
+    const VertexArray *vao = meshVAOEntry->vao.get();
 
     if (!m_DynamicInstanceBuffer) {
         m_DynamicInstanceBuffer = std::make_unique<VertexBuffer>();
@@ -234,21 +272,21 @@ void Rendering::Renderer::RenderBatch(const BatchKey &key, const std::vector<glm
         m_DynamicEntityIDBuffer->Init(nullptr, ID_BUFFER_SIZE, GL_DYNAMIC_DRAW);
     }
 
-    m_DynamicInstanceBuffer->SetDataOrphaned(transforms.data(), instanceCount * sizeof(glm::mat4));
-    m_DynamicEntityIDBuffer->SetDataOrphaned(entityIDs.data(), instanceCount * sizeof(int));
+    m_DynamicInstanceBuffer->SetDataOrphaned(transforms, count * sizeof(glm::mat4));
+    m_DynamicEntityIDBuffer->SetDataOrphaned(entityIDs, count * sizeof(int));
 
     if (m_LastBoundVAO != vao) {
         vao->Bind();
         m_LastBoundVAO = vao;
     }
 
-    if (!instanceAttribReady) {
+    if (!meshVAOEntry->instanceAttribReady) {
         vao->AddInstancedBuffer(*m_DynamicInstanceBuffer, 2);
-        vao->AddInstancedIntBuffer(*m_DynamicEntityIDBuffer, 6); // Add integer layout mapping!
-        instanceAttribReady = true;
+        vao->AddInstancedIntBuffer(*m_DynamicEntityIDBuffer, 6);
+        meshVAOEntry->instanceAttribReady = true;
     }
 
-    glDrawElementsInstanced(GL_TRIANGLES, key.mesh->GetIndexCount(), GL_UNSIGNED_INT, nullptr, instanceCount);
+    glDrawElementsInstanced(GL_TRIANGLES, key.mesh->GetIndexCount(), GL_UNSIGNED_INT, nullptr, static_cast<GLsizei>(count));
 }
 
 void Rendering::Renderer::Clean() {
@@ -256,10 +294,20 @@ void Rendering::Renderer::Clean() {
     m_Commands[1].clear();
     m_InstancedCommands[0].clear();
     m_InstancedCommands[1].clear();
+    m_InstancedTransformsStaging[0].clear();
+    m_InstancedTransformsStaging[1].clear();
+    m_InstancedEntityIDsStaging[0].clear();
+    m_InstancedEntityIDsStaging[1].clear();
+    m_BatchRanges.clear();
+    m_MergedTransforms.clear();
+    m_MergedEntityIDs.clear();
+    m_DummyEntityIDs.clear();
 
     m_MeshVAOs.clear();
     m_LastBoundVAO = nullptr;
     m_LastBoundShader = nullptr;
+    m_LastBoundTexture = nullptr;
+    m_LastBoundColor = glm::vec4(0.0f);
 }
 
 void Rendering::Renderer::SetLightmap(const Lightmap *lightmap) { m_Lightmap[m_SubmitIndex] = lightmap; }

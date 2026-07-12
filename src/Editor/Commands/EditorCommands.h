@@ -204,7 +204,7 @@ namespace Editor::Commands {
         [[nodiscard]] std::string_view Name() const noexcept override;
 
     private:
-        void ApplyStates(const StateMap &states);
+        void ApplyStates(const StateMap &states) const;
         StateMap m_OldState;
         StateMap m_NewState;
         Map::HexGrid *m_Grid;

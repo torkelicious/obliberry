@@ -74,8 +74,7 @@ namespace Editor::UI {
             ImGui::SameLine();
             if (ImGui::Button("Browse##Scene")) {
                 if (m_Context) {
-                    const auto picked = FileDialogs::OpenFile(*m_Context, {.filterName = "Scene File", .filterExt = "json"});
-                    if (picked.has_value()) {
+                    if (const auto picked = FileDialogs::OpenFile(*m_Context, {.filterName = "Scene File", .filterExt = "json"}); picked.has_value()) {
                         ResolveStartScenePath(picked.value());
                         Core::Project::GetActive()->MarkAsChanged();
                     }

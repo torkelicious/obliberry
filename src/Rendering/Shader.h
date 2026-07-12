@@ -2,7 +2,8 @@
 
 #include <string>
 #include <string_view>
-#include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -63,19 +64,7 @@ namespace Rendering {
 
         GLuint m_ID = 0;
 
-        struct StringHash {
-            using is_transparent = void;
-
-            size_t operator()(const std::string_view sv) const noexcept { return std::hash<std::string_view>{}(sv); }
-        };
-
-        struct StringEqual {
-            using is_transparent = void;
-
-            bool operator()(const std::string_view a, const std::string_view b) const noexcept { return a == b; }
-        };
-
-        std::unordered_map<std::string, GLint, StringHash, StringEqual> m_UniformCache;
+        std::vector<std::pair<std::string, GLint>> m_UniformCache;
 
         static std::string LoadFile(const std::string &virtualPath);
 

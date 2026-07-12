@@ -10,7 +10,7 @@ namespace Core {
         for (size_t i = 0; i < count; ++i) {
             m_Threads.emplace_back([this] {
                 while (true) {
-                    std::function<void()> task;
+                    Task task;
                     {
                         std::unique_lock lock(m_Mutex);
                         m_CV.wait(lock, [this] { return !m_Tasks.empty() || m_ShouldStop.load(); });
@@ -22,14 +22,14 @@ namespace Core {
                         m_Tasks.pop();
                     }
 
-                    task();
+                    if (task)
+                        task();
 
-                    {
+                    // lock-free decrement
+                    if (m_TasksPending.fetch_sub(1, std::memory_order_acq_rel) == 1) {
+                        // was 1, now 0 then all tasks complete.
                         std::unique_lock lock(m_Mutex);
-                        --m_TasksPending;
-                        if (m_TasksPending == 0) {
-                            m_DoneCV.notify_all();
-                        }
+                        m_DoneCV.notify_all();
                     }
                 }
             });
@@ -45,7 +45,7 @@ namespace Core {
         }
     }
 
-    void ThreadPool::enqueue(std::function<void()> task) {
+    void ThreadPool::enqueue(Task task) {
         {
             std::unique_lock lock(m_Mutex);
             if (m_ShouldStop.load())
@@ -58,7 +58,7 @@ namespace Core {
 
     void ThreadPool::wait() {
         std::unique_lock lock(m_Mutex);
-        m_DoneCV.wait(lock, [this] { return m_TasksPending == 0; });
+        m_DoneCV.wait(lock, [this] { return m_TasksPending.load(std::memory_order_acquire) == 0; });
     }
 
     void ThreadPool::stop() {

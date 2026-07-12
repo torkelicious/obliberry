@@ -21,8 +21,14 @@ namespace IO {
                 return newId;
             }
 
-            auto fileData = VFS::ReadVirtual(filepath);
-            if (!fileData.has_value()) {
+            std::string_view dataView;
+            std::string ownedData;
+            if (const auto view = VFS::ReadVirtualView(filepath)) {
+                dataView = *view;
+            } else if (auto owned = VFS::ReadVirtual(filepath)) {
+                ownedData = std::move(*owned);
+                dataView = ownedData;
+            } else {
                 if (auto *logger = Core::Logging::LoggerService::Get()) {
                     logger->log("PrefabManager", "Failed to instantiate: " + filepath + " (Not found in VFS)", Core::Logging::LogSeverity::Error);
                 }
@@ -32,10 +38,10 @@ namespace IO {
             nlohmann::json prefabJson;
             try {
                 if (VFS::IsPackaged()) {
-                    std::vector<uint8_t> bytes(fileData.value().begin(), fileData.value().end());
+                    std::vector<uint8_t> bytes(dataView.begin(), dataView.end());
                     prefabJson = nlohmann::json::from_msgpack(bytes);
                 } else {
-                    prefabJson = nlohmann::json::parse(fileData.value());
+                    prefabJson = nlohmann::json::parse(dataView);
                 }
             } catch (const std::exception &e) {
                 if (auto *logger = Core::Logging::LoggerService::Get()) {

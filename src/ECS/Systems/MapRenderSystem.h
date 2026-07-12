@@ -9,9 +9,10 @@
 #include "Rendering/Renderer.h"
 #include "Rendering/Transform.h"
 #include <algorithm>
+#include <array>
 
 namespace ECS::Systems::MapRenderSystem {
-    [[nodiscard]] inline Math::Projection::AABB CalculateBufferedAABB(const Math::Projection::AABB &viewAABB, const float bufferSize = Core::HEX_SIZE * 4.0f) noexcept {
+    [[nodiscard]] inline Math::Projection::AABB CalculateBufferedAABB(const Math::Projection::AABB &viewAABB, const float bufferSize = Core::HEX_SIZE * 6.0f) noexcept {
         Math::Projection::AABB buffered = viewAABB;
         buffered.min -= glm::vec2(bufferSize);
         buffered.max += glm::vec2(bufferSize);
@@ -48,21 +49,45 @@ namespace ECS::Systems::MapRenderSystem {
 
             const Math::Projection::AABB cameraBounds{.min = frustum.minBounds, .max = frustum.maxBounds};
 
-            const bool needsRebuild = mapComp->needsMeshUpdate || !Contains(mapComp->bufferedRenderAABB, cameraBounds);
-
-            if (needsRebuild) {
+            if (const bool needsRebuild = mapComp->needsMeshUpdate || !Contains(mapComp->bufferedRenderAABB, cameraBounds)) {
                 mapComp->bufferedRenderAABB = CalculateBufferedAABB(cameraBounds);
                 const auto [minQ, maxQ, minR, maxR] = GetGridBoundsForAABB(mapComp->bufferedRenderAABB);
 
-                for (auto &[typeId, transforms] : mapComp->visibles) {
-                    (void)typeId;
-                    transforms.clear();
+                // flip to the back buffer so the render thread can keep reading
+                // the front buffer while rebuild of the geometry
+                mapComp->activeBufferIndex = 1 - mapComp->activeBufferIndex;
+                auto &visibleBuffer = mapComp->visibles[mapComp->activeBufferIndex];
+                auto &activeTypes = mapComp->activeVisibleTypes[mapComp->activeBufferIndex];
+
+                for (const uint8_t typeId : activeTypes) {
+                    visibleBuffer[typeId].clear();
+                }
+                activeTypes.clear();
+
+                std::array<size_t, 256> typeCounts{};
+                for (int r = minR; r <= maxR; ++r) {
+                    for (int q = minQ; q <= maxQ; ++q) {
+                        if (const Map::Tile *tile = mapComp->grid.Get(Map::HexCoords(q, r))) {
+                            ++typeCounts[tile->type];
+                        }
+                    }
+                }
+
+                for (size_t typeId = 0; typeId < typeCounts.size(); ++typeId) {
+                    const size_t count = typeCounts[typeId];
+                    if (count == 0) {
+                        continue;
+                    }
+                    if (auto &transforms = visibleBuffer[typeId]; transforms.capacity() < count) {
+                        transforms.reserve(count);
+                    }
+                    activeTypes.push_back(static_cast<uint8_t>(typeId));
                 }
 
                 for (int r = minR; r <= maxR; ++r) {
                     for (int q = minQ; q <= maxQ; ++q) {
                         if (const Map::Tile *tile = mapComp->grid.Get(Map::HexCoords(q, r))) {
-                            mapComp->visibles[tile->type].push_back(tile->worldMatrix);
+                            visibleBuffer[tile->type].push_back(tile->worldMatrix);
                         }
                     }
                 }
@@ -71,13 +96,14 @@ namespace ECS::Systems::MapRenderSystem {
             }
 
             renderer.SetLightmap(mapComp->lightmap.texture ? &mapComp->lightmap : nullptr);
-            for (auto &[typeId, transforms] : mapComp->visibles) {
+            for (const uint8_t typeId : mapComp->activeVisibleTypes[mapComp->activeBufferIndex]) {
+                auto &transforms = mapComp->visibles[mapComp->activeBufferIndex][typeId];
                 if (transforms.empty())
                     continue;
 
-                auto matIt = mapComp->typeMats.find(typeId);
+                auto matIt = mapComp->findTypeMat(typeId);
                 if (matIt != mapComp->typeMats.end()) {
-                    renderer.Submit(mapComp->hexMesh, &matIt->second, transforms);
+                    renderer.SubmitPersistent(mapComp->hexMesh, &matIt->second, &transforms);
                 }
             }
         });

@@ -8,6 +8,7 @@
 #include <queue>
 #include <ranges>
 #include <string>
+#include <utility>
 
 namespace ECS {
     inline uint32_t NextPoolIndex() {
@@ -32,6 +33,8 @@ namespace ECS {
         std::vector<std::string> m_EntityNames;
         std::vector<bool> m_EntityStatus;
         std::vector<uint32_t> m_EntityVersions;
+        // raw cache , mirrors m_ComponentPools but avoids unique_ptr dereferning
+        std::array<IPool *, MAX_COMPONENT_TYPES> m_PoolCache{};
 
     public:
         template <typename T> ComponentPool<T> *GetPool() {
@@ -39,8 +42,9 @@ namespace ECS {
             assert(index < MAX_COMPONENT_TYPES && "Too many component types!");
             if (!m_ComponentPools[index]) {
                 m_ComponentPools[index] = std::make_unique<ComponentPool<T>>();
+                m_PoolCache[index] = m_ComponentPools[index].get();
             }
-            return static_cast<ComponentPool<T> *>(m_ComponentPools[index].get());
+            return static_cast<ComponentPool<T> *>(m_PoolCache[index]);
         }
 
     public:
@@ -81,8 +85,7 @@ namespace ECS {
             m_EntityStatus[index] = false;
             m_AvailableEntities.push(index);
 
-            auto it = std::ranges::find(m_LivingEntities, id);
-            if (it != m_LivingEntities.end()) {
+            if (const auto it = std::ranges::find(m_LivingEntities, id); it != m_LivingEntities.end()) {
                 *it = m_LivingEntities.back();
                 m_LivingEntities.pop_back();
             }
@@ -128,6 +131,7 @@ namespace ECS {
                 }
             }
         }
+
         template <typename Primary, typename... Rest> EntityID FindFirstEntity() {
             auto *primaryPool = GetPool<Primary>();
             auto restPools = std::make_tuple(GetPool<Rest>()...);

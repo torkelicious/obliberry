@@ -55,8 +55,7 @@ void Sound::AudioEngine::Update() {
         return;
 
     for (auto it = m_ActiveSounds.begin(); it != m_ActiveSounds.end();) {
-        ma_sound *sound = *it;
-        if (ma_sound_at_end(sound) || !ma_sound_is_playing(sound)) {
+        if (ma_sound *sound = *it; ma_sound_at_end(sound) || !ma_sound_is_playing(sound)) {
             ma_sound_uninit(sound);
 
             if (m_SoundContexts.contains(sound)) {

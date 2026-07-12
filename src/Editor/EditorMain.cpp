@@ -15,8 +15,7 @@ int main(const int argc, char *argv[]) {
 
     // CLI
     if (argc > 1) {
-        const std::string projectPath = argv[1];
-        if (std::filesystem::exists(projectPath)) {
+        if (const std::string projectPath = argv[1]; std::filesystem::exists(projectPath)) {
             Core::Project::Load(projectPath);
             startupConfig = Core::Project::GetActive()->GetConfig();
         }

@@ -4,6 +4,7 @@
 #include <mutex>
 #include <thread>
 #include <atomic>
+#include <deque>
 #include <memory>
 #include "ProjectConfig.h"
 #include "ResourceManager.h"
@@ -50,6 +51,7 @@ namespace Core {
         std::thread m_RenderThread;
         std::mutex m_RenderMutex;
         std::condition_variable m_RenderCV;
+        std::deque<int> m_ReadyFrames;
 
         std::atomic<bool> m_Running{true};
 

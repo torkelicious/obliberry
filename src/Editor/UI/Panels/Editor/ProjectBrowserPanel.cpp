@@ -32,7 +32,7 @@ namespace Editor::UI {
 
     std::string ProjectBrowserPanel::KeyFromPath(const std::filesystem::path &path) { return path.stem().string(); }
 
-    std::vector<AssetEntry> ProjectBrowserPanel::ScanDirectory(const std::string &subDir, const std::string &extension) const {
+    std::vector<AssetEntry> ProjectBrowserPanel::ScanDirectory(const std::string &subDir, const std::string &extension) {
         std::vector<AssetEntry> entries;
         const auto resolved = IO::VFS::Resolve(subDir);
         if (resolved.empty() || !std::filesystem::exists(resolved))
@@ -103,8 +103,8 @@ namespace Editor::UI {
 
 
     template <typename T>
-    void ProjectBrowserPanel::DrawResourceSection(Core::ResourceManager &resources, const std::unordered_map<std::string, std::shared_ptr<T>> &allItems, AssetType assetType, const char *childId, float childHeight,
-                                                  const char *emptyText, const char *typeName, std::type_identity_t<std::function<void(const std::shared_ptr<T> &)>> renderThumbnail,
+    void ProjectBrowserPanel::DrawResourceSection(Core::ResourceManager &resources, const std::unordered_map<std::string, std::shared_ptr<T>> &allItems, const AssetType assetType, const char *childId,
+                                                  const float childHeight, const char *emptyText, const char *typeName, std::type_identity_t<std::function<void(const std::shared_ptr<T> &)>> renderThumbnail,
                                                   const std::type_identity_t<std::function<void(const std::string &, Core::ResourceManager &)>> &renderExtraButtons,
                                                   std::type_identity_t<std::function<void(const std::string &, const std::shared_ptr<T> &, Core::ResourceManager &)>> renderTooltip) {
         struct RenameOp {
@@ -171,8 +171,8 @@ namespace Editor::UI {
                     ImGui::EndGroup();
 
                     auto *dl = ImGui::GetWindowDrawList();
-                    auto min = ImGui::GetItemRectMin();
-                    auto max = ImGui::GetItemRectMax();
+                    const auto min = ImGui::GetItemRectMin();
+                    const auto max = ImGui::GetItemRectMax();
                     dl->AddRect(ImVec2(min.x - 2, min.y - 2), ImVec2(max.x + 2, max.y + 2), ImGui::GetColorU32(ImGuiCol_Border));
                     ImGui::PopID();
                     itemCount++;
@@ -303,8 +303,7 @@ namespace Editor::UI {
             if (m_MeshNameBuffer[0] == '\0') {
                 snprintf(m_MeshNameBuffer, sizeof(m_MeshNameBuffer), "%s_mesh", meshTypes[m_SelectedMeshFactory]);
             }
-            const std::string id(m_MeshNameBuffer);
-            if (resources.Get<Rendering::Mesh>(id)) {
+            if (const std::string id(m_MeshNameBuffer); resources.Get<Rendering::Mesh>(id)) {
                 LOG_ERROR(LOG_WHO, "Mesh '" + id + "' already exists");
             } else {
                 CreateMesh(resources);
@@ -325,7 +324,7 @@ namespace Editor::UI {
                 },
                 [](const std::string &, Core::ResourceManager &) {},
                 [](const std::string &, const std::shared_ptr<Rendering::Material> &mat, Core::ResourceManager &res) {
-                    std::string tooltip = "Shader: " + (mat->shader ? res.GetKey(mat->shader) : "none") + "\nTexture: " + (mat->texture ? res.GetKey(mat->texture) : "none");
+                    const std::string tooltip = "Shader: " + (mat->shader ? res.GetKey(mat->shader) : "none") + "\nTexture: " + (mat->texture ? res.GetKey(mat->texture) : "none");
                     ImGui::SetTooltip("%s", tooltip.c_str());
                 });
 
@@ -407,7 +406,7 @@ namespace Editor::UI {
 } // namespace Editor::UI
 
 void Editor::UI::ProjectBrowserPanel::DrawFileSection(const char *label, const std::string &directory, const std::string &extension, const char *importFilter, const char *importFilterName) {
-    bool isScripts = (std::strcmp(label, "Scripts") == 0);
+    bool isScripts = std::strcmp(label, "Scripts") == 0;
 
     char *newScriptBuf = m_NewScriptBuffer;
 
@@ -491,11 +490,9 @@ void Editor::UI::ProjectBrowserPanel::DrawFileSection(const char *label, const s
                 std::string filename(newScriptBuf);
                 if (!filename.ends_with(".obsl"))
                     filename += ".obsl";
-                auto dir = IO::VFS::Resolve(std::string(Core::SCRIPT_PATH));
-                if (!dir.empty()) {
+                if (auto dir = IO::VFS::Resolve(std::string(Core::SCRIPT_PATH)); !dir.empty()) {
                     std::filesystem::create_directories(dir);
-                    auto filePath = dir / filename;
-                    if (!std::filesystem::exists(filePath)) {
+                    if (auto filePath = dir / filename; !std::filesystem::exists(filePath)) {
                         std::ofstream ofs(filePath);
                         ofs << "// " << newScriptBuf << "\n";
                         ofs.close();
@@ -525,8 +522,7 @@ void Editor::UI::ProjectBrowserPanel::DrawDeleteConfirmPopup(Core::ResourceManag
         if (ImGui::Button("Yes, Remove", ImVec2(120, 0))) {
             // File-based asset
             if (!m_DeleteConfirmFilePath.empty()) {
-                const auto absPath = IO::VFS::Resolve(m_DeleteConfirmFilePath);
-                if (!absPath.empty() && std::filesystem::remove(absPath)) {
+                if (const auto absPath = IO::VFS::Resolve(m_DeleteConfirmFilePath); !absPath.empty() && std::filesystem::remove(absPath)) {
                     LOG_INFO(LOG_WHO, "Deleted file '" + m_DeleteConfirmFilePath + "'");
                 } else {
                     LOG_ERROR(LOG_WHO, "Failed to delete '" + m_DeleteConfirmFilePath + "'");

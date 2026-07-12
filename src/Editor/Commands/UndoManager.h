@@ -5,7 +5,6 @@
 
 #include <deque>
 #include <memory>
-#include <cstddef>
 
 namespace Editor {
     class ICommand;

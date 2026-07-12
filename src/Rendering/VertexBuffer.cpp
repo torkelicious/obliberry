@@ -25,6 +25,5 @@ void Rendering::VertexBuffer::SetSubData(const void *data, const unsigned int si
 
 void Rendering::VertexBuffer::SetDataOrphaned(const void *data, const unsigned int size) const {
     glBindBuffer(GL_ARRAY_BUFFER, m_ID);
-    glBufferData(GL_ARRAY_BUFFER, size, nullptr, GL_DYNAMIC_DRAW);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, size, data);
+    glBufferData(GL_ARRAY_BUFFER, size, data, GL_DYNAMIC_DRAW);
 }

@@ -1,4 +1,5 @@
 #include "Rendering/Renderer.h"
+#include <algorithm>
 #include "Core/Constants.h"
 #include "MapEditState.h"
 #include "../EditorLayer.h"
@@ -327,7 +328,7 @@ void Editor::MapEditState::ApplyToolAt(const Map::HexCoords &hex) {
     }
 }
 
-void Editor::MapEditState::ForEachHexInRing(const Map::HexCoords center, const int radius, const std::function<void(const Map::HexCoords &)> &callback) const {
+void Editor::MapEditState::ForEachHexInRing(const Map::HexCoords center, const int radius, const std::function<void(const Map::HexCoords &)> &callback) {
     const auto [cx, cy, cz] = Math::HexMath::OddRToCube(center);
 
     for (int dx = -radius; dx <= radius; ++dx) {
@@ -351,13 +352,13 @@ uint8_t Editor::MapEditState::GetOrCreateTypeForMaterial(const std::shared_ptr<R
     }
     // allocate newid
     uint8_t newId = 0;
-    while (typeMats.contains(newId)) {
+    while (std::ranges::any_of(typeMats, [newId](const auto &p) { return p.first == newId; })) {
         newId++;
     }
 
     const auto shader = !typeMats.empty() ? typeMats.begin()->second.shader : m_EditorLayer->m_Context.resources->Get<Rendering::Shader>("base_shader");
 
-    typeMats.emplace(newId, Rendering::Material{shader, tex, color});
+    typeMats.emplace_back(newId, Rendering::Material{shader, tex, color});
     m_MapComp->needsMeshUpdate = true;
     return newId;
 }

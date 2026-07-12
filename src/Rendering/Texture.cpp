@@ -12,9 +12,18 @@ namespace Rendering {
         LOG_INFO(LOG_WHO, "Loading: " + m_FilePath);
         stbi_set_flip_vertically_on_load(1);
 
-        if (const std::optional<std::string> fileData = IO::VFS::ReadVirtual(m_FilePath)) {
-            const auto *buffer = reinterpret_cast<const stbi_uc *>(fileData->data());
-            const int len = static_cast<int>(fileData->size());
+        std::string_view dataView;
+        std::string ownedData;
+        if (const auto view = IO::VFS::ReadVirtualView(m_FilePath)) {
+            dataView = *view;
+        } else if (auto owned = IO::VFS::ReadVirtual(m_FilePath)) {
+            ownedData = std::move(*owned);
+            dataView = ownedData;
+        }
+
+        if (!dataView.empty()) {
+            const auto *buffer = reinterpret_cast<const stbi_uc *>(dataView.data());
+            const int len = static_cast<int>(dataView.size());
 
             if (unsigned char *loaded = stbi_load_from_memory(buffer, len, &m_Width, &m_Height, &m_BPP, 4)) {
                 const auto size = static_cast<size_t>(m_Width * m_Height * 4);

@@ -43,7 +43,7 @@ namespace Editor::UI {
         bool changed = false;
         if (ImGui::BeginCombo(label, preview.c_str())) {
             ImGui::PushID("__none__");
-            bool isSelected = (currentIdx == 0);
+            bool isSelected = currentIdx == 0;
             if (ImGui::Selectable("None", &isSelected)) {
                 current.reset();
                 changed = true;
@@ -56,7 +56,7 @@ namespace Editor::UI {
             idx = 1;
             for (const auto &[key, ptr] : all) {
                 ImGui::PushID(key.c_str());
-                isSelected = (currentIdx == idx);
+                isSelected = currentIdx == idx;
                 if (ImGui::Selectable(key.c_str(), &isSelected)) {
                     current = ptr;
                     changed = true;
