@@ -65,19 +65,13 @@ namespace ECS::Systems::MapRuntimeSystem {
     }
 
     inline void OnMapChanged(Registry &registry, const Core::EngineContext &ctx) {
-        Components::MapComponent *map = nullptr;
-        Components::MapStateComponent *state = nullptr;
-
-        registry.ForEach<Components::MapComponent, Components::MapStateComponent>([&](Entity, Components::MapComponent *mapComponent, Components::MapStateComponent *stateComponent) {
-            if (map == nullptr) {
-                map = mapComponent;
-                state = stateComponent;
-            }
-        });
-
-        if (map == nullptr) {
+        const EntityID mapEntity = registry.FindFirstEntity<Components::MapComponent, Components::MapStateComponent>();
+        if (!mapEntity) {
             return;
         }
+
+        auto *map = registry.GetComponent<Components::MapComponent>(mapEntity);
+        auto *state = registry.GetComponent<Components::MapStateComponent>(mapEntity);
 
         OnMapChanged(registry, *map, state, ctx);
     }

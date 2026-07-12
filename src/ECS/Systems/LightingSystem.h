@@ -52,17 +52,11 @@ namespace ECS::Systems::LightingSystem {
     }
 
     inline void Update(Registry &reg) {
-        Components::MapComponent *mapComp = nullptr;
-        reg.ForEach<Components::MapComponent>([&](Entity, Components::MapComponent *map) {
-            if (!mapComp)
-                mapComp = map;
-        });
+        Components::MapComponent *mapComp = reg.GetFirst<Components::MapComponent>();
         if (!mapComp || !mapComp->lightmap.texture)
             return;
 
-        bool hasAnyLight = false;
-        reg.ForEach<Components::PointLightComponent>([&](Entity, const Components::PointLightComponent *) { hasAnyLight = true; });
-        if (!hasAnyLight)
+        if (reg.GetPool<Components::PointLightComponent>()->GetDenseEntities().empty())
             return;
 
         auto &[texture, mapOffset, mapSize, ambient, accumulationBuffer, pixelBuffer] = mapComp->lightmap;

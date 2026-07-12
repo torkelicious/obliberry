@@ -10,6 +10,8 @@
 
 namespace ECS::Systems::RenderSystem {
     inline void Render(Registry &registry, Rendering::Renderer &renderer, const Math::Frustum::FrustumPlanes &frustum3D) noexcept {
+        auto *dirPool = registry.GetPool<Components::DirectionalTextureComponent>();
+
         registry.ForEach<Components::MeshComponent, Components::MaterialComponent, Components::TransformComponent>(
                 [&](const Entity entity, const Components::MeshComponent *meshComp, const Components::MaterialComponent *matComp, const Components::TransformComponent *transComp) {
                     if (!meshComp || !meshComp->mesh)
@@ -31,7 +33,7 @@ namespace ECS::Systems::RenderSystem {
 
                     const Rendering::Texture *textureOverride = nullptr;
 
-                    if (const auto *dir = entity.GetComponent<Components::DirectionalTextureComponent>()) {
+                    if (const auto *dir = dirPool->Get(static_cast<EntityID>(entity))) {
                         if (!dir->textures.empty()) {
                             if (const auto idx = dir->index % dir->textures.size(); dir->textures[idx]) {
                                 textureOverride = dir->textures[idx].get();

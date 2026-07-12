@@ -13,8 +13,7 @@
 
 namespace ECS::Systems::AISystem {
     inline void Update(Registry &registry, const float dt) noexcept {
-        const Components::MapComponent *map = nullptr;
-        registry.ForEach<Components::MapComponent>([&](Entity, const Components::MapComponent *m) { map = m; });
+        const Components::MapComponent *map = registry.GetFirst<Components::MapComponent>();
         if (!map)
             return;
 

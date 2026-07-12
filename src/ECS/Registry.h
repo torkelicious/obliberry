@@ -33,6 +33,7 @@ namespace ECS {
         std::vector<bool> m_EntityStatus;
         std::vector<uint32_t> m_EntityVersions;
 
+    public:
         template <typename T> ComponentPool<T> *GetPool() {
             const uint32_t index = ComponentTypeID<T>::ID();
             assert(index < MAX_COMPONENT_TYPES && "Too many component types!");
@@ -127,6 +128,18 @@ namespace ECS {
                 }
             }
         }
+        template <typename Primary, typename... Rest> EntityID FindFirstEntity() {
+            auto *primaryPool = GetPool<Primary>();
+            auto restPools = std::make_tuple(GetPool<Rest>()...);
+
+            for (EntityID id : primaryPool->GetDenseEntities()) {
+                if ((std::get<ComponentPool<Rest> *>(restPools)->Has(id) && ...)) {
+                    return id;
+                }
+            }
+            return 0;
+        }
+
         template <typename Primary, typename T = Primary> T *GetFirst() {
             auto *primaryPool = GetPool<Primary>();
             if constexpr (std::is_same_v<Primary, T>) {
