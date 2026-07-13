@@ -1,0 +1,154 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 23,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "linux",
+      "hidden": true,
+      "inherits": "base",
+      "generator": "Ninja Multi-Config",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      }
+    },
+    {
+      "name": "macos",
+      "hidden": true,
+      "inherits": "base",
+      "generator": "Ninja Multi-Config",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Darwin"
+      }
+    },
+    {
+      "name": "windows",
+      "hidden": true,
+      "inherits": "base",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    },
+    {
+      "name": "linux-default",
+      "displayName": "Linux (Ninja Multi-Config)",
+      "inherits": "linux"
+    },
+    {
+      "name": "linux-clang",
+      "displayName": "Linux (Clang, Ninja Multi-Config)",
+      "inherits": "linux",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++"
+      }
+    },
+    {
+      "name": "linux-native",
+      "displayName": "Linux (native CPU build)",
+      "inherits": "linux",
+      "cacheVariables": {
+        "ENGINE_ARCH_LEVEL": "native"
+      }
+    },
+    {
+      "name": "macos-default",
+      "displayName": "macOS (Ninja Multi-Config)",
+      "inherits": "macos"
+    },
+    {
+      "name": "macos-native",
+      "displayName": "macOS (native CPU build)",
+      "inherits": "macos",
+      "cacheVariables": {
+        "ENGINE_ARCH_LEVEL": "native"
+      }
+    },
+    {
+      "name": "windows-default",
+      "displayName": "Windows (VS22)",
+      "inherits": "windows"
+    },
+    {
+      "name": "linux-profile",
+      "displayName": "Linux (Profiler Build)",
+      "inherits": "linux",
+      "cacheVariables": {
+        "ENABLE_UNITY_BUILD": "OFF",
+        "CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO": "OFF"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "linux-debug",
+      "configurePreset": "linux-default",
+      "configuration": "Debug"
+    },
+    {
+      "name": "linux-release",
+      "configurePreset": "linux-default",
+      "configuration": "Release"
+    },
+    {
+      "name": "linux-clang-release",
+      "configurePreset": "linux-clang",
+      "configuration": "Release"
+    },
+    {
+      "name": "linux-native-release",
+      "configurePreset": "linux-native",
+      "configuration": "Release"
+    },
+    {
+      "name": "linux-profile",
+      "displayName": "Linux Perf Profile",
+      "configurePreset": "linux-profile",
+      "configuration": "RelWithDebInfo"
+    },
+    {
+      "name": "macos-debug",
+      "configurePreset": "macos-default",
+      "configuration": "Debug"
+    },
+    {
+      "name": "macos-release",
+      "configurePreset": "macos-default",
+      "configuration": "Release"
+    },
+    {
+      "name": "macos-native-release",
+      "configurePreset": "macos-native",
+      "configuration": "Release"
+    },
+    {
+      "name": "windows-debug",
+      "configurePreset": "windows-default",
+      "configuration": "Debug"
+    },
+    {
+      "name": "windows-release",
+      "configurePreset": "windows-default",
+      "configuration": "Release"
+    }
+  ]
+}
