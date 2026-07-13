@@ -5,8 +5,8 @@
 #include "Core/LoggerService.h"
 #include "IO/VFS.h"
 
-
-constexpr auto LOG_WHO = "Shader";
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "Shader"
 
 namespace Rendering {
     Shader::Shader(const std::string &vertPath, const std::string &fragPath) : m_vertPath(vertPath), m_fragPath(fragPath) {
@@ -227,3 +227,4 @@ void main() {
         return instance;
     }
 } // namespace Rendering
+#pragma pop_macro("LOG_WHO")

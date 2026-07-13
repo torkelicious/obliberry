@@ -13,7 +13,8 @@
 #include "ECS/Components/MapStateComponent.h"
 #include "ECS/Systems/MapRuntimeSystem.h"
 
-constexpr auto LOG_WHO = "SceneIO";
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "SceneIO"
 
 namespace IO::SceneIO {
     using json = nlohmann::json;
@@ -259,3 +260,4 @@ namespace IO::SceneIO {
         return true;
     }
 } // namespace IO::SceneIO
+#pragma pop_macro("LOG_WHO")

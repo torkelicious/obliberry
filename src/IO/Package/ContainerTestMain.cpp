@@ -15,7 +15,8 @@ static int g_failures = 0;
     } while (0)
 
 
-constexpr const char *LOG_WHO = "ContainerTest";
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "ContainerTest"
 
 int main() {
     // [1] Basic multi-entry roundtrip
@@ -131,3 +132,4 @@ int main() {
     LOG_ERROR(LOG_WHO, std::to_string(g_failures) + " test(s) failed");
     return 1;
 }
+#pragma pop_macro("LOG_WHO")

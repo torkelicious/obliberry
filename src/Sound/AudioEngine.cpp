@@ -4,8 +4,8 @@
 #include "Core/LoggerService.h"
 #include "IO/VFS.h"
 
-
-constexpr auto LOG_WHO = "AudioEngine";
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "AudioEngine"
 
 // Larger period = fewer IPC roundtrips to the audio daemon per second
 constexpr ma_uint32 AUDIO_PERIOD_FRAMES = 2048;
@@ -212,3 +212,4 @@ void Sound::AudioEngine::SetMasterVolume(const float volume) const {
         return;
     ma_engine_set_volume(m_Engine, volume);
 }
+#pragma pop_macro("LOG_WHO")

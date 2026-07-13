@@ -11,7 +11,8 @@
 #include "Editor/Commands/EditorCommands.h"
 
 
-constexpr auto LOG_WHO = "ProjectConfigEditor";
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "ProjectConfigEditor"
 
 namespace Editor::UI {
     void ProjectConfigEditor::SetContext(Core::EngineContext &context) { m_Context = &context; }
@@ -167,3 +168,4 @@ namespace Editor::UI {
         std::strncpy(m_StartSceneBuffer, absolutePath.c_str(), sizeof(m_StartSceneBuffer) - 1);
     }
 } // namespace Editor::UI
+#pragma pop_macro("LOG_WHO")

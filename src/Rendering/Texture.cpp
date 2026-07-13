@@ -4,7 +4,8 @@
 #include "Core/LoggerService.h"
 #include "IO/VFS.h"
 
-constexpr auto LOG_WHO = "Texture";
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "Texture"
 
 namespace Rendering {
     Texture::Texture(std::string path, const GLuint minFilter, const GLuint magFilter, const GLuint wrapS, const GLuint wrapT)
@@ -117,3 +118,4 @@ namespace Rendering {
         return instance;
     }
 } // namespace Rendering
+#pragma pop_macro("LOG_WHO")

@@ -8,7 +8,8 @@
 #include "Rendering/Shader.h"
 #include "Rendering/Texture.h"
 
-constexpr auto LOG_WHO = "AssetLoader";
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "AssetLoader"
 
 std::unordered_map<std::string, IO::AssetLoader::MeshFactory> IO::AssetLoader::s_MeshFactories;
 
@@ -149,3 +150,4 @@ void IO::AssetLoader::LoadMeshes(const json &meshes, Core::ResourceManager &reso
         Rendering::Renderer::SubmitInitTask([m] { m->InitGL(); });
     }
 }
+#pragma pop_macro("LOG_WHO")

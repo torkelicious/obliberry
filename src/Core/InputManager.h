@@ -76,16 +76,6 @@ namespace Core {
         [[nodiscard]] glm::vec2 GetMousePosVec2() const { return glm::vec2{m_MousePosX, m_MousePosY}; }
 
     private:
-        bool keys[GLFW_KEY_LAST + 1]{};
-        bool previousKeys[GLFW_KEY_LAST + 1]{};
-
-        bool mouseButtons[GLFW_MOUSE_BUTTON_LAST + 1]{};
-        bool previousMouseButtons[GLFW_MOUSE_BUTTON_LAST + 1]{};
-
-        static bool IsValidKey(int key);
-
-        static bool IsValidMouseButton(int button);
-
         double m_MousePosX = 0.0;
         double m_MousePosY = 0.0;
 
@@ -94,9 +84,19 @@ namespace Core {
 
         double m_MouseDeltaX = 0.0;
         double m_MouseDeltaY = 0.0;
-        bool m_FirstMouse = true;
 
         double m_ViewportOffsetX = 0.0;
         double m_ViewportOffsetY = 0.0;
+
+        bool m_FirstMouse = true;
+
+        bool mouseButtons[GLFW_MOUSE_BUTTON_LAST + 1]{};
+        bool previousMouseButtons[GLFW_MOUSE_BUTTON_LAST + 1]{};
+
+        static bool IsValidKey(int key);
+        static bool IsValidMouseButton(int button);
+
+        bool keys[GLFW_KEY_LAST + 1]{};
+        bool previousKeys[GLFW_KEY_LAST + 1]{};
     };
 } // namespace Core

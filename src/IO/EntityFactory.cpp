@@ -12,7 +12,8 @@
 #include "ECS/Components/PointLightComponent.h"
 #include "ECS/Components/ScriptComponent.h"
 
-constexpr auto LOG_WHO = "EntityFactory";
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "EntityFactory"
 
 std::unordered_map<std::string, ComponentDeserializer> IO::EntityFactory::s_Deserializers;
 std::unordered_map<std::string, ComponentSerializer> IO::EntityFactory::s_Serializers;
@@ -105,7 +106,7 @@ void IO::EntityFactory::RegisterDeserializers() {
 
     // SCRIPT COMPONENT
     s_Deserializers["ScriptComponent"] = [](ECS::Entity &entity, const nlohmann::json &data, Core::ResourceManager & /*resources*/) {
-        auto &[scriptPaths, resolvedScriptPaths, instance_envs, on_update_functions, on_destroy_functions, on_exit_functions, isInitialized, source_codes, ast_nodes, lastModified] =
+        auto &[isInitialized, scriptPaths, resolvedScriptPaths, instance_envs, on_update_functions, on_destroy_functions, on_exit_functions, source_codes, ast_nodes, lastModified] =
                 entity.AddComponent<ECS::Components::ScriptComponent>();
 
         if (data.contains("scriptPath")) {
@@ -258,3 +259,4 @@ void IO::EntityFactory::SerializeEntity(ECS::Entity &entity, nlohmann::json &out
         outEntityData["components"] = componentsData;
     }
 }
+#pragma pop_macro("LOG_WHO")

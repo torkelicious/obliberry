@@ -20,7 +20,8 @@
 #include "Editor/Commands/EditorCommands.h"
 
 
-constexpr auto LOG_WHO = "SceneConfigEditor";
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "SceneConfigEditor"
 
 namespace Editor::UI {
     void SceneConfigEditor::ReloadFromScene() {
@@ -167,3 +168,4 @@ namespace Editor::UI {
         m_LocalProperties.BackgroundMusicPath = absolutePath;
     }
 } // namespace Editor::UI
+#pragma pop_macro("LOG_WHO")

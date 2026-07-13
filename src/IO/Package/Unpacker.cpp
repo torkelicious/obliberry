@@ -12,7 +12,8 @@ const std::string BINARY_NAME = "ob_unpack";
 constexpr float VERSION = 1.1f;
 namespace fs = std::filesystem;
 
-constexpr auto LOG_WHO = "Unpacker";
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "Unpacker"
 
 static void show_help() {
     std::cout << TITLE_NAME << " - Extract contents from a .obpak container\n\n"
@@ -134,3 +135,4 @@ int main(int argc, char *argv[]) {
         LOG_INFO(LOG_WHO, "Finished extracting " + std::to_string(success_count) + "/" + std::to_string(paths.size()) + " files.");
     return static_cast<size_t>(success_count) == paths.size() ? 0 : 1;
 }
+#pragma pop_macro("LOG_WHO")

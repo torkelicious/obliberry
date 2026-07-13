@@ -5,9 +5,10 @@
 #include "IO/VFS.h"
 #include <filesystem>
 
-namespace Core {
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "Project"
 
-    constexpr auto LOG_WHO = "Project";
+namespace Core {
 
     std::shared_ptr<Project> Project::NewProject(const std::filesystem::path &baseDir, const std::string &name) {
         auto project = std::make_shared<Project>();
@@ -61,3 +62,4 @@ namespace Core {
         return true;
     }
 } // namespace Core
+#pragma pop_macro("LOG_WHO")

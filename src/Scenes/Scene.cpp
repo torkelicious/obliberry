@@ -1,9 +1,6 @@
 #include "Scene.h"
 #include "Core/LoggerService.h"
 #include "ECS/Systems/AISystem.h"
-
-
-constexpr auto LOG_WHO = "Scene";
 #include "ECS/Systems/MapRenderSystem.h"
 #include "ECS/Systems/MovementSystem.h"
 #include "ECS/Systems/PlayerControlSystem.h"
@@ -19,6 +16,9 @@ constexpr auto LOG_WHO = "Scene";
 #include "Math/Frustum.h"
 #include "Scripting/EngineLib/EngineLib.h"
 #include "Sound/AudioEngine.h"
+
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "Scene"
 
 Scenes::Scene::Scene(Core::EngineContext *context, SceneProperties props) : m_Properties(std::move(props)), m_Context(context) {}
 
@@ -105,3 +105,4 @@ void Scenes::Scene::OnExit() {
 }
 
 void Scenes::Scene::OnSaved() { ClearUnsavedChanges(); }
+#pragma pop_macro("LOG_WHO")

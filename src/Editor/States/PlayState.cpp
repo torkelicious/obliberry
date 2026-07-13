@@ -3,7 +3,8 @@
 #include "Core/LoggerService.h"
 
 
-constexpr auto LOG_WHO = "PlayState";
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "PlayState"
 
 void Editor::PlayState::OnEnter() {
     m_EditorLayer->m_PendingSceneToLoad.clear();
@@ -32,3 +33,4 @@ void Editor::PlayState::OnDrawPanels() {
 }
 
 void Editor::PlayState::OnRender() { m_EditorLayer->DrawEditorLayout(); }
+#pragma pop_macro("LOG_WHO")

@@ -5,8 +5,8 @@
 // Heavily based off of;
 // https://learnopengl.com/In-Practice/Debugging
 
-
-constexpr auto LOG_WHO = "GLDebug";
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "GLDebug"
 
 namespace Rendering {
     void APIENTRY GLDebug::glDebugOutput(const GLenum source, const GLenum type, const unsigned int id, const GLenum severity, GLsizei length, const char *message, const void *userParam) {
@@ -143,3 +143,4 @@ namespace Rendering {
         return stats;
     }
 } // namespace Rendering
+#pragma pop_macro("LOG_WHO")

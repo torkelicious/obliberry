@@ -49,7 +49,6 @@ namespace Core {
         float timeScale = 1.0f;
         uint64_t frameCount = 0;
         std::shared_ptr<Project> activeProject = nullptr;
-
         // Logging
         Logging::ILogger *logger = nullptr;
     };

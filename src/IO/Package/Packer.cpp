@@ -15,7 +15,8 @@ constexpr float VERSION = 1.1f;
 namespace fs = std::filesystem;
 
 
-constexpr auto LOG_WHO = "Packer";
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "Packer"
 
 static void show_help() {
     std::cout << TITLE_NAME << " - Package Obliberry projects into .obpak archives\n\n"
@@ -136,3 +137,4 @@ int main(int argc, char *argv[]) {
 
     return fail_count == 0 ? 0 : 1;
 }
+#pragma pop_macro("LOG_WHO")

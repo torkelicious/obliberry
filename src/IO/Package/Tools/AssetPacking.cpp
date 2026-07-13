@@ -9,7 +9,8 @@
 #include <nlohmann/json.hpp>
 #include <algorithm>
 
-constexpr auto LOG_WHO = "AssetPacking";
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "AssetPacking"
 
 namespace IO::Package::Tools {
     const std::filesystem::path ignorelist[] = {
@@ -137,3 +138,4 @@ namespace IO::Package::Tools {
         return true;
     }
 } // namespace IO::Package::Tools
+#pragma pop_macro("LOG_WHO")

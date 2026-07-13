@@ -10,7 +10,8 @@
 #include "IO/VFS.h"
 #include "IO/Package/Container.h"
 
-constexpr auto LOG_WHO = "ObpakTools";
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "ObpakTools"
 
 namespace IO::Package::Tools {
     std::string SanitizeExecutableName(const std::string &input) {
@@ -122,3 +123,4 @@ namespace IO::Package::Tools {
         }
     }
 } // namespace IO::Package::Tools
+#pragma pop_macro("LOG_WHO")

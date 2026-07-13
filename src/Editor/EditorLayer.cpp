@@ -38,7 +38,8 @@
 bool Editor::EditorLayer::s_ShouldBuildDock = true;
 
 
-constexpr auto LOG_WHO = "EditorLayer";
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "EditorLayer"
 
 void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
     m_Context = ctx;
@@ -767,7 +768,8 @@ void Editor::EditorLayer::DrawToolbar() {
                     }
                 });
             }
-        }
-    }
-    ImGui::EndMainMenuBar();
-}
+                    }
+                }
+                ImGui::EndMainMenuBar();
+            }
+            #pragma pop_macro("LOG_WHO")

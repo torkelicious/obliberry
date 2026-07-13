@@ -3,9 +3,10 @@
 #include "Core/LoggerService.h"
 #include "Package/Container.h"
 
-namespace IO::VFS {
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "VFS"
 
-    constexpr auto LOG_WHO = "VFS";
+namespace IO::VFS {
 
     struct VFSStorage {
         std::filesystem::path rootDir;
@@ -90,3 +91,4 @@ namespace IO::VFS {
     std::filesystem::path GetAssetsDirectory() { return s_State.assetsDir; }
     bool IsProjectLoaded() { return s_State.isLoaded; }
 } // namespace IO::VFS
+#pragma pop_macro("LOG_WHO")

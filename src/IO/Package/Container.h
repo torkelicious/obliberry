@@ -11,6 +11,9 @@
 // obliberry asset packaging FF
 namespace IO {
     namespace Package {
+#ifdef None
+#undef None
+#endif
 #pragma pack(push, 1)
         struct FileHeader {
             char magic[4] = {'O', 'B', 'P', 'K'};

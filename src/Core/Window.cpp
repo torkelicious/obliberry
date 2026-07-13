@@ -15,7 +15,8 @@
 #include "Window.h"
 #include "Constants.h"
 
-constexpr auto LOG_WHO = "Window";
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "Window"
 
 Core::Window::Window(const unsigned int width, const unsigned int height, const char *title, const bool fullscreen) {
     if (!Init(width, height, title, fullscreen)) {
@@ -171,3 +172,4 @@ void Core::Window::SetFullscreen(const bool fullscreen) const {
         glfwSetWindowMonitor(m_Window, nullptr, 100, 100, m_Width, m_Height, 0);
     }
 }
+#pragma pop_macro("LOG_WHO")

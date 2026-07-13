@@ -21,25 +21,29 @@
 
 namespace ECS::Components {
     struct MapComponent {
+        // double buffered for zero copy thread safe submission
+        std::array<std::array<std::vector<glm::mat4>, 256>, 2> visibles;
+
+        // lighting
+        Rendering::Lightmap lightmap;
+
         Map::HexGrid grid;
+
+        std::array<std::vector<uint8_t>, 2> activeVisibleTypes; // keep track of which types have data
+
         std::string mapFilePath = Core::PathUtils::Join(Core::MAP_PATH, "default", Core::MAP_FILE_EXTENSION);
 
         // visual assets
-        std::shared_ptr<Rendering::Mesh> hexMesh;
         std::vector<std::pair<uint8_t, Rendering::Material>> typeMats;
+        std::shared_ptr<Rendering::Mesh> hexMesh;
         std::shared_ptr<Rendering::Material> outlineMat;
         std::shared_ptr<Rendering::Material> pathToMat;
-
-        // double buffered for zero copy thread safe submission
-        std::array<std::array<std::vector<glm::mat4>, 256>, 2> visibles;
-        std::array<std::vector<uint8_t>, 2> activeVisibleTypes; // keep track of which types have data
-        uint8_t activeBufferIndex = 0;
 
         // padding bounds
         Math::Projection::AABB bufferedRenderAABB;
 
-        // lighting
-        Rendering::Lightmap lightmap;
+
+        uint8_t activeBufferIndex = 0;
 
         bool needsMeshUpdate = true;
         bool mapDirty = false;

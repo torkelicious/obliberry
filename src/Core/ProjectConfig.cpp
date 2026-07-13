@@ -5,9 +5,10 @@
 #include <vector>
 #include <nlohmann/json.hpp>
 
-namespace Core {
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "ProjectConfig"
 
-    constexpr auto LOG_WHO = "ProjectConfig";
+namespace Core {
     ProjectConfig ProjectConfig::Deserialize(const std::string &filepath) {
         ProjectConfig config;
 
@@ -78,3 +79,4 @@ namespace Core {
         }
     }
 } // namespace Core
+#pragma pop_macro("LOG_WHO")

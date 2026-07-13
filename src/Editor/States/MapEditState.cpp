@@ -16,7 +16,8 @@
 #include "IO/MapSerialization.h"
 
 
-constexpr auto LOG_WHO = "MapEditState";
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "MapEditState"
 
 void Editor::MapEditState::OnEnter() {
 
@@ -362,3 +363,4 @@ uint8_t Editor::MapEditState::GetOrCreateTypeForMaterial(const std::shared_ptr<R
     m_MapComp->needsMeshUpdate = true;
     return newId;
 }
+#pragma pop_macro("LOG_WHO")

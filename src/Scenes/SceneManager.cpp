@@ -2,9 +2,6 @@
 #include "Core/LoggerService.h"
 #include "Core/Constants.h"
 #include "Core/EngineContext.h"
-
-
-constexpr auto LOG_WHO = "SceneManager";
 #include "Core/Project.h"
 #include "Core/Utils.h"
 #include "IO/SceneSerialization.h"
@@ -15,6 +12,9 @@ constexpr auto LOG_WHO = "SceneManager";
 #include <iostream>
 #include <string>
 #include <vector>
+
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "SceneManager"
 
 namespace Scenes {
     std::vector<std::string> SceneManager::GetAvailableScenes() {
@@ -168,3 +168,4 @@ namespace Scenes {
         }
     }
 } // namespace Scenes
+#pragma pop_macro("LOG_WHO")

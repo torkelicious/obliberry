@@ -17,10 +17,10 @@
 #include <cstring>
 #include <fstream>
 
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "ProjectBrowser"
+
 namespace Editor::UI {
-
-
-    constexpr auto LOG_WHO = "ProjectBrowser";
 
     static bool ContainsSearch(const char *haystack, const char *needle) {
         if (needle[0] == '\0')
@@ -718,4 +718,5 @@ void Editor::UI::ProjectBrowserPanel::ImportFile(const std::string &targetSubDir
         return;
 
     IO::AssetLoader::ImportAsset(picked.value(), targetSubDir);
-}
+    }
+    #pragma pop_macro("LOG_WHO")

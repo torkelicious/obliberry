@@ -1,9 +1,10 @@
 #include "ThreadPool.h"
 #include "Core/LoggerService.h"
 
-namespace Core {
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "ThreadPool"
 
-    constexpr auto LOG_WHO = "ThreadPool";
+namespace Core {
     ThreadPool::ThreadPool(const size_t count) {
         LOG_INFO(LOG_WHO, "Initialized with " + std::to_string(count) + " thread(s)");
         m_Threads.reserve(count);
@@ -72,3 +73,4 @@ namespace Core {
         // Note: threads join in destructor
     }
 } // namespace Core
+#pragma pop_macro("LOG_WHO")

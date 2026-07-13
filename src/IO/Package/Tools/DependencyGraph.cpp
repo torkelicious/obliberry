@@ -2,7 +2,8 @@
 #include "Core/LoggerService.h"
 #include <functional>
 
-constexpr auto LOG_WHO = "DependencyGraph";
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "DependencyGraph"
 namespace IO::Package::Tools {
     void DependencyGraph::add_script(const std::string &canonical_path, std::vector<std::string> deps) {
         m_known_scripts.insert(canonical_path);
@@ -59,3 +60,4 @@ namespace IO::Package::Tools {
         return ok;
     }
 } // namespace IO::Package::Tools
+#pragma pop_macro("LOG_WHO")

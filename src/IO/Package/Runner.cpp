@@ -14,7 +14,8 @@ const std::string TITLE_NAME = "Obliberry-Working-Name-Runner";
 const std::string BINARY_NAME = "obsl_pack_run";
 constexpr float VERSION = 1.0f;
 
-constexpr auto LOG_WHO = "Runner";
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "Runner"
 
 static void show_help() {
     std::cout << TITLE_NAME << " - Run pre-packaged ObSL scripts directly from a .obpak container\n\n"
@@ -121,3 +122,4 @@ int main(int argc, char *argv[]) {
     }
     return 0;
 }
+#pragma pop_macro("LOG_WHO")
