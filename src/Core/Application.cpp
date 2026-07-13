@@ -65,31 +65,39 @@ static void FreeImDrawData(ImDrawData *data) {
 }
 
 void Core::Application::Run() {
+    // GLFW
     glfwMakeContextCurrent(m_Window.GetNativeWindow());
-
     glEnable(GL_BLEND);
     glDisable(GL_DEPTH_TEST);
-
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glfwSwapInterval(0);
+    // glfwSwapInterval(0); Redundant?
 
+    // ImGui Setup
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGui_ImplGlfw_InitForOpenGL(m_Window.GetNativeWindow(), true);
     ImGui_ImplOpenGL3_Init();
     ImGui::StyleColorsDark();
-
     float xscale, yscale;
     glfwGetWindowContentScale(m_Window.GetNativeWindow(), &xscale, &yscale);
     ImGui::GetStyle().ScaleAllSizes(xscale);
     ImGuiIO &io = ImGui::GetIO();
     io.FontGlobalScale = xscale;
-    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Docking
-    // io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; for later
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;        // Docking
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;    // Keyboard UI navigation
+    io.ConfigFlags |= ImGuiConfigFlags_NavNoCaptureKeyboard; // Don't capture keyboard for navigation
 
+#if defined(_WIN32) || defined(__APPLE__)
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+    // https://github.com/ocornut/imgui/wiki/Multi-Viewports#issues
+    // See #2117 https://github.com/ocornut/imgui/issues/2117]
+#endif
+
+    // Renderer
     Rendering::Renderer renderer;
     Rendering::Camera camera;
 
+    // EngineContext Setup
     EngineContext context;
     context.projectConfig = &m_Project;
     context.window = &m_Window;
@@ -102,21 +110,26 @@ void Core::Application::Run() {
     context.threadPool = &m_ThreadPool;
     context.audioEngine = m_AudioEngine.get();
     context.logger = Logging::LoggerService::Get();
-
+    // Meshes
     Rendering::MeshFactory::RegisterAllMeshFactories();
 
+    // Camera
     const float initialAspect = static_cast<float>(m_Window.GetWidth()) / static_cast<float>(m_Window.GetHeight());
     renderer.SetCamera(camera, initialAspect);
 
+    // DT
     auto previousTime = std::chrono::steady_clock::now();
 
+    // Layer
     m_Layer->Init(context);
 
+    // ImGui setup.. again
     ImGui_ImplOpenGL3_CreateDeviceObjects();
 
     // context handover
     glfwMakeContextCurrent(nullptr);
 
+    // Main loop
     m_Running = true;
     m_RenderThread = std::thread(&Application::RenderThreadWorker, this, &renderer);
 
@@ -127,6 +140,7 @@ void Core::Application::Run() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
+        // delta time
         const auto currentTime = std::chrono::steady_clock::now();
         const std::chrono::duration<float> delta = currentTime - previousTime;
         previousTime = currentTime;
@@ -204,6 +218,7 @@ void Core::Application::Shutdown() const {
 void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer) {
     glfwMakeContextCurrent(m_Window.GetNativeWindow());
     // Enable VSync specifically for this thread's context
+    // Maybe make a config option, even if having it disabled messes with performance?
     glfwSwapInterval(1);
     while (m_Running) {
         int frameIdx = 0;
@@ -258,6 +273,17 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer) {
         if (m_FrameImGuiData[frameIdx] && m_FrameImGuiData[frameIdx]->CmdListsCount > 0) {
             ImGui_ImplOpenGL3_RenderDrawData(m_FrameImGuiData[frameIdx]);
         }
+
+        // Todo: Test on win machine
+#if defined(_WIN32) || defined(__APPLE__)
+        // viewports test
+        if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+            GLFWwindow *backup_current_context = glfwGetCurrentContext();
+            ImGui::UpdatePlatformWindows();
+            ImGui::RenderPlatformWindowsDefault();
+            glfwMakeContextCurrent(backup_current_context);
+        }
+#endif
 
         m_Window.SwapBuffers();
 

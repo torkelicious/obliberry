@@ -159,9 +159,7 @@ namespace ECS::Systems::LightingSystem {
             pixelBuffer[pIdx + 2] = static_cast<unsigned char>(final.b * 255.0f);
             pixelBuffer[pIdx + 3] = 255;
         }
-        Rendering::Renderer::SubmitInitTask([tex = texture, w = texW, h = texH, data = std::move(pixelBuffer)]() mutable {
-            tex->UpdateData(data.data(), w, h);
-        });
+        Rendering::Renderer::SubmitInitTask([tex = texture, w = texW, h = texH, data = std::move(pixelBuffer)]() mutable { tex->UpdateData(data.data(), w, h); });
         pixelBuffer.assign(pixelCount * 4, 255);
 
         // rebuild complete
