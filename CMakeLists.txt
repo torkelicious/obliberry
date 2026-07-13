@@ -59,11 +59,6 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     )
 endif()
 
-option(ENABLE_UNITY_BUILD "Enable unity builds" ON)
-if(ENABLE_UNITY_BUILD)
-    set_target_properties(obliberry_engine obliberry_editor PROPERTIES UNITY_BUILD ON)
-endif()
-
 if(APPLE)
     # min sdk to avoid issues for apple bros
     set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum macOS deployment version")
@@ -305,7 +300,10 @@ target_link_libraries(obliberry_editor PRIVATE
         obliberry_engine
 )
 
-
+option(ENABLE_UNITY_BUILD "Enable unity builds" ON)
+if(ENABLE_UNITY_BUILD)
+    set_target_properties(obliberry_engine obliberry_editor PROPERTIES UNITY_BUILD ON)
+endif()
 
 # Tools
 if (BUILD_PACK_TOOLS)
@@ -337,7 +335,7 @@ if (BUILD_PACK_TOOLS)
     set_output_subdir(tools ob_packer ob_unpacker obsl_pack_run)
 endif ()
 
-# Strip release binaries (GNU/Clang only
+# Strip release binaries (GNU/Clang only)
 # (use /DEBUG:NONE or dont generate a .pdb for release if desired on MSVC)
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_link_options($<$<CONFIG:Release,MinSizeRel>:-s>)
