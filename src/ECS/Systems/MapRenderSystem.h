@@ -95,7 +95,7 @@ namespace ECS::Systems::MapRenderSystem {
                 mapComp->needsMeshUpdate = false;
             }
 
-            renderer.SetLightmap(mapComp->lightmap.texture ? &mapComp->lightmap : nullptr);
+            renderer.SetLightmap(mapComp->lightmap.framebuffer ? &mapComp->lightmap : nullptr);
             for (const uint8_t typeId : mapComp->activeVisibleTypes[mapComp->activeBufferIndex]) {
                 auto &transforms = mapComp->visibles[mapComp->activeBufferIndex][typeId];
                 if (transforms.empty())

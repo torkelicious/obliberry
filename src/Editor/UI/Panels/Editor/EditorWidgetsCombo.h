@@ -55,6 +55,9 @@ namespace Editor::UI {
             // Assets
             idx = 1;
             for (const auto &[key, ptr] : all) {
+                bool isEngineBuiltin = !key.empty() && key.front() == '[';
+                if (isEngineBuiltin)
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.45f, 0.75f, 1.0f, 1.0f)); // subtle blue for engine builtins
                 ImGui::PushID(key.c_str());
                 isSelected = currentIdx == idx;
                 if (ImGui::Selectable(key.c_str(), &isSelected)) {
@@ -64,6 +67,8 @@ namespace Editor::UI {
                 if (currentIdx == idx)
                     ImGui::SetItemDefaultFocus();
                 ImGui::PopID();
+                if (isEngineBuiltin)
+                    ImGui::PopStyleColor();
                 idx++;
             }
             ImGui::EndCombo();

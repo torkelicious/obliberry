@@ -1,0 +1,13 @@
+{
+  "window": {
+    "width": 1280,
+    "height": 720,
+    "fullscreen": false
+  },
+  "antialiasing": {
+    "MSAA": false,
+    "samples": 4
+  },
+  "targetfps": 60,
+  "vsync": "standard"
+}

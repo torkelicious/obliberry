@@ -10,6 +10,8 @@
 #include "ResourceManager.h"
 #include "Window.h"
 #include "ApplicationLayer.h"
+#include "GraphicsConfig.h"
+
 #include <ObSL/ScriptRuntime.h>
 #include "Core/ThreadPool.h"
 #include "Sound/AudioEngine.h"
@@ -19,7 +21,7 @@ struct ImDrawData;
 namespace Core {
     class Application {
     public:
-        explicit Application(ProjectConfig config, std::unique_ptr<ApplicationLayer> layer);
+        explicit Application(Graphics::GraphicsConfig gconf, ProjectConfig pconf, std::unique_ptr<ApplicationLayer> layer);
 
         ~Application() { Shutdown(); }
 
@@ -39,6 +41,7 @@ namespace Core {
         void RenderThreadWorker(Rendering::Renderer *renderer);
 
         ProjectConfig m_Project;
+        Graphics::GraphicsConfig m_GraphicsConfig;
         Window m_Window;
         InputManager m_InputManager;
         ResourceManager m_ResourceManager;

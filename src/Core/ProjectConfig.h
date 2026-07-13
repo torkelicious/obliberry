@@ -6,9 +6,7 @@ namespace Core {
     struct ProjectConfig {
         std::string Title = "Obliberry Project";
         std::string startScenePath;
-        int windowWidth = WINDOW_WIDTH;
-        int windowHeight = WINDOW_HEIGHT;
-        bool fullscreen = false;
+
 
         // default to the central relative project tag identifier
         static ProjectConfig Deserialize(const std::string &filepath = "project.json");

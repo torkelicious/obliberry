@@ -1,15 +1,15 @@
 #pragma once
 
 #define GLFW_INCLUDE_NONE
+#include "GraphicsConfig.h"
 #include <GLFW/glfw3.h>
 #include <string>
-
 #include "InputManager.h"
 
 namespace Core {
     class Window {
     public:
-        Window(unsigned int width, unsigned int height, const char *title, bool fullscreen);
+        Window(unsigned int width, unsigned int height, const char *title, const Graphics::GraphicsConfig *graphicsConf);
 
         ~Window();
 
@@ -41,7 +41,7 @@ namespace Core {
         int m_Width = 0;
         int m_Height = 0;
 
-        bool Init(unsigned int width, unsigned int height, const char *title, bool fullscreen);
+        bool Init(unsigned int width, unsigned int height, const char *title, const Graphics::GraphicsConfig *conf);
 
         static void WindowResizeCallback(GLFWwindow *window, int width, int height);
 

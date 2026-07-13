@@ -35,15 +35,8 @@ namespace Core {
             }
 
             if (j.contains("window")) {
-                auto &w = j["window"];
-                if (w.contains("width"))
-                    config.windowWidth = w["width"];
-                if (w.contains("height"))
-                    config.windowHeight = w["height"];
-                if (w.contains("title"))
+                if (auto &w = j["window"]; w.contains("title"))
                     config.Title = w["title"];
-                if (w.contains("fullscreen"))
-                    config.fullscreen = w["fullscreen"];
             }
             if (j.contains("start_scene")) {
                 config.startScenePath = j["start_scene"];
@@ -58,10 +51,7 @@ namespace Core {
     bool ProjectConfig::Serialize(const ProjectConfig &conf, const std::string &filepath) {
         try {
             nlohmann::json j;
-            j["window"]["width"] = conf.windowWidth;
-            j["window"]["height"] = conf.windowHeight;
             j["window"]["title"] = conf.Title;
-            j["window"]["fullscreen"] = conf.fullscreen;
             j["start_scene"] = conf.startScenePath;
 
             std::filesystem::path resolvedPath = IO::VFS::Resolve(filepath);

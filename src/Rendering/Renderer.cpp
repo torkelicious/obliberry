@@ -314,8 +314,9 @@ void Rendering::Renderer::Clean() {
 void Rendering::Renderer::SetLightmap(const Lightmap *lightmap) { m_Lightmap[m_SubmitIndex] = lightmap; }
 
 void Rendering::Renderer::BindLightmap(Shader *shader, const size_t renderIndex) const {
-    if (const Lightmap *lm = m_Lightmap[renderIndex]; lm && lm->texture) {
-        lm->texture->Bind(1);
+    if (const Lightmap *lm = m_Lightmap[renderIndex]; lm && lm->framebuffer) {
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, lm->framebuffer->GetColorAttID());
         shader->SetUniform1i("u_LightTexture", 1);
         shader->SetUniformVec2("u_MapSize", lm->mapSize);
         shader->SetUniformVec2("u_MapOffset", lm->mapOffset);

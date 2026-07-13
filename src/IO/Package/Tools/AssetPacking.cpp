@@ -16,6 +16,7 @@ namespace IO::Package::Tools {
     const std::filesystem::path ignorelist[] = {
             "imgui.ini",
             ".DS_Store",
+            "graphics.json",
     };
 
     static std::string lower_ext(const std::filesystem::path &p) {

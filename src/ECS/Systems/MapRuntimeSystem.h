@@ -61,7 +61,7 @@ namespace ECS::Systems::MapRuntimeSystem {
             ResetInteractionState(*state);
         }
         // ResetMovementEntities(registry, map.grid);
-        LightingSystem::GenerateLightmap(map);
+        LightingSystem::GenerateLightmap(map, ctx.resources);
     }
 
     inline void OnMapChanged(Registry &registry, const Core::EngineContext &ctx) {

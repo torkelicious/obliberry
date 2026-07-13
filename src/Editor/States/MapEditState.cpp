@@ -357,7 +357,7 @@ uint8_t Editor::MapEditState::GetOrCreateTypeForMaterial(const std::shared_ptr<R
         newId++;
     }
 
-    const auto shader = !typeMats.empty() ? typeMats.begin()->second.shader : m_EditorLayer->m_Context.resources->Get<Rendering::Shader>("base_shader");
+    const auto shader = !typeMats.empty() ? typeMats.begin()->second.shader : m_EditorLayer->m_Context.resources->Get<Rendering::Shader>("[Engine] Base");
 
     typeMats.emplace_back(newId, Rendering::Material{shader, tex, color});
     m_MapComp->needsMeshUpdate = true;

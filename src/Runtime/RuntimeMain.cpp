@@ -1,5 +1,6 @@
 #include "../Core/Application.h"
 #include "../Core/ProjectConfig.h"
+#include "../Core/GraphicsConfig.h"
 #include "../Game/GameLayer.h"
 #include "Core/Logger.h"
 #include "Core/LoggerService.h"
@@ -45,8 +46,9 @@ int main(const int argc, char *argv[]) {
     }
 
     const Core::ProjectConfig config = Core::ProjectConfig::Deserialize("project.json");
+    const Core::Graphics::GraphicsConfig graphicsConfig = Core::Graphics::GraphicsConfig::Deserialize("graphics.json");
 
-    Core::Application app(config, std::make_unique<Game::GameLayer>());
+    Core::Application app(graphicsConfig, config, std::make_unique<Game::GameLayer>());
     app.Run();
     return 0;
 }

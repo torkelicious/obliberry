@@ -2,6 +2,7 @@
 #include "Core/EngineContext.h"
 #include "Core/LoggerService.h"
 #include "Rendering/MeshFactory.h"
+#include "Rendering/InternalShaders.h"
 #include "Rendering/Renderer.h"
 #include "Sound/AudioEngine.h"
 #include "imgui.h"
@@ -15,8 +16,8 @@
 #include <utility>
 #include "Editor/EditorLayer.h"
 
-Core::Application::Application(ProjectConfig config, std::unique_ptr<ApplicationLayer> layer)
-    : m_Project(std::move(config)), m_Window(m_Project.windowWidth, m_Project.windowHeight, m_Project.Title.c_str(), m_Project.fullscreen), m_Layer(std::move(layer)) {
+Core::Application::Application(const Graphics::GraphicsConfig gconf, ProjectConfig pconf, std::unique_ptr<ApplicationLayer> layer)
+    : m_Project(std::move(pconf)), m_GraphicsConfig(gconf), m_Window(m_GraphicsConfig.WindowWidth, m_GraphicsConfig.WindowHeight, m_Project.Title.c_str(), &gconf), m_Layer(std::move(layer)) {
     m_Window.SetInputManager(&m_InputManager);
     m_AudioEngine = Sound::AudioEngine::Create();
 }
@@ -70,7 +71,8 @@ void Core::Application::Run() {
     glEnable(GL_BLEND);
     glDisable(GL_DEPTH_TEST);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    // glfwSwapInterval(0); Redundant?
+
+    glfwSwapInterval(static_cast<int>(m_GraphicsConfig.VSync));
 
     // ImGui Setup
     IMGUI_CHECKVERSION();
@@ -112,6 +114,9 @@ void Core::Application::Run() {
     context.logger = Logging::LoggerService::Get();
     // Meshes
     Rendering::MeshFactory::RegisterAllMeshFactories();
+
+    // engine builtin shaders (light pass, etc)
+    Rendering::BuiltinShaders::RegisterBuiltinShaders(m_ResourceManager);
 
     // Camera
     const float initialAspect = static_cast<float>(m_Window.GetWidth()) / static_cast<float>(m_Window.GetHeight());
@@ -217,9 +222,16 @@ void Core::Application::Shutdown() const {
 
 void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer) {
     glfwMakeContextCurrent(m_Window.GetNativeWindow());
+
     // Enable VSync specifically for this thread's context
-    // Maybe make a config option, even if having it disabled messes with performance?
-    glfwSwapInterval(1);
+    // some drivers handle it weird so better to be safe..
+    glfwSwapInterval(static_cast<int>(m_GraphicsConfig.VSync));
+
+    using Clock = std::chrono::steady_clock;
+    auto frameStart = Clock::now();
+    const auto targetFrameTime = std::chrono::microseconds(m_GraphicsConfig.TargetFPS > 0 ? static_cast<long long>(1000000.0f / m_GraphicsConfig.TargetFPS) : 0);
+    const bool frameLimit = m_GraphicsConfig.TargetFPS > 0 && m_GraphicsConfig.VSync == Graphics::VSyncType::NONE;
+
     while (m_Running) {
         int frameIdx = 0;
         {
@@ -286,6 +298,14 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer) {
 #endif
 
         m_Window.SwapBuffers();
+
+        // frame limiter only when VSync is off to avoid burning CPU for invisible frames
+        if (frameLimit) {
+            if (const auto elapsed = Clock::now() - frameStart; elapsed < targetFrameTime) {
+                std::this_thread::sleep_for(targetFrameTime - elapsed);
+            }
+        }
+        frameStart = Clock::now(); // start timing the next frame
 
         {
             std::lock_guard lock(m_Frames[frameIdx].mutex);

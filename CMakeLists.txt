@@ -245,6 +245,7 @@ add_library(obliberry_engine STATIC
         src/IO/Package/ContainerReader.cpp
         src/IO/Package/Tools/AssetPacking.cpp
         src/IO/Package/Tools/DependencyGraph.cpp
+        src/Core/GraphicsConfig.cpp
 )
 
 target_include_directories(obliberry_engine PUBLIC

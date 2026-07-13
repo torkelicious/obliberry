@@ -56,19 +56,6 @@ namespace Editor::UI {
 
         ImGui::Separator();
 
-        ImGui::DragInt("Width", &m_LocalConfig.windowWidth, 1.0f, 640, 7680);
-        if (ImGui::IsItemDeactivatedAfterEdit())
-            Core::Project::GetActive()->MarkAsChanged();
-        ImGui::DragInt("Height", &m_LocalConfig.windowHeight, 1.0f, 480, 4320);
-        if (ImGui::IsItemDeactivatedAfterEdit())
-            Core::Project::GetActive()->MarkAsChanged();
-
-        if (ImGui::Checkbox("Fullscreen", &m_LocalConfig.fullscreen)) {
-            Core::Project::GetActive()->MarkAsChanged();
-        }
-
-        ImGui::Separator();
-
         {
             ImGui::Text("Start Scene");
             ImGui::TextUnformatted(m_LocalConfig.startScenePath.empty() ? "None" : m_LocalConfig.startScenePath.c_str());

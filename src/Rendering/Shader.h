@@ -23,6 +23,8 @@ namespace Rendering {
 
         Shader(const std::string &vertPath, const std::string &fragPath);
 
+        Shader(std::string vertSrc, std::string fragSrc, std::string debugName);
+
         ~Shader();
 
         void InitGL();
@@ -42,6 +44,8 @@ namespace Rendering {
         void SetUniform1f(const char *name, float value);
 
         void SetUniformVec2(const char *name, const glm::vec2 &v);
+
+        void SetUniformVec3(const char *name, const glm::vec3 &v);
 
         void SetUniformVec4(const char *name, const glm::vec4 &v);
 

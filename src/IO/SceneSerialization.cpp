@@ -106,7 +106,7 @@ namespace IO::SceneIO {
             // bind visual resources from scene json grid section
             auto &gridJson = j["grid"];
             std::string meshId = gridJson.value("mesh_id", "hex_mesh");
-            std::string shaderId = gridJson.value("shader_id", "base_shader");
+            std::string shaderId = gridJson.value("shader_id", "[Engine] Base");
 
 
             auto hexMesh = resources.Get<Rendering::Mesh>(meshId);
@@ -224,7 +224,8 @@ namespace IO::SceneIO {
         SerializeAssets(j["assets"]["textures"], resources.GetAll<Rendering::Texture>(), [](const std::string &id, const std::shared_ptr<Rendering::Texture> &tex) { return json{{"id", id}, {"path", tex->GetPath()}}; });
 
         SerializeAssets(j["assets"]["shaders"], resources.GetAll<Rendering::Shader>(),
-                        [](const std::string &id, const std::shared_ptr<Rendering::Shader> &shad) { return json{{"id", id}, {"vertex", shad->GetVertexPath()}, {"fragment", shad->GetFragmentPath()}}; });
+                        [](const std::string &id, const std::shared_ptr<Rendering::Shader> &shad) { return json{{"id", id}, {"vertex", shad->GetVertexPath()}, {"fragment", shad->GetFragmentPath()}}; },
+                        IsUserAsset);
 
         SerializeAssets(j["assets"]["meshes"], resources.GetAll<Rendering::Mesh>(),
                         [](const std::string &id, const std::shared_ptr<Rendering::Mesh> &mesh) { return json{{"id", id}, {"factory", mesh->GetFactoryId()}}; });

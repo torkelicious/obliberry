@@ -55,7 +55,7 @@ void Scenes::Scene::OnEnter() {
     }
 
     if (auto *mapComp = m_Registry.GetFirst<ECS::Components::MapComponent>()) {
-        ECS::Systems::LightingSystem::GenerateLightmap(*mapComp);
+        ECS::Systems::LightingSystem::GenerateLightmap(*mapComp, m_Context->resources);
     }
 
     ECS::Systems::LightingSystem::Update(m_Registry);

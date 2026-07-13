@@ -13,13 +13,12 @@
 #include <nfd_glfw3.h>
 #include <stdexcept>
 #include "Window.h"
-#include "Constants.h"
 
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "Window"
 
-Core::Window::Window(const unsigned int width, const unsigned int height, const char *title, const bool fullscreen) {
-    if (!Init(width, height, title, fullscreen)) {
+Core::Window::Window(const unsigned int width, const unsigned int height, const char *title, const Graphics::GraphicsConfig *graphicsConf) {
+    if (!Init(width, height, title, graphicsConf)) {
         throw std::runtime_error("Failed to initialize window");
     }
 }
@@ -39,7 +38,7 @@ void Core::Window::PollEvents() { glfwPollEvents(); }
 
 void Core::Window::SwapBuffers() const { glfwSwapBuffers(m_Window); }
 
-bool Core::Window::Init(const unsigned int width, const unsigned int height, const char *title, const bool fullscreen) {
+bool Core::Window::Init(const unsigned int width, const unsigned int height, const char *title, const Graphics::GraphicsConfig *conf) {
     m_Width = static_cast<int>(width);
     m_Height = static_cast<int>(height);
 
@@ -52,12 +51,15 @@ bool Core::Window::Init(const unsigned int width, const unsigned int height, con
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    // glfwWindowHint(GLFW_SAMPLES, 2); // MSAA
+    if (conf->MSAAEnabled) {
+        glfwWindowHint(GLFW_SAMPLES, conf->AASamples); // MSAA
+    }
+
 #if defined DEBUG_BUILD
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
 #endif
 
-    GLFWmonitor *monitor = fullscreen ? glfwGetPrimaryMonitor() : nullptr;
+    GLFWmonitor *monitor = conf->Fullscreen ? glfwGetPrimaryMonitor() : nullptr;
     m_Window = glfwCreateWindow(m_Width, m_Height, title, monitor, nullptr);
 
     if (!m_Window) {

@@ -154,16 +154,21 @@ namespace Editor::UI {
                             m_RenamingKey.clear();
                         }
                     } else {
-                        if (ImGui::SmallButton("Rename")) {
-                            m_RenamingKey = id;
-                            m_RenameJustActivated = true;
-                            strncpy(m_RenameBuffer, id.c_str(), sizeof(m_RenameBuffer));
-                            m_RenameBuffer[sizeof(m_RenameBuffer) - 1] = '\0';
+                        bool isEngineBuiltin = !id.empty() && id[0] == '[';
+                        if (!isEngineBuiltin) {
+                            if (ImGui::SmallButton("Rename")) {
+                                m_RenamingKey = id;
+                                m_RenameJustActivated = true;
+                                strncpy(m_RenameBuffer, id.c_str(), sizeof(m_RenameBuffer));
+                                m_RenameBuffer[sizeof(m_RenameBuffer) - 1] = '\0';
+                            }
                         }
                         renderExtraButtons(id, resources);
-                        if (ImGui::SmallButton("Remove")) {
-                            m_DeleteConfirmKey = id;
-                            m_DeleteConfirmType = assetType;
+                        if (!isEngineBuiltin) {
+                            if (ImGui::SmallButton("Remove")) {
+                                m_DeleteConfirmKey = id;
+                                m_DeleteConfirmType = assetType;
+                            }
                         }
                     }
 
@@ -203,23 +208,28 @@ namespace Editor::UI {
                             m_RenamingKey.clear();
                         }
                     } else {
+                        bool isEngineBuiltin = !id.empty() && id[0] == '[';
                         ImGui::Text("%s", id.c_str());
                         if (renderTooltip && ImGui::IsItemHovered()) {
                             renderTooltip(id, asset, resources);
                         }
                         ImGui::SameLine();
-                        if (ImGui::SmallButton("Rename")) {
-                            m_RenamingKey = id;
-                            m_RenameJustActivated = true;
-                            strncpy(m_RenameBuffer, id.c_str(), sizeof(m_RenameBuffer));
-                            m_RenameBuffer[sizeof(m_RenameBuffer) - 1] = '\0';
+                        if (!isEngineBuiltin) {
+                            if (ImGui::SmallButton("Rename")) {
+                                m_RenamingKey = id;
+                                m_RenameJustActivated = true;
+                                strncpy(m_RenameBuffer, id.c_str(), sizeof(m_RenameBuffer));
+                                m_RenameBuffer[sizeof(m_RenameBuffer) - 1] = '\0';
+                            }
+                            ImGui::SameLine();
                         }
-                        ImGui::SameLine();
                         renderExtraButtons(id, resources);
-                        ImGui::SameLine();
-                        if (ImGui::SmallButton("Remove")) {
-                            m_DeleteConfirmKey = id;
-                            m_DeleteConfirmType = assetType;
+                        if (!isEngineBuiltin) {
+                            ImGui::SameLine();
+                            if (ImGui::SmallButton("Remove")) {
+                                m_DeleteConfirmKey = id;
+                                m_DeleteConfirmType = assetType;
+                            }
                         }
                     }
 
