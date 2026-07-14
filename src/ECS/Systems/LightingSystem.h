@@ -147,12 +147,11 @@ namespace ECS::Systems::LightingSystem {
         Rendering::Renderer::SubmitInitTask([fbo, shader, quad, lights = std::move(packedLights), ambient, mapOffset, mapSize, texW, texH] {
             // Save only the GL state this pass modifies
             GLint prevFbo, prevProgram, prevVao, prevBlendSrc, prevBlendDst, prevBlendEq;
-            GLboolean prevBlend;
             GLenum prevDrawBuf;
             glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prevFbo);
             glGetIntegerv(GL_CURRENT_PROGRAM, &prevProgram);
             glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &prevVao);
-            prevBlend = glIsEnabled(GL_BLEND);
+            GLboolean prevBlend = glIsEnabled(GL_BLEND);
             glGetIntegerv(GL_BLEND_SRC_RGB, &prevBlendSrc);
             glGetIntegerv(GL_BLEND_DST_RGB, &prevBlendDst);
             glGetIntegerv(GL_BLEND_EQUATION_RGB, &prevBlendEq);
