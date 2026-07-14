@@ -69,10 +69,10 @@ namespace ECS::Systems::LightingSystem {
         // capture lightmap pointer and dimensions
         // FBO created on render thread !!!
         Rendering::Lightmap *lmPtr = &lm;
-        Rendering::Renderer::SubmitInitTask(Core::SmallTask([lmPtr, lightQuad, texW, texH] {
+        Rendering::Renderer::SubmitInitTask([lmPtr, lightQuad, texW, texH] {
             lightQuad->InitGL();
             lmPtr->framebuffer = std::make_shared<Rendering::FrameBuffer>(texW, texH);
-        }));
+        });
 
         lm.lastLightCount = std::numeric_limits<size_t>::max();
     }
