@@ -21,20 +21,18 @@
 
 void Editor::MapEditState::OnEnter() {
 
-    if (!m_MapState || !m_MapComp) {
         // it is safe to assume each scene only has one map, no less no more.. otherwise something has probably gone
         // seriously wrong
         // TODO: probably enforce a required map ??
-        m_MapState = m_EditorLayer->m_Registry->GetFirst<ECS::Components::MapStateComponent>();
-        m_MapComp = m_EditorLayer->m_Registry->GetFirst<ECS::Components::MapComponent>();
-        m_MapComp->pathToMat->color = {0.0, 0.8, 1.0, 0.50};   // cyan
-        m_MapComp->outlineMat->color = {1.0, 0.85, 0.0, 0.55}; // gold / yellowish
-        m_CurrentGrid = &m_MapComp->grid;
-        m_selectedTile = m_CurrentGrid->Get(m_selectedHex);
-        m_TileEditorPanel.SetContext(m_EditorLayer->m_Scene, m_EditorLayer->m_Context);
-        m_TileEditorPanel.SetMapComponent(m_MapComp);
-        m_TileEditorPanel.SetCreateTypeFn([this](const std::shared_ptr<Rendering::Texture> &tex, const glm::vec4 &color) { return GetOrCreateTypeForMaterial(tex, color); });
-    }
+    m_MapState = m_EditorLayer->m_Registry->GetFirst<ECS::Components::MapStateComponent>();
+    m_MapComp = m_EditorLayer->m_Registry->GetFirst<ECS::Components::MapComponent>();
+    m_CurrentGrid = &m_MapComp->grid;
+    m_MapComp->pathToMat->color = {0.0, 0.8, 1.0, 0.50};   // cyan
+    m_MapComp->outlineMat->color = {1.0, 0.85, 0.0, 0.55}; // gold / yellowish
+    m_selectedTile = m_CurrentGrid->Get(m_selectedHex);
+    m_TileEditorPanel.SetContext(m_EditorLayer->m_Scene, m_EditorLayer->m_Context);
+    m_TileEditorPanel.SetMapComponent(m_MapComp);
+    m_TileEditorPanel.SetCreateTypeFn([this](const std::shared_ptr<Rendering::Texture> &tex, const glm::vec4 &color) { return GetOrCreateTypeForMaterial(tex, color); });
     if (!m_MapComp->typeMats.empty()) {
         m_TileEditorPanel.InitBrushFromFirstType();
     }
@@ -144,7 +142,7 @@ void Editor::MapEditState::OnRender() {
 
     ECS::Systems::MapRenderSystem::RenderAll(*m_EditorLayer->m_Registry, m_EditorLayer->m_Context, frustum);
 
-    if (m_CurrentTool != Select && m_BrushRadius > 1 && m_MapComp->hexMesh && m_MapComp->outlineMat) {
+    if (m_CurrentTool != Tool::Select && m_BrushRadius > 1 && m_MapComp->hexMesh && m_MapComp->outlineMat) {
         ForEachHexInRing(m_hoveredHex, m_BrushRadius - 1, [&](const Map::HexCoords &hex) {
             const auto worldPos = Map::HexGrid::GetWorldPos(hex);
             Rendering::Transform t;
@@ -180,20 +178,15 @@ void Editor::MapEditState::OnDrawModeToolbar() {
             }
             if (ImGui::MenuItem("Save Map")) {
                 LOG_INFO(LOG_WHO, "Save requested");
-                if (!IO::MapIO::Serialize(m_MapComp->mapFilePath, *m_CurrentGrid)) {
-                    LOG_ERROR(LOG_WHO, "Failed to save map: " + m_MapComp->mapFilePath);
-                } else {
-                    m_MapComp->mapDirty = false;
-                }
+                m_EditorLayer->SaveScene();
+                m_MapComp->mapDirty = false;
             }
             if (ImGui::MenuItem("Save Map As")) {
                 LOG_INFO(LOG_WHO, "Save as requested");
                 if (const auto path = FileDialogs::SaveFile(m_EditorLayer->m_Context)) {
-                    if (!IO::MapIO::Serialize(*path, *m_CurrentGrid)) {
-                        LOG_ERROR(LOG_WHO, "Failed to save map to: " + *path);
-                    } else {
-                        m_MapComp->mapDirty = false;
-                    }
+                    m_MapComp->mapFilePath = *path;
+                    m_EditorLayer->SaveScene();
+                    m_MapComp->mapDirty = false;
                 }
             }
             if (ImGui::MenuItem("Load Map from file")) {
@@ -235,11 +228,11 @@ void Editor::MapEditState::OnDrawModeToolbar() {
             ImGui::PopStyleColor(3);
         };
 
-        drawToolBtn("  Paint  ", Paint, "Left-click to place tiles. Drag to paint continuously.");
+        drawToolBtn("  Paint  ", Tool::Paint, "Left-click to place tiles. Drag to paint continuously.");
         ImGui::SameLine();
-        drawToolBtn("  Erase  ", Erase, "Left-click to remove tiles. Drag to erase continuously.");
+        drawToolBtn("  Erase  ", Tool::Erase, "Left-click to remove tiles. Drag to erase continuously.");
         ImGui::SameLine();
-        drawToolBtn("  Select ", Select, "Click a tile to inspect and edit its properties.");
+        drawToolBtn("  Select ", Tool::Select, "Click a tile to inspect and edit its properties.");
     }
 
     ImGui::SameLine();
@@ -261,6 +254,8 @@ void Editor::MapEditState::OnDrawUtilityWindows() {}
 
 void Editor::MapEditState::OnExit() {
     m_MapState = nullptr;
+    m_MapComp = nullptr;
+    m_CurrentGrid = nullptr;
 
     m_EditorLayer->m_Registry->ForEach<ECS::Components::MapStateComponent>([&](ECS::Entity, ECS::Components::MapStateComponent *state) { state->hasSelection = false; });
 }
@@ -283,12 +278,14 @@ void Editor::MapEditState::CommitMapChanges() {
     m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::MapChangeTileCommand>(m_PreDragState, m_AccumulatedNew, m_CurrentGrid, &m_MapComp->needsMeshUpdate), m_EditorLayer->m_Context);
     m_MapComp->needsMeshUpdate = true;
     m_MapComp->mapDirty = true;
+    if (m_EditorLayer->m_Scene)
+        m_EditorLayer->m_Scene->MarkAsChanged();
 }
 
 void Editor::MapEditState::ApplyToolAt(const Map::HexCoords &hex) {
     m_MapState->hasPathTo = false;
     switch (m_CurrentTool) {
-        case Select:
+        case Tool::Select:
             m_selectedHex = hex;
             m_MapState->pathTo = hex;
             m_MapState->hasPathTo = true;
@@ -299,7 +296,7 @@ void Editor::MapEditState::ApplyToolAt(const Map::HexCoords &hex) {
             }
             break;
 
-        case Paint: {
+        case Tool::Paint: {
             const uint8_t brushType = m_TileEditorPanel.GetSourceType();
             CapturePreDragState(hex);
             ForEachHexInRing(hex, m_BrushRadius - 1, [&](const Map::HexCoords &h) {
@@ -315,7 +312,7 @@ void Editor::MapEditState::ApplyToolAt(const Map::HexCoords &hex) {
             break;
         }
 
-        case Erase: {
+        case Tool::Erase: {
             CapturePreDragState(hex);
             ForEachHexInRing(hex, m_BrushRadius - 1, [&](const Map::HexCoords &h) {
                 if (m_CurrentGrid->HasTile(h)) {
@@ -361,6 +358,8 @@ uint8_t Editor::MapEditState::GetOrCreateTypeForMaterial(const std::shared_ptr<R
 
     typeMats.emplace_back(newId, Rendering::Material{shader, tex, color});
     m_MapComp->needsMeshUpdate = true;
+    if (m_EditorLayer->m_Scene)
+        m_EditorLayer->m_Scene->MarkAsChanged();
     return newId;
 }
 #pragma pop_macro("LOG_WHO")

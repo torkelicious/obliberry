@@ -318,6 +318,9 @@ void Editor::EditorLayer::ExecutePendingStateTransfer() {
     m_PendingState = nullptr;
 
     m_UndoManager.Clear();
+
+    if (m_Context.renderer)
+        m_Context.renderer->Clean();
 }
 
 void Editor::EditorLayer::PromptSaveDirtyMap(const std::function<void()> &onProceed) {
@@ -339,12 +342,9 @@ void Editor::EditorLayer::PromptSaveDirtyMap(const std::function<void()> &onProc
 
     m_SaveMapDialog.SetMessage("Map has unsaved changes. Save before leaving?");
     m_SaveMapDialog.SetOnSave([this, onProceed] {
+        SaveScene();
         m_Registry->ForEach<ECS::Components::MapComponent>([&](ECS::Entity, ECS::Components::MapComponent *mapComp) {
-            if (mapComp->mapDirty && !mapComp->mapFilePath.empty()) {
-                if (IO::MapIO::Serialize(mapComp->mapFilePath, mapComp->grid)) {
-                    mapComp->mapDirty = false;
-                }
-            }
+            mapComp->mapDirty = false;
         });
         onProceed();
     });

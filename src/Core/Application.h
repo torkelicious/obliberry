@@ -11,7 +11,6 @@
 #include "Window.h"
 #include "ApplicationLayer.h"
 #include "GraphicsConfig.h"
-
 #include <ObSL/ScriptRuntime.h>
 #include "Core/ThreadPool.h"
 #include "Sound/AudioEngine.h"

@@ -232,6 +232,9 @@ namespace Editor::UI {
                 it->second.texture = m_BrushTexture;
                 it->second.color = m_BrushColor;
                 m_MapComp->needsMeshUpdate = true;
+                m_MapComp->mapDirty = true;
+                if (m_SceneContext)
+                    m_SceneContext->MarkAsChanged();
             }
         }
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
@@ -244,6 +247,8 @@ namespace Editor::UI {
             if (m_CreateTypeFn) {
                 const uint8_t newId = m_CreateTypeFn(m_BrushTexture, m_BrushColor);
                 SetBrushType(newId);
+                if (m_SceneContext)
+                    m_SceneContext->MarkAsChanged();
             }
         }
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
@@ -288,6 +293,9 @@ namespace Editor::UI {
             if (uint8_t selectedType = m_CurrentTile->type; TypeCombo("Type##TileType", *m_MapComp, *m_EngineContext->resources, selectedType)) {
                 m_CurrentTile->type = selectedType;
                 m_MapComp->needsMeshUpdate = true;
+                m_MapComp->mapDirty = true;
+                if (m_SceneContext)
+                    m_SceneContext->MarkAsChanged();
             }
             ImGui::PopID();
 
@@ -310,6 +318,9 @@ namespace Editor::UI {
                 currentMat.color = m_EditColor;
                 m_EditSourceType = m_CurrentTile->type;
                 m_MapComp->needsMeshUpdate = true;
+                m_MapComp->mapDirty = true;
+                if (m_SceneContext)
+                    m_SceneContext->MarkAsChanged();
             }
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) && materialChanged) {
                 std::ostringstream tip;
@@ -323,6 +334,8 @@ namespace Editor::UI {
                 if (m_CreateTypeFn) {
                     m_CurrentTile->type = m_CreateTypeFn(m_EditTexture, m_EditColor);
                     m_MapComp->needsMeshUpdate = true;
+                    if (m_SceneContext)
+                        m_SceneContext->MarkAsChanged();
                 }
             }
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
@@ -347,6 +360,9 @@ namespace Editor::UI {
             if (ImGui::Checkbox("Is Walkable", &m_CurrentTile->walkable)) {
                 m_MapComp->grid.SyncTileWalkableCache(m_CurrentTile->position);
                 m_MapComp->needsMeshUpdate = true;
+                m_MapComp->mapDirty = true;
+                if (m_SceneContext)
+                    m_SceneContext->MarkAsChanged();
             }
         } else {
             ImGui::SeparatorText("Selected Tile");

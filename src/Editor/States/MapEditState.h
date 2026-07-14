@@ -12,10 +12,10 @@
 
 namespace Editor {
 
+    enum class Tool : uint8_t { Paint, Erase, Select };
+
     class MapEditState : public EditorState {
     public:
-        enum Tool : uint8_t { Paint, Erase, Select };
-
         void OnEnter() override;
 
         void OnUpdate(float dt) override;
@@ -42,7 +42,7 @@ namespace Editor {
         Map::HexGrid *m_CurrentGrid = nullptr;
         ECS::Components::MapStateComponent *m_MapState = nullptr;
         ECS::Components::MapComponent *m_MapComp = nullptr;
-        Tool m_CurrentTool = Paint;
+        Tool m_CurrentTool = Tool::Paint;
 
         // makes it easier than using the dumb names in the component
         Map::HexCoords m_hoveredHex = {0, 0};  // what the comp would refer to as "selectedHex", stupid naming.. i know.

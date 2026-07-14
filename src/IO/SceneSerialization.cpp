@@ -140,6 +140,21 @@ namespace IO::SceneIO {
             }
             mapComp.needsMeshUpdate = true;
             mapComp.lightmap.ambient = AmbientLight;
+
+            {
+                std::vector<uint8_t> definedTypeIds;
+                definedTypeIds.reserve(mapComp.typeMats.size());
+                for (const auto &[id, _] : mapComp.typeMats)
+                    definedTypeIds.push_back(id);
+
+                for (const auto &[coords, tile] : mapComp.grid.tiles) {
+                    if (std::ranges::find(definedTypeIds, tile.type) == definedTypeIds.end()) {
+                        LOG_WARN(LOG_WHO, "Tile at (" + std::to_string(coords.q) + "," + std::to_string(coords.r) + ") uses type " + std::to_string(tile.type) + " which has no defined material — it will not render");
+                        break; // only log once per load
+                    }
+                }
+            }
+
             mapEntity.AddComponent<ECS::Components::MapComponent>(mapComp);
             mapEntity.AddComponent<ECS::Components::MapStateComponent>();
         }

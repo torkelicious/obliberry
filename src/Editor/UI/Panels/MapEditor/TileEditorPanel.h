@@ -4,7 +4,6 @@
 #include <Map/Hex.h>
 #include <Rendering/Material.h>
 #include <Rendering/Texture.h>
-
 #include <functional>
 #include <memory>
 
@@ -48,6 +47,8 @@ namespace Editor::UI {
         glm::vec4 m_EditColor = {1.0f, 1.0f, 1.0f, 1.0f};
         uint8_t m_EditSourceType = 0;
         bool m_EditInitialized = false;
+
+        //Tool m_CurrentTool = Tool::Paint;
     };
 
 } // namespace Editor::UI

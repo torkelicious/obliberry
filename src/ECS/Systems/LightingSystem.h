@@ -66,10 +66,12 @@ namespace ECS::Systems::LightingSystem {
         lm.lightQuad = lightQuad;
         lm.lightShader = lightShader;
 
-        // init mesh & create FBO on render thread
-        Rendering::Renderer::SubmitInitTask([&lm, lightQuad, oldFbo, oldMesh, oldShader, texW, texH] {
+        // capture lightmap pointer and dimensions
+        // FBO created on render thread !!!
+        Rendering::Lightmap *lmPtr = &lm;
+        Rendering::Renderer::SubmitInitTask([lmPtr, lightQuad, texW, texH] {
             lightQuad->InitGL();
-            lm.framebuffer = std::make_shared<Rendering::FrameBuffer>(texW, texH);
+            lmPtr->framebuffer = std::make_shared<Rendering::FrameBuffer>(texW, texH);
         });
 
         lm.lastLightCount = std::numeric_limits<size_t>::max();
@@ -143,6 +145,27 @@ namespace ECS::Systems::LightingSystem {
 
         // submit to renderer
         Rendering::Renderer::SubmitInitTask([fbo, shader, quad, lights = std::move(packedLights), ambient, mapOffset, mapSize, texW, texH] {
+            // Save all GL state we will modify
+            GLint prevFbo = 0;
+            glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prevFbo);
+            GLint prevProgram = 0;
+            glGetIntegerv(GL_CURRENT_PROGRAM, &prevProgram);
+            GLint prevVao = 0;
+            glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &prevVao);
+            GLboolean prevBlend = glIsEnabled(GL_BLEND);
+            GLint prevBlendSrc = 0, prevBlendDst = 0, prevBlendEq = 0;
+            glGetIntegerv(GL_BLEND_SRC_RGB, &prevBlendSrc);
+            glGetIntegerv(GL_BLEND_DST_RGB, &prevBlendDst);
+            glGetIntegerv(GL_BLEND_EQUATION_RGB, &prevBlendEq);
+            GLenum prevDrawBuffer = 0;
+            glGetIntegerv(GL_DRAW_BUFFER0, reinterpret_cast<GLint *>(&prevDrawBuffer));
+            GLfloat prevClearColor[4];
+            glGetFloatv(GL_COLOR_CLEAR_VALUE, prevClearColor);
+            GLint prevViewport[4];
+            glGetIntegerv(GL_VIEWPORT, prevViewport);
+            GLint prevActiveTexture = 0;
+            glGetIntegerv(GL_ACTIVE_TEXTURE, &prevActiveTexture);
+
             fbo->Bind();
 
             // skip entity ID attachment
@@ -154,6 +177,7 @@ namespace ECS::Systems::LightingSystem {
             // additive blending
             glEnable(GL_BLEND);
             glBlendFunc(GL_ONE, GL_ONE);
+            glBlendEquation(GL_FUNC_ADD);
             // bind
             shader->Bind();
             const glm::mat4 proj = glm::ortho(mapOffset.x, mapOffset.x + mapSize.x, mapOffset.y, mapOffset.y + mapSize.y, -1.0f, 1.0f);
@@ -173,11 +197,19 @@ namespace ECS::Systems::LightingSystem {
             }
 
             // restore state
+            glBindVertexArray(prevVao);
+            glUseProgram(prevProgram);
+            glBindFramebuffer(GL_FRAMEBUFFER, prevFbo);
+            GLenum drawBuf = prevDrawBuffer;
+            glDrawBuffers(1, &drawBuf);
+            glClearColor(prevClearColor[0], prevClearColor[1], prevClearColor[2], prevClearColor[3]);
+            glViewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);
+            glActiveTexture(prevActiveTexture);
+            if (prevBlend)
+                glEnable(GL_BLEND);
             glDisable(GL_BLEND);
-            constexpr GLenum defaultBufs[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
-            glDrawBuffers(2, defaultBufs);
-            Rendering::Shader::Unbind();
-            fbo->Unbind();
+            glBlendFuncSeparate(prevBlendSrc, prevBlendDst, prevBlendSrc, prevBlendDst);
+            glBlendEquationSeparate(prevBlendEq, prevBlendEq);
         });
         lm.lastLightCount = lightCount;
     }
