@@ -145,26 +145,20 @@ namespace ECS::Systems::LightingSystem {
 
         // submit to renderer
         Rendering::Renderer::SubmitInitTask([fbo, shader, quad, lights = std::move(packedLights), ambient, mapOffset, mapSize, texW, texH] {
-            // Save all GL state we will modify
-            GLint prevFbo = 0;
+            // Save only the GL state this pass modifies
+            GLint prevFbo, prevProgram, prevVao, prevBlendSrc, prevBlendDst, prevBlendEq;
+            GLboolean prevBlend;
+            GLenum prevDrawBuf;
             glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prevFbo);
-            GLint prevProgram = 0;
             glGetIntegerv(GL_CURRENT_PROGRAM, &prevProgram);
-            GLint prevVao = 0;
             glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &prevVao);
-            GLboolean prevBlend = glIsEnabled(GL_BLEND);
-            GLint prevBlendSrc = 0, prevBlendDst = 0, prevBlendEq = 0;
+            prevBlend = glIsEnabled(GL_BLEND);
             glGetIntegerv(GL_BLEND_SRC_RGB, &prevBlendSrc);
             glGetIntegerv(GL_BLEND_DST_RGB, &prevBlendDst);
             glGetIntegerv(GL_BLEND_EQUATION_RGB, &prevBlendEq);
-            GLenum prevDrawBuffer = 0;
-            glGetIntegerv(GL_DRAW_BUFFER0, reinterpret_cast<GLint *>(&prevDrawBuffer));
-            GLfloat prevClearColor[4];
-            glGetFloatv(GL_COLOR_CLEAR_VALUE, prevClearColor);
-            GLint prevViewport[4];
-            glGetIntegerv(GL_VIEWPORT, prevViewport);
-            GLint prevActiveTexture = 0;
-            glGetIntegerv(GL_ACTIVE_TEXTURE, &prevActiveTexture);
+            glGetIntegerv(GL_DRAW_BUFFER0, reinterpret_cast<GLint *>(&prevDrawBuf));
+            GLfloat prevClear[4];
+            glGetFloatv(GL_COLOR_CLEAR_VALUE, prevClear);
 
             fbo->Bind();
 
@@ -200,14 +194,9 @@ namespace ECS::Systems::LightingSystem {
             glBindVertexArray(prevVao);
             glUseProgram(prevProgram);
             glBindFramebuffer(GL_FRAMEBUFFER, prevFbo);
-            GLenum drawBuf = prevDrawBuffer;
-            glDrawBuffers(1, &drawBuf);
-            glClearColor(prevClearColor[0], prevClearColor[1], prevClearColor[2], prevClearColor[3]);
-            glViewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);
-            glActiveTexture(prevActiveTexture);
-            if (prevBlend)
-                glEnable(GL_BLEND);
-            glDisable(GL_BLEND);
+            glDrawBuffers(1, &prevDrawBuf);
+            glClearColor(prevClear[0], prevClear[1], prevClear[2], prevClear[3]);
+            prevBlend ? glEnable(GL_BLEND) : glDisable(GL_BLEND);
             glBlendFuncSeparate(prevBlendSrc, prevBlendDst, prevBlendSrc, prevBlendDst);
             glBlendEquationSeparate(prevBlendEq, prevBlendEq);
         });
