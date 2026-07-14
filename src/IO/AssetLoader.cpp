@@ -1,4 +1,5 @@
 #include "AssetLoader.h"
+#include "Core/SmallTask.h"
 
 #include <stdexcept>
 #include "Core/LoggerService.h"
@@ -83,7 +84,7 @@ void IO::AssetLoader::LoadTextures(const json &textures, Core::ResourceManager &
         }
 
         auto texture = resources.Load<Rendering::Texture>(id, tex.at("path").get<std::string>());
-        Rendering::Renderer::SubmitInitTask([texture] { texture->InitGL(); });
+        Rendering::Renderer::SubmitInitTask(Core::SmallTask([texture] { texture->InitGL(); }));
     }
 }
 
@@ -97,7 +98,7 @@ void IO::AssetLoader::LoadShaders(const json &shaders, Core::ResourceManager &re
         }
 
         auto s = resources.Load<Rendering::Shader>(id, shader.at("vertex").get<std::string>(), shader.at("fragment").get<std::string>());
-        Rendering::Renderer::SubmitInitTask([s] { s->InitGL(); });
+        Rendering::Renderer::SubmitInitTask(Core::SmallTask([s] { s->InitGL(); }));
     }
 }
 
@@ -147,7 +148,7 @@ void IO::AssetLoader::LoadMeshes(const json &meshes, Core::ResourceManager &reso
             return fac_mesh;
         });
 
-        Rendering::Renderer::SubmitInitTask([m] { m->InitGL(); });
+        Rendering::Renderer::SubmitInitTask(Core::SmallTask([m] { m->InitGL(); }));
     }
 }
 #pragma pop_macro("LOG_WHO")

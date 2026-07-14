@@ -8,7 +8,8 @@ constexpr unsigned int MAX_INSTANCES = 100000;
 constexpr size_t INSTANCE_BUFFER_SIZE = MAX_INSTANCES * sizeof(glm::mat4);
 constexpr size_t ID_BUFFER_SIZE = MAX_INSTANCES * sizeof(int);
 
-std::vector<std::function<void()>> Rendering::Renderer::s_InitQueue;
+using InitTask = std::variant<Core::SmallTask, std::function<void()>>;
+std::vector<InitTask> Rendering::Renderer::s_InitQueue;
 std::mutex Rendering::Renderer::s_InitQueueMutex;
 std::atomic<bool> Rendering::Renderer::s_HasInitTasks{false};
 
@@ -336,16 +337,22 @@ void Rendering::Renderer::SwapBuffers() {
     m_SubmitIndex = (m_SubmitIndex + 1) % 2;
 }
 
+void Rendering::Renderer::SubmitInitTask(Core::SmallTask task) {
+    std::lock_guard lock(s_InitQueueMutex);
+    s_InitQueue.emplace_back(std::move(task));
+    s_HasInitTasks.store(true, std::memory_order_release);
+}
+
 void Rendering::Renderer::SubmitInitTask(std::function<void()> task) {
     std::lock_guard lock(s_InitQueueMutex);
-    s_InitQueue.push_back(std::move(task));
+    s_InitQueue.emplace_back(std::move(task));
     s_HasInitTasks.store(true, std::memory_order_release);
 }
 
 void Rendering::Renderer::ProcessInitQ() {
     if (!s_HasInitTasks.load(std::memory_order_acquire))
         return;
-    std::vector<std::function<void()>> queueCopy;
+    std::vector<InitTask> queueCopy;
     {
         std::lock_guard lock(s_InitQueueMutex);
         if (s_InitQueue.empty()) {
@@ -356,7 +363,7 @@ void Rendering::Renderer::ProcessInitQ() {
         s_HasInitTasks.store(false, std::memory_order_release);
     }
     for (auto &task : queueCopy) {
-        task();
+        std::visit([](auto &t) { t(); }, task);
     }
 }
 
@@ -365,11 +372,11 @@ void Rendering::Renderer::EnsureFramebufferSize(uint32_t width, uint32_t height)
         return;
     m_FboWidth = width;
     m_FboHeight = height;
-    SubmitInitTask([this, width, height] {
+    SubmitInitTask(Core::SmallTask([this, width, height] {
         if (!m_EditorFramebuffer) {
             m_EditorFramebuffer = std::make_shared<FrameBuffer>(width, height);
         } else {
             m_EditorFramebuffer->Invalidate(width, height);
         }
-    });
+    }));
 }

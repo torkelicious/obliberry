@@ -51,7 +51,7 @@ namespace ECS::Systems::LightingSystem {
         if (!lightShader) {
             // Fallback and create directly
             lightShader = std::make_shared<Rendering::Shader>(Rendering::BuiltinShaders::kLightVert, Rendering::BuiltinShaders::kLightFrag, "<light>");
-            Rendering::Renderer::SubmitInitTask([lightShader] { lightShader->InitGL(); });
+            Rendering::Renderer::SubmitInitTask(Core::SmallTask([lightShader] { lightShader->InitGL(); }));
         }
 
         // create quad mesh on game thread
@@ -69,10 +69,10 @@ namespace ECS::Systems::LightingSystem {
         // capture lightmap pointer and dimensions
         // FBO created on render thread !!!
         Rendering::Lightmap *lmPtr = &lm;
-        Rendering::Renderer::SubmitInitTask([lmPtr, lightQuad, texW, texH] {
+        Rendering::Renderer::SubmitInitTask(Core::SmallTask([lmPtr, lightQuad, texW, texH] {
             lightQuad->InitGL();
             lmPtr->framebuffer = std::make_shared<Rendering::FrameBuffer>(texW, texH);
-        });
+        }));
 
         lm.lastLightCount = std::numeric_limits<size_t>::max();
     }

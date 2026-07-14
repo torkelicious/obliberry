@@ -1,4 +1,5 @@
 #include "RegistryPanel.h"
+#include "Core/SmallTask.h"
 
 #include "EditorWidgets.h"
 #include "ECS/Components/MaterialComponent.h"
@@ -60,7 +61,7 @@ void Editor::UI::RegistryPanel::OnImGuiRender() {
             m_SelectedEntity.AddComponent<ECS::Components::TransformComponent>();
             auto mesh = std::make_shared<Rendering::Mesh>(Rendering::MeshFactory::CreateQuad());
             mesh->SetFactoryId("Quad");
-            Rendering::Renderer::SubmitInitTask([mesh] { mesh->InitGL(); });
+            Rendering::Renderer::SubmitInitTask(Core::SmallTask([mesh] { mesh->InitGL(); }));
             m_SelectedEntity.AddComponent<ECS::Components::MeshComponent>().mesh = std::move(mesh);
             auto &[material] = m_SelectedEntity.AddComponent<ECS::Components::MaterialComponent>();
             material = std::make_shared<Rendering::Material>();

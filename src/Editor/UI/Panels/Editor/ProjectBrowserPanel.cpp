@@ -1,4 +1,5 @@
 #include "ProjectBrowserPanel.h"
+#include "Core/SmallTask.h"
 
 #include "Core/Constants.h"
 #include "Core/LoggerService.h"
@@ -592,7 +593,7 @@ void Editor::UI::ProjectBrowserPanel::ImportTexture(Core::ResourceManager &resou
     }
 
     auto tex = resources.Load<Rendering::Texture>(key, finalPath.value());
-    Rendering::Renderer::SubmitInitTask([tex] { tex->InitGL(); });
+    Rendering::Renderer::SubmitInitTask(Core::SmallTask([tex] { tex->InitGL(); }));
     LOG_INFO(LOG_WHO, "Imported texture '" + key + "' from " + finalPath.value());
 }
 
@@ -620,7 +621,7 @@ void Editor::UI::ProjectBrowserPanel::ImportShader(Core::ResourceManager &resour
     }
 
     auto shader = resources.Load<Rendering::Shader>(key, finalVert.value(), finalFrag.value());
-    Rendering::Renderer::SubmitInitTask([shader] { shader->InitGL(); });
+    Rendering::Renderer::SubmitInitTask(Core::SmallTask([shader] { shader->InitGL(); }));
     LOG_INFO(LOG_WHO, "Imported shader '" + key + "'");
 }
 
@@ -638,7 +639,7 @@ void Editor::UI::ProjectBrowserPanel::ReplaceTexture(Core::ResourceManager &reso
 
     resources.Unload<Rendering::Texture>(key);
     auto tex = resources.Load<Rendering::Texture>(key, finalPath.value());
-    Rendering::Renderer::SubmitInitTask([tex] { tex->InitGL(); });
+    Rendering::Renderer::SubmitInitTask(Core::SmallTask([tex] { tex->InitGL(); }));
     LOG_INFO(LOG_WHO, "Replaced texture '" + key + "'");
 }
 
@@ -661,7 +662,7 @@ void Editor::UI::ProjectBrowserPanel::ReplaceShader(Core::ResourceManager &resou
 
     resources.Unload<Rendering::Shader>(key);
     auto shader = resources.Load<Rendering::Shader>(key, finalVert.value(), finalFrag.value());
-    Rendering::Renderer::SubmitInitTask([shader] { shader->InitGL(); });
+    Rendering::Renderer::SubmitInitTask(Core::SmallTask([shader] { shader->InitGL(); }));
     LOG_INFO(LOG_WHO, "Replaced shader '" + key + "'");
 }
 
@@ -714,7 +715,7 @@ void Editor::UI::ProjectBrowserPanel::CreateMesh(Core::ResourceManager &resource
         return m;
     });
 
-    Rendering::Renderer::SubmitInitTask([mesh] { mesh->InitGL(); });
+    Rendering::Renderer::SubmitInitTask(Core::SmallTask([mesh] { mesh->InitGL(); }));
     m_MeshNameBuffer[0] = '\0';
     LOG_INFO(LOG_WHO, "Created mesh '" + id + "'");
 }
