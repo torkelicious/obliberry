@@ -1,16 +1,14 @@
+#include "MapEditState.h"
 #include "Rendering/Renderer.h"
 #include <algorithm>
 #include "Core/Constants.h"
-#include "MapEditState.h"
 #include "Applications/Editor/EditorLayer.h"
 #include "Platform/Input/InputManager.h"
 #include "Core/ResourceManager.h"
 #include "ECS/Systems/MapRenderSystem.h"
 #include "Math/HexMath.h"
-
 #include <imgui.h>
 #include "imgui_internal.h"
-#include "Platform/Window/Window.h"
 #include "Applications/Editor/Platform/FileDialogs.h"
 #include "Applications/Editor/Commands/EditorCommands.h"
 #include "IO/MapSerialization.h"
@@ -142,7 +140,7 @@ void Editor::States::MapEditState::OnRender() {
 
     ECS::Systems::MapRenderSystem::RenderAll(*m_EditorLayer->m_Registry, m_EditorLayer->m_Context, frustum);
 
-    if (m_CurrentTool != Tool::Select && m_BrushRadius > 1 && m_MapComp->hexMesh && m_MapComp->outlineMat) {
+    if (m_CurrentTool != MapTool::Select && m_BrushRadius > 1 && m_MapComp->hexMesh && m_MapComp->outlineMat) {
         ForEachHexInRing(m_hoveredHex, m_BrushRadius - 1, [&](const Map::HexCoords &hex) {
             const auto worldPos = Map::HexGrid::GetWorldPos(hex);
             Rendering::Transform t;
@@ -209,7 +207,7 @@ void Editor::States::MapEditState::OnDrawModeToolbar() {
         constexpr auto activeCol = ImVec4(0.3f, 0.6f, 1.0f, 0.7f);
         constexpr auto inactiveCol = ImVec4(0.2f, 0.2f, 0.2f, 0.5f);
 
-        auto drawToolBtn = [&](const char *label, const Tool tool, const char *tip) {
+        auto drawToolBtn = [&](const char *label, const MapTool tool, const char *tip) {
             if (m_CurrentTool == tool) {
                 ImGui::PushStyleColor(ImGuiCol_Button, activeCol);
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, activeCol);
@@ -221,6 +219,7 @@ void Editor::States::MapEditState::OnDrawModeToolbar() {
             }
             if (ImGui::Button(label)) {
                 m_CurrentTool = tool;
+                m_TileEditorPanel.SetMapTool(m_CurrentTool);
             }
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
                 ImGui::SetTooltip("%s", tip);
@@ -228,11 +227,11 @@ void Editor::States::MapEditState::OnDrawModeToolbar() {
             ImGui::PopStyleColor(3);
         };
 
-        drawToolBtn("  Paint  ", Tool::Paint, "Left-click to place tiles. Drag to paint continuously.");
+        drawToolBtn("  Paint  ", MapTool::Paint, "Left-click to place tiles. Drag to paint continuously.");
         ImGui::SameLine();
-        drawToolBtn("  Erase  ", Tool::Erase, "Left-click to remove tiles. Drag to erase continuously.");
+        drawToolBtn("  Erase  ", MapTool::Erase, "Left-click to remove tiles. Drag to erase continuously.");
         ImGui::SameLine();
-        drawToolBtn("  Select ", Tool::Select, "Click a tile to inspect and edit its properties.");
+        drawToolBtn("  Select ", MapTool::Select, "Click a tile to inspect and edit its properties.");
     }
 
     ImGui::SameLine();
@@ -285,7 +284,7 @@ void Editor::States::MapEditState::CommitMapChanges() {
 void Editor::States::MapEditState::ApplyToolAt(const Map::HexCoords &hex) {
     m_MapState->hasPathTo = false;
     switch (m_CurrentTool) {
-        case Tool::Select:
+        case MapTool::Select:
             m_selectedHex = hex;
             m_MapState->pathTo = hex;
             m_MapState->hasPathTo = true;
@@ -296,23 +295,20 @@ void Editor::States::MapEditState::ApplyToolAt(const Map::HexCoords &hex) {
             }
             break;
 
-        case Tool::Paint: {
+        case MapTool::Paint: {
             const uint8_t brushType = m_TileEditorPanel.GetSourceType();
+            const bool brushWalkable = m_TileEditorPanel.GetBrushWalkable();
             CapturePreDragState(hex);
             ForEachHexInRing(hex, m_BrushRadius - 1, [&](const Map::HexCoords &h) {
-                bool walkable = true;
-                if (const auto *tile = m_CurrentGrid->Get(h)) {
-                    walkable = tile->walkable;
-                }
                 m_CurrentGrid->RemoveTileAt(h);
-                m_CurrentGrid->EmplaceTile(h, brushType, walkable);
-                m_AccumulatedNew[h] = TileState{brushType, walkable};
+                m_CurrentGrid->EmplaceTile(h, brushType, brushWalkable);
+                m_AccumulatedNew[h] = TileState{brushType, brushWalkable};
             });
             m_MapComp->needsMeshUpdate = true;
             break;
         }
 
-        case Tool::Erase: {
+        case MapTool::Erase: {
             CapturePreDragState(hex);
             ForEachHexInRing(hex, m_BrushRadius - 1, [&](const Map::HexCoords &h) {
                 if (m_CurrentGrid->HasTile(h)) {

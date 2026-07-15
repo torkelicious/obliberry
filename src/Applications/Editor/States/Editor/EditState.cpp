@@ -1,6 +1,5 @@
-#include "ECS/Systems/LightingSystem.h"
-
 #include "EditState.h"
+#include "ECS/Systems/LightingSystem.h"
 #include "Applications/Editor/EditorLayer.h"
 #include "Platform/Input/InputManager.h"
 #include <glm/gtc/type_ptr.hpp>

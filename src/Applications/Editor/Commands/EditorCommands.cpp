@@ -1,5 +1,4 @@
 #include "EditorCommands.h"
-
 #include "Core/Project.h"
 #include "ECS/Entity.h"
 #include "ECS/Components/TransformComponent.h"

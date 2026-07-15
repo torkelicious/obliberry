@@ -279,9 +279,9 @@ target_link_libraries(obliberry_runtime PRIVATE
 add_executable(obliberry_editor
         src/Applications/Editor/EditorMain.cpp
         src/Applications/Editor/EditorLayer.cpp
-        src/Applications/Editor/States/EditState.cpp
-        src/Applications/Editor/States/PlayState.cpp
-        src/Applications/Editor/States/MapEditState.cpp
+        src/Applications/Editor/States/Editor/EditState.cpp
+        src/Applications/Editor/States/Play/PlayState.cpp
+        src/Applications/Editor/States/MapEditor/MapEditState.cpp
         src/Applications/Editor/States/HubState.cpp
         src/Applications/Editor/UI/Panels/Editor/EditorWidgets.cpp
         src/Applications/Editor/UI/Panels/Editor/EditorWidgetsCombo.cpp

@@ -1,19 +1,14 @@
 #pragma once
-#include "EditorStateBase.h"
+#include "Applications/Editor/States/EditorStateBase.h"
 #include "ECS/Components/MapComponent.h"
 #include "ECS/Components/MapStateComponent.h"
 #include "Applications/Editor/UI/Panels/MapEditor/TileEditorPanel.h"
 #include "Map/Hex.h"
-
 #include <cstdint>
 #include <functional>
 #include <optional>
-#include <unordered_set>
 
 namespace Editor::States {
-
-    enum class Tool : uint8_t { Paint, Erase, Select };
-
     class MapEditState : public EditorStateBase {
     public:
         void OnEnter() override;
@@ -42,7 +37,7 @@ namespace Editor::States {
         Map::HexGrid *m_CurrentGrid = nullptr;
         ECS::Components::MapStateComponent *m_MapState = nullptr;
         ECS::Components::MapComponent *m_MapComp = nullptr;
-        Tool m_CurrentTool = Tool::Paint;
+        MapTool m_CurrentTool = MapTool::Paint;
 
         // makes it easier than using the dumb names in the component
         Map::HexCoords m_hoveredHex = {0, 0};  // what the comp would refer to as "selectedHex", stupid naming.. i know.

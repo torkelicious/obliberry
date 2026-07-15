@@ -1,8 +1,8 @@
 #pragma once
 #include <ECS/Components/MapComponent.h>
 #include "Applications/Editor/UI/Panels/EditorPanel.h"
+#include "Applications/Editor/States/MapEditor/MapTools.h"
 #include <Map/Hex.h>
-#include <Rendering/Material.h>
 #include <Rendering/Texture.h>
 #include <functional>
 #include <memory>
@@ -30,6 +30,10 @@ namespace Editor::UI {
 
         [[nodiscard]] const std::shared_ptr<Rendering::Texture> &GetBrushTexture() const { return m_BrushTexture; }
         [[nodiscard]] const glm::vec4 &GetBrushColor() const { return m_BrushColor; }
+        [[nodiscard]] bool GetBrushWalkable() const { return m_BrushWalkable; }
+
+        void SetMapTool(const MapTool &tool) { m_CurrentTool = tool; }
+        MapTool GetMapTool() const { return m_CurrentTool; }
 
     private:
         Map::Tile *m_CurrentTile = nullptr;
@@ -40,6 +44,7 @@ namespace Editor::UI {
         uint8_t m_BrushType = 0;
         std::shared_ptr<Rendering::Texture> m_BrushTexture;
         glm::vec4 m_BrushColor = {1.0f, 1.0f, 1.0f, 1.0f};
+        bool m_BrushWalkable = true;
         bool m_BrushInitialized = false;
 
         // selected-tile
@@ -48,7 +53,7 @@ namespace Editor::UI {
         uint8_t m_EditSourceType = 0;
         bool m_EditInitialized = false;
 
-        // Tool m_CurrentTool = Tool::Paint;
+        MapTool m_CurrentTool = MapTool::Paint;
     };
 
 } // namespace Editor::UI

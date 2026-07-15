@@ -1,6 +1,7 @@
 #pragma once
-#include "EditorStateBase.h"
-#include <cstdint>
+#include "Applications/Editor/States/EditorStateBase.h"
+#include "Rendering/Transform.h"
+#include <glm/glm.hpp>
 #include "imgui.h"
 #include "ImGuizmo.h"
 

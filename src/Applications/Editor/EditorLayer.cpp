@@ -3,30 +3,26 @@
 #include "Config/ProjectConfig.h"
 #include "Logger/LoggerService.h"
 #include "ECS/Entity.h"
-#include "ECS/Systems/LightingSystem.h"
 #include "Scenes/Scene.h"
 #include "imgui.h"
 #include "imgui_internal.h"
-
 #include <ObSL/ScriptRuntime.h>
 #include <filesystem>
 #include <memory>
 #include <string>
 #include <algorithm>
-
 #include "Platform/Input/InputManager.h"
 #include "Platform/Window/Window.h"
 #include "Applications/Editor/Platform/FileDialogs.h"
 #include "Applications/Editor/Commands/EditorCommands.h"
 #include "IO/SceneSerialization.h"
-#include "IO/MapSerialization.h"
 #include "IO/VFS/VFS.h"
 #include "IO/Package/Tools/ObpakTools.h"
-
-#include "Applications/Editor/States/EditState.h"
-#include "Applications/Editor/States/PlayState.h"
-#include "Applications/Editor/States/MapEditState.h"
+#include "Applications/Editor/States/Editor/EditState.h"
+#include "Applications/Editor/States/Play/PlayState.h"
+#include "Applications/Editor/States/MapEditor/MapEditState.h"
 #include "Applications/Editor/States/HubState.h"
+#include "Rendering/Renderer.h"
 
 /* TODO:
  * map editor - wip
@@ -164,6 +160,7 @@ void Editor::EditorLayer::HandleInput(const float dt) {
             SaveScene();
         }
     }
+
     if (m_Input->IsKeyComboPressed({"LeftCtrl", "Z"})) {
         if (m_UndoManager.CanUndo()) {
             m_UndoManager.Undo(m_Context);
@@ -744,9 +741,6 @@ void Editor::EditorLayer::DrawToolbar() {
         ImGui::SameLine();
 
         const float buttonWidth = 70.0f;
-        const float centerPos = ImGui::GetWindowSize().x * 0.5f - buttonWidth * 0.5f;
-
-        ImGui::SetCursorPosX(centerPos);
 
         if (ImGui::Button(m_CurrentState->PlayStopLabel(), ImVec2(buttonWidth, 0))) {
             if (m_CurrentState->IsPlayMode()) {

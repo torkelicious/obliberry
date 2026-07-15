@@ -1,12 +1,9 @@
 // ReSharper disable CppDFAUnreachableCode
 #include "TileEditorPanel.h"
-
 #include "Core/EngineContext.h"
 #include "Core/ResourceManager.h"
 #include "Applications/Editor/UI/Panels/Editor/EditorWidgetsCombo.h"
-
 #include "Core/Utils.h"
-
 #include <algorithm>
 #include <imgui.h>
 #include <sstream>
@@ -164,6 +161,10 @@ namespace Editor::UI {
         m_BrushInitialized = true;
     }
 
+    //
+    // Render
+    //
+
     void TileEditorPanel::OnImGuiRender() {
         ImGui::Begin("Tile Editor");
         m_IsHovered = ImGui::IsWindowHovered();
@@ -176,97 +177,109 @@ namespace Editor::UI {
 
         auto &typeMats = m_MapComp->typeMats;
 
-        if (!m_BrushInitialized) {
-            InitBrushFromFirstType();
-        }
+        if (m_CurrentTool == MapTool::Paint) {
+            if (!m_BrushInitialized) {
+                InitBrushFromFirstType();
+            }
 
-        ImGui::SeparatorText("Brush");
+            ImGui::SeparatorText("Brush");
 
-        ImGui::BeginGroup();
+            ImGui::BeginGroup();
 
-        DrawSwatch(m_BrushColor, m_BrushTexture, 56.0f);
+            DrawSwatch(m_BrushColor, m_BrushTexture, 56.0f);
 
-        ImGui::SameLine();
+            ImGui::SameLine();
 
-        ImGui::BeginGroup();
-        ImGui::Text("Type %d", static_cast<int>(m_BrushType));
+            ImGui::BeginGroup();
+            ImGui::Text("Type %d", static_cast<int>(m_BrushType));
 
-        const auto brushCounts = CountTilesPerType(*m_MapComp);
-        if (const auto brushCountIt = brushCounts.find(m_BrushType); brushCountIt != brushCounts.end()) {
-            ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "%zu tile(s) on map", brushCountIt->second);
-        } else {
-            ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "not yet on map");
-        }
-
-        ImGui::PushID("BrushType");
-        if (uint8_t selectedBrushType = m_BrushType; TypeCombo("##BrushType", *m_MapComp, *m_EngineContext->resources, selectedBrushType)) {
-            SetBrushType(selectedBrushType);
-        }
-        ImGui::PopID();
-
-        ImGui::EndGroup();
-        ImGui::EndGroup();
-
-        ImGui::PushID("BrushMat");
-        ImGui::Spacing();
-        TextureCombo("Texture", *m_EngineContext->resources, m_BrushTexture);
-
-        ImGui::ColorEdit4("Color", &m_BrushColor.x, ImGuiColorEditFlags_NoInputs);
-        ImGui::PopID();
-
-        bool brushMatChanged = false;
-        {
-            if (const auto it = FindTypeMat(typeMats, m_BrushType); it != typeMats.end()) {
-                brushMatChanged = m_BrushTexture != it->second.texture || m_BrushColor != it->second.color;
+            const auto brushCounts = CountTilesPerType(*m_MapComp);
+            if (const auto brushCountIt = brushCounts.find(m_BrushType); brushCountIt != brushCounts.end()) {
+                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "%zu tile(s) on map", brushCountIt->second);
             } else {
-                brushMatChanged = true;
+                ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "not yet on map");
+            }
+
+            ImGui::PushID("BrushType");
+            if (uint8_t selectedBrushType = m_BrushType; TypeCombo("##BrushType", *m_MapComp, *m_EngineContext->resources, selectedBrushType)) {
+                SetBrushType(selectedBrushType);
+            }
+            ImGui::PopID();
+
+            ImGui::EndGroup();
+            ImGui::EndGroup();
+
+            ImGui::PushID("BrushMat");
+            ImGui::Spacing();
+            TextureCombo("Texture", *m_EngineContext->resources, m_BrushTexture);
+
+            ImGui::ColorEdit4("Color", &m_BrushColor.x, ImGuiColorEditFlags_NoInputs);
+            ImGui::PopID();
+
+            bool brushMatChanged = false;
+            {
+                if (const auto it = FindTypeMat(typeMats, m_BrushType); it != typeMats.end()) {
+                    brushMatChanged = m_BrushTexture != it->second.texture || m_BrushColor != it->second.color;
+                } else {
+                    brushMatChanged = true;
+                }
+            }
+
+            if (!brushMatChanged) {
+                ImGui::BeginDisabled();
+            }
+
+            if (ImGui::Button("Update Brush Type")) {
+                if (const auto it = FindTypeMat(typeMats, m_BrushType); it != typeMats.end()) {
+                    it->second.texture = m_BrushTexture;
+                    it->second.color = m_BrushColor;
+                    m_MapComp->needsMeshUpdate = true;
+                    m_MapComp->mapDirty = true;
+                    if (m_SceneContext)
+                        m_SceneContext->MarkAsChanged();
+                }
+            }
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+                ImGui::SetTooltip("Replace the material of the current brush type for all tiles using it.");
+            }
+
+            ImGui::SameLine();
+
+            if (ImGui::Button("Save as New Type##brush")) {
+                if (m_CreateTypeFn) {
+                    const uint8_t newId = m_CreateTypeFn(m_BrushTexture, m_BrushColor);
+                    SetBrushType(newId);
+                    if (m_SceneContext)
+                        m_SceneContext->MarkAsChanged();
+                }
+            }
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+                ImGui::SetTooltip("Create a brand-new tile type with this texture and colour.\n"
+                                  "Future Paint strokes will use this new type.");
+            }
+
+            if (!brushMatChanged) {
+                ImGui::EndDisabled();
+            }
+
+            if (brushMatChanged) {
+                if (uint8_t existingId = 0; FindTypeIdForMaterial(*m_MapComp, m_BrushTexture, m_BrushColor, existingId) && existingId != m_BrushType) {
+                    ImGui::TextColored(ImVec4(0.9f, 0.8f, 0.4f, 1.0f), "Same material as type %u. Use 'Update' to merge, or change texture/colour.", static_cast<unsigned>(existingId));
+                }
+            }
+
+            ImGui::Spacing();
+            ImGui::Checkbox("Walkable", &m_BrushWalkable);
+            if (ImGui::IsItemHovered()) {
+                ImGui::SetTooltip("Walkable state applied to all tiles painted with this brush.");
             }
         }
 
-        if (!brushMatChanged) {
-            ImGui::BeginDisabled();
-        }
+        //
+        // Selection
+        //
 
-        if (ImGui::Button("Update Brush Type")) {
-            if (const auto it = FindTypeMat(typeMats, m_BrushType); it != typeMats.end()) {
-                it->second.texture = m_BrushTexture;
-                it->second.color = m_BrushColor;
-                m_MapComp->needsMeshUpdate = true;
-                m_MapComp->mapDirty = true;
-                if (m_SceneContext)
-                    m_SceneContext->MarkAsChanged();
-            }
-        }
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
-            ImGui::SetTooltip("Replace the material of the current brush type for all tiles using it.");
-        }
-
-        ImGui::SameLine();
-
-        if (ImGui::Button("Save as New Type##brush")) {
-            if (m_CreateTypeFn) {
-                const uint8_t newId = m_CreateTypeFn(m_BrushTexture, m_BrushColor);
-                SetBrushType(newId);
-                if (m_SceneContext)
-                    m_SceneContext->MarkAsChanged();
-            }
-        }
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
-            ImGui::SetTooltip("Create a brand-new tile type with this texture and colour.\n"
-                              "Future Paint strokes will use this new type.");
-        }
-
-        if (!brushMatChanged) {
-            ImGui::EndDisabled();
-        }
-
-        if (brushMatChanged) {
-            if (uint8_t existingId = 0; FindTypeIdForMaterial(*m_MapComp, m_BrushTexture, m_BrushColor, existingId) && existingId != m_BrushType) {
-                ImGui::TextColored(ImVec4(0.9f, 0.8f, 0.4f, 1.0f), "Same material as type %u. Use 'Update' to merge, or change texture/colour.", static_cast<unsigned>(existingId));
-            }
-        }
-
-        if (m_CurrentTile) {
+        if (m_CurrentTile && m_CurrentTool == MapTool::Select) {
             ImGui::SeparatorText("Selected Tile");
 
             const auto typeIt = FindTypeMat(typeMats, m_CurrentTile->type);
@@ -363,12 +376,11 @@ namespace Editor::UI {
                 m_MapComp->mapDirty = true;
                 if (m_SceneContext)
                     m_SceneContext->MarkAsChanged();
+            } else {
+                ImGui::SeparatorText("Selected Tile");
+                ImGui::TextDisabled("Click a tile in the viewport to inspect and edit it.");
             }
-        } else {
-            ImGui::SeparatorText("Selected Tile");
-            ImGui::TextDisabled("Click a tile in the viewport to inspect and edit it.");
         }
-
         ImGui::End();
     }
 } // namespace Editor::UI

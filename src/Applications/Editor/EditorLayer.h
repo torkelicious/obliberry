@@ -1,13 +1,10 @@
 #pragma once
-#include <cstdint>
 #include <memory>
-
 #include "Core/ApplicationLayer.h"
 #include "Applications/Editor/UI/Panels/Editor/InspectorPanel.h"
 #include "Applications/Editor/UI/Panels/Editor/ProjectBrowserPanel.h"
 #include "Applications/Editor/UI/Panels/Editor/RegistryPanel.h"
 #include "Applications/Editor/UI/Panels/ViewportPanel.h"
-
 #include "Applications/Editor/EditorCamera.h"
 #include "Applications/Editor/States/EditorStateBase.h"
 #include "Applications/Editor/Commands/UndoManager.h"

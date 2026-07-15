@@ -2,12 +2,10 @@
 #include "ICommand.h"
 #include "Config/ProjectConfig.h"
 #include "Platform/Window/Window.h"
-
 #include <glm/glm.hpp>
 #include <optional>
 #include "ECS/Types.h"
 #include "ECS/Components/ScriptComponent.h"
-#include "Applications/Editor/States/MapEditState.h"
 #include "Map/Hex.h"
 #include "Map/HexCoords.h"
 #include "Scenes/SceneManager.h"
