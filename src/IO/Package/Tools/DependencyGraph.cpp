@@ -1,5 +1,5 @@
 #include "DependencyGraph.h"
-#include "Core/LoggerService.h"
+#include "Logger/LoggerService.h"
 #include <functional>
 
 #pragma push_macro("LOG_WHO")

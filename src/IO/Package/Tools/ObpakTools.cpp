@@ -1,13 +1,13 @@
 #include "ObpakTools.h"
 #include <filesystem>
-#include "Core/LoggerService.h"
+#include "Logger/LoggerService.h"
 #include <iostream>
 #include "AssetPacking.h"
 #include "DependencyGraph.h"
 #include <string>
 #include <cctype>
 #include "Core/Project.h"
-#include "IO/VFS.h"
+#include "IO/VFS/VFS.h"
 #include "IO/Package/Container.h"
 
 #pragma push_macro("LOG_WHO")

@@ -9,7 +9,7 @@
 #include <unordered_set>
 #include "HexCoords.h"
 #include "Core/Constants.h"
-#include "../Math/HexMath.h"
+#include "Math/HexMath.h"
 
 namespace Map {
     using TileType = uint8_t;

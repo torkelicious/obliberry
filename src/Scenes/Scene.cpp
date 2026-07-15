@@ -1,5 +1,5 @@
 #include "Scene.h"
-#include "Core/LoggerService.h"
+#include "Logger/LoggerService.h"
 #include "ECS/Systems/AISystem.h"
 #include "ECS/Systems/MapRenderSystem.h"
 #include "ECS/Systems/MovementSystem.h"
@@ -7,12 +7,12 @@
 #include "ECS/Systems/RenderSystem.h"
 #include "ECS/Systems/SpriteBillboardSystem.h"
 #include "ECS/Systems/LightingSystem.h"
-#include "IO/EntityFactory.h"
+#include "IO/Loaders/EntityFactory.h"
 #include "IO/SceneSerialization.h"
 #include <iostream>
 #include <utility>
 #include "ECS/Systems/ScriptSystem.h"
-#include "IO/PrefabManager.h"
+#include "IO/Loaders/PrefabManager.h"
 #include "Math/Frustum.h"
 #include "Scripting/EngineLib/EngineLib.h"
 #include "Sound/AudioEngine.h"

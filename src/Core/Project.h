@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/ProjectConfig.h"
+#include "Config/ProjectConfig.h"
 #include <filesystem>
 #include <memory>
 #include <string>
@@ -21,8 +21,8 @@ namespace Core {
         static std::shared_ptr<Project> GetActive() { return s_ActiveProject; }
         static void SetActive(const std::shared_ptr<Project> &project) { s_ActiveProject = project; }
 
-        [[nodiscard]] const ProjectConfig &GetConfig() const { return m_Config; }
-        ProjectConfig &GetConfig() { return m_Config; }
+        [[nodiscard]] const Config::ProjectConfig &GetConfig() const { return m_Config; }
+        Config::ProjectConfig &GetConfig() { return m_Config; }
 
         [[nodiscard]] std::filesystem::path GetProjectPath() const { return m_ProjectFilepath; }
         [[nodiscard]] std::filesystem::path GetRootDirectory() const { return m_ProjectFilepath.parent_path(); }
@@ -33,7 +33,7 @@ namespace Core {
         void ClearUnsavedChanges() const { m_HasUnsavedChanges = false; }
 
     private:
-        ProjectConfig m_Config;
+        Config::ProjectConfig m_Config;
         std::filesystem::path m_ProjectFilepath;
         mutable bool m_HasUnsavedChanges = false;
         static inline std::shared_ptr<Project> s_ActiveProject = nullptr;

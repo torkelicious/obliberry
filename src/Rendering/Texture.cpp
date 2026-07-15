@@ -1,8 +1,8 @@
 #include "Texture.h"
 #include <utility>
 #include <stb_image.h>
-#include "Core/LoggerService.h"
-#include "IO/VFS.h"
+#include "Logger/LoggerService.h"
+#include "IO/VFS/VFS.h"
 
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "Texture"

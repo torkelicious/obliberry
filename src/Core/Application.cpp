@@ -1,6 +1,6 @@
 #include "Application.h"
 #include "Core/EngineContext.h"
-#include "Core/LoggerService.h"
+#include "Logger/LoggerService.h"
 #include "Rendering/MeshFactory.h"
 #include "Rendering/InternalShaders.h"
 #include "Rendering/Renderer.h"
@@ -14,9 +14,9 @@
 #include <nfd.hpp>
 #include <thread>
 #include <utility>
-#include "Editor/EditorLayer.h"
+#include "Applications/Editor/EditorLayer.h"
 
-Core::Application::Application(const Graphics::GraphicsConfig gconf, ProjectConfig pconf, std::unique_ptr<ApplicationLayer> layer)
+Core::Application::Application(const Config::GraphicsConfig gconf, Config::ProjectConfig pconf, std::unique_ptr<ApplicationLayer> layer)
     : m_Project(std::move(pconf)), m_GraphicsConfig(gconf), m_Window(m_GraphicsConfig.WindowWidth, m_GraphicsConfig.WindowHeight, m_Project.Title.c_str(), &gconf), m_Layer(std::move(layer)) {
     m_Window.SetInputManager(&m_InputManager);
     m_AudioEngine = Sound::AudioEngine::Create();
@@ -140,7 +140,7 @@ void Core::Application::Run() {
 
     while (!m_Window.ShouldClose()) {
         m_InputManager.BeginFrame();
-        Window::PollEvents();
+        Platform::Window::Window::PollEvents();
 
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -230,7 +230,7 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer) {
     using Clock = std::chrono::steady_clock;
     auto frameStart = Clock::now();
     const auto targetFrameTime = std::chrono::microseconds(m_GraphicsConfig.TargetFPS > 0 ? static_cast<long long>(1000000.0f / m_GraphicsConfig.TargetFPS) : 0);
-    const bool frameLimit = m_GraphicsConfig.TargetFPS > 0 && m_GraphicsConfig.VSync == Graphics::VSyncType::NONE;
+    const bool frameLimit = m_GraphicsConfig.TargetFPS > 0 && m_GraphicsConfig.VSync == Config::VSyncType::NONE;
 
     while (m_Running) {
         int frameIdx = 0;

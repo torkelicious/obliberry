@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Components/TransformComponent.h"
+#include "ECS/Components/TransformComponent.h"
 #include "ECS/Components/BillboardTagComponent.h"
 #include "ECS/Registry.h"
 #include "Rendering/Camera.h"

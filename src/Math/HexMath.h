@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Core/Constants.h"
-#include "../Map/HexCoords.h"
+#include "Map/HexCoords.h"
 #include <glm/glm.hpp>
 
 // math

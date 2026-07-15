@@ -1,6 +1,6 @@
 #include "AssetPacking.h"
 #include "FileIO.h"
-#include "Core/LoggerService.h"
+#include "Logger/LoggerService.h"
 #include <ObSL/Lexer.h>
 #include <ObSL/Parser.h>
 #include <ObSL/ASTSerializer.h>

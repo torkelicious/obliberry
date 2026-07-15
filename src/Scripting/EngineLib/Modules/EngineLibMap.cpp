@@ -1,4 +1,4 @@
-#include "../EngineLib.h"
+#include "Scripting/EngineLib/EngineLib.h"
 #include "ECS/Components/MapComponent.h"
 #include "ECS/Components/MapStateComponent.h"
 #include "ECS/Components/MovementComponent.h"

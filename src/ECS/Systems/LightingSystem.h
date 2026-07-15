@@ -51,7 +51,7 @@ namespace ECS::Systems::LightingSystem {
         if (!lightShader) {
             // Fallback and create directly
             lightShader = std::make_shared<Rendering::Shader>(Rendering::BuiltinShaders::kLightVert, Rendering::BuiltinShaders::kLightFrag, "<light>");
-            Rendering::Renderer::SubmitInitTask(Core::SmallTask([lightShader] { lightShader->InitGL(); }));
+            Rendering::Renderer::SubmitInitTask(Platform::Threading::SmallTask([lightShader] { lightShader->InitGL(); }));
         }
 
         // create quad mesh on game thread

@@ -1,9 +1,9 @@
 #define GLFW_INCLUDE_NONE
-#include "../EngineLib.h"
+#include "Scripting/EngineLib/EngineLib.h"
 #include <mutex>
-#include "Core/InputManager.h"
+#include "Platform/Input/InputManager.h"
 #include "Rendering/Camera.h"
-#include "Core/Window.h"
+#include "Platform/Window/Window.h"
 #include "Rendering/Renderer.h"
 #include <ObSL/Interpreter.h>
 
@@ -18,7 +18,7 @@ void Scripting::EngineLib::register_input_modules(ObSL::Interpreter &interpreter
                                                                             [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
                                                                                 if (!ctx || !ctx->input || args.empty() || !std::holds_alternative<std::string>(args[0]))
                                                                                     return false;
-                                                                                return ctx->input->IsKeyDown(Core::InputManager::GetKeyFromName(std::get<std::string>(args[0])));
+                                                                                return ctx->input->IsKeyDown(Platform::Input::InputManager::GetKeyFromName(std::get<std::string>(args[0])));
                                                                             },
                                                                             "Input_IsKeyDown"));
 
@@ -27,7 +27,7 @@ void Scripting::EngineLib::register_input_modules(ObSL::Interpreter &interpreter
                                                                                [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
                                                                                    if (!ctx || !ctx->input || args.empty() || !std::holds_alternative<std::string>(args[0]))
                                                                                        return false;
-                                                                                   return ctx->input->IsKeyPressed(Core::InputManager::GetKeyFromName(std::get<std::string>(args[0])));
+                                                                                   return ctx->input->IsKeyPressed(Platform::Input::InputManager::GetKeyFromName(std::get<std::string>(args[0])));
                                                                                },
                                                                                "Input_IsKeyPressed"));
 
@@ -36,7 +36,7 @@ void Scripting::EngineLib::register_input_modules(ObSL::Interpreter &interpreter
                                                                                 [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
                                                                                     if (!ctx || !ctx->input || args.empty() || !std::holds_alternative<std::string>(args[0]))
                                                                                         return false;
-                                                                                    return ctx->input->IsKeyReleased(Core::InputManager::GetKeyFromName(std::get<std::string>(args[0])));
+                                                                                    return ctx->input->IsKeyReleased(Platform::Input::InputManager::GetKeyFromName(std::get<std::string>(args[0])));
                                                                                 },
                                                                                 "Input_IsKeyReleased"));
 

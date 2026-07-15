@@ -194,13 +194,13 @@ target_link_libraries(obliberry_vendor PUBLIC glfw)
 add_library(obliberry_engine STATIC
         # Engine core
         src/Core/Application.cpp
-        src/Core/Window.cpp
-        src/Core/InputManager.cpp
-        src/Core/ProjectConfig.cpp
-        src/Core/KeyMappings.cpp
+        src/Platform/Window/Window.cpp
+        src/Platform/Input/InputManager.cpp
+        src/Config/ProjectConfig.cpp
+        src/Platform/Input/KeyMappings.cpp
         src/Core/Project.cpp
-        src/Core/ThreadPool.cpp
-        src/Core/LoggerService.cpp
+        src/Platform/Threading/ThreadPool.cpp
+        src/Logger/LoggerService.cpp
 
         # Rendering
         src/Rendering/VertexBuffer.cpp
@@ -215,15 +215,15 @@ add_library(obliberry_engine STATIC
         # Scenes / gameplay
         src/Scenes/Scene.cpp
         src/Scenes/SceneManager.cpp
-        src/Game/GameLayer.cpp
-        src/Game/GameUI.cpp
+        src/Applications/Runtime/Game/GameLayer.cpp
+        src/Applications/Runtime/Game/GameUI.cpp
 
         # IO
         src/IO/MapSerialization.cpp
-        src/IO/AssetLoader.cpp
-        src/IO/EntityFactory.cpp
+        src/IO/Loaders/AssetLoader.cpp
+        src/IO/Loaders/EntityFactory.cpp
         src/IO/SceneSerialization.cpp
-        src/IO/VFS.cpp
+        src/IO/VFS/VFS.cpp
 
         # Sound
         src/Sound/AudioEngine.cpp
@@ -246,7 +246,7 @@ add_library(obliberry_engine STATIC
         src/IO/Package/ContainerReader.cpp
         src/IO/Package/Tools/AssetPacking.cpp
         src/IO/Package/Tools/DependencyGraph.cpp
-        src/Core/GraphicsConfig.cpp
+        src/Config/GraphicsConfig.cpp
 )
 
 target_include_directories(obliberry_engine PUBLIC
@@ -268,7 +268,7 @@ target_link_libraries(obliberry_engine PUBLIC
 
 # Runtime
 add_executable(obliberry_runtime
-        src/Runtime/RuntimeMain.cpp
+        src/Applications/Runtime/RuntimeMain.cpp
 )
 
 target_link_libraries(obliberry_runtime PRIVATE
@@ -277,25 +277,25 @@ target_link_libraries(obliberry_runtime PRIVATE
 
 # Editor
 add_executable(obliberry_editor
-        src/Editor/EditorMain.cpp
-        src/Editor/EditorLayer.cpp
-        src/Editor/States/EditState.cpp
-        src/Editor/States/PlayState.cpp
-        src/Editor/States/MapEditState.cpp
-        src/Editor/States/HubState.cpp
-        src/Editor/UI/Panels/Editor/EditorWidgets.cpp
-        src/Editor/UI/Panels/Editor/EditorWidgetsCombo.cpp
-        src/Editor/UI/Panels/Editor/InspectorPanel.cpp
-        src/Editor/UI/Panels/Editor/ProjectBrowserPanel.cpp
-        src/Editor/UI/Panels/Editor/RegistryPanel.cpp
-        src/Editor/UI/Panels/ViewportPanel.cpp
-        src/Editor/UI/ConfigWindows/ProjectConfigEditor.cpp
-        src/Editor/UI/ConfigWindows/SceneConfigEditor.cpp
-        src/Editor/FileDialogs.cpp
+        src/Applications/Editor/EditorMain.cpp
+        src/Applications/Editor/EditorLayer.cpp
+        src/Applications/Editor/States/EditState.cpp
+        src/Applications/Editor/States/PlayState.cpp
+        src/Applications/Editor/States/MapEditState.cpp
+        src/Applications/Editor/States/HubState.cpp
+        src/Applications/Editor/UI/Panels/Editor/EditorWidgets.cpp
+        src/Applications/Editor/UI/Panels/Editor/EditorWidgetsCombo.cpp
+        src/Applications/Editor/UI/Panels/Editor/InspectorPanel.cpp
+        src/Applications/Editor/UI/Panels/Editor/ProjectBrowserPanel.cpp
+        src/Applications/Editor/UI/Panels/Editor/RegistryPanel.cpp
+        src/Applications/Editor/UI/Panels/ViewportPanel.cpp
+        src/Applications/Editor/UI/ConfigWindows/ProjectConfigEditor.cpp
+        src/Applications/Editor/UI/ConfigWindows/SceneConfigEditor.cpp
+        src/Applications/Editor/Platform/FileDialogs.cpp
         src/IO/Package/Tools/ObpakTools.cpp
-        src/Editor/UI/Panels/MapEditor/TileEditorPanel.cpp
-        src/Editor/Commands/UndoManager.cpp
-        src/Editor/Commands/EditorCommands.cpp
+        src/Applications/Editor/UI/Panels/MapEditor/TileEditorPanel.cpp
+        src/Applications/Editor/Commands/UndoManager.cpp
+        src/Applications/Editor/Commands/EditorCommands.cpp
 )
 
 target_link_libraries(obliberry_editor PRIVATE
@@ -311,17 +311,17 @@ endif ()
 if (BUILD_PACK_TOOLS)
 
     add_executable(ob_packer
-            src/IO/Package/Packer.cpp
+            src/Applications/Tools/Packaging/Packer.cpp
     )
     target_link_libraries(ob_packer PRIVATE obliberry_engine)
 
     add_executable(ob_unpacker
-            src/IO/Package/Unpacker.cpp
+            src/Applications/Tools/Packaging/Unpacker.cpp
     )
     target_link_libraries(ob_unpacker PRIVATE obliberry_engine)
 
     add_executable(obsl_pack_run
-            src/IO/Package/Runner.cpp
+            src/Applications/Tools/Packaging/Runner.cpp
     )
     target_link_libraries(obsl_pack_run PRIVATE obliberry_engine)
 

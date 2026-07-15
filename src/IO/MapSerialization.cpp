@@ -1,8 +1,8 @@
 #include "MapSerialization.h"
 #include <fstream>
 #include <ios>
-#include "Core/LoggerService.h"
-#include "VFS.h"
+#include "Logger/LoggerService.h"
+#include "VFS/VFS.h"
 
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "MapIO"

@@ -2,7 +2,7 @@
 #include "Core/Constants.h"
 #include <cmath>
 
-#include "IO/AssetLoader.h"
+#include "IO/Loaders/AssetLoader.h"
 
 namespace Rendering::MeshFactory {
     MeshData CreateQuad() {

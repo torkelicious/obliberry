@@ -1,4 +1,4 @@
-#include "../EngineLib.h"
+#include "Scripting/EngineLib/EngineLib.h"
 #include <mutex>
 #include "Rendering/Camera.h"
 #include <ObSL/Interpreter.h>

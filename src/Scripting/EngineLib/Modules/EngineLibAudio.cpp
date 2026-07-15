@@ -1,4 +1,4 @@
-#include "../EngineLib.h"
+#include "Scripting/EngineLib/EngineLib.h"
 #include <mutex>
 #include <ObSL/Interpreter.h>
 #include "Sound/AudioEngine.h"

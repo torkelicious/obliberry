@@ -9,7 +9,7 @@
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Registry.h"
 #include "ECS/Systems/MovementSystem.h"
-#include "../../Math/HexMath.h"
+#include "Math/HexMath.h"
 #include "Core/EngineContext.h"
 
 namespace ECS::Systems::MapRuntimeSystem {

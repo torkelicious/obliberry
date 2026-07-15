@@ -1,13 +1,13 @@
 #include "SceneSerialization.h"
 #include <fstream>
 #include <nlohmann/json.hpp>
-#include "Core/LoggerService.h"
+#include "Logger/LoggerService.h"
 #include "MapSerialization.h"
-#include "VFS.h"
-#include "Core/ProjectConfig.h"
+#include "VFS/VFS.h"
+#include "Config/ProjectConfig.h"
 #include "Core/Utils.h"
-#include "IO/AssetLoader.h"
-#include "IO/EntityFactory.h"
+#include "Loaders/AssetLoader.h"
+#include "Loaders/EntityFactory.h"
 #include "Scenes/Scene.h"
 #include "ECS/Components/MapComponent.h"
 #include "ECS/Components/MapStateComponent.h"
@@ -238,9 +238,9 @@ namespace IO::SceneIO {
 
         SerializeAssets(j["assets"]["textures"], resources.GetAll<Rendering::Texture>(), [](const std::string &id, const std::shared_ptr<Rendering::Texture> &tex) { return json{{"id", id}, {"path", tex->GetPath()}}; });
 
-        SerializeAssets(j["assets"]["shaders"], resources.GetAll<Rendering::Shader>(),
-                        [](const std::string &id, const std::shared_ptr<Rendering::Shader> &shad) { return json{{"id", id}, {"vertex", shad->GetVertexPath()}, {"fragment", shad->GetFragmentPath()}}; },
-                        IsUserAsset);
+        SerializeAssets(
+                j["assets"]["shaders"], resources.GetAll<Rendering::Shader>(),
+                [](const std::string &id, const std::shared_ptr<Rendering::Shader> &shad) { return json{{"id", id}, {"vertex", shad->GetVertexPath()}, {"fragment", shad->GetFragmentPath()}}; }, IsUserAsset);
 
         SerializeAssets(j["assets"]["meshes"], resources.GetAll<Rendering::Mesh>(),
                         [](const std::string &id, const std::shared_ptr<Rendering::Mesh> &mesh) { return json{{"id", id}, {"factory", mesh->GetFactoryId()}}; });

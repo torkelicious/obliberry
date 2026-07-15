@@ -2,8 +2,8 @@
 #include <filesystem>
 #include <fstream>
 #include <sstream>
-#include "Core/LoggerService.h"
-#include "IO/VFS.h"
+#include "Logger/LoggerService.h"
+#include "IO/VFS/VFS.h"
 
 #include "Rendering/InternalShaders.h"
 
@@ -17,8 +17,7 @@ namespace Rendering {
     }
 
     Shader::Shader(std::string vertSrc, std::string fragSrc, std::string debugName)
-        : m_vertPath(std::move(debugName)), m_fragPath(std::move(debugName)),
-          m_VertexSrc(std::move(vertSrc)), m_FragmentSrc(std::move(fragSrc)) {}
+        : m_vertPath(std::move(debugName)), m_fragPath(std::move(debugName)), m_VertexSrc(std::move(vertSrc)), m_FragmentSrc(std::move(fragSrc)) {}
 
     Shader::~Shader() {
         if (m_ID != 0) {

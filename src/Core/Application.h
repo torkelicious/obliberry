@@ -6,13 +6,13 @@
 #include <atomic>
 #include <deque>
 #include <memory>
-#include "ProjectConfig.h"
+#include "Config/ProjectConfig.h"
 #include "ResourceManager.h"
-#include "Window.h"
+#include "Platform/Window/Window.h"
 #include "ApplicationLayer.h"
-#include "GraphicsConfig.h"
+#include "Config/GraphicsConfig.h"
 #include <ObSL/ScriptRuntime.h>
-#include "Core/ThreadPool.h"
+#include "Platform/Threading/ThreadPool.h"
 #include "Sound/AudioEngine.h"
 
 struct ImDrawData;
@@ -20,7 +20,7 @@ struct ImDrawData;
 namespace Core {
     class Application {
     public:
-        explicit Application(Graphics::GraphicsConfig gconf, ProjectConfig pconf, std::unique_ptr<ApplicationLayer> layer);
+        explicit Application(Config::GraphicsConfig gconf, Config::ProjectConfig pconf, std::unique_ptr<ApplicationLayer> layer);
 
         ~Application() { Shutdown(); }
 
@@ -39,13 +39,13 @@ namespace Core {
 
         void RenderThreadWorker(Rendering::Renderer *renderer);
 
-        ProjectConfig m_Project;
-        Graphics::GraphicsConfig m_GraphicsConfig;
-        Window m_Window;
-        InputManager m_InputManager;
+        Config::ProjectConfig m_Project;
+        Config::GraphicsConfig m_GraphicsConfig;
+        Platform::Window::Window m_Window;
+        Platform::Input::InputManager m_InputManager;
         ResourceManager m_ResourceManager;
         ObSL::ScriptRuntime m_ScriptPool;
-        ThreadPool m_ThreadPool;
+        Platform::Threading::ThreadPool m_ThreadPool;
         std::unique_ptr<Sound::AudioEngine> m_AudioEngine;
 
         std::unique_ptr<ApplicationLayer> m_Layer;

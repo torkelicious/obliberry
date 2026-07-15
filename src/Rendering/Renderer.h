@@ -5,7 +5,7 @@
 #include "Mesh.h"
 #include "FrameBuffer.h"
 #include "Transform.h"
-#include "Core/SmallTask.h"
+#include "Platform/Threading/SmallTask.h"
 #include <atomic>
 #include <functional>
 #include <memory>
@@ -75,7 +75,7 @@ namespace Rendering {
 
         static void ApplyClearColor();
 
-        static void SubmitInitTask(Core::SmallTask task);
+        static void SubmitInitTask(Platform::Threading::SmallTask task);
         static void SubmitInitTask(std::function<void()> task);
 
         static void ProcessInitQ();
@@ -100,7 +100,7 @@ namespace Rendering {
 
         void RenderBatch(const BatchKey &key, const glm::mat4 *transforms, const int *entityIDs, size_t count, size_t renderIndex);
 
-        using InitTask = std::variant<Core::SmallTask, std::function<void()>>;
+        using InitTask = std::variant<Platform::Threading::SmallTask, std::function<void()>>;
         static std::vector<InitTask> s_InitQueue;
         static std::mutex s_InitQueueMutex;
         static std::atomic<bool> s_HasInitTasks;
