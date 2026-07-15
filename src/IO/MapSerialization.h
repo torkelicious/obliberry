@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstdint>
-#include "../Map/Hex.h"
+#include "Map/Hex.h"
 
 namespace IO::MapIO {
     // #pragma pack stops the compiler stuffing invisible padding bytes :))

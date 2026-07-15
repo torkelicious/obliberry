@@ -9,7 +9,7 @@
           1.0
         ],
         "id": "npc_mat",
-        "shader": "base_shader",
+        "shader": "[Engine] Base",
         "texture": "p_north_east"
       },
       {
@@ -20,7 +20,7 @@
           1.0
         ],
         "id": "player_mat",
-        "shader": "base_shader",
+        "shader": "[Engine] Base",
         "texture": "p_north_east"
       },
       {
@@ -31,7 +31,7 @@
           1.0
         ],
         "id": "t_mat",
-        "shader": "base_shader",
+        "shader": "[Engine] Base",
         "texture": ""
       },
       {
@@ -42,7 +42,7 @@
           1.0
         ],
         "id": "red_mat",
-        "shader": "base_shader",
+        "shader": "[Engine] Base",
         "texture": ""
       },
       {
@@ -53,7 +53,7 @@
           1.0
         ],
         "id": "green_mat",
-        "shader": "base_shader",
+        "shader": "[Engine] Base",
         "texture": ""
       },
       {
@@ -64,7 +64,7 @@
           1.0
         ],
         "id": "blue_mat",
-        "shader": "base_shader",
+        "shader": "[Engine] Base",
         "texture": ""
       },
       {
@@ -75,7 +75,7 @@
           1.0
         ],
         "id": "yellow_mat",
-        "shader": "base_shader",
+        "shader": "[Engine] Base",
         "texture": ""
       },
       {
@@ -86,7 +86,7 @@
           1.0
         ],
         "id": "purple_mat",
-        "shader": "base_shader",
+        "shader": "[Engine] Base",
         "texture": ""
       },
       {
@@ -97,7 +97,7 @@
           1.0
         ],
         "id": "cyan_mat",
-        "shader": "base_shader",
+        "shader": "[Engine] Base",
         "texture": ""
       }
     ],
@@ -147,13 +147,7 @@
         "id": "ring_mesh"
       }
     ],
-    "shaders": [
-      {
-        "fragment": "assets/shaders/base.frag",
-        "id": "base_shader",
-        "vertex": "assets/shaders/base.vert"
-      }
-    ],
+    "shaders": [],
     "textures": [
       {
         "id": "sand_tex",

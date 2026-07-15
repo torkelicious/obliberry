@@ -1,6 +1,6 @@
 #include "AssetPacking.h"
 #include "FileIO.h"
-#include "Core/LoggerService.h"
+#include "Logger/LoggerService.h"
 #include <ObSL/Lexer.h>
 #include <ObSL/Parser.h>
 #include <ObSL/ASTSerializer.h>
@@ -9,12 +9,14 @@
 #include <nlohmann/json.hpp>
 #include <algorithm>
 
-constexpr auto LOG_WHO = "AssetPacking";
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "AssetPacking"
 
 namespace IO::Package::Tools {
     const std::filesystem::path ignorelist[] = {
             "imgui.ini",
             ".DS_Store",
+            "graphics.json",
     };
 
     static std::string lower_ext(const std::filesystem::path &p) {
@@ -137,3 +139,4 @@ namespace IO::Package::Tools {
         return true;
     }
 } // namespace IO::Package::Tools
+#pragma pop_macro("LOG_WHO")

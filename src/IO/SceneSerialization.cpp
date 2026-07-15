@@ -1,19 +1,20 @@
 #include "SceneSerialization.h"
 #include <fstream>
 #include <nlohmann/json.hpp>
-#include "Core/LoggerService.h"
+#include "Logger/LoggerService.h"
 #include "MapSerialization.h"
-#include "VFS.h"
-#include "Core/ProjectConfig.h"
+#include "VFS/VFS.h"
+#include "Config/ProjectConfig.h"
 #include "Core/Utils.h"
-#include "IO/AssetLoader.h"
-#include "IO/EntityFactory.h"
+#include "Loaders/AssetLoader.h"
+#include "Loaders/EntityFactory.h"
 #include "Scenes/Scene.h"
 #include "ECS/Components/MapComponent.h"
 #include "ECS/Components/MapStateComponent.h"
 #include "ECS/Systems/MapRuntimeSystem.h"
 
-constexpr auto LOG_WHO = "SceneIO";
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "SceneIO"
 
 namespace IO::SceneIO {
     using json = nlohmann::json;
@@ -32,8 +33,14 @@ namespace IO::SceneIO {
     }
 
     bool Deserialize(const std::string &path, Scenes::Scene &scene) {
-        auto fileData = VFS::ReadVirtual(path);
-        if (!fileData.has_value()) {
+        std::string_view dataView;
+        std::string ownedData;
+        if (auto view = VFS::ReadVirtualView(path)) {
+            dataView = *view;
+        } else if (auto owned = VFS::ReadVirtual(path)) {
+            ownedData = std::move(*owned);
+            dataView = ownedData;
+        } else {
             LOG_ERROR(LOG_WHO, "Failed to open scene through VFS: " + path);
             return false;
         }
@@ -44,10 +51,10 @@ namespace IO::SceneIO {
         json j;
         try {
             if (VFS::IsPackaged()) {
-                std::vector<uint8_t> bytes(fileData.value().begin(), fileData.value().end());
+                std::vector<uint8_t> bytes(dataView.begin(), dataView.end());
                 j = json::from_msgpack(bytes);
             } else {
-                j = json::parse(fileData.value());
+                j = json::parse(dataView);
             }
         } catch (const std::exception &e) {
             LOG_ERROR(LOG_WHO, "Scene parsing failure: " + std::string(e.what()));
@@ -99,7 +106,7 @@ namespace IO::SceneIO {
             // bind visual resources from scene json grid section
             auto &gridJson = j["grid"];
             std::string meshId = gridJson.value("mesh_id", "hex_mesh");
-            std::string shaderId = gridJson.value("shader_id", "base_shader");
+            std::string shaderId = gridJson.value("shader_id", "[Engine] Base");
 
 
             auto hexMesh = resources.Get<Rendering::Mesh>(meshId);
@@ -121,7 +128,7 @@ namespace IO::SceneIO {
 
                     Rendering::Material typeMat{shader, typeTexture, color};
 
-                    mapComp.typeMats.emplace(id, typeMat);
+                    mapComp.typeMats.emplace_back(id, typeMat);
                 }
             }
 
@@ -133,6 +140,21 @@ namespace IO::SceneIO {
             }
             mapComp.needsMeshUpdate = true;
             mapComp.lightmap.ambient = AmbientLight;
+
+            {
+                std::vector<uint8_t> definedTypeIds;
+                definedTypeIds.reserve(mapComp.typeMats.size());
+                for (const auto &[id, _] : mapComp.typeMats)
+                    definedTypeIds.push_back(id);
+
+                for (const auto &[coords, tile] : mapComp.grid.tiles) {
+                    if (std::ranges::find(definedTypeIds, tile.type) == definedTypeIds.end()) {
+                        LOG_WARN(LOG_WHO, "Tile at (" + std::to_string(coords.q) + "," + std::to_string(coords.r) + ") uses type " + std::to_string(tile.type) + " which has no defined material — it will not render");
+                        break; // only log once per load
+                    }
+                }
+            }
+
             mapEntity.AddComponent<ECS::Components::MapComponent>(mapComp);
             mapEntity.AddComponent<ECS::Components::MapStateComponent>();
         }
@@ -189,7 +211,10 @@ namespace IO::SceneIO {
                 std::ranges::sort(keys);
 
                 for (uint8_t id : keys) {
-                    const auto &material = mapComp->typeMats.at(id);
+                    auto it = std::ranges::find_if(mapComp->typeMats, [id](const auto &p) { return p.first == id; });
+                    if (it == mapComp->typeMats.end())
+                        continue;
+                    const auto &material = it->second;
                     json typeJson;
                     typeJson["id"] = id;
 
@@ -213,8 +238,9 @@ namespace IO::SceneIO {
 
         SerializeAssets(j["assets"]["textures"], resources.GetAll<Rendering::Texture>(), [](const std::string &id, const std::shared_ptr<Rendering::Texture> &tex) { return json{{"id", id}, {"path", tex->GetPath()}}; });
 
-        SerializeAssets(j["assets"]["shaders"], resources.GetAll<Rendering::Shader>(),
-                        [](const std::string &id, const std::shared_ptr<Rendering::Shader> &shad) { return json{{"id", id}, {"vertex", shad->GetVertexPath()}, {"fragment", shad->GetFragmentPath()}}; });
+        SerializeAssets(
+                j["assets"]["shaders"], resources.GetAll<Rendering::Shader>(),
+                [](const std::string &id, const std::shared_ptr<Rendering::Shader> &shad) { return json{{"id", id}, {"vertex", shad->GetVertexPath()}, {"fragment", shad->GetFragmentPath()}}; }, IsUserAsset);
 
         SerializeAssets(j["assets"]["meshes"], resources.GetAll<Rendering::Mesh>(),
                         [](const std::string &id, const std::shared_ptr<Rendering::Mesh> &mesh) { return json{{"id", id}, {"factory", mesh->GetFactoryId()}}; });
@@ -250,3 +276,4 @@ namespace IO::SceneIO {
         return true;
     }
 } // namespace IO::SceneIO
+#pragma pop_macro("LOG_WHO")

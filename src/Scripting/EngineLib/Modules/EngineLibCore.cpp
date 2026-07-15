@@ -1,10 +1,10 @@
-#include "../EngineLib.h"
-#include "../EngineLibFactories.h"
+#include "Scripting/EngineLib/EngineLib.h"
+#include "Scripting/EngineLib/EngineLibFactories.h"
 #include <GLFW/glfw3.h>
 #include <mutex>
 #include <shared_mutex>
-#include "Core/Window.h"
-#include "IO/PrefabManager.h"
+#include "Platform/Window/Window.h"
+#include "IO/Loaders/PrefabManager.h"
 #include <ObSL/Interpreter.h>
 #include <ObSL/ScriptWorker.h>
 

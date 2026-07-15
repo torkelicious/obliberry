@@ -1,8 +1,9 @@
 #include "DependencyGraph.h"
-#include "Core/LoggerService.h"
+#include "Logger/LoggerService.h"
 #include <functional>
 
-constexpr auto LOG_WHO = "DependencyGraph";
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "DependencyGraph"
 namespace IO::Package::Tools {
     void DependencyGraph::add_script(const std::string &canonical_path, std::vector<std::string> deps) {
         m_known_scripts.insert(canonical_path);
@@ -46,8 +47,7 @@ namespace IO::Package::Tools {
 
         for (const auto &script : m_known_scripts) {
             if (color[script] == 0) {
-                std::vector<std::string> path;
-                if (has_cycle(script, path)) {
+                if (std::vector<std::string> path; has_cycle(script, path)) {
                     std::string chain;
                     for (auto &p : path)
                         chain += p + " -> ";
@@ -60,3 +60,4 @@ namespace IO::Package::Tools {
         return ok;
     }
 } // namespace IO::Package::Tools
+#pragma pop_macro("LOG_WHO")

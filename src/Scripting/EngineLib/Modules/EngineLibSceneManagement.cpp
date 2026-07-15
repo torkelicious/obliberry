@@ -1,9 +1,9 @@
-#include "../EngineLib.h"
+#include "Scripting/EngineLib/EngineLib.h"
 #include <mutex>
 #include "Scenes/SceneManager.h"
 #include "Scenes/Scene.h"
 #include "Core/EngineContext.h"
-#include "IO/PrefabManager.h"
+#include "IO/Loaders/PrefabManager.h"
 #include <ObSL/Interpreter.h>
 
 namespace {

@@ -1,16 +1,17 @@
 #include "ObpakTools.h"
 #include <filesystem>
-#include "Core/LoggerService.h"
+#include "Logger/LoggerService.h"
 #include <iostream>
 #include "AssetPacking.h"
 #include "DependencyGraph.h"
 #include <string>
 #include <cctype>
 #include "Core/Project.h"
-#include "IO/VFS.h"
+#include "IO/VFS/VFS.h"
 #include "IO/Package/Container.h"
 
-constexpr auto LOG_WHO = "ObpakTools";
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "ObpakTools"
 
 namespace IO::Package::Tools {
     std::string SanitizeExecutableName(const std::string &input) {
@@ -87,11 +88,9 @@ namespace IO::Package::Tools {
                 std::cout << "Packed " + std::to_string(success_count) + "/" + std::to_string(success_count + fail_count) + " files.\n";
             } catch (const std::exception &e) {
                 LOG_ERROR(LOG_WHO, std::string("Could not write package - ") + e.what());
-                return;
             }
         } else {
             LOG_ERROR(LOG_WHO, "No valid assets found to pack");
-            return;
         }
     }
 
@@ -124,3 +123,4 @@ namespace IO::Package::Tools {
         }
     }
 } // namespace IO::Package::Tools
+#pragma pop_macro("LOG_WHO")

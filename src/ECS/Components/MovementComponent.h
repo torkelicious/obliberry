@@ -14,4 +14,3 @@ namespace ECS::Components {
         bool isMoving = false;
     };
 } // namespace ECS::Components
-

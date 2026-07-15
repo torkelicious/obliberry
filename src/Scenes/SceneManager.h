@@ -9,7 +9,7 @@
 namespace Scenes {
     class SceneManager {
     public:
-        [[nodiscard]] std::vector<std::string> GetAvailableScenes() const;
+        [[nodiscard]] static std::vector<std::string> GetAvailableScenes();
 
         [[nodiscard]] bool CreateNewScene(const std::string &sceneName) const;
 

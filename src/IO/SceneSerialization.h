@@ -13,8 +13,13 @@ namespace IO::SceneIO {
 
     bool Serialize(const std::string &path, Scenes::Scene &scene);
 
-    template <typename T, typename Func> void SerializeAssets(nlohmann::json &arr, const std::unordered_map<std::string, std::shared_ptr<T>> &assets, Func serializer) {
+    inline bool IsUserAsset(const std::string &id) { return !id.starts_with("[Engine]"); }
+
+    template <typename T, typename Func, typename Pred = decltype([](const std::string &) { return true; })>
+    void SerializeAssets(nlohmann::json &arr, const std::unordered_map<std::string, std::shared_ptr<T>> &assets, Func serializer, Pred pred = {}) {
         for (const auto &[id, asset] : assets) {
+            if (!pred(id))
+                continue;
             arr.push_back(serializer(id, asset));
         }
     }

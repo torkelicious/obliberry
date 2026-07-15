@@ -1,21 +1,33 @@
 #pragma once
-
 #include "Core/Constants.h"
+#include "Core/ResourceManager.h"
 #include "ECS/Components/MapComponent.h"
 #include "ECS/Components/PointLightComponent.h"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Registry.h"
 #include "Rendering/Renderer.h"
-#include "Rendering/Texture.h"
+#include "Rendering/InternalShaders.h"
+#include "Rendering/MeshFactory.h"
 #include <algorithm>
+#include <cmath>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <memory>
+#include <vector>
+#include <ranges>
 
 namespace ECS::Systems::LightingSystem {
-    inline void GenerateLightmap(Components::MapComponent &map) {
+
+    struct GPULight {
+        float x, y;
+        float radius;
+        float colorR, colorG, colorB;
+    };
+
+    inline void GenerateLightmap(Components::MapComponent &map, Core::ResourceManager *resources) {
         auto &lm = map.lightmap;
 
-        // world space bounding box of all tiles
+        // compute map bounds from tiles
         glm::vec2 minWorld(std::numeric_limits<float>::max());
         glm::vec2 maxWorld(std::numeric_limits<float>::lowest());
 
@@ -24,52 +36,65 @@ namespace ECS::Systems::LightingSystem {
             minWorld = glm::min(minWorld, wp);
             maxWorld = glm::max(maxWorld, wp);
         }
-        // padding
+
         minWorld -= glm::vec2(Core::HEX_SIZE);
         maxWorld += glm::vec2(Core::HEX_SIZE);
 
         lm.mapOffset = minWorld;
         lm.mapSize = maxWorld - minWorld;
 
-        // determine texture resolution
         const int texW = std::max(1, static_cast<int>(lm.mapSize.x / Core::HEX_SIZE) * Core::LIGHTMAP_TEXELS_PER_HEX);
         const int texH = std::max(1, static_cast<int>(lm.mapSize.y / Core::HEX_SIZE) * Core::LIGHTMAP_TEXELS_PER_HEX);
 
-        // resize and fill cache
-        lm.accumulationBuffer.resize(texW * texH);
-        lm.pixelBuffer.assign(texW * texH * 4, 255);
-
-        if (!lm.texture || lm.texture->GetWidth() != texW || lm.texture->GetHeight() != texH) {
-            lm.texture = std::make_shared<Rendering::Texture>(texW, texH, lm.pixelBuffer.data());
-
-            Rendering::Renderer::SubmitInitTask([tex = lm.texture] { tex->InitGL(); });
-        } else {
-            Rendering::Renderer::SubmitInitTask([tex = lm.texture, w = texW, h = texH, data = std::move(lm.pixelBuffer)]() mutable {
-                tex->UpdateData(data.data(), w, h);
-                data.clear();
-            });
-            lm.pixelBuffer.assign(texW * texH * 4, 255);
+        // pull the light shader
+        auto lightShader = resources ? resources->Get<Rendering::Shader>("[Engine] Light") : nullptr;
+        if (!lightShader) {
+            // Fallback and create directly
+            lightShader = std::make_shared<Rendering::Shader>(Rendering::BuiltinShaders::kLightVert, Rendering::BuiltinShaders::kLightFrag, "<light>");
+            Rendering::Renderer::SubmitInitTask(Platform::Threading::SmallTask([lightShader] { lightShader->InitGL(); }));
         }
 
-        // force a rebuild the first time
+        // create quad mesh on game thread
+        auto lightQuad = std::make_shared<Rendering::Mesh>(Rendering::MeshFactory::CreateQuad());
+
+        // capture old resources so their destructors run on the GL thread
+        auto oldFbo = lm.framebuffer;
+        auto oldMesh = lm.lightQuad;
+        auto oldShader = lm.lightShader;
+
+        // new resources
+        lm.lightQuad = lightQuad;
+        lm.lightShader = lightShader;
+
+        // capture lightmap pointer and dimensions
+        // FBO created on render thread !!!
+        Rendering::Lightmap *lmPtr = &lm;
+        Rendering::Renderer::SubmitInitTask([lmPtr, lightQuad, texW, texH] {
+            lightQuad->InitGL();
+            lmPtr->framebuffer = std::make_shared<Rendering::FrameBuffer>(texW, texH);
+        });
+
         lm.lastLightCount = std::numeric_limits<size_t>::max();
     }
 
-    // return true if anything relevant to the lightmap changed since the last rebuild.
     inline bool ConsumeDirtyState(Registry &reg, const Components::MapComponent &mapComp, const size_t lightCount) {
-        bool anyDirty = (lightCount != mapComp.lightmap.lastLightCount);
+        if (lightCount != mapComp.lightmap.lastLightCount)
+            return true;
 
-        reg.ForEach<Components::PointLightComponent, Components::TransformComponent>([&](Entity, const Components::PointLightComponent *light, const Components::TransformComponent *transform) {
-            if (light->dirty || transform->transform.IsDirty())
-                anyDirty = true;
-        });
+        auto *lightPool = reg.GetPool<Components::PointLightComponent>();
+        auto *transformPool = reg.GetPool<Components::TransformComponent>();
+        for (const EntityID id : lightPool->GetDenseEntities()) {
+            const auto *light = lightPool->Get(id);
+            if (const auto *transform = transformPool ? transformPool->Get(id) : nullptr; light && (light->dirty || (transform && transform->transform.IsDirty())))
+                return true;
+        }
 
-        return anyDirty;
+        return false;
     }
 
     inline void Update(Registry &reg) {
-        Components::MapComponent *mapComp = reg.GetFirst<Components::MapComponent>();
-        if (!mapComp || !mapComp->lightmap.texture) {
+        auto *mapComp = reg.GetFirst<Components::MapComponent>();
+        if (!mapComp || !mapComp->lightmap.framebuffer) {
             return;
         }
 
@@ -81,73 +106,99 @@ namespace ECS::Systems::LightingSystem {
         if (!ConsumeDirtyState(reg, *mapComp, lightCount))
             return;
 
-        auto &[accumulationBuffer, pixelBuffer, texture, mapOffset, mapSize, ambient, lastLightCount] = mapComp->lightmap;
-        const int texW = texture->GetWidth();
-        const int texH = texture->GetHeight();
-        const int pixelCount = texW * texH;
+        auto &lm = mapComp->lightmap;
 
-        if (accumulationBuffer.size() != static_cast<size_t>(pixelCount)) {
-            accumulationBuffer.resize(pixelCount);
-        }
-        if (pixelBuffer.size() != static_cast<size_t>(pixelCount * 4)) {
-            pixelBuffer.resize(pixelCount * 4, 255);
-        }
+        // pack lights
+        std::vector<GPULight> packedLights;
+        packedLights.reserve(lightCount);
 
-        std::ranges::fill(accumulationBuffer, glm::vec3(ambient));
+        auto *transformPool = reg.GetPool<Components::TransformComponent>();
+        for (const EntityID id : lightPool->GetDenseEntities()) {
+            auto *light = lightPool->Get(id);
+            const auto *transform = transformPool ? transformPool->Get(id) : nullptr;
+            if (!light || !transform || light->intensity <= 0.0f)
+                continue;
 
-        reg.ForEach<Components::PointLightComponent, Components::TransformComponent>([&](Entity, const Components::PointLightComponent *light, const Components::TransformComponent *transform) {
             const glm::vec3 pos = transform->transform.GetPosition();
+            packedLights.push_back({
+                    pos.x,
+                    pos.y,
+                    light->radius,
+                    light->color.r * light->intensity,
+                    light->color.g * light->intensity,
+                    light->color.b * light->intensity,
+            });
 
-            const float lx = (pos.x - mapOffset.x) / mapSize.x * texW;
-            const float ly = (pos.y - mapOffset.y) / mapSize.y * texH;
-
-            const float radiusPxX = light->radius / mapSize.x * texW;
-            const float radiusPxY = light->radius / mapSize.y * texH;
-            const float radiusPx = std::max(radiusPxX, radiusPxY);
-            const float radiusSq = radiusPx * radiusPx;
-            const float invRadiusSq = 1.0f / radiusSq;
-
-            const int minX = std::max(0, static_cast<int>(lx - radiusPx));
-            const int maxX = std::min(texW - 1, static_cast<int>(lx + radiusPx));
-            const int minY = std::max(0, static_cast<int>(ly - radiusPx));
-            const int maxY = std::min(texH - 1, static_cast<int>(ly + radiusPx));
-
-            for (int y = minY; y <= maxY; ++y) {
-                const float dy = static_cast<float>(y) - ly;
-                const float dySq = dy * dy;
-                const int rowIdx = y * texW;
-
-                for (int x = minX; x <= maxX; ++x) {
-                    const float dx = static_cast<float>(x) - lx;
-
-                    if (const float distSq = dx * dx + dySq; distSq <= radiusSq) {
-                        const float falloff = std::max(0.0f, 1.0f - distSq * invRadiusSq);
-                        const float brightness = falloff * light->intensity;
-                        accumulationBuffer[rowIdx + x] += light->color * brightness;
-                    }
-                }
-            }
-        });
-
-        for (int i = 0; i < pixelCount; ++i) {
-            const glm::vec3 clamped = glm::clamp(accumulationBuffer[i], 0.0f, 1.0f);
-            const int pIdx = i * 4;
-            pixelBuffer[pIdx + 0] = static_cast<unsigned char>(clamped.r * 255.0f);
-            pixelBuffer[pIdx + 1] = static_cast<unsigned char>(clamped.g * 255.0f);
-            pixelBuffer[pIdx + 2] = static_cast<unsigned char>(clamped.b * 255.0f);
-            pixelBuffer[pIdx + 3] = 255;
-        }
-        Rendering::Renderer::SubmitInitTask([tex = texture, w = texW, h = texH, data = std::move(pixelBuffer)]() mutable {
-            tex->UpdateData(data.data(), w, h);
-            data.clear();
-        });
-        pixelBuffer.assign(texW * texH * 4, 255);
-
-        // rebuild complete
-        lastLightCount = lightCount;
-        reg.ForEach<Components::PointLightComponent, Components::TransformComponent>([&](Entity, Components::PointLightComponent *light, const Components::TransformComponent *transform) {
             light->dirty = false;
             transform->transform.ClearDirty();
+        }
+
+        // capture shared_ptrs
+        auto fbo = lm.framebuffer;
+        auto shader = lm.lightShader;
+        auto quad = lm.lightQuad;
+        const float ambient = lm.ambient;
+        const glm::vec2 mapOffset = lm.mapOffset;
+        const glm::vec2 mapSize = lm.mapSize;
+        const int texW = fbo->GetWidth();
+        const int texH = fbo->GetHeight();
+
+        // submit to renderer
+        Rendering::Renderer::SubmitInitTask([fbo, shader, quad, lights = std::move(packedLights), ambient, mapOffset, mapSize, texW, texH] {
+            // Save only the GL state this pass modifies
+            GLint prevFbo, prevProgram, prevVao, prevBlendSrc, prevBlendDst, prevBlendEq;
+            GLenum prevDrawBuf;
+            glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prevFbo);
+            glGetIntegerv(GL_CURRENT_PROGRAM, &prevProgram);
+            glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &prevVao);
+            GLboolean prevBlend = glIsEnabled(GL_BLEND);
+            glGetIntegerv(GL_BLEND_SRC_RGB, &prevBlendSrc);
+            glGetIntegerv(GL_BLEND_DST_RGB, &prevBlendDst);
+            glGetIntegerv(GL_BLEND_EQUATION_RGB, &prevBlendEq);
+            glGetIntegerv(GL_DRAW_BUFFER0, reinterpret_cast<GLint *>(&prevDrawBuf));
+            GLfloat prevClear[4];
+            glGetFloatv(GL_COLOR_CLEAR_VALUE, prevClear);
+
+            fbo->Bind();
+
+            // skip entity ID attachment
+            constexpr GLenum colorBuf = GL_COLOR_ATTACHMENT0;
+            glDrawBuffers(1, &colorBuf);
+            // clear to ambient
+            glClearColor(ambient, ambient, ambient, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT);
+            // additive blending
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_ONE, GL_ONE);
+            glBlendEquation(GL_FUNC_ADD);
+            // bind
+            shader->Bind();
+            const glm::mat4 proj = glm::ortho(mapOffset.x, mapOffset.x + mapSize.x, mapOffset.y, mapOffset.y + mapSize.y, -1.0f, 1.0f);
+            shader->SetUniformMat4("u_projection", proj);
+            quad->Bind();
+
+            // one scaled quad per light
+            for (const auto &[x, y, radius, colorR, colorG, colorB] : lights) {
+                //  translate to world pos, scale unit quad [-0.5,0.5] to [-radius, +radius]
+                glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, 0.0f));
+                model = glm::scale(model, glm::vec3(2.0f * radius));
+
+                shader->SetUniformMat4("u_model", model);
+                shader->SetUniformVec3("u_color", glm::vec3(colorR, colorG, colorB));
+                shader->SetUniform1f("u_intensity", 1.0f); // intensity pre multiplied into color
+                glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(quad->GetIndexCount()), GL_UNSIGNED_INT, nullptr);
+            }
+
+            // restore state
+            glBindVertexArray(prevVao);
+            glUseProgram(prevProgram);
+            glBindFramebuffer(GL_FRAMEBUFFER, prevFbo);
+            glDrawBuffers(1, &prevDrawBuf);
+            glClearColor(prevClear[0], prevClear[1], prevClear[2], prevClear[3]);
+            prevBlend ? glEnable(GL_BLEND) : glDisable(GL_BLEND);
+            glBlendFuncSeparate(prevBlendSrc, prevBlendDst, prevBlendSrc, prevBlendDst);
+            glBlendEquationSeparate(prevBlendEq, prevBlendEq);
         });
+        lm.lastLightCount = lightCount;
     }
 } // namespace ECS::Systems::LightingSystem

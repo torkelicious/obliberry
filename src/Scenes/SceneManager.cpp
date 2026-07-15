@@ -1,10 +1,7 @@
 #include "SceneManager.h"
-#include "Core/LoggerService.h"
+#include "Logger/LoggerService.h"
 #include "Core/Constants.h"
 #include "Core/EngineContext.h"
-
-
-constexpr auto LOG_WHO = "SceneManager";
 #include "Core/Project.h"
 #include "Core/Utils.h"
 #include "IO/SceneSerialization.h"
@@ -16,13 +13,15 @@ constexpr auto LOG_WHO = "SceneManager";
 #include <string>
 #include <vector>
 
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "SceneManager"
+
 namespace Scenes {
-    std::vector<std::string> SceneManager::GetAvailableScenes() const {
+    std::vector<std::string> SceneManager::GetAvailableScenes() {
         std::vector<std::string> scenes;
         if (const auto project = Core::Project::GetActive()) {
-            const auto scenedir = project->GetAssetsDirectory() / "scenes";
 
-            if (std::filesystem::exists(scenedir)) {
+            if (const auto scenedir = project->GetAssetsDirectory() / "scenes"; std::filesystem::exists(scenedir)) {
                 for (const auto &entry : std::filesystem::directory_iterator(scenedir)) {
                     if (entry.is_regular_file() && entry.path().extension() == ".json") {
                         auto relpath = std::filesystem::relative(entry.path(), project->GetRootDirectory());
@@ -60,8 +59,7 @@ namespace Scenes {
         if (!Core::Project::GetActive()) {
             return false;
         }
-        const std::filesystem::path fullPath = Core::Project::GetActive()->GetRootDirectory() / scenePath;
-        if (std::filesystem::exists(fullPath)) {
+        if (const std::filesystem::path fullPath = Core::Project::GetActive()->GetRootDirectory() / scenePath; std::filesystem::exists(fullPath)) {
             //  unload first
             if (m_CurrentScene && m_CurrentScene
 
@@ -170,3 +168,4 @@ namespace Scenes {
         }
     }
 } // namespace Scenes
+#pragma pop_macro("LOG_WHO")

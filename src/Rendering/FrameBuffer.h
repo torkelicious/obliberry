@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <glad/glad.h>
-#include "Core/LoggerService.h"
+#include "Logger/LoggerService.h"
 
 namespace Rendering {
     class FrameBuffer {
@@ -51,8 +51,8 @@ namespace Rendering {
             glDrawBuffers(2, buffers);
 
             if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-                if (auto *logger = Core::Logging::LoggerService::Get()) {
-                    logger->log("FrameBuffer", "Framebuffer is incomplete!", Core::Logging::LogSeverity::Error);
+                if (auto *logger = Logging::LoggerService::Get()) {
+                    logger->log("FrameBuffer", "Framebuffer is incomplete!", Logging::LogSeverity::Error);
                 }
             }
 

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.23)
 
 project(obliberry LANGUAGES CXX C)
 
@@ -12,9 +12,76 @@ option(BUILD_PACK_TOOLS "Build .obpak packager tools" ON)
 
 set(CONFIG_TYPES Debug Release RelWithDebInfo MinSizeRel)
 
-if (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-    add_compile_options(-fno-omit-frame-pointer)
-endif()
+# choose a cpu arch, default to a safe baseline
+# x86-64-v3 requires ~Haswell/Zen1 or newer
+set(ENGINE_ARCH_LEVEL "x86-64-v2" CACHE STRING "Target CPU architecture (x86-64-v2, x86-64-v3, native)")
+
+# meaningless (or error) on MSVC or ARM
+if ((CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang") AND (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64|i686"))
+    add_compile_options($<$<NOT:$<CONFIG:Debug>>:-march=${ENGINE_ARCH_LEVEL}>)
+    message(STATUS "Optimizing for CPU architecture level: ${ENGINE_ARCH_LEVEL}")
+endif ()
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    # split functions/data into sections
+    add_compile_options($<$<NOT:$<CONFIG:Debug>>:-ffunction-sections>)
+    add_compile_options($<$<NOT:$<CONFIG:Debug>>:-fdata-sections>)
+    # delete unused sections
+    add_link_options($<$<NOT:$<CONFIG:Debug>>:-Wl,--gc-sections>)
+elseif (MSVC)
+    # MSVC/link.exe equivalents
+    add_compile_options($<$<NOT:$<CONFIG:Debug>>:/Gy>)
+    add_link_options($<$<NOT:$<CONFIG:Debug>>:/OPT:REF>)
+    add_link_options($<$<NOT:$<CONFIG:Debug>>:/OPT:ICF>)
+endif ()
+
+# use a good linker where available :)
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang" AND NOT APPLE)
+    find_program(MOLD_LINKER mold)
+    find_program(LLD_LINKER lld)
+    if (MOLD_LINKER AND CMAKE_SYSTEM_NAME MATCHES "Linux")
+        add_link_options("-fuse-ld=mold")
+        message(STATUS "Using MOLD linker")
+    elseif (LLD_LINKER)
+        add_link_options("-fuse-ld=lld")
+        message(STATUS "Using LLD linker")
+    endif ()
+endif ()
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    add_compile_options(
+            $<$<CONFIG:RelWithDebInfo>:-fno-omit-frame-pointer>
+            $<$<CONFIG:RelWithDebInfo>:-g>
+    )
+
+    add_link_options(
+            $<$<CONFIG:RelWithDebInfo>:-Wl,--build-id>
+    )
+endif ()
+
+if (APPLE)
+    # min sdk to avoid issues for apple bros
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum macOS deployment version")
+endif ()
+
+# god bless ccache
+find_program(CCACHE_PROGRAM ccache)
+if (CCACHE_PROGRAM)
+    set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
+    set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
+    message(STATUS "ccache found and enabled")
+endif ()
+
+include(CheckIPOSupported)
+check_ipo_supported(RESULT lto_supported OUTPUT error)
+if (lto_supported)
+    message(STATUS "LTO/IPO is supported and enabled for Release and RelWithDebInfo builds.")
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_MINSIZEREL ON)
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO ON)
+else ()
+    message(WARNING "LTO/IPO is not supported by your compiler: ${error}")
+endif ()
 
 # Output dirs
 set(OUTPUT_BIN_DIR "${CMAKE_BINARY_DIR}/bin")
@@ -41,6 +108,7 @@ endfunction()
 
 # Dependencies
 include(FetchContent)
+set(FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}/.deps")
 
 # Helper
 function(fetch_dep NAME REPO TAG)
@@ -126,13 +194,13 @@ target_link_libraries(obliberry_vendor PUBLIC glfw)
 add_library(obliberry_engine STATIC
         # Engine core
         src/Core/Application.cpp
-        src/Core/Window.cpp
-        src/Core/InputManager.cpp
-        src/Core/ProjectConfig.cpp
-        src/Core/KeyMappings.cpp
+        src/Platform/Window/Window.cpp
+        src/Platform/Input/InputManager.cpp
+        src/Config/ProjectConfig.cpp
+        src/Platform/Input/KeyMappings.cpp
         src/Core/Project.cpp
-        src/Core/ThreadPool.cpp
-        src/Core/LoggerService.cpp
+        src/Platform/Threading/ThreadPool.cpp
+        src/Logger/LoggerService.cpp
 
         # Rendering
         src/Rendering/VertexBuffer.cpp
@@ -147,15 +215,15 @@ add_library(obliberry_engine STATIC
         # Scenes / gameplay
         src/Scenes/Scene.cpp
         src/Scenes/SceneManager.cpp
-        src/Game/GameLayer.cpp
-        src/Game/GameUI.cpp
+        src/Applications/Runtime/Game/GameLayer.cpp
+        src/Applications/Runtime/Game/GameUI.cpp
 
         # IO
         src/IO/MapSerialization.cpp
-        src/IO/AssetLoader.cpp
-        src/IO/EntityFactory.cpp
+        src/IO/Loaders/AssetLoader.cpp
+        src/IO/Loaders/EntityFactory.cpp
         src/IO/SceneSerialization.cpp
-        src/IO/VFS.cpp
+        src/IO/VFS/VFS.cpp
 
         # Sound
         src/Sound/AudioEngine.cpp
@@ -178,6 +246,7 @@ add_library(obliberry_engine STATIC
         src/IO/Package/ContainerReader.cpp
         src/IO/Package/Tools/AssetPacking.cpp
         src/IO/Package/Tools/DependencyGraph.cpp
+        src/Config/GraphicsConfig.cpp
 )
 
 target_include_directories(obliberry_engine PUBLIC
@@ -199,7 +268,7 @@ target_link_libraries(obliberry_engine PUBLIC
 
 # Runtime
 add_executable(obliberry_runtime
-        src/Runtime/RuntimeMain.cpp
+        src/Applications/Runtime/RuntimeMain.cpp
 )
 
 target_link_libraries(obliberry_runtime PRIVATE
@@ -208,46 +277,51 @@ target_link_libraries(obliberry_runtime PRIVATE
 
 # Editor
 add_executable(obliberry_editor
-        src/Editor/EditorMain.cpp
-        src/Editor/EditorLayer.cpp
-        src/Editor/States/EditState.cpp
-        src/Editor/States/PlayState.cpp
-        src/Editor/States/MapEditState.cpp
-        src/Editor/States/HubState.cpp
-        src/Editor/UI/Panels/Editor/EditorWidgets.cpp
-        src/Editor/UI/Panels/Editor/EditorWidgetsCombo.cpp
-        src/Editor/UI/Panels/Editor/InspectorPanel.cpp
-        src/Editor/UI/Panels/Editor/ProjectBrowserPanel.cpp
-        src/Editor/UI/Panels/Editor/RegistryPanel.cpp
-        src/Editor/UI/Panels/ViewportPanel.cpp
-        src/Editor/UI/ConfigWindows/ProjectConfigEditor.cpp
-        src/Editor/UI/ConfigWindows/SceneConfigEditor.cpp
-        src/Editor/FileDialogs.cpp
+        src/Applications/Editor/EditorMain.cpp
+        src/Applications/Editor/EditorLayer.cpp
+        src/Applications/Editor/States/Editor/EditState.cpp
+        src/Applications/Editor/States/Play/PlayState.cpp
+        src/Applications/Editor/States/MapEditor/MapEditState.cpp
+        src/Applications/Editor/States/HubState.cpp
+        src/Applications/Editor/UI/Panels/Editor/EditorWidgets.cpp
+        src/Applications/Editor/UI/Panels/Editor/EditorWidgetsCombo.cpp
+        src/Applications/Editor/UI/Panels/Editor/InspectorPanel.cpp
+        src/Applications/Editor/UI/Panels/ProjectBrowserPanel.cpp
+        src/Applications/Editor/UI/Panels/Editor/RegistryPanel.cpp
+        src/Applications/Editor/UI/Panels/ViewportPanel.cpp
+        src/Applications/Editor/UI/ConfigWindows/ProjectConfigEditor.cpp
+        src/Applications/Editor/UI/ConfigWindows/SceneConfigEditor.cpp
+        src/Applications/Editor/Platform/FileDialogs.cpp
         src/IO/Package/Tools/ObpakTools.cpp
-        src/Editor/UI/Panels/MapEditor/TileEditorPanel.cpp
-        src/Editor/Commands/UndoManager.cpp
-        src/Editor/Commands/EditorCommands.cpp
+        src/Applications/Editor/UI/Panels/MapEditor/TileEditorPanel.cpp
+        src/Applications/Editor/Commands/UndoManager.cpp
+        src/Applications/Editor/Commands/EditorCommands.cpp
 )
 
 target_link_libraries(obliberry_editor PRIVATE
         obliberry_engine
 )
 
+option(ENABLE_UNITY_BUILD "Enable unity builds" ON)
+if (ENABLE_UNITY_BUILD)
+    set_target_properties(obliberry_engine obliberry_editor PROPERTIES UNITY_BUILD ON)
+endif ()
+
 # Tools
 if (BUILD_PACK_TOOLS)
 
     add_executable(ob_packer
-            src/IO/Package/Packer.cpp
+            src/Applications/Tools/Packaging/Packer.cpp
     )
     target_link_libraries(ob_packer PRIVATE obliberry_engine)
 
     add_executable(ob_unpacker
-            src/IO/Package/Unpacker.cpp
+            src/Applications/Tools/Packaging/Unpacker.cpp
     )
     target_link_libraries(ob_unpacker PRIVATE obliberry_engine)
 
     add_executable(obsl_pack_run
-            src/IO/Package/Runner.cpp
+            src/Applications/Tools/Packaging/Runner.cpp
     )
     target_link_libraries(obsl_pack_run PRIVATE obliberry_engine)
 
@@ -261,4 +335,10 @@ set_output_subdir(internal obliberry_runtime)
 
 if (BUILD_PACK_TOOLS)
     set_output_subdir(tools ob_packer ob_unpacker obsl_pack_run)
+endif ()
+
+# Strip release binaries (GNU/Clang only)
+# (use /DEBUG:NONE or dont generate a .pdb for release if desired on MSVC)
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    add_link_options($<$<CONFIG:Release,MinSizeRel>:-s>)
 endif ()

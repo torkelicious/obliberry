@@ -1,14 +1,19 @@
 #pragma once
 #include <cstdint>
+#include <cstring>
 #include <filesystem>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
 // obliberry asset packaging FF
 namespace IO {
     namespace Package {
+#ifdef None
+#undef None
+#endif
 #pragma pack(push, 1)
         struct FileHeader {
             char magic[4] = {'O', 'B', 'P', 'K'};
@@ -68,9 +73,21 @@ namespace IO {
 
     class ContainerReader {
     public:
+        ContainerReader() = default;
+        ~ContainerReader();
+        ContainerReader(const ContainerReader &) = delete;
+        ContainerReader &operator=(const ContainerReader &) = delete;
+        ContainerReader(ContainerReader &&other) noexcept;
+        ContainerReader &operator=(ContainerReader &&other) noexcept;
+
         bool open(const std::filesystem::path &file);
 
+        // returns owned string (decompresses if needed)
         std::optional<std::string> read(const std::string &canonical_path) const;
+
+        // returns string_view into mapped blob for uncompressed entries
+        // returns nullopt for compressed entries or missing paths
+        std::optional<std::string_view> read_view(const std::string &canonical_path) const;
 
         void print_entries() const;
 
@@ -79,7 +96,11 @@ namespace IO {
     private:
         std::vector<Package::TocEntry> m_toc;
         std::vector<char> m_string_table;
-        std::vector<char> m_blob_data;
+        const char *m_blob_data = nullptr;
+        size_t m_blob_size = 0;
+        void *m_mapped_region = nullptr;
+        size_t m_mapped_size = 0;
+        int m_mapped_fd = -1;
         std::unordered_map<std::string_view, size_t> m_path_to_index;
     };
 } // namespace IO

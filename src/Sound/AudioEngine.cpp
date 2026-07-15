@@ -1,11 +1,14 @@
 #include "AudioEngine.h"
 #include <filesystem>
-#include "Core/LoggerService.h"
-#include "IO/VFS.h"
 #include "miniaudio.h"
+#include "Logger/LoggerService.h"
+#include "IO/VFS/VFS.h"
 
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "AudioEngine"
 
-constexpr auto LOG_WHO = "AudioEngine";
+// Larger period = fewer IPC roundtrips to the audio daemon per second
+constexpr ma_uint32 AUDIO_PERIOD_FRAMES = 2048;
 
 std::unique_ptr<Sound::AudioEngine> Sound::AudioEngine::Create() {
     std::unique_ptr<AudioEngine> instance(new AudioEngine());
@@ -20,7 +23,11 @@ Sound::AudioEngine::AudioEngine() = default;
 
 bool Sound::AudioEngine::Init() {
     m_Engine = new ma_engine();
-    if (const ma_result result = ma_engine_init(nullptr, m_Engine); result != MA_SUCCESS) {
+
+    ma_engine_config config = ma_engine_config_init();
+    config.periodSizeInFrames = AUDIO_PERIOD_FRAMES;
+
+    if (const ma_result result = ma_engine_init(&config, m_Engine); result != MA_SUCCESS) {
         LOG_ERROR(LOG_WHO, "miniaudio backend failed: Error code: " + std::to_string(result));
         delete m_Engine;
         m_Engine = nullptr;
@@ -55,8 +62,7 @@ void Sound::AudioEngine::Update() {
         return;
 
     for (auto it = m_ActiveSounds.begin(); it != m_ActiveSounds.end();) {
-        ma_sound *sound = *it;
-        if (ma_sound_at_end(sound) || !ma_sound_is_playing(sound)) {
+        if (ma_sound *sound = *it; ma_sound_at_end(sound) || !ma_sound_is_playing(sound)) {
             ma_sound_uninit(sound);
 
             if (m_SoundContexts.contains(sound)) {
@@ -206,3 +212,4 @@ void Sound::AudioEngine::SetMasterVolume(const float volume) const {
         return;
     ma_engine_set_volume(m_Engine, volume);
 }
+#pragma pop_macro("LOG_WHO")

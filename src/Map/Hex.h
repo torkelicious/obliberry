@@ -9,7 +9,7 @@
 #include <unordered_set>
 #include "HexCoords.h"
 #include "Core/Constants.h"
-#include "../Math/HexMath.h"
+#include "Math/HexMath.h"
 
 namespace Map {
     using TileType = uint8_t;
@@ -66,9 +66,9 @@ namespace Map {
         }
 
         void SyncTileWalkableCache(const HexCoords &pos) {
-            if (auto *tile = Get(pos)) {
+            if (const auto *tile = Get(pos)) {
                 if (tile->walkable) {
-                    if (std::find(walkableTiles.begin(), walkableTiles.end(), pos) == walkableTiles.end()) {
+                    if (std::ranges::find(walkableTiles, pos) == walkableTiles.end()) {
                         walkableTiles.push_back(pos);
                     }
                 } else {

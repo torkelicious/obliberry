@@ -8,5 +8,6 @@ namespace ECS::Components {
         Map::HexCoords pathTo;
         bool hasSelection = false;
         bool hasPathTo = false;
+        // note: both can be true at once
     };
 } // namespace ECS::Components

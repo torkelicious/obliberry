@@ -1,13 +1,14 @@
 #include "Project.h"
-#include "Core/ProjectConfig.h"
+#include "Config/ProjectConfig.h"
 #include "Core/Utils.h"
-#include "Core/LoggerService.h"
-#include "IO/VFS.h"
+#include "Logger/LoggerService.h"
+#include "IO/VFS/VFS.h"
 #include <filesystem>
 
-namespace Core {
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "Project"
 
-    constexpr auto LOG_WHO = "Project";
+namespace Core {
 
     std::shared_ptr<Project> Project::NewProject(const std::filesystem::path &baseDir, const std::string &name) {
         auto project = std::make_shared<Project>();
@@ -47,13 +48,13 @@ namespace Core {
         auto project = std::make_shared<Project>();
         project->m_ProjectFilepath = std::filesystem::absolute(projectFilePath);
         IO::VFS::MountProject(project->m_ProjectFilepath.string());
-        project->m_Config = ProjectConfig::Deserialize("project.json");
+        project->m_Config = Config::ProjectConfig::Deserialize("project.json");
         s_ActiveProject = project;
         return project;
     }
 
     bool Project::Save() const {
-        if (!ProjectConfig::Serialize(m_Config, "project.json")) {
+        if (!Config::ProjectConfig::Serialize(m_Config, "project.json")) {
             return false;
         }
 
@@ -61,3 +62,4 @@ namespace Core {
         return true;
     }
 } // namespace Core
+#pragma pop_macro("LOG_WHO")

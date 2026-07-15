@@ -9,7 +9,7 @@
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Registry.h"
 #include "ECS/Systems/MovementSystem.h"
-#include "../../Math/HexMath.h"
+#include "Math/HexMath.h"
 #include "Core/EngineContext.h"
 
 namespace ECS::Systems::MapRuntimeSystem {
@@ -61,7 +61,7 @@ namespace ECS::Systems::MapRuntimeSystem {
             ResetInteractionState(*state);
         }
         // ResetMovementEntities(registry, map.grid);
-        LightingSystem::GenerateLightmap(map);
+        LightingSystem::GenerateLightmap(map, ctx.resources);
     }
 
     inline void OnMapChanged(Registry &registry, const Core::EngineContext &ctx) {

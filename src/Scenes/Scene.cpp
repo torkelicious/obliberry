@@ -1,24 +1,24 @@
 #include "Scene.h"
-#include "Core/LoggerService.h"
+#include "Logger/LoggerService.h"
 #include "ECS/Systems/AISystem.h"
-
-
-constexpr auto LOG_WHO = "Scene";
 #include "ECS/Systems/MapRenderSystem.h"
 #include "ECS/Systems/MovementSystem.h"
 #include "ECS/Systems/PlayerControlSystem.h"
 #include "ECS/Systems/RenderSystem.h"
 #include "ECS/Systems/SpriteBillboardSystem.h"
 #include "ECS/Systems/LightingSystem.h"
-#include "IO/EntityFactory.h"
+#include "IO/Loaders/EntityFactory.h"
 #include "IO/SceneSerialization.h"
 #include <iostream>
 #include <utility>
 #include "ECS/Systems/ScriptSystem.h"
-#include "IO/PrefabManager.h"
+#include "IO/Loaders/PrefabManager.h"
 #include "Math/Frustum.h"
 #include "Scripting/EngineLib/EngineLib.h"
 #include "Sound/AudioEngine.h"
+
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "Scene"
 
 Scenes::Scene::Scene(Core::EngineContext *context, SceneProperties props) : m_Properties(std::move(props)), m_Context(context) {}
 
@@ -55,7 +55,7 @@ void Scenes::Scene::OnEnter() {
     }
 
     if (auto *mapComp = m_Registry.GetFirst<ECS::Components::MapComponent>()) {
-        ECS::Systems::LightingSystem::GenerateLightmap(*mapComp);
+        ECS::Systems::LightingSystem::GenerateLightmap(*mapComp, m_Context->resources);
     }
 
     ECS::Systems::LightingSystem::Update(m_Registry);
@@ -105,3 +105,4 @@ void Scenes::Scene::OnExit() {
 }
 
 void Scenes::Scene::OnSaved() { ClearUnsavedChanges(); }
+#pragma pop_macro("LOG_WHO")

@@ -6,6 +6,11 @@
 #include <string_view>
 
 namespace Core {
+    // Ammount of threads used by the Engine's most important functions
+    // 2 for Main & Render
+    // We do not reserve Logger since it's mostly idle in most cases. It can share.
+    constexpr unsigned ReservedThreads = 2;
+
     // filepaths
     constexpr std::string_view ASSET_PATH = "assets/";
     constexpr std::string_view SHADER_PATH = "assets/shaders/";
@@ -14,6 +19,7 @@ namespace Core {
     constexpr std::string_view SCENE_PATH = "assets/scenes/";
     constexpr std::string_view SCRIPT_PATH = "assets/scripts/";
     constexpr std::string_view AUDIO_PATH = "assets/audio/";
+    constexpr std::string_view PREFAB_PATH = "assets/prefabs/";
 
     // fs extensions
     constexpr auto MAP_FILE_EXTENSION = ".obmap";

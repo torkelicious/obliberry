@@ -11,7 +11,7 @@ namespace IO::Package::Tools {
         std::ifstream file(filepath, std::ios::in | std::ios::binary);
         if (!file)
             throw std::runtime_error("Could not open file: " + filepath.string());
-        return std::vector<uint8_t>(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
+        return std::vector<uint8_t>(std::istreambuf_iterator(file), std::istreambuf_iterator<char>());
     }
 
     inline std::string read_file_string(const std::filesystem::path &filepath) {

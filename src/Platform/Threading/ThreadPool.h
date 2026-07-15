@@ -1,0 +1,48 @@
+#pragma once
+#include "Task.h"
+#include "Core/Constants.h"
+
+
+#include <algorithm>
+#include <atomic>
+#include <condition_variable>
+#include <mutex>
+#include <queue>
+#include <thread>
+#include <vector>
+
+
+namespace Platform::Threading {
+
+
+    class ThreadPool {
+    public:
+        explicit ThreadPool(size_t count = [] {
+            const unsigned hw = std::thread::hardware_concurrency();
+            return std::max(1u, hw > Core::ReservedThreads ? hw - Core::ReservedThreads : 1u);
+        }());
+
+        ~ThreadPool();
+
+        ThreadPool(const ThreadPool &) = delete;
+        ThreadPool &operator=(const ThreadPool &) = delete;
+        ThreadPool(ThreadPool &&) = delete;
+        ThreadPool &operator=(ThreadPool &&) = delete;
+
+        void enqueue(Task task);
+
+        void wait();
+
+        void stop();
+
+    private:
+        std::vector<std::thread> m_Threads;
+        std::queue<Task> m_Tasks;
+        std::mutex m_Mutex;
+        std::condition_variable m_CV;
+        std::atomic<size_t> m_TasksPending{0};
+        std::condition_variable m_DoneCV;
+        std::atomic<bool> m_ShouldStop{false};
+        std::atomic<bool> m_Stopped{false};
+    };
+} // namespace Platform::Threading

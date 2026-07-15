@@ -1,10 +1,11 @@
 #include "MapSerialization.h"
 #include <fstream>
 #include <ios>
-#include "Core/LoggerService.h"
-#include "VFS.h"
+#include "Logger/LoggerService.h"
+#include "VFS/VFS.h"
 
-constexpr auto LOG_WHO = "MapIO";
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "MapIO"
 
 namespace IO::MapIO {
     bool Serialize(const std::string &path, const Map::HexGrid &grid) {
@@ -72,3 +73,4 @@ namespace IO::MapIO {
 
     bool CheckHeader(const MapFileHeader &header, const std::string &expected) { return std::string_view(header.magic, 8) == expected; }
 } // namespace IO::MapIO
+#pragma pop_macro("LOG_WHO")

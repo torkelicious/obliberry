@@ -7,8 +7,8 @@
 #include "ECS/Systems/DirectionalAnimationSystem.h"
 #include "Math/HexMath.h"
 #include "Core/EngineContext.h"
-#include "Core/InputManager.h"
-#include "Core/Window.h"
+#include "Platform/Input/InputManager.h"
+#include "Platform/Window/Window.h"
 #include "Rendering/Camera.h"
 
 namespace ECS::Systems::PlayerControlSystem {
