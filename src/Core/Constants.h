@@ -19,6 +19,7 @@ namespace Core {
     constexpr std::string_view SCENE_PATH = "assets/scenes/";
     constexpr std::string_view SCRIPT_PATH = "assets/scripts/";
     constexpr std::string_view AUDIO_PATH = "assets/audio/";
+    constexpr std::string_view PREFAB_PATH = "assets/prefabs/";
 
     // fs extensions
     constexpr auto MAP_FILE_EXTENSION = ".obmap";

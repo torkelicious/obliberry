@@ -5,10 +5,12 @@
 #include <nlohmann/json.hpp>
 #include <string>
 #include <unordered_map>
+#include <vector>
 #include "Logger/LoggerService.h"
 #include "EntityFactory.h"
 #include "IO/VFS/VFS.h"
 #include "ECS/Registry.h"
+#include "ECS/Components/PrefabSourceComponent.h"
 
 namespace IO {
     class PrefabManager {
@@ -18,6 +20,7 @@ namespace IO {
                 const ECS::EntityID newId = registry.CreateEntity();
                 ECS::Entity newEntity(newId, &registry);
                 EntityFactory::DeserializeEntity(newEntity, it->second, resources);
+                newEntity.AddComponent<ECS::Components::PrefabSourceComponent>(filepath, it->second);
                 return newId;
             }
 
@@ -56,7 +59,50 @@ namespace IO {
             const ECS::EntityID newId = registry.CreateEntity();
             ECS::Entity newEntity(newId, &registry);
             EntityFactory::DeserializeEntity(newEntity, prefabJson, resources);
+            newEntity.AddComponent<ECS::Components::PrefabSourceComponent>(filepath, prefabJson);
             return newId;
+        }
+
+        static bool SavePrefab(ECS::Entity &entity, const std::string &filepath, Core::ResourceManager &resources) {
+            nlohmann::json prefabJson;
+            EntityFactory::SerializeEntity(entity, prefabJson, resources);
+
+            // PrefabSourceComponent is just  metadata and not part of the prefab template
+            if (prefabJson.contains("components") && prefabJson["components"].contains("PrefabSourceComponent")) {
+                prefabJson["components"].erase("PrefabSourceComponent");
+            }
+
+            const auto resolved = VFS::Resolve(filepath);
+            std::ofstream out(resolved);
+            if (!out) {
+                if (auto *logger = Logging::LoggerService::Get()) {
+                    logger->log("PrefabManager", "Failed to save prefab to: " + filepath, Logging::LogSeverity::Error);
+                }
+                return false;
+            }
+            out << prefabJson.dump(4);
+            out.close();
+
+            s_prefab_cache[filepath] = std::move(prefabJson);
+            return true;
+        }
+
+        static std::vector<std::string> GetPrefabFiles() {
+            std::vector<std::string> files;
+            const auto resolved = VFS::Resolve("assets/prefabs/");
+            if (std::filesystem::exists(resolved)) {
+                for (const auto &entry : std::filesystem::directory_iterator(resolved)) {
+                    if (entry.is_regular_file() && entry.path().extension() == ".json") {
+                        auto relPath = std::filesystem::relative(entry.path(), VFS::GetProjectRoot());
+                        std::string relStr = relPath.string();
+                        for (auto &c : relStr)
+                            if (c == '\\')
+                                c = '/';
+                        files.push_back(std::move(relStr));
+                    }
+                }
+            }
+            return files;
         }
 
         static void ClearCache() { s_prefab_cache.clear(); }

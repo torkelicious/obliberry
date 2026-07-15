@@ -11,9 +11,13 @@
 #include "Rendering/Mesh.h"
 #include "ECS/Components/PointLightComponent.h"
 #include "ECS/Components/ScriptComponent.h"
+#include "ECS/Components/PrefabSourceComponent.h"
 
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "EntityFactory"
+
+
+// note: Prefabs not serialized / deserialized (here)
 
 std::unordered_map<std::string, ComponentDeserializer> IO::EntityFactory::s_Deserializers;
 std::unordered_map<std::string, ComponentSerializer> IO::EntityFactory::s_Serializers;

@@ -34,7 +34,6 @@ namespace Editor::UI {
         void DrawMeshSection(Core::ResourceManager &resources);
         void DrawMaterialSection(Core::ResourceManager &resources);
         void DrawFileSection(const char *label, const std::string &directory, const std::string &extension, const char *importFilter, const char *importFilterName);
-        //void DrawPrefabSection(Core::ResourceManager &resources); // todo: implement
 
         void ImportTexture(Core::ResourceManager &resources) const;
         void ImportShader(Core::ResourceManager &resources) const;

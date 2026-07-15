@@ -286,7 +286,7 @@ add_executable(obliberry_editor
         src/Applications/Editor/UI/Panels/Editor/EditorWidgets.cpp
         src/Applications/Editor/UI/Panels/Editor/EditorWidgetsCombo.cpp
         src/Applications/Editor/UI/Panels/Editor/InspectorPanel.cpp
-        src/Applications/Editor/UI/Panels/Editor/ProjectBrowserPanel.cpp
+        src/Applications/Editor/UI/Panels/ProjectBrowserPanel.cpp
         src/Applications/Editor/UI/Panels/Editor/RegistryPanel.cpp
         src/Applications/Editor/UI/Panels/ViewportPanel.cpp
         src/Applications/Editor/UI/ConfigWindows/ProjectConfigEditor.cpp

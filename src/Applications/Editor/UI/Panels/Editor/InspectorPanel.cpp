@@ -5,6 +5,8 @@
 #include "ECS/Components/MapStateComponent.h"
 #include "ECS/Components/MaterialComponent.h"
 #include "ECS/Components/MeshComponent.h"
+#include "ECS/Components/PrefabSourceComponent.h"
+#include "IO/Loaders/PrefabManager.h"
 #include <cstring>
 #include <functional>
 #include <imgui.h>
@@ -47,13 +49,64 @@ void Editor::UI::InspectorPanel::OnImGuiRender() {
             ImGui::Separator();
             ImGui::Spacing();
 
+            if (m_SelectedEntity.HasComponent<ECS::Components::PrefabSourceComponent>()) {
+                const auto *psc = m_SelectedEntity.GetComponent<ECS::Components::PrefabSourceComponent>();
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.8f, 1.0f, 1.0f));
+                ImGui::Text("Prefab: %s", psc->prefabPath.c_str());
+                ImGui::PopStyleColor();
+                if (ImGui::Button("Revert")) {
+                    auto &registry = m_SceneContext->GetRegistry();
+                    const auto entityId = static_cast<ECS::EntityID>(m_SelectedEntity);
+                    registry.DestroyEntity(entityId);
+                    const ECS::EntityID newId = IO::PrefabManager::Instantiate(registry, *m_EngineContext->resources, psc->prefabPath);
+                    m_SelectedEntity = ECS::Entity(newId, &registry);
+                    MarkSceneChanged(m_EngineContext);
+                    return; // entity changed, skip rest of draw
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("Break Prefab")) {
+                    m_SelectedEntity.RemoveComponent<ECS::Components::PrefabSourceComponent>();
+                    MarkSceneChanged(m_EngineContext);
+                }
+                ImGui::Separator();
+            }
+
+            // Component widgets
             for (const auto &widget : m_Widgets) {
                 ImGui::PushID(widget->GetName());
                 widget->Draw(m_SelectedEntity, m_EngineContext, m_UndoManager);
                 ImGui::PopID();
             }
-            ImGui::Separator();
 
+            // Save as Prefab
+            ImGui::Spacing();
+            ImGui::Separator();
+            if (ImGui::Button("Save as Prefab")) {
+                ImGui::OpenPopup("SavePrefabPopup");
+            }
+            if (ImGui::BeginPopup("SavePrefabPopup")) {
+                static char prefabNameBuf[128] = "";
+                if (ImGui::IsWindowAppearing()) {
+                    std::string entityName = m_SelectedEntity.GetName();
+                    strncpy(prefabNameBuf, entityName.c_str(), sizeof(prefabNameBuf) - 1);
+                    prefabNameBuf[sizeof(prefabNameBuf) - 1] = '\0';
+                }
+                ImGui::InputText("Name", prefabNameBuf, sizeof(prefabNameBuf));
+                if (ImGui::Button("Save") && prefabNameBuf[0] != '\0') {
+                    std::string path = "assets/prefabs/" + std::string(prefabNameBuf) + ".json";
+                    IO::PrefabManager::SavePrefab(m_SelectedEntity, path, *m_EngineContext->resources);
+                    MarkSceneChanged(m_EngineContext);
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("Cancel")) {
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndPopup();
+            }
+
+            ImGui::Spacing();
+            ImGui::SeparatorText("Components");
             if (ImGui::Button("Add Component")) {
                 ImGui::OpenPopup("AddComponentPopup");
             }

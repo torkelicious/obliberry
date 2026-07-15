@@ -1,13 +1,15 @@
 #include "RegistryPanel.h"
 #include "Platform/Threading/SmallTask.h"
-
 #include "EditorWidgets.h"
+#include "EditorWidgetsCombo.h"
 #include "ECS/Components/MaterialComponent.h"
 #include "ECS/Components/MeshComponent.h"
 #include "ECS/Components/TransformComponent.h"
 #include "Rendering/Material.h"
 #include "Rendering/MeshFactory.h"
 #include "Rendering/Renderer.h"
+#include "IO/Loaders/PrefabManager.h"
+#include "Core/Constants.h"
 
 #include <imgui.h>
 
@@ -30,6 +32,47 @@ void Editor::UI::RegistryPanel::OnImGuiRender() {
         ImGui::Text("Entities: %d", visibleEntities);
         ImGui::Separator();
 
+        // entity creation
+        if (ImGui::Button("+")) {
+            const auto newId = registry.CreateEntity();
+            m_SelectedEntity = ECS::Entity(newId, &registry);
+            m_SelectedEntity.AddComponent<ECS::Components::TransformComponent>();
+            auto mesh = std::make_shared<Rendering::Mesh>(Rendering::MeshFactory::CreateQuad());
+            mesh->SetFactoryId("Quad");
+            Rendering::Renderer::SubmitInitTask(::Platform::Threading::SmallTask([mesh] { mesh->InitGL(); }));
+            m_SelectedEntity.AddComponent<ECS::Components::MeshComponent>().mesh = std::move(mesh);
+            auto &[material] = m_SelectedEntity.AddComponent<ECS::Components::MaterialComponent>();
+            material = std::make_shared<Rendering::Material>();
+            MarkSceneChanged(m_EngineContext);
+        }
+        if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("Create empty entity");
+        }
+        ImGui::SameLine();
+        if (m_SelectedEntity) {
+            if (ImGui::Button("-")) {
+                registry.DestroyEntity(static_cast<ECS::EntityID>(m_SelectedEntity));
+                m_SelectedEntity = ECS::Entity{};
+                MarkSceneChanged(m_EngineContext);
+            }
+        }
+
+        // prefabs
+        ImGui::Spacing();
+        static std::string pendingPrefabPath;
+        if (FileCombo("Spawn Prefab", std::string(Core::PREFAB_PATH), std::string(".json"), pendingPrefabPath)) {
+            if (!pendingPrefabPath.empty() && m_EngineContext) {
+                if (const ECS::EntityID newId = IO::PrefabManager::Instantiate(registry, *m_EngineContext->resources, pendingPrefabPath); newId != 0) {
+                    m_SelectedEntity = ECS::Entity(newId, &registry);
+                    MarkSceneChanged(m_EngineContext);
+                }
+                pendingPrefabPath.clear();
+            }
+        }
+
+        ImGui::Separator();
+
+        // entity list
         ImGui::BeginChild("Entity List", ImVec2(0, 0), true);
         for (const ECS::EntityID id : livingEntities) {
             if (!registry.IsValid(id))
@@ -53,32 +96,9 @@ void Editor::UI::RegistryPanel::OnImGuiRender() {
             }
             ImGui::PopID();
         }
-        ImGui::Separator();
-        if (ImGui::Button("+")) {
-            const auto newId = registry.CreateEntity();
-            m_SelectedEntity = ECS::Entity(newId, &registry);
-
-            m_SelectedEntity.AddComponent<ECS::Components::TransformComponent>();
-            auto mesh = std::make_shared<Rendering::Mesh>(Rendering::MeshFactory::CreateQuad());
-            mesh->SetFactoryId("Quad");
-            Rendering::Renderer::SubmitInitTask(::Platform::Threading::SmallTask([mesh] { mesh->InitGL(); }));
-            m_SelectedEntity.AddComponent<ECS::Components::MeshComponent>().mesh = std::move(mesh);
-            auto &[material] = m_SelectedEntity.AddComponent<ECS::Components::MaterialComponent>();
-            material = std::make_shared<Rendering::Material>();
-            MarkSceneChanged(m_EngineContext);
-        }
-        ImGui::SameLine();
-        if (m_SelectedEntity) {
-            if (ImGui::Button("-")) {
-                registry.DestroyEntity(static_cast<ECS::EntityID>(m_SelectedEntity));
-                m_SelectedEntity = ECS::Entity{};
-                MarkSceneChanged(m_EngineContext);
-            }
-        }
         ImGui::EndChild();
     } else {
         ImGui::TextDisabled("No scene loaded.");
     }
-
     ImGui::End();
 }
