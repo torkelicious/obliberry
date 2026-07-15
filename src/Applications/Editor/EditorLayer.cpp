@@ -21,7 +21,7 @@
 #include "Applications/Editor/States/Editor/EditState.h"
 #include "Applications/Editor/States/Play/PlayState.h"
 #include "Applications/Editor/States/MapEditor/MapEditState.h"
-#include "Applications/Editor/States/HubState.h"
+#include "States/Hub/HubState.h"
 #include "Rendering/Renderer.h"
 
 /* TODO:
@@ -30,8 +30,6 @@
  * whatever else an editor needs?
  * TODO/FIX: Reload map if changes unsaved, otherwise innacurate scene view in relation to actual file
  */
-
-bool Editor::EditorLayer::s_ShouldBuildDock = true;
 
 
 #pragma push_macro("LOG_WHO")
@@ -48,6 +46,7 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
 
     m_SceneConfigEditor.SetContext(m_Context);
     m_ProjectConfigEditor.SetContext(m_Context);
+    m_GraphicsConfigEditor.SetContext(m_Context);
 
     m_SceneManager.SetContext(m_Context);
 
@@ -70,6 +69,8 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
 
     m_ProjectConfigEditor.SetUndoMgr(&m_UndoManager);
     m_SceneConfigEditor.SetUndoMgr(&m_UndoManager);
+    m_GraphicsConfigEditor.Init();
+    m_GraphicsConfigEditor.SetUndoMgr(&m_UndoManager);
 }
 
 
@@ -102,6 +103,7 @@ void Editor::EditorLayer::Render() {
     // common UI rendered regardless of state
     m_SceneConfigEditor.OnImGuiRender(m_ShowSceneConfig);
     m_ProjectConfigEditor.OnImGuiRender(m_ShowProjectConfig);
+    m_GraphicsConfigEditor.OnImGuiRender(m_ShowGraphicsConfig);
 
     m_NewProjectDialog.Update();
     if (Core::Project::GetActive()) {
@@ -255,6 +257,7 @@ void Editor::EditorLayer::ClearCurrentProject() {
     m_CurrentScenePath.clear();
     m_ShowSceneConfig = false;
     m_ShowProjectConfig = false;
+    m_ShowGraphicsConfig = false; // not at all needed but i want consistent UI.
 
     m_RegistryPanel.SetSelectedEntity(ECS::Entity{});
     m_InspectorPanel.SetSelectedEntity(ECS::Entity{});
@@ -272,6 +275,7 @@ void Editor::EditorLayer::LoadProject(const std::string &projectFilePath) {
 
     // sync loaded config into EngineContext
     *m_Context.projectConfig = Core::Project::GetActive()->GetConfig();
+    *m_Context.graphicsConfig = Config::GraphicsConfig::Deserialize("graphics.json");
 
     LoadStartScene();
 
@@ -365,42 +369,6 @@ void Editor::EditorLayer::DrawEditorUI() {
 void Editor::EditorLayer::DrawEditorLayout() {
     DrawEditorUI();
     m_SceneManager.Render();
-}
-
-void Editor::EditorLayer::DrawProjectHub() {
-    ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-    ImGui::SetNextWindowSize(ImGui::GetMainViewport()->Size);
-    ImGui::Begin("Obliberry hub", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
-
-    ImGui::Text("welcome :)");
-    ImGui::Separator();
-
-    if (ImGui::Button("Create New Project", ImVec2(250, 50))) {
-        if (const auto dir = Platform::FileDialogs::PickFolder(m_Context)) {
-            m_NewProjectDialog.SetDirectory(std::filesystem::path(*dir));
-            m_NewProjectDialog.SetOnConfirm([this](const std::filesystem::path &pDir, const std::string &name) {
-                const auto newProject = Core::Project::NewProject(pDir, name);
-                if (newProject) {
-                    LoadProject(newProject->GetProjectPath().string());
-                }
-            });
-            m_NewProjectDialog.Open();
-        }
-    }
-
-    ImGui::Spacing();
-
-    if (ImGui::Button("Open Existing Project", ImVec2(250, 50))) {
-        if (const auto dir = Platform::FileDialogs::PickFolder(m_Context)) {
-            if (const std::filesystem::path projectFile = std::filesystem::path(*dir) / "project.json"; std::filesystem::exists(projectFile)) {
-                LoadProject(projectFile.string());
-            } else {
-                LOG_ERROR("Hub", "No project.json found in: " + *dir);
-            }
-        }
-    }
-
-    ImGui::End();
 }
 
 void Editor::EditorLayer::DrawDockSpace() {
@@ -606,14 +574,14 @@ void Editor::EditorLayer::DrawToolbar() {
                         ClearCurrentProject();
                         Core::Project::SetActive(nullptr);
                         IO::VFS::UnmountProject();
-                        s_ShouldBuildDock = true;
+                        // s_ShouldBuildDock = true;
                         TransitionTo(std::make_unique<States::HubState>());
                     });
                     m_SaveChangesDialog.SetOnDiscard([this] {
                         ClearCurrentProject();
                         Core::Project::SetActive(nullptr);
                         IO::VFS::UnmountProject();
-                        s_ShouldBuildDock = true;
+                        // s_ShouldBuildDock = true;
                         TransitionTo(std::make_unique<States::HubState>());
                     });
                     m_SaveChangesDialog.Open();
@@ -622,11 +590,18 @@ void Editor::EditorLayer::DrawToolbar() {
                         ClearCurrentProject();
                         Core::Project::SetActive(nullptr);
                         IO::VFS::UnmountProject();
-                        s_ShouldBuildDock = true;
+                        // s_ShouldBuildDock = true;
                         TransitionTo(std::make_unique<States::HubState>());
                     });
                 }
             }
+            ImGui::Separator();
+
+            if (ImGui::MenuItem("Graphics Settings")) {
+                m_GraphicsConfigEditor.Reload();
+                m_ShowGraphicsConfig = true;
+            }
+
             ImGui::Separator();
 
             if (ImGui::MenuItem("Export Project")) {

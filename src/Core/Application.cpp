@@ -15,6 +15,8 @@
 #include <thread>
 #include <utility>
 #include "Applications/Editor/EditorLayer.h"
+#include "Applications/Editor/UI/ConfigWindows/GraphicsConfigEditor.h"
+
 
 Core::Application::Application(const Config::GraphicsConfig gconf, Config::ProjectConfig pconf, std::unique_ptr<ApplicationLayer> layer)
     : m_Project(std::move(pconf)), m_GraphicsConfig(gconf), m_Window(m_GraphicsConfig.WindowWidth, m_GraphicsConfig.WindowHeight, m_Project.Title.c_str(), &gconf), m_Layer(std::move(layer)) {
@@ -102,6 +104,7 @@ void Core::Application::Run() {
     // EngineContext Setup
     EngineContext context;
     context.projectConfig = &m_Project;
+    context.graphicsConfig = &m_GraphicsConfig;
     context.window = &m_Window;
     context.input = &m_InputManager;
     context.resources = &m_ResourceManager;
@@ -112,6 +115,10 @@ void Core::Application::Run() {
     context.threadPool = &m_ThreadPool;
     context.audioEngine = m_AudioEngine.get();
     context.logger = Logging::LoggerService::Get();
+
+    // MSAA supported samples, must be called before gl context handover!!!
+    Config::GraphicsCapabilities::CacheSampleCounts();
+
     // Meshes
     Rendering::MeshFactory::RegisterAllMeshFactories();
 

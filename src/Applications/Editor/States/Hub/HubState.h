@@ -1,5 +1,5 @@
 #pragma once
-#include "EditorStateBase.h"
+#include "../EditorStateBase.h"
 
 namespace Editor::States {
 
@@ -14,6 +14,7 @@ namespace Editor::States {
 
         bool CanSaveScene() const override { return false; }
         bool CanSaveSceneAs() const override { return false; }
+        bool ShouldDrawProjectBrowser() const override { return false; }
     };
 
 } // namespace Editor::States

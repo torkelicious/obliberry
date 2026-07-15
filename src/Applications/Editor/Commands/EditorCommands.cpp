@@ -237,4 +237,20 @@ namespace Editor::Commands {
     std::string_view MapChangeTileCommand::Name() const noexcept { return "Map paint / erase"; }
 
 
+    //
+    // Graphics Config
+    //
+    GraphicsConfigUpdateCommand::GraphicsConfigUpdateCommand(const Config::GraphicsConfig &oldCfg, const Config::GraphicsConfig &newCfg) : m_OldData(oldCfg), m_NewData(newCfg) {}
+
+    void GraphicsConfigUpdateCommand::Execute(Core::EngineContext &ctx) {
+        if (ctx.graphicsConfig)
+            *ctx.graphicsConfig = m_NewData;
+    }
+    void GraphicsConfigUpdateCommand::Undo(Core::EngineContext &ctx) {
+        if (ctx.graphicsConfig)
+            *ctx.graphicsConfig = m_OldData;
+    }
+
+    std::string_view GraphicsConfigUpdateCommand::Name() const noexcept { return "Graphics settings change"; }
+
 } // namespace Editor::Commands

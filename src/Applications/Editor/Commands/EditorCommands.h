@@ -209,5 +209,21 @@ namespace Editor::Commands {
         bool *m_MeshDirty;
     };
 
+    // = = = = = //
+    // Graphics  //
+    // = = = = = //
+
+    // Cfg
+    class GraphicsConfigUpdateCommand : public ICommand {
+    public:
+        GraphicsConfigUpdateCommand(const Config::GraphicsConfig &oldCfg, const Config::GraphicsConfig &newCfg);
+        void Execute(Core::EngineContext &ctx) override;
+        void Undo(Core::EngineContext &ctx) override;
+        [[nodiscard]] std::string_view Name() const noexcept override;
+
+    private:
+        Config::GraphicsConfig m_OldData;
+        Config::GraphicsConfig m_NewData;
+    };
 
 } // namespace Editor::Commands

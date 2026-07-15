@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ConfigWindow.h"
 #include "Core/EngineContext.h"
 #include "Config/ProjectConfig.h"
 #include "Applications/Editor/Commands/UndoManager.h"
@@ -7,27 +8,18 @@
 namespace Editor::UI {
     using Commands::UndoManager;
 
-    class ProjectConfigEditor {
+    class ProjectConfigEditor : public ConfigEditor {
     public:
-        ProjectConfigEditor() = default;
+        void OnImGuiRender(bool &isOpen) override;
 
-        void SetContext(Core::EngineContext &context);
+        void Reload() override;
 
-        void OnImGuiRender(bool &isOpen);
-
-        void Reload();
-
-        void SaveConfig();
-
-        void SetUndoMgr(UndoManager *mgr) { m_Undomgr = mgr; }
+        void SaveConfig() override;
 
     private:
         void ResolveStartScenePath(const std::string &absolutePath);
 
         void LoadConfigToBuffers();
-
-        Core::EngineContext *m_Context = nullptr;
-        UndoManager *m_Undomgr = nullptr;
 
         // Editable working copy
         Config::ProjectConfig m_LocalConfig;

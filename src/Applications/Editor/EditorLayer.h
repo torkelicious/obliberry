@@ -14,6 +14,7 @@
 #include "Applications/Editor/UI/Modals/StdDialogs.h"
 #include "Applications/Editor/UI/ConfigWindows/ProjectConfigEditor.h"
 #include "Applications/Editor/UI/ConfigWindows/SceneConfigEditor.h"
+#include "UI/ConfigWindows/GraphicsConfigEditor.h"
 
 namespace Editor {
     namespace States {
@@ -39,6 +40,8 @@ namespace Editor {
 
         void Shutdown() override;
 
+        static bool s_ShouldBuildDock;
+
     private:
         void DrawDockSpace();
 
@@ -51,8 +54,6 @@ namespace Editor {
         void DrawEditorLayout();
 
         void DrawToolbar();
-
-        void DrawProjectHub();
 
         void LoadProject(const std::string &projectFilePath);
 
@@ -86,7 +87,6 @@ namespace Editor {
 
         std::string m_PendingSceneToLoad;
         // UI
-        static bool s_ShouldBuildDock;
         UI::RegistryPanel m_RegistryPanel;
         UI::InspectorPanel m_InspectorPanel;
         UI::ProjectBrowserPanel m_ProjectBrowserPanel;
@@ -98,8 +98,10 @@ namespace Editor {
         UI::SaveSceneAsDialog m_SaveSceneAsDialog;
         UI::SceneConfigEditor m_SceneConfigEditor;
         UI::ProjectConfigEditor m_ProjectConfigEditor;
+        UI::GraphicsConfigEditor m_GraphicsConfigEditor;
         bool m_ShowSceneConfig = false;
         bool m_ShowProjectConfig = false;
+        bool m_ShowGraphicsConfig = false;
 
         // commands
         Commands::UndoManager m_UndoManager;

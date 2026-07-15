@@ -282,7 +282,7 @@ add_executable(obliberry_editor
         src/Applications/Editor/States/Editor/EditState.cpp
         src/Applications/Editor/States/Play/PlayState.cpp
         src/Applications/Editor/States/MapEditor/MapEditState.cpp
-        src/Applications/Editor/States/HubState.cpp
+        src/Applications/Editor/States/Hub/HubState.cpp
         src/Applications/Editor/UI/Panels/Editor/EditorWidgets.cpp
         src/Applications/Editor/UI/Panels/Editor/EditorWidgetsCombo.cpp
         src/Applications/Editor/UI/Panels/Editor/InspectorPanel.cpp
@@ -296,6 +296,8 @@ add_executable(obliberry_editor
         src/Applications/Editor/UI/Panels/MapEditor/TileEditorPanel.cpp
         src/Applications/Editor/Commands/UndoManager.cpp
         src/Applications/Editor/Commands/EditorCommands.cpp
+        src/Applications/Editor/UI/ConfigWindows/GraphicsConfigEditor.cpp
+        src/Applications/Editor/UI/ConfigWindows/ConfigWindow.cpp
 )
 
 target_link_libraries(obliberry_editor PRIVATE

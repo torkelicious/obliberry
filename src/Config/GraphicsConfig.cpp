@@ -8,9 +8,10 @@
 #define LOG_WHO "GraphicsConfig"
 
 namespace Config {
+    std::vector<uint8_t> GraphicsCapabilities::s_SupportedSampleCounts;
 
     // VSync JSON string mapping
-    static const char *VSyncToString(const VSyncType vsync) {
+    const char *GraphicsConfig::VSyncToString(const VSyncType vsync) {
         switch (vsync) {
             case VSyncType::NONE:
                 return "none";
@@ -29,6 +30,19 @@ namespace Config {
             return VSyncType::ADAPTIVE;
         return VSyncType::STANDARD;
     }
+
+    uint8_t GraphicsConfig::SnapToValidSampleCount(const uint8_t requested, const std::vector<uint8_t> &validSamples) {
+        uint8_t closest = validSamples[0];
+        int smallestDiff = std::abs(static_cast<int>(requested) - static_cast<int>(closest));
+        for (const uint8_t candidate : validSamples) {
+            if (const int diff = std::abs(static_cast<int>(requested) - static_cast<int>(candidate)); diff < smallestDiff) {
+                smallestDiff = diff;
+                closest = candidate;
+            }
+        }
+        return closest;
+    }
+
 
     GraphicsConfig GraphicsConfig::Deserialize(const std::string &filepath) {
         GraphicsConfig config;
@@ -67,7 +81,7 @@ namespace Config {
                 if (aa.contains("MSAA"))
                     config.MSAAEnabled = aa["MSAA"];
                 if (aa.contains("samples"))
-                    config.AASamples = aa["samples"];
+                    config.AASamples = SnapToValidSampleCount(aa["samples"], GraphicsCapabilities::s_SupportedSampleCounts);
             }
             if (j.contains("targetfps"))
                 config.TargetFPS = j["targetfps"];
@@ -97,7 +111,7 @@ namespace Config {
             j["window"]["height"] = conf.WindowHeight;
             j["window"]["fullscreen"] = conf.Fullscreen;
             j["antialiasing"]["MSAA"] = conf.MSAAEnabled;
-            j["antialiasing"]["samples"] = conf.AASamples;
+            j["antialiasing"]["samples"] = SnapToValidSampleCount(conf.AASamples, GraphicsCapabilities::s_SupportedSampleCounts);
             j["targetfps"] = conf.TargetFPS;
             j["vsync"] = VSyncToString(conf.VSync);
 

@@ -15,8 +15,6 @@
 #define LOG_WHO "ProjectConfigEditor"
 
 namespace Editor::UI {
-    void ProjectConfigEditor::SetContext(Core::EngineContext &context) { m_Context = &context; }
-
     void ProjectConfigEditor::Reload() {
         if (m_Context && m_Context->projectConfig) {
             m_LocalConfig = *m_Context->projectConfig;

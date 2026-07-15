@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Config/GraphicsConfig.h"
 #include "Logger/Logger.h"
 
 #include <filesystem>
@@ -48,6 +49,7 @@ namespace Core {
         std::filesystem::path ProjectRootPath;
         std::string pendingScenePath; // for deferred scene loading (GameLayer, Scripting)
         Config::ProjectConfig *projectConfig = nullptr;
+        Config::GraphicsConfig *graphicsConfig = nullptr;
         Platform::Window::Window *window = nullptr;
         Platform::Input::InputManager *input = nullptr;
         ResourceManager *resources = nullptr;
