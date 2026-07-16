@@ -35,6 +35,8 @@ namespace Platform::Window {
 
         void SetFullscreen(bool fullscreen) const;
 
+        static inline bool s_ShouldInitNFD = false;
+
     private:
         GLFWwindow *m_Window = nullptr;
         Platform::Input::InputManager *m_InputManager = nullptr;
@@ -53,4 +55,5 @@ namespace Platform::Window {
 
         static void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset);
     };
+
 } // namespace Platform::Window

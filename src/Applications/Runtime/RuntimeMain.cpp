@@ -8,6 +8,7 @@
 #include <filesystem>
 
 int main(const int argc, char *argv[]) {
+    Platform::Window::Window::s_ShouldInitNFD = false;
     Logging::Logger<1000> logger;
     Logging::LoggerService::Initialize(&logger);
     std::filesystem::path targetPackage = "data.obpak";

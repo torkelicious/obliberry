@@ -74,14 +74,16 @@ bool Platform::Window::Window::Init(const unsigned int width, const unsigned int
     glfwGetWindowSize(m_Window, &m_Width, &m_Height);
 
 
-    if (NFD_Init() != NFD_OKAY) {
-        LOG_WARN(LOG_WHO, "Failed to initialize Native File Dialog");
-    }
-
-    // wont do anything on nonlinux/nonwayland displays anyways
+    if (s_ShouldInitNFD) {
+        LOG_INFO(LOG_WHO, "Initializing NFD-E");
+        if (NFD_Init() != NFD_OKAY) {
+            LOG_WARN(LOG_WHO, "Failed to initialize Native File Dialog");
+        }
+// wont do anything on nonlinux/nonwayland displays anyways
 #if defined(__linux__)
-    NFD_SetDisplayPropertiesFromGLFW();
+        NFD_SetDisplayPropertiesFromGLFW();
 #endif
+    }
 
     glfwMakeContextCurrent(m_Window);
     glfwSetWindowUserPointer(m_Window, this);

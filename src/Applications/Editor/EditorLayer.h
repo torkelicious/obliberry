@@ -40,7 +40,7 @@ namespace Editor {
 
         void Shutdown() override;
 
-        static bool s_ShouldBuildDock;
+        inline static bool s_ShouldBuildDock = true;
 
     private:
         static void DrawDockSpace();

@@ -7,9 +7,8 @@
 #include "Logger/LoggerService.h"
 #include <filesystem>
 
-bool Editor::EditorLayer::s_ShouldBuildDock = true;
-
 int main(const int argc, char *argv[]) {
+    Platform::Window::Window::s_ShouldInitNFD = true;
     Logging::Logger<1000> logger;
     Logging::LoggerService::Initialize(&logger);
     LOG_INFO("EditorMain", "Initialized");
