@@ -12,6 +12,7 @@
 #include "ECS/Components/PointLightComponent.h"
 #include "ECS/Components/ScriptComponent.h"
 #include "ECS/Components/PrefabSourceComponent.h"
+#include "ECS/Components/ParticleEmitterComponent.h"
 
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "EntityFactory"
@@ -136,6 +137,40 @@ void IO::EntityFactory::RegisterDeserializers() {
         ast_nodes.resize(scriptCount);
         lastModified.resize(scriptCount);
     };
+
+    // PARTICLE EMITTER COMPONENT
+    s_Deserializers["ParticleEmitterComponent"] = [](ECS::Entity &entity, const nlohmann::json &data, Core::ResourceManager &resources) {
+        ECS::Components::ParticleEmitterComponent ec;
+        if (data.contains("maxParticles"))
+            ec.maxParticles = data["maxParticles"].get<int>();
+        if (data.contains("emitRate"))
+            ec.emitRate = data["emitRate"].get<float>();
+        if (data.contains("lifetimeMin"))
+            ec.lifetimeMin = data["lifetimeMin"].get<float>();
+        if (data.contains("lifetimeMax"))
+            ec.lifetimeMax = data["lifetimeMax"].get<float>();
+        if (data.contains("velocityMin"))
+            ec.velocityMin = {data["velocityMin"][0], data["velocityMin"][1], data["velocityMin"][2]};
+        if (data.contains("velocityMax"))
+            ec.velocityMax = {data["velocityMax"][0], data["velocityMax"][1], data["velocityMax"][2]};
+        if (data.contains("gravity"))
+            ec.gravity = {data["gravity"][0], data["gravity"][1], data["gravity"][2]};
+        if (data.contains("sizeStart"))
+            ec.sizeStart = data["sizeStart"].get<float>();
+        if (data.contains("sizeEnd"))
+            ec.sizeEnd = data["sizeEnd"].get<float>();
+        if (data.contains("colorStart"))
+            ec.colorStart = {data["colorStart"][0], data["colorStart"][1], data["colorStart"][2], data["colorStart"][3]};
+        if (data.contains("colorEnd"))
+            ec.colorEnd = {data["colorEnd"][0], data["colorEnd"][1], data["colorEnd"][2], data["colorEnd"][3]};
+        if (data.contains("isBillboard"))
+            ec.isBillboard = data["isBillboard"].get<bool>();
+        if (data.contains("material_id")) {
+            const std::string matID = data["material_id"].get<std::string>();
+            ec.material = resources.Get<Rendering::Material>(matID);
+        }
+        entity.AddComponent<ECS::Components::ParticleEmitterComponent>(ec);
+    };
 }
 
 void IO::EntityFactory::RegisterSerializers() {
@@ -230,6 +265,30 @@ void IO::EntityFactory::RegisterSerializers() {
                     scriptPathsArray.push_back(scriptPath);
                 }
                 data["ScriptComponent"]["scriptPaths"] = scriptPathsArray;
+            }
+        }
+    };
+
+    // PARTICLE EMITTER COMPONENT
+    s_Serializers["ParticleEmitterComponent"] = [](const ECS::Entity &entity, nlohmann::json &data, Core::ResourceManager &resources) {
+        if (entity.HasComponent<ECS::Components::ParticleEmitterComponent>()) {
+            const auto *ec = entity.GetComponent<ECS::Components::ParticleEmitterComponent>();
+            data["ParticleEmitterComponent"]["maxParticles"] = ec->maxParticles;
+            data["ParticleEmitterComponent"]["emitRate"] = ec->emitRate;
+            data["ParticleEmitterComponent"]["lifetimeMin"] = ec->lifetimeMin;
+            data["ParticleEmitterComponent"]["lifetimeMax"] = ec->lifetimeMax;
+            data["ParticleEmitterComponent"]["velocityMin"] = {ec->velocityMin.x, ec->velocityMin.y, ec->velocityMin.z};
+            data["ParticleEmitterComponent"]["velocityMax"] = {ec->velocityMax.x, ec->velocityMax.y, ec->velocityMax.z};
+            data["ParticleEmitterComponent"]["gravity"] = {ec->gravity.x, ec->gravity.y, ec->gravity.z};
+            data["ParticleEmitterComponent"]["sizeStart"] = ec->sizeStart;
+            data["ParticleEmitterComponent"]["sizeEnd"] = ec->sizeEnd;
+            data["ParticleEmitterComponent"]["colorStart"] = {ec->colorStart.x, ec->colorStart.y, ec->colorStart.z, ec->colorStart.w};
+            data["ParticleEmitterComponent"]["colorEnd"] = {ec->colorEnd.x, ec->colorEnd.y, ec->colorEnd.z, ec->colorEnd.w};
+            data["ParticleEmitterComponent"]["isBillboard"] = ec->isBillboard;
+            if (ec->material) {
+                if (std::string id = resources.GetKey<Rendering::Material>(ec->material); !id.empty()) {
+                    data["ParticleEmitterComponent"]["material_id"] = id;
+                }
             }
         }
     };

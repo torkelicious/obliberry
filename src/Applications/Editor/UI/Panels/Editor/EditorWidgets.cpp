@@ -397,3 +397,75 @@ void Editor::UI::CustomDataWidget::Draw(const ECS::Entity entity, Core::EngineCo
         }
     }
 }
+
+//  ParticleEmitterWidget
+
+const char *Editor::UI::ParticleEmitterWidget::GetName() const { return "Particle Emitter"; }
+
+void Editor::UI::ParticleEmitterWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext, UndoManager *undoManager) {
+    if (!entity.HasComponent<ECS::Components::ParticleEmitterComponent>())
+        return;
+    if (ImGui::CollapsingHeader(GetName())) {
+        auto *comp = entity.GetComponent<ECS::Components::ParticleEmitterComponent>();
+
+        ImGui::SeparatorText("Emission");
+        ImGui::Checkbox("Active", &comp->active);
+        ImGui::DragInt("Max Particles", &comp->maxParticles, 1.0f, 1, 16384);
+        ImGui::DragFloat("Emit Rate", &comp->emitRate, 1.0f, 0.0f, 1000.0f, "%.1f/s");
+        if (ImGui::IsItemDeactivatedAfterEdit())
+            MarkSceneChanged(engineContext);
+
+        ImGui::SeparatorText("Lifetime");
+        ImGui::DragFloat("Min", &comp->lifetimeMin, 0.05f, 0.01f, 60.0f, "%.2f s");
+        ImGui::DragFloat("Max", &comp->lifetimeMax, 0.05f, 0.01f, 60.0f, "%.2f s");
+        if (ImGui::IsItemDeactivatedAfterEdit())
+            MarkSceneChanged(engineContext);
+
+        ImGui::SeparatorText("Velocity");
+        ImGui::DragFloat3("Min", &comp->velocityMin.x, 0.1f);
+        ImGui::DragFloat3("Max", &comp->velocityMax.x, 0.1f);
+        if (ImGui::IsItemDeactivatedAfterEdit())
+            MarkSceneChanged(engineContext);
+
+        ImGui::SeparatorText("Physics");
+        ImGui::DragFloat3("Gravity", &comp->gravity.x, 0.1f);
+        if (ImGui::IsItemDeactivatedAfterEdit())
+            MarkSceneChanged(engineContext);
+
+        ImGui::SeparatorText("Size");
+        ImGui::DragFloat("Start", &comp->sizeStart, 0.01f, 0.001f, 50.0f, "%.3f");
+        ImGui::DragFloat("End", &comp->sizeEnd, 0.01f, 0.0f, 50.0f, "%.3f");
+        if (ImGui::IsItemDeactivatedAfterEdit())
+            MarkSceneChanged(engineContext);
+
+        ImGui::SeparatorText("Color");
+        ImGui::ColorEdit4("Start", &comp->colorStart.x, ImGuiColorEditFlags_NoInputs);
+        ImGui::ColorEdit4("End", &comp->colorEnd.x, ImGuiColorEditFlags_NoInputs);
+        if (ImGui::IsItemDeactivatedAfterEdit())
+            MarkSceneChanged(engineContext);
+
+        ImGui::SeparatorText("Options");
+        ImGui::Checkbox("Billboard", &comp->isBillboard);
+        if (ImGui::IsItemDeactivatedAfterEdit())
+            MarkSceneChanged(engineContext);
+
+        ImGui::SeparatorText("Material");
+        if (engineContext && engineContext->resources) {
+            ImGui::PushID("EmitterMatCombo");
+            if (MaterialCombo("Material", *engineContext->resources, comp->material)) {
+                MarkSceneChanged(engineContext);
+            }
+            ImGui::PopID();
+        }
+
+        ImGui::Separator();
+        const float buttonWidth = ImGui::CalcTextSize("Remove Particle Emitter").x + ImGui::GetStyle().FramePadding.x * 2;
+        const float availWidth = ImGui::GetContentRegionAvail().x;
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (availWidth - buttonWidth) * 0.5f);
+        if (ImGui::Button("Remove ##ParticleEmitter", ImVec2(buttonWidth, 0))) {
+            auto data = *entity.GetComponent<ECS::Components::ParticleEmitterComponent>();
+            undoManager->Execute(std::make_unique<Commands::RemoveComponentCommand<ECS::Components::ParticleEmitterComponent>>(static_cast<ECS::EntityID>(entity), data), *engineContext);
+            MarkSceneChanged(engineContext);
+        }
+    }
+}

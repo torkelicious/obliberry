@@ -46,7 +46,8 @@ ent.AddComponent("MapState");
 ent.AddComponent("BillboardTag");
 ent.AddComponent("DestroyTag");
 ent.AddComponent("DirectionalTexture");
-println "AddComponent (all 7): PASS";
+ent.AddComponent("ParticleEmitter");
+println "AddComponent (all 8): PASS";
 
 assert(ent.HasComponent("Transform"), "HasComponent Transform");
 assert(ent.HasComponent("PointLight"), "HasComponent PointLight");
@@ -55,10 +56,11 @@ assert(ent.HasComponent("MapState"), "HasComponent MapState");
 assert(ent.HasComponent("BillboardTag"), "HasComponent BillboardTag");
 assert(ent.HasComponent("DestroyTag"), "HasComponent DestroyTag");
 assert(ent.HasComponent("DirectionalTexture"), "HasComponent DirectionalTexture");
-println "HasComponent (all 7): PASS";
+assert(ent.HasComponent("ParticleEmitter"), "HasComponent ParticleEmitter");
+println "HasComponent (all 8): PASS";
 
 var comps2 = ent.GetComponents();
-assert(comps2.len == 7, "Should have 7 components, got " + to_string(comps2.len));
+assert(comps2.len == 8, "Should have 8 components, got " + to_string(comps2.len));
 println "GetComponents count=" + to_string(comps2.len) + ": PASS";
 
 var tf = ent.GetComponent("Transform");
@@ -73,7 +75,9 @@ var dtc = ent.GetComponent("DirectionalTexture");
 assert(dtc != null, "GetComponent DirectionalTexture");
 assert(ent.GetComponent("BillboardTag") != null, "GetComponent BillboardTag");
 assert(ent.GetComponent("DestroyTag") != null, "GetComponent DestroyTag");
-println "GetComponent (all 7): PASS";
+var emitter = ent.GetComponent("ParticleEmitter");
+assert(emitter != null, "GetComponent ParticleEmitter");
+println "GetComponent (all 8): PASS";
 
 assert(ent.GetComponent("NonExistent") == null, "GetComponent missing");
 println "GetComponent missing->null: PASS";
@@ -127,6 +131,15 @@ var ph = ms.GetPathToHex();
 assert(type_of(ph) == "array", "GetPathToHex type");
 assert(ph.len == 2, "GetPathToHex len");
 println "All: PASS";
+
+println "";
+println "ParticleEmitter";
+emitter.SetEmitRate(75.0);
+emitter.SetActive(false);
+assert(emitter.GetActive() == false, "GetActive should be false");
+emitter.SetActive(true);
+assert(emitter.GetActive() == true, "GetActive should be true");
+println "SetEmitRate/SetActive/GetActive: PASS";
 
 println "";
 println "DirectionalTexture";

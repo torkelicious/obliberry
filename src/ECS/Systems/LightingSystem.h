@@ -151,7 +151,7 @@ namespace ECS::Systems::LightingSystem {
             glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prevFbo);
             glGetIntegerv(GL_CURRENT_PROGRAM, &prevProgram);
             glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &prevVao);
-            GLboolean prevBlend = glIsEnabled(GL_BLEND);
+            const GLboolean prevBlend = glIsEnabled(GL_BLEND);
             glGetIntegerv(GL_BLEND_SRC_RGB, &prevBlendSrc);
             glGetIntegerv(GL_BLEND_DST_RGB, &prevBlendDst);
             glGetIntegerv(GL_BLEND_EQUATION_RGB, &prevBlendEq);

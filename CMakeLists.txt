@@ -111,6 +111,7 @@ endfunction()
 
 # Dependencies
 include(FetchContent)
+set(FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}/.deps")
 
 # Helper
 function(fetch_dep NAME REPO TAG)

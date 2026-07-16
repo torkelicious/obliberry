@@ -10,6 +10,7 @@
 
 #include "ECS/Components/MapComponent.h"
 #include "ECS/Components/MovementComponent.h"
+#include "ECS/Components/ParticleEmitterComponent.h"
 #include "ECS/Components/PointLightComponent.h"
 #include "ECS/Components/ScriptComponent.h"
 #include "ECS/Components/TransformComponent.h"
@@ -183,6 +184,12 @@ namespace Editor::UI {
     };
 
     struct CustomDataWidget : public IComponentWidget {
+        [[nodiscard]] const char *GetName() const override;
+
+        void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr, UndoManager *undoManager = nullptr) override;
+    };
+
+    struct ParticleEmitterWidget : public IComponentWidget {
         [[nodiscard]] const char *GetName() const override;
 
         void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr, UndoManager *undoManager = nullptr) override;

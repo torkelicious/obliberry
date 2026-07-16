@@ -7,6 +7,7 @@
 #include "ECS/Systems/RenderSystem.h"
 #include "ECS/Systems/SpriteBillboardSystem.h"
 #include "ECS/Systems/LightingSystem.h"
+#include "ECS/Systems/ParticleSystem.h"
 #include "IO/Loaders/EntityFactory.h"
 #include "IO/SceneSerialization.h"
 #include <iostream>
@@ -70,6 +71,7 @@ void Scenes::Scene::Update(const float dt) {
     ECS::Systems::MovementSystem::Update(m_Registry, dt);
     ECS::Systems::ScriptSystem::Update(m_Registry, *m_Context);
     ECS::Systems::LightingSystem::Update(m_Registry);
+    ECS::Systems::ParticleSystem::Update(m_Registry, dt);
 }
 
 void Scenes::Scene::Render() {
@@ -86,6 +88,8 @@ void Scenes::Scene::Render() {
         ECS::Systems::SpriteBillboardSystem::Update(m_Registry, m_Context->camera, frustum3D);
 
         ECS::Systems::RenderSystem::Render(m_Registry, *m_Context->renderer, frustum3D);
+
+        ECS::Systems::ParticleSystem::Render(m_Registry, *m_Context->renderer, m_Context->camera);
     }
 }
 

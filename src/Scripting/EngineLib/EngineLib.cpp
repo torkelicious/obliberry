@@ -11,6 +11,7 @@
 #include "ECS/Components/MovementComponent.h"
 #include "ECS/Components/PointLightComponent.h"
 #include "ECS/Components/TransformComponent.h"
+#include "ECS/Components/ParticleEmitterComponent.h"
 
 
 /*
@@ -70,6 +71,8 @@ namespace Scripting {
                 return EngineLibFactories::CreateBillboardTagObject(interp, registry, id);
             if (comp_name == "DestroyTag")
                 return EngineLibFactories::CreateDestroyTagObject(interp, registry, id);
+            if (comp_name == "ParticleEmitter")
+                return EngineLibFactories::CreateParticleEmitterObject(interp, registry, id);
 
             return std::monostate{};
         };
@@ -98,6 +101,8 @@ namespace Scripting {
                         reg.AddComponent<ECS::Components::BillboardTagComponent>(id, ECS::Components::BillboardTagComponent{});
                     else if (comp_name == "DestroyTag" && !reg.HasComponent<ECS::Components::DestroyTagComponent>(id))
                         reg.AddComponent<ECS::Components::DestroyTagComponent>(id, ECS::Components::DestroyTagComponent{});
+                    else if (comp_name == "ParticleEmitter" && !reg.HasComponent<ECS::Components::ParticleEmitterComponent>(id))
+                        reg.AddComponent<ECS::Components::ParticleEmitterComponent>(id, ECS::Components::ParticleEmitterComponent{});
                 });
             } else if (reg_ptr) {
                 std::unique_lock lock(g_RegistryMutex);
@@ -117,6 +122,8 @@ namespace Scripting {
                     reg_ptr->AddComponent<ECS::Components::BillboardTagComponent>(id, ECS::Components::BillboardTagComponent{});
                 else if (comp_name == "DestroyTag" && !reg_ptr->HasComponent<ECS::Components::DestroyTagComponent>(id))
                     reg_ptr->AddComponent<ECS::Components::DestroyTagComponent>(id, ECS::Components::DestroyTagComponent{});
+                else if (comp_name == "ParticleEmitter" && !reg_ptr->HasComponent<ECS::Components::ParticleEmitterComponent>(id))
+                    reg_ptr->AddComponent<ECS::Components::ParticleEmitterComponent>(id, ECS::Components::ParticleEmitterComponent{});
             }
             return std::monostate{};
         };
@@ -197,6 +204,8 @@ namespace Scripting {
                 return registry.HasComponent<ECS::Components::BillboardTagComponent>(id);
             if (name == "DestroyTag")
                 return registry.HasComponent<ECS::Components::DestroyTagComponent>(id);
+            if (name == "ParticleEmitter")
+                return registry.HasComponent<ECS::Components::ParticleEmitterComponent>(id);
             return false;
         };
 
@@ -224,6 +233,8 @@ namespace Scripting {
                         reg.RemoveComponent<ECS::Components::BillboardTagComponent>(id);
                     else if (comp_name == "DestroyTag")
                         reg.RemoveComponent<ECS::Components::DestroyTagComponent>(id);
+                    else if (comp_name == "ParticleEmitter")
+                        reg.RemoveComponent<ECS::Components::ParticleEmitterComponent>(id);
                 });
             } else if (reg_ptr) {
                 std::unique_lock lock(g_RegistryMutex);
@@ -241,8 +252,10 @@ namespace Scripting {
                     reg_ptr->RemoveComponent<ECS::Components::DirectionalTextureComponent>(id);
                 else if (comp_name == "BillboardTag")
                     reg_ptr->RemoveComponent<ECS::Components::BillboardTagComponent>(id);
-                else if (comp_name == "DestroyTag")
+                if (comp_name == "DestroyTag")
                     reg_ptr->RemoveComponent<ECS::Components::DestroyTagComponent>(id);
+                else if (comp_name == "ParticleEmitter")
+                    reg_ptr->RemoveComponent<ECS::Components::ParticleEmitterComponent>(id);
             }
             return std::monostate{};
         };
@@ -278,6 +291,8 @@ namespace Scripting {
                 arr->elements.emplace_back(std::string("BillboardTag"));
             if (registry.HasComponent<ECS::Components::DestroyTagComponent>(id))
                 arr->elements.emplace_back(std::string("DestroyTag"));
+            if (registry.HasComponent<ECS::Components::ParticleEmitterComponent>(id))
+                arr->elements.emplace_back(std::string("ParticleEmitter"));
             return arr;
         };
 

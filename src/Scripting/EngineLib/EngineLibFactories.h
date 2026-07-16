@@ -13,6 +13,7 @@
 #include "ECS/Components/MovementComponent.h"
 #include "ECS/Components/MapStateComponent.h"
 #include "ECS/Components/DirectionalTextureComponent.h"
+#include "ECS/Components/ParticleEmitterComponent.h"
 
 
 namespace Scripting {
@@ -366,5 +367,75 @@ namespace Scripting {
         inline ObSL::ObSLObject *CreateBillboardTagObject(ObSL::Interpreter *interpreter, ECS::Registry &, ECS::EntityID) { return interpreter->gc.allocate<ObSL::ObSLObject>(); }
 
         inline ObSL::ObSLObject *CreateDestroyTagObject(ObSL::Interpreter *interpreter, ECS::Registry &, ECS::EntityID) { return interpreter->gc.allocate<ObSL::ObSLObject>(); }
+
+        // PARTICLE EMITTER COMPONENT
+        inline ObSL::ObSLObject *CreateParticleEmitterObject(ObSL::Interpreter *interpreter, ECS::Registry &registry, ECS::EntityID id) {
+            auto *obj = interpreter->gc.allocate<ObSL::ObSLObject>();
+            GCProtectGuard guard(interpreter, obj);
+
+            auto set_emit_rate = [id, reg_ptr = &registry](const ObSL::Interpreter *interpreter, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+                if (!args.empty() && std::holds_alternative<double>(args[0])) {
+                    auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
+                    float rate = static_cast<float>(std::get<double>(args[0]));
+                    auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
+                    if (cmd_buf) {
+                        cmd_buf->push([id, rate](ECS::Registry &reg) {
+                            if (auto *comp = reg.GetComponent<ECS::Components::ParticleEmitterComponent>(id))
+                                comp->emitRate = rate;
+                        });
+                    } else if (reg_ptr) {
+                        std::unique_lock lock(g_RegistryMutex);
+                        if (auto *comp = reg_ptr->GetComponent<ECS::Components::ParticleEmitterComponent>(id))
+                            comp->emitRate = rate;
+                    }
+                }
+                return std::monostate{};
+            };
+
+            auto set_active = [id, reg_ptr = &registry](const ObSL::Interpreter *interpreter, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+                if (!args.empty()) {
+                    bool active = false;
+                    if (std::holds_alternative<bool>(args[0])) {
+                        active = std::get<bool>(args[0]);
+                    } else if (std::holds_alternative<double>(args[0])) {
+                        active = std::get<double>(args[0]) != 0.0;
+                    }
+                    auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
+                    auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
+                    if (cmd_buf) {
+                        cmd_buf->push([id, active](ECS::Registry &reg) {
+                            if (auto *comp = reg.GetComponent<ECS::Components::ParticleEmitterComponent>(id))
+                                comp->active = active;
+                        });
+                    } else if (reg_ptr) {
+                        std::unique_lock lock(g_RegistryMutex);
+                        if (auto *comp = reg_ptr->GetComponent<ECS::Components::ParticleEmitterComponent>(id))
+                            comp->active = active;
+                    }
+                }
+                return std::monostate{};
+            };
+
+            auto get_active = [id, &registry](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+                std::shared_lock lock(g_RegistryMutex);
+                if (auto *comp = registry.GetComponent<ECS::Components::ParticleEmitterComponent>(id))
+                    return comp->active;
+                return false;
+            };
+
+            auto get_alive_count = [id, &registry](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+                std::shared_lock lock(g_RegistryMutex);
+                if (auto *comp = registry.GetComponent<ECS::Components::ParticleEmitterComponent>(id))
+                    return static_cast<double>(comp->emitterIndex >= 0 ? 0 : 0); // runtime-only, no pool access from script
+                return 0.0;
+            };
+
+            obj->fields["SetEmitRate"] = interpreter->gc.allocate<ObSL::NativeFunction>(1, std::move(set_emit_rate), "SetEmitRate");
+            obj->fields["SetActive"] = interpreter->gc.allocate<ObSL::NativeFunction>(1, std::move(set_active), "SetActive");
+            obj->fields["GetActive"] = interpreter->gc.allocate<ObSL::NativeFunction>(0, std::move(get_active), "GetActive");
+            obj->fields["GetAliveCount"] = interpreter->gc.allocate<ObSL::NativeFunction>(0, std::move(get_alive_count), "GetAliveCount");
+
+            return obj;
+        }
     } // namespace EngineLibFactories
 } // namespace Scripting

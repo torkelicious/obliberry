@@ -2,6 +2,7 @@
 #include "EditorWidgets.h"
 #include "ECS/Components/CustomDataComponent.h"
 #include "ECS/Components/DirectionalTextureComponent.h"
+#include "ECS/Components/ParticleEmitterComponent.h"
 #include "ECS/Components/MapStateComponent.h"
 #include "ECS/Components/MaterialComponent.h"
 #include "ECS/Components/MeshComponent.h"
@@ -22,6 +23,7 @@ Editor::UI::InspectorPanel::InspectorPanel() {
     m_Widgets.push_back(std::make_unique<MapStateWidget>());
     m_Widgets.push_back(std::make_unique<ScriptWidget>());
     m_Widgets.push_back(std::make_unique<CustomDataWidget>());
+    m_Widgets.push_back(std::make_unique<ParticleEmitterWidget>());
 }
 
 Editor::UI::InspectorPanel::~InspectorPanel() = default;
@@ -127,6 +129,7 @@ void Editor::UI::InspectorPanel::OnImGuiRender() {
                         {"Map State", m_SelectedEntity.HasComponent<ECS::Components::MapStateComponent>(), [this] { m_SelectedEntity.AddComponent<ECS::Components::MapStateComponent>(); }},
                         {"Scripts", m_SelectedEntity.HasComponent<ECS::Components::ScriptComponent>(), [this] { m_SelectedEntity.AddComponent<ECS::Components::ScriptComponent>(); }},
                         {"ObSL Custom Data", m_SelectedEntity.HasComponent<ECS::Components::CustomDataComponent>(), [this] { m_SelectedEntity.AddComponent<ECS::Components::CustomDataComponent>(); }},
+                        {"Particle Emitter", m_SelectedEntity.HasComponent<ECS::Components::ParticleEmitterComponent>(), [this] { m_SelectedEntity.AddComponent<ECS::Components::ParticleEmitterComponent>(); }},
                 };
 
                 ImGui::TextDisabled("Available Components");
