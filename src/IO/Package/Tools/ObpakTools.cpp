@@ -110,6 +110,8 @@ namespace IO::Package::Tools {
         const std::filesystem::path runtime_src = std::filesystem::current_path() / "internal" / runtime_name;
         const std::filesystem::path dest_exe = std::filesystem::path(output_dir) / export_name;
 
+        const std::filesystem::path project_dir = VFS::GetProjectRoot();
+
         try {
             if (std::filesystem::exists(runtime_src)) {
                 std::filesystem::copy_file(runtime_src, dest_exe, std::filesystem::copy_options::overwrite_existing);
@@ -120,6 +122,10 @@ namespace IO::Package::Tools {
             }
         } catch (const std::exception &e) {
             LOG_ERROR(LOG_WHO, "Exception while copying runtime: " + std::string(e.what()));
+        }
+        const std::filesystem::path outPath(output_dir);
+        if (std::filesystem::exists(project_dir / "graphics.json")) {
+            std::filesystem::copy_file(project_dir / "graphics.json", outPath / "graphics.json", std::filesystem::copy_options::overwrite_existing);
         }
     }
 } // namespace IO::Package::Tools

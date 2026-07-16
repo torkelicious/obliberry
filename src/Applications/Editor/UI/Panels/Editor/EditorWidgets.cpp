@@ -340,7 +340,7 @@ void Editor::UI::ScriptWidget::Draw(const ECS::Entity entity, Core::EngineContex
         for (size_t i = 0; i < comp->scriptPaths.size(); i++) {
             ImGui::PushID(static_cast<int>(i));
             ImGui::BulletText("%s", comp->scriptPaths[i].c_str());
-            //ImGui::SameLine();
+            // ImGui::SameLine();
             if (ImGui::SmallButton("Remove ##Script")) {
                 undoManager->Execute(std::make_unique<Commands::RemoveScriptCommand>(static_cast<ECS::EntityID>(entity), *comp, i), *engineContext);
                 MarkSceneChanged(engineContext);

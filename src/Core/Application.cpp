@@ -73,6 +73,8 @@ void Core::Application::Run() {
     glEnable(GL_BLEND);
     glDisable(GL_DEPTH_TEST);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    if (m_GraphicsConfig.MSAAEnabled)
+        glEnable(GL_MULTISAMPLE);
 
     glfwSwapInterval(static_cast<int>(m_GraphicsConfig.VSync));
 

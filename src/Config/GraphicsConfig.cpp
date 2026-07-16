@@ -81,7 +81,7 @@ namespace Config {
                 if (aa.contains("MSAA"))
                     config.MSAAEnabled = aa["MSAA"];
                 if (aa.contains("samples"))
-                    config.AASamples = SnapToValidSampleCount(aa["samples"], GraphicsCapabilities::s_SupportedSampleCounts);
+                    config.AASamples = aa["samples"];
             }
             if (j.contains("targetfps"))
                 config.TargetFPS = j["targetfps"];
