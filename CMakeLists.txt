@@ -16,23 +16,36 @@ set(CONFIG_TYPES Debug Release RelWithDebInfo MinSizeRel)
 # x86-64-v3 requires ~Haswell/Zen1 or newer
 set(ENGINE_ARCH_LEVEL "x86-64-v2" CACHE STRING "Target CPU architecture (x86-64-v2, x86-64-v3, native)")
 
+# compiler / linker options
+add_library(obliberry_options INTERFACE)
+
 # meaningless (or error) on MSVC or ARM
 if ((CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang") AND (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64|i686"))
-    add_compile_options($<$<NOT:$<CONFIG:Debug>>:-march=${ENGINE_ARCH_LEVEL}>)
+    target_compile_options(obliberry_options INTERFACE $<$<NOT:$<CONFIG:Debug>>:-march=${ENGINE_ARCH_LEVEL}>)
     message(STATUS "Optimizing for CPU architecture level: ${ENGINE_ARCH_LEVEL}")
 endif ()
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    # split functions/data into sections
-    add_compile_options($<$<NOT:$<CONFIG:Debug>>:-ffunction-sections>)
-    add_compile_options($<$<NOT:$<CONFIG:Debug>>:-fdata-sections>)
-    # delete unused sections
-    add_link_options($<$<NOT:$<CONFIG:Debug>>:-Wl,--gc-sections>)
+    # split functions/data into sections & debug options
+    target_compile_options(obliberry_options INTERFACE
+            $<$<NOT:$<CONFIG:Debug>>:-ffunction-sections>
+            $<$<NOT:$<CONFIG:Debug>>:-fdata-sections>
+            $<$<CONFIG:RelWithDebInfo>:-fno-omit-frame-pointer>
+            $<$<CONFIG:RelWithDebInfo>:-g>
+    )
+    # delete unused sections & linker optimizations
+    target_link_options(obliberry_options INTERFACE
+            $<$<NOT:$<CONFIG:Debug>>:-Wl,--gc-sections>
+            $<$<CONFIG:RelWithDebInfo>:-Wl,--build-id>
+            $<$<CONFIG:Release,MinSizeRel>:-s>
+    )
 elseif (MSVC)
     # MSVC/link.exe equivalents
-    add_compile_options($<$<NOT:$<CONFIG:Debug>>:/Gy>)
-    add_link_options($<$<NOT:$<CONFIG:Debug>>:/OPT:REF>)
-    add_link_options($<$<NOT:$<CONFIG:Debug>>:/OPT:ICF>)
+    target_compile_options(obliberry_options INTERFACE $<$<NOT:$<CONFIG:Debug>>:/Gy>)
+    target_link_options(obliberry_options INTERFACE
+            $<$<NOT:$<CONFIG:Debug>>:/OPT:REF>
+            $<$<NOT:$<CONFIG:Debug>>:/OPT:ICF>
+    )
 endif ()
 
 # use a good linker where available :)
@@ -40,24 +53,14 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang" AND NOT APPLE)
     find_program(MOLD_LINKER mold)
     find_program(LLD_LINKER lld)
     if (MOLD_LINKER AND CMAKE_SYSTEM_NAME MATCHES "Linux")
-        add_link_options("-fuse-ld=mold")
+        target_link_options(obliberry_options INTERFACE "-fuse-ld=mold")
         message(STATUS "Using MOLD linker")
     elseif (LLD_LINKER)
-        add_link_options("-fuse-ld=lld")
+        target_link_options(obliberry_options INTERFACE "-fuse-ld=lld")
         message(STATUS "Using LLD linker")
     endif ()
 endif ()
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    add_compile_options(
-            $<$<CONFIG:RelWithDebInfo>:-fno-omit-frame-pointer>
-            $<$<CONFIG:RelWithDebInfo>:-g>
-    )
-
-    add_link_options(
-            $<$<CONFIG:RelWithDebInfo>:-Wl,--build-id>
-    )
-endif ()
 
 if (APPLE)
     # min sdk to avoid issues for apple bros
@@ -108,7 +111,6 @@ endfunction()
 
 # Dependencies
 include(FetchContent)
-set(FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}/.deps")
 
 # Helper
 function(fetch_dep NAME REPO TAG)
@@ -257,7 +259,9 @@ target_compile_definitions(obliberry_engine PUBLIC
         $<$<CONFIG:Debug>:DEBUG_BUILD>
 )
 
+# link interface opts
 target_link_libraries(obliberry_engine PUBLIC
+        obliberry_options
         obliberry_vendor
         glm::glm
         obsl
@@ -278,24 +282,33 @@ target_link_libraries(obliberry_runtime PRIVATE
 # Editor
 add_executable(obliberry_editor
         src/Applications/Editor/EditorMain.cpp
+
         src/Applications/Editor/EditorLayer.cpp
+
         src/Applications/Editor/States/Editor/EditState.cpp
         src/Applications/Editor/States/Play/PlayState.cpp
         src/Applications/Editor/States/MapEditor/MapEditState.cpp
         src/Applications/Editor/States/Hub/HubState.cpp
+
         src/Applications/Editor/UI/Panels/Editor/EditorWidgets.cpp
         src/Applications/Editor/UI/Panels/Editor/EditorWidgetsCombo.cpp
         src/Applications/Editor/UI/Panels/Editor/InspectorPanel.cpp
         src/Applications/Editor/UI/Panels/ProjectBrowserPanel.cpp
         src/Applications/Editor/UI/Panels/Editor/RegistryPanel.cpp
         src/Applications/Editor/UI/Panels/ViewportPanel.cpp
+
         src/Applications/Editor/UI/ConfigWindows/ProjectConfigEditor.cpp
         src/Applications/Editor/UI/ConfigWindows/SceneConfigEditor.cpp
+
         src/Applications/Editor/Platform/FileDialogs.cpp
+
         src/IO/Package/Tools/ObpakTools.cpp
+
         src/Applications/Editor/UI/Panels/MapEditor/TileEditorPanel.cpp
+
         src/Applications/Editor/Commands/UndoManager.cpp
         src/Applications/Editor/Commands/EditorCommands.cpp
+
         src/Applications/Editor/UI/ConfigWindows/GraphicsConfigEditor.cpp
         src/Applications/Editor/UI/ConfigWindows/ConfigWindow.cpp
 )
@@ -329,18 +342,18 @@ if (BUILD_PACK_TOOLS)
 
 endif ()
 
-# Post build
-file(COPY "${CMAKE_SOURCE_DIR}/Templates" DESTINATION "${OUTPUT_BIN_DIR}")
+# post build Template Sync
+add_custom_command(
+        TARGET obliberry_editor POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_SOURCE_DIR}/Templates"
+        "${OUTPUT_BIN_DIR}/Templates"
+        COMMENT "Copying templates to Editor output directory"
+)
 
 # output routing
 set_output_subdir(internal obliberry_runtime)
 
 if (BUILD_PACK_TOOLS)
     set_output_subdir(tools ob_packer ob_unpacker obsl_pack_run)
-endif ()
-
-# Strip release binaries (GNU/Clang only)
-# (use /DEBUG:NONE or dont generate a .pdb for release if desired on MSVC)
-if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    add_link_options($<$<CONFIG:Release,MinSizeRel>:-s>)
 endif ()

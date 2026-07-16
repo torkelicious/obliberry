@@ -15,10 +15,10 @@
       }
     },
     {
-      "name": "linux",
+      "name": "linux-base",
       "hidden": true,
       "inherits": "base",
-      "generator": "Ninja Multi-Config",
+      "generator": "Ninja",
       "condition": {
         "type": "equals",
         "lhs": "${hostSystemName}",
@@ -26,10 +26,10 @@
       }
     },
     {
-      "name": "macos",
+      "name": "macos-base",
       "hidden": true,
       "inherits": "base",
-      "generator": "Ninja Multi-Config",
+      "generator": "Ninja",
       "condition": {
         "type": "equals",
         "lhs": "${hostSystemName}",
@@ -37,7 +37,7 @@
       }
     },
     {
-      "name": "windows",
+      "name": "windows-base",
       "hidden": true,
       "inherits": "base",
       "generator": "Visual Studio 17 2022",
@@ -49,96 +49,74 @@
       }
     },
     {
-      "name": "linux-default",
-      "displayName": "Linux (Ninja Multi-Config)",
-      "inherits": "linux"
-    },
-    {
-      "name": "linux-clang",
-      "displayName": "Linux (Clang, Ninja Multi-Config)",
-      "inherits": "linux",
+      "name": "linux-debug",
+      "displayName": "Linux Debug",
+      "inherits": "linux-base",
       "cacheVariables": {
-        "CMAKE_C_COMPILER": "clang",
-        "CMAKE_CXX_COMPILER": "clang++"
+        "CMAKE_BUILD_TYPE": "Debug"
       }
     },
     {
-      "name": "linux-native",
-      "displayName": "Linux (native CPU build)",
-      "inherits": "linux",
+      "name": "linux-release",
+      "displayName": "Linux Release",
+      "inherits": "linux-base",
       "cacheVariables": {
-        "ENGINE_ARCH_LEVEL": "native"
+        "CMAKE_BUILD_TYPE": "Release"
       }
     },
     {
-      "name": "macos-default",
-      "displayName": "macOS (Ninja Multi-Config)",
-      "inherits": "macos"
+      "name": "linux-profile",
+      "displayName": "Linux (Profiler Build)",
+      "inherits": "linux-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "ENABLE_UNITY_BUILD": "OFF",
+        "CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO": "OFF"
+      }
     },
     {
-      "name": "macos-native",
-      "displayName": "macOS (native CPU build)",
-      "inherits": "macos",
+      "name": "macos-debug",
+      "displayName": "macOS Debug",
+      "inherits": "macos-base",
       "cacheVariables": {
-        "ENGINE_ARCH_LEVEL": "native"
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "macos-release",
+      "displayName": "macOS Release",
+      "inherits": "macos-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
       }
     },
     {
       "name": "windows-default",
       "displayName": "Windows (VS22)",
-      "inherits": "windows"
-    },
-    {
-      "name": "linux-profile",
-      "displayName": "Linux (Profiler Build)",
-      "inherits": "linux",
-      "cacheVariables": {
-        "ENABLE_UNITY_BUILD": "OFF",
-        "CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO": "OFF"
-      }
+      "inherits": "windows-base"
     }
   ],
   "buildPresets": [
     {
       "name": "linux-debug",
-      "configurePreset": "linux-default",
-      "configuration": "Debug"
+      "configurePreset": "linux-debug"
     },
     {
       "name": "linux-release",
-      "configurePreset": "linux-default",
-      "configuration": "Release"
-    },
-    {
-      "name": "linux-clang-release",
-      "configurePreset": "linux-clang",
-      "configuration": "Release"
-    },
-    {
-      "name": "linux-native-release",
-      "configurePreset": "linux-native",
-      "configuration": "Release"
+      "configurePreset": "linux-release"
     },
     {
       "name": "linux-profile",
       "displayName": "Linux Perf Profile",
-      "configurePreset": "linux-profile",
-      "configuration": "RelWithDebInfo"
+      "configurePreset": "linux-profile"
     },
     {
       "name": "macos-debug",
-      "configurePreset": "macos-default",
-      "configuration": "Debug"
+      "configurePreset": "macos-debug"
     },
     {
       "name": "macos-release",
-      "configurePreset": "macos-default",
-      "configuration": "Release"
-    },
-    {
-      "name": "macos-native-release",
-      "configurePreset": "macos-native",
-      "configuration": "Release"
+      "configurePreset": "macos-release"
     },
     {
       "name": "windows-debug",
