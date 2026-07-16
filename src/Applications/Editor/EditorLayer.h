@@ -43,7 +43,7 @@ namespace Editor {
         static bool s_ShouldBuildDock;
 
     private:
-        void DrawDockSpace();
+        static void DrawDockSpace();
 
         void DrawEditorPanels();
 

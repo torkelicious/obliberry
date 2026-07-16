@@ -122,6 +122,7 @@ namespace Config {
                 return;
             }
             file << j.dump(2);
+            LOG_INFO(LOG_WHO,"Saved graphics config to" + resolvedPath.string());
         } catch (const std::exception &e) {
             LOG_ERROR(LOG_WHO, "Failed to serialize graphics config: " + std::string(e.what()));
         }

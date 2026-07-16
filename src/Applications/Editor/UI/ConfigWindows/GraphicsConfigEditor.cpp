@@ -1,9 +1,10 @@
 #include "GraphicsConfigEditor.h"
-
 #include "Applications/Editor/Commands/EditorCommands.h"
 #include "IO/VFS/VFS.h"
-
 #include <algorithm>
+
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "GraphicsConfigEditor"
 
 namespace Editor::UI {
 
@@ -24,7 +25,7 @@ namespace Editor::UI {
         if (!m_Context)
             return;
 
-        ImGui::Begin("Graphics Settings", &isOpen);
+        ImGui::Begin("Project Graphics Settings", &isOpen);
 
         // Window
         ImGui::SeparatorText("Window");
@@ -75,24 +76,20 @@ namespace Editor::UI {
 
         // Buttons
         ImGui::SeparatorText("");
-        bool saved = false;
         constexpr float buttonWidth = 120.0f;
         if (ImGui::Button("Save", ImVec2(buttonWidth, 0.0f))) {
-            saved = true;
             m_Undomgr->Execute(std::make_unique<Commands::GraphicsConfigUpdateCommand>(m_OldConfig, m_LocalConfig), *m_Context);
             Config::GraphicsConfig::Serialize(m_LocalConfig, IO::VFS::GetProjectRoot() / "graphics.json");
+            isOpen = false;
         }
 
         ImGui::SameLine();
         if (ImGui::Button("Cancel", ImVec2(buttonWidth, 0.0f))) {
             Reload();
             isOpen = false;
-            saved = false;
         }
+        ImGui::TextDisabled("Some settings only apply in runtime");
 
-        if (saved) {
-            ImGui::TextDisabled("Please restart Editor Application to apply settings");
-        }
 
         ImGui::End();
     }
@@ -109,3 +106,5 @@ namespace Editor::UI {
 
 
 } // namespace Editor::UI
+
+#pragma pop_macro("LOG_WHO")

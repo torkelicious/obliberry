@@ -385,7 +385,7 @@ void Editor::EditorLayer::DrawDockSpace() {
     ImGuiID dock_id_center = dockspaceId;
 
     const ImGuiID dock_id_right = ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Right, 0.25f, nullptr, &dock_id_center);
-    const ImGuiID dock_id_left = ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Left, 0.2f, nullptr, &dock_id_center);
+    const ImGuiID dock_id_left = ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Left, 0.35f, nullptr, &dock_id_center);
     const ImGuiID dock_id_bottom = ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Down, 0.3f, nullptr, &dock_id_center);
 
     ImGui::DockBuilderDockWindow("Registry", dock_id_left);
@@ -671,6 +671,12 @@ void Editor::EditorLayer::DrawToolbar() {
                     }
                 }
                 ImGui::EndMenu();
+            }
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("Window")) {
+            if (ImGui::MenuItem("Reset Window Layout")) {
+                s_ShouldBuildDock = true;
             }
             ImGui::EndMenu();
         }
