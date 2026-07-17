@@ -50,6 +50,23 @@ namespace Editor::Commands {
     }
     std::string_view ScaleEntityCommand::Name() const noexcept { return "Scale entity"; }
 
+    //
+    // Rename Entity
+    //
+
+    SetNameCommand::SetNameCommand(const ECS::EntityID target, std::string oldName, std::string newName)
+        : m_EntityID(target), m_OldName(std::move(oldName)), m_NewName(std::move(newName)) {}
+
+    void SetNameCommand::Execute(Core::EngineContext &ctx) {
+        ctx.sceneManager->GetCurrentScene()->GetRegistry().SetEntityName(m_EntityID, m_NewName);
+    }
+
+    void SetNameCommand::Undo(Core::EngineContext &ctx) {
+        ctx.sceneManager->GetCurrentScene()->GetRegistry().SetEntityName(m_EntityID, m_OldName);
+    }
+
+    std::string_view SetNameCommand::Name() const noexcept { return "Rename entity"; }
+
     // normal components commands are in the header (EditorCommands.h)
 
     //

@@ -45,7 +45,9 @@ void Editor::UI::InspectorPanel::OnImGuiRender() {
             nameBuffer[sizeof(nameBuffer) - 1] = '\0';
 
             if (ImGui::InputText("Name", nameBuffer, sizeof(nameBuffer))) {
-                m_SelectedEntity.SetName(nameBuffer);
+                if (m_UndoManager && m_EngineContext) {
+                    m_UndoManager->Execute(std::make_unique<Commands::SetNameCommand>(static_cast<ECS::EntityID>(m_SelectedEntity), entityName, nameBuffer), *m_EngineContext);
+                }
                 MarkSceneChanged(m_EngineContext);
             }
             ImGui::Separator();
@@ -113,28 +115,43 @@ void Editor::UI::InspectorPanel::OnImGuiRender() {
                 ImGui::OpenPopup("AddComponentPopup");
             }
             if (ImGui::BeginPopup("AddComponentPopup")) {
+                const auto entId = static_cast<ECS::EntityID>(m_SelectedEntity);
+
                 struct CompEntry {
                     const char *name;
                     bool has;
                     std::function<void()> add;
                 };
                 const CompEntry entries[] = {
-                        {"Transform", m_SelectedEntity.HasComponent<ECS::Components::TransformComponent>(), [this] { m_SelectedEntity.AddComponent<ECS::Components::TransformComponent>(); }},
-                        {"Point Light", m_SelectedEntity.HasComponent<ECS::Components::PointLightComponent>(), [this] { m_SelectedEntity.AddComponent<ECS::Components::PointLightComponent>(); }},
-                        {"Movement", m_SelectedEntity.HasComponent<ECS::Components::MovementComponent>(), [this] { m_SelectedEntity.AddComponent<ECS::Components::MovementComponent>(); }},
-                        {"Mesh", m_SelectedEntity.HasComponent<ECS::Components::MeshComponent>(), [this] { m_SelectedEntity.AddComponent<ECS::Components::MeshComponent>(); }},
-                        {"Material", m_SelectedEntity.HasComponent<ECS::Components::MaterialComponent>(), [this] { m_SelectedEntity.AddComponent<ECS::Components::MaterialComponent>(); }},
-                        {"Directional Texture", m_SelectedEntity.HasComponent<ECS::Components::DirectionalTextureComponent>(), [this] { m_SelectedEntity.AddComponent<ECS::Components::DirectionalTextureComponent>(); }},
-                        {"Map", m_SelectedEntity.HasComponent<ECS::Components::MapComponent>(), [this] { m_SelectedEntity.AddComponent<ECS::Components::MapComponent>(); }},
-                        {"Map State", m_SelectedEntity.HasComponent<ECS::Components::MapStateComponent>(), [this] { m_SelectedEntity.AddComponent<ECS::Components::MapStateComponent>(); }},
-                        {"Scripts", m_SelectedEntity.HasComponent<ECS::Components::ScriptComponent>(), [this] { m_SelectedEntity.AddComponent<ECS::Components::ScriptComponent>(); }},
-                        {"ObSL Custom Data", m_SelectedEntity.HasComponent<ECS::Components::CustomDataComponent>(), [this] { m_SelectedEntity.AddComponent<ECS::Components::CustomDataComponent>(); }},
-                        {"Particle Emitter", m_SelectedEntity.HasComponent<ECS::Components::ParticleEmitterComponent>(),
-                         [this] {
-                             if (!m_SelectedEntity.HasComponent<ECS::Components::TransformComponent>())
-                                 m_SelectedEntity.AddComponent<ECS::Components::TransformComponent>();
-                             m_SelectedEntity.AddComponent<ECS::Components::ParticleEmitterComponent>();
+                        {"Transform", m_SelectedEntity.HasComponent<ECS::Components::TransformComponent>(),
+                         [this, entId] { m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::TransformComponent>>(entId, ECS::Components::TransformComponent{}), *m_EngineContext); }},
+                        {"Point Light", m_SelectedEntity.HasComponent<ECS::Components::PointLightComponent>(),
+                         [this, entId] { m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::PointLightComponent>>(entId, ECS::Components::PointLightComponent{}), *m_EngineContext); }},
+                        {"Movement", m_SelectedEntity.HasComponent<ECS::Components::MovementComponent>(),
+                         [this, entId] { m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::MovementComponent>>(entId, ECS::Components::MovementComponent{}), *m_EngineContext); }},
+                        {"Mesh", m_SelectedEntity.HasComponent<ECS::Components::MeshComponent>(),
+                         [this, entId] { m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::MeshComponent>>(entId, ECS::Components::MeshComponent{}), *m_EngineContext); }},
+                        {"Material", m_SelectedEntity.HasComponent<ECS::Components::MaterialComponent>(),
+                         [this, entId] { m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::MaterialComponent>>(entId, ECS::Components::MaterialComponent{}), *m_EngineContext); }},
+                        {"Directional Texture", m_SelectedEntity.HasComponent<ECS::Components::DirectionalTextureComponent>(),
+                         [this, entId] {
+                             m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::DirectionalTextureComponent>>(entId, ECS::Components::DirectionalTextureComponent{}), *m_EngineContext);
                          }},
+                        /*
+                        {"Map", m_SelectedEntity.HasComponent<ECS::Components::MapComponent>(),
+                         [this, entId] { m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::MapComponent>>(entId, ECS::Components::MapComponent{}), *m_EngineContext); }},
+                        {"Map State", m_SelectedEntity.HasComponent<ECS::Components::MapStateComponent>(),
+                         [this, entId] { m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::MapStateComponent>>(entId, ECS::Components::MapStateComponent{}), *m_EngineContext); }},
+                        */
+                        {"Particle Emitter", m_SelectedEntity.HasComponent<ECS::Components::ParticleEmitterComponent>(),
+                         [this, entId] {
+                             if (!m_SelectedEntity.HasComponent<ECS::Components::TransformComponent>())
+                                 m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::TransformComponent>>(entId, ECS::Components::TransformComponent{}), *m_EngineContext);
+                             m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::ParticleEmitterComponent>>(entId, ECS::Components::ParticleEmitterComponent{}), *m_EngineContext);
+                         }},
+                        {"Scripts", m_SelectedEntity.HasComponent<ECS::Components::ScriptComponent>(), [this] { m_SelectedEntity.AddComponent<ECS::Components::ScriptComponent>(); }},
+                        {"ObSL Custom Data", m_SelectedEntity.HasComponent<ECS::Components::CustomDataComponent>(),
+                         [this, entId] { m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::CustomDataComponent>>(entId, ECS::Components::CustomDataComponent{}), *m_EngineContext); }},
                 };
 
                 ImGui::TextDisabled("Available Components");

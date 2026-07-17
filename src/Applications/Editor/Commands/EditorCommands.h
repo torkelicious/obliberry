@@ -81,6 +81,24 @@ namespace Editor::Commands {
         glm::vec3 m_NewScale;
     };
 
+    // = = = = = //
+    // Entity   //
+    // = = = = = //
+
+    // Rename Entity
+    class SetNameCommand final : public ICommand {
+    public:
+        SetNameCommand(ECS::EntityID target, std::string oldName, std::string newName);
+        void Execute(Core::EngineContext &ctx) override;
+        void Undo(Core::EngineContext &ctx) override;
+        [[nodiscard]] std::string_view Name() const noexcept override;
+
+    private:
+        ECS::EntityID m_EntityID;
+        std::string m_OldName;
+        std::string m_NewName;
+    };
+
     // = = = =  //
     // Registry //
     // = = = =  //
