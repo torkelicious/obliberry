@@ -104,10 +104,10 @@ namespace IO::Package::Tools {
         const std::string export_name = clean_project_name + ".exe";
 #else
         const std::string runtime_name = "obliberry_runtime";
-        const std::string &export_name = clean_project_name;
+        const std::string export_name = clean_project_name;
 #endif
         // Locate the runtime
-        const std::filesystem::path runtime_src = std::filesystem::current_path() / "internal" / runtime_name;
+        const std::filesystem::path runtime_src = GetInternalsDirectory() / runtime_name;
         const std::filesystem::path dest_exe = std::filesystem::path(output_dir) / export_name;
 
         const std::filesystem::path project_dir = VFS::GetProjectRoot();

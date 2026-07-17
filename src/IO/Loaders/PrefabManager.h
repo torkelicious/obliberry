@@ -89,8 +89,7 @@ namespace IO {
 
         static std::vector<std::string> GetPrefabFiles() {
             std::vector<std::string> files;
-            const auto resolved = VFS::Resolve("assets/prefabs/");
-            if (std::filesystem::exists(resolved)) {
+            if (const auto resolved = VFS::Resolve("assets/prefabs/"); std::filesystem::exists(resolved)) {
                 for (const auto &entry : std::filesystem::directory_iterator(resolved)) {
                     if (entry.is_regular_file() && entry.path().extension() == ".json") {
                         auto relPath = std::filesystem::relative(entry.path(), VFS::GetProjectRoot());

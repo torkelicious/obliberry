@@ -3,7 +3,7 @@
 #include "Core/EngineContext.h"
 #include "Core/ResourceManager.h"
 #include "Applications/Editor/UI/Panels/Editor/EditorWidgetsCombo.h"
-#include "Core/Utils.h"
+#include "Core/Utils/UiUtils.h"
 #include <algorithm>
 #include <imgui.h>
 #include <sstream>

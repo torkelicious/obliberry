@@ -1,6 +1,6 @@
 #include "Project.h"
 #include "Config/ProjectConfig.h"
-#include "Core/Utils.h"
+#include "Core/Utils/PathUtils.h"
 #include "Logger/LoggerService.h"
 #include "IO/VFS/VFS.h"
 #include <filesystem>

@@ -43,7 +43,6 @@ namespace Core {
         Config::GraphicsConfig m_GraphicsConfig;
         Platform::Window::Window m_Window;
         Platform::Input::InputManager m_InputManager;
-        ResourceManager m_ResourceManager;
         ObSL::ScriptRuntime m_ScriptPool;
         Platform::Threading::ThreadPool m_ThreadPool;
         std::unique_ptr<Sound::AudioEngine> m_AudioEngine;

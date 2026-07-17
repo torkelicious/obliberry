@@ -3,7 +3,7 @@
 #include "Core/Constants.h"
 #include "Core/EngineContext.h"
 #include "Core/Project.h"
-#include "Core/Utils.h"
+#include "Core/Utils/PathUtils.h"
 #include "IO/SceneSerialization.h"
 #include "Scenes/Scene.h"
 #include <algorithm>

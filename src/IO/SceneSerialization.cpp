@@ -5,7 +5,7 @@
 #include "MapSerialization.h"
 #include "VFS/VFS.h"
 #include "Config/ProjectConfig.h"
-#include "Core/Utils.h"
+#include "Core/Utils/PathUtils.h"
 #include "Loaders/AssetLoader.h"
 #include "Loaders/EntityFactory.h"
 #include "Scenes/Scene.h"
@@ -18,19 +18,6 @@
 
 namespace IO::SceneIO {
     using json = nlohmann::json;
-
-    void RoundJsonFloats(json &j, const int decimals = 3) {
-        const float factor = std::pow(10.f, decimals);
-        if (j.is_number_float()) {
-            j = std::round(j.get<float>() * factor) / factor;
-        } else if (j.is_array()) {
-            for (auto &el : j)
-                RoundJsonFloats(el, decimals);
-        } else if (j.is_object()) {
-            for (auto &[k, v] : j.items())
-                RoundJsonFloats(v, decimals);
-        }
-    }
 
     bool Deserialize(const std::string &path, Scenes::Scene &scene) {
         std::string_view dataView;

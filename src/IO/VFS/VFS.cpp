@@ -18,15 +18,6 @@ namespace IO::VFS {
 
     static VFSStorage s_State;
 
-    std::filesystem::path GetHomeDirectory() {
-#ifdef _WIN32
-        const char *path = std::getenv("USERPROFILE");
-#else
-        const char *path = std::getenv("HOME");
-#endif
-        return path ? std::filesystem::path(path) : std::filesystem::path{};
-    }
-
     void MountProject(const std::filesystem::path &projectConfigPath) {
         try {
             // Absolute turns a potential relative "project.json" into its true OS representation

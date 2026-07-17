@@ -4,6 +4,7 @@
 #include "Core/Constants.h"
 #include "Logger/LoggerService.h"
 #include "Applications/Editor/Platform/FileDialogs.h"
+#include "Core/Utils/UiUtils.h"
 #include "IO/VFS/VFS.h"
 #include "IO/Loaders/AssetLoader.h"
 #include "Rendering/Material.h"

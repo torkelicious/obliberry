@@ -21,15 +21,16 @@ namespace Core {
 
     class ResourceManager {
     public:
-        ResourceManager() = default;
-
-        ~ResourceManager() = default;
-
-        // prevent copying
+        // prevent copying / moving
         ResourceManager(const ResourceManager &) = delete;
-
         ResourceManager &operator=(const ResourceManager &) = delete;
+        ResourceManager(ResourceManager &&) = delete;
+        ResourceManager &operator=(ResourceManager &&) = delete;
 
+        static ResourceManager &GetInstance() {
+            static ResourceManager instance;
+            return instance;
+        }
 
         template <typename T, typename... Args> std::shared_ptr<T> Load(const std::string &key, Args &&...args) {
             auto &cache = GetCache<T>();
@@ -76,6 +77,9 @@ namespace Core {
         template <typename T> bool Unload(const std::string &key) { return GetCache<T>().storage.erase(key) > 0; }
 
     private:
+        ResourceManager() = default;
+        ~ResourceManager() = default;
+
         // runtime type tracking
         std::unordered_map<std::type_index, std::unique_ptr<IResourceCache>> m_Caches;
 

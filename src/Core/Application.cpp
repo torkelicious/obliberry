@@ -109,7 +109,7 @@ void Core::Application::Run() {
     context.graphicsConfig = &m_GraphicsConfig;
     context.window = &m_Window;
     context.input = &m_InputManager;
-    context.resources = &m_ResourceManager;
+    context.resources = &ResourceManager::GetInstance();
     context.renderer = &renderer;
     context.camera = &camera;
     context.deltaTime = 0.0f;
@@ -125,7 +125,7 @@ void Core::Application::Run() {
     Rendering::MeshFactory::RegisterAllMeshFactories();
 
     // engine builtin shaders (light pass, etc)
-    Rendering::BuiltinShaders::RegisterBuiltinShaders(m_ResourceManager);
+    Rendering::BuiltinShaders::RegisterBuiltinShaders(ResourceManager::GetInstance());
 
     // Camera
     const float initialAspect = static_cast<float>(m_Window.GetWidth()) / static_cast<float>(m_Window.GetHeight());

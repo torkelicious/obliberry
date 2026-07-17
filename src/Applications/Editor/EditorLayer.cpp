@@ -16,6 +16,7 @@
 #include "Applications/Editor/Platform/FileDialogs.h"
 #include "Applications/Editor/Commands/EditorCommands.h"
 #include "IO/SceneSerialization.h"
+#include "Core/Utils/PathUtils.h"
 #include "IO/VFS/VFS.h"
 #include "IO/Package/Tools/ObpakTools.h"
 #include "Applications/Editor/States/Editor/EditState.h"
