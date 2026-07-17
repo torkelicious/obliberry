@@ -32,6 +32,7 @@ namespace Rendering {
         glm::vec4 color;
         int blendMode = 0;   // 0 = alpha, 1 = additive
         int renderOrder = 0; // higher is drawn later
+        int shape = 0;       // 0 = quad, 1 = circle, 2 = soft circle
 
         const glm::mat4 *transformPtr = nullptr;
         size_t transformOffset = 0;
@@ -51,7 +52,8 @@ namespace Rendering {
         const Material *material;
         const Texture *texture;
         glm::vec4 color;
-        bool operator==(const BatchKey &other) const noexcept { return mesh == other.mesh && material == other.material && texture == other.texture && color == other.color; }
+        int shape = 0;
+        bool operator==(const BatchKey &other) const noexcept { return mesh == other.mesh && material == other.material && texture == other.texture && color == other.color && shape == other.shape; }
     };
 
     class Renderer {
@@ -67,7 +69,7 @@ namespace Rendering {
 
         void Submit(const std::shared_ptr<Mesh> &mesh, const Material *material, const std::vector<glm::mat4> &transforms, const std::vector<int> &entityIDs = {});
 
-        void Submit(const std::shared_ptr<Mesh> &mesh, const Material *material, const std::vector<glm::mat4> &transforms, const std::vector<glm::vec4> &colors, int blendMode = 0, int renderOrder = 0);
+        void Submit(const std::shared_ptr<Mesh> &mesh, const Material *material, const std::vector<glm::mat4> &transforms, const std::vector<glm::vec4> &colors, int blendMode = 0, int renderOrder = 0, int shape = 0);
 
         void SubmitPersistent(const std::shared_ptr<Mesh> &mesh, const Material *material, const std::vector<glm::mat4> *transforms, const std::vector<int> *entityIDs = nullptr);
 

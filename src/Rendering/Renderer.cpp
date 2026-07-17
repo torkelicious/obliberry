@@ -76,7 +76,7 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Materi
                                                   .entityIDCount = entityIDs.size()});
 }
 
-void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Material *material, const std::vector<glm::mat4> &transforms, const std::vector<glm::vec4> &colors, const int blendMode, const int renderOrder) {
+void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Material *material, const std::vector<glm::mat4> &transforms, const std::vector<glm::vec4> &colors, const int blendMode, const int renderOrder, const int shape) {
     if (transforms.empty())
         return;
 
@@ -95,6 +95,7 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Materi
                                                   .color = col,
                                                   .blendMode = blendMode,
                                                   .renderOrder = renderOrder,
+                                                  .shape = shape,
                                                   .transformPtr = nullptr,
                                                   .transformOffset = transformOffset,
                                                   .transformCount = transforms.size(),
@@ -169,6 +170,8 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
                         return a.effectiveTexture < b.effectiveTexture;
                     if (a.blendMode != b.blendMode)
                         return a.blendMode < b.blendMode;
+                    if (a.shape != b.shape)
+                        return a.shape < b.shape;
                     if (a.color.r != b.color.r)
                         return a.color.r < b.color.r;
                     if (a.color.g != b.color.g)
@@ -202,7 +205,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
                     }
                 }
 
-                BatchKey key{instCmd.mesh, instCmd.material, instCmd.effectiveTexture, instCmd.color};
+                BatchKey key{instCmd.mesh, instCmd.material, instCmd.effectiveTexture, instCmd.color, instCmd.shape};
                 const glm::mat4 *transformsPtr = instCmd.transformPtr ? instCmd.transformPtr : m_InstancedTransformsStaging[renderIndex].data() + instCmd.transformOffset;
                 const glm::vec4 *colorsPtr = instCmd.colorPtr ? instCmd.colorPtr : (instCmd.colorCount > 0 ? m_InstancedColorsStaging[renderIndex].data() + instCmd.colorOffset : nullptr);
 
@@ -238,7 +241,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
             if (!cmd.mesh || !cmd.material)
                 continue;
 
-            if (BatchKey key{cmd.mesh, cmd.material, cmd.effectiveTexture, cmd.color}; !hasCurrent || currentKey != key) {
+            if (BatchKey key{cmd.mesh, cmd.material, cmd.effectiveTexture, cmd.color, 0}; !hasCurrent || currentKey != key) {
                 if (hasCurrent)
                     m_BatchRanges.push_back({currentKey, batchStart, m_MergedTransforms.size() - batchStart});
                 currentKey = key;
@@ -279,10 +282,10 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
                         glBlendFunc(GL_SRC_ALPHA, GL_ONE);
                     } else {
                         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                        }
                     }
-                }
 
-                BatchKey key{instCmd.mesh, instCmd.material, instCmd.effectiveTexture, instCmd.color};
+                    BatchKey key{instCmd.mesh, instCmd.material, instCmd.effectiveTexture, instCmd.color, instCmd.shape};
                 const glm::mat4 *transformsPtr = instCmd.transformPtr ? instCmd.transformPtr : m_InstancedTransformsStaging[renderIndex].data() + instCmd.transformOffset;
                 const glm::vec4 *colorsPtr = instCmd.colorPtr ? instCmd.colorPtr : (instCmd.colorCount > 0 ? m_InstancedColorsStaging[renderIndex].data() + instCmd.colorOffset : nullptr);
 
@@ -354,6 +357,8 @@ void Rendering::Renderer::RenderBatch(const BatchKey &key, const glm::mat4 *tran
         shader->SetUniformVec4("u_Color", key.color);
         m_LastBoundColor = key.color;
     }
+
+    shader->SetUniform1i("u_Shape", key.shape);
 
     // find or create VAO for this mesh
     MeshVAO *meshVAOEntry = nullptr;

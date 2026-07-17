@@ -56,6 +56,8 @@ namespace IO {
         }
         if (data.contains("renderOrder"))
             ec.renderOrder = data["renderOrder"].get<int>();
+        if (data.contains("shape"))
+            ec.shape = data["shape"].get<int>();
         if (data.contains("material_id")) {
             const std::string matID = data["material_id"].get<std::string>();
             ec.material = Core::ResourceManager::GetInstance().Get<Rendering::Material>(matID);
@@ -83,6 +85,7 @@ namespace IO {
         data["isBillboard"] = ec.isBillboard;
         data["blendMode"] = static_cast<int>(ec.blendMode);
         data["renderOrder"] = ec.renderOrder;
+        data["shape"] = ec.shape;
         if (ec.material) {
             if (std::string id = Core::ResourceManager::GetInstance().GetKey<Rendering::Material>(ec.material); !id.empty()) {
                 data["material_id"] = id;

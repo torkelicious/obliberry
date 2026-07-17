@@ -127,6 +127,7 @@ in vec4 v_InstanceColor;
 uniform sampler2D u_Texture;
 uniform sampler2D u_LightTexture;
 uniform float u_Ambient;
+uniform int u_Shape; // 0=quad, 1=circle, 2=soft circle
 flat in int v_EntityID;
 layout(location = 0) out vec4 FragColor;
 layout(location = 1) out int OutEntityID;
@@ -134,6 +135,20 @@ layout(location = 1) out int OutEntityID;
 void main()
 {
     vec4 tex = texture(u_Texture, v_UV);
+
+    if (u_Shape == 1 || u_Shape == 2) {
+        vec2 center = v_UV - 0.5;
+        float dist = length(center) * 2.0; // 0..1 from center to edge
+        if (u_Shape == 1) {
+            // hard circle
+            if (dist > 1.0) discard;
+        } else {
+            // soft circle
+            float alpha = 1.0 - smoothstep(0.6, 1.0, dist);
+            tex.a *= alpha;
+        }
+    }
+
     float finalAlpha = tex.a * v_InstanceColor.a;
     if (finalAlpha < 0.01) discard;
     vec3 light = texture(u_LightTexture, v_LightUV).rgb;

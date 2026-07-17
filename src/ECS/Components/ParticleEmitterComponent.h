@@ -28,6 +28,7 @@ namespace ECS::Components {
         bool isBillboard = false;
         ParticleBlendMode blendMode = ParticleBlendMode::Alpha;
         int renderOrder = 1;
+        int shape = 0; // 0=quad, 1=circle, 2=soft circle
         std::shared_ptr<Rendering::Material> material = nullptr;
         float emitAccumulator = 0.0f;
         bool active = true;

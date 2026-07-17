@@ -474,6 +474,12 @@ void Editor::UI::ParticleEmitterWidget::Draw(const ECS::Entity entity, Core::Eng
         ImGui::DragInt("Render Order", &comp->renderOrder, 0.1f, -10, 10);
         if (ImGui::IsItemDeactivatedAfterEdit())
             MarkSceneChanged(engineContext);
+        {
+            const char *shapes[] = {"Quad", "Circle", "Soft Circle"};
+            if (ImGui::Combo("Shape", &comp->shape, shapes, 3)) {
+                MarkSceneChanged(engineContext);
+            }
+        }
 
         ImGui::SeparatorText("Material");
         if (engineContext && engineContext->resources) {
