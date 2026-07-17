@@ -42,6 +42,8 @@ namespace Editor {
 
         inline static bool s_ShouldBuildDock = true;
 
+        inline static bool s_RenderParticlesInEditor = false;
+
     private:
         static void DrawDockSpace();
 

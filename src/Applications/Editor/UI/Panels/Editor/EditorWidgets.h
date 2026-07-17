@@ -191,7 +191,6 @@ namespace Editor::UI {
 
     struct ParticleEmitterWidget : public IComponentWidget {
         [[nodiscard]] const char *GetName() const override;
-
         void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr, UndoManager *undoManager = nullptr) override;
     };
 } // namespace Editor::UI

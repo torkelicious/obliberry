@@ -35,6 +35,10 @@ namespace Rendering {
         size_t transformOffset = 0;
         size_t transformCount = 0;
 
+        const glm::vec4 *colorPtr = nullptr;
+        size_t colorOffset = 0;
+        size_t colorCount = 0;
+
         const int *entityIDPtr = nullptr;
         size_t entityIDOffset = 0;
         size_t entityIDCount = 0;
@@ -60,6 +64,8 @@ namespace Rendering {
         void Submit(const std::shared_ptr<Mesh> &mesh, const Material *material, const Transform &transform, const Texture *textureOverride = nullptr, int entityID = -1);
 
         void Submit(const std::shared_ptr<Mesh> &mesh, const Material *material, const std::vector<glm::mat4> &transforms, const std::vector<int> &entityIDs = {});
+
+        void Submit(const std::shared_ptr<Mesh> &mesh, const Material *material, const std::vector<glm::mat4> &transforms, const std::vector<glm::vec4> &colors);
 
         void SubmitPersistent(const std::shared_ptr<Mesh> &mesh, const Material *material, const std::vector<glm::mat4> *transforms, const std::vector<int> *entityIDs = nullptr);
 
@@ -98,7 +104,7 @@ namespace Rendering {
     private:
         void BindLightmap(Shader *shader, size_t renderIndex) const;
 
-        void RenderBatch(const BatchKey &key, const glm::mat4 *transforms, const int *entityIDs, size_t count, size_t renderIndex);
+        void RenderBatch(const BatchKey &key, const glm::mat4 *transforms, const int *entityIDs, size_t count, size_t renderIndex, const glm::vec4 *perInstanceColors = nullptr);
 
         using InitTask = std::variant<Platform::Threading::SmallTask, std::function<void()>>;
         static std::vector<InitTask> s_InitQueue;
@@ -113,6 +119,7 @@ namespace Rendering {
 
         std::vector<glm::mat4> m_InstancedTransformsStaging[2];
         std::vector<int> m_InstancedEntityIDsStaging[2];
+        std::vector<glm::vec4> m_InstancedColorsStaging[2];
 
         const Camera *m_Camera = nullptr;
         const Lightmap *m_Lightmap[2] = {nullptr, nullptr};
@@ -134,6 +141,8 @@ namespace Rendering {
         std::vector<std::pair<const Mesh *, MeshVAO>> m_MeshVAOs;
         std::unique_ptr<VertexBuffer> m_DynamicInstanceBuffer;
         std::unique_ptr<VertexBuffer> m_DynamicEntityIDBuffer;
+        std::unique_ptr<VertexBuffer> m_DynamicColorBuffer;
+        std::vector<glm::vec4> m_DefaultInstanceColors;
         const VertexArray *m_LastBoundVAO = nullptr;
         const Shader *m_LastBoundShader = nullptr;
         const Texture *m_LastBoundTexture = nullptr;

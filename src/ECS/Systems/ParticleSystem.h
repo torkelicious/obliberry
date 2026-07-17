@@ -145,6 +145,7 @@ namespace ECS::Systems::ParticleSystem {
             return;
 
         static std::vector<glm::mat4> transforms;
+        static std::vector<glm::vec4> colors;
 
         const glm::vec3 camRight = camera ? camera->GetRightVector() : glm::vec3(1.0f, 0.0f, 0.0f);
         const glm::vec3 camUp = camera ? camera->GetUpVector() : glm::vec3(0.0f, 1.0f, 0.0f);
@@ -158,9 +159,9 @@ namespace ECS::Systems::ParticleSystem {
                 return;
 
             const bool bb = comp->isBillboard && camera;
-            state.pool.BuildTransforms(transforms, bb, &camRight, &camUp);
+            state.pool.BuildTransformsAndColors(transforms, colors, bb, &camRight, &camUp);
 
-            renderer.Submit(quad, comp->material.get(), transforms);
+            renderer.Submit(quad, comp->material.get(), transforms, colors);
         });
     }
 

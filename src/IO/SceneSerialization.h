@@ -11,10 +11,8 @@ namespace Scenes {
 
 namespace IO {
     // Forward
-    inline void RoundJsonFloats(nlohmann::json &j, const int decimals = 3) {
-        Core::Utils::Json::RoundJsonFloats(j, decimals);
-    }
-}
+    inline void RoundJsonFloats(nlohmann::json &j, const int decimals = 3) { Core::Utils::Json::RoundJsonFloats(j, decimals); }
+} // namespace IO
 
 namespace IO::SceneIO {
 

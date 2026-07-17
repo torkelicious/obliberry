@@ -129,7 +129,12 @@ void Editor::UI::InspectorPanel::OnImGuiRender() {
                         {"Map State", m_SelectedEntity.HasComponent<ECS::Components::MapStateComponent>(), [this] { m_SelectedEntity.AddComponent<ECS::Components::MapStateComponent>(); }},
                         {"Scripts", m_SelectedEntity.HasComponent<ECS::Components::ScriptComponent>(), [this] { m_SelectedEntity.AddComponent<ECS::Components::ScriptComponent>(); }},
                         {"ObSL Custom Data", m_SelectedEntity.HasComponent<ECS::Components::CustomDataComponent>(), [this] { m_SelectedEntity.AddComponent<ECS::Components::CustomDataComponent>(); }},
-                        {"Particle Emitter", m_SelectedEntity.HasComponent<ECS::Components::ParticleEmitterComponent>(), [this] { m_SelectedEntity.AddComponent<ECS::Components::ParticleEmitterComponent>(); }},
+                        {"Particle Emitter", m_SelectedEntity.HasComponent<ECS::Components::ParticleEmitterComponent>(),
+                         [this] {
+                             if (!m_SelectedEntity.HasComponent<ECS::Components::TransformComponent>())
+                                 m_SelectedEntity.AddComponent<ECS::Components::TransformComponent>();
+                             m_SelectedEntity.AddComponent<ECS::Components::ParticleEmitterComponent>();
+                         }},
                 };
 
                 ImGui::TextDisabled("Available Components");

@@ -6,6 +6,7 @@
 #include <glm/gtc/matrix_access.hpp>
 #include "ECS/Components/BillboardTagComponent.h"
 #include "Applications/Editor/Commands/EditorCommands.h"
+#include "ECS/Systems/ParticleSystem.h"
 
 namespace Editor::States {
     ImGuizmo::OPERATION EditState::mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
@@ -27,6 +28,9 @@ void Editor::States::EditState::OnUpdate(const float dt) {
     // Editor mode only runs lighting for accurate scene view
     // full scene update is for play
     ECS::Systems::LightingSystem::Update(*m_EditorLayer->m_Registry);
+    if (EditorLayer::s_RenderParticlesInEditor) {
+        ECS::Systems::ParticleSystem::Update(*m_EditorLayer->m_Registry, dt);
+    }
 
     // Entity picking
     if (const int clickedID = m_EditorLayer->m_ViewportPanel.GetSelectedEntityID(); clickedID != -1) {
@@ -112,6 +116,9 @@ void Editor::States::EditState::OnDrawPanels() {
 void Editor::States::EditState::OnRender() {
     ImGuizmo::BeginFrame();
     m_EditorLayer->DrawEditorLayout();
+    if (EditorLayer::s_RenderParticlesInEditor) {
+        ECS::Systems::ParticleSystem::Render(*m_EditorLayer->m_Registry, *m_EditorLayer->m_Context.renderer, &m_EditorLayer->m_Camera);
+    }
 }
 
 void Editor::States::EditState::OnDrawModeToolbar() {

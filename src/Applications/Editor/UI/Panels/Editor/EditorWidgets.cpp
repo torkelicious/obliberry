@@ -1,7 +1,9 @@
 #include "EditorWidgets.h"
+#include "Applications/Editor/EditorLayer.h"
 #include <cstring>
 
 #include "EditorWidgetsCombo.h"
+#include "IO/Loaders/ParticleEmitterPrefabManager.h"
 #include "Core/Constants.h"
 #include "Core/EngineContext.h"
 #include "Core/ResourceManager.h"
@@ -410,6 +412,9 @@ void Editor::UI::ParticleEmitterWidget::Draw(const ECS::Entity entity, Core::Eng
 
         ImGui::SeparatorText("Emission");
         ImGui::Checkbox("Active", &comp->active);
+        ImGui::SameLine();
+        ImGui::Checkbox("Editor Preview", &EditorLayer::s_RenderParticlesInEditor);
+
         ImGui::DragInt("Max Particles", &comp->maxParticles, 1.0f, 1, 16384);
         ImGui::DragFloat("Emit Rate", &comp->emitRate, 1.0f, 0.0f, 1000.0f, "%.1f/s");
         if (ImGui::IsItemDeactivatedAfterEdit())
@@ -439,8 +444,10 @@ void Editor::UI::ParticleEmitterWidget::Draw(const ECS::Entity entity, Core::Eng
             MarkSceneChanged(engineContext);
 
         ImGui::SeparatorText("Color");
-        ImGui::ColorEdit4("Start", &comp->colorStart.x, ImGuiColorEditFlags_NoInputs);
-        ImGui::ColorEdit4("End", &comp->colorEnd.x, ImGuiColorEditFlags_NoInputs);
+        ImGui::ColorEdit4("Start", &comp->colorStart.x, ImGuiColorEditFlags_AlphaBar);
+        if (ImGui::IsItemDeactivatedAfterEdit())
+            MarkSceneChanged(engineContext);
+        ImGui::ColorEdit4("End", &comp->colorEnd.x, ImGuiColorEditFlags_AlphaBar);
         if (ImGui::IsItemDeactivatedAfterEdit())
             MarkSceneChanged(engineContext);
 
@@ -456,6 +463,49 @@ void Editor::UI::ParticleEmitterWidget::Draw(const ECS::Entity entity, Core::Eng
                 MarkSceneChanged(engineContext);
             }
             ImGui::PopID();
+        }
+
+        // Preset: Load / Save
+        ImGui::SeparatorText("Presets");
+        {
+            static std::string pendingPresetPath;
+            ImGui::PushID("LoadEmitterPreset");
+            if (FileCombo("Load Preset", std::string(Core::PARTICLE_PRESET_PATH), std::string(".json"), pendingPresetPath)) {
+                if (!pendingPresetPath.empty()) {
+                    if (auto preset = IO::LoadEmitterPreset(pendingPresetPath)) {
+                        *comp = *preset;
+                        MarkSceneChanged(engineContext);
+                    }
+                }
+                pendingPresetPath.clear();
+            }
+            ImGui::PopID();
+        }
+        {
+            if (ImGui::Button("Save as Preset")) {
+                ImGui::OpenPopup("SaveEmitterPresetPopup");
+            }
+            if (ImGui::BeginPopup("SaveEmitterPresetPopup")) {
+                static char presetNameBuf[128] = "";
+                if (ImGui::IsWindowAppearing()) {
+                    presetNameBuf[0] = '\0';
+                }
+                ImGui::InputText("Name", presetNameBuf, sizeof(presetNameBuf));
+                if (ImGui::Button("Save") && presetNameBuf[0] != '\0') {
+                    const std::string filepath = std::string(Core::PARTICLE_PRESET_PATH) + std::string(presetNameBuf) + ".json";
+                    // ensure directory exists
+                    const auto resolved = IO::VFS::Resolve(std::string(Core::PARTICLE_PRESET_PATH));
+                    std::filesystem::create_directories(resolved);
+                    IO::SerializeEmitter(*comp, filepath);
+                    MarkSceneChanged(engineContext);
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("Cancel")) {
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndPopup();
+            }
         }
 
         ImGui::Separator();

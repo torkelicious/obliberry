@@ -6,6 +6,7 @@
 
 constexpr unsigned int MAX_INSTANCES = 100000;
 constexpr size_t INSTANCE_BUFFER_SIZE = MAX_INSTANCES * sizeof(glm::mat4);
+constexpr size_t COLOR_BUFFER_SIZE = MAX_INSTANCES * sizeof(glm::vec4);
 constexpr size_t ID_BUFFER_SIZE = MAX_INSTANCES * sizeof(int);
 
 using InitTask = std::variant<Platform::Threading::SmallTask, std::function<void()>>;
@@ -25,6 +26,7 @@ void Rendering::Renderer::BeginFrame() {
     m_InstancedCommands[m_SubmitIndex].clear();
     m_InstancedTransformsStaging[m_SubmitIndex].clear();
     m_InstancedEntityIDsStaging[m_SubmitIndex].clear();
+    m_InstancedColorsStaging[m_SubmitIndex].clear();
     m_Lightmap[m_SubmitIndex] = nullptr;
 
     if (m_Camera) {
@@ -74,6 +76,34 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Materi
                                                   .entityIDCount = entityIDs.size()});
 }
 
+void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Material *material, const std::vector<glm::mat4> &transforms, const std::vector<glm::vec4> &colors) {
+    if (transforms.empty())
+        return;
+
+    const Texture *tex = material && material->texture ? material->texture.get() : nullptr;
+    const glm::vec4 col = material ? material->color : glm::vec4(1.0f);
+
+    const size_t transformOffset = m_InstancedTransformsStaging[m_SubmitIndex].size();
+    m_InstancedTransformsStaging[m_SubmitIndex].insert(m_InstancedTransformsStaging[m_SubmitIndex].end(), transforms.begin(), transforms.end());
+
+    const size_t colorOffset = m_InstancedColorsStaging[m_SubmitIndex].size();
+    m_InstancedColorsStaging[m_SubmitIndex].insert(m_InstancedColorsStaging[m_SubmitIndex].end(), colors.begin(), colors.end());
+
+    m_InstancedCommands[m_SubmitIndex].push_back({.mesh = mesh.get(),
+                                                  .material = material,
+                                                  .effectiveTexture = tex,
+                                                  .color = col,
+                                                  .transformPtr = nullptr,
+                                                  .transformOffset = transformOffset,
+                                                  .transformCount = transforms.size(),
+                                                  .colorPtr = nullptr,
+                                                  .colorOffset = colorOffset,
+                                                  .colorCount = colors.size(),
+                                                  .entityIDPtr = nullptr,
+                                                  .entityIDOffset = 0,
+                                                  .entityIDCount = 0});
+}
+
 void Rendering::Renderer::SubmitPersistent(const std::shared_ptr<Mesh> &mesh, const Material *material, const std::vector<glm::mat4> *transforms, const std::vector<int> *entityIDs) {
     if (!transforms || transforms->empty())
         return;
@@ -88,6 +118,9 @@ void Rendering::Renderer::SubmitPersistent(const std::shared_ptr<Mesh> &mesh, co
                                                   .transformPtr = transforms->data(),
                                                   .transformOffset = 0,
                                                   .transformCount = transforms->size(),
+                                                  .colorPtr = nullptr,
+                                                  .colorOffset = 0,
+                                                  .colorCount = 0,
                                                   .entityIDPtr = entityIDs && !entityIDs->empty() ? entityIDs->data() : nullptr,
                                                   .entityIDOffset = 0,
                                                   .entityIDCount = entityIDs ? entityIDs->size() : 0});
@@ -140,19 +173,20 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
                 });
             }
 
-            for (const auto &[mesh, material, effectiveTexture, color, transformPtr, transformOffset, transformCount, entityIDPtr, entityIDOffset, entityIDCount] : instCmds) {
-                if (!mesh || !material || transformCount == 0)
+            for (const auto &instCmd : instCmds) {
+                if (!instCmd.mesh || !instCmd.material || instCmd.transformCount == 0)
                     continue;
-                BatchKey key{mesh, material, effectiveTexture, color};
-                const glm::mat4 *transformsPtr = transformPtr ? transformPtr : m_InstancedTransformsStaging[renderIndex].data() + transformOffset;
+                BatchKey key{instCmd.mesh, instCmd.material, instCmd.effectiveTexture, instCmd.color};
+                const glm::mat4 *transformsPtr = instCmd.transformPtr ? instCmd.transformPtr : m_InstancedTransformsStaging[renderIndex].data() + instCmd.transformOffset;
+                const glm::vec4 *colorsPtr = instCmd.colorPtr ? instCmd.colorPtr : (instCmd.colorCount > 0 ? m_InstancedColorsStaging[renderIndex].data() + instCmd.colorOffset : nullptr);
 
-                if (entityIDPtr || entityIDCount > 0) {
-                    const int *entityIDsPtr = entityIDPtr ? entityIDPtr : m_InstancedEntityIDsStaging[renderIndex].data() + entityIDOffset;
-                    RenderBatch(key, transformsPtr, entityIDsPtr, transformCount, renderIndex);
+                if (instCmd.entityIDPtr || instCmd.entityIDCount > 0) {
+                    const int *entityIDsPtr = instCmd.entityIDPtr ? instCmd.entityIDPtr : m_InstancedEntityIDsStaging[renderIndex].data() + instCmd.entityIDOffset;
+                    RenderBatch(key, transformsPtr, entityIDsPtr, instCmd.transformCount, renderIndex, colorsPtr);
                 } else {
-                    if (m_DummyEntityIDs.size() < transformCount)
-                        m_DummyEntityIDs.resize(transformCount, -1);
-                    RenderBatch(key, transformsPtr, m_DummyEntityIDs.data(), transformCount, renderIndex);
+                    if (m_DummyEntityIDs.size() < instCmd.transformCount)
+                        m_DummyEntityIDs.resize(instCmd.transformCount, -1);
+                    RenderBatch(key, transformsPtr, m_DummyEntityIDs.data(), instCmd.transformCount, renderIndex, colorsPtr);
                 }
             }
         }
@@ -214,7 +248,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
     m_InstancedCommands[renderIndex].clear();
 }
 
-void Rendering::Renderer::RenderBatch(const BatchKey &key, const glm::mat4 *transforms, const int *entityIDs, const size_t count, const size_t renderIndex) {
+void Rendering::Renderer::RenderBatch(const BatchKey &key, const glm::mat4 *transforms, const int *entityIDs, const size_t count, const size_t renderIndex, const glm::vec4 *perInstanceColors) {
     if (count == 0 || count > MAX_INSTANCES)
         return;
 
@@ -273,9 +307,22 @@ void Rendering::Renderer::RenderBatch(const BatchKey &key, const glm::mat4 *tran
         m_DynamicEntityIDBuffer = std::make_unique<VertexBuffer>();
         m_DynamicEntityIDBuffer->Init(nullptr, ID_BUFFER_SIZE, GL_DYNAMIC_DRAW);
     }
+    if (!m_DynamicColorBuffer) {
+        m_DynamicColorBuffer = std::make_unique<VertexBuffer>();
+        m_DynamicColorBuffer->Init(nullptr, COLOR_BUFFER_SIZE, GL_DYNAMIC_DRAW);
+    }
 
     m_DynamicInstanceBuffer->SetDataOrphaned(transforms, count * sizeof(glm::mat4));
     m_DynamicEntityIDBuffer->SetDataOrphaned(entityIDs, count * sizeof(int));
+
+    // per-instance colors: upload real colors or white defaults
+    if (perInstanceColors) {
+        m_DynamicColorBuffer->SetDataOrphaned(perInstanceColors, count * sizeof(glm::vec4));
+    } else {
+        if (m_DefaultInstanceColors.size() < count)
+            m_DefaultInstanceColors.assign(count, glm::vec4(1.0f));
+        m_DynamicColorBuffer->SetDataOrphaned(m_DefaultInstanceColors.data(), count * sizeof(glm::vec4));
+    }
 
     if (m_LastBoundVAO != vao) {
         vao->Bind();
@@ -285,6 +332,13 @@ void Rendering::Renderer::RenderBatch(const BatchKey &key, const glm::mat4 *tran
     if (!meshVAOEntry->instanceAttribReady) {
         vao->AddInstancedBuffer(*m_DynamicInstanceBuffer, 2);
         vao->AddInstancedIntBuffer(*m_DynamicEntityIDBuffer, 6);
+
+        // attribute 7: per-instance vec4 color
+        m_DynamicColorBuffer->Bind();
+        glEnableVertexAttribArray(7);
+        glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), nullptr);
+        glVertexAttribDivisor(7, 1);
+
         meshVAOEntry->instanceAttribReady = true;
     }
 
@@ -300,6 +354,8 @@ void Rendering::Renderer::Clean() {
     m_InstancedTransformsStaging[1].clear();
     m_InstancedEntityIDsStaging[0].clear();
     m_InstancedEntityIDsStaging[1].clear();
+    m_InstancedColorsStaging[0].clear();
+    m_InstancedColorsStaging[1].clear();
     m_BatchRanges.clear();
     m_MergedTransforms.clear();
     m_MergedEntityIDs.clear();
