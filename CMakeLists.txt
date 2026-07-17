@@ -152,6 +152,14 @@ set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(BUILD_STATIC_LIBS ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(lz4)
 
+fetch_dep(freetype https://github.com/freetype/freetype.git VER-2-14-3)
+set(FT_REQUIRE_ZLIB OFF CACHE BOOL "Disable ZLIB" FORCE)
+set(FT_REQUIRE_BZIP2 OFF CACHE BOOL "Disable BZIP2" FORCE)
+set(FT_REQUIRE_PNG OFF CACHE BOOL "Disable PNG" FORCE)
+set(FT_REQUIRE_HARFBUZZ OFF CACHE BOOL "Disable HarfBuzz" FORCE)
+set(FT_REQUIRE_BROTLI OFF CACHE BOOL "Disable Brotli" FORCE)
+FetchContent_MakeAvailable(freetype)
+
 # ObSL
 set(OBSL_BUILD_RUNTIME OFF CACHE BOOL "" FORCE)
 add_subdirectory(external/obsl)
@@ -191,7 +199,7 @@ target_include_directories(obliberry_vendor SYSTEM PUBLIC
         external/miniaudio
 )
 
-target_link_libraries(obliberry_vendor PUBLIC glfw)
+target_link_libraries(obliberry_vendor PUBLIC glfw freetype)
 
 # Engine target
 add_library(obliberry_engine STATIC
@@ -250,6 +258,9 @@ add_library(obliberry_engine STATIC
         src/IO/Package/Tools/AssetPacking.cpp
         src/IO/Package/Tools/DependencyGraph.cpp
         src/Config/GraphicsConfig.cpp
+        src/UI/Text/Font.cpp
+        src/UI/Text/Font.h
+        src/UI/Elements/UIText.cpp
 )
 
 target_include_directories(obliberry_engine PUBLIC
