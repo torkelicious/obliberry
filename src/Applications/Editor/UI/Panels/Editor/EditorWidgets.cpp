@@ -438,8 +438,16 @@ void Editor::UI::ParticleEmitterWidget::Draw(const ECS::Entity entity, Core::Eng
             MarkSceneChanged(engineContext);
 
         ImGui::SeparatorText("Size");
-        ImGui::DragFloat("Start", &comp->sizeStart, 0.01f, 0.001f, 50.0f, "%.3f");
-        ImGui::DragFloat("End", &comp->sizeEnd, 0.01f, 0.0f, 50.0f, "%.3f");
+        ImGui::DragFloat("Start Min", &comp->sizeStartMin, 0.01f, 0.001f, 50.0f, "%.3f");
+        ImGui::DragFloat("Start Max", &comp->sizeStartMax, 0.01f, 0.001f, 50.0f, "%.3f");
+        ImGui::DragFloat("End Min", &comp->sizeEndMin, 0.01f, 0.0f, 50.0f, "%.3f");
+        ImGui::DragFloat("End Max", &comp->sizeEndMax, 0.01f, 0.0f, 50.0f, "%.3f");
+        if (ImGui::IsItemDeactivatedAfterEdit())
+            MarkSceneChanged(engineContext);
+
+        ImGui::SeparatorText("Rotation");
+        ImGui::DragFloat("Speed Min", &comp->rotationSpeedMin, 0.1f, -100.0f, 100.0f, "%.2f");
+        ImGui::DragFloat("Speed Max", &comp->rotationSpeedMax, 0.1f, -100.0f, 100.0f, "%.2f");
         if (ImGui::IsItemDeactivatedAfterEdit())
             MarkSceneChanged(engineContext);
 
@@ -453,6 +461,17 @@ void Editor::UI::ParticleEmitterWidget::Draw(const ECS::Entity entity, Core::Eng
 
         ImGui::SeparatorText("Options");
         ImGui::Checkbox("Billboard", &comp->isBillboard);
+        if (ImGui::IsItemDeactivatedAfterEdit())
+            MarkSceneChanged(engineContext);
+        {
+            const char *blendModes[] = {"Alpha", "Additive"};
+            int bm = static_cast<int>(comp->blendMode);
+            if (ImGui::Combo("Blend Mode", &bm, blendModes, 2)) {
+                comp->blendMode = static_cast<ECS::Components::ParticleBlendMode>(bm);
+                MarkSceneChanged(engineContext);
+            }
+        }
+        ImGui::DragInt("Render Order", &comp->renderOrder, 0.1f, -10, 10);
         if (ImGui::IsItemDeactivatedAfterEdit())
             MarkSceneChanged(engineContext);
 

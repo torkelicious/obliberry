@@ -76,7 +76,7 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Materi
                                                   .entityIDCount = entityIDs.size()});
 }
 
-void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Material *material, const std::vector<glm::mat4> &transforms, const std::vector<glm::vec4> &colors) {
+void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Material *material, const std::vector<glm::mat4> &transforms, const std::vector<glm::vec4> &colors, const int blendMode, const int renderOrder) {
     if (transforms.empty())
         return;
 
@@ -93,6 +93,8 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Materi
                                                   .material = material,
                                                   .effectiveTexture = tex,
                                                   .color = col,
+                                                  .blendMode = blendMode,
+                                                  .renderOrder = renderOrder,
                                                   .transformPtr = nullptr,
                                                   .transformOffset = transformOffset,
                                                   .transformCount = transforms.size(),
@@ -157,12 +159,16 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
         if (auto &instCmds = m_InstancedCommands[renderIndex]; !instCmds.empty()) {
             if (instCmds.size() > 1) {
                 std::ranges::sort(instCmds, [](const InstancedRenderCommand &a, const InstancedRenderCommand &b) {
+                    if (a.renderOrder != b.renderOrder)
+                        return a.renderOrder < b.renderOrder;
                     if (a.mesh != b.mesh)
                         return a.mesh < b.mesh;
                     if (a.material != b.material)
                         return a.material < b.material;
                     if (a.effectiveTexture != b.effectiveTexture)
                         return a.effectiveTexture < b.effectiveTexture;
+                    if (a.blendMode != b.blendMode)
+                        return a.blendMode < b.blendMode;
                     if (a.color.r != b.color.r)
                         return a.color.r < b.color.r;
                     if (a.color.g != b.color.g)
@@ -173,9 +179,29 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
                 });
             }
 
-            for (const auto &instCmd : instCmds) {
+            const auto overlayStart = std::ranges::lower_bound(instCmds, 1, {}, [](const InstancedRenderCommand &cmd) { return cmd.renderOrder; });
+
+            const GLboolean prevBlend = glIsEnabled(GL_BLEND);
+            GLint prevBlendSrc, prevBlendDst;
+            glGetIntegerv(GL_BLEND_SRC_RGB, &prevBlendSrc);
+            glGetIntegerv(GL_BLEND_DST_RGB, &prevBlendDst);
+            int currentBlendMode = -1;
+
+            for (auto it = instCmds.begin(); it != overlayStart; ++it) {
+                const auto &instCmd = *it;
                 if (!instCmd.mesh || !instCmd.material || instCmd.transformCount == 0)
                     continue;
+
+                if (instCmd.blendMode != currentBlendMode) {
+                    currentBlendMode = instCmd.blendMode;
+                    glEnable(GL_BLEND);
+                    if (currentBlendMode == 1) {
+                        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+                    } else {
+                        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                    }
+                }
+
                 BatchKey key{instCmd.mesh, instCmd.material, instCmd.effectiveTexture, instCmd.color};
                 const glm::mat4 *transformsPtr = instCmd.transformPtr ? instCmd.transformPtr : m_InstancedTransformsStaging[renderIndex].data() + instCmd.transformOffset;
                 const glm::vec4 *colorsPtr = instCmd.colorPtr ? instCmd.colorPtr : (instCmd.colorCount > 0 ? m_InstancedColorsStaging[renderIndex].data() + instCmd.colorOffset : nullptr);
@@ -189,6 +215,10 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
                     RenderBatch(key, transformsPtr, m_DummyEntityIDs.data(), instCmd.transformCount, renderIndex, colorsPtr);
                 }
             }
+
+            // restore blend state
+            prevBlend ? glEnable(GL_BLEND) : glDisable(GL_BLEND);
+            glBlendFuncSeparate(prevBlendSrc, prevBlendDst, prevBlendSrc, prevBlendDst);
         }
     }
 
@@ -223,6 +253,52 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
 
         for (const auto &[key, offset, count] : m_BatchRanges)
             RenderBatch(key, m_MergedTransforms.data() + offset, m_MergedEntityIDs.data() + offset, count, renderIndex);
+    }
+
+    // overlay instanced commands
+    {
+        auto &instCmds = m_InstancedCommands[renderIndex];
+        const auto overlayStart = std::ranges::lower_bound(instCmds, 1, {}, [](const InstancedRenderCommand &cmd) { return cmd.renderOrder; });
+
+        if (overlayStart != instCmds.end()) {
+            const GLboolean prevBlend = glIsEnabled(GL_BLEND);
+            GLint prevBlendSrc, prevBlendDst;
+            glGetIntegerv(GL_BLEND_SRC_RGB, &prevBlendSrc);
+            glGetIntegerv(GL_BLEND_DST_RGB, &prevBlendDst);
+            int currentBlendMode = -1;
+
+            for (auto it = overlayStart; it != instCmds.end(); ++it) {
+                const auto &instCmd = *it;
+                if (!instCmd.mesh || !instCmd.material || instCmd.transformCount == 0)
+                    continue;
+
+                if (instCmd.blendMode != currentBlendMode) {
+                    currentBlendMode = instCmd.blendMode;
+                    glEnable(GL_BLEND);
+                    if (currentBlendMode == 1) {
+                        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+                    } else {
+                        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                    }
+                }
+
+                BatchKey key{instCmd.mesh, instCmd.material, instCmd.effectiveTexture, instCmd.color};
+                const glm::mat4 *transformsPtr = instCmd.transformPtr ? instCmd.transformPtr : m_InstancedTransformsStaging[renderIndex].data() + instCmd.transformOffset;
+                const glm::vec4 *colorsPtr = instCmd.colorPtr ? instCmd.colorPtr : (instCmd.colorCount > 0 ? m_InstancedColorsStaging[renderIndex].data() + instCmd.colorOffset : nullptr);
+
+                if (instCmd.entityIDPtr || instCmd.entityIDCount > 0) {
+                    const int *entityIDsPtr = instCmd.entityIDPtr ? instCmd.entityIDPtr : m_InstancedEntityIDsStaging[renderIndex].data() + instCmd.entityIDOffset;
+                    RenderBatch(key, transformsPtr, entityIDsPtr, instCmd.transformCount, renderIndex, colorsPtr);
+                } else {
+                    if (m_DummyEntityIDs.size() < instCmd.transformCount)
+                        m_DummyEntityIDs.resize(instCmd.transformCount, -1);
+                    RenderBatch(key, transformsPtr, m_DummyEntityIDs.data(), instCmd.transformCount, renderIndex, colorsPtr);
+                }
+            }
+
+            prevBlend ? glEnable(GL_BLEND) : glDisable(GL_BLEND);
+            glBlendFuncSeparate(prevBlendSrc, prevBlendDst, prevBlendSrc, prevBlendDst);
+        }
     }
 
     m_LastBoundVAO = nullptr;

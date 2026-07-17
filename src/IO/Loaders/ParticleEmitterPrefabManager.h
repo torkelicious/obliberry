@@ -28,16 +28,34 @@ namespace IO {
             ec.velocityMax = {data["velocityMax"][0], data["velocityMax"][1], data["velocityMax"][2]};
         if (data.contains("gravity"))
             ec.gravity = {data["gravity"][0], data["gravity"][1], data["gravity"][2]};
-        if (data.contains("sizeStart"))
-            ec.sizeStart = data["sizeStart"].get<float>();
-        if (data.contains("sizeEnd"))
-            ec.sizeEnd = data["sizeEnd"].get<float>();
+        if (data.contains("sizeStartMin"))
+            ec.sizeStartMin = data["sizeStartMin"].get<float>();
+        else if (data.contains("sizeStart"))
+            ec.sizeStartMin = ec.sizeStartMax = data["sizeStart"].get<float>();
+        if (data.contains("sizeStartMax"))
+            ec.sizeStartMax = data["sizeStartMax"].get<float>();
+        if (data.contains("sizeEndMin"))
+            ec.sizeEndMin = data["sizeEndMin"].get<float>();
+        else if (data.contains("sizeEnd"))
+            ec.sizeEndMin = ec.sizeEndMax = data["sizeEnd"].get<float>();
+        if (data.contains("sizeEndMax"))
+            ec.sizeEndMax = data["sizeEndMax"].get<float>();
+        if (data.contains("rotationSpeedMin"))
+            ec.rotationSpeedMin = data["rotationSpeedMin"].get<float>();
+        if (data.contains("rotationSpeedMax"))
+            ec.rotationSpeedMax = data["rotationSpeedMax"].get<float>();
         if (data.contains("colorStart"))
             ec.colorStart = {data["colorStart"][0], data["colorStart"][1], data["colorStart"][2], data["colorStart"][3]};
         if (data.contains("colorEnd"))
             ec.colorEnd = {data["colorEnd"][0], data["colorEnd"][1], data["colorEnd"][2], data["colorEnd"][3]};
         if (data.contains("isBillboard"))
             ec.isBillboard = data["isBillboard"].get<bool>();
+        if (data.contains("blendMode")) {
+            int bm = data["blendMode"].get<int>();
+            ec.blendMode = (bm == 1) ? ECS::Components::ParticleBlendMode::Additive : ECS::Components::ParticleBlendMode::Alpha;
+        }
+        if (data.contains("renderOrder"))
+            ec.renderOrder = data["renderOrder"].get<int>();
         if (data.contains("material_id")) {
             const std::string matID = data["material_id"].get<std::string>();
             ec.material = Core::ResourceManager::GetInstance().Get<Rendering::Material>(matID);
@@ -54,11 +72,17 @@ namespace IO {
         data["velocityMin"] = {ec.velocityMin.x, ec.velocityMin.y, ec.velocityMin.z};
         data["velocityMax"] = {ec.velocityMax.x, ec.velocityMax.y, ec.velocityMax.z};
         data["gravity"] = {ec.gravity.x, ec.gravity.y, ec.gravity.z};
-        data["sizeStart"] = ec.sizeStart;
-        data["sizeEnd"] = ec.sizeEnd;
+        data["sizeStartMin"] = ec.sizeStartMin;
+        data["sizeStartMax"] = ec.sizeStartMax;
+        data["sizeEndMin"] = ec.sizeEndMin;
+        data["sizeEndMax"] = ec.sizeEndMax;
+        data["rotationSpeedMin"] = ec.rotationSpeedMin;
+        data["rotationSpeedMax"] = ec.rotationSpeedMax;
         data["colorStart"] = {ec.colorStart.x, ec.colorStart.y, ec.colorStart.z, ec.colorStart.w};
         data["colorEnd"] = {ec.colorEnd.x, ec.colorEnd.y, ec.colorEnd.z, ec.colorEnd.w};
         data["isBillboard"] = ec.isBillboard;
+        data["blendMode"] = static_cast<int>(ec.blendMode);
+        data["renderOrder"] = ec.renderOrder;
         if (ec.material) {
             if (std::string id = Core::ResourceManager::GetInstance().GetKey<Rendering::Material>(ec.material); !id.empty()) {
                 data["material_id"] = id;

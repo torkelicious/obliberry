@@ -30,6 +30,8 @@ namespace Rendering {
         const Material *material;
         const Texture *effectiveTexture;
         glm::vec4 color;
+        int blendMode = 0;   // 0 = alpha, 1 = additive
+        int renderOrder = 0; // higher is drawn later
 
         const glm::mat4 *transformPtr = nullptr;
         size_t transformOffset = 0;
@@ -65,7 +67,7 @@ namespace Rendering {
 
         void Submit(const std::shared_ptr<Mesh> &mesh, const Material *material, const std::vector<glm::mat4> &transforms, const std::vector<int> &entityIDs = {});
 
-        void Submit(const std::shared_ptr<Mesh> &mesh, const Material *material, const std::vector<glm::mat4> &transforms, const std::vector<glm::vec4> &colors);
+        void Submit(const std::shared_ptr<Mesh> &mesh, const Material *material, const std::vector<glm::mat4> &transforms, const std::vector<glm::vec4> &colors, int blendMode = 0, int renderOrder = 0);
 
         void SubmitPersistent(const std::shared_ptr<Mesh> &mesh, const Material *material, const std::vector<glm::mat4> *transforms, const std::vector<int> *entityIDs = nullptr);
 

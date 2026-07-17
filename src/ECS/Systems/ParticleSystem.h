@@ -3,6 +3,7 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/random.hpp>
 
 #include "ECS/Components/ParticleEmitterComponent.h"
 #include "ECS/Components/TransformComponent.h"
@@ -57,8 +58,12 @@ namespace ECS::Systems::ParticleSystem {
         config.velocityMin = comp.velocityMin;
         config.velocityMax = comp.velocityMax;
         config.gravity = comp.gravity;
-        config.sizeStart = comp.sizeStart;
-        config.sizeEnd = comp.sizeEnd;
+        config.sizeStartMin = comp.sizeStartMin;
+        config.sizeStartMax = comp.sizeStartMax;
+        config.sizeEndMin = comp.sizeEndMin;
+        config.sizeEndMax = comp.sizeEndMax;
+        config.rotationSpeedMin = comp.rotationSpeedMin;
+        config.rotationSpeedMax = comp.rotationSpeedMax;
         config.colorStart = comp.colorStart;
         config.colorEnd = comp.colorEnd;
         config.isBillboard = comp.isBillboard;
@@ -94,8 +99,12 @@ namespace ECS::Systems::ParticleSystem {
             config.velocityMin = comp->velocityMin;
             config.velocityMax = comp->velocityMax;
             config.gravity = comp->gravity;
-            config.sizeStart = comp->sizeStart;
-            config.sizeEnd = comp->sizeEnd;
+            config.sizeStartMin = comp->sizeStartMin;
+            config.sizeStartMax = comp->sizeStartMax;
+            config.sizeEndMin = comp->sizeEndMin;
+            config.sizeEndMax = comp->sizeEndMax;
+            config.rotationSpeedMin = comp->rotationSpeedMin;
+            config.rotationSpeedMax = comp->rotationSpeedMax;
             config.colorStart = comp->colorStart;
             config.colorEnd = comp->colorEnd;
             config.isBillboard = comp->isBillboard;
@@ -110,10 +119,11 @@ namespace ECS::Systems::ParticleSystem {
                 while (comp->emitAccumulator >= 1.0f && !state.pool.IsFull()) {
                     const float life = glm::linearRand(comp->lifetimeMin, comp->lifetimeMax);
 
-                    const float sizeS = comp->sizeStart;
-                    const float sizeE = comp->sizeEnd;
+                    const float sizeS = glm::linearRand(comp->sizeStartMin, comp->sizeStartMax);
+                    const float sizeE = glm::linearRand(comp->sizeEndMin, comp->sizeEndMax);
+                    const float rotSpeed = glm::linearRand(comp->rotationSpeedMin, comp->rotationSpeedMax);
 
-                    state.pool.Spawn(origin, glm::linearRand(comp->velocityMin, comp->velocityMax), comp->gravity, sizeS, sizeE, comp->colorStart, comp->colorEnd, life);
+                    state.pool.Spawn(origin, glm::linearRand(comp->velocityMin, comp->velocityMax), comp->gravity, sizeS, sizeE, comp->colorStart, comp->colorEnd, life, rotSpeed);
 
                     comp->emitAccumulator -= 1.0f;
                 }
@@ -161,7 +171,8 @@ namespace ECS::Systems::ParticleSystem {
             const bool bb = comp->isBillboard && camera;
             state.pool.BuildTransformsAndColors(transforms, colors, bb, &camRight, &camUp);
 
-            renderer.Submit(quad, comp->material.get(), transforms, colors);
+            const int blendMode = (comp->blendMode == Components::ParticleBlendMode::Additive) ? 1 : 0;
+            renderer.Submit(quad, comp->material.get(), transforms, colors, blendMode, comp->renderOrder);
         });
     }
 

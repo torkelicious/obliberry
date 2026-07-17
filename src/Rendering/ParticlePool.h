@@ -25,8 +25,12 @@ namespace Rendering {
         float emitRate = 50.0f;
         float lifetimeMin = 0.5f;
         float lifetimeMax = 1.5f;
-        float sizeStart = 0.2f;
-        float sizeEnd = 0.0f;
+        float sizeStartMin = 0.2f;
+        float sizeStartMax = 0.2f;
+        float sizeEndMin = 0.0f;
+        float sizeEndMax = 0.0f;
+        float rotationSpeedMin = 0.0f;
+        float rotationSpeedMax = 0.0f;
 
         bool isBillboard = false;
     };
@@ -47,6 +51,8 @@ namespace Rendering {
             m_ColorEnd.resize(capacity);
             m_Life.resize(capacity);
             m_MaxLife.resize(capacity);
+            m_RotationSpeed.resize(capacity);
+            m_Rotation.resize(capacity);
         }
 
         void SetConfig(const ParticleEmitterConfig &config) {
@@ -68,7 +74,8 @@ namespace Rendering {
 
         // spawn
 
-        int Spawn(const glm::vec3 position, const glm::vec3 velocity, const glm::vec3 grav, const float sizeS, const float sizeE, const glm::vec4 colorS, const glm::vec4 colorE, const float life) {
+        int Spawn(const glm::vec3 position, const glm::vec3 velocity, const glm::vec3 grav, const float sizeS, const float sizeE, const glm::vec4 colorS, const glm::vec4 colorE, const float life,
+                  const float rotSpeed = 0.0f) {
             if (m_AliveCount >= m_Config.maxParticles)
                 return -1;
 
@@ -82,6 +89,8 @@ namespace Rendering {
             m_ColorEnd[i] = colorE;
             m_Life[i] = life;
             m_MaxLife[i] = life;
+            m_RotationSpeed[i] = rotSpeed;
+            m_Rotation[i] = 0.0f;
             return i;
         }
 
@@ -96,6 +105,7 @@ namespace Rendering {
 
                 m_Velocity[i] += m_Gravity[i] * dt;
                 m_Position[i] += m_Velocity[i] * dt;
+                m_Rotation[i] += m_RotationSpeed[i] * dt;
             }
         }
 
@@ -119,19 +129,23 @@ namespace Rendering {
                 const float size = m_SizeStart[i] + (m_SizeEnd[i] - m_SizeStart[i]) * t;
 
                 if (billboard && camRight && camUp) {
-                    const glm::vec3 right = *camRight * size;
-                    const glm::vec3 up = *camUp * size;
-                    const glm::vec3 fwd = glm::cross(right, up);
-                    const glm::vec3 center = m_Position[i] + up * 0.5f;
+                    const float angle = m_Rotation[i];
+                    const glm::vec3 fwd = glm::normalize(glm::cross(*camRight, *camUp));
+                    const glm::mat4 rot = glm::rotate(glm::mat4(1.0f), angle, fwd);
+                    const glm::vec3 r = glm::vec3(rot * glm::vec4(*camRight, 0.0f)) * size;
+                    const glm::vec3 u = glm::vec3(rot * glm::vec4(*camUp, 0.0f)) * size;
+                    const glm::vec3 f = glm::cross(r, u);
+                    const glm::vec3 center = m_Position[i] + u * 0.5f;
                     glm::mat4 model(1.0f);
-                    model[0] = glm::vec4(right, 0.0f);
-                    model[1] = glm::vec4(up, 0.0f);
-                    model[2] = glm::vec4(fwd, 0.0f);
+                    model[0] = glm::vec4(r, 0.0f);
+                    model[1] = glm::vec4(u, 0.0f);
+                    model[2] = glm::vec4(f, 0.0f);
                     model[3] = glm::vec4(center, 1.0f);
                     out[i] = model;
                 } else {
                     glm::mat4 model(1.0f);
                     model = glm::translate(model, m_Position[i]);
+                    model = glm::rotate(model, m_Rotation[i], glm::vec3(0.0f, 0.0f, 1.0f));
                     model = glm::scale(model, glm::vec3(size));
                     out[i] = model;
                 }
@@ -146,19 +160,23 @@ namespace Rendering {
                 const float size = m_SizeStart[i] + (m_SizeEnd[i] - m_SizeStart[i]) * t;
 
                 if (billboard && camRight && camUp) {
-                    const glm::vec3 right = *camRight * size;
-                    const glm::vec3 up = *camUp * size;
-                    const glm::vec3 fwd = glm::cross(right, up);
-                    const glm::vec3 center = m_Position[i] + up * 0.5f;
+                    const float angle = m_Rotation[i];
+                    const glm::vec3 fwd = glm::normalize(glm::cross(*camRight, *camUp));
+                    const glm::mat4 rot = glm::rotate(glm::mat4(1.0f), angle, fwd);
+                    const glm::vec3 r = glm::vec3(rot * glm::vec4(*camRight, 0.0f)) * size;
+                    const glm::vec3 u = glm::vec3(rot * glm::vec4(*camUp, 0.0f)) * size;
+                    const glm::vec3 f = glm::cross(r, u);
+                    const glm::vec3 center = m_Position[i] + u * 0.5f;
                     glm::mat4 model(1.0f);
-                    model[0] = glm::vec4(right, 0.0f);
-                    model[1] = glm::vec4(up, 0.0f);
-                    model[2] = glm::vec4(fwd, 0.0f);
+                    model[0] = glm::vec4(r, 0.0f);
+                    model[1] = glm::vec4(u, 0.0f);
+                    model[2] = glm::vec4(f, 0.0f);
                     model[3] = glm::vec4(center, 1.0f);
                     outT[i] = model;
                 } else {
                     glm::mat4 model(1.0f);
                     model = glm::translate(model, m_Position[i]);
+                    model = glm::rotate(model, m_Rotation[i], glm::vec3(0.0f, 0.0f, 1.0f));
                     model = glm::scale(model, glm::vec3(size));
                     outT[i] = model;
                 }
@@ -173,9 +191,11 @@ namespace Rendering {
 
                 const glm::vec3 vel = glm::linearRand(m_Config.velocityMin, m_Config.velocityMax);
                 const float life = glm::linearRand(m_Config.lifetimeMin, m_Config.lifetimeMax);
-                const float size = glm::linearRand(m_Config.sizeStart, m_Config.sizeEnd > 0.0f ? m_Config.sizeEnd : m_Config.sizeStart);
+                const float sizeS = glm::linearRand(m_Config.sizeStartMin, m_Config.sizeStartMax);
+                const float sizeE = glm::linearRand(m_Config.sizeEndMin, m_Config.sizeEndMax);
+                const float rotSpeed = glm::linearRand(m_Config.rotationSpeedMin, m_Config.rotationSpeedMax);
 
-                Spawn(origin, vel, m_Config.gravity, size, m_Config.sizeEnd, m_Config.colorStart, m_Config.colorEnd, life);
+                Spawn(origin, vel, m_Config.gravity, sizeS, sizeE, m_Config.colorStart, m_Config.colorEnd, life, rotSpeed);
             }
         }
 
@@ -195,6 +215,8 @@ namespace Rendering {
                 m_ColorEnd[index] = m_ColorEnd[m_AliveCount];
                 m_Life[index] = m_Life[m_AliveCount];
                 m_MaxLife[index] = m_MaxLife[m_AliveCount];
+                m_RotationSpeed[index] = m_RotationSpeed[m_AliveCount];
+                m_Rotation[index] = m_Rotation[m_AliveCount];
             }
         }
 
@@ -210,6 +232,8 @@ namespace Rendering {
         std::vector<glm::vec4> m_ColorEnd;
         std::vector<float> m_Life;
         std::vector<float> m_MaxLife;
+        std::vector<float> m_RotationSpeed;
+        std::vector<float> m_Rotation;
     };
 
 } // namespace Rendering
