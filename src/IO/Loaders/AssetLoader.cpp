@@ -40,13 +40,16 @@ std::optional<std::string> IO::AssetLoader::ImportAsset(const std::string &Absou
     // absolute path
     const std::filesystem::path destinationPath = destinationdir / srcpath.filename();
 
-    // copy the file
-    try {
-        std::filesystem::copy(srcpath, destinationPath, std::filesystem::copy_options::overwrite_existing);
-        LOG_INFO(LOG_WHO, "Successfully imported asset to: " + destinationPath.string());
-    } catch (const std::exception &e) {
-        LOG_ERROR(LOG_WHO, "Failed to copy asset: " + std::string(e.what()));
-        return std::nullopt;
+    if (std::filesystem::equivalent(srcpath, destinationPath)) {
+        LOG_INFO(LOG_WHO, "Asset already exists at destination: " + destinationPath.string());
+    } else {
+        try {
+            std::filesystem::copy(srcpath, destinationPath, std::filesystem::copy_options::overwrite_existing);
+            LOG_INFO(LOG_WHO, "Successfully imported asset to: " + destinationPath.string());
+        } catch (const std::exception &e) {
+            LOG_ERROR(LOG_WHO, "Failed to copy asset: " + std::string(e.what()));
+            return std::nullopt;
+        }
     }
 
     // return vfs-resolved path for later serialization
