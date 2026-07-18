@@ -24,7 +24,9 @@ Platform::Window::Window::Window(const unsigned int width, const unsigned int he
 }
 
 Platform::Window::Window::~Window() {
-    NFD_Quit();
+    if (s_ShouldInitNFD) {
+        NFD_Quit();
+    }
     if (m_Window) {
         glfwDestroyWindow(m_Window);
         m_Window = nullptr;
