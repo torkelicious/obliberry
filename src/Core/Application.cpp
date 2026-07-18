@@ -101,6 +101,7 @@ void Core::Application::Run() {
 
     // Renderer
     Rendering::Renderer renderer;
+    m_UIRenderer.InitGL();
     Rendering::Camera camera;
 
     // EngineContext Setup
@@ -111,6 +112,7 @@ void Core::Application::Run() {
     context.input = &m_InputManager;
     context.resources = &ResourceManager::GetInstance();
     context.renderer = &renderer;
+    context.uiRenderer = &m_UIRenderer;
     context.camera = &camera;
     context.deltaTime = 0.0f;
     context.scriptPool = &m_ScriptPool;
@@ -145,7 +147,7 @@ void Core::Application::Run() {
 
     // Main loop
     m_Running = true;
-    m_RenderThread = std::thread(&Application::RenderThreadWorker, this, &renderer);
+    m_RenderThread = std::thread(&Application::RenderThreadWorker, this, &renderer, &m_UIRenderer);
 
     while (!m_Window.ShouldClose()) {
         m_InputManager.BeginFrame();
@@ -168,6 +170,7 @@ void Core::Application::Run() {
         ImGui::Render();
 
         renderer.SwapBuffers();
+        m_UIRenderer.SwapBuffers();
 
         const int writeIdx = m_MainFrameIndex;
         UpdateImDrawData(m_FrameImGuiData[writeIdx], ImGui::GetDrawData());
@@ -229,7 +232,7 @@ void Core::Application::Shutdown() const {
     ImGui::DestroyContext();
 }
 
-void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer) {
+void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer, UI::UIRenderer *uiRenderer) {
     glfwMakeContextCurrent(m_Window.GetNativeWindow());
 
     // Enable VSync specifically for this thread's context
@@ -283,12 +286,14 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer) {
             glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
             fbo->ClearEntityIDAttachment();
+            uiRenderer->Flush();
         } else {
             glViewport(0, 0, m_Window.GetWidth(), m_Window.GetHeight());
             Rendering::Renderer::ApplyClearColor();
             glClear(GL_COLOR_BUFFER_BIT);
 
             renderer->Flush(static_cast<size_t>(frameIdx));
+            uiRenderer->Flush();
         }
 
         if (m_FrameImGuiData[frameIdx] && m_FrameImGuiData[frameIdx]->CmdListsCount > 0) {

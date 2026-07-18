@@ -261,6 +261,7 @@ add_library(obliberry_engine STATIC
         src/UI/Text/Font.cpp
         src/UI/Text/Font.h
         src/UI/Elements/UIText.cpp
+        src/UI/Rendering/UIRenderer.cpp
 )
 
 target_include_directories(obliberry_engine PUBLIC

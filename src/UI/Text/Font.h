@@ -22,7 +22,7 @@ namespace UI {
 
     class Font {
     public:
-        Font(const std::string &filepath, unsigned int fontSize);
+        Font(const std::string &filepath, unsigned int fontSize = 12);
         ~Font();
 
         Font(const Font &) = delete;

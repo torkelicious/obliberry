@@ -14,6 +14,7 @@
 #include <ObSL/ScriptRuntime.h>
 #include "Platform/Threading/ThreadPool.h"
 #include "Sound/AudioEngine.h"
+#include "UI/Rendering/UIRenderer.h"
 
 struct ImDrawData;
 
@@ -37,7 +38,7 @@ namespace Core {
             FrameState state = FrameState::Free;
         };
 
-        void RenderThreadWorker(Rendering::Renderer *renderer);
+        void RenderThreadWorker(Rendering::Renderer *renderer, UI::UIRenderer *uiRenderer);
 
         Config::ProjectConfig m_Project;
         Config::GraphicsConfig m_GraphicsConfig;
@@ -46,6 +47,7 @@ namespace Core {
         ObSL::ScriptRuntime m_ScriptPool;
         Platform::Threading::ThreadPool m_ThreadPool;
         std::unique_ptr<Sound::AudioEngine> m_AudioEngine;
+        UI::UIRenderer m_UIRenderer;
 
         std::unique_ptr<ApplicationLayer> m_Layer;
 

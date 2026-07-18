@@ -2,6 +2,7 @@
 
 #include "Config/GraphicsConfig.h"
 #include "Logger/Logger.h"
+#include "UI/Rendering/UIRenderer.h"
 
 #include <filesystem>
 #include <string>
@@ -56,6 +57,7 @@ namespace Core {
         Scenes::SceneManager *sceneManager = nullptr;
         Rendering::Renderer *renderer = nullptr;
         Rendering::Camera *camera = nullptr;
+        UI::UIRenderer *uiRenderer = nullptr;
         ObSL::ScriptRuntime *scriptPool = nullptr;
         Platform::Threading::ThreadPool *threadPool = nullptr;
         Sound::AudioEngine *audioEngine = nullptr;
