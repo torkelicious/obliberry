@@ -18,9 +18,10 @@ namespace UI {
         virtual void Update();
         virtual void Draw();
 
-        bool HasFlag(const UIFlags flag) const { return Flags & flag; }
+        [[nodiscard]] bool HasFlag(const UIFlags flag) const { return Flags & flag; }
         void AddFlag(const UIFlags flag) { Flags |= flag; }
         void RemoveFlag(const UIFlags flag) { Flags &= ~flag; }
+
     private:
         uint8_t Flags = VISIBLE | ENABLED;
     };

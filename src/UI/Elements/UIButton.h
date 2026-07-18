@@ -12,6 +12,7 @@ namespace UI {
     public:
         void Update() override;
         void Draw() override;
+
     private:
         ButtonState ButtonState = ButtonState::NONE;
     };

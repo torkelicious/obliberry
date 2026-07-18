@@ -7,8 +7,8 @@ namespace UI {
 
         // For future implementation
         // so i dont forgor
-        //glm::vec2 Pivot;
-        //glm::vec2 AnchorMin;
-        //glm::vec2 AnchorMax;
+        // glm::vec2 Pivot;
+        // glm::vec2 AnchorMin;
+        // glm::vec2 AnchorMax;
     };
 } // namespace UI
