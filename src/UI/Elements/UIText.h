@@ -33,7 +33,7 @@ namespace UI {
         [[nodiscard]] size_t GetQuadCount() const;
 
         void Update() override;
-        void Draw() override;
+        void Draw(UIRenderer *renderer, glm::vec2 finalPos) override;
 
     private:
         std::string m_Text;

@@ -1,8 +1,8 @@
 #include "UIText.h"
-#include "Rendering/Renderer.h"
-
+#include "UI/Rendering/UIRenderer.h"
 
 namespace UI {
+
 
     void UIText::SetText(const std::string &text) { m_Text = text; }
 
@@ -33,6 +33,41 @@ namespace UI {
             }
         }
         return count;
+    }
+
+    //
+    // stuff here :)
+    //
+
+    void UIText::Update() {}
+
+    void UIText::Draw(UIRenderer *renderer, const glm::vec2 finalPos) {
+        if (!renderer || !m_Font || m_Text.empty())
+            return;
+
+        const auto atlas = m_Font->GetAtlasTexture();
+        if (!atlas)
+            return;
+
+        float cursorX = 0.0f;
+
+        for (const char c : m_Text) {
+            const auto &glyph = m_Font->GetGlyph(c);
+
+            if (glyph.Size.x > 0 && glyph.Size.y > 0) {
+                const float x = finalPos.x + cursorX + static_cast<float>(glyph.Bearing.x);
+                const float y = finalPos.y + static_cast<float>(glyph.Bearing.y);
+                const auto w = static_cast<float>(glyph.Size.x);
+                const auto h = static_cast<float>(glyph.Size.y);
+
+                const glm::vec2 uvMin = glyph.UVOffset;
+                const glm::vec2 uvMax = glyph.UVOffset + glyph.UVSize;
+
+                renderer->SubmitQuad({x, y - h}, {w, h}, uvMin, uvMax, atlas.get(), m_Color);
+            }
+
+            cursorX += static_cast<float>(glyph.Advance);
+        }
     }
 
     std::vector<TextVertex> UIText::BuildVertices() const {

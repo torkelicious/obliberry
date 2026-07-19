@@ -71,8 +71,8 @@ namespace UI {
     void UIRenderer::SubmitRect(const glm::vec2 pos, const glm::vec2 size, const glm::vec4 color) { SubmitQuad(pos, size, {0.0f, 0.0f}, {1.0f, 1.0f}, Rendering::Texture::White(), color); }
 
     void UIRenderer::Flush() {
-        auto &verts = m_Vertices[m_RenderIndex];
-        auto &texs = m_QuadTextures[m_RenderIndex];
+        const auto &verts = m_Vertices[m_RenderIndex];
+        const auto &texs = m_QuadTextures[m_RenderIndex];
 
         if (verts.empty())
             return;
