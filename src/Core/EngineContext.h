@@ -1,9 +1,7 @@
 #pragma once
-
 #include "Config/GraphicsConfig.h"
 #include "Logger/Logger.h"
 #include "UI/Rendering/UIRenderer.h"
-
 #include <filesystem>
 #include <string>
 

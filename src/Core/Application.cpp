@@ -16,6 +16,9 @@
 #include <utility>
 #include "Applications/Editor/EditorLayer.h"
 #include "Applications/Editor/UI/ConfigWindows/GraphicsConfigEditor.h"
+#include "UI/Elements/UIText.h"
+#include "UI/Rendering/UISystem.h"
+#include "UI/Text/Font.h"
 
 
 Core::Application::Application(const Config::GraphicsConfig gconf, Config::ProjectConfig pconf, std::unique_ptr<ApplicationLayer> layer)
@@ -120,6 +123,20 @@ void Core::Application::Run() {
     context.audioEngine = m_AudioEngine.get();
     context.logger = Logging::LoggerService::Get();
 
+    // uisys temp
+    UI::UISystem uiSystem(&m_UIRenderer, &m_InputManager);
+    auto font = std::make_shared<UI::Font>("/usr/share/fonts/TTF/Hack-Bold.ttf");
+    font->InitGL();
+    UI::UIText text{};
+    text.Rect.Position = {100, 50};
+    text.Rect.Scale = {50, 50};
+    text.SetText("test");
+    text.SetColor({0.5f, 0.0f, 0.4f, 1.0f});
+    text.SetFont(font);
+    uiSystem.GetRoot()->Children.push_back(&text);
+    // context.uiSystem = &uiSystem;
+    //  uisys temp?
+
     // MSAA supported samples, must be called before gl context handover!!!
     Config::GraphicsCapabilities::CacheSampleCounts();
 
@@ -162,11 +179,15 @@ void Core::Application::Run() {
         previousTime = currentTime;
 
         m_Layer->Update(delta.count());
+        uiSystem.Update(delta.count());
         if (context.audioEngine) {
             context.audioEngine->Update();
         }
 
         m_Layer->Render();
+
+        m_UIRenderer.BeginFrame(m_Window.GetWidth(), m_Window.GetHeight());
+        uiSystem.Render();
         ImGui::Render();
 
         renderer.SwapBuffers();

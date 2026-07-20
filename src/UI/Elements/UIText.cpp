@@ -56,14 +56,14 @@ namespace UI {
 
             if (glyph.Size.x > 0 && glyph.Size.y > 0) {
                 const float x = finalPos.x + cursorX + static_cast<float>(glyph.Bearing.x);
-                const float y = finalPos.y + static_cast<float>(glyph.Bearing.y);
+                const float y = finalPos.y - static_cast<float>(glyph.Bearing.y);
                 const auto w = static_cast<float>(glyph.Size.x);
                 const auto h = static_cast<float>(glyph.Size.y);
 
                 const glm::vec2 uvMin = glyph.UVOffset;
                 const glm::vec2 uvMax = glyph.UVOffset + glyph.UVSize;
 
-                renderer->SubmitQuad({x, y - h}, {w, h}, uvMin, uvMax, atlas.get(), m_Color);
+                renderer->SubmitQuad({x, y}, {w, h}, uvMin, uvMax, atlas.get(), m_Color);
             }
 
             cursorX += static_cast<float>(glyph.Advance);
