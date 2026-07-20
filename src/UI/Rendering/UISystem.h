@@ -28,7 +28,7 @@ namespace UI {
 
         void Update(float dt);
         void Render();
-        [[nodiscard]] UIElement *HitTest(glm::vec2 point);
+        [[nodiscard]] UIElement *HitTest(glm::vec2 point) const;
 
     private:
         void RenderRecursive(UIElement *element, glm::vec2 accumulatedPos);

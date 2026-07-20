@@ -20,7 +20,7 @@ namespace UI {
     void UISystem::Render() { RenderRecursive(m_Root.get(), {0.0f, 0.0f}); }
 
     void UISystem::RenderRecursive(UIElement *element, const glm::vec2 accumulatedPos) {
-        if (!element || !element->HasFlag(VISIBLE))
+        if (!element || !element->HasFlag(VISIBLE) || !element->HasFlag(ENABLED))
             return;
 
         const glm::vec2 finalPos = accumulatedPos + element->Rect.Position;
@@ -34,7 +34,7 @@ namespace UI {
         }
     }
 
-    UIElement *UISystem::HitTest(const glm::vec2 point) { return HitTestRecursive(m_Root.get(), point, {0.0f, 0.0f}); }
+    UIElement *UISystem::HitTest(const glm::vec2 point) const { return HitTestRecursive(m_Root.get(), point, {0.0f, 0.0f}); }
 
     UIElement *UISystem::HitTestRecursive(UIElement *element, const glm::vec2 point, const glm::vec2 accumulatedPos) {
         if (!element || !element->HasFlag(VISIBLE) || !element->HasFlag(ENABLED))
