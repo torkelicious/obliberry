@@ -7,6 +7,7 @@
 #include "Rendering/Mesh.h"
 #include "Rendering/Shader.h"
 #include "Rendering/Texture.h"
+#include "UI/Text/Font.h"
 
 namespace Editor::UI {
 
@@ -28,6 +29,14 @@ namespace Editor::UI {
             const std::string texKey = mat->texture ? resources.GetKey(mat->texture) : "none";
             const std::string shaderKey = mat->shader ? resources.GetKey(mat->shader) : "none";
             ImGui::TextDisabled("Texture: %s  Shader: %s", texKey.c_str(), shaderKey.c_str());
+        });
+    }
+
+    bool FontCombo(const char *label, Core::ResourceManager &resources, std::shared_ptr<::UI::Font> &current) {
+        return AssetComboImpl(label, resources, current, [](const std::shared_ptr<::UI::Font> &font) {
+            if (font) {
+                ImGui::TextDisabled("%upx%s", font->GetFontSize(), font->IsSDF() ? " SDF" : "");
+            }
         });
     }
 

@@ -25,10 +25,14 @@ namespace UI {
         glm::vec4 Color;
     };
 
+    enum class BatchShader : uint8_t { REGULAR, SDF };
+
     struct UIBatch {
         const Rendering::Texture *texture = nullptr;
-        uint32_t indexOffset = 0; // byte offset into IBO
-        uint32_t indexCount = 0;  // number of indices to draw
+        uint32_t indexOffset = 0;
+        uint32_t indexCount = 0;
+        BatchShader shader = BatchShader::REGULAR;
+        float sdfScale = 1.0f;  // only used for SDF
     };
 
     class UIRenderer {
@@ -51,6 +55,8 @@ namespace UI {
         // colored rectangle
         void SubmitRect(glm::vec2 pos, glm::vec2 size, glm::vec4 color);
 
+        void SubmitSDFQuad(glm::vec2 pos, glm::vec2 size, glm::vec2 uvMin, glm::vec2 uvMax, const Rendering::Texture *texture, glm::vec4 color, float sdfScale);
+
         // convenience
         void SubmitRect(const RectTransform &rect, const glm::vec4 color) { SubmitRect(rect.Position, rect.Scale, color); }
 
@@ -63,6 +69,9 @@ namespace UI {
 
         void SwapBuffers();
 
+        void SetGameResolution(uint32_t width, uint32_t height);
+        [[nodiscard]] glm::vec2 GetGameResolution() const { return m_GameResolution; }
+
     private:
         static constexpr uint32_t MAX_QUADS = 10000;
 
@@ -70,15 +79,19 @@ namespace UI {
         size_t m_RenderIndex = 1;
 
         glm::mat4 m_Projection[2] = {glm::mat4(1.0f), glm::mat4(1.0f)};
+        glm::vec2 m_GameResolution = {0.0f, 0.0f};
 
         std::vector<UIVertex> m_Vertices[2];
         std::vector<UIBatch> m_Batches;
         std::vector<const Rendering::Texture *> m_QuadTextures[2];
+        std::vector<BatchShader> m_QuadShader[2];
+        std::vector<float> m_QuadSDFScale[2];
 
         std::unique_ptr<Rendering::VertexBuffer> m_VBO;
         std::unique_ptr<Rendering::VertexArray> m_VAO;
         std::unique_ptr<Rendering::IndexBuffer> m_IBO;
         std::shared_ptr<Rendering::Shader> m_Shader;
+        std::shared_ptr<Rendering::Shader> m_SDFShader;
 
         bool m_GLInitialized = false;
     };

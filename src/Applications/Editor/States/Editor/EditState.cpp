@@ -31,6 +31,7 @@ void Editor::States::EditState::OnUpdate(const float dt) {
     if (EditorLayer::s_RenderParticlesInEditor) {
         ECS::Systems::ParticleSystem::Update(*m_EditorLayer->m_Registry, dt);
     }
+    m_EditorLayer->m_Context.uiSystem->Update(dt);
 
     // Entity picking
     if (const int clickedID = m_EditorLayer->m_ViewportPanel.GetSelectedEntityID(); clickedID != -1) {
@@ -110,6 +111,7 @@ void Editor::States::EditState::OnHandleInput(const float dt) {
 void Editor::States::EditState::OnDrawPanels() {
     m_EditorLayer->m_RegistryPanel.OnImGuiRender();
     m_EditorLayer->m_InspectorPanel.OnImGuiRender();
+    m_EditorLayer->m_UIPanel.OnImGuiRender();
     DrawGizmoForSelected();
 }
 
@@ -119,6 +121,7 @@ void Editor::States::EditState::OnRender() {
     if (EditorLayer::s_RenderParticlesInEditor) {
         ECS::Systems::ParticleSystem::Render(*m_EditorLayer->m_Registry, *m_EditorLayer->m_Context.renderer, &m_EditorLayer->m_Camera);
     }
+    m_EditorLayer->m_Context.uiSystem->Render();
 }
 
 void Editor::States::EditState::OnDrawModeToolbar() {

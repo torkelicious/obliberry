@@ -76,6 +76,12 @@ namespace Rendering {
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
         }
 
+        void BindDrawBuffers() const {
+            glBindFramebuffer(GL_FRAMEBUFFER, m_RendererID);
+            constexpr GLenum buffers[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+            glDrawBuffers(2, buffers);
+        }
+
         // on click
         [[nodiscard]] int ReadEntityID(const uint32_t x, const uint32_t y) const {
             if (x >= m_Width || y >= m_Height)

@@ -263,6 +263,7 @@ add_library(obliberry_engine STATIC
         src/UI/Elements/UIText.cpp
         src/UI/Elements/UIButton.cpp
         src/UI/Elements/UIImage.cpp
+        src/UI/Elements/UIRect.cpp
         src/UI/Rendering/UIRenderer.cpp
         src/UI/Rendering/UISystem.h
         src/UI/Rendering/UISystem.cpp
@@ -328,6 +329,7 @@ add_executable(obliberry_editor
 
         src/Applications/Editor/UI/ConfigWindows/GraphicsConfigEditor.cpp
         src/Applications/Editor/UI/ConfigWindows/ConfigWindow.cpp
+        src/Applications/Editor/UI/Panels/Editor/UIPanel.cpp
 )
 
 target_link_libraries(obliberry_editor PRIVATE

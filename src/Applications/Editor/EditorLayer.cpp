@@ -391,6 +391,7 @@ void Editor::EditorLayer::DrawDockSpace() {
 
     ImGui::DockBuilderDockWindow("Registry", dock_id_left);
     ImGui::DockBuilderDockWindow("Inspector", dock_id_right);
+    ImGui::DockBuilderDockWindow("UI Hierarchy", dock_id_right);
     ImGui::DockBuilderDockWindow("Console", dock_id_bottom);
     ImGui::DockBuilderDockWindow("Project Browser", dock_id_bottom);
     ImGui::DockBuilderDockWindow("Scene View", dock_id_center);
@@ -404,7 +405,7 @@ void Editor::EditorLayer::DrawEditorPanels() {
     m_InspectorPanel.SetContext(m_Scene, m_Context, &m_UndoManager);
     m_ProjectBrowserPanel.SetContext(m_Scene, m_Context);
     m_ViewportPanel.SetContext(m_Scene, m_Context);
-
+    m_UIPanel.SetContext(m_Scene, m_Context, &m_UndoManager);
     m_InspectorPanel.SetSelectedEntity(m_RegistryPanel.GetSelectedEntity());
 
     // viewport must be rendered first so ImGuizmo::SetDrawlist/SetRect are called

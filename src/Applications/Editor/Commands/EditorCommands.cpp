@@ -265,4 +265,143 @@ namespace Editor::Commands {
 
     std::string_view GraphicsConfigUpdateCommand::Name() const noexcept { return "Graphics settings change"; }
 
+    // = = = = = //
+    //   UI    //
+    // = = = = = //
+
+    UIElementSnapshot SnapshotUIElement(const ::UI::UIElement *element) {
+        UIElementSnapshot snap;
+        if (!element)
+            return snap;
+
+        snap.name = element->Name;
+        snap.position = element->Rect.Position;
+        snap.scale = element->Rect.Scale;
+        snap.flags = element->HasFlag(::UI::VISIBLE) ? (snap.flags | ::UI::VISIBLE) : (snap.flags & ~::UI::VISIBLE);
+        snap.flags = element->HasFlag(::UI::ENABLED) ? (snap.flags | ::UI::ENABLED) : (snap.flags & ~::UI::ENABLED);
+
+        if (const auto *rect = dynamic_cast<const ::UI::UIRect *>(element)) {
+            snap.type = UIElementSnapshot::RECT;
+            snap.color = rect->GetColor();
+        } else if (const auto *text = dynamic_cast<const ::UI::UIText *>(element)) {
+            snap.type = UIElementSnapshot::TEXT;
+            snap.text = text->GetText();
+            snap.font = text->GetFont();
+            snap.color = text->GetColor();
+        } else if (const auto *btn = dynamic_cast<const ::UI::UIButton *>(element)) {
+            snap.type = UIElementSnapshot::BUTTON;
+            snap.text = btn->GetText();
+            snap.font = btn->GetFont();
+            snap.color = btn->GetColor();
+            snap.bgColor = btn->GetBackgroundColor();
+        } else if (const auto *img = dynamic_cast<const ::UI::UIImage *>(element)) {
+            snap.type = UIElementSnapshot::IMAGE;
+            snap.color = img->GetColor();
+            snap.image = const_cast<::UI::UIImage *>(img)->GetImage();
+        }
+
+        return snap;
+    }
+
+    std::unique_ptr<::UI::UIElement> CreateUIElementFromSnapshot(const UIElementSnapshot &snap) {
+        std::unique_ptr<::UI::UIElement> el;
+
+        switch (snap.type) {
+            case UIElementSnapshot::RECT: {
+                auto r = std::make_unique<::UI::UIRect>();
+                r->SetColor(snap.color);
+                el = std::move(r);
+                break;
+            }
+            case UIElementSnapshot::TEXT: {
+                auto t = std::make_unique<::UI::UIText>();
+                t->SetText(snap.text);
+                if (snap.font)
+                    t->SetFont(snap.font);
+                t->SetColor(snap.color);
+                el = std::move(t);
+                break;
+            }
+            case UIElementSnapshot::BUTTON: {
+                auto b = std::make_unique<::UI::UIButton>();
+                b->SetText(snap.text);
+                if (snap.font)
+                    b->SetFont(snap.font);
+                b->SetColor(snap.color);
+                b->SetBackgroundColor(snap.bgColor);
+                el = std::move(b);
+                break;
+            }
+            case UIElementSnapshot::IMAGE: {
+                auto i = std::make_unique<::UI::UIImage>();
+                if (snap.image)
+                    i->SetImage(snap.image);
+                i->SetColor(snap.color);
+                el = std::move(i);
+                break;
+            }
+        }
+
+        if (el) {
+            el->Name = snap.name;
+            el->Rect.Position = snap.position;
+            el->Rect.Scale = snap.scale;
+            if (snap.flags & ::UI::VISIBLE)
+                el->AddFlag(::UI::VISIBLE);
+            else
+                el->RemoveFlag(::UI::VISIBLE);
+            if (snap.flags & ::UI::ENABLED)
+                el->AddFlag(::UI::ENABLED);
+            else
+                el->RemoveFlag(::UI::ENABLED);
+        }
+
+        return el;
+    }
+
+    // AddUIElementCommand
+    AddUIElementCommand::AddUIElementCommand(::UI::UISystem *sys, ::UI::UIElement *parent, UIElementSnapshot snapshot)
+        : m_UISystem(sys), m_Parent(parent), m_Snapshot(std::move(snapshot)) {}
+
+    void AddUIElementCommand::Execute(Core::EngineContext &ctx) {
+        auto el = CreateUIElementFromSnapshot(m_Snapshot);
+        if (el && m_UISystem && m_Parent) {
+            m_Created = m_UISystem->AddChild(m_Parent, std::move(el));
+        }
+    }
+
+    void AddUIElementCommand::Undo(Core::EngineContext &ctx) {
+        if (m_Created && m_UISystem && m_Parent) {
+            m_UISystem->RemoveChild(m_Parent, m_Created);
+            m_Created = nullptr;
+        }
+    }
+
+    // RemoveUIElementCommand
+    RemoveUIElementCommand::RemoveUIElementCommand(::UI::UISystem *sys, ::UI::UIElement *parent, ::UI::UIElement *child)
+        : m_UISystem(sys), m_Parent(parent), m_Snapshot(SnapshotUIElement(child)) {}
+
+    void RemoveUIElementCommand::Execute(Core::EngineContext &ctx) {
+        if (m_Restored && m_UISystem && m_Parent) {
+            // Re-remove on redo
+            m_UISystem->RemoveChild(m_Parent, m_Restored);
+            m_Restored = nullptr;
+        } else if (!m_Snapshot.name.empty() && m_UISystem && m_Parent) {
+            // First time: find the child by matching snapshot data
+            for (auto *child : m_Parent->Children) {
+                if (child->Name == m_Snapshot.name && child->Rect.Position == m_Snapshot.position) {
+                    m_UISystem->RemoveChild(m_Parent, child);
+                    break;
+                }
+            }
+        }
+    }
+
+    void RemoveUIElementCommand::Undo(Core::EngineContext &ctx) {
+        auto el = CreateUIElementFromSnapshot(m_Snapshot);
+        if (el && m_UISystem && m_Parent) {
+            m_Restored = m_UISystem->AddChild(m_Parent, std::move(el));
+        }
+    }
+
 } // namespace Editor::Commands

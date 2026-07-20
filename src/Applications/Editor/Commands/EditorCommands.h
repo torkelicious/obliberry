@@ -9,6 +9,14 @@
 #include "Map/Hex.h"
 #include "Map/HexCoords.h"
 #include "Scenes/SceneManager.h"
+#include "UI/UIElement.h"
+#include "UI/Rendering/UISystem.h"
+#include "UI/Elements/UIImage.h"
+#include "UI/Elements/UIText.h"
+#include "UI/Elements/UIButton.h"
+#include "UI/Elements/UIRect.h"
+#include "Rendering/Texture.h"
+#include "UI/Text/Font.h"
 
 namespace Editor::Commands {
 
@@ -242,6 +250,102 @@ namespace Editor::Commands {
     private:
         Config::GraphicsConfig m_OldData;
         Config::GraphicsConfig m_NewData;
+    };
+
+    // = = = = = //
+    //   UI    //
+    // = = = = = //
+
+    struct UIElementSnapshot {
+        enum Type : uint8_t { RECT, TEXT, BUTTON, IMAGE };
+        Type type = RECT;
+        std::string name;
+        glm::vec2 position{0.0f};
+        glm::vec2 scale{0.0f};
+        uint8_t flags = ::UI::VISIBLE | ::UI::ENABLED;
+        glm::vec4 color{1.0f, 1.0f, 1.0f, 1.0f};
+        // UIText / UIButton
+        std::string text;
+        std::shared_ptr<::UI::Font> font;
+        // UIButton
+        glm::vec4 bgColor{0.2f, 0.2f, 0.2f, 1.0f};
+        // UIImage
+        std::shared_ptr<::Rendering::Texture> image;
+    };
+
+    std::unique_ptr<::UI::UIElement> CreateUIElementFromSnapshot(const UIElementSnapshot &snap);
+
+    UIElementSnapshot SnapshotUIElement(const ::UI::UIElement *element);
+
+    class AddUIElementCommand final : public ICommand {
+    public:
+        AddUIElementCommand(::UI::UISystem *sys, ::UI::UIElement *parent, UIElementSnapshot snapshot);
+        void Execute(Core::EngineContext &ctx) override;
+        void Undo(Core::EngineContext &ctx) override;
+        [[nodiscard]] std::string_view Name() const noexcept override { return "Add UI Element"; }
+        [[nodiscard]] ::UI::UIElement *GetCreated() const { return m_Created; }
+
+    private:
+        ::UI::UISystem *m_UISystem;
+        ::UI::UIElement *m_Parent;
+        UIElementSnapshot m_Snapshot;
+        ::UI::UIElement *m_Created = nullptr;
+    };
+
+    class RemoveUIElementCommand final : public ICommand {
+    public:
+        RemoveUIElementCommand(::UI::UISystem *sys, ::UI::UIElement *parent, ::UI::UIElement *child);
+        void Execute(Core::EngineContext &ctx) override;
+        void Undo(Core::EngineContext &ctx) override;
+        [[nodiscard]] std::string_view Name() const noexcept override { return "Remove UI Element"; }
+
+    private:
+        ::UI::UISystem *m_UISystem;
+        ::UI::UIElement *m_Parent;
+        UIElementSnapshot m_Snapshot;
+        ::UI::UIElement *m_Restored = nullptr;
+    };
+
+    class SetUIElementNameCommand final : public ICommand {
+    public:
+        SetUIElementNameCommand(::UI::UIElement *target, std::string oldName, std::string newName)
+            : m_Target(target), m_OldName(std::move(oldName)), m_NewName(std::move(newName)) {}
+        void Execute(Core::EngineContext &ctx) override { m_Target->Name = m_NewName; }
+        void Undo(Core::EngineContext &ctx) override { m_Target->Name = m_OldName; }
+        [[nodiscard]] std::string_view Name() const noexcept override { return "Rename UI Element"; }
+
+    private:
+        ::UI::UIElement *m_Target;
+        std::string m_OldName;
+        std::string m_NewName;
+    };
+
+    class SetUIElementPositionCommand final : public ICommand {
+    public:
+        SetUIElementPositionCommand(::UI::UIElement *target, glm::vec2 oldPos, glm::vec2 newPos)
+            : m_Target(target), m_OldPos(oldPos), m_NewPos(newPos) {}
+        void Execute(Core::EngineContext &ctx) override { m_Target->Rect.Position = m_NewPos; }
+        void Undo(Core::EngineContext &ctx) override { m_Target->Rect.Position = m_OldPos; }
+        [[nodiscard]] std::string_view Name() const noexcept override { return "Move UI Element"; }
+
+    private:
+        ::UI::UIElement *m_Target;
+        glm::vec2 m_OldPos;
+        glm::vec2 m_NewPos;
+    };
+
+    class SetUIElementScaleCommand final : public ICommand {
+    public:
+        SetUIElementScaleCommand(::UI::UIElement *target, glm::vec2 oldScale, glm::vec2 newScale)
+            : m_Target(target), m_OldScale(oldScale), m_NewScale(newScale) {}
+        void Execute(Core::EngineContext &ctx) override { m_Target->Rect.Scale = m_NewScale; }
+        void Undo(Core::EngineContext &ctx) override { m_Target->Rect.Scale = m_OldScale; }
+        [[nodiscard]] std::string_view Name() const noexcept override { return "Resize UI Element"; }
+
+    private:
+        ::UI::UIElement *m_Target;
+        glm::vec2 m_OldScale;
+        glm::vec2 m_NewScale;
     };
 
 } // namespace Editor::Commands

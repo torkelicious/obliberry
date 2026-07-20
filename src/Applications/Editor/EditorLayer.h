@@ -15,6 +15,7 @@
 #include "Applications/Editor/UI/ConfigWindows/ProjectConfigEditor.h"
 #include "Applications/Editor/UI/ConfigWindows/SceneConfigEditor.h"
 #include "UI/ConfigWindows/GraphicsConfigEditor.h"
+#include "UI/Panels/Editor/UIPanel.h"
 
 namespace Editor {
     namespace States {
@@ -93,6 +94,7 @@ namespace Editor {
         UI::InspectorPanel m_InspectorPanel;
         UI::ProjectBrowserPanel m_ProjectBrowserPanel;
         UI::ViewportPanel m_ViewportPanel;
+        UI::UIPanel m_UIPanel;
         UI::NewProjectDialog m_NewProjectDialog;
         UI::CreateSceneDialog m_CreateSceneDialog;
         UI::SaveChangesDialog m_SaveChangesDialog;

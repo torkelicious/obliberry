@@ -32,5 +32,22 @@ void main() {
 }
 )";
 
+    // SDF text shader
+    inline constexpr char kUISDFFragShader[] = R"(
+#version 330 core
+in vec2 v_UV;
+in vec4 v_Color;
+uniform sampler2D u_Texture;
+uniform float u_Spread;
+uniform float u_Scale;
+out vec4 FragColor;
+void main() {
+    float dist = texture(u_Texture, v_UV).a;
+    float smoothing = clamp(1.0 / (u_Spread * u_Scale), 0.005, 0.15);
+    float alpha = smoothstep(0.5 - smoothing, 0.5 + smoothing, dist);
+    FragColor = vec4(v_Color.rgb, v_Color.a * alpha);
+}
+)";
+
 
 } // namespace UI

@@ -5,6 +5,7 @@
 #include "Platform/Input/InputManager.h"
 #include <glm/vec2.hpp>
 #include <memory>
+#include <vector>
 
 namespace UI {
 
@@ -21,10 +22,13 @@ namespace UI {
             m_Root->Name = "Canvas";
         }
 
-        // Replace the root element (UISystem takes ownership)
         void SetRoot(std::unique_ptr<UIElement> el) { m_Root = std::move(el); }
         [[nodiscard]] UIElement *GetRoot() { return m_Root.get(); }
         [[nodiscard]] const UIElement *GetRoot() const { return m_Root.get(); }
+
+        UIElement *AddChild(UIElement *parent, std::unique_ptr<UIElement> element);
+
+        void RemoveChild(UIElement *parent, UIElement *child);
 
         void Update(float dt);
         void Render();
@@ -35,6 +39,7 @@ namespace UI {
         static UIElement *HitTestRecursive(UIElement *element, glm::vec2 point, glm::vec2 accumulatedPos);
 
         std::unique_ptr<UIElement> m_Root;
+        std::vector<std::unique_ptr<UIElement>> m_OwnedElements;
         UIRenderer *m_Renderer;
         Platform::Input::InputManager *m_Input;
     };

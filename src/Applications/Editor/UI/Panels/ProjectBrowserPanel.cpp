@@ -13,6 +13,7 @@
 #include "Rendering/Renderer.h"
 #include "Rendering/Texture.h"
 #include "Rendering/Shader.h"
+#include "UI/Text/Font.h"
 #include <imgui.h>
 #include <iostream>
 #include <filesystem>
@@ -87,6 +88,9 @@ namespace Editor::UI {
         }
         if (ImGui::CollapsingHeader("Materials")) {
             DrawMaterialSection(resources);
+        }
+        if (ImGui::CollapsingHeader("Fonts")) {
+            DrawFontSection(resources);
         }
         if (ImGui::CollapsingHeader("Scripts")) {
             DrawFileSection("Scripts", std::string(Core::SCRIPT_PATH), std::string(Core::SCRIPT_FILE_EXTENSION), ".obsl,txt", "Script Files");
@@ -415,6 +419,87 @@ namespace Editor::UI {
             }
         }
     }
+
+    void ProjectBrowserPanel::DrawFontSection(Core::ResourceManager &resources) {
+        const auto &allFonts = resources.GetAll<::UI::Font>();
+
+        DrawResourceSection(
+                resources, allFonts, AssetType::Font, "##fontList", 100.0f, "No fonts imported.", "font",
+                [](const std::shared_ptr<::UI::Font> &font) {
+                    ImGui::Text("%s", font ? "F" : "?");
+                    if (font) {
+                        ImGui::SameLine();
+                        ImGui::TextDisabled("%upx%s", font->GetFontSize(), font->IsSDF() ? " SDF" : "");
+                    }
+                },
+                [this](const std::string &id, Core::ResourceManager &res) {
+                    if (ImGui::SmallButton("Replace"))
+                        ReplaceFont(res, id);
+                },
+                [](const std::string &key, const std::shared_ptr<::UI::Font> &font, Core::ResourceManager &) {
+                    if (font) {
+                        ImGui::SetTooltip("%s\nSize: %u\nSDF: %s\nGlyphs: loaded", key.c_str(), font->GetFontSize(), font->IsSDF() ? "yes" : "no");
+                    }
+                });
+
+        ImGui::Spacing();
+        ImGui::SeparatorText("Import Font");
+
+        ImGui::InputInt("Size", &m_FontSize);
+        if (m_FontSize < 1) m_FontSize = 1;
+        ImGui::Checkbox("SDF", &m_FontUseSDF);
+        if (m_FontUseSDF) {
+            ImGui::SameLine();
+            ImGui::InputInt("Spread", &m_FontSDFSpread);
+            if (m_FontSDFSpread < 1) m_FontSDFSpread = 1;
+        }
+
+        if (ImGui::SmallButton("Import Font")) {
+            ImportFont(resources);
+        }
+    }
+
+    void ProjectBrowserPanel::ImportFont(Core::ResourceManager &resources) const {
+        if (!m_EngineContext)
+            return;
+
+        const auto picked = Platform::FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Font", .filterExt = "ttf,otf,woff,woff2"});
+        if (!picked.has_value())
+            return;
+
+        auto finalPath = IO::AssetLoader::ImportAsset(picked.value(), "fonts");
+        if (!finalPath.has_value())
+            return;
+
+        const std::string key = KeyFromPath(std::filesystem::path(finalPath.value()));
+        if (resources.Get<::UI::Font>(key)) {
+            LOG_WARN(LOG_WHO, "Font '" + key + "' already exists. Skipping");
+            return;
+        }
+
+        auto font = resources.Load<::UI::Font>(key, finalPath.value(), static_cast<unsigned int>(m_FontSize), m_FontUseSDF, static_cast<unsigned int>(m_FontSDFSpread));
+        Rendering::Renderer::SubmitInitTask(::Platform::Threading::SmallTask([font] { font->InitGL(); }));
+        LOG_INFO(LOG_WHO, "Imported font '" + key + "' from " + finalPath.value());
+    }
+
+    void ProjectBrowserPanel::ReplaceFont(Core::ResourceManager &resources, const std::string &key) const {
+        if (!m_EngineContext)
+            return;
+
+        const auto picked = Platform::FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Font", .filterExt = "ttf,otf,woff,woff2"});
+        if (!picked.has_value())
+            return;
+
+        auto finalPath = IO::AssetLoader::ImportAsset(picked.value(), "fonts");
+        if (!finalPath.has_value())
+            return;
+
+        resources.Unload<::UI::Font>(key);
+        auto font = resources.Load<::UI::Font>(key, finalPath.value(), static_cast<unsigned int>(m_FontSize), m_FontUseSDF, static_cast<unsigned int>(m_FontSDFSpread));
+        Rendering::Renderer::SubmitInitTask(::Platform::Threading::SmallTask([font] { font->InitGL(); }));
+        LOG_INFO(LOG_WHO, "Replaced font '" + key + "'");
+    }
+
 } // namespace Editor::UI
 
 void Editor::UI::ProjectBrowserPanel::DrawFileSection(const char *label, const std::string &directory, const std::string &extension, const char *importFilter, const char *importFilterName) {
@@ -558,6 +643,10 @@ void Editor::UI::ProjectBrowserPanel::DrawDeleteConfirmPopup(Core::ResourceManag
                     case AssetType::Material:
                         resources.Unload<Rendering::Material>(m_DeleteConfirmKey);
                         LOG_INFO(LOG_WHO, "Removed material '" + m_DeleteConfirmKey + "'");
+                        break;
+                    case AssetType::Font:
+                        resources.Unload<::UI::Font>(m_DeleteConfirmKey);
+                        LOG_INFO(LOG_WHO, "Removed font '" + m_DeleteConfirmKey + "'");
                         break;
                 }
             }

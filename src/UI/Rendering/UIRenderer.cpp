@@ -40,6 +40,9 @@ namespace UI {
         m_Shader = std::make_shared<Rendering::Shader>(kUIVertShader, kUIFragShader, "[Engine UI] UIShader");
         m_Shader->InitGL();
 
+        m_SDFShader = std::make_shared<Rendering::Shader>(kUIVertShader, kUISDFFragShader, "[Engine UI] UISDFShader");
+        m_SDFShader->InitGL();
+
         Rendering::Texture::White();
 
         for (auto &buf : m_Vertices)
@@ -51,9 +54,15 @@ namespace UI {
     }
 
     void UIRenderer::BeginFrame(const uint32_t viewWidth, const uint32_t viewHeight) {
-        m_Projection[m_SubmitIndex] = glm::ortho(0.0f, static_cast<float>(viewWidth), static_cast<float>(viewHeight), 0.0f, -1.0f, 1.0f);
+        if (m_GameResolution.x > 0 && m_GameResolution.y > 0) {
+            m_Projection[m_SubmitIndex] = glm::ortho(0.0f, m_GameResolution.x, m_GameResolution.y, 0.0f, -1.0f, 1.0f);
+        } else {
+            m_Projection[m_SubmitIndex] = glm::ortho(0.0f, static_cast<float>(viewWidth), static_cast<float>(viewHeight), 0.0f, -1.0f, 1.0f);
+        }
         m_Vertices[m_SubmitIndex].clear();
         m_QuadTextures[m_SubmitIndex].clear();
+        m_QuadShader[m_SubmitIndex].clear();
+        m_QuadSDFScale[m_SubmitIndex].clear();
     }
 
     void UIRenderer::SubmitQuad(const glm::vec2 pos, const glm::vec2 size, const glm::vec2 uvMin, const glm::vec2 uvMax, const Rendering::Texture *texture, const glm::vec4 color) {
@@ -66,9 +75,23 @@ namespace UI {
         verts.push_back({pos + glm::vec2(0.0f, size.y), glm::vec2(uvMin.x, uvMin.y), color});
 
         m_QuadTextures[m_SubmitIndex].push_back(texture);
+        m_QuadShader[m_SubmitIndex].push_back(BatchShader::REGULAR);
+        m_QuadSDFScale[m_SubmitIndex].push_back(1.0f);
     }
 
     void UIRenderer::SubmitRect(const glm::vec2 pos, const glm::vec2 size, const glm::vec4 color) { SubmitQuad(pos, size, {0.0f, 0.0f}, {1.0f, 1.0f}, Rendering::Texture::White(), color); }
+
+    void UIRenderer::SubmitSDFQuad(const glm::vec2 pos, const glm::vec2 size, const glm::vec2 uvMin, const glm::vec2 uvMax, const Rendering::Texture *texture, const glm::vec4 color, const float sdfScale) {
+        auto &verts = m_Vertices[m_SubmitIndex];
+        verts.push_back({pos, glm::vec2(uvMin.x, uvMax.y), color});
+        verts.push_back({pos + glm::vec2(size.x, 0.0f), glm::vec2(uvMax.x, uvMax.y), color});
+        verts.push_back({pos + size, glm::vec2(uvMax.x, uvMin.y), color});
+        verts.push_back({pos + glm::vec2(0.0f, size.y), glm::vec2(uvMin.x, uvMin.y), color});
+
+        m_QuadTextures[m_SubmitIndex].push_back(texture);
+        m_QuadShader[m_SubmitIndex].push_back(BatchShader::SDF);
+        m_QuadSDFScale[m_SubmitIndex].push_back(sdfScale);
+    }
 
     void UIRenderer::Flush() {
         const auto &verts = m_Vertices[m_RenderIndex];
@@ -77,19 +100,27 @@ namespace UI {
         if (verts.empty())
             return;
 
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glDisable(GL_DEPTH_TEST);
+
         // Build batches
         m_Batches.clear();
         const Rendering::Texture *currentTex = texs[0];
+        BatchShader currentShader = m_QuadShader[m_RenderIndex][0];
+        float currentSDFScale = m_QuadSDFScale[m_RenderIndex][0];
         uint32_t batchStart = 0;
 
         for (uint32_t i = 1; i < static_cast<uint32_t>(texs.size()); i++) {
-            if (texs[i] != currentTex) {
-                m_Batches.push_back({currentTex, batchStart * 6, (i - batchStart) * 6});
+            if (texs[i] != currentTex || m_QuadShader[m_RenderIndex][i] != currentShader) {
+                m_Batches.push_back({currentTex, batchStart * 6, (i - batchStart) * 6, currentShader, currentSDFScale});
                 currentTex = texs[i];
+                currentShader = m_QuadShader[m_RenderIndex][i];
+                currentSDFScale = m_QuadSDFScale[m_RenderIndex][i];
                 batchStart = i;
             }
         }
-        m_Batches.push_back({currentTex, batchStart * 6, (static_cast<uint32_t>(texs.size()) - batchStart) * 6});
+        m_Batches.push_back({currentTex, batchStart * 6, (static_cast<uint32_t>(texs.size()) - batchStart) * 6, currentShader, currentSDFScale});
 
         // Upload to GPU
         m_VBO->SetDataOrphaned(verts.data(), static_cast<unsigned int>(verts.size() * sizeof(UIVertex)));
@@ -99,11 +130,23 @@ namespace UI {
         m_Shader->Bind();
         m_Shader->SetUniformMat4("u_Projection", m_Projection[m_RenderIndex]);
 
-        for (const auto &[texture, indexOffset, indexCount] : m_Batches) {
-            if (texture) {
-                texture->Bind(0);
+        for (const auto &batch : m_Batches) {
+            if (batch.shader == BatchShader::SDF) {
+                m_SDFShader->Bind();
+                m_SDFShader->SetUniformMat4("u_Projection", m_Projection[m_RenderIndex]);
+                m_SDFShader->SetUniform1f("u_Spread", 8.0f); // spread used at font rasterization
+                m_SDFShader->SetUniform1f("u_Scale", batch.sdfScale);
+            } else {
+                m_Shader->Bind();
+                m_Shader->SetUniformMat4("u_Projection", m_Projection[m_RenderIndex]);
             }
-            glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indexCount), GL_UNSIGNED_INT, reinterpret_cast<const void *>(static_cast<uintptr_t>(indexOffset * sizeof(unsigned int))));
+            if (batch.texture) {
+                batch.texture->Bind(0);
+            }
+            glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(batch.indexCount), GL_UNSIGNED_INT, reinterpret_cast<const void *>(static_cast<uintptr_t>(batch.indexOffset * sizeof(unsigned int))));
+            if (batch.shader == BatchShader::SDF) {
+                m_SDFShader->Unbind();
+            }
         }
 
         m_Shader->Unbind();
@@ -111,5 +154,7 @@ namespace UI {
     }
 
     void UIRenderer::SwapBuffers() { std::swap(m_SubmitIndex, m_RenderIndex); }
+
+    void UIRenderer::SetGameResolution(const uint32_t width, const uint32_t height) { m_GameResolution = {static_cast<float>(width), static_cast<float>(height)}; }
 
 } // namespace UI

@@ -1,5 +1,6 @@
 #include "UISystem.h"
 
+#include <algorithm>
 #include <ranges>
 
 namespace UI {
@@ -53,6 +54,35 @@ namespace UI {
             return element;
 
         return nullptr;
+    }
+
+    UIElement *UISystem::AddChild(UIElement *parent, std::unique_ptr<UIElement> element) {
+        if (!parent || !element)
+            return nullptr;
+        UIElement *raw = element.get();
+        raw->Parent = parent;
+        parent->Children.push_back(raw);
+        m_OwnedElements.push_back(std::move(element));
+        return raw;
+    }
+
+    void UISystem::RemoveChild(UIElement *parent, UIElement *child) {
+        if (!parent || !child)
+            return;
+
+        // copy children list before modifying
+        auto childCopy = child->Children;
+        for (auto *grandchild : childCopy) {
+            RemoveChild(child, grandchild);
+        }
+
+        // Remove from parent
+        auto &children = parent->Children;
+        std::erase(children, child);
+        child->Parent = nullptr;
+
+        // Remove from owned elements
+        std::erase_if(m_OwnedElements, [child](const std::unique_ptr<UIElement> &ptr) { return ptr.get() == child; });
     }
 
 } // namespace UI

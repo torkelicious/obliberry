@@ -21,7 +21,7 @@ namespace Editor::UI {
         void OnImGuiRender() override;
 
     private:
-        enum class AssetType : uint8_t { Texture, Shader, Mesh, Material };
+        enum class AssetType : uint8_t { Texture, Shader, Mesh, Material, Font };
 
         template <typename T>
         void DrawResourceSection(Core::ResourceManager &resources, const std::unordered_map<std::string, std::shared_ptr<T>> &allItems, AssetType assetType, const char *childId, float childHeight, const char *emptyText,
@@ -33,15 +33,18 @@ namespace Editor::UI {
         void DrawShaderSection(Core::ResourceManager &resources);
         void DrawMeshSection(Core::ResourceManager &resources);
         void DrawMaterialSection(Core::ResourceManager &resources);
+        void DrawFontSection(Core::ResourceManager &resources);
         void DrawFileSection(const char *label, const std::string &directory, const std::string &extension, const char *importFilter, const char *importFilterName);
 
         void ImportTexture(Core::ResourceManager &resources) const;
         void ImportShader(Core::ResourceManager &resources) const;
+        void ImportFont(Core::ResourceManager &resources) const;
         void CreateMesh(Core::ResourceManager &resources);
         void ImportFile(const std::string &targetSubDir, const char *filterExt, const char *filterName) const;
 
         void ReplaceTexture(Core::ResourceManager &resources, const std::string &key) const;
         void ReplaceShader(Core::ResourceManager &resources, const std::string &key) const;
+        void ReplaceFont(Core::ResourceManager &resources, const std::string &key) const;
 
         void DrawDeleteConfirmPopup(Core::ResourceManager &resources);
 
@@ -52,6 +55,10 @@ namespace Editor::UI {
         glm::vec4 m_MaterialColor = {1.0f, 1.0f, 1.0f, 1.0f};
         int m_SelectedMaterialShaderIdx = 0;
         int m_SelectedMaterialTextureIdx = 0;
+
+        int m_FontSize = 48;
+        bool m_FontUseSDF = false;
+        int m_FontSDFSpread = 8;
 
         // rename state
         std::string m_RenamingKey;

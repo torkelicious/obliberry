@@ -14,6 +14,10 @@ namespace Rendering {
     class Material;
 } // namespace Rendering
 
+namespace UI {
+    class Font;
+}
+
 namespace Editor::UI {
     template <typename T, typename GetPreviewText> bool AssetComboImpl(const char *label, Core::ResourceManager &resources, std::shared_ptr<T> &current, GetPreviewText &&getPreview) {
         const auto &all = resources.GetAll<T>();
@@ -90,6 +94,8 @@ namespace Editor::UI {
     bool MeshCombo(const char *label, Core::ResourceManager &resources, std::shared_ptr<Rendering::Mesh> &current);
 
     bool MaterialCombo(const char *label, Core::ResourceManager &resources, std::shared_ptr<Rendering::Material> &current);
+
+    bool FontCombo(const char *label, Core::ResourceManager &resources, std::shared_ptr<::UI::Font> &current);
 
     bool FileCombo(const char *label, const std::string &subDir, const std::string &extension, std::string &current);
 

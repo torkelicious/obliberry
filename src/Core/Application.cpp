@@ -16,6 +16,7 @@
 #include <utility>
 #include "Applications/Editor/EditorLayer.h"
 #include "Applications/Editor/UI/ConfigWindows/GraphicsConfigEditor.h"
+#include "UI/Elements/UIImage.h"
 #include "UI/Elements/UIText.h"
 #include "UI/Rendering/UISystem.h"
 #include "UI/Text/Font.h"
@@ -105,6 +106,7 @@ void Core::Application::Run() {
     // Renderer
     Rendering::Renderer renderer;
     m_UIRenderer.InitGL();
+    m_UIRenderer.SetGameResolution(m_GraphicsConfig.WindowWidth, m_GraphicsConfig.WindowHeight);
     Rendering::Camera camera;
 
     // EngineContext Setup
@@ -123,19 +125,42 @@ void Core::Application::Run() {
     context.audioEngine = m_AudioEngine.get();
     context.logger = Logging::LoggerService::Get();
 
-    // uisys temp
     UI::UISystem uiSystem(&m_UIRenderer, &m_InputManager);
+    context.uiSystem = &uiSystem;
+
+    // uisys temp
+
     auto font = std::make_shared<UI::Font>("/usr/share/fonts/TTF/Hack-Bold.ttf");
+    auto tex = std::make_shared<Rendering::Texture>("assets/textures/player/player_se.png");
+
+    tex->InitGL();
     font->InitGL();
-    UI::UIText text{};
-    text.Rect.Position = {100, 50};
-    text.Rect.Scale = {50, 50};
-    text.SetText("test");
-    text.SetColor({0.5f, 0.0f, 0.4f, 1.0f});
-    text.SetFont(font);
-    uiSystem.GetRoot()->Children.push_back(&text);
-    // context.uiSystem = &uiSystem;
-    //  uisys temp?
+
+    auto text = std::make_unique<UI::UIText>();
+    text->Name = "TestText";
+    text->Rect.Position = {100, 50};
+    text->Rect.Scale = {200, 50};
+    text->SetText("test");
+    text->SetColor({0.5f, 0.0f, 0.4f, 1.0f});
+    text->SetFont(font);
+
+    auto uimg = std::make_unique<UI::UIImage>();
+    uimg->Name = "TestImage";
+    uimg->SetImage(tex);
+    uimg->Rect.Position = {500, 500};
+    uimg->Rect.Scale = {50, 50};
+
+    auto *root = uiSystem.GetRoot();
+    uiSystem.AddChild(root, std::move(text));
+    uiSystem.AddChild(root, std::move(uimg));
+
+    auto emptyimg = std::make_unique<UI::UIImage>();
+    emptyimg->Name = "EmptyChild";
+    emptyimg->SetColor({0.4f, 0.0f, 0.0f, 1.0f});
+    emptyimg->Rect.Position = {10, 10};
+    emptyimg->Rect.Scale = {30, 30};
+    uiSystem.AddChild(root->Children.back(), std::move(emptyimg));
+    // uisys temp
 
     // MSAA supported samples, must be called before gl context handover!!!
     Config::GraphicsCapabilities::CacheSampleCounts();
@@ -184,10 +209,8 @@ void Core::Application::Run() {
             context.audioEngine->Update();
         }
 
-        m_Layer->Render();
-
         m_UIRenderer.BeginFrame(m_Window.GetWidth(), m_Window.GetHeight());
-        uiSystem.Render();
+        m_Layer->Render();
         ImGui::Render();
 
         renderer.SwapBuffers();
@@ -302,23 +325,30 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer, UI::UI
             glClear(GL_COLOR_BUFFER_BIT);
 
             renderer->Flush(static_cast<size_t>(frameIdx));
+
+            fbo->BindDrawBuffers();
+
+            uiRenderer->Flush();
+
+            fbo->ClearEntityIDAttachment();
             fbo->Unbind();
             glViewport(0, 0, m_Window.GetWidth(), m_Window.GetHeight());
             glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
-            fbo->ClearEntityIDAttachment();
-            uiRenderer->Flush();
         } else {
             glViewport(0, 0, m_Window.GetWidth(), m_Window.GetHeight());
             Rendering::Renderer::ApplyClearColor();
             glClear(GL_COLOR_BUFFER_BIT);
 
             renderer->Flush(static_cast<size_t>(frameIdx));
-            uiRenderer->Flush();
         }
 
         if (m_FrameImGuiData[frameIdx] && m_FrameImGuiData[frameIdx]->CmdListsCount > 0) {
             ImGui_ImplOpenGL3_RenderDrawData(m_FrameImGuiData[frameIdx]);
+        }
+
+        if (!renderer->GetEditorFramebuffer()) {
+            uiRenderer->Flush();
         }
 
         // Todo: Test on win machine

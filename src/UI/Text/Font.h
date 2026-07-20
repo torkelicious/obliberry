@@ -22,7 +22,7 @@ namespace UI {
 
     class Font {
     public:
-        Font(const std::string &filepath, unsigned int fontSize = 12);
+        Font(const std::string &filepath, unsigned int fontSize = 12, bool useSDF = false, unsigned int sdfSpread = 8);
         ~Font();
 
         Font(const Font &) = delete;
@@ -36,12 +36,19 @@ namespace UI {
         [[nodiscard]] const Glyph &GetGlyph(char c) const;
         [[nodiscard]] std::shared_ptr<Rendering::Texture> GetAtlasTexture() const { return m_AtlasTexture; }
         [[nodiscard]] unsigned int GetFontSize() const { return m_FontSize; }
+        [[nodiscard]] bool IsSDF() const { return m_IsSDF; }
+        [[nodiscard]] unsigned int GetSDFSpread() const { return m_SDFSpread; }
 
     private:
+        void BuildSDFAtlas(const std::string &filepath, unsigned int fontSize, unsigned int spread);
+        void BuildBitmapAtlas(const std::string &filepath, unsigned int fontSize);
+
         FT_Library m_FTLibrary = nullptr;
         FT_Face m_Face = nullptr;
         bool m_Valid = false;
         unsigned int m_FontSize = 0;
+        bool m_IsSDF = false;
+        unsigned int m_SDFSpread = 0;
         std::map<char, Glyph> m_Glyphs;
         std::shared_ptr<Rendering::Texture> m_AtlasTexture;
     };
