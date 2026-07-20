@@ -34,14 +34,18 @@ namespace Editor::UI {
 
             bool visible = element->HasFlag(::UI::VISIBLE);
             if (ImGui::Checkbox("Visible", &visible)) {
-                if (visible) element->AddFlag(::UI::VISIBLE);
-                else element->RemoveFlag(::UI::VISIBLE);
+                if (visible)
+                    element->AddFlag(::UI::VISIBLE);
+                else
+                    element->RemoveFlag(::UI::VISIBLE);
             }
 
             bool enabled = element->HasFlag(::UI::ENABLED);
             if (ImGui::Checkbox("Enabled", &enabled)) {
-                if (enabled) element->AddFlag(::UI::ENABLED);
-                else element->RemoveFlag(::UI::ENABLED);
+                if (enabled)
+                    element->AddFlag(::UI::ENABLED);
+                else
+                    element->RemoveFlag(::UI::ENABLED);
             }
 
             ImGui::Separator();
@@ -57,9 +61,7 @@ namespace Editor::UI {
             ImGui::Text("Pos: (%.1f, %.1f)", element->Rect.Position.x, element->Rect.Position.y);
             ImGui::Text("Size: (%.1f, %.1f)", element->Rect.Scale.x, element->Rect.Scale.y);
             ImGui::Text("Children: %zu", element->Children.size());
-            ImGui::Text("Flags: %s%s",
-                        element->HasFlag(::UI::VISIBLE) ? "VISIBLE " : "",
-                        element->HasFlag(::UI::ENABLED) ? "ENABLED " : "");
+            ImGui::Text("Flags: %s%s", element->HasFlag(::UI::VISIBLE) ? "VISIBLE " : "", element->HasFlag(::UI::ENABLED) ? "ENABLED " : "");
             ImGui::EndTooltip();
         }
 
@@ -172,8 +174,7 @@ namespace Editor::UI {
             }
             if (ImGui::IsItemDeactivatedAfterEdit() && m_EditingName) {
                 if (m_EditibNameStart != m_SelectedElement->Name && m_UndoManager) {
-                    auto cmd = std::make_unique<Commands::SetUIElementNameCommand>(
-                        m_SelectedElement, m_EditibNameStart, m_SelectedElement->Name);
+                    auto cmd = std::make_unique<Commands::SetUIElementNameCommand>(m_SelectedElement, m_EditibNameStart, m_SelectedElement->Name);
                     m_UndoManager->Execute(std::move(cmd), *m_EngineContext);
                 }
                 m_EditingName = false;
@@ -186,8 +187,7 @@ namespace Editor::UI {
             }
             if (ImGui::IsItemDeactivatedAfterEdit() && m_DraggingPos) {
                 if (m_DragStartPos != m_SelectedElement->Rect.Position && m_UndoManager) {
-                    auto cmd = std::make_unique<Commands::SetUIElementPositionCommand>(
-                        m_SelectedElement, m_DragStartPos, m_SelectedElement->Rect.Position);
+                    auto cmd = std::make_unique<Commands::SetUIElementPositionCommand>(m_SelectedElement, m_DragStartPos, m_SelectedElement->Rect.Position);
                     m_UndoManager->Execute(std::move(cmd), *m_EngineContext);
                 }
                 m_DraggingPos = false;
@@ -200,8 +200,7 @@ namespace Editor::UI {
             }
             if (ImGui::IsItemDeactivatedAfterEdit() && m_DraggingScale) {
                 if (m_DragStartScale != m_SelectedElement->Rect.Scale && m_UndoManager) {
-                    auto cmd = std::make_unique<Commands::SetUIElementScaleCommand>(
-                        m_SelectedElement, m_DragStartScale, m_SelectedElement->Rect.Scale);
+                    auto cmd = std::make_unique<Commands::SetUIElementScaleCommand>(m_SelectedElement, m_DragStartScale, m_SelectedElement->Rect.Scale);
                     m_UndoManager->Execute(std::move(cmd), *m_EngineContext);
                 }
                 m_DraggingScale = false;
@@ -209,14 +208,18 @@ namespace Editor::UI {
 
             bool visible = m_SelectedElement->HasFlag(::UI::VISIBLE);
             if (ImGui::Checkbox("Visible", &visible)) {
-                if (visible) m_SelectedElement->AddFlag(::UI::VISIBLE);
-                else m_SelectedElement->RemoveFlag(::UI::VISIBLE);
+                if (visible)
+                    m_SelectedElement->AddFlag(::UI::VISIBLE);
+                else
+                    m_SelectedElement->RemoveFlag(::UI::VISIBLE);
             }
             ImGui::SameLine();
             bool enabled = m_SelectedElement->HasFlag(::UI::ENABLED);
             if (ImGui::Checkbox("Enabled", &enabled)) {
-                if (enabled) m_SelectedElement->AddFlag(::UI::ENABLED);
-                else m_SelectedElement->RemoveFlag(::UI::ENABLED);
+                if (enabled)
+                    m_SelectedElement->AddFlag(::UI::ENABLED);
+                else
+                    m_SelectedElement->RemoveFlag(::UI::ENABLED);
             }
 
             ImGui::Separator();

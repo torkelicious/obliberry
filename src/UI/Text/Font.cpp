@@ -34,8 +34,7 @@ namespace UI {
         return bestDist;
     }
 
-    Font::Font(const std::string &filepath, unsigned int fontSize, bool useSDF, unsigned int sdfSpread)
-        : m_FontSize(fontSize), m_IsSDF(useSDF), m_SDFSpread(sdfSpread) {
+    Font::Font(const std::string &filepath, unsigned int fontSize, bool useSDF, unsigned int sdfSpread) : m_FontSize(fontSize), m_IsSDF(useSDF), m_SDFSpread(sdfSpread) {
         if (FT_Init_FreeType(&m_FTLibrary)) {
             LOG_ERROR(LOG_WHO, "Could not init FreeType");
             return;
@@ -321,10 +320,10 @@ namespace UI {
                     unsigned char val = static_cast<unsigned char>(sdf * 255.0f);
 
                     const size_t idx = static_cast<size_t>((bmpY + row) * atlasWidth + (bmpX + col)) * 4;
-                    atlasPixels[idx + 0] = 255;  // R
-                    atlasPixels[idx + 1] = 255;  // G
-                    atlasPixels[idx + 2] = 255;  // B
-                    atlasPixels[idx + 3] = val;  // A = SDF distance
+                    atlasPixels[idx + 0] = 255; // R
+                    atlasPixels[idx + 1] = 255; // G
+                    atlasPixels[idx + 2] = 255; // B
+                    atlasPixels[idx + 3] = val; // A = SDF distance
                 }
             }
         }
@@ -347,7 +346,8 @@ namespace UI {
         m_FTLibrary = nullptr;
 
         m_Valid = true;
-        LOG_INFO(LOG_WHO, "Font loaded (SDF): " + filepath + " (" + std::to_string(m_Glyphs.size()) + " glyphs, spread=" + std::to_string(spread) + ", " + std::to_string(atlasWidth) + "x" + std::to_string(atlasHeight) + " atlas)");
+        LOG_INFO(LOG_WHO, "Font loaded (SDF): " + filepath + " (" + std::to_string(m_Glyphs.size()) + " glyphs, spread=" + std::to_string(spread) + ", " + std::to_string(atlasWidth) + "x" + std::to_string(atlasHeight) +
+                                  " atlas)");
     }
 
     Font::~Font() {

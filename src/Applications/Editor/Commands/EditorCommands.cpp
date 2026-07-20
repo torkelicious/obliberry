@@ -360,8 +360,7 @@ namespace Editor::Commands {
     }
 
     // AddUIElementCommand
-    AddUIElementCommand::AddUIElementCommand(::UI::UISystem *sys, ::UI::UIElement *parent, UIElementSnapshot snapshot)
-        : m_UISystem(sys), m_Parent(parent), m_Snapshot(std::move(snapshot)) {}
+    AddUIElementCommand::AddUIElementCommand(::UI::UISystem *sys, ::UI::UIElement *parent, UIElementSnapshot snapshot) : m_UISystem(sys), m_Parent(parent), m_Snapshot(std::move(snapshot)) {}
 
     void AddUIElementCommand::Execute(Core::EngineContext &ctx) {
         auto el = CreateUIElementFromSnapshot(m_Snapshot);
@@ -378,8 +377,7 @@ namespace Editor::Commands {
     }
 
     // RemoveUIElementCommand
-    RemoveUIElementCommand::RemoveUIElementCommand(::UI::UISystem *sys, ::UI::UIElement *parent, ::UI::UIElement *child)
-        : m_UISystem(sys), m_Parent(parent), m_Snapshot(SnapshotUIElement(child)) {}
+    RemoveUIElementCommand::RemoveUIElementCommand(::UI::UISystem *sys, ::UI::UIElement *parent, ::UI::UIElement *child) : m_UISystem(sys), m_Parent(parent), m_Snapshot(SnapshotUIElement(child)) {}
 
     void RemoveUIElementCommand::Execute(Core::EngineContext &ctx) {
         if (m_Restored && m_UISystem && m_Parent) {

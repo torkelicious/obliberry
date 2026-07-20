@@ -446,12 +446,14 @@ namespace Editor::UI {
         ImGui::SeparatorText("Import Font");
 
         ImGui::InputInt("Size", &m_FontSize);
-        if (m_FontSize < 1) m_FontSize = 1;
+        if (m_FontSize < 1)
+            m_FontSize = 1;
         ImGui::Checkbox("SDF", &m_FontUseSDF);
         if (m_FontUseSDF) {
             ImGui::SameLine();
             ImGui::InputInt("Spread", &m_FontSDFSpread);
-            if (m_FontSDFSpread < 1) m_FontSDFSpread = 1;
+            if (m_FontSDFSpread < 1)
+                m_FontSDFSpread = 1;
         }
 
         if (ImGui::SmallButton("Import Font")) {

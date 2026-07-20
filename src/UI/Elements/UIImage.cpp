@@ -4,7 +4,7 @@
 namespace UI {
 
     void UIImage::Update() {
-        //TODO
+        // TODO
     }
 
     void UIImage::Draw(UIRenderer *renderer, const glm::vec2 finalPos) {

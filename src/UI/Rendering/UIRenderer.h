@@ -32,7 +32,7 @@ namespace UI {
         uint32_t indexOffset = 0;
         uint32_t indexCount = 0;
         BatchShader shader = BatchShader::REGULAR;
-        float sdfScale = 1.0f;  // only used for SDF
+        float sdfScale = 1.0f; // only used for SDF
     };
 
     class UIRenderer {

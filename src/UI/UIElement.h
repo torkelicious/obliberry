@@ -22,6 +22,7 @@ namespace UI {
         [[nodiscard]] bool HasFlag(const UIFlags flag) const { return Flags & flag; }
         void AddFlag(const UIFlags flag) { Flags |= flag; }
         void RemoveFlag(const UIFlags flag) { Flags &= ~flag; }
+
     protected:
         uint8_t Flags = VISIBLE | ENABLED;
     };

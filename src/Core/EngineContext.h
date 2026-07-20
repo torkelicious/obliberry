@@ -58,7 +58,7 @@ namespace Core {
         Rendering::Renderer *renderer = nullptr;
         Rendering::Camera *camera = nullptr;
         UI::UIRenderer *uiRenderer = nullptr;
-        UI::UISystem* uiSystem = nullptr;
+        UI::UISystem *uiSystem = nullptr;
         ObSL::ScriptRuntime *scriptPool = nullptr;
         Platform::Threading::ThreadPool *threadPool = nullptr;
         Sound::AudioEngine *audioEngine = nullptr;

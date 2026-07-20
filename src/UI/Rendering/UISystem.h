@@ -10,14 +10,12 @@
 namespace UI {
 
     [[nodiscard]] inline bool IsPointInsideRect(const glm::vec2 &point, const RectTransform &rect) {
-        return point.x >= rect.Position.x && point.x < rect.Position.x + rect.Scale.x &&
-               point.y >= rect.Position.y && point.y < rect.Position.y + rect.Scale.y;
+        return point.x >= rect.Position.x && point.x < rect.Position.x + rect.Scale.x && point.y >= rect.Position.y && point.y < rect.Position.y + rect.Scale.y;
     }
 
     class UISystem {
     public:
-        UISystem(UIRenderer *renderer, Platform::Input::InputManager *input)
-            : m_Renderer(renderer), m_Input(input) {
+        UISystem(UIRenderer *renderer, Platform::Input::InputManager *input) : m_Renderer(renderer), m_Input(input) {
             m_Root = std::make_unique<UIElement>();
             m_Root->Name = "Canvas";
         }
