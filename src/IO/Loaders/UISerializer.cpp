@@ -41,6 +41,9 @@ namespace IO::UISerializer {
             j["text"] = button->GetText();
             SerializeColor(j, "color", button->GetColor());
             SerializeColor(j, "bg_color", button->GetBackgroundColor());
+            if (button->GetBackgroundTexture()) {
+                j["bg_texture"] = resources.GetKey(button->GetBackgroundTexture());
+            }
             if (button->GetFont()) {
                 j["font"] = resources.GetKey(button->GetFont());
             }
@@ -129,6 +132,15 @@ namespace IO::UISerializer {
             btn->SetColor(color);
             btn->SetBackgroundColor(bgColor);
             btn->SetText(j.value("text", ""));
+            if (j.contains("bg_texture")) {
+                const std::string texKey = j["bg_texture"].get<std::string>();
+                auto tex = resources.Get<Rendering::Texture>(texKey);
+                if (tex) {
+                    btn->SetBackgroundTexture(tex);
+                } else {
+                    LOG_WARN(LOG_WHO, "Texture '" + texKey + "' not found in resources for button background.");
+                }
+            }
             if (j.contains("font")) {
                 const std::string fontKey = j["font"].get<std::string>();
                 auto font = resources.Get<UI::Font>(fontKey);

@@ -71,8 +71,7 @@ namespace UI {
             return;
 
         // copy children list before modifying
-        auto childCopy = child->Children;
-        for (auto *grandchild : childCopy) {
+        for (const auto childCopy = child->Children; auto *grandchild : childCopy) {
             RemoveChild(child, grandchild);
         }
 

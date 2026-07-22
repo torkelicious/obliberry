@@ -1,5 +1,6 @@
 #include "UIText.h"
 #include "UI/Rendering/UIRenderer.h"
+#include "Rendering/Texture.h"
 
 namespace UI {
 
@@ -54,8 +55,7 @@ namespace UI {
         for (const char c : m_Text) {
             const auto &glyph = m_Font->GetGlyph(c);
             naturalWidth += static_cast<float>(glyph.Advance);
-            float glyphHeight = static_cast<float>(glyph.LayoutSize.y);
-            if (glyphHeight > maxHeight)
+            if (const float glyphHeight = static_cast<float>(glyph.LayoutSize.y); glyphHeight > maxHeight)
                 maxHeight = glyphHeight;
         }
 
@@ -81,8 +81,12 @@ namespace UI {
                 const auto w = static_cast<float>(glyph.Size.x) * scale;
                 const auto h = static_cast<float>(glyph.Size.y) * scale;
 
-                const glm::vec2 uvMin = glyph.UVOffset;
-                const glm::vec2 uvMax = glyph.UVOffset + glyph.UVSize;
+                // prevent linear filter bleeding from adjacent atlas glyphs
+                const auto atlasW = static_cast<float>(atlas->GetWidth());
+                const auto atlasH = static_cast<float>(atlas->GetHeight());
+                const glm::vec2 halfTexel = {0.5f / atlasW, 0.5f / atlasH};
+                const glm::vec2 uvMin = glyph.UVOffset + halfTexel;
+                const glm::vec2 uvMax = glyph.UVOffset + glyph.UVSize - halfTexel;
 
                 if (isSDF) {
                     renderer->SubmitSDFQuad({x, y}, {w, h}, uvMin, uvMax, atlas.get(), m_Color, sdfRenderScale, static_cast<float>(spread));

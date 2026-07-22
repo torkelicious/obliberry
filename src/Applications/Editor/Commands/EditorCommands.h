@@ -271,6 +271,7 @@ namespace Editor::Commands {
         std::shared_ptr<::UI::Font> font;
         // UIButton
         glm::vec4 bgColor{0.2f, 0.2f, 0.2f, 1.0f};
+        std::shared_ptr<::Rendering::Texture> bgTexture;
         // UIImage
         std::shared_ptr<::Rendering::Texture> image;
     };

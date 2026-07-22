@@ -14,7 +14,11 @@ namespace UI {
 
         // background
         if (Rect.Scale.x > 0.0f && Rect.Scale.y > 0.0f) {
-            renderer->SubmitRect(finalPos, Rect.Scale, m_BackgroundColor);
+            if (m_BackgroundTexture) {
+                renderer->SubmitQuad(finalPos, Rect.Scale, {0.0f, 0.0f}, {1.0f, 1.0f}, m_BackgroundTexture.get(), m_BackgroundColor);
+            } else {
+                renderer->SubmitRect(finalPos, Rect.Scale, m_BackgroundColor);
+            }
         }
 
         // text
@@ -26,10 +30,12 @@ namespace UI {
             const bool isSDF = m_Font->IsSDF();
             const unsigned int spread = m_Font->GetSDFSpread();
 
-            // center text
+            // center text vertically
+            // ascent ~ 0.8 * fontSize, descent ~ 0.2 * fontSize so offset ~ 0.3 * fontSize
+            // i think at least
             const float textWidth = GetTextWidth();
             const float textX = finalPos.x + (Rect.Scale.x - textWidth) * 0.5f;
-            const float textY = finalPos.y + (Rect.Scale.y + static_cast<float>(m_Font->GetFontSize())) * 0.5f;
+            const float textY = finalPos.y + Rect.Scale.y * 0.5f + static_cast<float>(m_Font->GetFontSize()) * 0.3f;
 
             float cursorX = 0.0f;
             for (const char c : m_Text) {
@@ -46,8 +52,12 @@ namespace UI {
                     const auto w = static_cast<float>(Size.x);
                     const auto h = static_cast<float>(Size.y);
 
-                    const glm::vec2 uvMin = UVOffset;
-                    const glm::vec2 uvMax = UVOffset + UVSize;
+                    // prevent linear filter bleeding from adjacent atlas glyphs
+                    const auto atlasW = static_cast<float>(atlas->GetWidth());
+                    const auto atlasH = static_cast<float>(atlas->GetHeight());
+                    const glm::vec2 halfTexel = {0.5f / atlasW, 0.5f / atlasH};
+                    const glm::vec2 uvMin = UVOffset + halfTexel;
+                    const glm::vec2 uvMax = UVOffset + UVSize - halfTexel;
 
                     if (isSDF) {
                         renderer->SubmitSDFQuad({x, y}, {w, h}, uvMin, uvMax, atlas.get(), m_Color, 1.0f, static_cast<float>(spread));
