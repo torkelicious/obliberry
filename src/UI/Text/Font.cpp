@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <utility>
 #include <vector>
 
 #pragma push_macro("LOG_WHO")
@@ -34,7 +35,7 @@ namespace UI {
         return bestDist;
     }
 
-    Font::Font(const std::string &filepath, const unsigned int fontSize, const bool useSDF, const unsigned int sdfSpread) : m_FilePath(filepath), m_FontSize(fontSize), m_IsSDF(useSDF), m_SDFSpread(sdfSpread) {
+    Font::Font(std::string filepath, const unsigned int fontSize, const bool useSDF, const unsigned int sdfSpread) : m_FilePath(std::move(filepath)), m_FontSize(fontSize), m_IsSDF(useSDF), m_SDFSpread(sdfSpread) {
     }
 
     void Font::LoadCPU() {
@@ -300,8 +301,8 @@ namespace UI {
             const int bmpY = static_cast<int>(g.UVOffset.y);
             const int gw = it->second.width;
             const int gh = it->second.rows;
-            const int paddedW = static_cast<int>(g.Size.x);
-            const int paddedH = static_cast<int>(g.Size.y);
+            const int paddedW = g.Size.x;
+            const int paddedH = g.Size.y;
 
             std::vector<unsigned char> paddedBitmap(static_cast<size_t>(paddedW * paddedH), 0);
             for (int row = 0; row < gh; row++) {

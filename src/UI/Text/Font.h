@@ -23,7 +23,7 @@ namespace UI {
 
     class Font {
     public:
-        Font(const std::string &filepath, unsigned int fontSize = 12, bool useSDF = false, unsigned int sdfSpread = 8);
+        explicit Font(std::string filepath, unsigned int fontSize = 12, bool useSDF = false, unsigned int sdfSpread = 8);
         ~Font();
 
         Font(const Font &) = delete;
