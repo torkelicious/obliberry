@@ -35,8 +35,7 @@ namespace UI {
         return bestDist;
     }
 
-    Font::Font(std::string filepath, const unsigned int fontSize, const bool useSDF, const unsigned int sdfSpread) : m_FilePath(std::move(filepath)), m_FontSize(fontSize), m_IsSDF(useSDF), m_SDFSpread(sdfSpread) {
-    }
+    Font::Font(std::string filepath, const unsigned int fontSize, const bool useSDF, const unsigned int sdfSpread) : m_FilePath(std::move(filepath)), m_FontSize(fontSize), m_IsSDF(useSDF), m_SDFSpread(sdfSpread) {}
 
     void Font::LoadCPU() {
         if (m_Valid)
