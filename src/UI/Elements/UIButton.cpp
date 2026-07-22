@@ -2,20 +2,16 @@
 #include "UI/Rendering/UIRenderer.h"
 #include "Rendering/Texture.h"
 #include "UI/Rendering/UISystem.h"
-#include <iostream>
 
 namespace UI {
 
     void UIButton::Update() {
         if (IsPointInsideRect(m_GameMousePos, Rect)) {
             if (m_Input->IsMousePressed(0)) {
-                std::cout << "btn clicked\n";
                 m_ButtonState = ButtonState::CLICKED;
             } else if (m_Input->IsMouseDown(0)) {
-                std::cout << "btn held\n";
                 m_ButtonState = ButtonState::HELD;
             } else {
-                std::cout << "btn hovered\n";
                 m_ButtonState = ButtonState::HOVERED;
             }
         } else {
