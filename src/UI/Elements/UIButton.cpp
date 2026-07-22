@@ -1,11 +1,26 @@
 #include "UIButton.h"
 #include "UI/Rendering/UIRenderer.h"
 #include "Rendering/Texture.h"
+#include "UI/Rendering/UISystem.h"
+#include <iostream>
 
 namespace UI {
 
     void UIButton::Update() {
-        // TODO
+        if (IsPointInsideRect(m_GameMousePos, Rect)) {
+            if (m_Input->IsMousePressed(0)) {
+                std::cout << "btn clicked\n";
+                m_ButtonState = ButtonState::CLICKED;
+            } else if (m_Input->IsMouseDown(0)) {
+                std::cout << "btn held\n";
+                m_ButtonState = ButtonState::HELD;
+            } else {
+                std::cout << "btn hovered\n";
+                m_ButtonState = ButtonState::HOVERED;
+            }
+        } else {
+            m_ButtonState = ButtonState::NONE;
+        }
     }
 
     void UIButton::Draw(UIRenderer *renderer, const glm::vec2 finalPos) {
@@ -14,10 +29,11 @@ namespace UI {
 
         // background
         if (Rect.Scale.x > 0.0f && Rect.Scale.y > 0.0f) {
+            const glm::vec4 &bgCol = (m_ButtonState == ButtonState::HOVERED || m_ButtonState == ButtonState::HELD) ? m_HoveredBackgroundColor : m_BackgroundColor;
             if (m_BackgroundTexture) {
-                renderer->SubmitQuad(finalPos, Rect.Scale, {0.0f, 0.0f}, {1.0f, 1.0f}, m_BackgroundTexture.get(), m_BackgroundColor);
+                renderer->SubmitQuad(finalPos, Rect.Scale, {0.0f, 0.0f}, {1.0f, 1.0f}, m_BackgroundTexture.get(), bgCol);
             } else {
-                renderer->SubmitRect(finalPos, Rect.Scale, m_BackgroundColor);
+                renderer->SubmitRect(finalPos, Rect.Scale, bgCol);
             }
         }
 

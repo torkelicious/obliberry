@@ -271,6 +271,7 @@ namespace Editor::Commands {
         std::shared_ptr<::UI::Font> font;
         // UIButton
         glm::vec4 bgColor{0.2f, 0.2f, 0.2f, 1.0f};
+        glm::vec4 hoverBgColor{0.1f, 0.1f, 0.1f, 1.0f};
         std::shared_ptr<::Rendering::Texture> bgTexture;
         // UIImage
         std::shared_ptr<::Rendering::Texture> image;
@@ -356,7 +357,7 @@ namespace Editor::Commands {
     // Used by AutoComponentWidget to make generic field edits (DragFloat, DragInt, etc.) undoable.
     template <typename T> class ModifyComponentFieldCommand final : public ICommand {
     public:
-        ModifyComponentFieldCommand(ECS::EntityID target, size_t offset, size_t fieldSize, const void *oldData, const void *newData, std::string fieldName)
+        ModifyComponentFieldCommand(const ECS::EntityID target, const size_t offset, const size_t fieldSize, const void *oldData, const void *newData, std::string fieldName)
             : m_EntityID(target), m_Offset(offset), m_FieldSize(fieldSize), m_FieldName(std::move(fieldName)) {
             const auto *src = static_cast<const uint8_t *>(oldData);
             m_OldData.assign(src, src + fieldSize);

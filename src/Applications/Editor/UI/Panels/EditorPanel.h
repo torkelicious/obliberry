@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/EngineContext.h"
+#include "Applications/Editor/Commands/UndoManager.h"
 #include "Scenes/Scene.h"
 
 namespace Editor::Commands {

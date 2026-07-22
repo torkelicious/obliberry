@@ -1,5 +1,7 @@
 #pragma once
 #include "RectTransform.h"
+#include "Platform/Input/InputManager.h"
+
 #include <string>
 #include <vector>
 
@@ -23,7 +25,14 @@ namespace UI {
         void AddFlag(const UIFlags flag) { Flags |= flag; }
         void RemoveFlag(const UIFlags flag) { Flags &= ~flag; }
 
+        void SetInputMgr(Platform::Input::InputManager *mgr) { m_Input = mgr; }
+
+        void SetGameMousePos(const glm::vec2 &pos) { m_GameMousePos = pos; }
+        [[nodiscard]] const glm::vec2 &GetGameMousePos() const { return m_GameMousePos; }
+
     protected:
+        Platform::Input::InputManager *m_Input = nullptr; // set by system
+        glm::vec2 m_GameMousePos = {0.0f, 0.0f};
         uint8_t Flags = VISIBLE | ENABLED;
     };
 

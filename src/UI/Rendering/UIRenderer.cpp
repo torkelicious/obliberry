@@ -106,6 +106,7 @@ namespace UI {
             return;
 
         const glm::uvec2 targetSize = (renderTargetWidth > 0 && renderTargetHeight > 0) ? glm::uvec2{renderTargetWidth, renderTargetHeight} : m_ActualWindowSize;
+        m_LastRenderTargetSize = targetSize;
 
         if (m_GameResolution.x > 0 && m_GameResolution.y > 0 && targetSize.x > 0 && targetSize.y > 0) {
             const float gameAspect = m_GameResolution.x / m_GameResolution.y;
@@ -191,5 +192,29 @@ namespace UI {
     void UIRenderer::SwapBuffers() { std::swap(m_SubmitIndex, m_RenderIndex); }
 
     void UIRenderer::SetGameResolution(const uint32_t width, const uint32_t height) { m_GameResolution = {static_cast<float>(width), static_cast<float>(height)}; }
+
+    glm::vec2 UIRenderer::WindowToGameCoords(const float winX, const float winY) const {
+        if (m_GameResolution.x <= 0 || m_GameResolution.y <= 0 || m_LastRenderTargetSize.x == 0 || m_LastRenderTargetSize.y == 0)
+            return {winX, winY};
+
+        const float gameAspect = m_GameResolution.x / m_GameResolution.y;
+        const float targetAspect = static_cast<float>(m_LastRenderTargetSize.x) / static_cast<float>(m_LastRenderTargetSize.y);
+
+        float vpX = 0.0f, vpY = 0.0f, vpW, vpH;
+        if (targetAspect > gameAspect) {
+            vpH = static_cast<float>(m_LastRenderTargetSize.y);
+            vpW = vpH * gameAspect;
+            vpX = (static_cast<float>(m_LastRenderTargetSize.x) - vpW) * 0.5f;
+        } else {
+            vpW = static_cast<float>(m_LastRenderTargetSize.x);
+            vpH = vpW / gameAspect;
+            vpY = (static_cast<float>(m_LastRenderTargetSize.y) - vpH) * 0.5f;
+        }
+
+        const float gameX = (winX - vpX) * (m_GameResolution.x / vpW);
+        const float gameY = (winY - vpY) * (m_GameResolution.y / vpH);
+
+        return {gameX, gameY};
+    }
 
 } // namespace UI

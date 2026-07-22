@@ -41,6 +41,7 @@ namespace IO::UISerializer {
             j["text"] = button->GetText();
             SerializeColor(j, "color", button->GetColor());
             SerializeColor(j, "bg_color", button->GetBackgroundColor());
+            SerializeColor(j, "hovered_bg_color", button->GetHoveredBackgroundColor());
             if (button->GetBackgroundTexture()) {
                 j["bg_texture"] = resources.GetKey(button->GetBackgroundTexture());
             }
@@ -127,10 +128,13 @@ namespace IO::UISerializer {
             auto *btn = new UI::UIButton();
             glm::vec4 color = btn->GetColor();
             glm::vec4 bgColor = btn->GetBackgroundColor();
+            glm::vec4 hoverBgColor = btn->GetHoveredBackgroundColor();
             DeserializeColor(j, "color", color);
             DeserializeColor(j, "bg_color", bgColor);
+            DeserializeColor(j, "hovered_bg_color", hoverBgColor);
             btn->SetColor(color);
             btn->SetBackgroundColor(bgColor);
+            btn->SetHoveredBackgroundColor(hoverBgColor);
             btn->SetText(j.value("text", ""));
             if (j.contains("bg_texture")) {
                 const std::string texKey = j["bg_texture"].get<std::string>();

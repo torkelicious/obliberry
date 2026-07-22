@@ -5,18 +5,25 @@
 
 namespace UI {
 
-    static void UpdateRecursive(UIElement *element, const float dt) {
+    static void UpdateRecursive(UIElement *element, const float dt, const glm::vec2 &gameMousePos) {
         if (!element || !element->HasFlag(VISIBLE))
             return;
 
+        element->SetGameMousePos(gameMousePos);
         element->Update();
 
         for (auto *child : element->Children) {
-            UpdateRecursive(child, dt);
+            UpdateRecursive(child, dt, gameMousePos);
         }
     }
 
-    void UISystem::Update(const float dt) { UpdateRecursive(m_Root.get(), dt); }
+    void UISystem::Update(const float dt) {
+        glm::vec2 gameMouse = {0.0f, 0.0f};
+        if (m_Renderer && m_Input) {
+            gameMouse = m_Renderer->WindowToGameCoords(static_cast<float>(m_Input->MousePosX()), static_cast<float>(m_Input->MousePosY()));
+        }
+        UpdateRecursive(m_Root.get(), dt, gameMouse);
+    }
 
     void UISystem::Render() { RenderRecursive(m_Root.get(), {0.0f, 0.0f}); }
 
@@ -61,6 +68,7 @@ namespace UI {
             return nullptr;
         UIElement *raw = element.get();
         raw->Parent = parent;
+        raw->SetInputMgr(m_Input);
         parent->Children.push_back(raw);
         m_OwnedElements.push_back(std::move(element));
         return raw;

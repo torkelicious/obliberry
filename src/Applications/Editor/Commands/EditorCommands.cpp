@@ -294,6 +294,7 @@ namespace Editor::Commands {
             snap.font = btn->GetFont();
             snap.color = btn->GetColor();
             snap.bgColor = btn->GetBackgroundColor();
+            snap.hoverBgColor = btn->GetHoveredBackgroundColor();
             snap.bgTexture = btn->GetBackgroundTexture();
         } else if (const auto *img = dynamic_cast<const ::UI::UIImage *>(element)) {
             snap.type = UIElementSnapshot::IMAGE;
@@ -330,6 +331,7 @@ namespace Editor::Commands {
                     b->SetFont(snap.font);
                 b->SetColor(snap.color);
                 b->SetBackgroundColor(snap.bgColor);
+                b->SetHoveredBackgroundColor(snap.hoverBgColor);
                 if (snap.bgTexture)
                     b->SetBackgroundTexture(snap.bgTexture);
                 el = std::move(b);

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "UI/UIElement.h"
 #include "UI/Rendering/UIRenderer.h"
+#include "UI/UIElement.h"
 #include "Platform/Input/InputManager.h"
 #include <glm/vec2.hpp>
 #include <memory>
@@ -18,6 +18,7 @@ namespace UI {
         UISystem(UIRenderer *renderer, Platform::Input::InputManager *input) : m_Renderer(renderer), m_Input(input) {
             m_Root = std::make_unique<UIElement>();
             m_Root->Name = "Canvas";
+            m_Root->SetInputMgr(m_Input);
         }
 
         void SetRoot(std::unique_ptr<UIElement> el) { m_Root = std::move(el); }
@@ -40,8 +41,8 @@ namespace UI {
 
         std::unique_ptr<UIElement> m_Root;
         std::vector<std::unique_ptr<UIElement>> m_OwnedElements;
-        UIRenderer *m_Renderer;
-        Platform::Input::InputManager *m_Input;
+        UIRenderer *m_Renderer = nullptr;
+        Platform::Input::InputManager *m_Input = nullptr;
     };
 
 } // namespace UI

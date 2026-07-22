@@ -73,6 +73,8 @@ namespace UI {
         void SetGameResolution(uint32_t width, uint32_t height);
         [[nodiscard]] glm::vec2 GetGameResolution() const { return m_GameResolution; }
 
+        [[nodiscard]] glm::vec2 WindowToGameCoords(float winX, float winY) const;
+
     private:
         static constexpr uint32_t MAX_QUADS = 10000;
 
@@ -81,7 +83,8 @@ namespace UI {
 
         glm::mat4 m_Projection[2] = {glm::mat4(1.0f), glm::mat4(1.0f)};
         glm::vec2 m_GameResolution = {0.0f, 0.0f};
-        glm::uvec2 m_ActualWindowSize = {0, 0}; // framebuffer/window size for letterboxing
+        glm::uvec2 m_ActualWindowSize = {0, 0};     // framebuffer/window size for letterboxing
+        glm::uvec2 m_LastRenderTargetSize = {0, 0}; // render target used in last Flush
 
         std::vector<UIVertex> m_Vertices[2];
         std::vector<UIBatch> m_Batches;
