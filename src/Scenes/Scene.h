@@ -3,6 +3,7 @@
 
 #include <string>
 #include <glm/glm.hpp>
+#include "UI/Rendering/UISystem.h"
 #include "Core/EngineContext.h"
 #include "ECS/ECS.h"
 
@@ -35,6 +36,9 @@ namespace Scenes {
         [[nodiscard]] Core::EngineContext &GetContext() { return *m_Context; }
         [[nodiscard]] const Core::EngineContext &GetContext() const { return *m_Context; }
 
+        [[nodiscard]] UI::UISystem &GetUISystem() { return m_UISystem; }
+        [[nodiscard]] const UI::UISystem &GetUISystem() const { return m_UISystem; }
+
         [[nodiscard]] const std::string &GetScenePath() const { return m_Properties.ScenePath; }
 
         SceneProperties &GetProperties() { return m_Properties; }
@@ -50,5 +54,6 @@ namespace Scenes {
         Core::EngineContext *m_Context;
         ECS::Registry m_Registry;
         bool m_HasUnsavedChanges = false;
+        UI::UISystem m_UISystem;
     };
 } // namespace Scenes

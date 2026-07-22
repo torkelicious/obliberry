@@ -8,6 +8,7 @@
 #include "Rendering/Renderer.h"
 #include "Rendering/Shader.h"
 #include "Rendering/Texture.h"
+#include "UI/Text/Font.h"
 
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "AssetLoader"
@@ -74,6 +75,9 @@ void IO::AssetLoader::LoadAssets(const json &assets, Core::ResourceManager &reso
 
     if (assets.contains("materials"))
         LoadMaterials(assets["materials"], resources);
+
+    if (assets.contains("fonts"))
+        LoadFonts(assets["fonts"], resources);
 }
 
 void IO::AssetLoader::RegisterMeshFactory(const std::string &name, MeshFactory factory) { s_MeshFactories[name] = std::move(factory); }
@@ -105,6 +109,25 @@ void IO::AssetLoader::LoadShaders(const json &shaders, Core::ResourceManager &re
     }
 }
 
+
+void IO::AssetLoader::LoadFonts(const json &fonts, Core::ResourceManager &resources) {
+    for (const auto &font : fonts) {
+        const std::string id = font.at("id").get<std::string>();
+
+        if (resources.Get<UI::Font>(id) != nullptr) {
+            continue;
+        }
+
+        const std::string path = font.at("path").get<std::string>();
+        const unsigned int size = font.value("size", 12);
+        const bool useSDF = font.value("sdf", false);
+        const unsigned int spread = font.value("spread", 8);
+
+        auto f = resources.Load<UI::Font>(id, path, size, useSDF, spread);
+        f->LoadCPU();
+        Rendering::Renderer::SubmitInitTask(Platform::Threading::SmallTask([f] { f->InitGL(); }));
+    }
+}
 
 void IO::AssetLoader::LoadMaterials(const json &materials, Core::ResourceManager &resources) {
     for (const auto &mat : materials) {

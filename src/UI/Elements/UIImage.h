@@ -8,7 +8,8 @@ namespace UI {
         void SetImage(const std::shared_ptr<Rendering::Texture> &tex){m_Image = tex;}
         void SetColor(const glm::vec4 color) { m_Color = color; }
         [[nodiscard]] const glm::vec4 &GetColor() const { return m_Color; }
-        std::shared_ptr<Rendering::Texture> &GetImage(){return m_Image;}
+        [[nodiscard]] const std::shared_ptr<Rendering::Texture> &GetImage() const { return m_Image; }
+        [[nodiscard]] std::shared_ptr<Rendering::Texture> &GetImage() { return m_Image; }
 
         void Update() override;
         void Draw(UIRenderer *renderer, glm::vec2 finalPos) override;

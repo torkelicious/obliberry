@@ -121,7 +121,6 @@ void Editor::States::EditState::OnRender() {
     if (EditorLayer::s_RenderParticlesInEditor) {
         ECS::Systems::ParticleSystem::Render(*m_EditorLayer->m_Registry, *m_EditorLayer->m_Context.renderer, &m_EditorLayer->m_Camera);
     }
-    m_EditorLayer->m_Context.uiSystem->Render();
 }
 
 void Editor::States::EditState::OnDrawModeToolbar() {

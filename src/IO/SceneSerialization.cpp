@@ -12,6 +12,9 @@
 #include "ECS/Components/MapComponent.h"
 #include "ECS/Components/MapStateComponent.h"
 #include "ECS/Systems/MapRuntimeSystem.h"
+#include "IO/Loaders/UISerializer.h"
+#include "UI/Rendering/UISystem.h"
+#include "UI/Text/Font.h"
 
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "SceneIO"
@@ -155,6 +158,13 @@ namespace IO::SceneIO {
             }
         }
 
+        // UI
+        if (j.contains("ui")) {
+            if (auto *uiSys = scene.GetContext().uiSystem) {
+                IO::UISerializer::Deserialize(j["ui"], *uiSys, resources);
+            }
+        }
+
         ECS::Systems::MapRuntimeSystem::OnMapChanged(scene.GetRegistry(), scene.GetContext());
         return true;
     }
@@ -222,6 +232,7 @@ namespace IO::SceneIO {
         j["assets"]["shaders"] = json::array();
         j["assets"]["meshes"] = json::array();
         j["assets"]["materials"] = json::array();
+        j["assets"]["fonts"] = json::array();
 
         SerializeAssets(j["assets"]["textures"], resources.GetAll<Rendering::Texture>(), [](const std::string &id, const std::shared_ptr<Rendering::Texture> &tex) { return json{{"id", id}, {"path", tex->GetPath()}}; });
 
@@ -234,6 +245,15 @@ namespace IO::SceneIO {
 
         SerializeAssets(j["assets"]["materials"], resources.GetAll<Rendering::Material>(), [&](const std::string &id, const std::shared_ptr<Rendering::Material> &mat) {
             return json{{"id", id}, {"shader", resources.GetKey(mat->shader)}, {"texture", resources.GetKey(mat->texture)}, {"color", {mat->color.r, mat->color.g, mat->color.b, mat->color.a}}};
+        });
+
+        // UI
+        if (auto *uiSys = scene.GetContext().uiSystem) {
+            IO::UISerializer::Serialize(j, *uiSys, resources);
+        }
+
+        SerializeAssets(j["assets"]["fonts"], resources.GetAll<UI::Font>(), [&](const std::string &id, const std::shared_ptr<UI::Font> &font) {
+            return json{{"id", id}, {"path", font->GetPath()}, {"size", font->GetFontSize()}, {"sdf", font->IsSDF()}, {"spread", font->GetSDFSpread()}};
         });
 
         // ENTITIES

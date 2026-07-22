@@ -66,7 +66,7 @@ namespace UI {
         }
 
         // call on render thread.
-        void Flush();
+        void Flush(uint32_t renderTargetWidth = 0, uint32_t renderTargetHeight = 0);
 
         void SwapBuffers();
 
@@ -81,6 +81,7 @@ namespace UI {
 
         glm::mat4 m_Projection[2] = {glm::mat4(1.0f), glm::mat4(1.0f)};
         glm::vec2 m_GameResolution = {0.0f, 0.0f};
+        glm::uvec2 m_ActualWindowSize = {0, 0}; // framebuffer/window size for letterboxing
 
         std::vector<UIVertex> m_Vertices[2];
         std::vector<UIBatch> m_Batches;

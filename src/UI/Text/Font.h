@@ -41,6 +41,7 @@ namespace UI {
         [[nodiscard]] unsigned int GetFontSize() const { return m_FontSize; }
         [[nodiscard]] bool IsSDF() const { return m_IsSDF; }
         [[nodiscard]] unsigned int GetSDFSpread() const { return m_SDFSpread; }
+        [[nodiscard]] const std::string &GetPath() const { return m_FilePath; }
 
     private:
         void BuildSDFAtlas(const std::string &filepath, unsigned int fontSize, unsigned int spread);

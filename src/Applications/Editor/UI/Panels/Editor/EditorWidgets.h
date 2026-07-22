@@ -4,6 +4,7 @@
 #include "ECS/Registry.h"
 #include "Scenes/SceneManager.h"
 #include <imgui.h>
+#include <cstring>
 #include <memory>
 #include <string>
 #include <vector>
@@ -31,6 +32,22 @@ namespace Editor::UI {
 
     enum class FieldType : uint8_t { Float, Int, Bool, Vec3, Color3 };
 
+    inline size_t FieldTypeSize(FieldType type) {
+        switch (type) {
+            case FieldType::Float:
+                return sizeof(float);
+            case FieldType::Int:
+                return sizeof(int);
+            case FieldType::Bool:
+                return sizeof(bool);
+            case FieldType::Vec3:
+                return sizeof(float) * 3;
+            case FieldType::Color3:
+                return sizeof(float) * 3;
+        }
+        return 0;
+    }
+
     struct ComponentField {
         const char *Name;
         FieldType Type;
@@ -50,6 +67,7 @@ namespace Editor::UI {
         const char *m_Name;
         std::vector<ComponentField> m_Fields;
         size_t m_DirtyOffset = 0;
+        std::vector<std::vector<uint8_t>> m_CapturedOldValues;
 
     public:
         explicit AutoComponentWidget(const char *name) : m_Name(name) {}
@@ -62,9 +80,19 @@ namespace Editor::UI {
             if (ImGui::CollapsingHeader(m_Name)) {
                 T *component = entity.GetComponent<T>();
                 const auto byte_ptr = reinterpret_cast<uint8_t *>(component);
+                const auto entId = static_cast<ECS::EntityID>(entity);
 
-                for (const auto &[Name, Type, Offset] : m_Fields) {
+                if (m_CapturedOldValues.size() != m_Fields.size())
+                    m_CapturedOldValues.resize(m_Fields.size());
+
+                for (size_t i = 0; i < m_Fields.size(); i++) {
+                    const auto &[Name, Type, Offset] = m_Fields[i];
                     void *fieldAddress = byte_ptr + Offset;
+                    const size_t fieldSize = FieldTypeSize(Type);
+
+                    std::vector<uint8_t> preEditBytes(fieldSize);
+                    std::memcpy(preEditBytes.data(), fieldAddress, fieldSize);
+
                     switch (Type) {
                         case FieldType::Float:
                             ImGui::DragFloat(Name, static_cast<float *>(fieldAddress), 0.1f);
@@ -82,9 +110,14 @@ namespace Editor::UI {
                             ImGui::Checkbox(Name, static_cast<bool *>(fieldAddress));
                             break;
                     }
+
+                    if (ImGui::IsItemActivated()) {
+                        m_CapturedOldValues[i] = preEditBytes;
+                    }
                     if (ImGui::IsItemDeactivatedAfterEdit()) {
-                        if (m_DirtyOffset)
-                            *reinterpret_cast<bool *>(byte_ptr + m_DirtyOffset) = true;
+                        if (undoManager && engineContext) {
+                            undoManager->Execute(std::make_unique<Commands::ModifyComponentFieldCommand<T>>(entId, Offset, fieldSize, m_CapturedOldValues[i].data(), fieldAddress, Name), *engineContext);
+                        }
                         MarkSceneChanged(engineContext);
                     }
                 }

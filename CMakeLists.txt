@@ -233,6 +233,7 @@ add_library(obliberry_engine STATIC
         src/IO/MapSerialization.cpp
         src/IO/Loaders/AssetLoader.cpp
         src/IO/Loaders/EntityFactory.cpp
+        src/IO/Loaders/UISerializer.cpp
         src/IO/SceneSerialization.cpp
         src/IO/VFS/VFS.cpp
 

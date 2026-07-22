@@ -15,11 +15,6 @@
 #include <thread>
 #include <utility>
 #include "Applications/Editor/EditorLayer.h"
-#include "Applications/Editor/UI/ConfigWindows/GraphicsConfigEditor.h"
-#include "UI/Elements/UIImage.h"
-#include "UI/Elements/UIText.h"
-#include "UI/Rendering/UISystem.h"
-#include "UI/Text/Font.h"
 
 
 Core::Application::Application(const Config::GraphicsConfig gconf, Config::ProjectConfig pconf, std::unique_ptr<ApplicationLayer> layer)
@@ -125,44 +120,6 @@ void Core::Application::Run() {
     context.audioEngine = m_AudioEngine.get();
     context.logger = Logging::LoggerService::Get();
 
-    UI::UISystem uiSystem(&m_UIRenderer, &m_InputManager);
-    context.uiSystem = &uiSystem;
-
-    // uisys temp
-
-    auto font = std::make_shared<UI::Font>("/usr/share/fonts/TTF/Hack-Bold.ttf");
-    font->LoadCPU();
-    auto tex = std::make_shared<Rendering::Texture>("assets/textures/player/player_se.png");
-
-    tex->InitGL();
-    font->InitGL();
-
-    auto text = std::make_unique<UI::UIText>();
-    text->Name = "TestText";
-    text->Rect.Position = {100, 50};
-    text->Rect.Scale = {200, 50};
-    text->SetText("test");
-    text->SetColor({0.5f, 0.0f, 0.4f, 1.0f});
-    text->SetFont(font);
-
-    auto uimg = std::make_unique<UI::UIImage>();
-    uimg->Name = "TestImage";
-    uimg->SetImage(tex);
-    uimg->Rect.Position = {500, 500};
-    uimg->Rect.Scale = {50, 50};
-
-    auto *root = uiSystem.GetRoot();
-    uiSystem.AddChild(root, std::move(text));
-    uiSystem.AddChild(root, std::move(uimg));
-
-    auto emptyimg = std::make_unique<UI::UIImage>();
-    emptyimg->Name = "EmptyChild";
-    emptyimg->SetColor({0.4f, 0.0f, 0.0f, 1.0f});
-    emptyimg->Rect.Position = {10, 10};
-    emptyimg->Rect.Scale = {30, 30};
-    uiSystem.AddChild(root->Children.back(), std::move(emptyimg));
-    // uisys temp
-
     // MSAA supported samples, must be called before gl context handover!!!
     Config::GraphicsCapabilities::CacheSampleCounts();
 
@@ -205,7 +162,6 @@ void Core::Application::Run() {
         previousTime = currentTime;
 
         m_Layer->Update(delta.count());
-        uiSystem.Update(delta.count());
         if (context.audioEngine) {
             context.audioEngine->Update();
         }
@@ -329,7 +285,7 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer, UI::UI
 
             fbo->BindDrawBuffers();
 
-            uiRenderer->Flush();
+            uiRenderer->Flush(fbo->GetWidth(), fbo->GetHeight());
 
             fbo->ClearEntityIDAttachment();
             fbo->Unbind();

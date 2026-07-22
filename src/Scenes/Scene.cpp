@@ -21,10 +21,12 @@
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "Scene"
 
-Scenes::Scene::Scene(Core::EngineContext *context, SceneProperties props) : m_Properties(std::move(props)), m_Context(context) {}
+Scenes::Scene::Scene(Core::EngineContext *context, SceneProperties props) : m_Properties(std::move(props)), m_Context(context), m_UISystem(context->uiRenderer, context->input) {}
 
 void Scenes::Scene::OnEnter() {
     LOG_INFO(LOG_WHO, "Entering scene: " + m_Properties.ScenePath);
+
+    m_Context->uiSystem = &m_UISystem;
 
     // Register EngineLib native functions on every worker's interpreter
     for (size_t w = 0; w < m_Context->scriptPool->worker_count(); ++w) {
@@ -66,6 +68,10 @@ void Scenes::Scene::Update(const float dt) {
     m_Context->deltaTime = dt;
     m_Context->frameCount++;
 
+    if (m_Context->uiSystem) {
+        m_Context->uiSystem->Update(dt);
+    }
+
     ECS::Systems::PlayerControlSystem::Update(m_Registry, *m_Context);
     ECS::Systems::AISystem::Update(m_Registry, dt);
     ECS::Systems::MovementSystem::Update(m_Registry, dt);
@@ -91,6 +97,10 @@ void Scenes::Scene::Render() {
 
         ECS::Systems::ParticleSystem::Render(m_Registry, *m_Context->renderer, m_Context->camera);
     }
+
+    if (m_Context->uiSystem) {
+        m_Context->uiSystem->Render();
+    }
 }
 
 void Scenes::Scene::OnExit() {
@@ -105,6 +115,8 @@ void Scenes::Scene::OnExit() {
 
     ECS::Systems::ScriptSystem::OnSceneExit(m_Registry, *m_Context);
     IO::PrefabManager::ClearCache();
+    m_UISystem.Clear();
+    m_Context->uiSystem = nullptr;
     LOG_INFO(LOG_WHO, "Exiting Scene " + m_Properties.ScenePath);
 }
 

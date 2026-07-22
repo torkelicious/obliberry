@@ -51,7 +51,7 @@ namespace IO {
         if (data.contains("isBillboard"))
             ec.isBillboard = data["isBillboard"].get<bool>();
         if (data.contains("blendMode")) {
-            int bm = data["blendMode"].get<int>();
+            const int bm = data["blendMode"].get<int>();
             ec.blendMode = (bm == 1) ? ECS::Components::ParticleBlendMode::Additive : ECS::Components::ParticleBlendMode::Alpha;
         }
         if (data.contains("renderOrder"))

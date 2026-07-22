@@ -230,10 +230,20 @@ void Editor::UI::DirectionalTextureWidget::Draw(const ECS::Entity entity, Core::
         auto *comp = entity.GetComponent<ECS::Components::DirectionalTextureComponent>();
 
         int facingIndex = static_cast<int>(comp->index);
+        static int s_DirTexOldIndex = 0;
         ImGui::SliderInt("Facing Index", &facingIndex, 0, 5);
-        comp->index = static_cast<uint8_t>(facingIndex);
-        if (ImGui::IsItemDeactivatedAfterEdit())
+        if (ImGui::IsItemActivated())
+            s_DirTexOldIndex = static_cast<int>(comp->index);
+        if (ImGui::IsItemDeactivatedAfterEdit()) {
+            comp->index = static_cast<uint8_t>(facingIndex);
+            if (undoManager && engineContext) {
+                const auto entId = static_cast<ECS::EntityID>(entity);
+                undoManager->Execute(std::make_unique<Commands::ModifyComponentFieldCommand<ECS::Components::DirectionalTextureComponent>>(entId, offsetof(ECS::Components::DirectionalTextureComponent, index),
+                                                                                                                                           sizeof(uint8_t), &s_DirTexOldIndex, &comp->index, "Facing Index"),
+                                     *engineContext);
+            }
             MarkSceneChanged(engineContext);
+        }
         ImGui::Spacing();
 
         if (engineContext && engineContext->resources) {
@@ -306,14 +316,41 @@ void Editor::UI::MapStateWidget::Draw(const ECS::Entity entity, Core::EngineCont
         return;
     if (ImGui::CollapsingHeader(GetName())) {
         auto *comp = entity.GetComponent<ECS::Components::MapStateComponent>();
-        ImGui::Checkbox("Has Selection", &comp->hasSelection);
-        if (ImGui::IsItemDeactivatedAfterEdit())
-            MarkSceneChanged(engineContext);
+        const auto entId = static_cast<ECS::EntityID>(entity);
+
+        {
+            static bool s_OldHasSelection = false;
+            bool hasSel = comp->hasSelection;
+            ImGui::Checkbox("Has Selection", &hasSel);
+            if (ImGui::IsItemActivated())
+                s_OldHasSelection = comp->hasSelection;
+            if (ImGui::IsItemDeactivatedAfterEdit()) {
+                comp->hasSelection = hasSel;
+                if (undoManager && engineContext)
+                    undoManager->Execute(std::make_unique<Commands::ModifyComponentFieldCommand<ECS::Components::MapStateComponent>>(entId, offsetof(ECS::Components::MapStateComponent, hasSelection), sizeof(bool),
+                                                                                                                                     &s_OldHasSelection, &comp->hasSelection, "Has Selection"),
+                                         *engineContext);
+                MarkSceneChanged(engineContext);
+            }
+        }
         if (comp->hasSelection)
             ImGui::Text("Selected Hex: [%d, %d]", comp->selectedHex.q, comp->selectedHex.r);
-        ImGui::Checkbox("Has Path To", &comp->hasPathTo);
-        if (ImGui::IsItemDeactivatedAfterEdit())
-            MarkSceneChanged(engineContext);
+
+        {
+            static bool s_OldHasPathTo = false;
+            bool hasPath = comp->hasPathTo;
+            ImGui::Checkbox("Has Path To", &hasPath);
+            if (ImGui::IsItemActivated())
+                s_OldHasPathTo = comp->hasPathTo;
+            if (ImGui::IsItemDeactivatedAfterEdit()) {
+                comp->hasPathTo = hasPath;
+                if (undoManager && engineContext)
+                    undoManager->Execute(std::make_unique<Commands::ModifyComponentFieldCommand<ECS::Components::MapStateComponent>>(entId, offsetof(ECS::Components::MapStateComponent, hasPathTo), sizeof(bool),
+                                                                                                                                     &s_OldHasPathTo, &comp->hasPathTo, "Has Path To"),
+                                         *engineContext);
+                MarkSceneChanged(engineContext);
+            }
+        }
         if (comp->hasPathTo)
             ImGui::Text("Path Target: [%d, %d]", comp->pathTo.q, comp->pathTo.r);
 

@@ -85,4 +85,13 @@ namespace UI {
         std::erase_if(m_OwnedElements, [child](const std::unique_ptr<UIElement> &ptr) { return ptr.get() == child; });
     }
 
+    void UISystem::Clear() {
+        // remove all children from root
+        for (auto *child : m_Root->Children) {
+            child->Parent = nullptr;
+        }
+        m_Root->Children.clear();
+        m_OwnedElements.clear();
+    }
+
 } // namespace UI

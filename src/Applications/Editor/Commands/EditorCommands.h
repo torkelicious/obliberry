@@ -4,6 +4,8 @@
 #include "Platform/Window/Window.h"
 #include <glm/glm.hpp>
 #include <optional>
+#include <cstring>
+#include <vector>
 #include "ECS/Types.h"
 #include "ECS/Components/ScriptComponent.h"
 #include "Map/Hex.h"
@@ -343,6 +345,45 @@ namespace Editor::Commands {
         ::UI::UIElement *m_Target;
         glm::vec2 m_OldScale;
         glm::vec2 m_NewScale;
+    };
+
+    // = = = = = = = = = = = = = = //
+    // Generic Component Field Edit //
+    // = = = = = = = = = = = = = = //
+
+    // A type-erased command that stores old/new bytes at a given offset inside a component.
+    // Used by AutoComponentWidget to make generic field edits (DragFloat, DragInt, etc.) undoable.
+    template <typename T> class ModifyComponentFieldCommand final : public ICommand {
+    public:
+        ModifyComponentFieldCommand(ECS::EntityID target, size_t offset, size_t fieldSize, const void *oldData, const void *newData, std::string fieldName)
+            : m_EntityID(target), m_Offset(offset), m_FieldSize(fieldSize), m_FieldName(std::move(fieldName)) {
+            const auto *src = static_cast<const uint8_t *>(oldData);
+            m_OldData.assign(src, src + fieldSize);
+            src = static_cast<const uint8_t *>(newData);
+            m_NewData.assign(src, src + fieldSize);
+        }
+
+        void Execute(Core::EngineContext &ctx) override {
+            auto *comp = ctx.sceneManager->GetCurrentScene()->GetRegistry().GetComponent<T>(m_EntityID);
+            if (comp)
+                std::memcpy(reinterpret_cast<uint8_t *>(comp) + m_Offset, m_NewData.data(), m_FieldSize);
+        }
+
+        void Undo(Core::EngineContext &ctx) override {
+            auto *comp = ctx.sceneManager->GetCurrentScene()->GetRegistry().GetComponent<T>(m_EntityID);
+            if (comp)
+                std::memcpy(reinterpret_cast<uint8_t *>(comp) + m_Offset, m_OldData.data(), m_FieldSize);
+        }
+
+        [[nodiscard]] std::string_view Name() const noexcept override { return m_FieldName; }
+
+    private:
+        ECS::EntityID m_EntityID;
+        size_t m_Offset;
+        size_t m_FieldSize;
+        std::string m_FieldName;
+        std::vector<uint8_t> m_OldData;
+        std::vector<uint8_t> m_NewData;
     };
 
 } // namespace Editor::Commands

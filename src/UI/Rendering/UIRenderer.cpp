@@ -54,6 +54,7 @@ namespace UI {
     }
 
     void UIRenderer::BeginFrame(const uint32_t viewWidth, const uint32_t viewHeight) {
+        m_ActualWindowSize = {viewWidth, viewHeight};
         if (m_GameResolution.x > 0 && m_GameResolution.y > 0) {
             m_Projection[m_SubmitIndex] = glm::ortho(0.0f, m_GameResolution.x, m_GameResolution.y, 0.0f, -1.0f, 1.0f);
         } else {
@@ -97,12 +98,35 @@ namespace UI {
         m_QuadSDFSpread[m_SubmitIndex].push_back(sdfSpread);
     }
 
-    void UIRenderer::Flush() {
+    void UIRenderer::Flush(uint32_t renderTargetWidth, uint32_t renderTargetHeight) {
         const auto &verts = m_Vertices[m_RenderIndex];
         const auto &texs = m_QuadTextures[m_RenderIndex];
 
         if (verts.empty())
             return;
+
+        const glm::uvec2 targetSize = (renderTargetWidth > 0 && renderTargetHeight > 0) ? glm::uvec2{renderTargetWidth, renderTargetHeight} : m_ActualWindowSize;
+
+        if (m_GameResolution.x > 0 && m_GameResolution.y > 0 && targetSize.x > 0 && targetSize.y > 0) {
+            const float gameAspect = m_GameResolution.x / m_GameResolution.y;
+            const float targetAspect = static_cast<float>(targetSize.x) / static_cast<float>(targetSize.y);
+
+            uint32_t vpX = 0, vpY = 0, vpW, vpH;
+            if (targetAspect > gameAspect) {
+                vpH = targetSize.y;
+                vpW = static_cast<uint32_t>(static_cast<float>(vpH) * gameAspect);
+                vpX = (targetSize.x - vpW) / 2;
+                vpY = 0;
+            } else {
+                vpW = targetSize.x;
+                vpH = static_cast<uint32_t>(static_cast<float>(vpW) / gameAspect);
+                vpX = 0;
+                vpY = (targetSize.y - vpH) / 2;
+            }
+            glViewport(static_cast<GLint>(vpX), static_cast<GLint>(targetSize.y - vpY - vpH), static_cast<GLsizei>(vpW), static_cast<GLsizei>(vpH));
+            glEnable(GL_SCISSOR_TEST);
+            glScissor(static_cast<GLint>(vpX), static_cast<GLint>(targetSize.y - vpY - vpH), static_cast<GLsizei>(vpW), static_cast<GLsizei>(vpH));
+        }
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -157,6 +181,11 @@ namespace UI {
 
         m_Shader->Unbind();
         Rendering::VertexArray::Unbind();
+
+        if (m_GameResolution.x > 0 && m_GameResolution.y > 0 && targetSize.x > 0 && targetSize.y > 0) {
+            glDisable(GL_SCISSOR_TEST);
+            glViewport(0, 0, static_cast<GLsizei>(targetSize.x), static_cast<GLsizei>(targetSize.y));
+        }
     }
 
     void UIRenderer::SwapBuffers() { std::swap(m_SubmitIndex, m_RenderIndex); }
