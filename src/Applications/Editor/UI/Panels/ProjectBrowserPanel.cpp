@@ -1,5 +1,6 @@
 #include "ProjectBrowserPanel.h"
 #include "Platform/Threading/SmallTask.h"
+#include <thread>
 
 #include "Core/Constants.h"
 #include "Logger/LoggerService.h"
@@ -480,7 +481,10 @@ namespace Editor::UI {
         }
 
         auto font = resources.Load<::UI::Font>(key, finalPath.value(), static_cast<unsigned int>(m_FontSize), m_FontUseSDF, static_cast<unsigned int>(m_FontSDFSpread));
-        Rendering::Renderer::SubmitInitTask(::Platform::Threading::SmallTask([font] { font->InitGL(); }));
+        std::thread([font] {
+            font->LoadCPU();
+            Rendering::Renderer::SubmitInitTask(::Platform::Threading::SmallTask([font] { font->InitGL(); }));
+        }).detach();
         LOG_INFO(LOG_WHO, "Imported font '" + key + "' from " + finalPath.value());
     }
 
@@ -498,7 +502,10 @@ namespace Editor::UI {
 
         resources.Unload<::UI::Font>(key);
         auto font = resources.Load<::UI::Font>(key, finalPath.value(), static_cast<unsigned int>(m_FontSize), m_FontUseSDF, static_cast<unsigned int>(m_FontSDFSpread));
-        Rendering::Renderer::SubmitInitTask(::Platform::Threading::SmallTask([font] { font->InitGL(); }));
+        std::thread([font] {
+            font->LoadCPU();
+            Rendering::Renderer::SubmitInitTask(::Platform::Threading::SmallTask([font] { font->InitGL(); }));
+        }).detach();
         LOG_INFO(LOG_WHO, "Replaced font '" + key + "'");
     }
 

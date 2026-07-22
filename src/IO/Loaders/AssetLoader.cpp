@@ -40,7 +40,7 @@ std::optional<std::string> IO::AssetLoader::ImportAsset(const std::string &Absou
     // absolute path
     const std::filesystem::path destinationPath = destinationdir / srcpath.filename();
 
-    if (std::filesystem::exists(destinationPath) && std::filesystem::equivalent(srcpath, destinationPath)) {
+    if (std::filesystem::exists(destinationPath) && std::filesystem::exists(srcpath) && std::filesystem::equivalent(srcpath, destinationPath)) {
         LOG_INFO(LOG_WHO, "Asset already exists at destination: " + destinationPath.string());
     } else {
         try {

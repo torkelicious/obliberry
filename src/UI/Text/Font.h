@@ -13,11 +13,12 @@ namespace Rendering {
 namespace UI {
 
     struct Glyph {
-        glm::ivec2 Size;    // Width and height of glyph in pixels
-        glm::ivec2 Bearing; // Offset from baseline to left/top edge
-        GLuint Advance;     // Horizontal offset to next glyph (pixels)
-        glm::vec2 UVOffset; // Bottom-left UV of glyph in atlas
-        glm::vec2 UVSize;   // Glyph size as UV fraction of atlas
+        glm::ivec2 Size;       // Quad size (padded for SDF, actual for bitmap)
+        glm::ivec2 LayoutSize; // Unpadded size for text layout / bounding box
+        glm::ivec2 Bearing;    // Offset from baseline to left/top edge
+        GLuint Advance;        // Horizontal offset to next glyph (pixels)
+        glm::vec2 UVOffset;    // Bottom-left UV of glyph in atlas
+        glm::vec2 UVSize;      // Glyph size as UV fraction of atlas
     };
 
     class Font {
@@ -29,6 +30,8 @@ namespace UI {
         Font &operator=(const Font &) = delete;
         Font(Font &&) = delete;
         Font &operator=(Font &&) = delete;
+
+        void LoadCPU();
 
         void InitGL() const;
 
@@ -45,6 +48,7 @@ namespace UI {
 
         FT_Library m_FTLibrary = nullptr;
         FT_Face m_Face = nullptr;
+        std::string m_FilePath;
         bool m_Valid = false;
         unsigned int m_FontSize = 0;
         bool m_IsSDF = false;

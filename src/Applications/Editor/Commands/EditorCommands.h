@@ -321,7 +321,7 @@ namespace Editor::Commands {
 
     class SetUIElementPositionCommand final : public ICommand {
     public:
-        SetUIElementPositionCommand(::UI::UIElement *target, glm::vec2 oldPos, glm::vec2 newPos) : m_Target(target), m_OldPos(oldPos), m_NewPos(newPos) {}
+        SetUIElementPositionCommand(::UI::UIElement *target, const glm::vec2 oldPos, const glm::vec2 newPos) : m_Target(target), m_OldPos(oldPos), m_NewPos(newPos) {}
         void Execute(Core::EngineContext &ctx) override { m_Target->Rect.Position = m_NewPos; }
         void Undo(Core::EngineContext &ctx) override { m_Target->Rect.Position = m_OldPos; }
         [[nodiscard]] std::string_view Name() const noexcept override { return "Move UI Element"; }
@@ -334,7 +334,7 @@ namespace Editor::Commands {
 
     class SetUIElementScaleCommand final : public ICommand {
     public:
-        SetUIElementScaleCommand(::UI::UIElement *target, glm::vec2 oldScale, glm::vec2 newScale) : m_Target(target), m_OldScale(oldScale), m_NewScale(newScale) {}
+        SetUIElementScaleCommand(::UI::UIElement *target, const glm::vec2 oldScale, const glm::vec2 newScale) : m_Target(target), m_OldScale(oldScale), m_NewScale(newScale) {}
         void Execute(Core::EngineContext &ctx) override { m_Target->Rect.Scale = m_NewScale; }
         void Undo(Core::EngineContext &ctx) override { m_Target->Rect.Scale = m_OldScale; }
         [[nodiscard]] std::string_view Name() const noexcept override { return "Resize UI Element"; }

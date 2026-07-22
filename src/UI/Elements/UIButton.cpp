@@ -23,6 +23,9 @@ namespace UI {
             if (!atlas)
                 return;
 
+            const bool isSDF = m_Font->IsSDF();
+            const unsigned int spread = m_Font->GetSDFSpread();
+
             // center text
             const float textWidth = GetTextWidth();
             const float textX = finalPos.x + (Rect.Scale.x - textWidth) * 0.5f;
@@ -30,7 +33,12 @@ namespace UI {
 
             float cursorX = 0.0f;
             for (const char c : m_Text) {
-                const auto &[Size, Bearing, Advance, UVOffset, UVSize] = m_Font->GetGlyph(c);
+                const auto &glyph = m_Font->GetGlyph(c);
+                const auto &Size = glyph.Size;
+                const auto &Bearing = glyph.Bearing;
+                const auto &Advance = glyph.Advance;
+                const auto &UVOffset = glyph.UVOffset;
+                const auto &UVSize = glyph.UVSize;
 
                 if (Size.x > 0 && Size.y > 0) {
                     const float x = textX + cursorX + static_cast<float>(Bearing.x);
@@ -41,7 +49,11 @@ namespace UI {
                     const glm::vec2 uvMin = UVOffset;
                     const glm::vec2 uvMax = UVOffset + UVSize;
 
-                    renderer->SubmitQuad({x, y}, {w, h}, uvMin, uvMax, atlas.get(), m_Color);
+                    if (isSDF) {
+                        renderer->SubmitSDFQuad({x, y}, {w, h}, uvMin, uvMax, atlas.get(), m_Color, 1.0f, static_cast<float>(spread));
+                    } else {
+                        renderer->SubmitQuad({x, y}, {w, h}, uvMin, uvMax, atlas.get(), m_Color);
+                    }
                 }
 
                 cursorX += static_cast<float>(Advance);

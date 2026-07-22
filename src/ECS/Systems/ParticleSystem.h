@@ -37,7 +37,7 @@ namespace ECS::Systems::ParticleSystem {
         }
     }
 
-    inline int FindEmitter(EntityID entity) {
+    inline int FindEmitter(const EntityID entity) {
         const auto &emitters = GetEmitters();
         for (int i = 0; i < static_cast<int>(emitters.size()); ++i) {
             if (emitters[i].sourceEntity == entity)
@@ -73,7 +73,7 @@ namespace ECS::Systems::ParticleSystem {
         return index;
     }
 
-    inline void Update(ECS::Registry &registry, float dt) {
+    inline void Update(ECS::Registry &registry, const float dt) {
         EnsureQuad();
 
         auto &emitters = GetEmitters();

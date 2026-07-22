@@ -2,7 +2,7 @@
 #include "Logger/LoggerService.h"
 #include "Rendering/Texture.h"
 #include "IO/VFS/VFS.h"
-
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <vector>
@@ -12,20 +12,20 @@
 
 namespace UI {
 
-    static float DistanceToEdge(const unsigned char *bitmap, int width, int height, int px, int py, bool inside) {
+    static float DistanceToEdge(const unsigned char *bitmap, const int width, const int height, const int px, const int py, const bool inside, const int spread) {
         float bestDist = 1e6f;
-        constexpr int SEARCH_RADIUS = 12;
+        const int SEARCH_RADIUS = std::max(spread, 12);
 
         for (int dy = -SEARCH_RADIUS; dy <= SEARCH_RADIUS; dy++) {
             for (int dx = -SEARCH_RADIUS; dx <= SEARCH_RADIUS; dx++) {
-                int nx = px + dx;
-                int ny = py + dy;
+                const int nx = px + dx;
+                const int ny = py + dy;
                 if (nx < 0 || nx >= width || ny < 0 || ny >= height)
                     continue;
 
-                bool sampleInside = bitmap[ny * width + nx] > 127;
+                const bool sampleInside = bitmap[ny * width + nx] > 127;
                 if (sampleInside != inside) {
-                    float d = std::sqrt(static_cast<float>(dx * dx + dy * dy));
+                    const float d = std::sqrt(static_cast<float>(dx * dx + dy * dy));
                     if (d < bestDist)
                         bestDist = d;
                 }
@@ -34,31 +34,37 @@ namespace UI {
         return bestDist;
     }
 
-    Font::Font(const std::string &filepath, unsigned int fontSize, bool useSDF, unsigned int sdfSpread) : m_FontSize(fontSize), m_IsSDF(useSDF), m_SDFSpread(sdfSpread) {
+    Font::Font(const std::string &filepath, const unsigned int fontSize, const bool useSDF, const unsigned int sdfSpread) : m_FilePath(filepath), m_FontSize(fontSize), m_IsSDF(useSDF), m_SDFSpread(sdfSpread) {
+    }
+
+    void Font::LoadCPU() {
+        if (m_Valid)
+            return;
+
         if (FT_Init_FreeType(&m_FTLibrary)) {
             LOG_ERROR(LOG_WHO, "Could not init FreeType");
             return;
         }
 
-        const std::string resolvedPath = IO::VFS::Resolve(filepath);
+        const std::string resolvedPath = IO::VFS::Resolve(m_FilePath);
         if (resolvedPath.empty()) {
-            LOG_ERROR(LOG_WHO, "Could not resolve font path: " + filepath);
+            LOG_ERROR(LOG_WHO, "Could not resolve font path: " + m_FilePath);
             FT_Done_FreeType(m_FTLibrary);
             m_FTLibrary = nullptr;
             return;
         }
 
         if (FT_New_Face(m_FTLibrary, resolvedPath.c_str(), 0, &m_Face)) {
-            LOG_ERROR(LOG_WHO, "Failed to load font: " + filepath + " (resolved: " + resolvedPath + ")");
+            LOG_ERROR(LOG_WHO, "Failed to load font: " + m_FilePath + " (resolved: " + resolvedPath + ")");
             FT_Done_FreeType(m_FTLibrary);
             m_FTLibrary = nullptr;
             return;
         }
 
-        if (useSDF) {
-            BuildSDFAtlas(filepath, fontSize, sdfSpread);
+        if (m_IsSDF) {
+            BuildSDFAtlas(m_FilePath, m_FontSize, m_SDFSpread);
         } else {
-            BuildBitmapAtlas(filepath, fontSize);
+            BuildBitmapAtlas(m_FilePath, m_FontSize);
         }
     }
 
@@ -94,6 +100,7 @@ namespace UI {
 
             if (w == 0 || h == 0) {
                 g.Size = glm::ivec2(0);
+                g.LayoutSize = glm::ivec2(0);
                 g.UVOffset = glm::vec2(0.0f);
                 g.UVSize = glm::vec2(0.0f);
                 m_Glyphs[static_cast<char>(c)] = g;
@@ -119,6 +126,7 @@ namespace UI {
 
             // pixel coordinates
             g.Size = glm::ivec2(w, h);
+            g.LayoutSize = g.Size;
             g.UVOffset = glm::vec2(static_cast<float>(x), static_cast<float>(y));
             g.UVSize = glm::vec2(static_cast<float>(w), static_cast<float>(h));
             m_Glyphs[static_cast<char>(c)] = g;
@@ -226,6 +234,7 @@ namespace UI {
 
             if (w == 0 || h == 0) {
                 g.Size = glm::ivec2(0);
+                g.LayoutSize = glm::ivec2(0);
                 g.UVOffset = glm::vec2(0.0f);
                 g.UVSize = glm::vec2(0.0f);
                 m_Glyphs[static_cast<char>(c)] = g;
@@ -255,6 +264,7 @@ namespace UI {
             bitmaps[static_cast<char>(c)] = std::move(bmp);
 
             g.Size = glm::ivec2(paddedW, paddedH);
+            g.LayoutSize = glm::ivec2(w, h);
             g.UVOffset = glm::vec2(static_cast<float>(x), static_cast<float>(y));
             g.UVSize = glm::vec2(static_cast<float>(paddedW), static_cast<float>(paddedH));
             m_Glyphs[static_cast<char>(c)] = g;
@@ -306,7 +316,7 @@ namespace UI {
                     const float alpha = static_cast<float>(paddedBitmap[static_cast<size_t>(row * paddedW + col)]) / 255.0f;
                     const bool inside = alpha > 0.5f;
 
-                    float dist = DistanceToEdge(paddedBitmap.data(), paddedW, paddedH, col, row, inside);
+                    float dist = DistanceToEdge(paddedBitmap.data(), paddedW, paddedH, col, row, inside, static_cast<int>(spread));
 
                     // Normalize distance by spread
                     float normalized = dist / static_cast<float>(spread);

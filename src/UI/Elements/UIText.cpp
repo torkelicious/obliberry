@@ -54,7 +54,7 @@ namespace UI {
         for (const char c : m_Text) {
             const auto &glyph = m_Font->GetGlyph(c);
             naturalWidth += static_cast<float>(glyph.Advance);
-            float glyphHeight = static_cast<float>(glyph.Size.y);
+            float glyphHeight = static_cast<float>(glyph.LayoutSize.y);
             if (glyphHeight > maxHeight)
                 maxHeight = glyphHeight;
         }
@@ -85,7 +85,7 @@ namespace UI {
                 const glm::vec2 uvMax = glyph.UVOffset + glyph.UVSize;
 
                 if (isSDF) {
-                    renderer->SubmitSDFQuad({x, y}, {w, h}, uvMin, uvMax, atlas.get(), m_Color, sdfRenderScale);
+                    renderer->SubmitSDFQuad({x, y}, {w, h}, uvMin, uvMax, atlas.get(), m_Color, sdfRenderScale, static_cast<float>(spread));
                 } else {
                     renderer->SubmitQuad({x, y}, {w, h}, uvMin, uvMax, atlas.get(), m_Color);
                 }
@@ -105,18 +105,18 @@ namespace UI {
         float cursorX = 0.0f;
 
         for (const char c : m_Text) {
-            const auto &[Size, Bearing, Advance, UVOffset, UVSize] = m_Font->GetGlyph(c);
-            if (Size.x > 0 && Size.y > 0) {
+            const auto &glyph = m_Font->GetGlyph(c);
+            if (glyph.Size.x > 0 && glyph.Size.y > 0) {
                 const float baselineY = 0.0f;
-                const float x = cursorX + static_cast<float>(Bearing.x);
-                const float y = baselineY - static_cast<float>(Size.y - Bearing.y);
-                const auto w = static_cast<float>(Size.x);
-                const auto h = static_cast<float>(Size.y);
+                const float x = cursorX + static_cast<float>(glyph.Bearing.x);
+                const float y = baselineY - static_cast<float>(glyph.Size.y - glyph.Bearing.y);
+                const auto w = static_cast<float>(glyph.Size.x);
+                const auto h = static_cast<float>(glyph.Size.y);
 
-                const float u0 = UVOffset.x;
-                const float v0 = UVOffset.y;
-                const float u1 = UVOffset.x + UVSize.x;
-                const float v1 = UVOffset.y + UVSize.y;
+                const float u0 = glyph.UVOffset.x;
+                const float v0 = glyph.UVOffset.y;
+                const float u1 = glyph.UVOffset.x + glyph.UVSize.x;
+                const float v1 = glyph.UVOffset.y + glyph.UVSize.y;
 
                 // triangle 1
                 vertices.push_back({{x, y}, {u0, v0}});
@@ -128,7 +128,7 @@ namespace UI {
                 vertices.push_back({{x, y + h}, {u0, v1}});
             }
 
-            cursorX += static_cast<float>(Advance);
+            cursorX += static_cast<float>(glyph.Advance);
         }
         return vertices;
     }

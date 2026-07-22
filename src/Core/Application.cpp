@@ -131,6 +131,7 @@ void Core::Application::Run() {
     // uisys temp
 
     auto font = std::make_shared<UI::Font>("/usr/share/fonts/TTF/Hack-Bold.ttf");
+    font->LoadCPU();
     auto tex = std::make_shared<Rendering::Texture>("assets/textures/player/player_se.png");
 
     tex->InitGL();

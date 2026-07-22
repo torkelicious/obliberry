@@ -63,6 +63,7 @@ namespace UI {
         m_QuadTextures[m_SubmitIndex].clear();
         m_QuadShader[m_SubmitIndex].clear();
         m_QuadSDFScale[m_SubmitIndex].clear();
+        m_QuadSDFSpread[m_SubmitIndex].clear();
     }
 
     void UIRenderer::SubmitQuad(const glm::vec2 pos, const glm::vec2 size, const glm::vec2 uvMin, const glm::vec2 uvMax, const Rendering::Texture *texture, const glm::vec4 color) {
@@ -77,11 +78,13 @@ namespace UI {
         m_QuadTextures[m_SubmitIndex].push_back(texture);
         m_QuadShader[m_SubmitIndex].push_back(BatchShader::REGULAR);
         m_QuadSDFScale[m_SubmitIndex].push_back(1.0f);
+        m_QuadSDFSpread[m_SubmitIndex].push_back(8.0f);
     }
 
     void UIRenderer::SubmitRect(const glm::vec2 pos, const glm::vec2 size, const glm::vec4 color) { SubmitQuad(pos, size, {0.0f, 0.0f}, {1.0f, 1.0f}, Rendering::Texture::White(), color); }
 
-    void UIRenderer::SubmitSDFQuad(const glm::vec2 pos, const glm::vec2 size, const glm::vec2 uvMin, const glm::vec2 uvMax, const Rendering::Texture *texture, const glm::vec4 color, const float sdfScale) {
+    void UIRenderer::SubmitSDFQuad(const glm::vec2 pos, const glm::vec2 size, const glm::vec2 uvMin, const glm::vec2 uvMax, const Rendering::Texture *texture, const glm::vec4 color, const float sdfScale,
+                                   const float sdfSpread) {
         auto &verts = m_Vertices[m_SubmitIndex];
         verts.push_back({pos, glm::vec2(uvMin.x, uvMax.y), color});
         verts.push_back({pos + glm::vec2(size.x, 0.0f), glm::vec2(uvMax.x, uvMax.y), color});
@@ -91,6 +94,7 @@ namespace UI {
         m_QuadTextures[m_SubmitIndex].push_back(texture);
         m_QuadShader[m_SubmitIndex].push_back(BatchShader::SDF);
         m_QuadSDFScale[m_SubmitIndex].push_back(sdfScale);
+        m_QuadSDFSpread[m_SubmitIndex].push_back(sdfSpread);
     }
 
     void UIRenderer::Flush() {
@@ -109,18 +113,20 @@ namespace UI {
         const Rendering::Texture *currentTex = texs[0];
         BatchShader currentShader = m_QuadShader[m_RenderIndex][0];
         float currentSDFScale = m_QuadSDFScale[m_RenderIndex][0];
+        float currentSDFSpread = m_QuadSDFSpread[m_RenderIndex][0];
         uint32_t batchStart = 0;
 
         for (uint32_t i = 1; i < static_cast<uint32_t>(texs.size()); i++) {
             if (texs[i] != currentTex || m_QuadShader[m_RenderIndex][i] != currentShader) {
-                m_Batches.push_back({currentTex, batchStart * 6, (i - batchStart) * 6, currentShader, currentSDFScale});
+                m_Batches.push_back({currentTex, batchStart * 6, (i - batchStart) * 6, currentShader, currentSDFScale, currentSDFSpread});
                 currentTex = texs[i];
                 currentShader = m_QuadShader[m_RenderIndex][i];
                 currentSDFScale = m_QuadSDFScale[m_RenderIndex][i];
+                currentSDFSpread = m_QuadSDFSpread[m_RenderIndex][i];
                 batchStart = i;
             }
         }
-        m_Batches.push_back({currentTex, batchStart * 6, (static_cast<uint32_t>(texs.size()) - batchStart) * 6, currentShader, currentSDFScale});
+        m_Batches.push_back({currentTex, batchStart * 6, (static_cast<uint32_t>(texs.size()) - batchStart) * 6, currentShader, currentSDFScale, currentSDFSpread});
 
         // Upload to GPU
         m_VBO->SetDataOrphaned(verts.data(), static_cast<unsigned int>(verts.size() * sizeof(UIVertex)));
@@ -134,7 +140,7 @@ namespace UI {
             if (batch.shader == BatchShader::SDF) {
                 m_SDFShader->Bind();
                 m_SDFShader->SetUniformMat4("u_Projection", m_Projection[m_RenderIndex]);
-                m_SDFShader->SetUniform1f("u_Spread", 8.0f); // spread used at font rasterization
+                m_SDFShader->SetUniform1f("u_Spread", batch.sdfSpread);
                 m_SDFShader->SetUniform1f("u_Scale", batch.sdfScale);
             } else {
                 m_Shader->Bind();

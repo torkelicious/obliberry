@@ -32,7 +32,8 @@ namespace UI {
         uint32_t indexOffset = 0;
         uint32_t indexCount = 0;
         BatchShader shader = BatchShader::REGULAR;
-        float sdfScale = 1.0f; // only used for SDF
+        float sdfScale = 1.0f;  // only used for SDF
+        float sdfSpread = 8.0f; // only used for SDF
     };
 
     class UIRenderer {
@@ -55,7 +56,7 @@ namespace UI {
         // colored rectangle
         void SubmitRect(glm::vec2 pos, glm::vec2 size, glm::vec4 color);
 
-        void SubmitSDFQuad(glm::vec2 pos, glm::vec2 size, glm::vec2 uvMin, glm::vec2 uvMax, const Rendering::Texture *texture, glm::vec4 color, float sdfScale);
+        void SubmitSDFQuad(glm::vec2 pos, glm::vec2 size, glm::vec2 uvMin, glm::vec2 uvMax, const Rendering::Texture *texture, glm::vec4 color, float sdfScale, float sdfSpread = 8.0f);
 
         // convenience
         void SubmitRect(const RectTransform &rect, const glm::vec4 color) { SubmitRect(rect.Position, rect.Scale, color); }
@@ -86,6 +87,7 @@ namespace UI {
         std::vector<const Rendering::Texture *> m_QuadTextures[2];
         std::vector<BatchShader> m_QuadShader[2];
         std::vector<float> m_QuadSDFScale[2];
+        std::vector<float> m_QuadSDFSpread[2];
 
         std::unique_ptr<Rendering::VertexBuffer> m_VBO;
         std::unique_ptr<Rendering::VertexArray> m_VAO;
