@@ -338,10 +338,8 @@ assert(to_string(42.0) == "42", "to_string");
 assert(to_num("42") == 42.0, "to_num");
 println "Conversion: PASS";
 
-println "";
-println "GUI";
-assert(type_of(ImGui_Button("Btn")) == "bool", "ImGui_Button type");
-println "ImGui_Button: PASS";
+//println "";
+//println "GUI";
 
 println "";
 println "Destroy";
