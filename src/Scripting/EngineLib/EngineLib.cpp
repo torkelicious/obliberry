@@ -16,7 +16,7 @@
 
 /*
  *todo:
- * gui stuff?
+ * gui stuff? -- wip
  * wait corutine type thingy (wait for specific time without pausing entire thread type thingy)
  */
 
