@@ -224,7 +224,7 @@ namespace Scripting {
                 [name, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
                     if (!std::holds_alternative<std::string>(args[0]))
                         return std::monostate{};
-                    std::string text = std::get<std::string>(args[0]);
+                    auto text = std::get<std::string>(args[0]);
                     if (ctx->uiCmdBuf) {
                         ctx->uiCmdBuf->push([name, text](UI::UISystem &ui) {
                             if (auto *el = ui.FindByName(name))
@@ -317,7 +317,7 @@ namespace Scripting {
                 [name, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
                     if (!std::holds_alternative<std::string>(args[0]))
                         return std::monostate{};
-                    std::string text = std::get<std::string>(args[0]);
+                    auto text = std::get<std::string>(args[0]);
                     if (ctx->uiCmdBuf) {
                         ctx->uiCmdBuf->push([name, text](UI::UISystem &ui) {
                             if (auto *el = ui.FindByName(name))
