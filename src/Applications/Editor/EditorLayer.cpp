@@ -390,8 +390,8 @@ void Editor::EditorLayer::DrawDockSpace() {
     const ImGuiID dock_id_bottom = ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Down, 0.3f, nullptr, &dock_id_center);
 
     ImGui::DockBuilderDockWindow("Registry", dock_id_left);
+    ImGui::DockBuilderDockWindow("UI Hierarchy", dock_id_left);
     ImGui::DockBuilderDockWindow("Inspector", dock_id_right);
-    ImGui::DockBuilderDockWindow("UI Hierarchy", dock_id_right);
     ImGui::DockBuilderDockWindow("Console", dock_id_bottom);
     ImGui::DockBuilderDockWindow("Project Browser", dock_id_bottom);
     ImGui::DockBuilderDockWindow("Scene View", dock_id_center);
