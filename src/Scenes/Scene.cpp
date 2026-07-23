@@ -27,6 +27,7 @@ void Scenes::Scene::OnEnter() {
     LOG_INFO(LOG_WHO, "Entering scene: " + m_Properties.ScenePath);
 
     m_Context->uiSystem = &m_UISystem;
+    m_Context->uiCmdBuf = &m_UICmdBuf;
 
     // Register EngineLib native functions on every worker's interpreter
     for (size_t w = 0; w < m_Context->scriptPool->worker_count(); ++w) {
@@ -70,12 +71,14 @@ void Scenes::Scene::Update(const float dt) {
 
     if (m_Context->uiSystem) {
         m_Context->uiSystem->Update(dt);
+        m_Context->uiSystem->SnapshotButtonStates();
     }
 
     ECS::Systems::PlayerControlSystem::Update(m_Registry, *m_Context);
     ECS::Systems::AISystem::Update(m_Registry, dt);
     ECS::Systems::MovementSystem::Update(m_Registry, dt);
     ECS::Systems::ScriptSystem::Update(m_Registry, *m_Context);
+    m_UICmdBuf.flush(m_UISystem);
     ECS::Systems::LightingSystem::Update(m_Registry);
     ECS::Systems::ParticleSystem::Update(m_Registry, dt);
 }
@@ -117,6 +120,7 @@ void Scenes::Scene::OnExit() {
     IO::PrefabManager::ClearCache();
     m_UISystem.Clear();
     m_Context->uiSystem = nullptr;
+    m_Context->uiCmdBuf = nullptr;
     LOG_INFO(LOG_WHO, "Exiting Scene " + m_Properties.ScenePath);
 }
 

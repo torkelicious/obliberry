@@ -45,6 +45,10 @@ namespace ObSL {
     class ScriptRuntime;
 }
 
+namespace Scripting {
+    class UICommandBuffer;
+}
+
 namespace Core {
     struct EngineContext {
         std::filesystem::path ProjectRootPath;
@@ -59,6 +63,7 @@ namespace Core {
         Rendering::Camera *camera = nullptr;
         UI::UIRenderer *uiRenderer = nullptr;
         UI::UISystem *uiSystem = nullptr;
+        Scripting::UICommandBuffer *uiCmdBuf = nullptr;
         ObSL::ScriptRuntime *scriptPool = nullptr;
         Platform::Threading::ThreadPool *threadPool = nullptr;
         Sound::AudioEngine *audioEngine = nullptr;

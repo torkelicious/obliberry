@@ -2,9 +2,12 @@
 
 #include "UI/Rendering/UIRenderer.h"
 #include "UI/UIElement.h"
+#include "UI/Elements/UIButton.h"
 #include "Platform/Input/InputManager.h"
 #include <glm/vec2.hpp>
 #include <memory>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace UI {
@@ -35,6 +38,12 @@ namespace UI {
         void Render();
         [[nodiscard]] UIElement *HitTest(glm::vec2 point) const;
 
+        [[nodiscard]] UIElement *FindByName(const std::string &name);
+        [[nodiscard]] const UIElement *FindByName(const std::string &name) const;
+
+        void SnapshotButtonStates();
+        [[nodiscard]] ButtonState GetButtonState(const std::string &name) const;
+
     private:
         void RenderRecursive(UIElement *element, glm::vec2 accumulatedPos);
         static UIElement *HitTestRecursive(UIElement *element, glm::vec2 point, glm::vec2 accumulatedPos);
@@ -43,6 +52,7 @@ namespace UI {
         std::vector<std::unique_ptr<UIElement>> m_OwnedElements;
         UIRenderer *m_Renderer = nullptr;
         Platform::Input::InputManager *m_Input = nullptr;
+        std::unordered_map<std::string, ButtonState> m_ButtonSnapshots;
     };
 
 } // namespace UI

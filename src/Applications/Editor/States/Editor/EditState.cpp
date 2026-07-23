@@ -32,6 +32,7 @@ void Editor::States::EditState::OnUpdate(const float dt) {
         ECS::Systems::ParticleSystem::Update(*m_EditorLayer->m_Registry, dt);
     }
     m_EditorLayer->m_Context.uiSystem->Update(dt);
+    m_EditorLayer->m_Context.uiSystem->SnapshotButtonStates();
 
     // Entity picking
     if (const int clickedID = m_EditorLayer->m_ViewportPanel.GetSelectedEntityID(); clickedID != -1) {

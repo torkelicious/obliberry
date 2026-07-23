@@ -101,4 +101,43 @@ namespace UI {
         m_OwnedElements.clear();
     }
 
+    // Scripting
+    static UIElement *FindByNameRecursive(UIElement *element, const std::string &name) {
+        if (!element)
+            return nullptr;
+        if (element->Name == name)
+            return element;
+        for (auto *child : element->Children) {
+            if (auto *found = FindByNameRecursive(child, name))
+                return found;
+        }
+        return nullptr;
+    }
+
+    UIElement *UISystem::FindByName(const std::string &name) { return FindByNameRecursive(m_Root.get(), name); }
+
+    const UIElement *UISystem::FindByName(const std::string &name) const { return FindByNameRecursive(m_Root.get(), name); }
+
+    static void SnapshotButtonsRecursive(UIElement *element, std::unordered_map<std::string, ButtonState> &out) {
+        if (!element)
+            return;
+        if (const auto *btn = dynamic_cast<UIButton *>(element)) {
+            if (!element->Name.empty())
+                out[element->Name] = btn->GetButtonState();
+        }
+        for (auto *child : element->Children) {
+            SnapshotButtonsRecursive(child, out);
+        }
+    }
+
+    void UISystem::SnapshotButtonStates() {
+        m_ButtonSnapshots.clear();
+        SnapshotButtonsRecursive(m_Root.get(), m_ButtonSnapshots);
+    }
+
+    ButtonState UISystem::GetButtonState(const std::string &name) const {
+        const auto it = m_ButtonSnapshots.find(name);
+        return (it != m_ButtonSnapshots.end()) ? it->second : ButtonState::NONE;
+    }
+
 } // namespace UI

@@ -6,6 +6,7 @@
 #include "UI/Rendering/UISystem.h"
 #include "Core/EngineContext.h"
 #include "ECS/ECS.h"
+#include "Scripting/EngineLib/UICommandBuffer.h"
 
 namespace Scenes {
     struct SceneProperties {
@@ -55,5 +56,6 @@ namespace Scenes {
         ECS::Registry m_Registry;
         bool m_HasUnsavedChanges = false;
         UI::UISystem m_UISystem;
+        Scripting::UICommandBuffer m_UICmdBuf;
     };
 } // namespace Scenes
