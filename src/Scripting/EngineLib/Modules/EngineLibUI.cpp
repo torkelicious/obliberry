@@ -277,7 +277,7 @@ namespace Scripting {
 
     ObSL::ObSLObject *CreateUITextObject(ObSL::Interpreter *interp, const std::string &name, Core::EngineContext *ctx) {
         auto *obj = interp->gc.allocate<ObSL::ObSLObject>();
-        Scripting::EngineLibFactories::GCProtectGuard guard(interp, obj);
+        EngineLibFactories::GCProtectGuard guard(interp, obj);
 
         BuildBaseUIFields(obj, interp, name, ctx);
 
