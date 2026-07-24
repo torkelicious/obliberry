@@ -14,7 +14,7 @@ namespace Editor::UI {
 
         ~InspectorPanel() override;
 
-        public:
+    public:
         void OnImGuiRender() override;
 
         void SetSelectedEntity(const ECS::Entity entity) { m_SelectedEntity = entity; }

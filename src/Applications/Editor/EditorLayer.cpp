@@ -735,7 +735,8 @@ void Editor::EditorLayer::DrawToolbar() {
                                 mapEntity.AddComponent<ECS::Components::MapComponent>(mapComp);
                                 mapEntity.AddComponent<ECS::Components::MapStateComponent>();
 
-                                if (m_Scene) m_Scene->MarkAsChanged();
+                                if (m_Scene)
+                                    m_Scene->MarkAsChanged();
                             }
                             TransitionTo(std::make_unique<States::MapEditState>());
                         });

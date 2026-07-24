@@ -69,12 +69,12 @@ namespace Rendering {
 
         void Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> &transforms, const std::vector<int> &entityIDs = {});
 
-        void Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> &transforms, const std::vector<glm::vec4> &colors, int blendMode = 0, int renderOrder = 0, int shape = 0);
+        void Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> &transforms, const std::vector<glm::vec4> &colors, int blendMode = 0, int renderOrder = 0,
+                    int shape = 0);
 
         void SubmitPersistent(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> *transforms, const std::vector<int> *entityIDs = nullptr);
 
-        template <typename T>
-        void Pin(const std::shared_ptr<T> &resource) {
+        template <typename T> void Pin(const std::shared_ptr<T> &resource) {
             if (resource)
                 m_ResourcePins[m_SubmitIndex].push_back(resource);
         }

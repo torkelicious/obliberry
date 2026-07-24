@@ -85,8 +85,8 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::s
                                                   .entityIDCount = entityIDs.size()});
 }
 
-void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> &transforms, const std::vector<glm::vec4> &colors, const int blendMode, const int renderOrder,
-                                 const int shape) {
+void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> &transforms, const std::vector<glm::vec4> &colors, const int blendMode,
+                                 const int renderOrder, const int shape) {
     if (transforms.empty())
         return;
 
