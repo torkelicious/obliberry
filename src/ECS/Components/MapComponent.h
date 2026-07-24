@@ -31,10 +31,10 @@ namespace ECS::Components {
 
         std::array<std::vector<uint8_t>, 2> activeVisibleTypes; // keep track of which types have data
 
-        std::string mapFilePath = Core::PathUtils::Join(Core::MAP_PATH, "default", Core::MAP_FILE_EXTENSION);
+        std::string mapFilePath;
 
         // visual assets
-        std::vector<std::pair<uint8_t, Rendering::Material>> typeMats;
+        std::vector<std::pair<uint8_t, std::shared_ptr<Rendering::Material>>> typeMats;
         std::shared_ptr<Rendering::Mesh> hexMesh;
         std::shared_ptr<Rendering::Material> outlineMat;
         std::shared_ptr<Rendering::Material> pathToMat;

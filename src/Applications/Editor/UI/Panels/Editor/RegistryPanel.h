@@ -8,8 +8,9 @@ namespace Editor::UI {
     public:
         void OnImGuiRender() override;
 
-        [[nodiscard]] ECS::Entity GetSelectedEntity() const { return m_SelectedEntity; }
         void SetSelectedEntity(const ECS::Entity entity) { m_SelectedEntity = entity; }
+        [[nodiscard]] ECS::Entity GetSelectedEntity() const { return m_SelectedEntity; }
+        void Reset() { m_SelectedEntity = ECS::Entity{}; }
 
     private:
         ECS::Entity m_SelectedEntity;

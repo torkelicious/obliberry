@@ -65,13 +65,19 @@ namespace Rendering {
 
         void BeginFrame();
 
-        void Submit(const std::shared_ptr<Mesh> &mesh, const Material *material, const Transform &transform, const Texture *textureOverride = nullptr, int entityID = -1);
+        void Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const Transform &transform, const Texture *textureOverride = nullptr, int entityID = -1);
 
-        void Submit(const std::shared_ptr<Mesh> &mesh, const Material *material, const std::vector<glm::mat4> &transforms, const std::vector<int> &entityIDs = {});
+        void Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> &transforms, const std::vector<int> &entityIDs = {});
 
-        void Submit(const std::shared_ptr<Mesh> &mesh, const Material *material, const std::vector<glm::mat4> &transforms, const std::vector<glm::vec4> &colors, int blendMode = 0, int renderOrder = 0, int shape = 0);
+        void Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> &transforms, const std::vector<glm::vec4> &colors, int blendMode = 0, int renderOrder = 0, int shape = 0);
 
-        void SubmitPersistent(const std::shared_ptr<Mesh> &mesh, const Material *material, const std::vector<glm::mat4> *transforms, const std::vector<int> *entityIDs = nullptr);
+        void SubmitPersistent(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> *transforms, const std::vector<int> *entityIDs = nullptr);
+
+        template <typename T>
+        void Pin(const std::shared_ptr<T> &resource) {
+            if (resource)
+                m_ResourcePins[m_SubmitIndex].push_back(resource);
+        }
 
         void Flush(size_t renderIndex);
 
@@ -109,6 +115,8 @@ namespace Rendering {
         void BindLightmap(Shader *shader, size_t renderIndex) const;
 
         void RenderBatch(const BatchKey &key, const glm::mat4 *transforms, const int *entityIDs, size_t count, size_t renderIndex, const glm::vec4 *perInstanceColors = nullptr);
+
+        std::vector<std::shared_ptr<void>> m_ResourcePins[2];
 
         using InitTask = std::variant<Platform::Threading::SmallTask, std::function<void()>>;
         static std::vector<InitTask> s_InitQueue;

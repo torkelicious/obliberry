@@ -46,7 +46,7 @@ void Scenes::Scene::OnEnter() {
         LOG_INFO(LOG_WHO, "Successfully deserialized scene");
     }
 
-    if (m_Context->audioEngine) {
+    if (m_Context->audioEngine && !m_Context->isEditorMode) {
         if (!m_Properties.BackgroundMusicPath.empty()) {
             m_Context->audioEngine->PlayMusic(m_Properties.BackgroundMusicPath);
         } else {

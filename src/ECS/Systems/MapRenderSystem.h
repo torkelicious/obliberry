@@ -4,12 +4,14 @@
 #include "ECS/Components/MapComponent.h"
 #include "ECS/Components/MapStateComponent.h"
 #include "ECS/Registry.h"
+#include "Logger/LoggerService.h"
 #include "Math/Frustum.h"
 #include "Math/Math.h"
 #include "Rendering/Renderer.h"
 #include "Rendering/Transform.h"
 #include <algorithm>
 #include <array>
+#include <unordered_set>
 
 namespace ECS::Systems::MapRenderSystem {
     [[nodiscard]] inline Math::Projection::AABB CalculateBufferedAABB(const Math::Projection::AABB &viewAABB, const float bufferSize = Core::HEX_SIZE * 6.0f) noexcept {
@@ -103,7 +105,16 @@ namespace ECS::Systems::MapRenderSystem {
 
                 auto matIt = mapComp->findTypeMat(typeId);
                 if (matIt != mapComp->typeMats.end()) {
-                    renderer.SubmitPersistent(mapComp->hexMesh, &matIt->second, &transforms);
+                    if (!matIt->second->texture) {
+                        static std::unordered_set<uint8_t> warnedMissingTex;
+                        if (warnedMissingTex.insert(typeId).second)
+                            LOG_WARN("MapRender", "Tile type " + std::to_string(typeId) + " has no texture, tiles will render blank");
+                    }
+                    renderer.SubmitPersistent(mapComp->hexMesh, matIt->second, &transforms);
+                } else {
+                    static std::unordered_set<uint8_t> warnedMissingType;
+                    if (warnedMissingType.insert(typeId).second)
+                        LOG_WARN("MapRender", "Tile type " + std::to_string(typeId) + " has no material definition, tiles will not render");
                 }
             }
         });
@@ -111,7 +122,7 @@ namespace ECS::Systems::MapRenderSystem {
 
     inline void RenderOverlays(Registry &registry, Rendering::Renderer &renderer) {
         registry.ForEach<Components::MapComponent, Components::MapStateComponent>([&](Entity, Components::MapComponent *mapComp, const Components::MapStateComponent *stateComp) {
-            if (!mapComp->hexMesh || !mapComp->outlineMat->shader || !mapComp->pathToMat->shader) {
+            if (!mapComp->hexMesh || !mapComp->outlineMat || !mapComp->outlineMat->shader || !mapComp->pathToMat || !mapComp->pathToMat->shader) {
                 return;
             }
 
@@ -120,7 +131,7 @@ namespace ECS::Systems::MapRenderSystem {
                 Rendering::Transform t;
                 t.SetPosition({worldPos.x, worldPos.y, 0.01f});
                 t.SetScale({1.08f, 1.08f, 1.0f});
-                renderer.Submit(mapComp->hexMesh, mapComp->outlineMat.get(), t);
+                renderer.Submit(mapComp->hexMesh, mapComp->outlineMat, t);
             }
 
             if (stateComp->hasPathTo) {
@@ -128,7 +139,7 @@ namespace ECS::Systems::MapRenderSystem {
                 Rendering::Transform t;
                 t.SetPosition({worldPos.x, worldPos.y, 0.01f});
                 t.SetScale({1.08f, 1.08f, 1.0f});
-                renderer.Submit(mapComp->hexMesh, mapComp->pathToMat.get(), t);
+                renderer.Submit(mapComp->hexMesh, mapComp->pathToMat, t);
             }
         });
     }

@@ -24,7 +24,10 @@ void Game::GameLayer::Init(Core::EngineContext &ctx) {
 
     m_SceneManager.SetContext(*m_Context);
 
+    m_Context->isEditorMode = false;
+
     if (m_Context->scriptPool) {
+        m_Context->scriptPool->shutdown();
         m_Context->scriptPool->init(IO::VFS::GetAssetsDirectory() / "scripts");
     }
 

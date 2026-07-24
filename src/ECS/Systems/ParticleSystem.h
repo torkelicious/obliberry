@@ -172,7 +172,7 @@ namespace ECS::Systems::ParticleSystem {
             state.pool.BuildTransformsAndColors(transforms, colors, bb, &camRight, &camUp);
 
             const int blendMode = (comp->blendMode == Components::ParticleBlendMode::Additive) ? 1 : 0;
-            renderer.Submit(quad, comp->material.get(), transforms, colors, blendMode, comp->renderOrder, comp->shape);
+            renderer.Submit(quad, comp->material, transforms, colors, blendMode, comp->renderOrder, comp->shape);
         });
     }
 

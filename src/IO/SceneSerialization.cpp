@@ -116,9 +116,7 @@ namespace IO::SceneIO {
                         color = {c[0], c[1], c[2], c[3]};
                     }
 
-                    Rendering::Material typeMat{shader, typeTexture, color};
-
-                    mapComp.typeMats.emplace_back(id, typeMat);
+                    mapComp.typeMats.emplace_back(id, std::make_shared<Rendering::Material>(Rendering::Material{shader, typeTexture, color}));
                 }
             }
 
@@ -188,11 +186,14 @@ namespace IO::SceneIO {
 
         // ecs query to save grid
         scene.GetRegistry().ForEach<ECS::Components::MapComponent>([&](ECS::Entity, const ECS::Components::MapComponent *mapComp) {
-            std::string mapFile = mapComp->mapFilePath.empty() ? Core::PathUtils::Join(Core::MAP_PATH, "unknown", Core::MAP_FILE_EXTENSION) : mapComp->mapFilePath;
+            if (mapComp->mapFilePath.empty()) {
+                LOG_WARN(LOG_WHO, "Map has no file path, skipping grid serialization. Use Save As to assign a path.");
+                return;
+            }
 
-            j["grid"]["map_file"] = mapFile;
-            if (!MapIO::Serialize(mapFile, mapComp->grid)) {
-                LOG_ERROR(LOG_WHO, "Failed to write map file: " + mapFile);
+            j["grid"]["map_file"] = mapComp->mapFilePath;
+            if (!MapIO::Serialize(mapComp->mapFilePath, mapComp->grid)) {
+                LOG_ERROR(LOG_WHO, "Failed to write map file: " + mapComp->mapFilePath);
             }
 
             if (mapComp->hexMesh) {
@@ -215,12 +216,12 @@ namespace IO::SceneIO {
                     json typeJson;
                     typeJson["id"] = id;
 
-                    if (material.texture) {
-                        typeJson["texture"] = resources.GetKey(material.texture);
+                    if (material->texture) {
+                        typeJson["texture"] = resources.GetKey(material->texture);
                     }
 
-                    if (material.color != glm::vec4(1.0f)) {
-                        typeJson["color"] = {material.color.r, material.color.g, material.color.b, material.color.a};
+                    if (material->color != glm::vec4(1.0f)) {
+                        typeJson["color"] = {material->color.r, material->color.g, material->color.b, material->color.a};
                     }
                     j["grid"]["types"].push_back(typeJson);
                 }

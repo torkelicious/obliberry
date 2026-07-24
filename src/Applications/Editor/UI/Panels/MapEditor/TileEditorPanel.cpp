@@ -25,7 +25,7 @@ namespace Editor::UI {
 
         bool FindTypeIdForMaterial(const ECS::Components::MapComponent &mapComp, const std::shared_ptr<Rendering::Texture> &tex, const glm::vec4 &color, uint8_t &outId) {
             for (const auto &[id, mat] : mapComp.typeMats) {
-                if (mat.texture == tex && mat.color == color) {
+                if (mat->texture == tex && mat->color == color) {
                     outId = id;
                     return true;
                 }
@@ -58,7 +58,7 @@ namespace Editor::UI {
             if (const auto it = FindTypeMat(typeMats, current); it != typeMats.end()) {
                 const auto cit = counts.find(current);
                 const size_t count = cit != counts.end() ? cit->second : 0;
-                preview = FormatTypeLabel(current, it->second, resources, count);
+                preview = FormatTypeLabel(current, *it->second, resources, count);
             }
 
             bool changed = false;
@@ -68,9 +68,9 @@ namespace Editor::UI {
                     const bool isSelected = id == current;
                     const auto cit = counts.find(id);
                     const size_t count = cit != counts.end() ? cit->second : 0;
-                    const std::string labelStr = FormatTypeLabel(id, mat, resources, count);
+                    const std::string labelStr = FormatTypeLabel(id, *mat, resources, count);
 
-                    if (const ImVec4 swatchCol(mat.color.r, mat.color.g, mat.color.b, mat.color.a);
+                    if (const ImVec4 swatchCol(mat->color.r, mat->color.g, mat->color.b, mat->color.a);
                         ImGui::ColorButton("##swatch", swatchCol, ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoInputs, ImVec2(16, 16))) {
                         current = id;
                         changed = true;
@@ -129,8 +129,8 @@ namespace Editor::UI {
         m_BrushType = type;
         if (m_MapComp) {
             if (const auto it = m_MapComp->findTypeMat(type); it != m_MapComp->typeMats.end()) {
-                m_BrushTexture = it->second.texture;
-                m_BrushColor = it->second.color;
+                m_BrushTexture = it->second->texture;
+                m_BrushColor = it->second->color;
             }
         }
         m_BrushInitialized = true;
@@ -140,8 +140,8 @@ namespace Editor::UI {
         if (m_MapComp && !m_MapComp->typeMats.empty()) {
             const auto &[id, mat] = *m_MapComp->typeMats.begin();
             m_BrushType = id;
-            m_BrushTexture = mat.texture;
-            m_BrushColor = mat.color;
+            m_BrushTexture = mat->texture;
+            m_BrushColor = mat->color;
         } else {
             m_BrushType = 0;
             m_BrushTexture = nullptr;
@@ -155,8 +155,8 @@ namespace Editor::UI {
             return;
         m_BrushType = tile.type;
         if (const auto it = m_MapComp->findTypeMat(tile.type); it != m_MapComp->typeMats.end()) {
-            m_BrushTexture = it->second.texture;
-            m_BrushColor = it->second.color;
+            m_BrushTexture = it->second->texture;
+            m_BrushColor = it->second->color;
         }
         m_BrushInitialized = true;
     }
@@ -183,6 +183,11 @@ namespace Editor::UI {
             }
 
             ImGui::SeparatorText("Brush");
+
+            if (typeMats.empty()) {
+                ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "No tile types defined.");
+                ImGui::TextDisabled("Use 'Save as New Type' below to create one.");
+            }
 
             ImGui::BeginGroup();
 
@@ -219,7 +224,7 @@ namespace Editor::UI {
             bool brushMatChanged = false;
             {
                 if (const auto it = FindTypeMat(typeMats, m_BrushType); it != typeMats.end()) {
-                    brushMatChanged = m_BrushTexture != it->second.texture || m_BrushColor != it->second.color;
+                    brushMatChanged = m_BrushTexture != it->second->texture || m_BrushColor != it->second->color;
                 } else {
                     brushMatChanged = true;
                 }
@@ -231,8 +236,8 @@ namespace Editor::UI {
 
             if (ImGui::Button("Update Brush Type")) {
                 if (const auto it = FindTypeMat(typeMats, m_BrushType); it != typeMats.end()) {
-                    it->second.texture = m_BrushTexture;
-                    it->second.color = m_BrushColor;
+                    it->second->texture = m_BrushTexture;
+                    it->second->color = m_BrushColor;
                     m_MapComp->needsMeshUpdate = true;
                     m_MapComp->mapDirty = true;
                     if (m_SceneContext)
@@ -292,8 +297,8 @@ namespace Editor::UI {
             auto &currentMat = typeIt->second;
 
             if (!m_EditInitialized || m_EditSourceType != m_CurrentTile->type) {
-                m_EditTexture = currentMat.texture;
-                m_EditColor = currentMat.color;
+                m_EditTexture = currentMat->texture;
+                m_EditColor = currentMat->color;
                 m_EditSourceType = m_CurrentTile->type;
                 m_EditInitialized = true;
             }
@@ -318,7 +323,7 @@ namespace Editor::UI {
             ImGui::ColorEdit4("Color", &m_EditColor.x, ImGuiColorEditFlags_NoInputs);
             ImGui::PopID();
 
-            const bool materialChanged = m_EditTexture != currentMat.texture || m_EditColor != currentMat.color;
+            const bool materialChanged = m_EditTexture != currentMat->texture || m_EditColor != currentMat->color;
 
             if (!materialChanged) {
                 ImGui::BeginDisabled();
@@ -327,8 +332,8 @@ namespace Editor::UI {
             ImGui::Spacing();
 
             if (ImGui::Button("Override Current Type")) {
-                currentMat.texture = m_EditTexture;
-                currentMat.color = m_EditColor;
+                currentMat->texture = m_EditTexture;
+                currentMat->color = m_EditColor;
                 m_EditSourceType = m_CurrentTile->type;
                 m_MapComp->needsMeshUpdate = true;
                 m_MapComp->mapDirty = true;

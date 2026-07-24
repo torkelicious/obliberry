@@ -28,13 +28,18 @@ void Rendering::Renderer::BeginFrame() {
     m_InstancedEntityIDsStaging[m_SubmitIndex].clear();
     m_InstancedColorsStaging[m_SubmitIndex].clear();
     m_Lightmap[m_SubmitIndex] = nullptr;
+    m_ResourcePins[m_SubmitIndex].clear();
 
     if (m_Camera) {
         m_VP[m_SubmitIndex] = m_Camera->GetVP(m_Aspect);
     }
 }
 
-void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Material *material, const Transform &transform, const Texture *textureOverride, const int entityID) {
+void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const Transform &transform, const Texture *textureOverride, const int entityID) {
+    m_ResourcePins[m_SubmitIndex].push_back(mesh);
+    if (material)
+        m_ResourcePins[m_SubmitIndex].push_back(material);
+
     const glm::vec3 &pos = transform.GetPosition();
 
     auto packKey = [](const float posX, const float posY, const float posZ) -> int32_t {
@@ -48,12 +53,16 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Materi
     const Texture *effectiveTex = textureOverride ? textureOverride : material && material->texture ? material->texture.get() : nullptr;
     const glm::vec4 col = material ? material->color : glm::vec4(1.0f);
 
-    m_Commands[m_SubmitIndex].push_back({mesh.get(), material, effectiveTex, col, transform.GetMatrix(), packKey(pos.x, pos.y, pos.z), entityID});
+    m_Commands[m_SubmitIndex].push_back({mesh.get(), material.get(), effectiveTex, col, transform.GetMatrix(), packKey(pos.x, pos.y, pos.z), entityID});
 }
 
-void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Material *material, const std::vector<glm::mat4> &transforms, const std::vector<int> &entityIDs) {
+void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> &transforms, const std::vector<int> &entityIDs) {
     if (transforms.empty())
         return;
+
+    m_ResourcePins[m_SubmitIndex].push_back(mesh);
+    if (material)
+        m_ResourcePins[m_SubmitIndex].push_back(material);
 
     const Texture *tex = material && material->texture ? material->texture.get() : nullptr;
     const glm::vec4 col = material ? material->color : glm::vec4(1.0f);
@@ -65,7 +74,7 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Materi
     m_InstancedEntityIDsStaging[m_SubmitIndex].insert(m_InstancedEntityIDsStaging[m_SubmitIndex].end(), entityIDs.begin(), entityIDs.end());
 
     m_InstancedCommands[m_SubmitIndex].push_back({.mesh = mesh.get(),
-                                                  .material = material,
+                                                  .material = material.get(),
                                                   .effectiveTexture = tex,
                                                   .color = col,
                                                   .transformPtr = nullptr,
@@ -76,10 +85,14 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Materi
                                                   .entityIDCount = entityIDs.size()});
 }
 
-void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Material *material, const std::vector<glm::mat4> &transforms, const std::vector<glm::vec4> &colors, const int blendMode, const int renderOrder,
+void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> &transforms, const std::vector<glm::vec4> &colors, const int blendMode, const int renderOrder,
                                  const int shape) {
     if (transforms.empty())
         return;
+
+    m_ResourcePins[m_SubmitIndex].push_back(mesh);
+    if (material)
+        m_ResourcePins[m_SubmitIndex].push_back(material);
 
     const Texture *tex = material && material->texture ? material->texture.get() : nullptr;
     const glm::vec4 col = material ? material->color : glm::vec4(1.0f);
@@ -91,7 +104,7 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Materi
     m_InstancedColorsStaging[m_SubmitIndex].insert(m_InstancedColorsStaging[m_SubmitIndex].end(), colors.begin(), colors.end());
 
     m_InstancedCommands[m_SubmitIndex].push_back({.mesh = mesh.get(),
-                                                  .material = material,
+                                                  .material = material.get(),
                                                   .effectiveTexture = tex,
                                                   .color = col,
                                                   .blendMode = blendMode,
@@ -108,15 +121,19 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const Materi
                                                   .entityIDCount = 0});
 }
 
-void Rendering::Renderer::SubmitPersistent(const std::shared_ptr<Mesh> &mesh, const Material *material, const std::vector<glm::mat4> *transforms, const std::vector<int> *entityIDs) {
+void Rendering::Renderer::SubmitPersistent(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> *transforms, const std::vector<int> *entityIDs) {
     if (!transforms || transforms->empty())
         return;
+
+    m_ResourcePins[m_SubmitIndex].push_back(mesh);
+    if (material)
+        m_ResourcePins[m_SubmitIndex].push_back(material);
 
     const Texture *tex = material && material->texture ? material->texture.get() : nullptr;
     const glm::vec4 col = material ? material->color : glm::vec4(1.0f);
 
     m_InstancedCommands[m_SubmitIndex].push_back({.mesh = mesh.get(),
-                                                  .material = material,
+                                                  .material = material.get(),
                                                   .effectiveTexture = tex,
                                                   .color = col,
                                                   .transformPtr = transforms->data(),

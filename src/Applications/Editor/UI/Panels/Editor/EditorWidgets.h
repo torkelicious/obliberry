@@ -114,6 +114,9 @@ namespace Editor::UI {
                     if (ImGui::IsItemActivated()) {
                         m_CapturedOldValues[i] = preEditBytes;
                     }
+                    if (ImGui::IsItemActive() && m_DirtyOffset != 0) {
+                        *reinterpret_cast<bool *>(byte_ptr + m_DirtyOffset) = true;
+                    }
                     if (ImGui::IsItemDeactivatedAfterEdit()) {
                         if (undoManager && engineContext) {
                             undoManager->Execute(std::make_unique<Commands::ModifyComponentFieldCommand<T>>(entId, Offset, fieldSize, m_CapturedOldValues[i].data(), fieldAddress, Name), *engineContext);

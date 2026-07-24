@@ -22,6 +22,9 @@ void Editor::States::EditState::OnEnter() {
         title += " - Scene - " + m_EditorLayer->m_CurrentScenePath;
     SetWindowTitle(title);
     m_EditorLayer->m_UndoManager.Clear();
+
+    if (m_EditorLayer->m_Context.audioEngine)
+        m_EditorLayer->m_Context.audioEngine->StopMusic();
 }
 
 void Editor::States::EditState::OnUpdate(const float dt) {
@@ -33,6 +36,9 @@ void Editor::States::EditState::OnUpdate(const float dt) {
     }
     m_EditorLayer->m_Context.uiSystem->Update(dt);
     m_EditorLayer->m_Context.uiSystem->SnapshotButtonStates();
+    if (m_EditorLayer->m_Context.uiCmdBuf) {
+        m_EditorLayer->m_Context.uiCmdBuf->flush(*m_EditorLayer->m_Context.uiSystem);
+    }
 
     // Entity picking
     if (const int clickedID = m_EditorLayer->m_ViewportPanel.GetSelectedEntityID(); clickedID != -1) {

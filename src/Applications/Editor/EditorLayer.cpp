@@ -41,6 +41,7 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
 
     m_Context.camera = &m_Camera;
     m_Context.sceneManager = &m_SceneManager;
+    m_Context.isEditorMode = true;
 
     ctx.camera = &m_Camera;
     ctx.sceneManager = &m_SceneManager;
@@ -216,12 +217,6 @@ void Editor::EditorLayer::LoadScene(std::string path) {
 
     ClearCurrentProject();
 
-    // The script root path requires VFS to be mounted (project must be loaded).
-    if (Core::Project::GetActive()) {
-        m_Context.scriptPool->init(IO::VFS::GetAssetsDirectory() / "scripts");
-        m_Context.scriptPool->set_stdout(m_InterpreterOutput);
-    }
-
     try {
         m_SceneManager.LoadSceneByPath(path);
         m_Scene = m_SceneManager.GetCurrentScene();
@@ -235,6 +230,20 @@ void Editor::EditorLayer::LoadScene(std::string path) {
             if (m_Context.renderer) {
                 Rendering::Renderer::SetClearColor(m_Scene->GetProperties().BackgroundClearColor);
             }
+
+            if (Core::Project::GetActive()) {
+                m_Context.scriptPool->set_stdout(m_InterpreterOutput);
+            }
+
+            m_UIPanel.Reset();
+            m_InspectorPanel.Reset();
+            m_RegistryPanel.Reset();
+
+            m_RegistryPanel.SetContext(m_Scene, m_Context);
+            m_InspectorPanel.SetContext(m_Scene, m_Context, &m_UndoManager);
+            m_UIPanel.SetContext(m_Scene, m_Context, &m_UndoManager);
+            m_ViewportPanel.SetContext(m_Scene, m_Context);
+            m_ProjectBrowserPanel.SetContext(m_Scene, m_Context);
 
             LOG_INFO("LoadScene", "Successfully loaded scene with " + std::to_string(m_Scene->GetRegistry().GetLivingEntities().size()) + " entities");
             Commands::RefreshWindowTitle(m_Context);
@@ -708,7 +717,28 @@ void Editor::EditorLayer::DrawToolbar() {
                         PromptSaveDirtyMap([this] { TransitionTo(std::make_unique<States::EditState>()); });
                         break;
                     case 1:
-                        PromptSaveDirtyMap([this] { TransitionTo(std::make_unique<States::MapEditState>()); });
+                        PromptSaveDirtyMap([this] {
+                            // Auto-create a map entity if scene has none
+                            if (m_Registry && !m_Registry->GetFirst<ECS::Components::MapComponent>()) {
+                                LOG_INFO(LOG_WHO, "Scene has no map creating default map entity");
+                                ECS::Entity mapEntity(m_Registry->CreateEntity(), m_Registry);
+                                mapEntity.SetName("MAP");
+
+                                ECS::Components::MapComponent mapComp;
+                                mapComp.hexMesh = m_Context.resources->Get<Rendering::Mesh>("hex_mesh");
+                                auto shader = m_Context.resources->Get<Rendering::Shader>("[Engine] Base");
+                                mapComp.outlineMat = std::make_shared<Rendering::Material>(Rendering::Material{shader, nullptr, {1, 0, 0, 0.5f}});
+                                mapComp.pathToMat = std::make_shared<Rendering::Material>(Rendering::Material{shader, nullptr, {1, 1, 1, 0.5f}});
+                                mapComp.mapFilePath.clear();
+                                mapComp.needsMeshUpdate = true;
+
+                                mapEntity.AddComponent<ECS::Components::MapComponent>(mapComp);
+                                mapEntity.AddComponent<ECS::Components::MapStateComponent>();
+
+                                if (m_Scene) m_Scene->MarkAsChanged();
+                            }
+                            TransitionTo(std::make_unique<States::MapEditState>());
+                        });
                         break;
                 }
             }

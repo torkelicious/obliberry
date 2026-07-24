@@ -6,6 +6,8 @@ namespace Editor::UI {
     public:
         void OnImGuiRender() override;
 
+        void Reset() { m_SelectedElement = nullptr; }
+
     private:
         void DrawElementNode(::UI::UIElement *element);
 

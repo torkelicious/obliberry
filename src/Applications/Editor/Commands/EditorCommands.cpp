@@ -2,6 +2,7 @@
 #include "Core/Project.h"
 #include "ECS/Entity.h"
 #include "ECS/Components/TransformComponent.h"
+#include "ECS/Components/MapComponent.h"
 #include "Applications/Editor/UI/Panels/Editor/EditorWidgets.h"
 #include "Rendering/Renderer.h"
 #include "Scenes/SceneManager.h"
@@ -163,16 +164,11 @@ namespace Editor::Commands {
         if (ctx.sceneManager->GetCurrentScene()) {
             ctx.sceneManager->GetCurrentScene()->GetProperties() = m_NewData;
             ctx.sceneManager->GetCurrentScene()->MarkAsChanged();
+            if (auto *mapComp = ctx.sceneManager->GetCurrentScene()->GetRegistry().GetFirst<ECS::Components::MapComponent>())
+                mapComp->lightmap.ambient = m_NewData.AmbientLight;
         }
         if (ctx.renderer) {
             Rendering::Renderer::SetClearColor(m_NewData.BackgroundClearColor);
-        }
-        if (ctx.audioEngine) {
-            if (!m_NewData.BackgroundMusicPath.empty()) {
-                ctx.audioEngine->PlayMusic(m_NewData.BackgroundMusicPath);
-            } else {
-                ctx.audioEngine->StopMusic();
-            }
         }
         RefreshWindowTitle(ctx);
     }
@@ -181,16 +177,11 @@ namespace Editor::Commands {
         if (ctx.sceneManager->GetCurrentScene()) {
             ctx.sceneManager->GetCurrentScene()->GetProperties() = m_OldData;
             ctx.sceneManager->GetCurrentScene()->MarkAsChanged();
+            if (auto *mapComp = ctx.sceneManager->GetCurrentScene()->GetRegistry().GetFirst<ECS::Components::MapComponent>())
+                mapComp->lightmap.ambient = m_OldData.AmbientLight;
         }
         if (ctx.renderer) {
             Rendering::Renderer::SetClearColor(m_OldData.BackgroundClearColor);
-        }
-        if (ctx.audioEngine) {
-            if (!m_OldData.BackgroundMusicPath.empty()) {
-                ctx.audioEngine->PlayMusic(m_OldData.BackgroundMusicPath);
-            } else {
-                ctx.audioEngine->StopMusic();
-            }
         }
         RefreshWindowTitle(ctx);
     }

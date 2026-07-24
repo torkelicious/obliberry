@@ -161,6 +161,15 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
         return;
     if (ImGui::CollapsingHeader(GetName())) {
 
+        if (engineContext && engineContext->resources) {
+            auto *matComp = entity.GetComponent<ECS::Components::MaterialComponent>();
+            ImGui::PushID("MatSelectCombo");
+            if (MaterialCombo("Material", *engineContext->resources, matComp->material)) {
+                MarkSceneChanged(engineContext);
+            }
+            ImGui::PopID();
+        }
+
         if (auto *comp = entity.GetComponent<ECS::Components::MaterialComponent>(); comp->material) {
             {
                 ImGui::PushID("MatColor");
@@ -195,6 +204,8 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
             if (comp->material->shader) {
                 ImGui::Text("Vert: %s", comp->material->shader->GetVertexPath().c_str());
                 ImGui::Text("Frag: %s", comp->material->shader->GetFragmentPath().c_str());
+            } else {
+                ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "No shader assigned. Material will not render.");
             }
 
             // shader reload is not needed for texture changes.
@@ -206,6 +217,26 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
                     MarkSceneChanged(engineContext);
                 }
                 ImGui::PopID();
+            }
+        }
+
+        ImGui::Spacing();
+        auto *matComp = entity.GetComponent<ECS::Components::MaterialComponent>();
+        const float cloneWidth = ImGui::CalcTextSize("Clone Material").x + ImGui::GetStyle().FramePadding.x * 2;
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (ImGui::GetContentRegionAvail().x - cloneWidth) * 0.5f);
+        if (ImGui::Button("Clone Material", ImVec2(cloneWidth, 0))) {
+            if (matComp && matComp->material && engineContext && engineContext->resources) {
+                auto &resources = *engineContext->resources;
+                const std::string origKey = resources.GetKey<Rendering::Material>(matComp->material);
+                std::string newKey = origKey.empty() ? "material_clone" : origKey + "_clone";
+                // ensure unique key
+                int suffix = 1;
+                while (resources.Get<Rendering::Material>(newKey)) {
+                    newKey = (origKey.empty() ? "material_clone" : origKey + "_clone") + "_" + std::to_string(suffix++);
+                }
+                auto cloned = resources.Load<Rendering::Material>(newKey, matComp->material->shader, matComp->material->texture, matComp->material->color);
+                matComp->material = cloned;
+                MarkSceneChanged(engineContext);
             }
         }
 
@@ -247,6 +278,7 @@ void Editor::UI::DirectionalTextureWidget::Draw(const ECS::Entity entity, Core::
         ImGui::Spacing();
 
         if (engineContext && engineContext->resources) {
+            int missingCount = 0;
             for (int i = 0; i < 6; i++) {
                 ImGui::PushID(i);
                 char label[32];
@@ -254,7 +286,12 @@ void Editor::UI::DirectionalTextureWidget::Draw(const ECS::Entity entity, Core::
                 if (TextureCombo(label, *engineContext->resources, comp->textures[i])) {
                     MarkSceneChanged(engineContext);
                 }
+                if (!comp->textures[i])
+                    missingCount++;
                 ImGui::PopID();
+            }
+            if (missingCount > 0) {
+                ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "%d direction(s) have no texture.", missingCount);
             }
         }
 
@@ -293,7 +330,11 @@ void Editor::UI::MapWidget::Draw(const ECS::Entity entity, Core::EngineContext *
         if (ImGui::IsItemDeactivatedAfterEdit())
             MarkSceneChanged(engineContext);
         ImGui::Text("Render Visibles: %zu types", comp->visibles.size());
+        ImGui::Text("Tile Types: %zu", comp->typeMats.size());
         ImGui::Text("Hex Mesh: %s", comp->hexMesh ? "Loaded" : "Missing");
+        if (!comp->outlineMat || !comp->pathToMat) {
+            ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "Overlay materials missing. Selection/path highlights will not render.");
+        }
 
         ImGui::Separator();
         const float buttonWidth = ImGui::CalcTextSize("Remove Map").x + ImGui::GetStyle().FramePadding.x * 2;
@@ -525,6 +566,11 @@ void Editor::UI::ParticleEmitterWidget::Draw(const ECS::Entity entity, Core::Eng
                 MarkSceneChanged(engineContext);
             }
             ImGui::PopID();
+        }
+        if (!comp->material) {
+            ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "No material assigned. Particles will not render.");
+        } else if (!comp->material->texture) {
+            ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "Material has no texture. Particles will render as solid color.");
         }
 
         // Preset: Load / Save

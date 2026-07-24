@@ -19,11 +19,14 @@
 
 void Editor::States::MapEditState::OnEnter() {
 
-    // it is safe to assume each scene only has one map, no less no more.. otherwise something has probably gone
-    // seriously wrong
-    // TODO: probably enforce a required map ??
     m_MapState = m_EditorLayer->m_Registry->GetFirst<ECS::Components::MapStateComponent>();
     m_MapComp = m_EditorLayer->m_Registry->GetFirst<ECS::Components::MapComponent>();
+
+    if (!m_MapComp) {
+        LOG_ERROR(LOG_WHO, "No MapComponent found in scene, cannot enter map editor");
+        return;
+    }
+
     m_CurrentGrid = &m_MapComp->grid;
     m_MapComp->pathToMat->color = {0.0, 0.8, 1.0, 0.50};   // cyan
     m_MapComp->outlineMat->color = {1.0, 0.85, 0.0, 0.55}; // gold / yellowish
@@ -146,7 +149,7 @@ void Editor::States::MapEditState::OnRender() {
             Rendering::Transform t;
             t.SetPosition({worldPos.x, worldPos.y, 0.01f});
             t.SetScale({1.08f, 1.08f, 1.0f});
-            renderer->Submit(m_MapComp->hexMesh, m_MapComp->outlineMat.get(), t);
+            renderer->Submit(m_MapComp->hexMesh, m_MapComp->outlineMat, t);
         });
     }
 
@@ -157,7 +160,9 @@ void Editor::States::MapEditState::OnDrawModeToolbar() {
     {
         if (m_MapComp) {
             const std::string &mapPath = m_MapComp->mapFilePath;
-            if (m_MapComp->mapDirty) {
+            if (mapPath.empty()) {
+                ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "%sUnsaved Map", m_MapComp->mapDirty ? "* " : "");
+            } else if (m_MapComp->mapDirty) {
                 ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "* %s", mapPath.c_str());
             } else {
                 ImGui::TextDisabled("%s", mapPath.c_str());
@@ -175,9 +180,19 @@ void Editor::States::MapEditState::OnDrawModeToolbar() {
                 LOG_INFO(LOG_WHO, "Create new map requested");
             }
             if (ImGui::MenuItem("Save Map")) {
-                LOG_INFO(LOG_WHO, "Save requested");
-                m_EditorLayer->SaveScene();
-                m_MapComp->mapDirty = false;
+                if (m_MapComp->mapFilePath.empty()) {
+                    // no file yet
+                    if (const auto path = Platform::FileDialogs::SaveFile(m_EditorLayer->m_Context)) {
+                        m_MapComp->mapFilePath = *path;
+                        m_EditorLayer->SaveScene();
+                        m_MapComp->mapDirty = false;
+                        SetWindowTitle(*path);
+                    }
+                } else {
+                    LOG_INFO(LOG_WHO, "Save requested");
+                    m_EditorLayer->SaveScene();
+                    m_MapComp->mapDirty = false;
+                }
             }
             if (ImGui::MenuItem("Save Map As")) {
                 LOG_INFO(LOG_WHO, "Save as requested");
@@ -340,7 +355,7 @@ void Editor::States::MapEditState::ForEachHexInRing(const Map::HexCoords center,
 uint8_t Editor::States::MapEditState::GetOrCreateTypeForMaterial(const std::shared_ptr<Rendering::Texture> &tex, const glm::vec4 &color) const {
     auto &typeMats = m_MapComp->typeMats;
     for (const auto &[id, mat] : typeMats) {
-        if (mat.texture == tex && mat.color == color) {
+        if (mat->texture == tex && mat->color == color) {
             return id;
         }
     }
@@ -350,9 +365,9 @@ uint8_t Editor::States::MapEditState::GetOrCreateTypeForMaterial(const std::shar
         newId++;
     }
 
-    const auto shader = !typeMats.empty() ? typeMats.begin()->second.shader : m_EditorLayer->m_Context.resources->Get<Rendering::Shader>("[Engine] Base");
+    const auto shader = !typeMats.empty() ? typeMats.begin()->second->shader : m_EditorLayer->m_Context.resources->Get<Rendering::Shader>("[Engine] Base");
 
-    typeMats.emplace_back(newId, Rendering::Material{shader, tex, color});
+    typeMats.emplace_back(newId, std::make_shared<Rendering::Material>(Rendering::Material{shader, tex, color}));
     m_MapComp->needsMeshUpdate = true;
     if (m_EditorLayer->m_Scene)
         m_EditorLayer->m_Scene->MarkAsChanged();

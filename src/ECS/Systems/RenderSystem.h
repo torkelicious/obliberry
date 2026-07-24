@@ -36,14 +36,14 @@ namespace ECS::Systems::RenderSystem {
                     if (const auto *dir = dirPool->Get(static_cast<EntityID>(entity))) {
                         if (!dir->textures.empty()) {
                             if (const auto idx = dir->index % dir->textures.size(); dir->textures[idx]) {
+                                renderer.Pin(dir->textures[idx]);
                                 textureOverride = dir->textures[idx].get();
                             }
                         }
                     }
-                    const auto &shader = matComp->material->shader;
 
                     const int entityInt = static_cast<int>(static_cast<EntityID>(entity));
-                    renderer.Submit(meshComp->mesh, matComp->material.get(), transComp->transform, textureOverride, entityInt);
+                    renderer.Submit(meshComp->mesh, matComp->material, transComp->transform, textureOverride, entityInt);
                 });
     }
 } // namespace ECS::Systems::RenderSystem

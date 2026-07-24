@@ -31,7 +31,7 @@ namespace Rendering {
 
         void Reload();
 
-        bool IsValid() const { return m_ID != 0; }
+        [[nodiscard]] bool IsValid() const { return m_ID != 0; }
 
         void Bind() const;
 
