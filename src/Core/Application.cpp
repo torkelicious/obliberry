@@ -128,6 +128,7 @@ void Core::Application::Run() {
 
     // engine builtin shaders (light pass, etc)
     Rendering::BuiltinShaders::RegisterBuiltinShaders(ResourceManager::GetInstance());
+    renderer.SetFallbackShader(ResourceManager::GetInstance().Get<Rendering::Shader>("[Engine] Base").get());
 
     // Camera
     const float initialAspect = static_cast<float>(m_Window.GetWidth()) / static_cast<float>(m_Window.GetHeight());

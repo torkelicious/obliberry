@@ -56,8 +56,6 @@ namespace Rendering {
         std::string &GetFragmentPath() { return m_fragPath; }
         const std::string &GetFragmentPath() const { return m_fragPath; }
 
-        static Shader *Default();
-
     private:
         std::string m_vertPath;
         std::string m_fragPath;

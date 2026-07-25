@@ -102,6 +102,8 @@ namespace Rendering {
 
         void EnsureFramebufferSize(uint32_t width, uint32_t height);
 
+        void SetFallbackShader(Shader *shader) { m_FallbackShader = shader; }
+
         // Picking
         void RequestPixelRead(const int x, const int y) {
             m_PixelReadX.store(x);
@@ -171,6 +173,8 @@ namespace Rendering {
         std::shared_ptr<FrameBuffer> m_EditorFramebuffer = nullptr;
         uint32_t m_FboWidth = 0;
         uint32_t m_FboHeight = 0;
+
+        Shader *m_FallbackShader = nullptr;
 
         // picking
         std::atomic<bool> m_PixelReadRequested{false};

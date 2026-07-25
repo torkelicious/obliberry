@@ -360,7 +360,7 @@ void Rendering::Renderer::RenderBatch(const BatchKey &key, const glm::mat4 *tran
 
     Shader *shader = key.material ? key.material->shader.get() : nullptr;
     if (!shader || !shader->IsValid())
-        shader = Shader::Default();
+        shader = m_FallbackShader;
 
     if (m_LastBoundShader != shader) {
         shader->Bind();

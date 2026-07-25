@@ -185,15 +185,5 @@ namespace Rendering {
         return program;
     }
 
-    // FIXME/HACK: this is a bit of a hack, i should probably keep default fallbackshaders in internal/ build dir?, not
-    // sure for now
-    Shader *Shader::Default() {
-        static Shader *instance = [] {
-            auto *shader = new Shader(BuiltinShaders::kBaseVert, BuiltinShaders::kBaseFrag, "<default>");
-            shader->InitGL();
-            return shader;
-        }();
-        return instance;
-    }
 } // namespace Rendering
 #pragma pop_macro("LOG_WHO")
