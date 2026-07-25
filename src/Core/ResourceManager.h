@@ -74,6 +74,12 @@ namespace Core {
             return cache.storage.emplace(key, factory()).first->second;
         }
 
+        template <typename T> std::shared_ptr<T> Register(const std::string &key, std::shared_ptr<T> resource) {
+            auto &cache = GetCache<T>();
+            cache.storage[key] = std::move(resource);
+            return cache.storage[key];
+        }
+
         template <typename T> bool Unload(const std::string &key) { return GetCache<T>().storage.erase(key) > 0; }
 
     private:

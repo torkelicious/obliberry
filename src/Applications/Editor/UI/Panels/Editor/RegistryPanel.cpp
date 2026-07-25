@@ -10,6 +10,7 @@
 #include "Rendering/Renderer.h"
 #include "IO/Loaders/PrefabManager.h"
 #include "Core/Constants.h"
+#include "Core/ResourceManager.h"
 
 #include <imgui.h>
 
@@ -37,12 +38,23 @@ void Editor::UI::RegistryPanel::OnImGuiRender() {
             const auto newId = registry.CreateEntity();
             m_SelectedEntity = ECS::Entity(newId, &registry);
             m_SelectedEntity.AddComponent<ECS::Components::TransformComponent>();
-            auto mesh = std::make_shared<Rendering::Mesh>(Rendering::MeshFactory::CreateQuad());
-            mesh->SetFactoryId("Quad");
+
+            auto &resources = *m_EngineContext->resources;
+            const std::string meshKey = "EntityMesh_" + std::to_string(newId);
+            auto mesh = resources.LoadFromFactory<Rendering::Mesh>(meshKey, []() {
+                auto m = std::make_shared<Rendering::Mesh>(Rendering::MeshFactory::CreateQuad());
+                m->SetFactoryId("Quad");
+                return m;
+            });
             Rendering::Renderer::SubmitInitTask(::Platform::Threading::SmallTask([mesh] { mesh->InitGL(); }));
             m_SelectedEntity.AddComponent<ECS::Components::MeshComponent>().mesh = std::move(mesh);
-            auto &[material] = m_SelectedEntity.AddComponent<ECS::Components::MaterialComponent>();
-            material = std::make_shared<Rendering::Material>();
+
+            const std::string matKey = "EntityMat_" + std::to_string(newId);
+            auto material = resources.LoadFromFactory<Rendering::Material>(matKey, []() {
+                return std::make_shared<Rendering::Material>();
+            });
+            m_SelectedEntity.AddComponent<ECS::Components::MaterialComponent>().material = std::move(material);
+
             MarkSceneChanged(m_EngineContext);
         }
         if (ImGui::IsItemHovered()) {
