@@ -337,7 +337,6 @@ void Editor::EditorLayer::ExecutePendingStateTransfer() {
     m_CurrentState->SetEditorLayer(this);
     m_CurrentState->OnEnter();
     m_PendingState = nullptr;
-
     m_UndoManager.Clear();
 }
 

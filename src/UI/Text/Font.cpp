@@ -13,26 +13,91 @@
 
 namespace UI {
 
-    static float DistanceToEdge(const unsigned char *bitmap, const int width, const int height, const int px, const int py, const bool inside, const int spread) {
-        float bestDist = 1e6f;
-        const int SEARCH_RADIUS = std::max(spread, 12);
-
-        for (int dy = -SEARCH_RADIUS; dy <= SEARCH_RADIUS; dy++) {
-            for (int dx = -SEARCH_RADIUS; dx <= SEARCH_RADIUS; dx++) {
-                const int nx = px + dx;
-                const int ny = py + dy;
-                if (nx < 0 || nx >= width || ny < 0 || ny >= height)
-                    continue;
-
-                const bool sampleInside = bitmap[ny * width + nx] > 127;
-                if (sampleInside != inside) {
-                    const float d = std::sqrt(static_cast<float>(dx * dx + dy * dy));
-                    if (d < bestDist)
-                        bestDist = d;
+    // 8SSEDT (felzenszwalb & huttenlocher)
+    static void ForwardDT(std::vector<float> &dist, const int w, const int h) {
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                const int i = y * w + x;
+                if (y > 0 && x > 0) {
+                    const float d = dist[(y - 1) * w + (x - 1)] + 2.0f;
+                    if (d < dist[i])
+                        dist[i] = d;
+                }
+                if (y > 0) {
+                    const float d = dist[(y - 1) * w + x] + 1.0f;
+                    if (d < dist[i])
+                        dist[i] = d;
+                }
+                if (y > 0 && x < w - 1) {
+                    const float d = dist[(y - 1) * w + (x + 1)] + 2.0f;
+                    if (d < dist[i])
+                        dist[i] = d;
+                }
+                if (x > 0) {
+                    const float d = dist[y * w + (x - 1)] + 1.0f;
+                    if (d < dist[i])
+                        dist[i] = d;
                 }
             }
         }
-        return bestDist;
+    }
+
+    static void BackwardDT(std::vector<float> &dist, const int w, const int h) {
+        for (int y = h - 1; y >= 0; y--) {
+            for (int x = w - 1; x >= 0; x--) {
+                const int i = y * w + x;
+                if (y < h - 1 && x < w - 1) {
+                    if (const float d = dist[(y + 1) * w + (x + 1)] + 2.0f; d < dist[i])
+                        dist[i] = d;
+                }
+                if (y < h - 1) {
+                    if (const float d = dist[(y + 1) * w + x] + 1.0f; d < dist[i])
+                        dist[i] = d;
+                }
+                if (y < h - 1 && x > 0) {
+                    if (const float d = dist[(y + 1) * w + (x - 1)] + 2.0f; d < dist[i])
+                        dist[i] = d;
+                }
+                if (x < w - 1) {
+                    if (const float d = dist[y * w + (x + 1)] + 1.0f; d < dist[i])
+                        dist[i] = d;
+                }
+            }
+        }
+    }
+
+    static void ComputeSDF(const unsigned char *bitmap, const int w, const int h, const int spread, std::vector<unsigned char> &out) {
+        constexpr float INF = 1e20f;
+        const int n = w * h;
+
+        // distance to nearest inside pixel (0 if inside)
+        std::vector<float> dInside(n);
+        // distance to nearest outside pixel (0 if outside)
+        std::vector<float> dOutside(n);
+        std::vector<bool> inside(n);
+
+        for (int i = 0; i < n; i++) {
+            inside[i] = bitmap[i] > 127;
+            dInside[i] = inside[i] ? 0.0f : INF;
+            dOutside[i] = inside[i] ? INF : 0.0f;
+        }
+
+        ForwardDT(dInside, w, h);
+        BackwardDT(dInside, w, h);
+        ForwardDT(dOutside, w, h);
+        BackwardDT(dOutside, w, h);
+
+        out.resize(n);
+        for (int i = 0; i < n; i++) {
+            float d;
+            if (inside[i]) {
+                d = std::min(std::sqrt(dOutside[i]), static_cast<float>(spread));
+            } else {
+                d = -std::min(std::sqrt(dInside[i]), static_cast<float>(spread));
+            }
+            const float sdf = d / static_cast<float>(spread) * 0.5f + 0.5f;
+            out[i] = static_cast<unsigned char>(std::clamp(sdf, 0.0f, 1.0f) * 255.0f);
+        }
     }
 
     Font::Font(std::string filepath, const unsigned int fontSize, const bool useSDF, const unsigned int sdfSpread) : m_FilePath(std::move(filepath)), m_FontSize(fontSize), m_IsSDF(useSDF), m_SDFSpread(sdfSpread) {}
@@ -311,29 +376,16 @@ namespace UI {
                 }
             }
 
+            std::vector<unsigned char> sdfBuffer;
+            ComputeSDF(paddedBitmap.data(), paddedW, paddedH, static_cast<int>(spread), sdfBuffer);
+
             for (int row = 0; row < paddedH; row++) {
                 for (int col = 0; col < paddedW; col++) {
-                    const float alpha = static_cast<float>(paddedBitmap[static_cast<size_t>(row * paddedW + col)]) / 255.0f;
-                    const bool inside = alpha > 0.5f;
-
-                    float dist = DistanceToEdge(paddedBitmap.data(), paddedW, paddedH, col, row, inside, static_cast<int>(spread));
-
-                    // Normalize distance by spread
-                    float normalized = dist / static_cast<float>(spread);
-                    if (!inside)
-                        normalized = -normalized;
-
-                    // Map: -1..+1  →  0..1  where 0.5 = edge
-                    float sdf = normalized * 0.5f + 0.5f;
-                    sdf = std::clamp(sdf, 0.0f, 1.0f);
-
-                    unsigned char val = static_cast<unsigned char>(sdf * 255.0f);
-
                     const size_t idx = static_cast<size_t>((bmpY + row) * atlasWidth + (bmpX + col)) * 4;
-                    atlasPixels[idx + 0] = 255; // R
-                    atlasPixels[idx + 1] = 255; // G
-                    atlasPixels[idx + 2] = 255; // B
-                    atlasPixels[idx + 3] = val; // A = SDF distance
+                    atlasPixels[idx + 0] = 255;
+                    atlasPixels[idx + 1] = 255;
+                    atlasPixels[idx + 2] = 255;
+                    atlasPixels[idx + 3] = sdfBuffer[row * paddedW + col];
                 }
             }
         }

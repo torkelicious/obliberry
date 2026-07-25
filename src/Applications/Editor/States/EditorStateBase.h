@@ -28,7 +28,7 @@ namespace Editor::States {
 
         virtual void OnDrawUtilityWindows() {}
 
-        virtual void OnSaveKey(){}
+        virtual void OnSaveKey() {}
 
         [[nodiscard]] virtual bool CanSaveScene() const { return true; }
         [[nodiscard]] virtual bool CanSaveSceneAs() const { return true; }

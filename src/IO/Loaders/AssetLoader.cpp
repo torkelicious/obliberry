@@ -2,6 +2,7 @@
 #include "Platform/Threading/SmallTask.h"
 
 #include <stdexcept>
+#include <thread>
 #include "Logger/LoggerService.h"
 #include "IO/VFS/VFS.h"
 #include "Rendering/Mesh.h"
@@ -124,8 +125,11 @@ void IO::AssetLoader::LoadFonts(const json &fonts, Core::ResourceManager &resour
         const unsigned int spread = font.value("spread", 8);
 
         auto f = resources.Load<UI::Font>(id, path, size, useSDF, spread);
-        f->LoadCPU();
-        Rendering::Renderer::SubmitInitTask(Platform::Threading::SmallTask([f] { f->InitGL(); }));
+        // defer font atlas generation to a background thread to avoid blocking the main thread
+        std::thread([f] {
+            f->LoadCPU();
+            Rendering::Renderer::SubmitInitTask(Platform::Threading::SmallTask([f] { f->InitGL(); }));
+        }).detach();
     }
 }
 

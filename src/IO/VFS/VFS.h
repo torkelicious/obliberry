@@ -1,6 +1,8 @@
 #pragma once
+#include <algorithm>
 #include <filesystem>
 #include <optional>
+#include <string>
 #include <string_view>
 
 namespace IO::VFS {
@@ -28,4 +30,14 @@ namespace IO::VFS {
     [[nodiscard]] bool IsProjectLoaded();
 
     [[nodiscard]] std::filesystem::path GetHomeDirectory();
+
+    [[nodiscard]] inline std::string ToRelative(const std::filesystem::path &absolutePath) {
+        const auto root = GetProjectRoot();
+        if (root.empty())
+            return absolutePath.string();
+        auto rel = std::filesystem::relative(absolutePath, root);
+        std::string result = rel.string();
+        std::ranges::replace(result, '\\', '/');
+        return result;
+    }
 } // namespace IO::VFS
