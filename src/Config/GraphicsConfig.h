@@ -42,6 +42,7 @@ namespace Config {
         int WindowHeight = Core::WINDOW_HEIGHT;
         VSyncType VSync = VSyncType::STANDARD;
 
+        bool ShowPerformanceOverlay = false; // only applies in runtime!!!
         bool MSAAEnabled = false;
         bool Fullscreen = false;
         uint8_t AASamples = 4; // if MSAA on, how many samples

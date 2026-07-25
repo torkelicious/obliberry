@@ -91,6 +91,9 @@ namespace Config {
                 else if (j["vsync"].is_boolean())
                     config.VSync = j["vsync"].get<bool>() ? VSyncType::STANDARD : VSyncType::NONE;
             }
+            if (j.contains("overlay")) {
+                config.ShowPerformanceOverlay = j["overlay"].get<bool>();
+            }
 
             LOG_INFO(LOG_WHO, "Loaded graphics config:");
             LOG_INFO(LOG_WHO, "  Window:        " + std::to_string(config.WindowWidth) + "x" + std::to_string(config.WindowHeight) + (config.Fullscreen ? " (fullscreen)" : ""));
@@ -114,6 +117,7 @@ namespace Config {
             j["antialiasing"]["samples"] = SnapToValidSampleCount(conf.AASamples, GraphicsCapabilities::s_SupportedSampleCounts);
             j["targetfps"] = conf.TargetFPS;
             j["vsync"] = VSyncToString(conf.VSync);
+            j["overlay"] = conf.ShowPerformanceOverlay;
 
             std::filesystem::path resolvedPath = IO::VFS::Resolve(filepath);
             std::ofstream file(resolvedPath);
