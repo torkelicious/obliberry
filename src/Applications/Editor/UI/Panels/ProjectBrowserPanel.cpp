@@ -161,7 +161,7 @@ namespace Editor::UI {
                             m_RenamingKey.clear();
                         }
                     } else {
-                        bool isEngineBuiltin = !id.empty() && id[0] == '[';
+                        const bool isEngineBuiltin = !id.empty() && id[0] == '[';
                         if (!isEngineBuiltin) {
                             if (ImGui::SmallButton("Rename")) {
                                 m_RenamingKey = id;
@@ -215,7 +215,7 @@ namespace Editor::UI {
                             m_RenamingKey.clear();
                         }
                     } else {
-                        bool isEngineBuiltin = !id.empty() && id[0] == '[';
+                        const bool isEngineBuiltin = !id.empty() && id[0] == '[';
                         ImGui::Text("%s", id.c_str());
                         if (renderTooltip && ImGui::IsItemHovered()) {
                             renderTooltip(id, asset, resources);

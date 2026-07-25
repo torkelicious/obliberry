@@ -91,7 +91,7 @@ void IO::AssetLoader::LoadTextures(const json &textures, Core::ResourceManager &
             continue;
         }
 
-        auto texture = resources.Load<Rendering::Texture>(id, tex.at("path").get<std::string>());
+        auto texture = resources.Load<Rendering::Texture>(id, IO::VFS::ToRelative(tex.at("path").get<std::string>()));
         Rendering::Renderer::SubmitInitTask(Platform::Threading::SmallTask([texture] { texture->InitGL(); }));
     }
 }
@@ -105,7 +105,7 @@ void IO::AssetLoader::LoadShaders(const json &shaders, Core::ResourceManager &re
             continue;
         }
 
-        auto s = resources.Load<Rendering::Shader>(id, shader.at("vertex").get<std::string>(), shader.at("fragment").get<std::string>());
+        auto s = resources.Load<Rendering::Shader>(id, IO::VFS::ToRelative(shader.at("vertex").get<std::string>()), IO::VFS::ToRelative(shader.at("fragment").get<std::string>()));
         Rendering::Renderer::SubmitInitTask(Platform::Threading::SmallTask([s] { s->InitGL(); }));
     }
 }
@@ -119,7 +119,7 @@ void IO::AssetLoader::LoadFonts(const json &fonts, Core::ResourceManager &resour
             continue;
         }
 
-        const std::string path = font.at("path").get<std::string>();
+        const std::string path = IO::VFS::ToRelative(font.at("path").get<std::string>());
         const unsigned int size = font.value("size", 12);
         const bool useSDF = font.value("sdf", false);
         const unsigned int spread = font.value("spread", 8);

@@ -31,11 +31,17 @@ namespace IO::VFS {
 
     [[nodiscard]] std::filesystem::path GetHomeDirectory();
 
-    [[nodiscard]] inline std::string ToRelative(const std::filesystem::path &absolutePath) {
+    [[nodiscard]] inline std::string ToRelative(const std::filesystem::path &inputPath) {
+        // already relative
+        if (!inputPath.is_absolute()) {
+            std::string result = inputPath.string();
+            std::ranges::replace(result, '\\', '/');
+            return result;
+        }
         const auto root = GetProjectRoot();
         if (root.empty())
-            return absolutePath.string();
-        auto rel = std::filesystem::relative(absolutePath, root);
+            return inputPath.string();
+        const auto rel = std::filesystem::relative(inputPath, root);
         std::string result = rel.string();
         std::ranges::replace(result, '\\', '/');
         return result;

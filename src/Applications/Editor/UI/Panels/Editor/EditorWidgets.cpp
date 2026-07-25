@@ -234,7 +234,7 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
                 while (resources.Get<Rendering::Material>(newKey)) {
                     newKey = (origKey.empty() ? "material_clone" : origKey + "_clone") + "_" + std::to_string(suffix++);
                 }
-                auto cloned = resources.Load<Rendering::Material>(newKey, matComp->material->shader, matComp->material->texture, matComp->material->color);
+                const auto cloned = resources.Load<Rendering::Material>(newKey, matComp->material->shader, matComp->material->texture, matComp->material->color);
                 matComp->material = cloned;
                 MarkSceneChanged(engineContext);
             }
@@ -580,7 +580,7 @@ void Editor::UI::ParticleEmitterWidget::Draw(const ECS::Entity entity, Core::Eng
             ImGui::PushID("LoadEmitterPreset");
             if (FileCombo("Load Preset", std::string(Core::PARTICLE_PRESET_PATH), std::string(".json"), pendingPresetPath)) {
                 if (!pendingPresetPath.empty()) {
-                    if (auto preset = IO::LoadEmitterPreset(pendingPresetPath)) {
+                    if (const auto preset = IO::LoadEmitterPreset(pendingPresetPath)) {
                         *comp = *preset;
                         MarkSceneChanged(engineContext);
                     }

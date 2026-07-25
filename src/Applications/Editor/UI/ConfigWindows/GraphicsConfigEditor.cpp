@@ -12,7 +12,7 @@ namespace Editor::UI {
     void GraphicsConfigEditor::Init() {
         m_SampleLabels.clear();
         m_SampleLabelPtrs.clear();
-        for (uint8_t s : Config::GraphicsCapabilities::s_SupportedSampleCounts)
+        for (const uint8_t s : Config::GraphicsCapabilities::s_SupportedSampleCounts)
             m_SampleLabels.push_back(std::to_string(s));
         for (auto &label : m_SampleLabels)
             m_SampleLabelPtrs.push_back(label.c_str());

@@ -294,7 +294,7 @@ namespace Editor::UI {
                 return;
             }
 
-            auto &currentMat = typeIt->second;
+            const auto &currentMat = typeIt->second;
 
             if (!m_EditInitialized || m_EditSourceType != m_CurrentTile->type) {
                 m_EditTexture = currentMat->texture;

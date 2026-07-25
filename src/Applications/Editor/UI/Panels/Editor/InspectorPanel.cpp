@@ -91,13 +91,13 @@ void Editor::UI::InspectorPanel::OnImGuiRender() {
             if (ImGui::BeginPopup("SavePrefabPopup")) {
                 static char prefabNameBuf[128] = "";
                 if (ImGui::IsWindowAppearing()) {
-                    std::string entityName = m_SelectedEntity.GetName();
+                    const std::string entityName = m_SelectedEntity.GetName();
                     strncpy(prefabNameBuf, entityName.c_str(), sizeof(prefabNameBuf) - 1);
                     prefabNameBuf[sizeof(prefabNameBuf) - 1] = '\0';
                 }
                 ImGui::InputText("Name", prefabNameBuf, sizeof(prefabNameBuf));
                 if (ImGui::Button("Save") && prefabNameBuf[0] != '\0') {
-                    std::string path = "assets/prefabs/" + std::string(prefabNameBuf) + ".json";
+                    const std::string path = "assets/prefabs/" + std::string(prefabNameBuf) + ".json";
                     IO::PrefabManager::SavePrefab(m_SelectedEntity, path, *m_EngineContext->resources);
                     MarkSceneChanged(m_EngineContext);
                     ImGui::CloseCurrentPopup();

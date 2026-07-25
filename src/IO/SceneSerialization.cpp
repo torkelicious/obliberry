@@ -36,7 +36,7 @@ namespace IO::SceneIO {
         }
 
         auto &[ScenePath, Name, BackgroundMusicPath, BackgroundClearColor, AmbientLight] = scene.GetProperties();
-        ScenePath = path;
+        ScenePath = IO::VFS::ToRelative(path);
 
         json j;
         try {
@@ -65,7 +65,7 @@ namespace IO::SceneIO {
             }
 
             if (properties.contains("background_music")) {
-                BackgroundMusicPath = properties["background_music"].get<std::string>();
+                BackgroundMusicPath = IO::VFS::ToRelative(properties["background_music"].get<std::string>());
             }
 
             if (properties.contains("ambient_light")) {
@@ -87,7 +87,7 @@ namespace IO::SceneIO {
             ECS::Entity mapEntity(scene.GetRegistry().CreateEntity(), &scene.GetRegistry());
             mapEntity.SetName("MAP");
             ECS::Components::MapComponent mapComp;
-            mapComp.mapFilePath = mapPath;
+            mapComp.mapFilePath = IO::VFS::ToRelative(mapPath);
 
             if (!MapIO::Deserialize(mapPath, mapComp.grid)) {
                 LOG_ERROR(LOG_WHO, "Failed to load map file: " + mapPath);
