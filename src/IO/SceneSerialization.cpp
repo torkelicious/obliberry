@@ -245,7 +245,7 @@ namespace IO::SceneIO {
                         [](const std::string &id, const std::shared_ptr<Rendering::Mesh> &mesh) { return json{{"id", id}, {"factory", mesh->GetFactoryId()}}; });
 
         SerializeAssets(j["assets"]["materials"], resources.GetAll<Rendering::Material>(), [&](const std::string &id, const std::shared_ptr<Rendering::Material> &mat) {
-            return json{{"id", id}, {"shader", resources.GetKey(mat->shader)}, {"texture", resources.GetKey(mat->texture)}, {"color", {mat->color.r, mat->color.g, mat->color.b, mat->color.a}}};
+            return json{{"id", id}, {"shader", mat->shader ? resources.GetKey(mat->shader) : "[Engine] Base"}, {"texture", resources.GetKey(mat->texture)}, {"color", {mat->color.r, mat->color.g, mat->color.b, mat->color.a}}};
         });
 
         // UI

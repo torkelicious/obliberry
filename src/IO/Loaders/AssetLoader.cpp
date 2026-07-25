@@ -136,14 +136,14 @@ void IO::AssetLoader::LoadFonts(const json &fonts, Core::ResourceManager &resour
 void IO::AssetLoader::LoadMaterials(const json &materials, Core::ResourceManager &resources) {
     for (const auto &mat : materials) {
         const std::string id = mat.at("id").get<std::string>();
-        const std::string shaderId = mat.at("shader").get<std::string>();
+        std::string shaderId = mat.at("shader").get<std::string>();
         const std::string textureId = mat.at("texture").get<std::string>();
 
         auto shader = resources.Get<Rendering::Shader>(shaderId);
-        auto texture = resources.Get<Rendering::Texture>(textureId);
-
         if (!shader)
-            LOG_ERROR(LOG_WHO, "Missing shader: " + shaderId);
+            shader = resources.Get<Rendering::Shader>("[Engine] Base");
+
+        auto texture = resources.Get<Rendering::Texture>(textureId);
 
         if (!texture)
             texture = nullptr;
