@@ -100,13 +100,37 @@ namespace ECS::Systems::LightingSystem {
 
         auto *lightPool = reg.GetPool<Components::PointLightComponent>();
         const size_t lightCount = lightPool->GetDenseEntities().size();
-        if (lightCount == 0)
+
+        auto &lm = mapComp->lightmap;
+
+        // capture shared_ptrs
+        auto fbo = lm.framebuffer;
+        auto shader = lm.lightShader;
+        auto quad = lm.lightQuad;
+        const float ambient = lm.ambient;
+        const glm::vec2 mapOffset = lm.mapOffset;
+        const glm::vec2 mapSize = lm.mapSize;
+        const int texW = fbo->GetWidth();
+        const int texH = fbo->GetHeight();
+
+        if (lightCount == 0) {
+            Rendering::Renderer::SubmitInitTask([fbo, ambient] {
+                GLint prevFbo;
+                glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prevFbo);
+
+                fbo->Bind();
+                constexpr GLenum colorBuf = GL_COLOR_ATTACHMENT0;
+                glDrawBuffers(1, &colorBuf);
+                glClearColor(ambient, ambient, ambient, 1.0f);
+                glClear(GL_COLOR_BUFFER_BIT);
+
+                glBindFramebuffer(GL_FRAMEBUFFER, prevFbo);
+            });
             return;
+        }
 
         if (!ConsumeDirtyState(reg, *mapComp, lightCount))
             return;
-
-        auto &lm = mapComp->lightmap;
 
         // pack lights
         std::vector<GPULight> packedLights;
@@ -132,16 +156,6 @@ namespace ECS::Systems::LightingSystem {
             light->dirty = false;
             transform->transform.ClearDirty();
         }
-
-        // capture shared_ptrs
-        auto fbo = lm.framebuffer;
-        auto shader = lm.lightShader;
-        auto quad = lm.lightQuad;
-        const float ambient = lm.ambient;
-        const glm::vec2 mapOffset = lm.mapOffset;
-        const glm::vec2 mapSize = lm.mapSize;
-        const int texW = fbo->GetWidth();
-        const int texH = fbo->GetHeight();
 
         // submit to renderer
         Rendering::Renderer::SubmitInitTask([fbo, shader, quad, lights = std::move(packedLights), ambient, mapOffset, mapSize, texW, texH] {
