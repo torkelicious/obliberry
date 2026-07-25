@@ -1,5 +1,6 @@
 #include "Scripting/EngineLib/EngineLib.h"
 #include "Scripting/EngineLib/EngineLibFactories.h"
+#define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <mutex>
 #include <shared_mutex>

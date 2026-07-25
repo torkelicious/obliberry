@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <filesystem>
 
 namespace IO::Package::Tools {
     static std::filesystem::path GetInternalsDirectory() {

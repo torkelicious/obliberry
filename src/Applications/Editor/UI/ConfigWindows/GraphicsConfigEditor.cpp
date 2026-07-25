@@ -1,6 +1,7 @@
 #include "GraphicsConfigEditor.h"
 #include "Applications/Editor/Commands/EditorCommands.h"
 #include "IO/VFS/VFS.h"
+#include "imgui.h"
 #include <algorithm>
 
 #pragma push_macro("LOG_WHO")

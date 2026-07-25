@@ -2,8 +2,8 @@
 #include <map>
 #include <memory>
 #include <string>
-#include <freetype/freetype.h>
 #include <glad/glad.h>
+#include <freetype/freetype.h>
 #include <glm/vec2.hpp>
 
 namespace Rendering {

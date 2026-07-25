@@ -5,7 +5,9 @@
 #include "Core/Project.h"
 #include "Core/Utils/PathUtils.h"
 #include "IO/SceneSerialization.h"
+#include "IO/VFS/VFS.h"
 #include "Scenes/Scene.h"
+#include <ObSL/ScriptRuntime.h>
 #include <algorithm>
 #include <exception>
 #include <filesystem>
