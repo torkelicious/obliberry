@@ -14,6 +14,8 @@ namespace Editor::States {
 
         virtual void OnExit() {}
 
+        virtual void OnSceneLoaded() {}
+
         virtual void OnUpdate(float dt) = 0;
 
         virtual void OnHandleInput(float dt) = 0;
@@ -25,6 +27,8 @@ namespace Editor::States {
         virtual void OnDrawModeToolbar() {}
 
         virtual void OnDrawUtilityWindows() {}
+
+        virtual void OnSaveKey(){}
 
         [[nodiscard]] virtual bool CanSaveScene() const { return true; }
         [[nodiscard]] virtual bool CanSaveSceneAs() const { return true; }

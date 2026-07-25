@@ -245,6 +245,11 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
 
     // merge and render single commands
     {
+        const GLboolean prevBlend = glIsEnabled(GL_BLEND);
+        GLint prevBlendSrc, prevBlendDst;
+        glGetIntegerv(GL_BLEND_SRC_RGB, &prevBlendSrc);
+        glGetIntegerv(GL_BLEND_DST_RGB, &prevBlendDst);
+
         m_BatchRanges.clear();
         m_MergedTransforms.clear();
         m_MergedEntityIDs.clear();
@@ -274,6 +279,10 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
 
         for (const auto &[key, offset, count] : m_BatchRanges)
             RenderBatch(key, m_MergedTransforms.data() + offset, m_MergedEntityIDs.data() + offset, count, renderIndex);
+
+        // restore blend state
+        prevBlend ? glEnable(GL_BLEND) : glDisable(GL_BLEND);
+        glBlendFuncSeparate(prevBlendSrc, prevBlendDst, prevBlendSrc, prevBlendDst);
     }
 
     // overlay instanced commands
@@ -465,6 +474,8 @@ void Rendering::Renderer::Clean() {
     m_LastBoundShader = nullptr;
     m_LastBoundTexture = nullptr;
     m_LastBoundColor = glm::vec4(0.0f);
+    m_Lightmap[0] = nullptr;
+    m_Lightmap[1] = nullptr;
 }
 
 void Rendering::Renderer::SetLightmap(const Lightmap *lightmap) { m_Lightmap[m_SubmitIndex] = lightmap; }

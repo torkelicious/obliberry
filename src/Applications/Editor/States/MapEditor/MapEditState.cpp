@@ -39,7 +39,6 @@ void Editor::States::MapEditState::OnEnter() {
     }
     m_TileEditorPanel.SetSelectedTile(m_selectedTile);
     SetWindowTitle(m_MapComp->mapFilePath);
-    m_EditorLayer->m_UndoManager.Clear();
 }
 
 void Editor::States::MapEditState::OnUpdate(const float dt) {}
@@ -180,19 +179,7 @@ void Editor::States::MapEditState::OnDrawModeToolbar() {
                 LOG_INFO(LOG_WHO, "Create new map requested");
             }
             if (ImGui::MenuItem("Save Map")) {
-                if (m_MapComp->mapFilePath.empty()) {
-                    // no file yet
-                    if (const auto path = Platform::FileDialogs::SaveFile(m_EditorLayer->m_Context)) {
-                        m_MapComp->mapFilePath = *path;
-                        m_EditorLayer->SaveScene();
-                        m_MapComp->mapDirty = false;
-                        SetWindowTitle(*path);
-                    }
-                } else {
-                    LOG_INFO(LOG_WHO, "Save requested");
-                    m_EditorLayer->SaveScene();
-                    m_MapComp->mapDirty = false;
-                }
+                SaveMap();
             }
             if (ImGui::MenuItem("Save Map As")) {
                 LOG_INFO(LOG_WHO, "Save as requested");
@@ -265,6 +252,37 @@ void Editor::States::MapEditState::OnDrawModeToolbar() {
 }
 
 void Editor::States::MapEditState::OnDrawUtilityWindows() {}
+
+void Editor::States::MapEditState::OnSceneLoaded() {
+    m_MapState = m_EditorLayer->m_Registry->GetFirst<ECS::Components::MapStateComponent>();
+    m_MapComp = m_EditorLayer->m_Registry->GetFirst<ECS::Components::MapComponent>();
+
+    if (m_MapComp) {
+        m_CurrentGrid = &m_MapComp->grid;
+        m_selectedTile = m_CurrentGrid->Get(m_selectedHex);
+        m_TileEditorPanel.SetMapComponent(m_MapComp);
+        m_TileEditorPanel.SetSelectedTile(m_selectedTile);
+    } else {
+        m_CurrentGrid = nullptr;
+        m_selectedTile = nullptr;
+    }
+}
+void Editor::States::MapEditState::SaveMap() {
+    if (m_MapComp->mapFilePath.empty()) {
+        // no file yet
+        if (const auto path = Platform::FileDialogs::SaveFile(m_EditorLayer->m_Context)) {
+            m_MapComp->mapFilePath = *path;
+            m_EditorLayer->SaveScene();
+            m_MapComp->mapDirty = false;
+            SetWindowTitle(*path);
+        }
+    } else {
+        LOG_INFO(LOG_WHO, "Save requested");
+        m_EditorLayer->SaveScene();
+        m_MapComp->mapDirty = false;
+    }
+}
+void Editor::States::MapEditState::OnSaveKey() { SaveMap(); }
 
 void Editor::States::MapEditState::OnExit() {
     m_MapState = nullptr;

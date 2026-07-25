@@ -160,9 +160,7 @@ void Editor::EditorLayer::HandleInput(const float dt) {
     // 2key Modifier Shortcuts
     //
     if (m_Input->IsKeyComboPressed({"LeftCtrl", "S"})) {
-        if (m_CurrentState->CanSaveScene()) {
-            SaveScene();
-        }
+        m_CurrentState->OnSaveKey();
     }
 
     if (m_Input->IsKeyComboPressed({"LeftCtrl", "Z"})) {
@@ -215,6 +213,9 @@ void Editor::EditorLayer::HandleInput(const float dt) {
 void Editor::EditorLayer::LoadScene(std::string path) {
     LOG_INFO("LoadScene", "Loading scene: " + path);
 
+    if (m_Context.audioEngine)
+        m_Context.audioEngine->StopMusic();
+
     ClearCurrentProject();
 
     try {
@@ -247,6 +248,9 @@ void Editor::EditorLayer::LoadScene(std::string path) {
 
             LOG_INFO("LoadScene", "Successfully loaded scene with " + std::to_string(m_Scene->GetRegistry().GetLivingEntities().size()) + " entities");
             Commands::RefreshWindowTitle(m_Context);
+
+            if (m_CurrentState)
+                m_CurrentState->OnSceneLoaded();
 
         } else {
             LOG_ERROR("LoadScene", "Failed to load scene: " + path);
@@ -319,6 +323,8 @@ void Editor::EditorLayer::ExecutePendingStateTransfer() {
     if (m_CurrentState)
         m_CurrentState->OnExit();
 
+    m_PendingSceneToLoad.clear();
+
     // save the current state  so it can be returned to on exiting play mode
     if (m_PendingState->IsPlayMode())
         m_PreviousState = std::move(m_CurrentState);
@@ -329,9 +335,6 @@ void Editor::EditorLayer::ExecutePendingStateTransfer() {
     m_PendingState = nullptr;
 
     m_UndoManager.Clear();
-
-    if (m_Context.renderer)
-        m_Context.renderer->Clean();
 }
 
 void Editor::EditorLayer::PromptSaveDirtyMap(const std::function<void()> &onProceed) {
@@ -677,7 +680,6 @@ void Editor::EditorLayer::DrawToolbar() {
                                     LoadScene(scenePath);
                                 }
                             });
-                            m_PendingSceneToLoad = scenePath;
                         }
                     }
                 }

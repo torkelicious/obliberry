@@ -26,6 +26,10 @@ namespace Editor::States {
 
         void OnExit() override;
 
+        void OnSceneLoaded() override;
+        void SaveMap();
+        void OnSaveKey() override;
+
         [[nodiscard]] uint8_t GetOrCreateTypeForMaterial(const std::shared_ptr<Rendering::Texture> &tex, const glm::vec4 &color = {1, 1, 1, 1}) const;
 
     private:

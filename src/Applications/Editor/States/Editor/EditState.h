@@ -23,6 +23,8 @@ namespace Editor::States {
 
         void OnDrawModeToolbar() override;
 
+        void OnSaveKey() override;
+
     private:
         void DrawGizmoForSelected() const;
         void EditTransform(Rendering::Transform &transform, bool isBillboard);

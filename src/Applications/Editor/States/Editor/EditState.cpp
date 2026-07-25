@@ -2,8 +2,8 @@
 #include "ECS/Systems/LightingSystem.h"
 #include "Applications/Editor/EditorLayer.h"
 #include "Platform/Input/InputManager.h"
+#include "Sound/AudioEngine.h"
 #include <glm/gtc/type_ptr.hpp>
-#include <glm/gtc/matrix_access.hpp>
 #include "ECS/Components/BillboardTagComponent.h"
 #include "Applications/Editor/Commands/EditorCommands.h"
 #include "ECS/Systems/ParticleSystem.h"
@@ -21,10 +21,6 @@ void Editor::States::EditState::OnEnter() {
     if (m_EditorLayer->m_Scene)
         title += " - Scene - " + m_EditorLayer->m_CurrentScenePath;
     SetWindowTitle(title);
-    m_EditorLayer->m_UndoManager.Clear();
-
-    if (m_EditorLayer->m_Context.audioEngine)
-        m_EditorLayer->m_Context.audioEngine->StopMusic();
 }
 
 void Editor::States::EditState::OnUpdate(const float dt) {
@@ -151,6 +147,11 @@ void Editor::States::EditState::OnDrawModeToolbar() {
     gizmoButton("R##Gizmo", ImGuizmo::ROTATE, "Rotate (R)", ImVec4(0.2f, 0.6f, 1.0f, 1.0f));
     ImGui::SameLine();
     gizmoButton("S##Gizmo", ImGuizmo::SCALE, "Scale (E)", ImVec4(1.0f, 0.8f, 0.2f, 1.0f));
+}
+void Editor::States::EditState::OnSaveKey() {
+    if (CanSaveScene()) {
+        m_EditorLayer->SaveScene();
+    }
 }
 
 void Editor::States::EditState::DrawGizmoForSelected() const {

@@ -7,7 +7,6 @@
 #define LOG_WHO "PlayState"
 
 void Editor::States::PlayState::OnEnter() {
-    m_EditorLayer->m_PendingSceneToLoad.clear();
     m_EditorLayer->m_Camera.SaveState();
     m_EditorLayer->m_ViewportPanel.SetPlayModeIndicator(true);
     m_EditorLayer->m_Context.isEditorMode = false;
@@ -16,7 +15,6 @@ void Editor::States::PlayState::OnEnter() {
 }
 
 void Editor::States::PlayState::OnExit() {
-    m_EditorLayer->m_PendingSceneToLoad.clear();
     m_EditorLayer->m_ViewportPanel.SetPlayModeIndicator(false);
     m_EditorLayer->m_Context.isEditorMode = true;
     LOG_INFO(LOG_WHO, "Exiting Play Mode, restoring scene state...");
