@@ -503,6 +503,9 @@ void Rendering::Renderer::BindLightmap(Shader *shader, const size_t renderIndex)
     } else {
         Texture::White()->Bind(1);
         shader->SetUniform1i("u_LightTexture", 1);
+        shader->SetUniformVec2("u_MapSize", {1.0f, 1.0f});
+        shader->SetUniformVec2("u_MapOffset", {0.0f, 0.0f});
+        shader->SetUniform1f("u_Ambient", 1.0f);
     }
 }
 
