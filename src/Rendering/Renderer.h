@@ -83,6 +83,8 @@ namespace Rendering {
 
         void Clean();
 
+        void InvalidateGLCache();
+
         void SwapBuffers();
 
         void SetLightmap(const Lightmap *lightmap);

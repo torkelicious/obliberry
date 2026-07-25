@@ -218,6 +218,10 @@ void Editor::EditorLayer::LoadScene(std::string path) {
 
     ClearCurrentProject();
 
+    if (m_Context.renderer) {
+        m_Context.renderer->InvalidateGLCache();
+    }
+
     try {
         m_SceneManager.LoadSceneByPath(path);
         m_Scene = m_SceneManager.GetCurrentScene();

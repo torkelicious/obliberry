@@ -478,6 +478,18 @@ void Rendering::Renderer::Clean() {
     m_Lightmap[1] = nullptr;
 }
 
+void Rendering::Renderer::InvalidateGLCache() {
+    SubmitInitTask(Platform::Threading::SmallTask([this] {
+        m_MeshVAOs.clear();
+        m_LastBoundVAO = nullptr;
+        m_LastBoundShader = nullptr;
+        m_LastBoundTexture = nullptr;
+        m_LastBoundColor = glm::vec4(0.0f);
+        m_Lightmap[0] = nullptr;
+        m_Lightmap[1] = nullptr;
+    }));
+}
+
 void Rendering::Renderer::SetLightmap(const Lightmap *lightmap) { m_Lightmap[m_SubmitIndex] = lightmap; }
 
 void Rendering::Renderer::BindLightmap(Shader *shader, const size_t renderIndex) const {

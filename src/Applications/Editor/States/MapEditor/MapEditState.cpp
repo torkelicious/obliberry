@@ -69,6 +69,10 @@ void Editor::States::MapEditState::OnHandleInput(const float dt) {
 
     m_hoveredHex = Math::HexMath::PixelToHex(m_EditorLayer->m_ViewportPanel.MousePosToWorld(m_EditorLayer->m_Camera));
 
+    if (!m_MapState || !m_MapComp) {
+        return;
+    }
+
     m_MapState->hasSelection = true;
     // The component names are misleading: "selectedHex" is actually the hovered hex,
     // while "pathTo" represents the real clicked selection.
@@ -142,7 +146,7 @@ void Editor::States::MapEditState::OnRender() {
 
     ECS::Systems::MapRenderSystem::RenderAll(*m_EditorLayer->m_Registry, m_EditorLayer->m_Context, frustum);
 
-    if (m_CurrentTool != MapTool::Select && m_BrushRadius > 1 && m_MapComp->hexMesh && m_MapComp->outlineMat) {
+    if (m_MapComp && m_CurrentTool != MapTool::Select && m_BrushRadius > 1 && m_MapComp->hexMesh && m_MapComp->outlineMat) {
         ForEachHexInRing(m_hoveredHex, m_BrushRadius - 1, [&](const Map::HexCoords &hex) {
             const auto worldPos = Map::HexGrid::GetWorldPos(hex);
             Rendering::Transform t;
@@ -178,10 +182,10 @@ void Editor::States::MapEditState::OnDrawModeToolbar() {
                 // maybe remove
                 LOG_INFO(LOG_WHO, "Create new map requested");
             }
-            if (ImGui::MenuItem("Save Map")) {
+            if (ImGui::MenuItem("Save Map", nullptr, false, m_MapComp != nullptr)) {
                 SaveMap();
             }
-            if (ImGui::MenuItem("Save Map As")) {
+            if (ImGui::MenuItem("Save Map As", nullptr, false, m_MapComp != nullptr)) {
                 LOG_INFO(LOG_WHO, "Save as requested");
                 if (const auto path = Platform::FileDialogs::SaveFile(m_EditorLayer->m_Context)) {
                     m_MapComp->mapFilePath = *path;
@@ -189,7 +193,7 @@ void Editor::States::MapEditState::OnDrawModeToolbar() {
                     m_MapComp->mapDirty = false;
                 }
             }
-            if (ImGui::MenuItem("Load Map from file")) {
+            if (ImGui::MenuItem("Load Map from file", nullptr, false, m_MapComp != nullptr)) {
                 LOG_INFO(LOG_WHO, "Load requested");
                 if (const auto path = Platform::FileDialogs::OpenFile(m_EditorLayer->m_Context)) {
                     if (IO::MapIO::Deserialize(*path, *m_CurrentGrid)) {
