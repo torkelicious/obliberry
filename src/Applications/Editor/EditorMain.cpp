@@ -17,7 +17,7 @@ int main(const int argc, char *argv[]) {
     Config::ProjectConfig projectConfig;
     Config::GraphicsConfig graphicsConfig;
 
-    Editor::EditorLayer::s_ShouldBuildDock = !(std::filesystem::exists("imgui.ini"));
+    Editor::EditorLayer::s_ShouldBuildDock = !std::filesystem::exists("imgui.ini");
     // CLI
     if (argc > 1) {
         if (const std::string projectPath = argv[1]; std::filesystem::exists(projectPath)) {

@@ -17,7 +17,7 @@ namespace UI {
         }
     }
 
-    void UISystem::Update(const float dt) {
+    void UISystem::Update(const float dt) const {
         glm::vec2 gameMouse = {0.0f, 0.0f};
         if (m_Renderer && m_Input) {
             gameMouse = m_Renderer->WindowToGameCoords(static_cast<float>(m_Input->MousePosX()), static_cast<float>(m_Input->MousePosY()));
@@ -137,7 +137,7 @@ namespace UI {
 
     ButtonState UISystem::GetButtonState(const std::string &name) const {
         const auto it = m_ButtonSnapshots.find(name);
-        return (it != m_ButtonSnapshots.end()) ? it->second : ButtonState::NONE;
+        return it != m_ButtonSnapshots.end() ? it->second : ButtonState::NONE;
     }
 
 } // namespace UI

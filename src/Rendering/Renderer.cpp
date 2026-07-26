@@ -35,7 +35,7 @@ void Rendering::Renderer::BeginFrame() {
     }
 }
 
-void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const Transform &transform, const Texture *textureOverride, int32_t entityID) {
+void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const Transform &transform, const Texture *textureOverride, const int32_t entityID) {
     m_ResourcePins[m_SubmitIndex].push_back(mesh);
     if (material)
         m_ResourcePins[m_SubmitIndex].push_back(material);
@@ -85,8 +85,8 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::s
                                                   .entityIDCount = entityIDs.size()});
 }
 
-void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> &transforms, const std::vector<glm::vec4> &colors, int32_t blendMode,
-                                 int32_t renderOrder, int8_t shape) {
+void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> &transforms, const std::vector<glm::vec4> &colors, const int32_t blendMode,
+                                 const int32_t renderOrder, const int8_t shape) {
     if (transforms.empty())
         return;
 
@@ -225,7 +225,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
 
                 BatchKey key{instCmd.mesh, instCmd.material, instCmd.effectiveTexture, instCmd.color, instCmd.shape};
                 const glm::mat4 *transformsPtr = instCmd.transformPtr ? instCmd.transformPtr : m_InstancedTransformsStaging[renderIndex].data() + instCmd.transformOffset;
-                const glm::vec4 *colorsPtr = instCmd.colorPtr ? instCmd.colorPtr : (instCmd.colorCount > 0 ? m_InstancedColorsStaging[renderIndex].data() + instCmd.colorOffset : nullptr);
+                const glm::vec4 *colorsPtr = instCmd.colorPtr ? instCmd.colorPtr : instCmd.colorCount > 0 ? m_InstancedColorsStaging[renderIndex].data() + instCmd.colorOffset : nullptr;
 
                 if (instCmd.entityIDPtr || instCmd.entityIDCount > 0) {
                     const int32_t *entityIDsPtr = instCmd.entityIDPtr ? instCmd.entityIDPtr : m_InstancedEntityIDsStaging[renderIndex].data() + instCmd.entityIDOffset;
@@ -288,9 +288,8 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
     // overlay instanced commands
     {
         auto &instCmds = m_InstancedCommands[renderIndex];
-        const auto overlayStart = std::ranges::lower_bound(instCmds, 1, {}, [](const InstancedRenderCommand &cmd) { return cmd.renderOrder; });
 
-        if (overlayStart != instCmds.end()) {
+        if (const auto overlayStart = std::ranges::lower_bound(instCmds, 1, {}, [](const InstancedRenderCommand &cmd) { return cmd.renderOrder; }); overlayStart != instCmds.end()) {
             const GLboolean prevBlend = glIsEnabled(GL_BLEND);
             GLint prevBlendSrc, prevBlendDst;
             glGetIntegerv(GL_BLEND_SRC_RGB, &prevBlendSrc);
@@ -314,7 +313,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
 
                 BatchKey key{instCmd.mesh, instCmd.material, instCmd.effectiveTexture, instCmd.color, instCmd.shape};
                 const glm::mat4 *transformsPtr = instCmd.transformPtr ? instCmd.transformPtr : m_InstancedTransformsStaging[renderIndex].data() + instCmd.transformOffset;
-                const glm::vec4 *colorsPtr = instCmd.colorPtr ? instCmd.colorPtr : (instCmd.colorCount > 0 ? m_InstancedColorsStaging[renderIndex].data() + instCmd.colorOffset : nullptr);
+                const glm::vec4 *colorsPtr = instCmd.colorPtr ? instCmd.colorPtr : instCmd.colorCount > 0 ? m_InstancedColorsStaging[renderIndex].data() + instCmd.colorOffset : nullptr;
 
                 if (instCmd.entityIDPtr || instCmd.entityIDCount > 0) {
                     const int32_t *entityIDsPtr = instCmd.entityIDPtr ? instCmd.entityIDPtr : m_InstancedEntityIDsStaging[renderIndex].data() + instCmd.entityIDOffset;

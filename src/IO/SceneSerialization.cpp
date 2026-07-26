@@ -160,10 +160,8 @@ namespace IO::SceneIO {
             }
 
             for (size_t i = 0; i < deserializedIds.size(); ++i) {
-                const auto &entityData = j["entities"][i];
-                if (entityData.contains("parent")) {
-                    const size_t parentIndex = entityData["parent"].get<size_t>();
-                    if (parentIndex < deserializedIds.size() && parentIndex != i) {
+                if (const auto &entityData = j["entities"][i]; entityData.contains("parent")) {
+                    if (const size_t parentIndex = entityData["parent"].get<size_t>(); parentIndex < deserializedIds.size() && parentIndex != i) {
                         scene.GetRegistry().Reparent(deserializedIds[i], deserializedIds[parentIndex]);
                     }
                 }
@@ -279,8 +277,7 @@ namespace IO::SceneIO {
             for (const ECS::EntityID entityID : scene.GetRegistry().GetLivingEntities()) {
                 if (!scene.GetRegistry().IsValid(entityID))
                     continue;
-                ECS::Entity entity(entityID, &scene.GetRegistry());
-                if (entity.HasComponent<ECS::Components::MapComponent>())
+                if (ECS::Entity entity(entityID, &scene.GetRegistry()); entity.HasComponent<ECS::Components::MapComponent>())
                     continue;
                 entityIdToIndex[entityID] = idx++;
             }
@@ -300,8 +297,7 @@ namespace IO::SceneIO {
 
             if (const auto *rel = scene.GetRegistry().GetComponent<ECS::Components::RelationshipComponent>(entityID)) {
                 if (rel->parent != 0) {
-                    auto it = entityIdToIndex.find(rel->parent);
-                    if (it != entityIdToIndex.end()) {
+                    if (auto it = entityIdToIndex.find(rel->parent); it != entityIdToIndex.end()) {
                         entityJson["parent"] = it->second;
                     }
                 }

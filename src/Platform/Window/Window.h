@@ -29,7 +29,7 @@ namespace Platform::Window {
 
         [[nodiscard]] GLFWwindow *GetNativeWindow() const { return m_Window; }
 
-        void SetInputManager(Platform::Input::InputManager *inputManager);
+        void SetInputManager(Input::InputManager *inputManager);
 
         void SetWindowTitle(const std::string &title) const;
 
@@ -39,7 +39,7 @@ namespace Platform::Window {
 
     private:
         GLFWwindow *m_Window = nullptr;
-        Platform::Input::InputManager *m_InputManager = nullptr;
+        Input::InputManager *m_InputManager = nullptr;
         int m_Width = 0;
         int m_Height = 0;
 

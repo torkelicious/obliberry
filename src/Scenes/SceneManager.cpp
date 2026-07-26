@@ -124,7 +124,7 @@ namespace Scenes {
         }
     }
 
-    bool SceneManager::ValidateScenePath(const std::string &scenePath) const {
+    bool SceneManager::ValidateScenePath(const std::string &scenePath) {
         if (scenePath.empty()) {
             LOG_ERROR(LOG_WHO, "Scene path cannot be empty!");
             return false;

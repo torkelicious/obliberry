@@ -8,7 +8,7 @@ namespace IO::Package::Tools {
         return path;
     }
 
-    void PackageCurrentProject(const std::string &outputdir);
+    void PackageCurrentProject(const std::string &output_dir);
 
     void ExportGame(const std::string &output_dir);
 } // namespace IO::Package::Tools

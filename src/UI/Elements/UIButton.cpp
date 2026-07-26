@@ -25,7 +25,7 @@ namespace UI {
 
         // background
         if (Rect.Scale.x > 0.0f && Rect.Scale.y > 0.0f) {
-            const glm::vec4 &bgCol = (m_ButtonState == ButtonState::HOVERED || m_ButtonState == ButtonState::HELD) ? m_HoveredBackgroundColor : m_BackgroundColor;
+            const glm::vec4 &bgCol = m_ButtonState == ButtonState::HOVERED || m_ButtonState == ButtonState::HELD ? m_HoveredBackgroundColor : m_BackgroundColor;
             if (m_BackgroundTexture) {
                 renderer->SubmitQuad(finalPos, Rect.Scale, {0.0f, 0.0f}, {1.0f, 1.0f}, m_BackgroundTexture.get(), bgCol);
             } else {

@@ -54,10 +54,9 @@ namespace Config {
             ownedData = std::move(*owned);
             dataView = ownedData;
         } else if (IO::VFS::IsProjectLoaded()) {
-            auto loosePath = IO::VFS::GetProjectRoot() / filepath;
-            if (std::filesystem::exists(loosePath)) {
+            if (auto loosePath = IO::VFS::GetProjectRoot() / filepath; std::filesystem::exists(loosePath)) {
                 std::ifstream file(loosePath);
-                ownedData.assign((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+                ownedData.assign(std::istreambuf_iterator(file), std::istreambuf_iterator<char>());
                 dataView = ownedData;
             }
         }
@@ -98,7 +97,7 @@ namespace Config {
             LOG_INFO(LOG_WHO, "Loaded graphics config:");
             LOG_INFO(LOG_WHO, "  Window:        " + std::to_string(config.WindowWidth) + "x" + std::to_string(config.WindowHeight) + (config.Fullscreen ? " (fullscreen)" : ""));
             LOG_INFO(LOG_WHO, "  VSync:         " + std::string(VSyncToString(config.VSync)));
-            LOG_INFO(LOG_WHO, "  Target FPS:    " + std::to_string(static_cast<int>(config.TargetFPS)));
+            LOG_INFO(LOG_WHO, "  Target FPS:    " + std::to_string(config.TargetFPS));
             LOG_INFO(LOG_WHO, "  MSAA:          " + std::string(config.MSAAEnabled ? "on (" + std::to_string(config.AASamples) + "x)" : "off"));
         } catch (const std::exception &e) {
             LOG_ERROR(LOG_WHO, "Failed to parse graphics config: " + std::string(e.what()));

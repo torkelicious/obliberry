@@ -62,8 +62,7 @@ namespace Editor::Platform {
             std::string result(outPath.get());
 
             if (options.filterExt && !result.empty()) {
-                std::string ext = std::string(".") + options.filterExt;
-                if (result.size() < ext.size() || result.compare(result.size() - ext.size(), ext.size(), ext) != 0) {
+                if (const std::string ext = std::string(".") + options.filterExt; result.size() < ext.size() || result.compare(result.size() - ext.size(), ext.size(), ext) != 0) {
                     result += ext;
                 }
             }

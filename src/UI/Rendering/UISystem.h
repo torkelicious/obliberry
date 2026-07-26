@@ -34,7 +34,7 @@ namespace UI {
 
         void Clear();
 
-        void Update(float dt);
+        void Update(float dt) const;
         void Render();
         [[nodiscard]] UIElement *HitTest(glm::vec2 point) const;
 

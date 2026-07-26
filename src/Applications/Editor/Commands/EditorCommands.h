@@ -272,9 +272,9 @@ namespace Editor::Commands {
         // UIButton
         glm::vec4 bgColor{0.2f, 0.2f, 0.2f, 1.0f};
         glm::vec4 hoverBgColor{0.1f, 0.1f, 0.1f, 1.0f};
-        std::shared_ptr<::Rendering::Texture> bgTexture;
+        std::shared_ptr<Rendering::Texture> bgTexture;
         // UIImage
-        std::shared_ptr<::Rendering::Texture> image;
+        std::shared_ptr<Rendering::Texture> image;
     };
 
     std::unique_ptr<::UI::UIElement> CreateUIElementFromSnapshot(const UIElementSnapshot &snap);

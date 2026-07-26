@@ -268,8 +268,8 @@ namespace Editor::Commands {
         snap.name = element->Name;
         snap.position = element->Rect.Position;
         snap.scale = element->Rect.Scale;
-        snap.flags = element->HasFlag(::UI::VISIBLE) ? (snap.flags | ::UI::VISIBLE) : (snap.flags & ~::UI::VISIBLE);
-        snap.flags = element->HasFlag(::UI::ENABLED) ? (snap.flags | ::UI::ENABLED) : (snap.flags & ~::UI::ENABLED);
+        snap.flags = element->HasFlag(::UI::VISIBLE) ? snap.flags | ::UI::VISIBLE : snap.flags & ~::UI::VISIBLE;
+        snap.flags = element->HasFlag(::UI::ENABLED) ? snap.flags | ::UI::ENABLED : snap.flags & ~::UI::ENABLED;
 
         if (const auto *rect = dynamic_cast<const ::UI::UIRect *>(element)) {
             snap.type = UIElementSnapshot::RECT;
@@ -359,8 +359,7 @@ namespace Editor::Commands {
     AddUIElementCommand::AddUIElementCommand(::UI::UISystem *sys, ::UI::UIElement *parent, UIElementSnapshot snapshot) : m_UISystem(sys), m_Parent(parent), m_Snapshot(std::move(snapshot)) {}
 
     void AddUIElementCommand::Execute(Core::EngineContext &ctx) {
-        auto el = CreateUIElementFromSnapshot(m_Snapshot);
-        if (el && m_UISystem && m_Parent) {
+        if (auto el = CreateUIElementFromSnapshot(m_Snapshot); el && m_UISystem && m_Parent) {
             m_Created = m_UISystem->AddChild(m_Parent, std::move(el));
         }
     }
@@ -392,8 +391,7 @@ namespace Editor::Commands {
     }
 
     void RemoveUIElementCommand::Undo(Core::EngineContext &ctx) {
-        auto el = CreateUIElementFromSnapshot(m_Snapshot);
-        if (el && m_UISystem && m_Parent) {
+        if (auto el = CreateUIElementFromSnapshot(m_Snapshot); el && m_UISystem && m_Parent) {
             m_Restored = m_UISystem->AddChild(m_Parent, std::move(el));
         }
     }

@@ -30,8 +30,7 @@ namespace ECS::Systems::ParticleSystem {
     }
 
     inline void EnsureQuad() {
-        auto &q = GetQuadMesh();
-        if (!q) {
+        if (auto &q = GetQuadMesh(); !q) {
             q = std::make_shared<Rendering::Mesh>(Rendering::MeshFactory::CreateQuad());
             Rendering::Renderer::SubmitInitTask(Platform::Threading::SmallTask([q] { q->InitGL(); }));
         }
@@ -73,7 +72,7 @@ namespace ECS::Systems::ParticleSystem {
         return index;
     }
 
-    inline void Update(ECS::Registry &registry, const float dt) {
+    inline void Update(Registry &registry, const float dt) {
         EnsureQuad();
 
         auto &emitters = GetEmitters();
@@ -148,7 +147,7 @@ namespace ECS::Systems::ParticleSystem {
         }
     }
 
-    inline void Render(ECS::Registry &registry, Rendering::Renderer &renderer, const Rendering::Camera *camera = nullptr) {
+    inline void Render(Registry &registry, Rendering::Renderer &renderer, const Rendering::Camera *camera = nullptr) {
         const auto &emitters = GetEmitters();
         const auto &quad = GetQuadMesh();
         if (!quad)
@@ -171,7 +170,7 @@ namespace ECS::Systems::ParticleSystem {
             const bool bb = comp->isBillboard && camera;
             state.pool.BuildTransformsAndColors(transforms, colors, bb, &camRight, &camUp);
 
-            const int blendMode = (comp->blendMode == Components::ParticleBlendMode::Additive) ? 1 : 0;
+            const int blendMode = comp->blendMode == Components::ParticleBlendMode::Additive ? 1 : 0;
             renderer.Submit(quad, comp->material, transforms, colors, blendMode, comp->renderOrder, comp->shape);
         });
     }

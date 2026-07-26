@@ -98,14 +98,14 @@ namespace UI {
         m_QuadSDFSpread[m_SubmitIndex].push_back(sdfSpread);
     }
 
-    void UIRenderer::Flush(uint32_t renderTargetWidth, uint32_t renderTargetHeight) {
+    void UIRenderer::Flush(const uint32_t renderTargetWidth, const uint32_t renderTargetHeight) {
         const auto &verts = m_Vertices[m_RenderIndex];
         const auto &texs = m_QuadTextures[m_RenderIndex];
 
         if (verts.empty())
             return;
 
-        const glm::uvec2 targetSize = (renderTargetWidth > 0 && renderTargetHeight > 0) ? glm::uvec2{renderTargetWidth, renderTargetHeight} : m_ActualWindowSize;
+        const glm::uvec2 targetSize = renderTargetWidth > 0 && renderTargetHeight > 0 ? glm::uvec2{renderTargetWidth, renderTargetHeight} : m_ActualWindowSize;
         m_LastRenderTargetSize = targetSize;
 
         if (m_GameResolution.x > 0 && m_GameResolution.y > 0 && targetSize.x > 0 && targetSize.y > 0) {
@@ -174,7 +174,7 @@ namespace UI {
             if (batch.texture) {
                 batch.texture->Bind(0);
             }
-            glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(batch.indexCount), GL_UNSIGNED_INT, reinterpret_cast<const void *>(static_cast<uintptr_t>(batch.indexOffset * sizeof(unsigned int))));
+            glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(batch.indexCount), GL_UNSIGNED_INT, reinterpret_cast<const void *>(batch.indexOffset * sizeof(unsigned int)));
             if (batch.shader == BatchShader::SDF) {
                 m_SDFShader->Unbind();
             }

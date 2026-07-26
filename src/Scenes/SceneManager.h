@@ -23,7 +23,7 @@ namespace Scenes {
 
         [[nodiscard]] bool SaveCurrentScene() const;
 
-        [[nodiscard]] bool ValidateScenePath(const std::string &scenePath) const;
+        [[nodiscard]] static bool ValidateScenePath(const std::string &scenePath);
 
         void ProcessPendingSceneChange(Core::EngineContext &context);
 

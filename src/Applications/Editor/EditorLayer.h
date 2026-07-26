@@ -78,7 +78,7 @@ namespace Editor {
         Scenes::Scene *m_Scene = nullptr;
         std::string m_CurrentScenePath;
         EditorCamera m_Camera;
-        ::Platform::Input::InputManager *m_Input = nullptr;
+        Platform::Input::InputManager *m_Input = nullptr;
         ECS::Registry *m_Registry = nullptr;
         Scenes::SceneManager m_SceneManager;
 

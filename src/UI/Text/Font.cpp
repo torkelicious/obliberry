@@ -19,23 +19,19 @@ namespace UI {
             for (int x = 0; x < w; x++) {
                 const int i = y * w + x;
                 if (y > 0 && x > 0) {
-                    const float d = dist[(y - 1) * w + (x - 1)] + 2.0f;
-                    if (d < dist[i])
+                    if (const float d = dist[(y - 1) * w + (x - 1)] + 2.0f; d < dist[i])
                         dist[i] = d;
                 }
                 if (y > 0) {
-                    const float d = dist[(y - 1) * w + x] + 1.0f;
-                    if (d < dist[i])
+                    if (const float d = dist[(y - 1) * w + x] + 1.0f; d < dist[i])
                         dist[i] = d;
                 }
                 if (y > 0 && x < w - 1) {
-                    const float d = dist[(y - 1) * w + (x + 1)] + 2.0f;
-                    if (d < dist[i])
+                    if (const float d = dist[(y - 1) * w + (x + 1)] + 2.0f; d < dist[i])
                         dist[i] = d;
                 }
                 if (x > 0) {
-                    const float d = dist[y * w + (x - 1)] + 1.0f;
-                    if (d < dist[i])
+                    if (const float d = dist[y * w + (x - 1)] + 1.0f; d < dist[i])
                         dist[i] = d;
                 }
             }

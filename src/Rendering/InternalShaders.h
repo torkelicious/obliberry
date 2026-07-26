@@ -233,7 +233,7 @@ void main() {
         hex->InitGL();
         resources.LoadFromFactory<Mesh>("[Engine] Hex", [hex] { return hex; });
 
-        auto shader = resources.Get<Shader>("[Engine] Base");
+        const auto shader = resources.Get<Shader>("[Engine] Base");
         auto mat = std::make_shared<Material>(Material{shader, nullptr, {1.0f, 1.0f, 1.0f, 1.0f}});
         resources.LoadFromFactory<Material>("[Engine] DefaultMaterial", [mat] { return mat; });
     }

@@ -15,7 +15,7 @@ namespace Editor::UI {
     static bool IsUIDescendantOf(const ::UI::UIElement *ancestor, const ::UI::UIElement *descendant) {
         if (!descendant)
             return false;
-        auto *p = descendant->Parent;
+        const auto *p = descendant->Parent;
         while (p) {
             if (p == ancestor)
                 return true;
@@ -73,8 +73,7 @@ namespace Editor::UI {
         // Drop
         if (ImGui::BeginDragDropTarget()) {
             if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("UI_ELEMENT_DRAG")) {
-                auto *dragged = *static_cast<::UI::UIElement **>(payload->Data);
-                if (dragged != element && !IsUIDescendantOf(element, dragged)) {
+                if (auto *dragged = *static_cast<::UI::UIElement **>(payload->Data); dragged != element && !IsUIDescendantOf(element, dragged)) {
                     ReparentUIElement(dragged, element);
                     MarkSceneChanged(m_EngineContext);
                 }
@@ -172,7 +171,7 @@ namespace Editor::UI {
         ImGui::Combo("Type", &m_AddType, typeNames, 4);
 
         if (ImGui::Button("Add")) {
-            ::UI::UIElement *parent = (m_SelectedElement && m_SelectedElement != root) ? m_SelectedElement : root;
+            ::UI::UIElement *parent = m_SelectedElement && m_SelectedElement != root ? m_SelectedElement : root;
 
             Commands::UIElementSnapshot snap;
             snap.type = static_cast<Commands::UIElementSnapshot::Type>(m_AddType);
@@ -309,8 +308,7 @@ namespace Editor::UI {
 
             if (auto *image = dynamic_cast<::UI::UIImage *>(m_SelectedElement)) {
                 ImGui::Text("Image Properties");
-                auto &tex = image->GetImage();
-                if (TextureCombo("Texture", *m_EngineContext->resources, tex)) {
+                if (auto &tex = image->GetImage(); TextureCombo("Texture", *m_EngineContext->resources, tex)) {
                     MarkSceneChanged(m_EngineContext);
                 }
 

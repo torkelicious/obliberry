@@ -125,7 +125,7 @@ void Platform::Window::Window::WindowResizeCallback(GLFWwindow *window, const in
     glViewport(0, 0, fbWidth, fbHeight);
 }
 
-void Platform::Window::Window::SetInputManager(Platform::Input::InputManager *inputManager) { m_InputManager = inputManager; }
+void Platform::Window::Window::SetInputManager(Input::InputManager *inputManager) { m_InputManager = inputManager; }
 
 void Platform::Window::Window::SetWindowTitle(const std::string &title) const { glfwSetWindowTitle(m_Window, title.c_str()); }
 

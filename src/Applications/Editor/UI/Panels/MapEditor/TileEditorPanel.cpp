@@ -64,7 +64,7 @@ namespace Editor::UI {
             bool changed = false;
             if (ImGui::BeginCombo(label, preview.c_str())) {
                 for (const auto &[id, mat] : typeMats) {
-                    ImGui::PushID(static_cast<int>(id));
+                    ImGui::PushID(id);
                     const bool isSelected = id == current;
                     const auto cit = counts.find(id);
                     const size_t count = cit != counts.end() ? cit->second : 0;

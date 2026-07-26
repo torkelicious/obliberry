@@ -182,7 +182,7 @@ void IO::EntityFactory::RegisterDeserializers() {
             ec.isBillboard = data["isBillboard"].get<bool>();
         if (data.contains("blendMode")) {
             const int bm = data["blendMode"].get<int>();
-            ec.blendMode = (bm == 1) ? ECS::Components::ParticleBlendMode::Additive : ECS::Components::ParticleBlendMode::Alpha;
+            ec.blendMode = bm == 1 ? ECS::Components::ParticleBlendMode::Additive : ECS::Components::ParticleBlendMode::Alpha;
         }
         if (data.contains("renderOrder"))
             ec.renderOrder = data["renderOrder"].get<int>();

@@ -75,15 +75,14 @@ namespace ECS {
                 return;
 
             // destroy all children first
-            if (auto *rel = GetComponent<Components::RelationshipComponent>(id)) {
-                const std::vector<EntityID> childrenCopy = rel->children;
-                for (const EntityID childId : childrenCopy) {
+            if (const auto *rel = GetComponent<Components::RelationshipComponent>(id)) {
+                for (const std::vector<EntityID> childrenCopy = rel->children; const EntityID childId : childrenCopy) {
                     DestroyEntity(childId);
                 }
             }
 
             // remove self from parent children list
-            if (auto *rel = GetComponent<Components::RelationshipComponent>(id)) {
+            if (const auto *rel = GetComponent<Components::RelationshipComponent>(id)) {
                 if (rel->parent != 0 && IsValid(rel->parent)) {
                     if (auto *parentRel = GetComponent<Components::RelationshipComponent>(rel->parent)) {
                         std::erase(parentRel->children, id);
@@ -231,14 +230,13 @@ namespace ECS {
     inline void Entity::SetParent(const EntityID parentId) const { m_Registry->Reparent(m_EntityHandle, parentId); }
 
     inline Entity Entity::GetParent() const {
-        auto *rel = m_Registry->GetComponent<Components::RelationshipComponent>(m_EntityHandle);
-        if (rel && rel->parent != 0 && m_Registry->IsValid(rel->parent))
+        if (const auto *rel = m_Registry->GetComponent<Components::RelationshipComponent>(m_EntityHandle); rel && rel->parent != 0 && m_Registry->IsValid(rel->parent))
             return Entity(rel->parent, m_Registry);
         return Entity{};
     }
 
     inline const std::vector<EntityID> &Entity::GetChildren() const {
-        static const std::vector<EntityID> empty;
+        static constexpr std::vector<EntityID> empty;
         auto *rel = m_Registry->GetComponent<Components::RelationshipComponent>(m_EntityHandle);
         return rel ? rel->children : empty;
     }

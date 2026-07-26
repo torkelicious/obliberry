@@ -32,7 +32,7 @@ namespace Editor::UI {
 
     enum class FieldType : uint8_t { Float, Int, Bool, Vec3, Color3 };
 
-    inline size_t FieldTypeSize(FieldType type) {
+    inline size_t FieldTypeSize(const FieldType type) {
         switch (type) {
             case FieldType::Float:
                 return sizeof(float);
@@ -132,7 +132,7 @@ namespace Editor::UI {
                 ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (availWidth - buttonWidth) * 0.5f);
                 if (ImGui::Button((std::string("Remove ##") + m_Name).c_str(), ImVec2(buttonWidth, 0))) {
                     auto data = *entity.GetComponent<T>();
-                    undoManager->Execute(std::make_unique<Editor::Commands::RemoveComponentCommand<T>>(static_cast<ECS::EntityID>(entity), data), *engineContext);
+                    undoManager->Execute(std::make_unique<Commands::RemoveComponentCommand<T>>(static_cast<ECS::EntityID>(entity), data), *engineContext);
                     MarkSceneChanged(engineContext);
                 }
             }
@@ -157,7 +157,7 @@ namespace Editor::UI {
             if (ImGui::CollapsingHeader(m_Name)) {
                 ImGui::TextDisabled("Tag Component (No Data)");
                 if (ImGui::Button((std::string("Remove ##") + m_Name).c_str())) {
-                    undoManager->Execute(std::make_unique<Editor::Commands::RemoveComponentCommand<T>>(static_cast<ECS::EntityID>(entity), T{}), *engineContext);
+                    undoManager->Execute(std::make_unique<Commands::RemoveComponentCommand<T>>(static_cast<ECS::EntityID>(entity), T{}), *engineContext);
                     MarkSceneChanged(engineContext);
                 }
             }

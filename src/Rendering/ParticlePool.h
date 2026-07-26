@@ -119,7 +119,7 @@ namespace Rendering {
         [[nodiscard]] const glm::vec4 *GetColorStartData() const { return m_ColorStart.data(); }
         [[nodiscard]] const glm::vec4 *GetColorEndData() const { return m_ColorEnd.data(); }
 
-        [[nodiscard]] float GetNormalizedAge(const int i) const { return 1.0f - (m_Life[i] / m_MaxLife[i]); }
+        [[nodiscard]] float GetNormalizedAge(const int i) const { return 1.0f - m_Life[i] / m_MaxLife[i]; }
 
         // bulk transform build for instanced rendering
         void BuildTransforms(std::vector<glm::mat4> &out, const bool billboard = false, const glm::vec3 *camRight = nullptr, const glm::vec3 *camUp = nullptr) const {

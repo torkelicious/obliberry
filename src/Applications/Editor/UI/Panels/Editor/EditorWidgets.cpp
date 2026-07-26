@@ -260,7 +260,7 @@ void Editor::UI::DirectionalTextureWidget::Draw(const ECS::Entity entity, Core::
     if (ImGui::CollapsingHeader(GetName())) {
         auto *comp = entity.GetComponent<ECS::Components::DirectionalTextureComponent>();
 
-        int facingIndex = static_cast<int>(comp->index);
+        int facingIndex = comp->index;
         static int s_DirTexOldIndex = 0;
         ImGui::SliderInt("Facing Index", &facingIndex, 0, 5);
         if (ImGui::IsItemActivated())

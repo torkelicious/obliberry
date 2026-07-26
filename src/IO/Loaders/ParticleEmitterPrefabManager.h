@@ -52,7 +52,7 @@ namespace IO {
             ec.isBillboard = data["isBillboard"].get<bool>();
         if (data.contains("blendMode")) {
             const int bm = data["blendMode"].get<int>();
-            ec.blendMode = (bm == 1) ? ECS::Components::ParticleBlendMode::Additive : ECS::Components::ParticleBlendMode::Alpha;
+            ec.blendMode = bm == 1 ? ECS::Components::ParticleBlendMode::Additive : ECS::Components::ParticleBlendMode::Alpha;
         }
         if (data.contains("renderOrder"))
             ec.renderOrder = data["renderOrder"].get<int>();
@@ -83,7 +83,7 @@ namespace IO {
         data["colorStart"] = {ec.colorStart.x, ec.colorStart.y, ec.colorStart.z, ec.colorStart.w};
         data["colorEnd"] = {ec.colorEnd.x, ec.colorEnd.y, ec.colorEnd.z, ec.colorEnd.w};
         data["isBillboard"] = ec.isBillboard;
-        data["blendMode"] = static_cast<int>(ec.blendMode);
+        data["blendMode"] = ec.blendMode;
         data["renderOrder"] = ec.renderOrder;
         data["shape"] = ec.shape;
         if (ec.material) {

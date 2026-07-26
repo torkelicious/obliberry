@@ -17,8 +17,8 @@
 #include <unordered_set>
 
 namespace {
-    bool IsAncestorOf(ECS::Registry &registry, ECS::EntityID entity, ECS::EntityID candidate) {
-        auto *rel = registry.GetComponent<ECS::Components::RelationshipComponent>(entity);
+    bool IsAncestorOf(ECS::Registry &registry, const ECS::EntityID entity, const ECS::EntityID candidate) {
+        const auto *rel = registry.GetComponent<ECS::Components::RelationshipComponent>(entity);
         while (rel && rel->parent != 0) {
             if (rel->parent == candidate)
                 return true;
@@ -27,7 +27,7 @@ namespace {
         return false;
     }
 
-    std::string GetLabel(const ECS::Entity &entity, ECS::EntityID id) {
+    std::string GetLabel(const ECS::Entity &entity, const ECS::EntityID id) {
         std::string label = entity.GetName();
         if (label.empty())
             label = "Entity " + std::to_string(id);
@@ -97,8 +97,7 @@ void Editor::UI::RegistryPanel::OnImGuiRender() {
         std::unordered_set<ECS::EntityID> visibleSet;
         for (const ECS::EntityID id : livingEntities) {
             if (registry.IsValid(id)) {
-                ECS::Entity e(id, &registry);
-                if (!e.HasComponent<ECS::Components::MapComponent>())
+                if (ECS::Entity e(id, &registry); !e.HasComponent<ECS::Components::MapComponent>())
                     visibleSet.insert(id);
             }
         }
@@ -107,8 +106,7 @@ void Editor::UI::RegistryPanel::OnImGuiRender() {
         std::unordered_set<ECS::EntityID> hasVisibleParent;
 
         for (const ECS::EntityID id : visibleSet) {
-            auto *rel = registry.GetComponent<ECS::Components::RelationshipComponent>(id);
-            if (rel && rel->parent != 0 && visibleSet.contains(rel->parent)) {
+            if (const auto *rel = registry.GetComponent<ECS::Components::RelationshipComponent>(id); rel && rel->parent != 0 && visibleSet.contains(rel->parent)) {
                 parentToChildren[rel->parent].push_back(id);
                 hasVisibleParent.insert(id);
             }
@@ -119,11 +117,11 @@ void Editor::UI::RegistryPanel::OnImGuiRender() {
 
         static bool s_Dragging = false;
 
-        std::function<void(ECS::EntityID)> renderNode = [&](ECS::EntityID id) {
+        std::function<void(ECS::EntityID)> renderNode = [&](const ECS::EntityID id) {
             if (!registry.IsValid(id))
                 return;
 
-            ECS::Entity entity(id, &registry);
+            const ECS::Entity entity(id, &registry);
             const std::string label = GetLabel(entity, id);
 
             const auto *rel = registry.GetComponent<ECS::Components::RelationshipComponent>(id);
@@ -158,9 +156,8 @@ void Editor::UI::RegistryPanel::OnImGuiRender() {
             // drop
             if (ImGui::BeginDragDropTarget()) {
                 if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("ENTITY_DRAG")) {
-                    const ECS::EntityID draggedId = *static_cast<const ECS::EntityID *>(payload->Data);
                     // prevent self parenting and ancestor cycles
-                    if (draggedId != id && !IsAncestorOf(registry, id, draggedId)) {
+                    if (const ECS::EntityID draggedId = *static_cast<const ECS::EntityID *>(payload->Data); draggedId != id && !IsAncestorOf(registry, id, draggedId)) {
                         registry.Reparent(draggedId, id);
                         MarkSceneChanged(m_EngineContext);
                     }
@@ -203,8 +200,7 @@ void Editor::UI::RegistryPanel::OnImGuiRender() {
                             continue;
                         if (IsAncestorOf(registry, otherId, id))
                             continue;
-                        ECS::Entity other(otherId, &registry);
-                        if (ImGui::MenuItem(GetLabel(other, otherId).c_str())) {
+                        if (ECS::Entity other(otherId, &registry); ImGui::MenuItem(GetLabel(other, otherId).c_str())) {
                             registry.Reparent(id, otherId);
                             MarkSceneChanged(m_EngineContext);
                         }

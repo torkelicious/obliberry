@@ -103,8 +103,7 @@ namespace ECS::Systems::MapRenderSystem {
                 if (transforms.empty())
                     continue;
 
-                auto matIt = mapComp->findTypeMat(typeId);
-                if (matIt != mapComp->typeMats.end()) {
+                if (auto matIt = mapComp->findTypeMat(typeId); matIt != mapComp->typeMats.end()) {
                     if (!matIt->second->texture) {
                         static std::unordered_set<uint8_t> warnedMissingTex;
                         if (warnedMissingTex.insert(typeId).second)
