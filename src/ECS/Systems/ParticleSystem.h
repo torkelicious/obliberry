@@ -114,7 +114,7 @@ namespace ECS::Systems::ParticleSystem {
             if (comp->emitRate > 0.0f) {
                 comp->emitAccumulator += dt * comp->emitRate;
 
-                const glm::vec3 origin = tc->transform.GetPosition();
+                const glm::vec3 origin = tc->worldTransform.GetPosition();
 
                 while (comp->emitAccumulator >= 1.0f && !state.pool.IsFull()) {
                     const float life = glm::linearRand(comp->lifetimeMin, comp->lifetimeMax);

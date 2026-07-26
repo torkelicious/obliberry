@@ -298,7 +298,7 @@ namespace Editor::Commands {
 
     class RemoveUIElementCommand final : public ICommand {
     public:
-        RemoveUIElementCommand(::UI::UISystem *sys, ::UI::UIElement *parent, ::UI::UIElement *child);
+        RemoveUIElementCommand(::UI::UISystem *sys, ::UI::UIElement *parent, const ::UI::UIElement *child);
         void Execute(Core::EngineContext &ctx) override;
         void Undo(Core::EngineContext &ctx) override;
         [[nodiscard]] std::string_view Name() const noexcept override { return "Remove UI Element"; }

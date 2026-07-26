@@ -8,27 +8,81 @@
 #include "Applications/Editor/UI/Panels/Editor/EditorWidgetsCombo.h"
 #include "Applications/Editor/UI/Panels/Editor/EditorWidgets.h"
 #include <cstring>
+#include <algorithm>
 
 namespace Editor::UI {
+
+    static bool IsUIDescendantOf(const ::UI::UIElement *ancestor, const ::UI::UIElement *descendant) {
+        if (!descendant)
+            return false;
+        auto *p = descendant->Parent;
+        while (p) {
+            if (p == ancestor)
+                return true;
+            p = p->Parent;
+        }
+        return false;
+    }
+
+    static void ReparentUIElement(::UI::UIElement *element, ::UI::UIElement *newParent) {
+        if (!element || !newParent || element == newParent)
+            return;
+        if (element == newParent)
+            return;
+        if (IsUIDescendantOf(element, newParent))
+            return;
+
+        // remove from old parent
+        if (element->Parent) {
+            auto &siblings = element->Parent->Children;
+            std::erase(siblings, element);
+        }
+
+        // attach to new parent
+        element->Parent = newParent;
+        newParent->Children.push_back(element);
+    }
 
     void UIPanel::DrawElementNode(::UI::UIElement *element) {
         if (!element)
             return;
 
+        ImGui::PushID(element);
+
+        const bool hasChildren = !element->Children.empty();
         ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
-        if (element->Children.empty())
-            flags |= ImGuiTreeNodeFlags_Leaf;
+        if (!hasChildren)
+            flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 
         if (element == m_SelectedElement)
             flags |= ImGuiTreeNodeFlags_Selected;
 
-        const bool nodeOpen = ImGui::TreeNodeEx(element, flags, "%s", element->Name.c_str());
+        const bool nodeOpen = ImGui::TreeNodeEx("##node", flags, "%s", element->Name.c_str());
 
-        if (ImGui::IsItemClicked()) {
+        if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
             m_SelectedElement = element;
         }
 
-        // Context menu
+        // Drag
+        if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
+            ImGui::SetDragDropPayload("UI_ELEMENT_DRAG", &element, sizeof(::UI::UIElement *));
+            ImGui::TextUnformatted(element->Name.c_str());
+            ImGui::EndDragDropSource();
+        }
+
+        // Drop
+        if (ImGui::BeginDragDropTarget()) {
+            if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("UI_ELEMENT_DRAG")) {
+                auto *dragged = *static_cast<::UI::UIElement **>(payload->Data);
+                if (dragged != element && !IsUIDescendantOf(element, dragged)) {
+                    ReparentUIElement(dragged, element);
+                    MarkSceneChanged(m_EngineContext);
+                }
+            }
+            ImGui::EndDragDropTarget();
+        }
+
+        // context menu
         if (ImGui::BeginPopupContextItem()) {
             ImGui::Text("Element: %s", element->Name.c_str());
             ImGui::Separator();
@@ -55,6 +109,17 @@ namespace Editor::UI {
             ImGui::Text("Pos: (%.1f, %.1f)", element->Rect.Position.x, element->Rect.Position.y);
             ImGui::Text("Size: (%.1f, %.1f)", element->Rect.Scale.x, element->Rect.Scale.y);
 
+            if (element->Parent && element->Parent->Parent) {
+                ImGui::Separator();
+                if (ImGui::MenuItem("Detach")) {
+                    auto *root = element;
+                    while (root->Parent)
+                        root = root->Parent;
+                    ReparentUIElement(element, root);
+                    MarkSceneChanged(m_EngineContext);
+                }
+            }
+
             ImGui::EndPopup();
         }
 
@@ -69,11 +134,15 @@ namespace Editor::UI {
         }
 
         if (nodeOpen) {
-            for (auto *child : element->Children) {
-                DrawElementNode(child);
+            if (hasChildren) {
+                for (auto *child : element->Children) {
+                    DrawElementNode(child);
+                }
+                ImGui::TreePop();
             }
-            ImGui::TreePop();
         }
+
+        ImGui::PopID();
     }
 
     void UIPanel::OnImGuiRender() {

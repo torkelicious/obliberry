@@ -21,8 +21,8 @@ namespace ECS::Systems::RenderSystem {
                     if (!transComp)
                         return;
 
-                    const glm::vec3 &pos = transComp->transform.GetPosition();
-                    const glm::vec3 &scale = transComp->transform.GetScale();
+                    const glm::vec3 &pos = transComp->worldTransform.GetPosition();
+                    const glm::vec3 &scale = transComp->worldTransform.GetScale();
 
                     const float meshRadius = meshComp->mesh->GetBoundingRadius();
                     const float maxScale = std::max({scale.x, scale.y, scale.z, 1.0f});
@@ -42,8 +42,8 @@ namespace ECS::Systems::RenderSystem {
                         }
                     }
 
-                    const int entityInt = static_cast<int>(static_cast<EntityID>(entity));
-                    renderer.Submit(meshComp->mesh, matComp->material, transComp->transform, textureOverride, entityInt);
+                    const int32_t entityInt = static_cast<int32_t>(static_cast<EntityID>(entity));
+                    renderer.Submit(meshComp->mesh, matComp->material, transComp->worldTransform, textureOverride, entityInt);
                 });
     }
 } // namespace ECS::Systems::RenderSystem

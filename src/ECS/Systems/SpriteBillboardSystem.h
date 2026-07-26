@@ -24,11 +24,11 @@ namespace ECS::Systems::SpriteBillboardSystem {
         const glm::vec3 up = camera->GetUpVector();
 
         registry.ForEach<Components::BillboardTagComponent, Components::TransformComponent>([&](Entity, Components::BillboardTagComponent *, Components::TransformComponent *transComp) {
-            const glm::vec3 pos = transComp->transform.GetPosition();
-            const glm::vec3 scale = transComp->transform.GetScale();
+            const glm::vec3 pos = transComp->worldTransform.GetPosition();
+            const glm::vec3 scale = transComp->worldTransform.GetScale();
             if (const float radius = std::max(scale.x, scale.y) * 0.5f; !frustum3D.IntersectsSphere(pos, radius))
                 return;
-            transComp->transform.SetCustomMatrix(MakeBillboardMatrix(pos, scale.x, scale.y, right, up));
+            transComp->worldTransform.SetCustomMatrix(MakeBillboardMatrix(pos, scale.x, scale.y, right, up));
         });
     }
 } // namespace ECS::Systems::SpriteBillboardSystem

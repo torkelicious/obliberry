@@ -11,6 +11,7 @@
 #include "Scenes/Scene.h"
 #include "ECS/Components/MapComponent.h"
 #include "ECS/Components/MapStateComponent.h"
+#include "ECS/Components/RelationshipComponent.h"
 #include "ECS/Systems/MapRuntimeSystem.h"
 #include "IO/Loaders/UISerializer.h"
 #include "UI/Rendering/UISystem.h"
@@ -149,10 +150,23 @@ namespace IO::SceneIO {
 
         // ENTITIES
         if (j.contains("entities")) {
+            std::vector<ECS::EntityID> deserializedIds;
+            deserializedIds.reserve(j["entities"].size());
+
             for (const auto &entityData : j["entities"]) {
                 ECS::Entity entity(scene.GetRegistry().CreateEntity(), &scene.GetRegistry());
-
                 EntityFactory::DeserializeEntity(entity, entityData, resources);
+                deserializedIds.push_back(static_cast<ECS::EntityID>(entity));
+            }
+
+            for (size_t i = 0; i < deserializedIds.size(); ++i) {
+                const auto &entityData = j["entities"][i];
+                if (entityData.contains("parent")) {
+                    const size_t parentIndex = entityData["parent"].get<size_t>();
+                    if (parentIndex < deserializedIds.size() && parentIndex != i) {
+                        scene.GetRegistry().Reparent(deserializedIds[i], deserializedIds[parentIndex]);
+                    }
+                }
             }
         }
 
@@ -259,7 +273,22 @@ namespace IO::SceneIO {
 
         // ENTITIES
         j["entities"] = json::array();
-        for (const auto &livingEntities = scene.GetRegistry().GetLivingEntities(); ECS::EntityID entityID : livingEntities) {
+        std::unordered_map<ECS::EntityID, size_t> entityIdToIndex;
+        {
+            size_t idx = 0;
+            for (const ECS::EntityID entityID : scene.GetRegistry().GetLivingEntities()) {
+                if (!scene.GetRegistry().IsValid(entityID))
+                    continue;
+                ECS::Entity entity(entityID, &scene.GetRegistry());
+                if (entity.HasComponent<ECS::Components::MapComponent>())
+                    continue;
+                entityIdToIndex[entityID] = idx++;
+            }
+        }
+
+        for (const ECS::EntityID entityID : scene.GetRegistry().GetLivingEntities()) {
+            if (!scene.GetRegistry().IsValid(entityID))
+                continue;
             ECS::Entity entity(entityID, &scene.GetRegistry());
 
             if (entity.HasComponent<ECS::Components::MapComponent>()) {
@@ -268,6 +297,15 @@ namespace IO::SceneIO {
 
             json entityJson;
             EntityFactory::SerializeEntity(entity, entityJson, resources);
+
+            if (const auto *rel = scene.GetRegistry().GetComponent<ECS::Components::RelationshipComponent>(entityID)) {
+                if (rel->parent != 0) {
+                    auto it = entityIdToIndex.find(rel->parent);
+                    if (it != entityIdToIndex.end()) {
+                        entityJson["parent"] = it->second;
+                    }
+                }
+            }
 
             if (!entityJson.empty()) {
                 j["entities"].push_back(entityJson);

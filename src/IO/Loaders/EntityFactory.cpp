@@ -37,6 +37,9 @@ void IO::EntityFactory::RegisterDeserializers() {
         if (data.contains("position")) {
             tc.transform.SetPosition({data["position"][0], data["position"][1], data["position"][2]});
         }
+        if (data.contains("rotation")) {
+            tc.transform.SetRotation({data["rotation"][0], data["rotation"][1], data["rotation"][2]});
+        }
         if (data.contains("scale")) {
             tc.transform.SetScale({data["scale"][0], data["scale"][1], data["scale"][2]});
         }
@@ -202,8 +205,10 @@ void IO::EntityFactory::RegisterSerializers() {
         if (entity.HasComponent<ECS::Components::TransformComponent>()) {
             const auto *tc = entity.GetComponent<ECS::Components::TransformComponent>();
             auto pos = tc->transform.GetPosition();
+            auto rot = tc->transform.GetRotation();
             auto scale = tc->transform.GetScale();
             data["TransformComponent"]["position"] = {pos.x, pos.y, pos.z};
+            data["TransformComponent"]["rotation"] = {rot.x, rot.y, rot.z};
             data["TransformComponent"]["scale"] = {scale.x, scale.y, scale.z};
         }
     };

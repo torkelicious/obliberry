@@ -2,6 +2,7 @@
 
 #include "Types.h"
 #include <string>
+#include <vector>
 
 namespace ECS {
     class Registry;
@@ -31,6 +32,11 @@ namespace ECS {
         void SetName(const std::string &name) const;
 
         [[nodiscard]] const std::string &GetName() const;
+
+        // hierarchy
+        void SetParent(EntityID parentId) const;
+        [[nodiscard]] Entity GetParent() const;
+        [[nodiscard]] const std::vector<EntityID> &GetChildren() const;
 
     private:
         EntityID m_EntityHandle = 0;

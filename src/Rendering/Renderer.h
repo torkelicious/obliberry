@@ -22,7 +22,7 @@ namespace Rendering {
         glm::vec4 color;
         glm::mat4 model;
         int32_t sortKey;
-        int entityID; // signed int since -1 is used to represent invalid/non-entities
+        int32_t entityID; // signed int since -1 is used to represent invalid/non-entities
     };
 
     struct InstancedRenderCommand {
@@ -30,9 +30,9 @@ namespace Rendering {
         const Material *material;
         const Texture *effectiveTexture;
         glm::vec4 color;
-        int blendMode = 0;   // 0 = alpha, 1 = additive
-        int renderOrder = 0; // higher is drawn later
-        int shape = 0;       // 0 = quad, 1 = circle, 2 = soft circle
+        int8_t blendMode = 0;    // 0 = alpha, 1 = additive
+        int32_t renderOrder = 0; // higher is drawn later
+        int8_t shape = 0;        // 0 = quad, 1 = circle, 2 = soft circle
 
         const glm::mat4 *transformPtr = nullptr;
         size_t transformOffset = 0;
@@ -42,7 +42,7 @@ namespace Rendering {
         size_t colorOffset = 0;
         size_t colorCount = 0;
 
-        const int *entityIDPtr = nullptr;
+        const int32_t *entityIDPtr = nullptr;
         size_t entityIDOffset = 0;
         size_t entityIDCount = 0;
     };
@@ -52,7 +52,7 @@ namespace Rendering {
         const Material *material;
         const Texture *texture;
         glm::vec4 color;
-        int shape = 0;
+        int32_t shape = 0;
         bool operator==(const BatchKey &other) const noexcept { return mesh == other.mesh && material == other.material && texture == other.texture && color == other.color && shape == other.shape; }
     };
 
@@ -65,14 +65,14 @@ namespace Rendering {
 
         void BeginFrame();
 
-        void Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const Transform &transform, const Texture *textureOverride = nullptr, int entityID = -1);
+        void Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const Transform &transform, const Texture *textureOverride = nullptr, int32_t entityID = -1);
 
-        void Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> &transforms, const std::vector<int> &entityIDs = {});
+        void Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> &transforms, const std::vector<int32_t> &entityIDs = {});
 
-        void Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> &transforms, const std::vector<glm::vec4> &colors, int blendMode = 0, int renderOrder = 0,
-                    int shape = 0);
+        void Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> &transforms, const std::vector<glm::vec4> &colors, int32_t blendMode = 0,
+                    int32_t renderOrder = 0, int8_t shape = 0);
 
-        void SubmitPersistent(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> *transforms, const std::vector<int> *entityIDs = nullptr);
+        void SubmitPersistent(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> *transforms, const std::vector<int32_t> *entityIDs = nullptr);
 
         template <typename T> void Pin(const std::shared_ptr<T> &resource) {
             if (resource)
@@ -118,7 +118,7 @@ namespace Rendering {
     private:
         void BindLightmap(Shader *shader, size_t renderIndex) const;
 
-        void RenderBatch(const BatchKey &key, const glm::mat4 *transforms, const int *entityIDs, size_t count, size_t renderIndex, const glm::vec4 *perInstanceColors = nullptr);
+        void RenderBatch(const BatchKey &key, const glm::mat4 *transforms, const int32_t *entityIDs, size_t count, size_t renderIndex, const glm::vec4 *perInstanceColors = nullptr);
 
         std::vector<std::shared_ptr<void>> m_ResourcePins[2];
 
@@ -134,7 +134,7 @@ namespace Rendering {
         std::vector<InstancedRenderCommand> m_InstancedCommands[2];
 
         std::vector<glm::mat4> m_InstancedTransformsStaging[2];
-        std::vector<int> m_InstancedEntityIDsStaging[2];
+        std::vector<int32_t> m_InstancedEntityIDsStaging[2];
         std::vector<glm::vec4> m_InstancedColorsStaging[2];
 
         const Camera *m_Camera = nullptr;
@@ -167,8 +167,8 @@ namespace Rendering {
         // per frame merge buffers
         std::vector<BatchRange> m_BatchRanges;
         std::vector<glm::mat4> m_MergedTransforms;
-        std::vector<int> m_MergedEntityIDs;
-        std::vector<int> m_DummyEntityIDs;
+        std::vector<int32_t> m_MergedEntityIDs;
+        std::vector<int32_t> m_DummyEntityIDs;
 
         std::shared_ptr<FrameBuffer> m_EditorFramebuffer = nullptr;
         uint32_t m_FboWidth = 0;
@@ -180,6 +180,6 @@ namespace Rendering {
         std::atomic<bool> m_PixelReadRequested{false};
         std::atomic<int> m_PixelReadX{0};
         std::atomic<int> m_PixelReadY{0};
-        std::atomic<int> m_PixelReadResult{-1};
+        std::atomic<int32_t> m_PixelReadResult{-1};
     };
 } // namespace Rendering

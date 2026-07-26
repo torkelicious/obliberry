@@ -373,7 +373,7 @@ namespace Editor::Commands {
     }
 
     // RemoveUIElementCommand
-    RemoveUIElementCommand::RemoveUIElementCommand(::UI::UISystem *sys, ::UI::UIElement *parent, ::UI::UIElement *child) : m_UISystem(sys), m_Parent(parent), m_Snapshot(SnapshotUIElement(child)) {}
+    RemoveUIElementCommand::RemoveUIElementCommand(::UI::UISystem *sys, ::UI::UIElement *parent, const ::UI::UIElement *child) : m_UISystem(sys), m_Parent(parent), m_Snapshot(SnapshotUIElement(child)) {}
 
     void RemoveUIElementCommand::Execute(Core::EngineContext &ctx) {
         if (m_Restored && m_UISystem && m_Parent) {

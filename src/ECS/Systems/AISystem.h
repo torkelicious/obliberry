@@ -21,7 +21,7 @@ namespace ECS::Systems::AISystem {
 
         registry.ForEach<Components::TransformComponent>([&](const Entity entity, const Components::TransformComponent *pt) {
             if (entity.GetName() == "Player") {
-                const glm::vec3 pos = pt->transform.GetPosition();
+                const glm::vec3 pos = pt->worldTransform.GetPosition();
                 playerHex = Math::HexMath::PixelToHex({pos.x, pos.y});
             }
         });
@@ -53,7 +53,7 @@ namespace ECS::Systems::AISystem {
                             }
 
                             if (valid) {
-                                const glm::vec3 pos3 = trans->transform.GetPosition();
+                                const glm::vec3 pos3 = trans->worldTransform.GetPosition();
                                 const Map::HexCoords startHex = Math::HexMath::PixelToHex({pos3.x, pos3.y});
 
                                 map->grid.FindPath(startHex, target, move->currentPath);
@@ -68,7 +68,7 @@ namespace ECS::Systems::AISystem {
                     }
 
                     if (move->isMoving && move->currentPathIndex < move->currentPath.size()) {
-                        const glm::vec3 pos3 = trans->transform.GetPosition();
+                        const glm::vec3 pos3 = trans->worldTransform.GetPosition();
                         const glm::vec2 pos{pos3.x, pos3.y};
                         const glm::vec2 target = Math::HexMath::HexToWorld(move->currentPath[move->currentPathIndex]);
                         DirectionalAnimation::UpdateFacing(entity, target - pos, mat);

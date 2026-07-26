@@ -20,7 +20,7 @@ namespace ECS::Systems::PlayerControlSystem {
         }
         registry.ForEach<Components::TransformComponent, Components::MovementComponent, Components::MaterialComponent>(
                 [&](const Entity entity, const Components::TransformComponent *trans, const Components::MovementComponent *move, const Components::MaterialComponent *mat) {
-                    const glm::vec2 pPos = trans->transform.GetPosition();
+                    const glm::vec2 pPos = trans->worldTransform.GetPosition();
                     glm::vec2 targetDir;
                     if (move->isMoving && move->currentPathIndex < move->currentPath.size()) {
                         const Map::HexCoords nextHex = move->currentPath[move->currentPathIndex];

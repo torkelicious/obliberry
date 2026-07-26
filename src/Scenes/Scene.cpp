@@ -13,6 +13,8 @@
 #include <iostream>
 #include <utility>
 #include "ECS/Systems/ScriptSystem.h"
+#include "ECS/Systems/HierarchySystem.h"
+#include "ECS/Systems/HierarchySystem.h"
 #include "IO/Loaders/PrefabManager.h"
 #include "Math/Frustum.h"
 #include "Scripting/EngineLib/EngineLib.h"
@@ -69,6 +71,8 @@ void Scenes::Scene::Update(const float dt) {
     m_Context->deltaTime = dt;
     m_Context->frameCount++;
 
+    ECS::Systems::HierarchySystem::Propagate(m_Registry);
+
     if (m_Context->uiSystem) {
         m_Context->uiSystem->Update(dt);
         m_Context->uiSystem->SnapshotButtonStates();
@@ -85,6 +89,8 @@ void Scenes::Scene::Update(const float dt) {
 
 void Scenes::Scene::Render() {
     m_Context->renderer->BeginFrame();
+
+    ECS::Systems::HierarchySystem::Propagate(m_Registry);
 
     const glm::mat4 &vp = m_Context->renderer->GetCurrentVP();
 

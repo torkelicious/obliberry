@@ -2,6 +2,7 @@
 #include "ComponentPool.h"
 #include "Entity.h"
 #include "Types.h"
+#include "ECS/Components/RelationshipComponent.h"
 #include <array>
 #include <cassert>
 #include <memory>
@@ -73,6 +74,23 @@ namespace ECS {
             if (!IsValid(id))
                 return;
 
+            // destroy all children first
+            if (auto *rel = GetComponent<Components::RelationshipComponent>(id)) {
+                const std::vector<EntityID> childrenCopy = rel->children;
+                for (const EntityID childId : childrenCopy) {
+                    DestroyEntity(childId);
+                }
+            }
+
+            // remove self from parent children list
+            if (auto *rel = GetComponent<Components::RelationshipComponent>(id)) {
+                if (rel->parent != 0 && IsValid(rel->parent)) {
+                    if (auto *parentRel = GetComponent<Components::RelationshipComponent>(rel->parent)) {
+                        std::erase(parentRel->children, id);
+                    }
+                }
+            }
+
             const uint32_t index = GetEntityIndex(id);
 
             for (uint32_t i = 0; i < MAX_COMPONENT_TYPES; ++i) {
@@ -120,6 +138,44 @@ namespace ECS {
         [[nodiscard]] const std::string &GetEntityName(const EntityID id) const { return m_EntityNames[GetEntityIndex(id)]; }
 
         [[nodiscard]] const std::vector<EntityID> &GetLivingEntities() const { return m_LivingEntities; }
+
+        [[nodiscard]] EntityID FindEntityByName(const std::string &name) const {
+            for (const EntityID id : m_LivingEntities) {
+                if (m_EntityNames[GetEntityIndex(id)] == name)
+                    return id;
+            }
+            return 0;
+        }
+
+        void Reparent(const EntityID child, const EntityID newParent) {
+            if (!IsValid(child) || child == newParent)
+                return;
+
+            auto *childRel = GetComponent<Components::RelationshipComponent>(child);
+            if (!childRel)
+                childRel = &AddComponent<Components::RelationshipComponent>(child);
+
+            // remove from old parent
+            if (childRel->parent != 0 && IsValid(childRel->parent)) {
+                if (auto *oldParentRel = GetComponent<Components::RelationshipComponent>(childRel->parent)) {
+                    std::erase(oldParentRel->children, child);
+                }
+            }
+
+            // attach to new parent
+            if (newParent != 0 && IsValid(newParent)) {
+                childRel->parent = newParent;
+                childRel->parentName = GetEntityName(newParent);
+
+                auto *newParentRel = GetComponent<Components::RelationshipComponent>(newParent);
+                if (!newParentRel)
+                    newParentRel = &AddComponent<Components::RelationshipComponent>(newParent);
+                newParentRel->children.push_back(child);
+            } else {
+                childRel->parent = 0;
+                childRel->parentName.clear();
+            }
+        }
 
         template <typename Primary, typename... Rest, typename Func> void ForEach(Func &&func) {
             auto *primaryPool = GetPool<Primary>();
@@ -171,4 +227,19 @@ namespace ECS {
     inline void Entity::SetName(const std::string &name) const { m_Registry->SetEntityName(m_EntityHandle, name); }
 
     inline const std::string &Entity::GetName() const { return m_Registry->GetEntityName(m_EntityHandle); }
+
+    inline void Entity::SetParent(const EntityID parentId) const { m_Registry->Reparent(m_EntityHandle, parentId); }
+
+    inline Entity Entity::GetParent() const {
+        auto *rel = m_Registry->GetComponent<Components::RelationshipComponent>(m_EntityHandle);
+        if (rel && rel->parent != 0 && m_Registry->IsValid(rel->parent))
+            return Entity(rel->parent, m_Registry);
+        return Entity{};
+    }
+
+    inline const std::vector<EntityID> &Entity::GetChildren() const {
+        static const std::vector<EntityID> empty;
+        auto *rel = m_Registry->GetComponent<Components::RelationshipComponent>(m_EntityHandle);
+        return rel ? rel->children : empty;
+    }
 } // namespace ECS

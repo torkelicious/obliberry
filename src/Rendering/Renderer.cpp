@@ -7,7 +7,7 @@
 constexpr unsigned int MAX_INSTANCES = 100000;
 constexpr size_t INSTANCE_BUFFER_SIZE = MAX_INSTANCES * sizeof(glm::mat4);
 constexpr size_t COLOR_BUFFER_SIZE = MAX_INSTANCES * sizeof(glm::vec4);
-constexpr size_t ID_BUFFER_SIZE = MAX_INSTANCES * sizeof(int);
+constexpr size_t ID_BUFFER_SIZE = MAX_INSTANCES * sizeof(int32_t);
 
 using InitTask = std::variant<Platform::Threading::SmallTask, std::function<void()>>;
 std::vector<InitTask> Rendering::Renderer::s_InitQueue;
@@ -35,7 +35,7 @@ void Rendering::Renderer::BeginFrame() {
     }
 }
 
-void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const Transform &transform, const Texture *textureOverride, const int entityID) {
+void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const Transform &transform, const Texture *textureOverride, int32_t entityID) {
     m_ResourcePins[m_SubmitIndex].push_back(mesh);
     if (material)
         m_ResourcePins[m_SubmitIndex].push_back(material);
@@ -56,7 +56,7 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::s
     m_Commands[m_SubmitIndex].push_back({mesh.get(), material.get(), effectiveTex, col, transform.GetMatrix(), packKey(pos.x, pos.y, pos.z), entityID});
 }
 
-void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> &transforms, const std::vector<int> &entityIDs) {
+void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> &transforms, const std::vector<int32_t> &entityIDs) {
     if (transforms.empty())
         return;
 
@@ -85,8 +85,8 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::s
                                                   .entityIDCount = entityIDs.size()});
 }
 
-void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> &transforms, const std::vector<glm::vec4> &colors, const int blendMode,
-                                 const int renderOrder, const int shape) {
+void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> &transforms, const std::vector<glm::vec4> &colors, int32_t blendMode,
+                                 int32_t renderOrder, int8_t shape) {
     if (transforms.empty())
         return;
 
@@ -107,7 +107,7 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::s
                                                   .material = material.get(),
                                                   .effectiveTexture = tex,
                                                   .color = col,
-                                                  .blendMode = blendMode,
+                                                  .blendMode = static_cast<int8_t>(blendMode),
                                                   .renderOrder = renderOrder,
                                                   .shape = shape,
                                                   .transformPtr = nullptr,
@@ -121,7 +121,7 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::s
                                                   .entityIDCount = 0});
 }
 
-void Rendering::Renderer::SubmitPersistent(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> *transforms, const std::vector<int> *entityIDs) {
+void Rendering::Renderer::SubmitPersistent(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> *transforms, const std::vector<int32_t> *entityIDs) {
     if (!transforms || transforms->empty())
         return;
 
@@ -228,7 +228,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
                 const glm::vec4 *colorsPtr = instCmd.colorPtr ? instCmd.colorPtr : (instCmd.colorCount > 0 ? m_InstancedColorsStaging[renderIndex].data() + instCmd.colorOffset : nullptr);
 
                 if (instCmd.entityIDPtr || instCmd.entityIDCount > 0) {
-                    const int *entityIDsPtr = instCmd.entityIDPtr ? instCmd.entityIDPtr : m_InstancedEntityIDsStaging[renderIndex].data() + instCmd.entityIDOffset;
+                    const int32_t *entityIDsPtr = instCmd.entityIDPtr ? instCmd.entityIDPtr : m_InstancedEntityIDsStaging[renderIndex].data() + instCmd.entityIDOffset;
                     RenderBatch(key, transformsPtr, entityIDsPtr, instCmd.transformCount, renderIndex, colorsPtr);
                 } else {
                     if (m_DummyEntityIDs.size() < instCmd.transformCount)
@@ -317,7 +317,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
                 const glm::vec4 *colorsPtr = instCmd.colorPtr ? instCmd.colorPtr : (instCmd.colorCount > 0 ? m_InstancedColorsStaging[renderIndex].data() + instCmd.colorOffset : nullptr);
 
                 if (instCmd.entityIDPtr || instCmd.entityIDCount > 0) {
-                    const int *entityIDsPtr = instCmd.entityIDPtr ? instCmd.entityIDPtr : m_InstancedEntityIDsStaging[renderIndex].data() + instCmd.entityIDOffset;
+                    const int32_t *entityIDsPtr = instCmd.entityIDPtr ? instCmd.entityIDPtr : m_InstancedEntityIDsStaging[renderIndex].data() + instCmd.entityIDOffset;
                     RenderBatch(key, transformsPtr, entityIDsPtr, instCmd.transformCount, renderIndex, colorsPtr);
                 } else {
                     if (m_DummyEntityIDs.size() < instCmd.transformCount)
@@ -341,7 +341,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
             m_EditorFramebuffer->Bind();
             glReadBuffer(GL_COLOR_ATTACHMENT1);
 
-            int pixelData = -1;
+            int32_t pixelData = -1;
             glReadPixels(m_PixelReadX.load(), m_PixelReadY.load(), 1, 1, GL_RED_INTEGER, GL_INT, &pixelData);
 
             m_PixelReadResult.store(pixelData);
@@ -354,7 +354,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
     m_InstancedCommands[renderIndex].clear();
 }
 
-void Rendering::Renderer::RenderBatch(const BatchKey &key, const glm::mat4 *transforms, const int *entityIDs, const size_t count, const size_t renderIndex, const glm::vec4 *perInstanceColors) {
+void Rendering::Renderer::RenderBatch(const BatchKey &key, const glm::mat4 *transforms, const int32_t *entityIDs, const size_t count, const size_t renderIndex, const glm::vec4 *perInstanceColors) {
     if (count == 0 || count > MAX_INSTANCES)
         return;
 
@@ -421,7 +421,7 @@ void Rendering::Renderer::RenderBatch(const BatchKey &key, const glm::mat4 *tran
     }
 
     m_DynamicInstanceBuffer->SetDataOrphaned(transforms, count * sizeof(glm::mat4));
-    m_DynamicEntityIDBuffer->SetDataOrphaned(entityIDs, count * sizeof(int));
+    m_DynamicEntityIDBuffer->SetDataOrphaned(entityIDs, count * sizeof(int32_t));
 
     // per-instance colors: upload real colors or white defaults
     if (perInstanceColors) {
