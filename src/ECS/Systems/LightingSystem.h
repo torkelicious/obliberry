@@ -61,6 +61,7 @@ namespace ECS::Systems::LightingSystem {
         auto oldFbo = lm.framebuffer;
         auto oldMesh = lm.lightQuad;
         auto oldShader = lm.lightShader;
+        auto oldVAO = lm.lightQuadVAO;
 
         // new resources
         lm.lightQuad = lightQuad;
@@ -71,6 +72,13 @@ namespace ECS::Systems::LightingSystem {
         Rendering::Lightmap *lmPtr = &lm;
         Rendering::Renderer::SubmitInitTask([lmPtr, lightQuad, texW, texH] {
             lightQuad->InitGL();
+            auto vao = std::make_shared<Rendering::VertexArray>();
+            vao->Init();
+            vao->Bind();
+            vao->AddBuffer(lightQuad->GetVBO(), Rendering::VertexTraits<Rendering::Vertex>::GetLayout());
+            vao->SetIndexBuffer(lightQuad->GetIBO());
+            glBindVertexArray(0);
+            lmPtr->lightQuadVAO = std::move(vao);
             lmPtr->framebuffer = std::make_shared<Rendering::FrameBuffer>(texW, texH);
         });
 
@@ -107,6 +115,7 @@ namespace ECS::Systems::LightingSystem {
         auto fbo = lm.framebuffer;
         auto shader = lm.lightShader;
         auto quad = lm.lightQuad;
+        auto quadVAO = lm.lightQuadVAO;
         const float ambient = lm.ambient;
         const glm::vec2 mapOffset = lm.mapOffset;
         const glm::vec2 mapSize = lm.mapSize;
@@ -158,7 +167,7 @@ namespace ECS::Systems::LightingSystem {
         }
 
         // submit to renderer
-        Rendering::Renderer::SubmitInitTask([fbo, shader, quad, lights = std::move(packedLights), ambient, mapOffset, mapSize, texW, texH] {
+        Rendering::Renderer::SubmitInitTask([fbo, shader, quad, quadVAO, lights = std::move(packedLights), ambient, mapOffset, mapSize, texW, texH] {
             // Save only the GL state this pass modifies
             GLint prevFbo, prevProgram, prevVao, prevBlendSrc, prevBlendDst, prevBlendEq;
             GLenum prevDrawBuf;
@@ -189,7 +198,7 @@ namespace ECS::Systems::LightingSystem {
             shader->Bind();
             const glm::mat4 proj = glm::ortho(mapOffset.x, mapOffset.x + mapSize.x, mapOffset.y, mapOffset.y + mapSize.y, -1.0f, 1.0f);
             shader->SetUniformMat4("u_projection", proj);
-            quad->Bind();
+            quadVAO->Bind();
 
             // one scaled quad per light
             for (const auto &[x, y, radius, colorR, colorG, colorB] : lights) {

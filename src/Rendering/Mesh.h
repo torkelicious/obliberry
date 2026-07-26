@@ -55,15 +55,6 @@ namespace Rendering {
         void InitGL() {
             m_VBO.Init(m_TempData.vertices.data(), static_cast<uint32_t>(m_TempData.vertices.size() * sizeof(Vertex)));
             m_IBO.Init(m_TempData.indices.data(), static_cast<uint32_t>(m_TempData.indices.size()));
-            m_VAO.Init();
-            // Setup VAO
-            const auto &layout = VertexTraits<Vertex>::GetLayout();
-            m_VAO.Bind();
-            m_VBO.Bind();
-            m_VAO.AddBuffer(m_VBO, layout);
-            m_VAO.SetIndexBuffer(m_IBO);
-            // unbind to avoid polluted state
-            glBindVertexArray(0);
             // free the RAM copy once uploaded
             m_TempData.vertices.clear();
             m_TempData.indices.clear();
