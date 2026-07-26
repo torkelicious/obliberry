@@ -163,7 +163,6 @@ namespace ECS::Systems::LightingSystem {
             });
 
             light->dirty = false;
-            transform->transform.ClearDirty();
         }
 
         // submit to renderer
