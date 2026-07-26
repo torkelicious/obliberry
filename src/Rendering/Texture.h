@@ -15,10 +15,9 @@ namespace Rendering {
         Texture &operator=(const Texture &) = delete;
 
         // allow moving
-        Texture(Texture &&other) noexcept : m_ID(other.m_ID), m_FilePath(std::move(other.m_FilePath)), m_PixelData(std::move(other.m_PixelData)),
-                                            m_Width(other.m_Width), m_Height(other.m_Height), m_BPP(other.m_BPP),
-                                            m_MinFilter(other.m_MinFilter), m_MagFilter(other.m_MagFilter), m_WrapS(other.m_WrapS), m_WrapT(other.m_WrapT),
-                                            m_IsWhiteTexture(other.m_IsWhiteTexture) {
+        Texture(Texture &&other) noexcept
+            : m_ID(other.m_ID), m_FilePath(std::move(other.m_FilePath)), m_PixelData(std::move(other.m_PixelData)), m_Width(other.m_Width), m_Height(other.m_Height), m_BPP(other.m_BPP), m_MinFilter(other.m_MinFilter),
+              m_MagFilter(other.m_MagFilter), m_WrapS(other.m_WrapS), m_WrapT(other.m_WrapT), m_IsWhiteTexture(other.m_IsWhiteTexture) {
             other.m_ID = 0;
         }
 
