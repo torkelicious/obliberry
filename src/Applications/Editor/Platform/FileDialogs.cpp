@@ -59,7 +59,16 @@ namespace Editor::Platform {
         nfdnchar_t *outPathRaw = nullptr;
         if (NFD_SaveDialogU8_With(&outPathRaw, &args) == NFD_OKAY && outPathRaw) {
             const NFD::UniquePathU8 outPath(outPathRaw);
-            return std::string(outPath.get());
+            std::string result(outPath.get());
+
+            if (options.filterExt && !result.empty()) {
+                std::string ext = std::string(".") + options.filterExt;
+                if (result.size() < ext.size() || result.compare(result.size() - ext.size(), ext.size(), ext) != 0) {
+                    result += ext;
+                }
+            }
+
+            return result;
         }
         return std::nullopt;
     }

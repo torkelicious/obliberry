@@ -11,6 +11,9 @@
 
 #include <memory>
 #include "Core/ResourceManager.h"
+#include "Rendering/Material.h"
+#include "Rendering/Mesh.h"
+#include "Rendering/MeshFactory.h"
 #include "Rendering/Shader.h"
 
 namespace Rendering::BuiltinShaders {
@@ -216,6 +219,23 @@ void main() {
         auto lightShader = std::make_shared<Shader>(kLightVert, kLightFrag, "<light>");
         lightShader->InitGL();
         resources.LoadFromFactory<Shader>("[Engine] Light", [lightShader] { return lightShader; });
+    }
+
+    inline void RegisterBuiltinAssets(Core::ResourceManager &resources) {
+        // Default quad mesh — shared by all new entities
+        auto quad = std::make_shared<Mesh>(MeshFactory::CreateQuad());
+        quad->SetFactoryId("Quad");
+        quad->InitGL();
+        resources.LoadFromFactory<Mesh>("[Engine] Quad", [quad] { return quad; });
+
+        auto hex = std::make_shared<Mesh>(MeshFactory::CreatePointTopHex(0.5f));
+        hex->SetFactoryId("PointTopHex");
+        hex->InitGL();
+        resources.LoadFromFactory<Mesh>("[Engine] Hex", [hex] { return hex; });
+
+        auto shader = resources.Get<Shader>("[Engine] Base");
+        auto mat = std::make_shared<Material>(Material{shader, nullptr, {1.0f, 1.0f, 1.0f, 1.0f}});
+        resources.LoadFromFactory<Material>("[Engine] DefaultMaterial", [mat] { return mat; });
     }
 
 } // namespace Rendering::BuiltinShaders

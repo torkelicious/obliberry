@@ -1,13 +1,11 @@
 #include "RegistryPanel.h"
-#include "Platform/Threading/SmallTask.h"
 #include "EditorWidgets.h"
 #include "EditorWidgetsCombo.h"
 #include "ECS/Components/MaterialComponent.h"
 #include "ECS/Components/MeshComponent.h"
 #include "ECS/Components/TransformComponent.h"
 #include "Rendering/Material.h"
-#include "Rendering/MeshFactory.h"
-#include "Rendering/Renderer.h"
+#include "Rendering/Mesh.h"
 #include "IO/Loaders/PrefabManager.h"
 #include "Core/Constants.h"
 #include "Core/ResourceManager.h"
@@ -40,20 +38,8 @@ void Editor::UI::RegistryPanel::OnImGuiRender() {
             m_SelectedEntity.AddComponent<ECS::Components::TransformComponent>();
 
             auto &resources = *m_EngineContext->resources;
-            const std::string meshKey = "EntityMesh_" + std::to_string(newId);
-            auto mesh = resources.LoadFromFactory<Rendering::Mesh>(meshKey, []() {
-                auto m = std::make_shared<Rendering::Mesh>(Rendering::MeshFactory::CreateQuad());
-                m->SetFactoryId("Quad");
-                return m;
-            });
-            Rendering::Renderer::SubmitInitTask(::Platform::Threading::SmallTask([mesh] { mesh->InitGL(); }));
-            m_SelectedEntity.AddComponent<ECS::Components::MeshComponent>().mesh = std::move(mesh);
-
-            const std::string matKey = "EntityMat_" + std::to_string(newId);
-            auto material = resources.LoadFromFactory<Rendering::Material>(matKey, []() {
-                return std::make_shared<Rendering::Material>();
-            });
-            m_SelectedEntity.AddComponent<ECS::Components::MaterialComponent>().material = std::move(material);
+            m_SelectedEntity.AddComponent<ECS::Components::MeshComponent>().mesh = resources.Get<Rendering::Mesh>("[Engine] Quad");
+            m_SelectedEntity.AddComponent<ECS::Components::MaterialComponent>().material = resources.Get<Rendering::Material>("[Engine] DefaultMaterial");
 
             MarkSceneChanged(m_EngineContext);
         }

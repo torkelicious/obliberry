@@ -731,7 +731,7 @@ void Editor::EditorLayer::DrawToolbar() {
                                 mapEntity.SetName("MAP");
 
                                 ECS::Components::MapComponent mapComp;
-                                mapComp.hexMesh = m_Context.resources->Get<Rendering::Mesh>("hex_mesh");
+                                mapComp.hexMesh = m_Context.resources->Get<Rendering::Mesh>("[Engine] Hex");
                                 const auto shader = m_Context.resources->Get<Rendering::Shader>("[Engine] Base");
                                 mapComp.outlineMat = std::make_shared<Rendering::Material>(Rendering::Material{shader, nullptr, {1, 0, 0, 0.5f}});
                                 mapComp.pathToMat = std::make_shared<Rendering::Material>(Rendering::Material{shader, nullptr, {1, 1, 1, 0.5f}});

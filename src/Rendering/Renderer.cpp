@@ -543,7 +543,7 @@ void Rendering::Renderer::ProcessInitQ() {
         queueCopy = std::move(s_InitQueue);
         s_HasInitTasks.store(false, std::memory_order_release);
     }
-    
+
     // unbind VAO to avoid corrupting init tasks that bind their own vao
     glBindVertexArray(0);
     for (auto &task : queueCopy) {

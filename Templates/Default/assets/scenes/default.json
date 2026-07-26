@@ -103,10 +103,6 @@
     ],
     "meshes": [
       {
-        "factory": "PointTopHex",
-        "id": "hex_mesh"
-      },
-      {
         "factory": "Quad",
         "id": "p_mesh"
       },
@@ -531,7 +527,6 @@
   ],
   "grid": {
     "map_file": "assets/maps/test1.obmap",
-    "mesh_id": "hex_mesh",
     "types": [
       {
         "id": 1,

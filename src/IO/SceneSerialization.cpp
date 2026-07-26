@@ -36,7 +36,7 @@ namespace IO::SceneIO {
         }
 
         auto &[ScenePath, Name, BackgroundMusicPath, BackgroundClearColor, AmbientLight] = scene.GetProperties();
-        ScenePath = IO::VFS::ToRelative(path);
+        ScenePath = VFS::ToRelative(path);
 
         json j;
         try {
@@ -65,7 +65,7 @@ namespace IO::SceneIO {
             }
 
             if (properties.contains("background_music")) {
-                BackgroundMusicPath = IO::VFS::ToRelative(properties["background_music"].get<std::string>());
+                BackgroundMusicPath = VFS::ToRelative(properties["background_music"].get<std::string>());
             }
 
             if (properties.contains("ambient_light")) {
@@ -87,7 +87,7 @@ namespace IO::SceneIO {
             ECS::Entity mapEntity(scene.GetRegistry().CreateEntity(), &scene.GetRegistry());
             mapEntity.SetName("MAP");
             ECS::Components::MapComponent mapComp;
-            mapComp.mapFilePath = IO::VFS::ToRelative(mapPath);
+            mapComp.mapFilePath = VFS::ToRelative(mapPath);
 
             if (!MapIO::Deserialize(mapPath, mapComp.grid)) {
                 LOG_ERROR(LOG_WHO, "Failed to load map file: " + mapPath);
@@ -95,7 +95,7 @@ namespace IO::SceneIO {
 
             // bind visual resources from scene json grid section
             auto &gridJson = j["grid"];
-            std::string meshId = gridJson.value("mesh_id", "hex_mesh");
+            std::string meshId = gridJson.value("mesh_id", "[Engine] Hex");
             std::string shaderId = gridJson.value("shader_id", "[Engine] Base");
 
 
@@ -159,7 +159,7 @@ namespace IO::SceneIO {
         // UI
         if (j.contains("ui")) {
             if (auto *uiSys = scene.GetContext().uiSystem) {
-                IO::UISerializer::Deserialize(j["ui"], *uiSys, resources);
+                UISerializer::Deserialize(j["ui"], *uiSys, resources);
             }
         }
 
@@ -245,13 +245,13 @@ namespace IO::SceneIO {
                         [](const std::string &id, const std::shared_ptr<Rendering::Mesh> &mesh) { return json{{"id", id}, {"factory", mesh->GetFactoryId()}}; });
 
         SerializeAssets(j["assets"]["materials"], resources.GetAll<Rendering::Material>(), [&](const std::string &id, const std::shared_ptr<Rendering::Material> &mat) {
-            return json{{"id", id}, {"shader", mat->shader ? resources.GetKey(mat->shader) : "[Engine] Base"}, {"texture", resources.GetKey(mat->texture)}, {"color", {mat->color.r, mat->color.g, mat->color.b, mat->color.a}}};
+            return json{{"id", id},
+                        {"shader", mat->shader ? resources.GetKey(mat->shader) : "[Engine] Base"},
+                        {"texture", resources.GetKey(mat->texture)},
+                        {"color", {mat->color.r, mat->color.g, mat->color.b, mat->color.a}}};
         });
 
-        // UI
-        if (auto *uiSys = scene.GetContext().uiSystem) {
-            IO::UISerializer::Serialize(j, *uiSys, resources);
-        }
+        UISerializer::Serialize(j, scene.GetUISystem(), resources);
 
         SerializeAssets(j["assets"]["fonts"], resources.GetAll<UI::Font>(), [&](const std::string &id, const std::shared_ptr<UI::Font> &font) {
             return json{{"id", id}, {"path", font->GetPath()}, {"size", font->GetFontSize()}, {"sdf", font->IsSDF()}, {"spread", font->GetSDFSpread()}};
