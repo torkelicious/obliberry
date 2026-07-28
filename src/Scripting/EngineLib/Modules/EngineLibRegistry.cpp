@@ -11,12 +11,25 @@
 #include "ECS/Components/PointLightComponent.h"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Components/ParticleEmitterComponent.h"
+#include "ECS/Components/RelationshipComponent.h"
 #include "IO/Loaders/PrefabManager.h"
 #include "Scripting/EngineLib/EngineLibFactories.h"
 #include <shared_mutex>
 
 // Helper Object
 namespace Scripting {
+
+    ObSL::ObSLArray *ChildrenAsArray(ObSL::Interpreter *interp, ECS::Registry &reg, const ECS::EntityID id) {
+        auto *arr = interp->gc.allocate<ObSL::ObSLArray>();
+        if (reg.IsValid(id)) {
+            const ECS::Entity ent(id, &reg);
+            for (const auto &children = ent.GetChildren(); const auto child : children) {
+                arr->elements.emplace_back(CreateEntityObject(interp, reg, child));
+            }
+        }
+        return arr;
+    }
+
     ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, ECS::Registry &registry, ECS::EntityID id) {
         auto *obj = interpreter->gc.allocate<ObSL::ObSLObject>();
         EngineLibFactories::GCProtectGuard guard(interpreter, obj);
@@ -77,8 +90,7 @@ namespace Scripting {
                 return std::monostate{};
             const std::string comp_name = std::get<std::string>(args[0]);
             auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
-            auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
-            if (cmd_buf) {
+            if (auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>()) {
                 cmd_buf->push([id, comp_name](ECS::Registry &reg) {
                     if (!reg.IsValid(id))
                         return;
@@ -149,8 +161,7 @@ namespace Scripting {
                 if (!reg_ptr->HasComponent<ECS::Components::CustomDataComponent>(id)) {
                     reg_ptr->AddComponent<ECS::Components::CustomDataComponent>(id, ECS::Components::CustomDataComponent{});
                 }
-                auto *comp = reg_ptr->GetComponent<ECS::Components::CustomDataComponent>(id);
-                if (comp)
+                if (auto *comp = reg_ptr->GetComponent<ECS::Components::CustomDataComponent>(id))
                     comp->script_components[compName] = val;
             }
             return true;
@@ -209,8 +220,7 @@ namespace Scripting {
                 return std::monostate{};
             const std::string comp_name = std::get<std::string>(args[0]);
             auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
-            auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
-            if (cmd_buf) {
+            if (auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>()) {
                 cmd_buf->push([id, comp_name](ECS::Registry &reg) {
                     if (!reg.IsValid(id))
                         return;
@@ -300,6 +310,83 @@ namespace Scripting {
         obj->fields["Destroy"] = interpreter->gc.allocate<ObSL::NativeFunction>(0, std::move(destroy_body), "Destroy");
         obj->fields["AddCustomComponent"] = interpreter->gc.allocate<ObSL::NativeFunction>(2, std::move(add_custom_comp), "AddCustomComponent");
         obj->fields["GetCustomComponent"] = interpreter->gc.allocate<ObSL::NativeFunction>(1, std::move(get_custom_comp), "GetCustomComponent");
+
+        // hierarchy methods
+
+        auto get_children_body = [id, &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
+            std::shared_lock lock(g_RegistryMutex);
+            return ChildrenAsArray(interp, registry, id);
+        };
+
+        auto get_parent_body = [id, &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
+            std::shared_lock lock(g_RegistryMutex);
+            if (!registry.IsValid(id))
+                return std::monostate{};
+            auto *rel = registry.GetComponent<ECS::Components::RelationshipComponent>(id);
+            if (!rel || rel->parent == 0 || !registry.IsValid(rel->parent))
+                return std::monostate{};
+            return CreateEntityObject(interp, registry, rel->parent);
+        };
+
+        auto set_parent_body = [id, reg_ptr = &registry](const ObSL::Interpreter *interpreter, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+            ECS::EntityID parentId = 0;
+            if (!args.empty()) {
+                if (std::holds_alternative<double>(args[0])) {
+                    parentId = static_cast<ECS::EntityID>(std::get<double>(args[0]));
+                } else if (std::holds_alternative<ObSL::ObSLObject *>(args[0])) {
+                    auto *obj = std::get<ObSL::ObSLObject *>(args[0]);
+                    if (auto it = obj->fields.find("id"); it != obj->fields.end() && std::holds_alternative<double>(it->second))
+                        parentId = static_cast<ECS::EntityID>(std::get<double>(it->second));
+                }
+            }
+            auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
+            if (auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>()) {
+                cmd_buf->push([id, parentId](ECS::Registry &reg) {
+                    if (!reg.IsValid(id))
+                        return;
+                    reg.Reparent(id, parentId);
+                });
+            } else if (reg_ptr) {
+                std::unique_lock lock(g_RegistryMutex);
+                if (reg_ptr->IsValid(id))
+                    reg_ptr->Reparent(id, parentId);
+            }
+            return std::monostate{};
+        };
+
+        auto get_child_count_body = [id, &registry](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+            std::shared_lock lock(g_RegistryMutex);
+            if (!registry.IsValid(id))
+                return 0.0;
+            auto *rel = registry.GetComponent<ECS::Components::RelationshipComponent>(id);
+            if (!rel)
+                return 0.0;
+            return static_cast<double>(rel->children.size());
+        };
+
+        auto find_child_body = [id, &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+            if (args.empty() || !std::holds_alternative<std::string>(args[0]))
+                return std::monostate{};
+            const auto &childName = std::get<std::string>(args[0]);
+            std::shared_lock lock(g_RegistryMutex);
+            if (!registry.IsValid(id))
+                return std::monostate{};
+            auto *rel = registry.GetComponent<ECS::Components::RelationshipComponent>(id);
+            if (!rel)
+                return std::monostate{};
+            for (const ECS::EntityID childId : rel->children) {
+                if (registry.IsValid(childId) && registry.GetEntityName(childId) == childName)
+                    return CreateEntityObject(interp, registry, childId);
+            }
+            return std::monostate{};
+        };
+
+        obj->fields["GetChildren"] = interpreter->gc.allocate<ObSL::NativeFunction>(0, std::move(get_children_body), "GetChildren");
+        obj->fields["GetParent"] = interpreter->gc.allocate<ObSL::NativeFunction>(0, std::move(get_parent_body), "GetParent");
+        obj->fields["SetParent"] = interpreter->gc.allocate<ObSL::NativeFunction>(1, std::move(set_parent_body), "SetParent");
+        obj->fields["GetChildCount"] = interpreter->gc.allocate<ObSL::NativeFunction>(0, std::move(get_child_count_body), "GetChildCount");
+        obj->fields["Find"] = interpreter->gc.allocate<ObSL::NativeFunction>(1, std::move(find_child_body), "Find");
+
         return obj;
     }
 } // namespace Scripting
@@ -387,8 +474,4 @@ void Scripting::EngineLib::register_registry_modules(ObSL::Interpreter &interpre
                                                                               return std::monostate{};
                                                                           },
                                                                           "DestroyEntity"));
-
-    //
-    // todo: children / parent stuff entities
-    //
 }

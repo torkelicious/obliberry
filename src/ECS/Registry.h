@@ -48,7 +48,6 @@ namespace ECS {
             return static_cast<ComponentPool<T> *>(m_PoolCache[index]);
         }
 
-    public:
         Registry() {
             m_EntityStatus.resize(MAX_ENTITIES, false);
             m_EntityVersions.resize(MAX_ENTITIES, 0);
