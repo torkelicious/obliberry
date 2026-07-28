@@ -20,6 +20,8 @@ namespace Scripting {
         // submodules
         void register_core_modules(ObSL::Interpreter &interpreter);
 
+        void register_registry_modules(ObSL::Interpreter &interpreter);
+
         void register_input_modules(ObSL::Interpreter &interpreter);
 
         void register_camera_modules(ObSL::Interpreter &interpreter);

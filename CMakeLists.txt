@@ -208,6 +208,7 @@ add_library(obliberry_engine STATIC
         src/Platform/Window/Window.cpp
         src/Platform/Input/InputManager.cpp
         src/Config/ProjectConfig.cpp
+        src/Config/GraphicsConfig.cpp
         src/Platform/Input/KeyMappings.cpp
         src/Core/Project.cpp
         src/Platform/Threading/ThreadPool.cpp
@@ -252,13 +253,15 @@ add_library(obliberry_engine STATIC
         src/Scripting/EngineLib/Modules/EngineLibSceneManagement.cpp
         src/Scripting/EngineLib/Modules/EngineLibTime.cpp
         src/Scripting/EngineLib/Modules/EngineLibUI.cpp
+        src/Scripting/EngineLib/Modules/EngineLibRegistry.cpp
 
         # Packaging
         src/IO/Package/ContainerWriter.cpp
         src/IO/Package/ContainerReader.cpp
         src/IO/Package/Tools/AssetPacking.cpp
         src/IO/Package/Tools/DependencyGraph.cpp
-        src/Config/GraphicsConfig.cpp
+
+        # ui
         src/UI/Text/Font.cpp
         src/UI/Text/Font.h
         src/UI/Elements/UIText.cpp

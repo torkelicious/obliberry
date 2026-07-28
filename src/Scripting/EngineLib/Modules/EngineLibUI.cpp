@@ -1,3 +1,4 @@
+#include "Core/ResourceManager.h"
 #include "Scripting/EngineLib/EngineLib.h"
 #include "Scripting/EngineLib/UICommandBuffer.h"
 #include "Scripting/EngineLib/EngineLibFactories.h"
@@ -271,6 +272,47 @@ namespace Scripting {
                     return std::monostate{};
                 },
                 "SetBackgroundColor");
+
+        obj->fields["SetFont"] = interp->gc.allocate<ObSL::NativeFunction>(
+                1,
+                [name, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+                    if (!std::holds_alternative<std::string>(args[0]))
+                        return std::monostate{};
+                    auto fontname = std::get<std::string>(args[0]);
+                    if (ctx->uiCmdBuf) {
+                        ctx->uiCmdBuf->push([name, fontname](UI::UISystem &ui) {
+                            if (auto *el = ui.FindByName(name))
+                                if (auto *btn = dynamic_cast<UI::UIButton *>(el)) {
+                                    if (const auto font = Core::ResourceManager::GetInstance().Get<UI::Font>(fontname)) {
+                                        btn->SetFont(font);
+                                    }
+                                }
+                        });
+                    }
+                    return std::monostate{};
+                },
+                "SetFont");
+
+        obj->fields["GetFont"] = interp->gc.allocate<ObSL::NativeFunction>(
+                1,
+                [name, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+                    if (!std::holds_alternative<std::string>(args[0]))
+                        return std::monostate{};
+                    if (ctx->uiCmdBuf) {
+                        ctx->uiCmdBuf->push([name](UI::UISystem &ui) {
+                            if (auto *el = ui.FindByName(name))
+                                if (const auto *btn = dynamic_cast<UI::UIButton *>(el)) {
+                                    if (const auto font = btn->GetFont()) {
+                                        auto key = Core::ResourceManager::GetInstance().GetKey(font);
+                                        return key;
+                                    }
+                                }
+                            return std::string{};
+                        });
+                    }
+                    return std::monostate{};
+                },
+                "GetFont");
 
         return obj;
     }
