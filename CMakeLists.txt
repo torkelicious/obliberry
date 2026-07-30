@@ -281,6 +281,9 @@ target_compile_definitions(obliberry_engine PUBLIC
         $<$<CONFIG:Debug>:DEBUG_BUILD>
 )
 
+# windows
+add_compile_definitions(NOMINMAX)
+
 # link interface opts
 target_link_libraries(obliberry_engine PUBLIC
         obliberry_options
