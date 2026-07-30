@@ -1,21 +1,38 @@
 #include <iostream>
 #include <fstream>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-
 #include "Container.h"
 #include <lz4.h>
 #include <ranges>
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <io.h>
+#include <fcntl.h>
+#ifndef MAP_FAILED
+#define MAP_FAILED ((void *)-1)
+#endif
+#else
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#endif
 
 namespace IO {
     ContainerReader::~ContainerReader() {
         if (m_mapped_region && m_mapped_region != MAP_FAILED) {
+#ifdef _WIN32
+            UnmapViewOfFile(m_mapped_region);
+#else
             munmap(m_mapped_region, m_mapped_size);
+#endif
         }
         if (m_mapped_fd >= 0) {
+#ifdef _WIN32
+            _close(m_mapped_fd);
+#else
             close(m_mapped_fd);
+#endif
         }
     }
 
@@ -31,10 +48,20 @@ namespace IO {
 
     ContainerReader &ContainerReader::operator=(ContainerReader &&other) noexcept {
         if (this != &other) {
-            if (m_mapped_region && m_mapped_region != MAP_FAILED)
+            if (m_mapped_region && m_mapped_region != MAP_FAILED) {
+#ifdef _WIN32
+                UnmapViewOfFile(m_mapped_region);
+#else
                 munmap(m_mapped_region, m_mapped_size);
-            if (m_mapped_fd >= 0)
+#endif
+            }
+            if (m_mapped_fd >= 0) {
+#ifdef _WIN32
+                _close(m_mapped_fd);
+#else
                 close(m_mapped_fd);
+#endif
+            }
 
             m_toc = std::move(other.m_toc);
             m_string_table = std::move(other.m_string_table);
@@ -57,11 +84,19 @@ namespace IO {
     bool ContainerReader::open(const std::filesystem::path &file) {
         // clean up any previous mapping
         if (m_mapped_region && m_mapped_region != MAP_FAILED) {
+#ifdef _WIN32
+            UnmapViewOfFile(m_mapped_region);
+#else
             munmap(m_mapped_region, m_mapped_size);
+#endif
             m_mapped_region = nullptr;
         }
         if (m_mapped_fd >= 0) {
+#ifdef _WIN32
+            _close(m_mapped_fd);
+#else
             close(m_mapped_fd);
+#endif
             m_mapped_fd = -1;
         }
 
@@ -93,11 +128,42 @@ namespace IO {
 
         // mmap the blob region
         const auto file_size = std::filesystem::file_size(file);
+
+#ifdef _WIN32
+        m_mapped_fd = _wopen(file.c_str(), _O_RDONLY | _O_BINARY);
+#else
         m_mapped_fd = ::open(file.c_str(), O_RDONLY);
+#endif
+
         if (m_mapped_fd < 0)
             return false;
 
         m_mapped_size = file_size;
+
+#ifdef _WIN32
+        HANDLE hFile = (HANDLE)_get_osfhandle(m_mapped_fd);
+        if (hFile == INVALID_HANDLE_VALUE) {
+            _close(m_mapped_fd);
+            m_mapped_fd = -1;
+            return false;
+        }
+
+        HANDLE hMapping = CreateFileMappingW(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
+        if (!hMapping) {
+            _close(m_mapped_fd);
+            m_mapped_fd = -1;
+            return false;
+        }
+
+        m_mapped_region = MapViewOfFile(hMapping, FILE_MAP_READ, 0, 0, 0);
+        CloseHandle(hMapping);
+
+        if (!m_mapped_region) {
+            _close(m_mapped_fd);
+            m_mapped_fd = -1;
+            return false;
+        }
+#else
         m_mapped_region = mmap(nullptr, m_mapped_size, PROT_READ, MAP_PRIVATE, m_mapped_fd, 0);
         if (m_mapped_region == MAP_FAILED) {
             close(m_mapped_fd);
@@ -105,15 +171,14 @@ namespace IO {
             m_mapped_region = nullptr;
             return false;
         }
+        madvise(m_mapped_region, m_mapped_size, MADV_SEQUENTIAL);
+#endif
 
         m_blob_data = static_cast<const char *>(m_mapped_region) + header.blob_data_offset;
         m_blob_size = file_size - header.blob_data_offset;
 
-        madvise(m_mapped_region, m_mapped_size, MADV_SEQUENTIAL);
-
         return true;
     }
-
 
     std::optional<std::string> ContainerReader::read(const std::string &canonical_path) const {
         const auto it = m_path_to_index.find(canonical_path);

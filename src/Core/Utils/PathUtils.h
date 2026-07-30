@@ -1,5 +1,9 @@
 #pragma once
 #include <filesystem>
+#ifdef _WIN32
+    #define WIN32_LEAN_AND_MEAN
+    #include <windows.h>
+#endif
 
 namespace Core::PathUtils {
     // accepts any number of string_views and joins them
