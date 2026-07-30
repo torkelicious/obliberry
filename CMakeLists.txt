@@ -15,13 +15,10 @@ set(CONFIG_TYPES Debug Release RelWithDebInfo MinSizeRel)
 # Target CPU Architecture Baseline
 set(ENGINE_ARCH_LEVEL "x86-64-v2" CACHE STRING "Target CPU architecture (x86-64-v2, x86-64-v3, native)")
 
-# standard definitions across platforms
 if (WIN32)
-    add_compile_definitions(NOMINMAX WIN32_LEAN_AND_MEAN)
+    add_compile_definitions(NOMINMAX)
+    add_compile_definitions(WIN32_LEAN_AND_MEAN)
 endif ()
-
-# System OpenGL
-find_package(OpenGL REQUIRED)
 
 # Compiler / Linker Options Target
 add_library(obliberry_options INTERFACE)
@@ -53,10 +50,8 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 
     if (APPLE)
         # macOS specific linker flags
-        target_link_options(obliberry_options INTERFACE
-            $<$<NOT:$<CONFIG:Debug>>:-Wl,-dead_strip>
-        )
-    else ()
+        target_link_options(obliberry_options INTERFACE $<$<NOT:$<CONFIG:Debug>>:-Wl,-dead_strip>)
+    elseif (CMAKE_SYSTEM_NAME MATCHES "Linux")
         # Linux specific linker flags
         target_link_options(obliberry_options INTERFACE
             $<$<NOT:$<CONFIG:Debug>>:-Wl,--gc-sections>
@@ -220,17 +215,13 @@ target_include_directories(obliberry_vendor SYSTEM PUBLIC
     external/miniaudio
 )
 
-target_link_libraries(obliberry_vendor PUBLIC glfw freetype OpenGL::GL)
+target_link_libraries(obliberry_vendor PUBLIC glfw freetype)
 
-# macOS framework linkages
+# Miniaudio macOS Framework Linkage
 if (APPLE)
-    target_link_libraries(obliberry_vendor PUBLIC
-        "-framework Cocoa"
-        "-framework IOKit"
-        "-framework CoreVideo"
-        "-framework CoreAudio"
-        "-framework AudioToolbox"
-    )
+    find_library(COREAUDIO_LIB CoreAudio)
+    find_library(AUDIOTOOLBOX_LIB AudioToolbox)
+    target_link_libraries(obliberry_vendor PUBLIC ${COREAUDIO_LIB} ${AUDIOTOOLBOX_LIB})
 endif ()
 
 # Engine Target
@@ -357,11 +348,6 @@ target_link_libraries(obliberry_editor PRIVATE obliberry_engine)
 option(ENABLE_UNITY_BUILD "Enable unity builds" ON)
 if (ENABLE_UNITY_BUILD)
     set_target_properties(obliberry_engine obliberry_editor PROPERTIES UNITY_BUILD ON)
-    set_source_files_properties(
-        external/glad/src/glad.c
-        external/miniaudio/miniaudio.c
-        PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON
-    )
 endif ()
 
 # Packaging Tools Target
