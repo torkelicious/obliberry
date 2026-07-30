@@ -2,6 +2,8 @@
 #include "Core/Constants.h"
 #include "glad/glad.h"
 #include <cstdint>
+#include <filesystem>
+#include <string>
 #include <vector>
 
 namespace Config {
@@ -16,7 +18,7 @@ namespace Config {
             static const uint8_t candidates[] = {1, 2, 4, 8, 16};
             std::vector<uint8_t> supported;
             for (uint8_t c : candidates) {
-                if (c <= maxSamples)
+                if (c <= static_cast<uint8_t>(maxSamples))
                     supported.push_back(c);
             }
             if (supported.empty())
@@ -49,8 +51,8 @@ namespace Config {
 
         static const char *VSyncToString(VSyncType vsync);
         static uint8_t SnapToValidSampleCount(uint8_t requested, const std::vector<uint8_t> &validSamples = GraphicsCapabilities::s_SupportedSampleCounts);
-        static GraphicsConfig Deserialize(const std::string &filepath = "graphics.json");
-        static void Serialize(const GraphicsConfig &conf, const std::string &filepath = "graphics.json");
+        static GraphicsConfig Deserialize(const std::filesystem::path &filepath = "graphics.json");
+        static void Serialize(const GraphicsConfig &conf, const std::filesystem::path &filepath = "graphics.json");
     };
 
 } // namespace Config

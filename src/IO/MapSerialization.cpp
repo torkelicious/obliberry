@@ -71,6 +71,6 @@ namespace IO::MapIO {
         return true;
     }
 
-    bool CheckHeader(const MapFileHeader &header, const std::string &expected) { return std::string_view(header.magic, 8) == expected; }
+    static bool CheckHeader(const MapFileHeader &header, const std::string_view &expected) { return std::string_view(header.magic, 8) == expected; }
 } // namespace IO::MapIO
 #pragma pop_macro("LOG_WHO")

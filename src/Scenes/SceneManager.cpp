@@ -153,7 +153,7 @@ namespace Scenes {
 
         if (m_Context->scriptPool) {
             m_Context->scriptPool->shutdown();
-            m_Context->scriptPool->init(IO::VFS::GetAssetsDirectory() / "scripts");
+            m_Context->scriptPool->init(IO::VFS::GetAssetsDirectory().string() + "/scripts");
         }
 
         m_CurrentScene = std::move(newScene);

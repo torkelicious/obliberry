@@ -1,7 +1,6 @@
 #include "EditorWidgets.h"
 #include "Applications/Editor/EditorLayer.h"
 #include <cstring>
-
 #include "EditorWidgetsCombo.h"
 #include "IO/Loaders/ParticleEmitterPrefabManager.h"
 #include "Core/Constants.h"
@@ -422,7 +421,7 @@ void Editor::UI::ScriptWidget::Draw(const ECS::Entity entity, Core::EngineContex
             ImGui::BulletText("%s", comp->scriptPaths[i].c_str());
             // ImGui::SameLine();
             if (ImGui::SmallButton("Remove ##Script")) {
-                undoManager->Execute(std::make_unique<Commands::RemoveScriptCommand>(static_cast<ECS::EntityID>(entity), *comp, i), *engineContext);
+                undoManager->Execute(std::make_unique<Commands::RemoveScriptCommand>(static_cast<ECS::EntityID>(entity), *comp, static_cast<int>(i)), *engineContext);
                 MarkSceneChanged(engineContext);
                 ImGui::PopID();
                 break;

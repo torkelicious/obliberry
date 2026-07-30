@@ -3,6 +3,7 @@
 #include "Core/Constants.h"
 #include "Map/HexCoords.h"
 #include <glm/glm.hpp>
+#include <array>
 
 // math
 namespace Math::HexMath {

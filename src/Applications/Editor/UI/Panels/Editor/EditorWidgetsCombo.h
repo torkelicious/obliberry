@@ -11,7 +11,7 @@ namespace Rendering {
     class Texture;
     class Shader;
     class Mesh;
-    class Material;
+    struct Material;
 } // namespace Rendering
 
 namespace UI {

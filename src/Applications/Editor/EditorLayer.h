@@ -16,6 +16,7 @@
 #include "Applications/Editor/UI/ConfigWindows/SceneConfigEditor.h"
 #include "UI/ConfigWindows/GraphicsConfigEditor.h"
 #include "UI/Panels/Editor/UIPanel.h"
+#include "Platform/Input/InputManager.h"
 
 namespace Editor {
     namespace States {

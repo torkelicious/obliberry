@@ -4,6 +4,8 @@
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <filesystem>
+#include <cmath>
+
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "GraphicsConfig"
 
@@ -32,6 +34,9 @@ namespace Config {
     }
 
     uint8_t GraphicsConfig::SnapToValidSampleCount(const uint8_t requested, const std::vector<uint8_t> &validSamples) {
+        if (validSamples.empty())
+            return requested;
+
         uint8_t closest = validSamples[0];
         int smallestDiff = std::abs(static_cast<int>(requested) - static_cast<int>(closest));
         for (const uint8_t candidate : validSamples) {
@@ -43,27 +48,32 @@ namespace Config {
         return closest;
     }
 
-
-    GraphicsConfig GraphicsConfig::Deserialize(const std::string &filepath) {
+    GraphicsConfig GraphicsConfig::Deserialize(const std::filesystem::path &filepath) {
         GraphicsConfig config;
         std::string_view dataView;
         std::string ownedData;
-        if (const auto view = IO::VFS::ReadVirtualView(filepath)) {
+
+        // Convert path to string for VFS calls that expect string keys/paths
+        const std::string pathStr = filepath.string();
+
+        if (const auto view = IO::VFS::ReadVirtualView(pathStr)) {
             dataView = *view;
-        } else if (auto owned = IO::VFS::ReadVirtual(filepath)) {
+        } else if (auto owned = IO::VFS::ReadVirtual(pathStr)) {
             ownedData = std::move(*owned);
             dataView = ownedData;
         } else if (IO::VFS::IsProjectLoaded()) {
             if (auto loosePath = IO::VFS::GetProjectRoot() / filepath; std::filesystem::exists(loosePath)) {
                 std::ifstream file(loosePath);
-                ownedData.assign(std::istreambuf_iterator(file), std::istreambuf_iterator<char>());
+                ownedData.assign(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
                 dataView = ownedData;
             }
         }
+
         if (dataView.empty()) {
-            LOG_WARN(LOG_WHO, "Graphics config not found: " + filepath + ". Using defaults");
+            LOG_WARN(LOG_WHO, "Graphics config not found: " + pathStr + ". Using defaults");
             return config;
         }
+
         try {
             nlohmann::json j = nlohmann::json::parse(dataView);
             if (j.contains("window")) {
@@ -106,7 +116,7 @@ namespace Config {
         return config;
     }
 
-    void GraphicsConfig::Serialize(const GraphicsConfig &conf, const std::string &filepath) {
+    void GraphicsConfig::Serialize(const GraphicsConfig &conf, const std::filesystem::path &filepath) {
         try {
             nlohmann::json j;
             j["window"]["width"] = conf.WindowWidth;
@@ -118,14 +128,14 @@ namespace Config {
             j["vsync"] = VSyncToString(conf.VSync);
             j["overlay"] = conf.ShowPerformanceOverlay;
 
-            std::filesystem::path resolvedPath = IO::VFS::Resolve(filepath);
+            std::filesystem::path resolvedPath = IO::VFS::Resolve(filepath.string());
             std::ofstream file(resolvedPath);
             if (!file.is_open()) {
                 LOG_ERROR(LOG_WHO, "Failed to open graphics config for writing: " + resolvedPath.string());
                 return;
             }
             file << j.dump(2);
-            LOG_INFO(LOG_WHO, "Saved graphics config to" + resolvedPath.string());
+            LOG_INFO(LOG_WHO, "Saved graphics config to " + resolvedPath.string());
         } catch (const std::exception &e) {
             LOG_ERROR(LOG_WHO, "Failed to serialize graphics config: " + std::string(e.what()));
         }

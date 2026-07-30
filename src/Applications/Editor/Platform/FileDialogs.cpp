@@ -35,7 +35,7 @@ namespace Editor::Platform {
         args.acceptLabel = options.acceptBtnLabel;
         args.cancelLabel = options.cancelBtnLabel;
 
-        nfdnchar_t *outPathRaw = nullptr;
+        nfdu8char_t *outPathRaw = nullptr;
         if (NFD_OpenDialogU8_With(&outPathRaw, &args) == NFD_OKAY && outPathRaw) {
             const NFD::UniquePathU8 outPath(outPathRaw);
             return std::string(outPath.get());
@@ -56,7 +56,7 @@ namespace Editor::Platform {
         args.acceptLabel = options.acceptBtnLabel;
         args.cancelLabel = options.cancelBtnLabel;
 
-        nfdnchar_t *outPathRaw = nullptr;
+        nfdu8char_t *outPathRaw = nullptr;
         if (NFD_SaveDialogU8_With(&outPathRaw, &args) == NFD_OKAY && outPathRaw) {
             const NFD::UniquePathU8 outPath(outPathRaw);
             std::string result(outPath.get());
@@ -80,7 +80,7 @@ namespace Editor::Platform {
         args.acceptLabel = acceptBtnLabel;
         args.cancelLabel = cancelBtnLabel;
 
-        nfdnchar_t *outPathRaw = nullptr;
+        nfdu8char_t *outPathRaw = nullptr;
         if (NFD_PickFolderU8_With(&outPathRaw, &args) == NFD_OKAY && outPathRaw) {
             const NFD::UniquePathU8 outPath(outPathRaw);
             return std::string(outPath.get());

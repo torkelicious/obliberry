@@ -23,7 +23,7 @@ void Game::GameLayer::Init(Core::EngineContext &ctx) {
 
     if (m_Context->scriptPool) {
         m_Context->scriptPool->shutdown();
-        m_Context->scriptPool->init(IO::VFS::GetAssetsDirectory() / "scripts");
+        m_Context->scriptPool->init(IO::VFS::GetAssetsDirectory().string() + "/scripts");
     }
 
     std::string startScene;

@@ -92,12 +92,6 @@ void Core::Application::Run() {
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;    // Keyboard UI navigation
     io.ConfigFlags |= ImGuiConfigFlags_NavNoCaptureKeyboard; // Don't capture keyboard for navigation
 
-#if defined(_WIN32) || defined(__APPLE__)
-    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
-    // https://github.com/ocornut/imgui/wiki/Multi-Viewports#issues
-    // See #2117 https://github.com/ocornut/imgui/issues/2117]
-#endif
-
     // Renderer
     Rendering::Renderer renderer;
     m_UIRenderer.InitGL();
@@ -311,17 +305,6 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer, UI::UI
         if (!renderer->GetEditorFramebuffer()) {
             uiRenderer->Flush();
         }
-
-        // Todo: Test on win machine
-#if defined(_WIN32) || defined(__APPLE__)
-        // viewports test
-        if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-            GLFWwindow *backup_current_context = glfwGetCurrentContext();
-            ImGui::UpdatePlatformWindows();
-            ImGui::RenderPlatformWindowsDefault();
-            glfwMakeContextCurrent(backup_current_context);
-        }
-#endif
 
         m_Window.SwapBuffers();
 

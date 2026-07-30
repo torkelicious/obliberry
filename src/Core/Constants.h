@@ -24,12 +24,12 @@ namespace Core {
     constexpr std::string_view FONT_PATH = "assets/fonts/";
 
     // fs extensions
-    constexpr auto MAP_FILE_EXTENSION = ".obmap";
-    constexpr auto SCENE_FILE_EXTENSION = ".json";
-    constexpr auto SCRIPT_FILE_EXTENSION = ".obsl";
-    constexpr auto PACKAGE_FILE_EXTENSION = ".obpak";
+    constexpr std::string_view MAP_FILE_EXTENSION = ".obmap";
+    constexpr std::string_view SCENE_FILE_EXTENSION = ".json";
+    constexpr std::string_view SCRIPT_FILE_EXTENSION = ".obsl";
+    constexpr std::string_view PACKAGE_FILE_EXTENSION = ".obpak";
     // misc file stuff
-    constexpr std::string MAP_FILE_MAGIC_STR = "OBLIHEXM";
+    constexpr std::string_view MAP_FILE_MAGIC_STR = "OBLIHEXM";
     // window config
     constexpr int WINDOW_WIDTH = 1280;
     constexpr int WINDOW_HEIGHT = 720;

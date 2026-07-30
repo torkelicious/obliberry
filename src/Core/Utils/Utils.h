@@ -1,6 +1,7 @@
 #pragma once
 #include <filesystem>
 #include <optional>
+#include <array>
 
 namespace Core::Utils {
     template <std::movable T, std::size_t Size>

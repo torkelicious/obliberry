@@ -27,7 +27,7 @@ namespace IO::MapIO {
 
     [[nodiscard]] bool Deserialize(const std::string &path, Map::HexGrid &grid);
 
-    bool CheckHeader(const MapFileHeader &header, const std::string &expected);
+    bool CheckHeader(const MapFileHeader &header, const std::string_view &expected);
 
     // testing
     inline size_t CalculateExpectedFileSize(const size_t tileCount) {

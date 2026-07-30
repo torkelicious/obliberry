@@ -325,8 +325,8 @@ add_executable(obliberry_editor
     src/Applications/Editor/States/Play/PlayState.cpp
     src/Applications/Editor/States/MapEditor/MapEditState.cpp
     src/Applications/Editor/States/Hub/HubState.cpp
-    src/Applications/Editor/UI/Panels/Editor/EditorWidgets.cpp
     src/Applications/Editor/UI/Panels/Editor/EditorWidgetsCombo.cpp
+    src/Applications/Editor/UI/Panels/Editor/EditorWidgets.cpp
     src/Applications/Editor/UI/Panels/Editor/InspectorPanel.cpp
     src/Applications/Editor/UI/Panels/ProjectBrowserPanel.cpp
     src/Applications/Editor/UI/Panels/Editor/RegistryPanel.cpp
@@ -344,8 +344,8 @@ add_executable(obliberry_editor
 )
 target_link_libraries(obliberry_editor PRIVATE obliberry_engine)
 
-# Unity Build Handling
-option(ENABLE_UNITY_BUILD "Enable unity builds" ON)
+# Unity Build Handling. Will not work on windows!!!
+option(ENABLE_UNITY_BUILD "Enable unity builds" OFF)
 if (ENABLE_UNITY_BUILD)
     set_target_properties(obliberry_engine obliberry_editor PROPERTIES UNITY_BUILD ON)
 endif ()
