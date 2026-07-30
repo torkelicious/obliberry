@@ -137,12 +137,26 @@
     },
     {
       "name": "windows-debug",
+      "displayName": "Windows Debug (VS22)",
       "configurePreset": "windows-default",
       "configuration": "Debug"
     },
     {
       "name": "windows-release",
+      "displayName": "Windows Release (VS22)",
       "configurePreset": "windows-default",
+      "configuration": "Release"
+    },
+    {
+      "name": "windows-debug-2026",
+      "displayName": "Windows Debug (VS26)",
+      "configurePreset": "windows-default-2026",
+      "configuration": "Debug"
+    },
+    {
+      "name": "windows-release-2026",
+      "displayName": "Windows Release (VS26)",
+      "configurePreset": "windows-default-2026",
       "configuration": "Release"
     }
   ]
