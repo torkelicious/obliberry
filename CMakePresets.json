@@ -49,6 +49,18 @@
       }
     },
     {
+      "name": "windows-2026-base",
+      "hidden": true,
+      "inherits": "base",
+      "generator": "Visual Studio 18 2026",
+      "architecture": "x64",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    },
+    {
       "name": "linux-debug",
       "displayName": "Linux Debug",
       "inherits": "linux-base",
@@ -94,6 +106,11 @@
       "name": "windows-default",
       "displayName": "Windows (VS22)",
       "inherits": "windows-base"
+    },
+    {
+      "name": "windows-default-2026",
+      "displayName": "Windows (VS26)",
+      "inherits": "windows-base-2026"
     }
   ],
   "buildPresets": [
