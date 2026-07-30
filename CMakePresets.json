@@ -49,7 +49,7 @@
       }
     },
     {
-      "name": "windows-2026-base",
+      "name": "windows-base-2026",
       "hidden": true,
       "inherits": "base",
       "generator": "Visual Studio 18 2026",
