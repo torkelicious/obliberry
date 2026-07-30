@@ -107,7 +107,7 @@ namespace UI {
             return;
         }
 
-        const std::string resolvedPath = IO::VFS::Resolve(m_FilePath);
+        const std::string resolvedPath = IO::VFS::Resolve(m_FilePath).string();
         if (resolvedPath.empty()) {
             LOG_ERROR(LOG_WHO, "Could not resolve font path: " + m_FilePath);
             FT_Done_FreeType(m_FTLibrary);
