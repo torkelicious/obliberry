@@ -27,7 +27,7 @@ namespace Editor::States {
 
     private:
         void DrawGizmoForSelected() const;
-        void EditTransform(Rendering::Transform &transform, bool isBillboard);
+        void EditTransform(Rendering::Transform &localTransform, Rendering::Transform &worldTransform, bool isBillboard);
 
         bool m_HideGameUI = false;
 

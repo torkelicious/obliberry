@@ -163,6 +163,7 @@ void Editor::States::EditState::DrawGizmoForSelected() const {
         return;
 
     Rendering::Transform &t = selectedEntity.GetComponent<ECS::Components::TransformComponent>()->transform;
+    Rendering::Transform &worldT = selectedEntity.GetComponent<ECS::Components::TransformComponent>()->worldTransform;
     const bool isBillboard = selectedEntity.HasComponent<ECS::Components::BillboardTagComponent>();
 
     if (isBillboard && mCurrentGizmoOperation == ImGuizmo::ROTATE) {
@@ -182,10 +183,10 @@ void Editor::States::EditState::DrawGizmoForSelected() const {
         drawList->AddText(ImVec2(badgeMin.x + padding, badgeMin.y + padding), IM_COL32(255, 255, 255, 255), warningText);
         ImGui::End();
     }
-    const_cast<EditState *>(this)->EditTransform(t, isBillboard);
+    const_cast<EditState *>(this)->EditTransform(t, worldT, isBillboard);
 }
 
-void Editor::States::EditState::EditTransform(Rendering::Transform &transform, bool isBillboard) {
+void Editor::States::EditState::EditTransform(Rendering::Transform &localTransform, Rendering::Transform &worldTransform, bool isBillboard) {
     const auto &camera = m_EditorLayer->m_Camera;
     const float aspect = m_EditorLayer->m_ViewportPanel.GetWidth() / m_EditorLayer->m_ViewportPanel.GetHeight();
 
@@ -202,15 +203,12 @@ void Editor::States::EditState::EditTransform(Rendering::Transform &transform, b
         const glm::vec3 forward = glm::cross(right, up);
 
         gizmoMatrix = glm::mat4(1.0f);
-        gizmoMatrix[0] = glm::vec4(right * transform.GetScale().x, 0.0f);
-        gizmoMatrix[1] = glm::vec4(up * transform.GetScale().y, 0.0f);
-        gizmoMatrix[2] = glm::vec4(forward * transform.GetScale().z, 0.0f);
-        gizmoMatrix[3] = glm::vec4(transform.GetPosition(), 1.0f);
+        gizmoMatrix[0] = glm::vec4(right * worldTransform.GetScale().x, 0.0f);
+        gizmoMatrix[1] = glm::vec4(up * worldTransform.GetScale().y, 0.0f);
+        gizmoMatrix[2] = glm::vec4(forward * worldTransform.GetScale().z, 0.0f);
+        gizmoMatrix[3] = glm::vec4(worldTransform.GetPosition(), 1.0f);
     } else {
-        glm::vec3 pos = transform.GetPosition();
-        glm::vec3 rot = glm::degrees(transform.GetRotation());
-        glm::vec3 scale = transform.GetScale();
-        ImGuizmo::RecomposeMatrixFromComponents(glm::value_ptr(pos), glm::value_ptr(rot), glm::value_ptr(scale), glm::value_ptr(gizmoMatrix));
+        gizmoMatrix = worldTransform.GetMatrix();
     }
 
     auto deltaMatrix = glm::mat4(1.0f);
@@ -228,9 +226,9 @@ void Editor::States::EditState::EditTransform(Rendering::Transform &transform, b
         // just started dragging
         if (!m_GizmoDragging) {
             m_GizmoDragging = true;
-            m_GizmoStartPos = transform.GetPosition();
-            m_GizmoStartRot = transform.GetRotation();
-            m_GizmoStartScale = transform.GetScale();
+            m_GizmoStartPos = localTransform.GetPosition();
+            m_GizmoStartRot = localTransform.GetRotation();
+            m_GizmoStartScale = localTransform.GetScale();
         }
 
         if (auto *scene = m_EditorLayer->m_Scene) {
@@ -239,28 +237,28 @@ void Editor::States::EditState::EditTransform(Rendering::Transform &transform, b
 
         if (mCurrentGizmoOperation == ImGuizmo::TRANSLATE) {
             const auto deltaPos = glm::vec3(deltaMatrix[3]);
-            transform.SetPosition(transform.GetPosition() + deltaPos);
+            localTransform.SetPosition(localTransform.GetPosition() + deltaPos);
         } else if (mCurrentGizmoOperation == ImGuizmo::ROTATE) {
             float deltaTranslation[3], deltaRotation[3], deltaScale[3];
             ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(deltaMatrix), deltaTranslation, deltaRotation, deltaScale);
 
-            glm::vec3 currentRot = transform.GetRotation();
+            glm::vec3 currentRot = localTransform.GetRotation();
             glm::vec3 dRot = glm::radians(glm::vec3(deltaRotation[0], deltaRotation[1], deltaRotation[2]));
-            transform.SetRotation(currentRot + dRot);
+            localTransform.SetRotation(currentRot + dRot);
         } else if (mCurrentGizmoOperation == ImGuizmo::SCALE) {
             if (isBillboard) {
                 float scaleX = glm::length(glm::vec3(gizmoMatrix[0]));
                 float scaleY = glm::length(glm::vec3(gizmoMatrix[1]));
                 float scaleZ = glm::length(glm::vec3(gizmoMatrix[2]));
 
-                transform.SetScale(glm::vec3(scaleX, scaleY, scaleZ));
+                localTransform.SetScale(glm::vec3(scaleX, scaleY, scaleZ));
             } else {
                 float deltaTranslation[3], deltaRotation[3], deltaScale[3];
                 ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(deltaMatrix), deltaTranslation, deltaRotation, deltaScale);
 
-                glm::vec3 currentScale = transform.GetScale();
+                glm::vec3 currentScale = localTransform.GetScale();
                 auto dScale = glm::vec3(deltaScale[0], deltaScale[1], deltaScale[2]);
-                transform.SetScale(currentScale * dScale);
+                localTransform.SetScale(currentScale * dScale);
             }
         }
     } else {
@@ -271,16 +269,16 @@ void Editor::States::EditState::EditTransform(Rendering::Transform &transform, b
             if (const ECS::Entity selectedEntity = m_EditorLayer->m_RegistryPanel.GetSelectedEntity()) {
                 const auto entId = static_cast<ECS::EntityID>(selectedEntity);
                 if (mCurrentGizmoOperation == ImGuizmo::TRANSLATE) {
-                    if (m_GizmoStartPos != transform.GetPosition()) {
-                        m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::TranslateEntityCommand>(entId, m_GizmoStartPos, transform.GetPosition()), m_EditorLayer->m_Context);
+                    if (m_GizmoStartPos != localTransform.GetPosition()) {
+                        m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::TranslateEntityCommand>(entId, m_GizmoStartPos, localTransform.GetPosition()), m_EditorLayer->m_Context);
                     }
                 } else if (mCurrentGizmoOperation == ImGuizmo::ROTATE) {
-                    if (m_GizmoStartRot != transform.GetRotation()) {
-                        m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::RotateEntityCommand>(entId, m_GizmoStartRot, transform.GetRotation()), m_EditorLayer->m_Context);
+                    if (m_GizmoStartRot != localTransform.GetRotation()) {
+                        m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::RotateEntityCommand>(entId, m_GizmoStartRot, localTransform.GetRotation()), m_EditorLayer->m_Context);
                     }
                 } else if (mCurrentGizmoOperation == ImGuizmo::SCALE) {
-                    if (m_GizmoStartScale != transform.GetScale()) {
-                        m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::ScaleEntityCommand>(entId, m_GizmoStartScale, transform.GetScale()), m_EditorLayer->m_Context);
+                    if (m_GizmoStartScale != localTransform.GetScale()) {
+                        m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::ScaleEntityCommand>(entId, m_GizmoStartScale, localTransform.GetScale()), m_EditorLayer->m_Context);
                     }
                 }
             }

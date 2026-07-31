@@ -3,6 +3,11 @@
 #include "Entity.h"
 #include "Types.h"
 #include "ECS/Components/RelationshipComponent.h"
+#include "ECS/Components/TransformComponent.h"
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 #include <array>
 #include <cassert>
 #include <memory>
@@ -148,6 +153,10 @@ namespace ECS {
             if (!IsValid(child) || child == newParent)
                 return;
 
+            // preserve world transform before changing hierarchy
+            auto *childTrans = GetComponent<Components::TransformComponent>(child);
+            const glm::mat4 worldBefore = childTrans ? childTrans->worldTransform.GetMatrix() : glm::mat4(1.0f);
+
             auto *childRel = GetComponent<Components::RelationshipComponent>(child);
             if (!childRel)
                 childRel = &AddComponent<Components::RelationshipComponent>(child);
@@ -168,9 +177,36 @@ namespace ECS {
                 if (!newParentRel)
                     newParentRel = &AddComponent<Components::RelationshipComponent>(newParent);
                 newParentRel->children.push_back(child);
+
+                // convert world transform to local space relative to new parent
+                if (childTrans) {
+                    auto *parentTrans = GetComponent<Components::TransformComponent>(newParent);
+                    const glm::mat4 parentWorld = parentTrans ? parentTrans->worldTransform.GetMatrix() : glm::mat4(1.0f);
+                    const glm::mat4 localRelative = glm::inverse(parentWorld) * worldBefore;
+                    glm::vec3 pos, scale, skew;
+                    glm::quat rot;
+                    glm::vec4 perspective;
+                    glm::decompose(localRelative, scale, rot, pos, skew, perspective);
+                    childTrans->transform.SetPosition(pos);
+                    childTrans->transform.SetRotation(glm::eulerAngles(rot));
+                    childTrans->transform.SetScale(scale);
+                }
             } else {
                 childRel->parent = 0;
                 childRel->parentName.clear();
+
+                // world becomes local
+                if (childTrans) {
+                    auto pos = glm::vec3(worldBefore[3]);
+                    glm::vec3 scale;
+                    glm::quat rot;
+                    glm::vec3 skew;
+                    glm::vec4 perspective;
+                    glm::decompose(worldBefore, scale, rot, pos, skew, perspective);
+                    childTrans->transform.SetPosition(pos);
+                    childTrans->transform.SetRotation(glm::eulerAngles(rot));
+                    childTrans->transform.SetScale(scale);
+                }
             }
         }
 
