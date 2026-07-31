@@ -66,7 +66,7 @@ namespace Scenes {
             if (m_CurrentScene && m_CurrentScene
 
 
-                ->GetScenePath() == scenePath) {
+                                                  ->GetScenePath() == scenePath) {
                 m_CurrentScene->OnExit();
                 m_CurrentScene.reset();
             }

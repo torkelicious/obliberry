@@ -20,8 +20,7 @@ namespace Math::HexMath {
     struct FractionalHex {
         float q, r, s;
 
-        FractionalHex(const float q_, const float r_, const float s_) : q(q_), r(r_), s(s_) {
-        }
+        FractionalHex(const float q_, const float r_, const float s_) : q(q_), r(r_), s(s_) {}
     };
 
     struct CubeCoords {

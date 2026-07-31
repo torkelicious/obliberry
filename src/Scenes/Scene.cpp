@@ -23,8 +23,7 @@
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "Scene"
 
-Scenes::Scene::Scene(Core::EngineContext *context, SceneProperties props) : m_Properties(std::move(props)), m_Context(context), m_UISystem(context->uiRenderer, context->input) {
-}
+Scenes::Scene::Scene(Core::EngineContext *context, SceneProperties props) : m_Properties(std::move(props)), m_Context(context), m_UISystem(context->uiRenderer, context->input) {}
 
 void Scenes::Scene::OnEnter() {
     LOG_INFO(LOG_WHO, "Entering scene: " + m_Properties.ScenePath);

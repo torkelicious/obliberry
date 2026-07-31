@@ -32,7 +32,7 @@ namespace UI {
         uint32_t indexOffset = 0;
         uint32_t indexCount = 0;
         BatchShader shader = BatchShader::REGULAR;
-        float sdfScale = 1.0f; // only used for SDF
+        float sdfScale = 1.0f;  // only used for SDF
         float sdfSpread = 8.0f; // only used for SDF
     };
 
@@ -83,7 +83,7 @@ namespace UI {
 
         glm::mat4 m_Projection[2] = {glm::mat4(1.0f), glm::mat4(1.0f)};
         glm::vec2 m_GameResolution = {0.0f, 0.0f};
-        glm::uvec2 m_ActualWindowSize = {0, 0}; // framebuffer/window size for letterboxing
+        glm::uvec2 m_ActualWindowSize = {0, 0};     // framebuffer/window size for letterboxing
         glm::uvec2 m_LastRenderTargetSize = {0, 0}; // render target used in last Flush
 
         std::vector<UIVertex> m_Vertices[2];

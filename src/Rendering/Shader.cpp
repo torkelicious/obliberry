@@ -17,8 +17,7 @@ namespace Rendering {
     }
 
     Shader::Shader(std::string vertSrc, std::string fragSrc, std::string debugName)
-        : m_vertPath(std::move(debugName)), m_fragPath(std::move(debugName)), m_VertexSrc(std::move(vertSrc)), m_FragmentSrc(std::move(fragSrc)) {
-    }
+        : m_vertPath(std::move(debugName)), m_fragPath(std::move(debugName)), m_VertexSrc(std::move(vertSrc)), m_FragmentSrc(std::move(fragSrc)) {}
 
     Shader::~Shader() {
         if (m_ID != 0) {
@@ -63,9 +62,7 @@ namespace Rendering {
         glUseProgram(m_ID);
     }
 
-    void Shader::Unbind() {
-        glUseProgram(0);
-    }
+    void Shader::Unbind() { glUseProgram(0); }
 
 
     void Shader::SetUniform1i(const char *name, const int value) {

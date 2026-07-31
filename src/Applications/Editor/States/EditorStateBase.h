@@ -10,14 +10,11 @@ namespace Editor::States {
     public:
         virtual ~EditorStateBase() = default;
 
-        virtual void OnEnter() {
-        }
+        virtual void OnEnter() {}
 
-        virtual void OnExit() {
-        }
+        virtual void OnExit() {}
 
-        virtual void OnSceneLoaded() {
-        }
+        virtual void OnSceneLoaded() {}
 
         virtual void OnUpdate(float dt) = 0;
 
@@ -27,14 +24,11 @@ namespace Editor::States {
 
         virtual void OnRender() = 0;
 
-        virtual void OnDrawModeToolbar() {
-        }
+        virtual void OnDrawModeToolbar() {}
 
-        virtual void OnDrawUtilityWindows() {
-        }
+        virtual void OnDrawUtilityWindows() {}
 
-        virtual void OnSaveKey() {
-        }
+        virtual void OnSaveKey() {}
 
         [[nodiscard]] virtual bool CanSaveScene() const { return true; }
         [[nodiscard]] virtual bool CanSaveSceneAs() const { return true; }

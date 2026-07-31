@@ -8,8 +8,7 @@
 namespace Editor::UI {
     class EditorDialog {
     public:
-        explicit EditorDialog(std::string title) : m_Title(std::move(title)), m_IsOpen(false), m_ShouldOpen(false) {
-        }
+        explicit EditorDialog(std::string title) : m_Title(std::move(title)), m_IsOpen(false), m_ShouldOpen(false) {}
 
         virtual ~EditorDialog() = default;
 

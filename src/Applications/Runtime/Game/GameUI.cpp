@@ -7,7 +7,7 @@ static ImVec4 GetThresholdColor(const float frameMs) {
         return {1.0f, 0.3f, 0.3f, 1.0f}; // critical (sub-30 FPS)
     if (frameMs >= 20.0f)
         return {1.0f, 0.8f, 0.2f, 1.0f}; // warning (sub-50 FPS)
-    return {0.4f, 1.0f, 0.4f, 1.0f}; // Good
+    return {0.4f, 1.0f, 0.4f, 1.0f};     // Good
 }
 
 void Game::GameLayer::DrawInterface() const {

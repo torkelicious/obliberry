@@ -28,8 +28,7 @@ namespace Rendering {
         unsigned int m_Stride;
 
     public:
-        VertexBufferLayout() : m_Stride(0) {
-        }
+        VertexBufferLayout() : m_Stride(0) {}
 
         void Push(const unsigned int type, const unsigned int count) {
             m_Elements.push_back({type, count, GL_FALSE});

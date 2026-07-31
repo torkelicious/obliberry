@@ -44,7 +44,7 @@ namespace Editor::States {
         MapTool m_CurrentTool = MapTool::Paint;
 
         // makes it easier than using the dumb names in the component
-        Map::HexCoords m_hoveredHex = {0, 0}; // what the comp would refer to as "selectedHex", stupid naming.. i know.
+        Map::HexCoords m_hoveredHex = {0, 0};  // what the comp would refer to as "selectedHex", stupid naming.. i know.
         Map::HexCoords m_selectedHex = {0, 0}; // actually clicked hex, not the same as the components "selectedHex"
 
         Map::Tile *m_selectedTile = nullptr;

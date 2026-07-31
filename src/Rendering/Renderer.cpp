@@ -510,9 +510,7 @@ void Rendering::Renderer::BindLightmap(Shader *shader, const size_t renderIndex)
 
 void Rendering::Renderer::SetClearColor(const glm::vec4 color) { s_ClearColorStaging = color; }
 
-void Rendering::Renderer::ApplyClearColor() {
-    glClearColor(s_ClearColorStaging[0], s_ClearColorStaging[1], s_ClearColorStaging[2], s_ClearColorStaging[3]);
-}
+void Rendering::Renderer::ApplyClearColor() { glClearColor(s_ClearColorStaging[0], s_ClearColorStaging[1], s_ClearColorStaging[2], s_ClearColorStaging[3]); }
 
 void Rendering::Renderer::SwapBuffers() {
     m_RenderIndex = m_SubmitIndex;

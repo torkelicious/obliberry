@@ -30,9 +30,9 @@ namespace Rendering {
         const Material *material;
         const Texture *effectiveTexture;
         glm::vec4 color;
-        int8_t blendMode = 0; // 0 = alpha, 1 = additive
+        int8_t blendMode = 0;    // 0 = alpha, 1 = additive
         int32_t renderOrder = 0; // higher is drawn later
-        int8_t shape = 0; // 0 = quad, 1 = circle, 2 = soft circle
+        int8_t shape = 0;        // 0 = quad, 1 = circle, 2 = soft circle
 
         const glm::mat4 *transformPtr = nullptr;
         size_t transformOffset = 0;

@@ -19,13 +19,13 @@ constexpr float VERSION = 1.0f;
 
 static void show_help() {
     std::cout << TITLE_NAME << " - Run pre-packaged ObSL scripts directly from a .obpak container\n\n"
-            << "Usage: " << BINARY_NAME << " [options] <package.obpak> <entry_script_path>\n\n"
-            << "Options:\n"
-            << "  -h, --help             Show this help message and exit\n"
-            << "  -v, --version          Show version information and exit\n"
-            << "  -q, --quiet            Suppress runner output (script print output is preserved)\n\n"
-            << "Example:\n"
-            << "  " << BINARY_NAME << " -q game.obpak assets/scripts/engine_integ_test.obsl\n";
+              << "Usage: " << BINARY_NAME << " [options] <package.obpak> <entry_script_path>\n\n"
+              << "Options:\n"
+              << "  -h, --help             Show this help message and exit\n"
+              << "  -v, --version          Show version information and exit\n"
+              << "  -q, --quiet            Suppress runner output (script print output is preserved)\n\n"
+              << "Example:\n"
+              << "  " << BINARY_NAME << " -q game.obpak assets/scripts/engine_integ_test.obsl\n";
 }
 
 int main(int argc, char *argv[]) {

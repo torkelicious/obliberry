@@ -116,7 +116,7 @@ namespace ECS {
 
         template <typename T> void RemoveComponent(const EntityID entity) { GetPool<T>()->EntityDestroyed(entity); }
 
-        template <typename T, typename... Args> T &AddComponent(EntityID entity, Args &&... args) {
+        template <typename T, typename... Args> T &AddComponent(EntityID entity, Args &&...args) {
             assert(IsValid(entity) && "Attempted to add component to an invalid entity");
             return GetPool<T>()->Emplace(entity, std::forward<Args>(args)...);
         }
@@ -213,7 +213,7 @@ namespace ECS {
         }
     };
 
-    template <typename T, typename... Args> T &Entity::AddComponent(Args &&... args) { return m_Registry->AddComponent<T>(m_EntityHandle, std::forward<Args>(args)...); }
+    template <typename T, typename... Args> T &Entity::AddComponent(Args &&...args) { return m_Registry->AddComponent<T>(m_EntityHandle, std::forward<Args>(args)...); }
 
     template <typename T> T *Entity::GetComponent() const { return m_Registry->GetComponent<T>(m_EntityHandle); }
 

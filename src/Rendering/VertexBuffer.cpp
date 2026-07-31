@@ -6,17 +6,11 @@ void Rendering::VertexBuffer::Init(const void *data, const unsigned int size, co
     glBufferData(GL_ARRAY_BUFFER, size, data, usage);
 }
 
-Rendering::VertexBuffer::~VertexBuffer() {
-    glDeleteBuffers(1, &m_ID);
-}
+Rendering::VertexBuffer::~VertexBuffer() { glDeleteBuffers(1, &m_ID); }
 
-void Rendering::VertexBuffer::Bind() const {
-    glBindBuffer(GL_ARRAY_BUFFER, m_ID);
-}
+void Rendering::VertexBuffer::Bind() const { glBindBuffer(GL_ARRAY_BUFFER, m_ID); }
 
-void Rendering::VertexBuffer::Unbind() {
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-}
+void Rendering::VertexBuffer::Unbind() { glBindBuffer(GL_ARRAY_BUFFER, 0); }
 
 void Rendering::VertexBuffer::SetData(const void *data, const unsigned int size) const {
     glBindBuffer(GL_ARRAY_BUFFER, m_ID);

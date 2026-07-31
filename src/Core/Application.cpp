@@ -88,8 +88,8 @@ void Core::Application::Run() {
     ImGui::GetStyle().ScaleAllSizes(xscale);
     ImGuiIO &io = ImGui::GetIO();
     io.FontGlobalScale = xscale;
-    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Docking
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Keyboard UI navigation
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;        // Docking
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;    // Keyboard UI navigation
     io.ConfigFlags |= ImGuiConfigFlags_NavNoCaptureKeyboard; // Don't capture keyboard for navigation
 
     // Renderer

@@ -17,14 +17,14 @@ namespace fs = std::filesystem;
 
 static void show_help() {
     std::cout << TITLE_NAME << " - Extract contents from a .obpak container\n\n"
-            << "Usage: " << BINARY_NAME << " [options] <package.obpak> [output_directory]\n\n"
-            << "Options:\n"
-            << "  -h, --help             Show this help message and exit\n"
-            << "  -l, --list             List contents of obpak file without extracting\n"
-            << "  -q, --quiet            Suppress output\n"
-            << "  -v, --version          Show version\n\n"
-            << "Example:\n"
-            << "  " << BINARY_NAME << " game.obpak ./extracted_assets\n";
+              << "Usage: " << BINARY_NAME << " [options] <package.obpak> [output_directory]\n\n"
+              << "Options:\n"
+              << "  -h, --help             Show this help message and exit\n"
+              << "  -l, --list             List contents of obpak file without extracting\n"
+              << "  -q, --quiet            Suppress output\n"
+              << "  -v, --version          Show version\n\n"
+              << "Example:\n"
+              << "  " << BINARY_NAME << " game.obpak ./extracted_assets\n";
 }
 
 int main(int argc, char *argv[]) {

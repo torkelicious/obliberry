@@ -11,10 +11,9 @@ namespace ECS {
     public:
         Entity() = default;
 
-        Entity(const EntityID handle, Registry *registry) : m_EntityHandle(handle), m_Registry(registry) {
-        }
+        Entity(const EntityID handle, Registry *registry) : m_EntityHandle(handle), m_Registry(registry) {}
 
-        template <typename T, typename... Args> T &AddComponent(Args &&... args);
+        template <typename T, typename... Args> T &AddComponent(Args &&...args);
 
         template <typename T> T *GetComponent() const;
 

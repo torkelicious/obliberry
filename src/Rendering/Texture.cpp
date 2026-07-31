@@ -95,9 +95,7 @@ namespace Rendering {
         glBindTexture(GL_TEXTURE_2D, m_ID);
     }
 
-    void Texture::Unbind() {
-        glBindTexture(GL_TEXTURE_2D, 0);
-    }
+    void Texture::Unbind() { glBindTexture(GL_TEXTURE_2D, 0); }
 
     void Texture::UpdateData(const unsigned char *data, const int width, const int height) {
         Bind();

@@ -9,8 +9,7 @@
 
 // used by both PlayerControlSystem and AISystem.
 namespace ECS::Systems::DirectionalAnimation {
-    inline void UpdateFacing(const Entity entity, const glm::vec2 direction,
-                             const Components::MaterialComponent *) noexcept {
+    inline void UpdateFacing(const Entity entity, const glm::vec2 direction, const Components::MaterialComponent *) noexcept {
         if (glm::dot(direction, direction) <= 1.0e-6f)
             return;
 

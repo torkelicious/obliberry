@@ -70,8 +70,7 @@ namespace Editor::UI {
         std::vector<std::vector<uint8_t>> m_CapturedOldValues;
 
     public:
-        explicit AutoComponentWidget(const char *name) : m_Name(name) {
-        }
+        explicit AutoComponentWidget(const char *name) : m_Name(name) {}
 
         [[nodiscard]] const char *GetName() const override { return m_Name; }
 
@@ -140,8 +139,7 @@ namespace Editor::UI {
         }
 
     protected:
-        virtual void DrawExtras(ECS::Entity entity, T *component, Core::EngineContext *engineContext, UndoManager *undoManager) {
-        }
+        virtual void DrawExtras(ECS::Entity entity, T *component, Core::EngineContext *engineContext, UndoManager *undoManager) {}
     };
 
     template <typename T> class TagWidget : public IComponentWidget {
@@ -149,8 +147,7 @@ namespace Editor::UI {
         const char *m_Name;
 
     public:
-        explicit TagWidget(const char *name) : m_Name(name) {
-        }
+        explicit TagWidget(const char *name) : m_Name(name) {}
 
         [[nodiscard]] const char *GetName() const override { return m_Name; }
 

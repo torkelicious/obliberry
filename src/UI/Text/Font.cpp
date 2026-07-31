@@ -96,8 +96,7 @@ namespace UI {
         }
     }
 
-    Font::Font(std::string filepath, const unsigned int fontSize, const bool useSDF, const unsigned int sdfSpread) : m_FilePath(std::move(filepath)), m_FontSize(fontSize), m_IsSDF(useSDF), m_SDFSpread(sdfSpread) {
-    }
+    Font::Font(std::string filepath, const unsigned int fontSize, const bool useSDF, const unsigned int sdfSpread) : m_FilePath(std::move(filepath)), m_FontSize(fontSize), m_IsSDF(useSDF), m_SDFSpread(sdfSpread) {}
 
     void Font::LoadCPU() {
         if (m_Valid)
@@ -406,7 +405,7 @@ namespace UI {
 
         m_Valid = true;
         LOG_INFO(LOG_WHO, "Font loaded (SDF): " + filepath + " (" + std::to_string(m_Glyphs.size()) + " glyphs, spread=" + std::to_string(spread) + ", " + std::to_string(atlasWidth) + "x" + std::to_string(atlasHeight) +
-                 " atlas)");
+                                  " atlas)");
     }
 
     Font::~Font() {

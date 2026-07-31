@@ -23,7 +23,7 @@ namespace Platform::Threading {
         template <typename F, typename = std::enable_if_t<!std::is_same_v<std::decay_t<F>, SmallTask>>> explicit SmallTask(F &&f) {
             using FuncType = std::decay_t<F>;
             if constexpr (sizeof(FuncType) <= StorageSize && alignof(FuncType) <= alignof(decltype(m_Storage)) && std::is_trivially_move_constructible_v<FuncType> && std::is_trivially_destructible_v<FuncType>) {
-                new(m_Storage) FuncType(std::forward<F>(f));
+                new (m_Storage) FuncType(std::forward<F>(f));
                 m_Invoke = [](std::byte *ptr) { (*reinterpret_cast<FuncType *>(ptr))(); };
                 m_UsesHeap = false;
                 m_Destroy = nullptr;

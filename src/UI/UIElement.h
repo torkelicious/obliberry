@@ -19,11 +19,9 @@ namespace UI {
         std::vector<UIElement *> Children;
         RectTransform Rect{{0.0f, 0.0f}, {0.0f, 0.0f}};
 
-        virtual void Update() {
-        }
+        virtual void Update() {}
 
-        virtual void Draw(UIRenderer * /*renderer*/, glm::vec2 /*finalPos*/) {
-        }
+        virtual void Draw(UIRenderer * /*renderer*/, glm::vec2 /*finalPos*/) {}
 
         [[nodiscard]] bool HasFlag(const UIFlags flag) const { return Flags & flag; }
         void AddFlag(const UIFlags flag) { Flags |= flag; }

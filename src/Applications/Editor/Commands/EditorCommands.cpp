@@ -15,8 +15,7 @@ namespace Editor::Commands {
     //
 
     // Move Transform
-    TranslateEntityCommand::TranslateEntityCommand(const ECS::EntityID target, const glm::vec3 oldPos, const glm::vec3 newPos) : m_EntityID(target), m_OldPos(oldPos), m_NewPos(newPos) {
-    }
+    TranslateEntityCommand::TranslateEntityCommand(const ECS::EntityID target, const glm::vec3 oldPos, const glm::vec3 newPos) : m_EntityID(target), m_OldPos(oldPos), m_NewPos(newPos) {}
 
     void TranslateEntityCommand::Execute(Core::EngineContext &ctx) {
         const ECS::Entity ent(m_EntityID, &ctx.sceneManager->GetCurrentScene()->GetRegistry());
@@ -31,8 +30,7 @@ namespace Editor::Commands {
     std::string_view TranslateEntityCommand::Name() const noexcept { return "Move entity"; }
 
     // Rotate Transform
-    RotateEntityCommand::RotateEntityCommand(const ECS::EntityID target, const glm::vec3 oldRot, const glm::vec3 newRot) : m_EntityID(target), m_OldRot(oldRot), m_NewRot(newRot) {
-    }
+    RotateEntityCommand::RotateEntityCommand(const ECS::EntityID target, const glm::vec3 oldRot, const glm::vec3 newRot) : m_EntityID(target), m_OldRot(oldRot), m_NewRot(newRot) {}
 
     void RotateEntityCommand::Execute(Core::EngineContext &ctx) {
         const ECS::Entity ent(m_EntityID, &ctx.sceneManager->GetCurrentScene()->GetRegistry());
@@ -47,8 +45,7 @@ namespace Editor::Commands {
     std::string_view RotateEntityCommand::Name() const noexcept { return "Rotate entity"; }
 
     // Scale Transform
-    ScaleEntityCommand::ScaleEntityCommand(const ECS::EntityID target, const glm::vec3 oldScale, const glm::vec3 newScale) : m_EntityID(target), m_OldScale(oldScale), m_NewScale(newScale) {
-    }
+    ScaleEntityCommand::ScaleEntityCommand(const ECS::EntityID target, const glm::vec3 oldScale, const glm::vec3 newScale) : m_EntityID(target), m_OldScale(oldScale), m_NewScale(newScale) {}
 
     void ScaleEntityCommand::Execute(Core::EngineContext &ctx) {
         const ECS::Entity ent(m_EntityID, &ctx.sceneManager->GetCurrentScene()->GetRegistry());
@@ -66,8 +63,7 @@ namespace Editor::Commands {
     // Rename Entity
     //
 
-    SetNameCommand::SetNameCommand(const ECS::EntityID target, std::string oldName, std::string newName) : m_EntityID(target), m_OldName(std::move(oldName)), m_NewName(std::move(newName)) {
-    }
+    SetNameCommand::SetNameCommand(const ECS::EntityID target, std::string oldName, std::string newName) : m_EntityID(target), m_OldName(std::move(oldName)), m_NewName(std::move(newName)) {}
 
     void SetNameCommand::Execute(Core::EngineContext &ctx) { ctx.sceneManager->GetCurrentScene()->GetRegistry().SetEntityName(m_EntityID, m_NewName); }
 
@@ -129,8 +125,7 @@ namespace Editor::Commands {
     std::string_view RemoveScriptCommand::Name() const noexcept { return "Remove Script"; }
 
     // Add script
-    AddScriptCommand::AddScriptCommand(const ECS::EntityID target, const std::string &script_path) : m_EntityID(target), m_PendingPath(script_path) {
-    }
+    AddScriptCommand::AddScriptCommand(const ECS::EntityID target, const std::string &script_path) : m_EntityID(target), m_PendingPath(script_path) {}
 
     void AddScriptCommand::Execute(Core::EngineContext &ctx) {
         if (!m_PendingPath.empty()) {
@@ -175,8 +170,7 @@ namespace Editor::Commands {
     std::string_view AddScriptCommand::Name() const noexcept { return "Add script"; }
 
     // Scene Properties
-    UpdateScenePropertiesCommand::UpdateScenePropertiesCommand(const Scenes::SceneProperties &oldCfg, const Scenes::SceneProperties &newCfg) : m_OldData(oldCfg), m_NewData(newCfg) {
-    }
+    UpdateScenePropertiesCommand::UpdateScenePropertiesCommand(const Scenes::SceneProperties &oldCfg, const Scenes::SceneProperties &newCfg) : m_OldData(oldCfg), m_NewData(newCfg) {}
 
     void UpdateScenePropertiesCommand::Execute(Core::EngineContext &ctx) {
         if (ctx.sceneManager->GetCurrentScene()) {
@@ -210,8 +204,7 @@ namespace Editor::Commands {
     //
     // Project
     //
-    ProjectConfigUpdateCommand::ProjectConfigUpdateCommand(const Config::ProjectConfig &oldCfg, const Config::ProjectConfig &newCfg) : m_OldData(oldCfg), m_NewData(newCfg) {
-    }
+    ProjectConfigUpdateCommand::ProjectConfigUpdateCommand(const Config::ProjectConfig &oldCfg, const Config::ProjectConfig &newCfg) : m_OldData(oldCfg), m_NewData(newCfg) {}
 
     void ProjectConfigUpdateCommand::Execute(Core::EngineContext &ctx) {
         if (ctx.projectConfig)
@@ -237,8 +230,7 @@ namespace Editor::Commands {
 
     // Paint / Erase
     MapChangeTileCommand::MapChangeTileCommand(StateMap oldState, StateMap newState, Map::HexGrid *grid, bool *meshDirty)
-        : m_OldState(std::move(oldState)), m_NewState(std::move(newState)), m_Grid(grid), m_MeshDirty(meshDirty) {
-    }
+        : m_OldState(std::move(oldState)), m_NewState(std::move(newState)), m_Grid(grid), m_MeshDirty(meshDirty) {}
 
     void MapChangeTileCommand::ApplyStates(const StateMap &states) const {
         for (const auto &[pos, state] : states) {
@@ -267,8 +259,7 @@ namespace Editor::Commands {
     //
     // Graphics Config
     //
-    GraphicsConfigUpdateCommand::GraphicsConfigUpdateCommand(const Config::GraphicsConfig &oldCfg, const Config::GraphicsConfig &newCfg) : m_OldData(oldCfg), m_NewData(newCfg) {
-    }
+    GraphicsConfigUpdateCommand::GraphicsConfigUpdateCommand(const Config::GraphicsConfig &oldCfg, const Config::GraphicsConfig &newCfg) : m_OldData(oldCfg), m_NewData(newCfg) {}
 
     void GraphicsConfigUpdateCommand::Execute(Core::EngineContext &ctx) {
         if (ctx.graphicsConfig)
@@ -382,8 +373,7 @@ namespace Editor::Commands {
     }
 
     // AddUIElementCommand
-    AddUIElementCommand::AddUIElementCommand(::UI::UISystem *sys, ::UI::UIElement *parent, UIElementSnapshot snapshot) : m_UISystem(sys), m_Parent(parent), m_Snapshot(std::move(snapshot)) {
-    }
+    AddUIElementCommand::AddUIElementCommand(::UI::UISystem *sys, ::UI::UIElement *parent, UIElementSnapshot snapshot) : m_UISystem(sys), m_Parent(parent), m_Snapshot(std::move(snapshot)) {}
 
     void AddUIElementCommand::Execute(Core::EngineContext &ctx) {
         if (auto el = CreateUIElementFromSnapshot(m_Snapshot); el && m_UISystem && m_Parent) {
@@ -399,8 +389,7 @@ namespace Editor::Commands {
     }
 
     // RemoveUIElementCommand
-    RemoveUIElementCommand::RemoveUIElementCommand(::UI::UISystem *sys, ::UI::UIElement *parent, const ::UI::UIElement *child) : m_UISystem(sys), m_Parent(parent), m_Snapshot(SnapshotUIElement(child)) {
-    }
+    RemoveUIElementCommand::RemoveUIElementCommand(::UI::UISystem *sys, ::UI::UIElement *parent, const ::UI::UIElement *child) : m_UISystem(sys), m_Parent(parent), m_Snapshot(SnapshotUIElement(child)) {}
 
     void RemoveUIElementCommand::Execute(Core::EngineContext &ctx) {
         if (m_Restored && m_UISystem && m_Parent) {

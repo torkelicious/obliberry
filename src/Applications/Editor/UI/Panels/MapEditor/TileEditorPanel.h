@@ -10,8 +10,7 @@
 namespace Editor::UI {
 
     // todo implement  ...very work in progress..
-    struct TilePrefab {
-    };
+    struct TilePrefab {};
 
     class TileEditorPanel : public EditorPanel {
     public:

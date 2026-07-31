@@ -32,7 +32,7 @@ namespace Core {
             return instance;
         }
 
-        template <typename T, typename... Args> std::shared_ptr<T> Load(const std::string &key, Args &&... args) {
+        template <typename T, typename... Args> std::shared_ptr<T> Load(const std::string &key, Args &&...args) {
             auto &cache = GetCache<T>();
             if (auto it = cache.storage.find(key); it != cache.storage.end()) {
                 return it->second;

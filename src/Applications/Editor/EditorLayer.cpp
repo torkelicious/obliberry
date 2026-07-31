@@ -117,8 +117,7 @@ void Editor::EditorLayer::Render() {
     m_SaveMapDialog.Update();
 }
 
-void Editor::EditorLayer::Shutdown() {
-}
+void Editor::EditorLayer::Shutdown() {}
 
 void Editor::EditorLayer::HandleInput(const float dt) {
     // NOTE:

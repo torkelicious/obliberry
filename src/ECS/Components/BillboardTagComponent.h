@@ -3,6 +3,5 @@
 
 namespace ECS::Components {
     // tag component
-    struct BillboardTagComponent {
-    };
+    struct BillboardTagComponent {};
 } // namespace ECS::Components
