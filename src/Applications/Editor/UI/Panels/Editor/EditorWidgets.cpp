@@ -31,7 +31,8 @@ Editor::UI::PointLightWidget::PointLightWidget() : AutoComponentWidget("Point Li
 
 //  TransformWidget
 
-Editor::UI::TransformWidget::TransformWidget() : AutoComponentWidget("Transform") {}
+Editor::UI::TransformWidget::TransformWidget() : AutoComponentWidget("Transform") {
+}
 
 void Editor::UI::TransformWidget::DrawExtras(const ECS::Entity entity, ECS::Components::TransformComponent *component, Core::EngineContext *engineContext, UndoManager *undoManager) {
     auto pos = component->transform.GetPosition();

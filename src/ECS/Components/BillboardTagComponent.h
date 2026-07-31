@@ -6,4 +6,3 @@ namespace ECS::Components {
     struct BillboardTagComponent {
     };
 } // namespace ECS::Components
-

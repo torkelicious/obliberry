@@ -38,9 +38,9 @@ namespace Math::Projection {
 
         // unproject the corners of the screen down to the z0 grid
         bounds.Expand(UnprojectToGround(invVP, -1.0f, -1.0f)); // Bottom-Left
-        bounds.Expand(UnprojectToGround(invVP, 1.0f, -1.0f));  // Bottom-Right
-        bounds.Expand(UnprojectToGround(invVP, 1.0f, 1.0f));   // Top-Right
-        bounds.Expand(UnprojectToGround(invVP, -1.0f, 1.0f));  // Top-Left
+        bounds.Expand(UnprojectToGround(invVP, 1.0f, -1.0f)); // Bottom-Right
+        bounds.Expand(UnprojectToGround(invVP, 1.0f, 1.0f)); // Top-Right
+        bounds.Expand(UnprojectToGround(invVP, -1.0f, 1.0f)); // Top-Left
 
         // padding buffer
         constexpr float padding = Core::HEX_SIZE * 2;

@@ -6,6 +6,7 @@
 
 namespace Editor::UI {
     using Commands::UndoManager;
+
     class ConfigEditor {
     public:
         virtual ~ConfigEditor() = default;

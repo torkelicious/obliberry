@@ -314,7 +314,7 @@ void IO::EntityFactory::RegisterSerializers() {
             data["ParticleEmitterComponent"]["colorStart"] = {ec->colorStart.x, ec->colorStart.y, ec->colorStart.z, ec->colorStart.w};
             data["ParticleEmitterComponent"]["colorEnd"] = {ec->colorEnd.x, ec->colorEnd.y, ec->colorEnd.z, ec->colorEnd.w};
             data["ParticleEmitterComponent"]["isBillboard"] = ec->isBillboard;
-            data["ParticleEmitterComponent"]["blendMode"] = static_cast<int>(ec->blendMode);
+            data["ParticleEmitterComponent"]["blendMode"] = ec->blendMode;
             data["ParticleEmitterComponent"]["renderOrder"] = ec->renderOrder;
             data["ParticleEmitterComponent"]["shape"] = ec->shape;
             if (ec->material) {

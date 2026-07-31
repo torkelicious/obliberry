@@ -102,7 +102,9 @@ namespace Editor::UI {
         }
     }
 
-    void GraphicsConfigEditor::SaveConfig() {}
+    void GraphicsConfigEditor::SaveConfig() {
+    }
+
     void GraphicsConfigEditor::LoadConfigToBuffers() { m_OldConfig = m_LocalConfig; }
 
 

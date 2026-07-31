@@ -1,9 +1,9 @@
-
 #pragma once
 #include <cstddef>
 #include <cstring>
 #include <type_traits>
 #include <utility>
+
 namespace Platform::Threading {
     // non-heap allocated function wrapper
     // type-erased
@@ -22,7 +22,7 @@ namespace Platform::Threading {
             static_assert(std::is_trivially_move_constructible_v<FuncType>, "Task lambda must be trivially movable!");
             static_assert(std::is_trivially_destructible_v<FuncType>, "Task lambda must be trivially destructible!");
 
-            new (m_Storage) FuncType(std::forward<F>(f));
+            new(m_Storage) FuncType(std::forward<F>(f));
             m_Invoke = [](std::byte *ptr) { (*reinterpret_cast<FuncType *>(ptr))(); };
         }
 

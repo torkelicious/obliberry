@@ -96,7 +96,8 @@ namespace UI {
         }
     }
 
-    Font::Font(std::string filepath, const unsigned int fontSize, const bool useSDF, const unsigned int sdfSpread) : m_FilePath(std::move(filepath)), m_FontSize(fontSize), m_IsSDF(useSDF), m_SDFSpread(sdfSpread) {}
+    Font::Font(std::string filepath, const unsigned int fontSize, const bool useSDF, const unsigned int sdfSpread) : m_FilePath(std::move(filepath)), m_FontSize(fontSize), m_IsSDF(useSDF), m_SDFSpread(sdfSpread) {
+    }
 
     void Font::LoadCPU() {
         if (m_Valid)
@@ -198,7 +199,7 @@ namespace UI {
         }
 
         // atlas dimensions
-        const int atlasWidth = MAX_ATLAS_WIDTH;
+        constexpr int atlasWidth = MAX_ATLAS_WIDTH;
         const int atlasHeight = y + rowHeight;
 
         if (atlasHeight == 0 || m_Glyphs.empty()) {
@@ -237,7 +238,7 @@ namespace UI {
         }
 
         // normalize UV
-        const float invAtlasW = 1.0f / static_cast<float>(atlasWidth);
+        constexpr float invAtlasW = 1.0f / static_cast<float>(atlasWidth);
         const float invAtlasH = 1.0f / static_cast<float>(atlasHeight);
         for (auto &[c, g] : m_Glyphs) {
             g.UVOffset.x *= invAtlasW;
@@ -335,7 +336,7 @@ namespace UI {
             x += paddedW;
         }
 
-        const int atlasWidth = MAX_ATLAS_WIDTH;
+        constexpr int atlasWidth = MAX_ATLAS_WIDTH;
         const int atlasHeight = y + rowHeight;
 
         if (atlasHeight == 0 || m_Glyphs.empty()) {
@@ -387,7 +388,7 @@ namespace UI {
         }
 
         // Normalize UVs
-        const float invAtlasW = 1.0f / static_cast<float>(atlasWidth);
+        constexpr float invAtlasW = 1.0f / static_cast<float>(atlasWidth);
         const float invAtlasH = 1.0f / static_cast<float>(atlasHeight);
         for (auto &[c, g] : m_Glyphs) {
             g.UVOffset.x *= invAtlasW;
@@ -405,7 +406,7 @@ namespace UI {
 
         m_Valid = true;
         LOG_INFO(LOG_WHO, "Font loaded (SDF): " + filepath + " (" + std::to_string(m_Glyphs.size()) + " glyphs, spread=" + std::to_string(spread) + ", " + std::to_string(atlasWidth) + "x" + std::to_string(atlasHeight) +
-                                  " atlas)");
+                 " atlas)");
     }
 
     Font::~Font() {

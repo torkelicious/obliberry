@@ -67,7 +67,6 @@ namespace Rendering {
             m_CachedMatrix = glm::scale(model, m_Scale);
         }
 
-    private:
         glm::vec3 m_Position{0.0f};
         glm::vec3 m_Rotation{0.0f};
         glm::vec3 m_Scale{1.0f};

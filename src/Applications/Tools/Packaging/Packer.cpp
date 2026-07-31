@@ -9,7 +9,7 @@
 #include "Logger/LoggerService.h"
 
 const std::string TITLE_NAME = "Obliberry-Working-Name-Packager";
-const std::string BINARY_NAME = "ob_packer";
+constexpr std::string BINARY_NAME = "ob_packer";
 constexpr float VERSION = 1.1f;
 
 namespace fs = std::filesystem;
@@ -20,17 +20,17 @@ namespace fs = std::filesystem;
 
 static void show_help() {
     std::cout << TITLE_NAME << " - Package Obliberry projects into .obpak archives\n\n"
-              << "Usage: " << BINARY_NAME << " [options] <project_directory>\n\n"
-              << "Options:\n"
-              << "  -o, --output <file>    Output .obpak path (default: <project_directory>.obpak)\n"
-              << "  -q, --quiet            Suppress all non-error output\n"
-              << "  --verbose              Enable detailed logging per file\n"
-              << "  --no-compress          Disable LZ4 compression globally\n"
-              << "  --strict               Fail packaging on dependency validation errors\n"
-              << "  -h, --help             Show this help message and exit\n"
-              << "  -v, --version          Show version information and exit\n\n"
-              << "Example:\n"
-              << "  " << BINARY_NAME << " -o pkg/game.obpak ./UntitledProject\n";
+            << "Usage: " << BINARY_NAME << " [options] <project_directory>\n\n"
+            << "Options:\n"
+            << "  -o, --output <file>    Output .obpak path (default: <project_directory>.obpak)\n"
+            << "  -q, --quiet            Suppress all non-error output\n"
+            << "  --verbose              Enable detailed logging per file\n"
+            << "  --no-compress          Disable LZ4 compression globally\n"
+            << "  --strict               Fail packaging on dependency validation errors\n"
+            << "  -h, --help             Show this help message and exit\n"
+            << "  -v, --version          Show version information and exit\n\n"
+            << "Example:\n"
+            << "  " << BINARY_NAME << " -o pkg/game.obpak ./UntitledProject\n";
 }
 
 static void show_version() { std::cout << BINARY_NAME << " (" << TITLE_NAME << ") v" << VERSION << "\n"; }

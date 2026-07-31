@@ -1,5 +1,6 @@
 #pragma once
 #include <glm/glm.hpp>
+
 namespace UI {
     struct RectTransform {
         glm::vec2 Position;

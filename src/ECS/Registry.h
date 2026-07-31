@@ -27,7 +27,6 @@ namespace ECS {
     constexpr uint32_t MAX_COMPONENT_TYPES = 64;
 
     class Registry {
-    private:
         std::queue<uint32_t> m_AvailableEntities;
         std::array<std::unique_ptr<IPool>, MAX_COMPONENT_TYPES> m_ComponentPools{};
         std::vector<EntityID> m_LivingEntities;
@@ -117,7 +116,7 @@ namespace ECS {
 
         template <typename T> void RemoveComponent(const EntityID entity) { GetPool<T>()->EntityDestroyed(entity); }
 
-        template <typename T, typename... Args> T &AddComponent(EntityID entity, Args &&...args) {
+        template <typename T, typename... Args> T &AddComponent(EntityID entity, Args &&... args) {
             assert(IsValid(entity) && "Attempted to add component to an invalid entity");
             return GetPool<T>()->Emplace(entity, std::forward<Args>(args)...);
         }
@@ -214,7 +213,7 @@ namespace ECS {
         }
     };
 
-    template <typename T, typename... Args> T &Entity::AddComponent(Args &&...args) { return m_Registry->AddComponent<T>(m_EntityHandle, std::forward<Args>(args)...); }
+    template <typename T, typename... Args> T &Entity::AddComponent(Args &&... args) { return m_Registry->AddComponent<T>(m_EntityHandle, std::forward<Args>(args)...); }
 
     template <typename T> T *Entity::GetComponent() const { return m_Registry->GetComponent<T>(m_EntityHandle); }
 
@@ -235,7 +234,7 @@ namespace ECS {
     }
 
     inline const std::vector<EntityID> &Entity::GetChildren() const {
-        static const std::vector<EntityID> empty;
+        static constexpr std::vector<EntityID> empty;
         auto *rel = m_Registry->GetComponent<Components::RelationshipComponent>(m_EntityHandle);
         return rel ? rel->children : empty;
     }

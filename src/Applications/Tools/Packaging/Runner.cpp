@@ -11,7 +11,7 @@
 #include "Logger/LoggerService.h"
 
 const std::string TITLE_NAME = "Obliberry-Working-Name-Runner";
-const std::string BINARY_NAME = "obsl_pack_run";
+constexpr std::string BINARY_NAME = "obsl_pack_run";
 constexpr float VERSION = 1.0f;
 
 #pragma push_macro("LOG_WHO")
@@ -19,13 +19,13 @@ constexpr float VERSION = 1.0f;
 
 static void show_help() {
     std::cout << TITLE_NAME << " - Run pre-packaged ObSL scripts directly from a .obpak container\n\n"
-              << "Usage: " << BINARY_NAME << " [options] <package.obpak> <entry_script_path>\n\n"
-              << "Options:\n"
-              << "  -h, --help             Show this help message and exit\n"
-              << "  -v, --version          Show version information and exit\n"
-              << "  -q, --quiet            Suppress runner output (script print output is preserved)\n\n"
-              << "Example:\n"
-              << "  " << BINARY_NAME << " -q game.obpak assets/scripts/engine_integ_test.obsl\n";
+            << "Usage: " << BINARY_NAME << " [options] <package.obpak> <entry_script_path>\n\n"
+            << "Options:\n"
+            << "  -h, --help             Show this help message and exit\n"
+            << "  -v, --version          Show version information and exit\n"
+            << "  -q, --quiet            Suppress runner output (script print output is preserved)\n\n"
+            << "Example:\n"
+            << "  " << BINARY_NAME << " -q game.obpak assets/scripts/engine_integ_test.obsl\n";
 }
 
 int main(int argc, char *argv[]) {
@@ -39,24 +39,27 @@ int main(int argc, char *argv[]) {
         if (std::string arg = argv[i]; arg == "-h" || arg == "--help") {
             show_help();
             return 0;
-        } else if (arg == "-v" || arg == "--version") {
-            std::cout << BINARY_NAME << " (" << TITLE_NAME << ") v" << VERSION << "\n";
-            return 0;
-        } else if (arg == "-q" || arg == "--quiet") {
-            quiet = true;
-        } else if (arg[0] == '-') {
-            LOG_ERROR(LOG_WHO, "Unknown option: " + arg);
-            show_help();
-            return 1;
         } else {
-            if (package_path.empty()) {
-                package_path = arg;
-            } else if (entry_script.empty()) {
-                entry_script = arg;
-            } else {
-                LOG_ERROR(LOG_WHO, "Unexpected extra argument: " + arg);
+            if (arg == "-v" || arg == "--version") {
+                std::cout << BINARY_NAME << " (" << TITLE_NAME << ") v" << VERSION << "\n";
+                return 0;
+            }
+            if (arg == "-q" || arg == "--quiet") {
+                quiet = true;
+            } else if (arg[0] == '-') {
+                LOG_ERROR(LOG_WHO, "Unknown option: " + arg);
                 show_help();
                 return 1;
+            } else {
+                if (package_path.empty()) {
+                    package_path = arg;
+                } else if (entry_script.empty()) {
+                    entry_script = arg;
+                } else {
+                    LOG_ERROR(LOG_WHO, "Unexpected extra argument: " + arg);
+                    show_help();
+                    return 1;
+                }
             }
         }
     }

@@ -34,7 +34,6 @@ namespace IO {
         static void LoadMeshes(const json &meshes, Core::ResourceManager &resources);
         static void LoadFonts(const json &fonts, Core::ResourceManager &resources);
 
-    private:
         static std::unordered_map<std::string, MeshFactory> s_MeshFactories;
     };
 } // namespace IO

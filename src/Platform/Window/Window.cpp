@@ -81,7 +81,7 @@ bool Platform::Window::Window::Init(const unsigned int width, const unsigned int
         if (NFD_Init() != NFD_OKAY) {
             LOG_WARN(LOG_WHO, "Failed to initialize Native File Dialog");
         }
-// wont do anything on nonlinux/nonwayland displays anyways
+        // wont do anything on nonlinux/nonwayland displays anyways
 #if defined(__linux__)
         NFD_SetDisplayPropertiesFromGLFW();
 #endif

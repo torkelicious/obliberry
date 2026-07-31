@@ -104,7 +104,7 @@ namespace Rendering {
 
     protected:
         float m_AngleX = -55.0f; // tilt down
-        float m_AngleZ = 45.0f;  // rotate world
+        float m_AngleZ = 45.0f; // rotate world
 
     private:
         mutable glm::mat4 m_CachedRotation{1.0f};

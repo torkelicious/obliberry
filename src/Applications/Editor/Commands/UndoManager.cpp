@@ -4,7 +4,9 @@
 #include <memory>
 
 namespace Editor::Commands {
-    UndoManager::UndoManager(const size_t maxHistory) : m_maxHistory(maxHistory) {}
+    UndoManager::UndoManager(const size_t maxHistory) : m_maxHistory(maxHistory) {
+    }
+
     UndoManager::~UndoManager() = default;
 
     void UndoManager::Execute(std::unique_ptr<ICommand> command, Core::EngineContext &ctx) {

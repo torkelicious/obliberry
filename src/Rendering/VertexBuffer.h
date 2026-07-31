@@ -24,7 +24,8 @@ namespace Rendering {
             return *this;
         }
 
-        VertexBuffer() {}
+        VertexBuffer() {
+        }
 
         void Init(const void *data, unsigned int size, GLenum usage = GL_STATIC_DRAW);
 

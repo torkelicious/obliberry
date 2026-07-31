@@ -64,7 +64,9 @@ namespace Rendering {
             glViewport(0, 0, m_Width, m_Height);
         }
 
-        void Unbind() const { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
+        void Unbind() const {
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
 
         // EDITOR PICKING
 

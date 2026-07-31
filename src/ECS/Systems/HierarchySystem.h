@@ -44,7 +44,7 @@ namespace ECS::Systems::HierarchySystem {
 
                 const glm::mat4 localMatrix = childTc->transform.GetMatrix();
 
-                const glm::vec3 worldPos = glm::vec3(parentWorldMatrix * glm::vec4(childTc->transform.GetPosition(), 1.0f));
+                const auto worldPos = glm::vec3(parentWorldMatrix * glm::vec4(childTc->transform.GetPosition(), 1.0f));
 
                 const glm::vec3 worldScale = parentScale * childTc->transform.GetScale();
 

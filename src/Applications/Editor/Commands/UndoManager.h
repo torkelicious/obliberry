@@ -36,7 +36,6 @@ namespace Editor::Commands {
     private:
         void PushUndo(std::unique_ptr<ICommand> command);
 
-    private:
         std::deque<std::unique_ptr<ICommand>> m_undo;
         std::deque<std::unique_ptr<ICommand>> m_redo;
 

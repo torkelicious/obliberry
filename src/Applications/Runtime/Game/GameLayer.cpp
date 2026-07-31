@@ -62,4 +62,5 @@ void Game::GameLayer::Render() {
     m_SceneManager.Render();
 }
 
-void Game::GameLayer::Shutdown() {}
+void Game::GameLayer::Shutdown() {
+}

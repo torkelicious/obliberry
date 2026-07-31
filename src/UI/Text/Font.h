@@ -13,12 +13,12 @@ namespace Rendering {
 namespace UI {
 
     struct Glyph {
-        glm::ivec2 Size;       // Quad size (padded for SDF, actual for bitmap)
+        glm::ivec2 Size; // Quad size (padded for SDF, actual for bitmap)
         glm::ivec2 LayoutSize; // Unpadded size for text layout / bounding box
-        glm::ivec2 Bearing;    // Offset from baseline to left/top edge
-        GLuint Advance;        // Horizontal offset to next glyph (pixels)
-        glm::vec2 UVOffset;    // Bottom-left UV of glyph in atlas
-        glm::vec2 UVSize;      // Glyph size as UV fraction of atlas
+        glm::ivec2 Bearing; // Offset from baseline to left/top edge
+        GLuint Advance; // Horizontal offset to next glyph (pixels)
+        glm::vec2 UVOffset; // Bottom-left UV of glyph in atlas
+        glm::vec2 UVSize; // Glyph size as UV fraction of atlas
     };
 
     class Font {

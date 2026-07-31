@@ -74,9 +74,9 @@ void Editor::UI::ViewportPanel::OnImGuiRender() {
                 // play mode badge in top-left corner
                 if (m_ShowPlayIndicator) {
                     ImDrawList *drawList = ImGui::GetWindowDrawList();
-                    const auto label = "Playing";
+                    constexpr auto label = "Playing";
                     const ImVec2 textSize = ImGui::CalcTextSize(label);
-                    const float padding = 6.0f;
+                    constexpr float padding = 6.0f;
                     const ImVec2 badgeMin(boundsMin.x + 8.0f, boundsMin.y + 8.0f);
                     const ImVec2 badgeMax(badgeMin.x + textSize.x + padding * 2.0f, badgeMin.y + textSize.y + padding * 2.0f);
                     drawList->AddRectFilled(badgeMin, badgeMax, IM_COL32(200, 40, 40, 200), 4.0f);

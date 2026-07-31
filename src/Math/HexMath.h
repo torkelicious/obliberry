@@ -20,7 +20,8 @@ namespace Math::HexMath {
     struct FractionalHex {
         float q, r, s;
 
-        FractionalHex(const float q_, const float r_, const float s_) : q(q_), r(r_), s(s_) {}
+        FractionalHex(const float q_, const float r_, const float s_) : q(q_), r(r_), s(s_) {
+        }
     };
 
     struct CubeCoords {
@@ -90,6 +91,7 @@ namespace Math::HexMath {
 
     // for later evil plans ....
     inline FractionalHex Lerp(const FractionalHex &a, const FractionalHex &b, const float t) { return {a.q + (b.q - a.q) * t, a.r + (b.r - a.r) * t, a.s + (b.s - a.s) * t}; }
+
     inline CubeCoords CubeRound(const FractionalHex &h) {
         auto rx = static_cast<int32_t>(std::lround(h.q));
         auto ry = static_cast<int32_t>(std::lround(h.r));

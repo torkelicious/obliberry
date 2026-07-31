@@ -148,6 +148,7 @@ void Editor::States::EditState::OnDrawModeToolbar() {
     ImGui::SameLine();
     gizmoButton("S##Gizmo", ImGuizmo::SCALE, "Scale (E)", ImVec4(1.0f, 0.8f, 0.2f, 1.0f));
 }
+
 void Editor::States::EditState::OnSaveKey() {
     if (CanSaveScene()) {
         m_EditorLayer->SaveScene();
@@ -168,9 +169,9 @@ void Editor::States::EditState::DrawGizmoForSelected() const {
         ImGui::Begin("Scene View");
         ImDrawList *drawList = ImGui::GetWindowDrawList();
 
-        const auto warningText = " Rotation has no effect on Billboard Sprites ";
+        constexpr auto warningText = " Rotation has no effect on Billboard Sprites ";
         const ImVec2 textSize = ImGui::CalcTextSize(warningText);
-        const float padding = 6.0f;
+        constexpr float padding = 6.0f;
 
         const ImVec2 windowPos = ImGui::GetWindowPos();
         const ImVec2 windowSize = ImGui::GetWindowSize();

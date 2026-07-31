@@ -260,7 +260,7 @@ namespace Editor::UI {
             }
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
                 ImGui::SetTooltip("Create a brand-new tile type with this texture and colour.\n"
-                                  "Future Paint strokes will use this new type.");
+                        "Future Paint strokes will use this new type.");
             }
 
             if (!brushMatChanged) {

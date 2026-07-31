@@ -103,9 +103,9 @@ namespace Math::Frustum {
         };
 
         expand(-1.0f, -1.0f); // bottom-left
-        expand(1.0f, -1.0f);  // bottom-right
-        expand(1.0f, 1.0f);   // top-right
-        expand(-1.0f, 1.0f);  // top-left
+        expand(1.0f, -1.0f); // bottom-right
+        expand(1.0f, 1.0f); // top-right
+        expand(-1.0f, 1.0f); // top-left
 
         frustum.minBounds -= glm::vec2(padding);
         frustum.maxBounds += glm::vec2(padding);

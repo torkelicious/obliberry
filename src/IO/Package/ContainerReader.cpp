@@ -140,14 +140,14 @@ namespace IO {
         m_mapped_size = file_size;
 
 #ifdef _WIN32
-        HANDLE hFile = (HANDLE)_get_osfhandle(m_mapped_fd);
+        auto hFile = (HANDLE)_get_osfhandle(m_mapped_fd);
         if (hFile == INVALID_HANDLE_VALUE) {
             _close(m_mapped_fd);
             m_mapped_fd = -1;
             return false;
         }
 
-        HANDLE hMapping = CreateFileMappingW(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
+        HANDLE hMapping = CreateFileMappingW(hFile, nullptr, PAGE_READONLY, 0, 0, nullptr);
         if (!hMapping) {
             _close(m_mapped_fd);
             m_mapped_fd = -1;

@@ -9,7 +9,6 @@
 
 namespace ECS {
     template <typename T> class ComponentPool : public IPool {
-    private:
         std::vector<T> m_Data;
         std::vector<EntityID> m_IndexToEntity;
         std::vector<uint32_t> m_EntityToIndex;
@@ -64,7 +63,7 @@ namespace ECS {
             m_Data.pop_back();
         }
 
-        template <typename... Args> T &Emplace(const EntityID entity, Args &&...args) { return Insert(entity, T(std::forward<Args>(args)...)); }
+        template <typename... Args> T &Emplace(const EntityID entity, Args &&... args) { return Insert(entity, T(std::forward<Args>(args)...)); }
 
         [[nodiscard]] const std::vector<T> &GetDenseData() const { return m_Data; }
         [[nodiscard]] const std::vector<EntityID> &GetDenseEntities() const { return m_IndexToEntity; }

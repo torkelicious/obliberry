@@ -8,7 +8,7 @@
 #include "Logger/LoggerService.h"
 
 const std::string TITLE_NAME = "Obliberry-Working-Name-Unpackager";
-const std::string BINARY_NAME = "ob_unpack";
+constexpr std::string BINARY_NAME = "ob_unpack";
 constexpr float VERSION = 1.1f;
 namespace fs = std::filesystem;
 
@@ -17,14 +17,14 @@ namespace fs = std::filesystem;
 
 static void show_help() {
     std::cout << TITLE_NAME << " - Extract contents from a .obpak container\n\n"
-              << "Usage: " << BINARY_NAME << " [options] <package.obpak> [output_directory]\n\n"
-              << "Options:\n"
-              << "  -h, --help             Show this help message and exit\n"
-              << "  -l, --list             List contents of obpak file without extracting\n"
-              << "  -q, --quiet            Suppress output\n"
-              << "  -v, --version          Show version\n\n"
-              << "Example:\n"
-              << "  " << BINARY_NAME << " game.obpak ./extracted_assets\n";
+            << "Usage: " << BINARY_NAME << " [options] <package.obpak> [output_directory]\n\n"
+            << "Options:\n"
+            << "  -h, --help             Show this help message and exit\n"
+            << "  -l, --list             List contents of obpak file without extracting\n"
+            << "  -q, --quiet            Suppress output\n"
+            << "  -v, --version          Show version\n\n"
+            << "Example:\n"
+            << "  " << BINARY_NAME << " game.obpak ./extracted_assets\n";
 }
 
 int main(int argc, char *argv[]) {
@@ -43,28 +43,31 @@ int main(int argc, char *argv[]) {
         if (std::string arg = argv[i]; arg == "-h" || arg == "--help") {
             show_help();
             return 0;
-        } else if (arg == "-v" || arg == "--version") {
-            std::cout << BINARY_NAME << " (" << TITLE_NAME << ") v" << VERSION << "\n";
-            return 0;
-        } else if (arg == "-l" || arg == "--list") {
-            list_contents = true;
-        } else if (arg == "-q" || arg == "--quiet") {
-            quiet = true;
-        } else if (arg == "-r" || arg == "--readable") {
-            readable = true;
-        } else if (arg[0] == '-') {
-            LOG_ERROR(LOG_WHO, "Unknown option: " + arg);
-            show_help();
-            return 1;
         } else {
-            if (package_path.empty())
-                package_path = arg;
-            else if (output_dir.empty())
-                output_dir = arg;
-            else {
-                LOG_ERROR(LOG_WHO, "Unexpected extra argument: " + arg);
+            if (arg == "-v" || arg == "--version") {
+                std::cout << BINARY_NAME << " (" << TITLE_NAME << ") v" << VERSION << "\n";
+                return 0;
+            }
+            if (arg == "-l" || arg == "--list") {
+                list_contents = true;
+            } else if (arg == "-q" || arg == "--quiet") {
+                quiet = true;
+            } else if (arg == "-r" || arg == "--readable") {
+                readable = true;
+            } else if (arg[0] == '-') {
+                LOG_ERROR(LOG_WHO, "Unknown option: " + arg);
                 show_help();
                 return 1;
+            } else {
+                if (package_path.empty())
+                    package_path = arg;
+                else if (output_dir.empty())
+                    output_dir = arg;
+                else {
+                    LOG_ERROR(LOG_WHO, "Unexpected extra argument: " + arg);
+                    show_help();
+                    return 1;
+                }
             }
         }
     }

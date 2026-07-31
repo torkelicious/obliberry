@@ -117,7 +117,8 @@ void Editor::EditorLayer::Render() {
     m_SaveMapDialog.Update();
 }
 
-void Editor::EditorLayer::Shutdown() {}
+void Editor::EditorLayer::Shutdown() {
+}
 
 void Editor::EditorLayer::HandleInput(const float dt) {
     // NOTE:
@@ -760,7 +761,7 @@ void Editor::EditorLayer::DrawToolbar() {
         ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
         ImGui::SameLine();
 
-        const float buttonWidth = 70.0f;
+        constexpr float buttonWidth = 70.0f;
 
         if (ImGui::Button(m_CurrentState->PlayStopLabel(), ImVec2(buttonWidth, 0))) {
             if (m_CurrentState->IsPlayMode()) {

@@ -70,7 +70,8 @@ namespace Editor::UI {
         std::vector<std::vector<uint8_t>> m_CapturedOldValues;
 
     public:
-        explicit AutoComponentWidget(const char *name) : m_Name(name) {}
+        explicit AutoComponentWidget(const char *name) : m_Name(name) {
+        }
 
         [[nodiscard]] const char *GetName() const override { return m_Name; }
 
@@ -139,7 +140,8 @@ namespace Editor::UI {
         }
 
     protected:
-        virtual void DrawExtras(ECS::Entity entity, T *component, Core::EngineContext *engineContext, UndoManager *undoManager) {}
+        virtual void DrawExtras(ECS::Entity entity, T *component, Core::EngineContext *engineContext, UndoManager *undoManager) {
+        }
     };
 
     template <typename T> class TagWidget : public IComponentWidget {
@@ -147,7 +149,8 @@ namespace Editor::UI {
         const char *m_Name;
 
     public:
-        explicit TagWidget(const char *name) : m_Name(name) {}
+        explicit TagWidget(const char *name) : m_Name(name) {
+        }
 
         [[nodiscard]] const char *GetName() const override { return m_Name; }
 
@@ -165,23 +168,23 @@ namespace Editor::UI {
     };
 
     // Widget Declarations
-    struct PointLightWidget : public AutoComponentWidget<ECS::Components::PointLightComponent> {
+    struct PointLightWidget : AutoComponentWidget<ECS::Components::PointLightComponent> {
         PointLightWidget();
     };
 
-    struct TransformWidget : public AutoComponentWidget<ECS::Components::TransformComponent> {
+    struct TransformWidget : AutoComponentWidget<ECS::Components::TransformComponent> {
         TransformWidget();
 
         void DrawExtras(ECS::Entity entity, ECS::Components::TransformComponent *component, Core::EngineContext *engineContext, UndoManager *undoManager) override;
     };
 
-    struct MovementWidget : public AutoComponentWidget<ECS::Components::MovementComponent> {
+    struct MovementWidget : AutoComponentWidget<ECS::Components::MovementComponent> {
         MovementWidget();
 
         void DrawExtras(ECS::Entity entity, ECS::Components::MovementComponent *component, Core::EngineContext *engineContext, UndoManager *undoManager) override;
     };
 
-    struct MeshWidget : public IComponentWidget {
+    struct MeshWidget : IComponentWidget {
         int m_SelectedMesh = 0;
 
         [[nodiscard]] const char *GetName() const override;
@@ -189,43 +192,43 @@ namespace Editor::UI {
         void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr, UndoManager *undoManager = nullptr) override;
     };
 
-    struct MaterialWidget : public IComponentWidget {
+    struct MaterialWidget : IComponentWidget {
         [[nodiscard]] const char *GetName() const override;
 
         void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr, UndoManager *undoManager = nullptr) override;
     };
 
-    struct DirectionalTextureWidget : public IComponentWidget {
+    struct DirectionalTextureWidget : IComponentWidget {
         [[nodiscard]] const char *GetName() const override;
 
         void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr, UndoManager *undoManager = nullptr) override;
     };
 
-    struct MapWidget : public IComponentWidget {
+    struct MapWidget : IComponentWidget {
         [[nodiscard]] const char *GetName() const override;
 
         void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr, UndoManager *undoManager = nullptr) override;
     };
 
-    struct MapStateWidget : public IComponentWidget {
+    struct MapStateWidget : IComponentWidget {
         [[nodiscard]] const char *GetName() const override;
 
         void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr, UndoManager *undoManager = nullptr) override;
     };
 
-    struct ScriptWidget : public IComponentWidget {
+    struct ScriptWidget : IComponentWidget {
         [[nodiscard]] const char *GetName() const override;
 
         void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr, UndoManager *undoManager = nullptr) override;
     };
 
-    struct CustomDataWidget : public IComponentWidget {
+    struct CustomDataWidget : IComponentWidget {
         [[nodiscard]] const char *GetName() const override;
 
         void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr, UndoManager *undoManager = nullptr) override;
     };
 
-    struct ParticleEmitterWidget : public IComponentWidget {
+    struct ParticleEmitterWidget : IComponentWidget {
         [[nodiscard]] const char *GetName() const override;
         void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr, UndoManager *undoManager = nullptr) override;
     };

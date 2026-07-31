@@ -29,7 +29,7 @@ void Editor::States::MapEditState::OnEnter() {
     }
 
     m_CurrentGrid = &m_MapComp->grid;
-    m_MapComp->pathToMat->color = {0.0, 0.8, 1.0, 0.50};   // cyan
+    m_MapComp->pathToMat->color = {0.0, 0.8, 1.0, 0.50}; // cyan
     m_MapComp->outlineMat->color = {1.0, 0.85, 0.0, 0.55}; // gold / yellowish
     m_selectedTile = m_CurrentGrid->Get(m_selectedHex);
     m_TileEditorPanel.SetContext(m_EditorLayer->m_Scene, m_EditorLayer->m_Context);
@@ -42,7 +42,8 @@ void Editor::States::MapEditState::OnEnter() {
     SetWindowTitle(m_MapComp->mapFilePath);
 }
 
-void Editor::States::MapEditState::OnUpdate(const float dt) {}
+void Editor::States::MapEditState::OnUpdate(const float dt) {
+}
 
 void Editor::States::MapEditState::OnHandleInput(const float dt) {
 
@@ -133,7 +134,8 @@ void Editor::States::MapEditState::OnHandleInput(const float dt) {
     m_EditorLayer->m_Camera.KeyboardPan(kbPanX, kbPanY, 15.0f * speedMod * moveAmount * (600.0f / vpHeight));
 }
 
-void Editor::States::MapEditState::OnDrawPanels() {}
+void Editor::States::MapEditState::OnDrawPanels() {
+}
 
 void Editor::States::MapEditState::OnRender() {
     m_EditorLayer->DrawEditorUI();
@@ -256,7 +258,8 @@ void Editor::States::MapEditState::OnDrawModeToolbar() {
     }
 }
 
-void Editor::States::MapEditState::OnDrawUtilityWindows() {}
+void Editor::States::MapEditState::OnDrawUtilityWindows() {
+}
 
 void Editor::States::MapEditState::OnSceneLoaded() {
     m_MapState = m_EditorLayer->m_Registry->GetFirst<ECS::Components::MapStateComponent>();
@@ -272,6 +275,7 @@ void Editor::States::MapEditState::OnSceneLoaded() {
         m_selectedTile = nullptr;
     }
 }
+
 void Editor::States::MapEditState::SaveMap() {
     if (m_MapComp->mapFilePath.empty()) {
         // no file yet
@@ -287,6 +291,7 @@ void Editor::States::MapEditState::SaveMap() {
         m_MapComp->mapDirty = false;
     }
 }
+
 void Editor::States::MapEditState::OnSaveKey() { SaveMap(); }
 
 void Editor::States::MapEditState::OnExit() {

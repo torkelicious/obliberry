@@ -34,6 +34,7 @@ namespace Rendering {
 
         bool isBillboard = false;
     };
+
     class ParticlePool {
     public:
         explicit ParticlePool(ParticleEmitterConfig config) : m_Config(std::move(config)) { Reserve(m_Config.maxParticles); }

@@ -9,7 +9,9 @@ namespace Rendering {
         }
     }
 
-    void VertexArray::Init() { glGenVertexArrays(1, &m_ID); }
+    void VertexArray::Init() {
+        glGenVertexArrays(1, &m_ID);
+    }
 
     void VertexArray::AddBuffer(const VertexBuffer &vb, const VertexBufferLayout &layout) const {
         Bind();
@@ -54,7 +56,11 @@ namespace Rendering {
         ibo.Bind();
     }
 
-    void VertexArray::Bind() const { glBindVertexArray(m_ID); }
+    void VertexArray::Bind() const {
+        glBindVertexArray(m_ID);
+    }
 
-    void VertexArray::Unbind() { glBindVertexArray(0); }
+    void VertexArray::Unbind() {
+        glBindVertexArray(0);
+    }
 } // namespace Rendering

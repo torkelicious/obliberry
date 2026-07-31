@@ -29,7 +29,8 @@ namespace Rendering {
             return *this;
         }
 
-        IndexBuffer() {}
+        IndexBuffer() {
+        }
 
         ~IndexBuffer();
 

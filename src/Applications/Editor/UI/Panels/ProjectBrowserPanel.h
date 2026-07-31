@@ -73,6 +73,7 @@ namespace Editor::UI {
         char m_NewScriptBuffer[64] = {};
 
         enum class ViewMode { Grid, List };
+
         ViewMode m_ViewMode = ViewMode::Grid;
         char m_SearchBuffer[128] = {};
 

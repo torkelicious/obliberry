@@ -52,6 +52,7 @@ namespace ECS::Components {
         [[nodiscard]] auto findTypeMat(uint8_t id) {
             return std::ranges::find_if(typeMats, [id](const auto &p) { return p.first == id; });
         }
+
         [[nodiscard]] auto findTypeMat(uint8_t id) const {
             return std::ranges::find_if(typeMats, [id](const auto &p) { return p.first == id; });
         }

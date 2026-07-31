@@ -41,7 +41,8 @@ namespace UI {
     // stuff here :)
     //
 
-    void UIText::Update() {}
+    void UIText::Update() {
+    }
 
     void UIText::Draw(UIRenderer *renderer, const glm::vec2 finalPos) {
         if (!renderer || !m_Font || m_Text.empty())
@@ -112,7 +113,7 @@ namespace UI {
         for (const char c : m_Text) {
             const auto &glyph = m_Font->GetGlyph(c);
             if (glyph.Size.x > 0 && glyph.Size.y > 0) {
-                const float baselineY = 0.0f;
+                constexpr float baselineY = 0.0f;
                 const float x = cursorX + static_cast<float>(glyph.Bearing.x);
                 const float y = baselineY - static_cast<float>(glyph.Size.y - glyph.Bearing.y);
                 const auto w = static_cast<float>(glyph.Size.x);

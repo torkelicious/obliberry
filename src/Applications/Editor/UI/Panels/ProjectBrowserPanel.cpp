@@ -307,7 +307,8 @@ namespace Editor::UI {
 
         DrawResourceSection(
                 resources, allMeshes, AssetType::Mesh, "##meshList", 100.0f, "No meshes registered.", "mesh", [](const std::shared_ptr<Rendering::Mesh> &) { ImGui::Button("M", ImVec2(64, 64)); },
-                [](const std::string &, Core::ResourceManager &) {});
+                [](const std::string &, Core::ResourceManager &) {
+                });
 
         ImGui::Spacing();
         ImGui::SeparatorText("Create Mesh");
@@ -339,7 +340,8 @@ namespace Editor::UI {
                     else
                         ImGui::Button("M", ImVec2(64, 64));
                 },
-                [](const std::string &, Core::ResourceManager &) {},
+                [](const std::string &, Core::ResourceManager &) {
+                },
                 [](const std::string &, const std::shared_ptr<Rendering::Material> &mat, Core::ResourceManager &res) {
                     const std::string tooltip = "Shader: " + (mat->shader ? res.GetKey(mat->shader) : "none") + "\nTexture: " + (mat->texture ? res.GetKey(mat->texture) : "none");
                     ImGui::SetTooltip("%s", tooltip.c_str());

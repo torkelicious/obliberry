@@ -11,4 +11,3 @@ namespace ECS::Components {
         std::unordered_map<std::string, ObSL::Value> script_components;
     };
 } // namespace ECS::Components
-

@@ -95,6 +95,7 @@ namespace Logging {
                 }
             }
         }
+
         std::fstream logfile_;
         Core::Utils::CircularBuffer<Log, QueueSize> buffer_;
         std::mutex mutex_;

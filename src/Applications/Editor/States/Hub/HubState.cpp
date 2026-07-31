@@ -17,11 +17,14 @@ namespace Editor::States {
 
     void HubState::OnExit() { LOG_INFO(LOG_WHO, "Exiting Hub State"); }
 
-    void HubState::OnUpdate(float /*dt*/) {}
+    void HubState::OnUpdate(float /*dt*/) {
+    }
 
-    void HubState::OnHandleInput(float /*dt*/) {}
+    void HubState::OnHandleInput(float /*dt*/) {
+    }
 
-    void HubState::OnDrawPanels() {}
+    void HubState::OnDrawPanels() {
+    }
 
     void HubState::OnRender() {
         ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Always, ImVec2(0.5f, 0.5f));

@@ -1,5 +1,6 @@
 #pragma once
 #include <nlohmann/json.hpp>
+
 namespace Core::Utils::Json {
 
     inline void RoundJsonFloats(nlohmann::json &j, const int decimals = 3) {

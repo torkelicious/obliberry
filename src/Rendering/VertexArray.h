@@ -26,7 +26,8 @@ namespace Rendering {
             return *this;
         }
 
-        VertexArray() : m_ID(0) {}
+        VertexArray() : m_ID(0) {
+        }
 
         ~VertexArray();
 

@@ -21,16 +21,19 @@ int main(const int argc, char *argv[]) {
             IO::VFS::MountProject(targetProject);
             mountSuccess = true;
             break;
-        } else if ((arg == "-pk" || arg == "--package") && i + 1 < argc) {
-            targetPackage = argv[++i];
-            IO::VFS::MountPackage(targetPackage);
-            mountSuccess = true;
-            break;
-        } else if (std::filesystem::path(arg).extension() == ".obpak") {
-            targetPackage = arg;
-            IO::VFS::MountPackage(targetPackage);
-            mountSuccess = true;
-            break;
+        } else {
+            if ((arg == "-pk" || arg == "--package") && i + 1 < argc) {
+                targetPackage = argv[++i];
+                IO::VFS::MountPackage(targetPackage);
+                mountSuccess = true;
+                break;
+            }
+            if (std::filesystem::path(arg).extension() == ".obpak") {
+                targetPackage = arg;
+                IO::VFS::MountPackage(targetPackage);
+                mountSuccess = true;
+                break;
+            }
         }
     }
 
