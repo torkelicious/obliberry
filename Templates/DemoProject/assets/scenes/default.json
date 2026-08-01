@@ -1,0 +1,880 @@
+{
+    "assets": {
+        "fonts": [
+            {
+                "id": "OpenSans-Regular",
+                "path": "assets/fonts/OpenSans-Regular.ttf",
+                "sdf": true,
+                "size": 48,
+                "spread": 8
+            }
+        ],
+        "materials": [
+            {
+                "color": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "id": "[Engine] DefaultMaterial",
+                "shader": "[Engine] Base",
+                "texture": ""
+            },
+            {
+                "color": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "id": "player_mat",
+                "shader": "[Engine] Base",
+                "texture": "p_north_east"
+            },
+            {
+                "color": [
+                    1.0,
+                    0.5,
+                    0.5,
+                    1.0
+                ],
+                "id": "npc_mat",
+                "shader": "[Engine] Base",
+                "texture": "p_north_east"
+            },
+            {
+                "color": [
+                    0.7350000143051147,
+                    0.9300000071525574,
+                    1.0,
+                    1.0
+                ],
+                "id": "Boring Default Material_clone_6",
+                "shader": "[Engine] Base",
+                "texture": ""
+            },
+            {
+                "color": [
+                    0.7059999704360962,
+                    1.0,
+                    0.0,
+                    1.0
+                ],
+                "id": "Boring Default Material_clone",
+                "shader": "[Engine] Base",
+                "texture": ""
+            },
+            {
+                "color": [
+                    0.0,
+                    0.7350000143051147,
+                    1.0,
+                    1.0
+                ],
+                "id": "Boring Default Material",
+                "shader": "[Engine] Base",
+                "texture": ""
+            },
+            {
+                "color": [
+                    0.5389999747276306,
+                    0.23800000548362732,
+                    0.0,
+                    1.0
+                ],
+                "id": "Boring Default Material_clone_7",
+                "shader": "[Engine] Base",
+                "texture": ""
+            },
+            {
+                "color": [
+                    1.0,
+                    0.0,
+                    0.8240000009536743,
+                    1.0
+                ],
+                "id": "Boring Default Material_clone_5",
+                "shader": "[Engine] Base",
+                "texture": ""
+            },
+            {
+                "color": [
+                    0.29100000858306885,
+                    0.45100000500679016,
+                    0.11100000143051147,
+                    1.0
+                ],
+                "id": "Boring Default Material_clone_4",
+                "shader": "[Engine] Base",
+                "texture": ""
+            },
+            {
+                "color": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "id": "mat_ent_1",
+                "shader": "[Engine] Base",
+                "texture": ""
+            },
+            {
+                "color": [
+                    1.0,
+                    0.0,
+                    0.0,
+                    1.0
+                ],
+                "id": "Boring Default Material_clone_1",
+                "shader": "[Engine] Base",
+                "texture": ""
+            },
+            {
+                "color": [
+                    0.2939999997615814,
+                    0.0,
+                    1.0,
+                    1.0
+                ],
+                "id": "Boring Default Material_clone_2",
+                "shader": "[Engine] Base",
+                "texture": ""
+            },
+            {
+                "color": [
+                    0.9629999995231628,
+                    1.0,
+                    0.5830000042915344,
+                    1.0
+                ],
+                "id": "Boring Default Material_clone_3",
+                "shader": "[Engine] Base",
+                "texture": ""
+            },
+            {
+                "color": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "id": "Particle Material",
+                "shader": "[Engine] Particle",
+                "texture": ""
+            }
+        ],
+        "meshes": [
+            {
+                "factory": "Ring",
+                "id": "ring_mesh"
+            },
+            {
+                "factory": "Octagon",
+                "id": "oct_mesh"
+            },
+            {
+                "factory": "Hexagon",
+                "id": "hexagon_mesh"
+            },
+            {
+                "factory": "Pentagon",
+                "id": "pent_mesh"
+            },
+            {
+                "factory": "Ellipse",
+                "id": "ellipse"
+            },
+            {
+                "factory": "ETriang",
+                "id": "tri_mesh"
+            },
+            {
+                "factory": "Diamond",
+                "id": "diamond_mesh"
+            },
+            {
+                "factory": "Sector",
+                "id": "sector_mesh"
+            },
+            {
+                "factory": "Circle",
+                "id": "circle_mesh"
+            },
+            {
+                "factory": "Quad",
+                "id": "p_mesh"
+            },
+            {
+                "factory": "Quad",
+                "id": "mesh_ent_1"
+            },
+            {
+                "factory": "PointTopHex",
+                "id": "[Engine] Hex"
+            },
+            {
+                "factory": "Quad",
+                "id": "[Engine] Quad"
+            }
+        ],
+        "shaders": [],
+        "textures": [
+            {
+                "id": "dirt_tex",
+                "path": "assets/textures/HexDirt.png"
+            },
+            {
+                "id": "p_east",
+                "path": "assets/textures/player/player_e.png"
+            },
+            {
+                "id": "p_north_east",
+                "path": "assets/textures/player/player_ne.png"
+            },
+            {
+                "id": "p_north_west",
+                "path": "assets/textures/player/player_nw.png"
+            },
+            {
+                "id": "p_west",
+                "path": "assets/textures/player/player_w.png"
+            },
+            {
+                "id": "p_south_west",
+                "path": "assets/textures/player/player_sw.png"
+            },
+            {
+                "id": "p_south_east",
+                "path": "assets/textures/player/player_se.png"
+            },
+            {
+                "id": "grass_tex",
+                "path": "assets/textures/HexGrass.png"
+            },
+            {
+                "id": "water_tex",
+                "path": "assets/textures/HexWater.png"
+            },
+            {
+                "id": "sand_tex",
+                "path": "assets/textures/HexSand.png"
+            }
+        ]
+    },
+    "entities": [
+        {
+            "components": {
+                "BillboardTagComponent": {},
+                "DirectionalTextureComponent": {
+                    "index": 2,
+                    "textures": [
+                        "p_east",
+                        "p_north_east",
+                        "p_north_west",
+                        "p_west",
+                        "p_south_west",
+                        "p_south_east"
+                    ]
+                },
+                "MaterialComponent": {
+                    "material_id": "player_mat"
+                },
+                "MeshComponent": {
+                    "mesh_id": "[Engine] Quad"
+                },
+                "MovementComponent": {
+                    "timePerStep": 0.15000000596046448
+                },
+                "ParticleEmitterComponent": {
+                    "blendMode": 1,
+                    "colorEnd": [
+                        1.0,
+                        0.20000000298023224,
+                        0.0,
+                        0.2160000056028366
+                    ],
+                    "colorStart": [
+                        1.0,
+                        0.7490000128746033,
+                        0.0,
+                        0.09799999743700027
+                    ],
+                    "emitRate": 100.0,
+                    "gravity": [
+                        -0.10000000149011612,
+                        -0.10000000149011612,
+                        0.10000000149011612
+                    ],
+                    "isBillboard": false,
+                    "lifetimeMax": 2.049999952316284,
+                    "lifetimeMin": 0.5,
+                    "material_id": "Particle Material",
+                    "maxParticles": 500,
+                    "renderOrder": 1,
+                    "rotationSpeedMax": 10.0,
+                    "rotationSpeedMin": 0.0,
+                    "shape": 2,
+                    "sizeEndMax": 0.009999999776482582,
+                    "sizeEndMin": 0.0,
+                    "sizeStartMax": 0.5709999799728394,
+                    "sizeStartMin": 0.07999999821186066,
+                    "velocityMax": [
+                        0.10000000149011612,
+                        0.10000000149011612,
+                        0.8999999761581421
+                    ],
+                    "velocityMin": [
+                        -0.10000000149011612,
+                        -0.10000000149011612,
+                        0.10000000149011612
+                    ]
+                },
+                "PointLightComponent": {
+                    "color": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ],
+                    "intensity": 1.0,
+                    "radius": 3.5
+                },
+                "ScriptComponent": {
+                    "scriptPaths": [
+                        "assets/scripts/PlayerMovement.obsl",
+                        "assets/scripts/InteractionSystem.obsl"
+                    ]
+                },
+                "TransformComponent": {
+                    "position": [
+                        0.0,
+                        0.0,
+                        0.05000000074505806
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "scale": [
+                        0.5,
+                        1.0,
+                        1.0
+                    ]
+                }
+            },
+            "name": "Player"
+        },
+        {
+            "components": {
+                "BillboardTagComponent": {},
+                "DirectionalTextureComponent": {
+                    "index": 5,
+                    "textures": [
+                        "p_east",
+                        "p_north_east",
+                        "p_north_west",
+                        "p_west",
+                        "p_south_west",
+                        "p_south_east"
+                    ]
+                },
+                "MaterialComponent": {
+                    "material_id": "npc_mat"
+                },
+                "MeshComponent": {
+                    "mesh_id": "p_mesh"
+                },
+                "MovementComponent": {
+                    "timePerStep": 0.15000000596046448
+                },
+                "ParticleEmitterComponent": {
+                    "blendMode": 1,
+                    "colorEnd": [
+                        0.7730000019073486,
+                        0.0,
+                        1.0,
+                        0.2160000056028366
+                    ],
+                    "colorStart": [
+                        0.0,
+                        0.7850000262260437,
+                        1.0,
+                        0.09799999743700027
+                    ],
+                    "emitRate": 100.0,
+                    "gravity": [
+                        -0.10000000149011612,
+                        -0.10000000149011612,
+                        0.10000000149011612
+                    ],
+                    "isBillboard": true,
+                    "lifetimeMax": 2.049999952316284,
+                    "lifetimeMin": 0.5,
+                    "material_id": "Particle Material",
+                    "maxParticles": 500,
+                    "renderOrder": 1,
+                    "rotationSpeedMax": 10.0,
+                    "rotationSpeedMin": 0.0,
+                    "shape": 2,
+                    "sizeEndMax": 0.009999999776482582,
+                    "sizeEndMin": 0.0,
+                    "sizeStartMax": 0.5709999799728394,
+                    "sizeStartMin": 0.07999999821186066,
+                    "velocityMax": [
+                        0.10000000149011612,
+                        0.10000000149011612,
+                        0.8999999761581421
+                    ],
+                    "velocityMin": [
+                        -0.10000000149011612,
+                        -0.10000000149011612,
+                        0.10000000149011612
+                    ]
+                },
+                "PointLightComponent": {
+                    "color": [
+                        1.0,
+                        0.20000000298023224,
+                        0.20000000298023224
+                    ],
+                    "intensity": 1.2000000476837158,
+                    "radius": 5.0
+                },
+                "TransformComponent": {
+                    "position": [
+                        -11.258000373840332,
+                        -7.5,
+                        0.05000000074505806
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                }
+            },
+            "name": "NPC"
+        },
+        {
+            "components": {
+                "BillboardTagComponent": {},
+                "MaterialComponent": {
+                    "material_id": "Boring Default Material_clone"
+                },
+                "MeshComponent": {
+                    "mesh_id": "ellipse"
+                },
+                "MovementComponent": {
+                    "timePerStep": 0.05000000074505806
+                },
+                "TransformComponent": {
+                    "position": [
+                        -3.8970000743865967,
+                        -9.75,
+                        0.05000000074505806
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                }
+            },
+            "name": "Ellipse"
+        },
+        {
+            "components": {
+                "BillboardTagComponent": {},
+                "MaterialComponent": {
+                    "material_id": "Boring Default Material_clone_1"
+                },
+                "MeshComponent": {
+                    "mesh_id": "tri_mesh"
+                },
+                "MovementComponent": {
+                    "timePerStep": 0.05000000074505806
+                },
+                "TransformComponent": {
+                    "position": [
+                        -1.7319999933242798,
+                        -15.0,
+                        0.05000000074505806
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                }
+            },
+            "name": "Triangle"
+        },
+        {
+            "components": {
+                "BillboardTagComponent": {},
+                "MaterialComponent": {
+                    "material_id": "Boring Default Material_clone_2"
+                },
+                "MeshComponent": {
+                    "mesh_id": "circle_mesh"
+                },
+                "MovementComponent": {
+                    "timePerStep": 0.05000000074505806
+                },
+                "TransformComponent": {
+                    "position": [
+                        -6.061999797821045,
+                        -4.5,
+                        0.05000000074505806
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                }
+            },
+            "name": "Circle"
+        },
+        {
+            "components": {
+                "BillboardTagComponent": {},
+                "MaterialComponent": {
+                    "material_id": "Boring Default Material_clone_3"
+                },
+                "MeshComponent": {
+                    "mesh_id": "pent_mesh"
+                },
+                "MovementComponent": {
+                    "timePerStep": 0.05000000074505806
+                },
+                "TransformComponent": {
+                    "position": [
+                        13.244999885559082,
+                        2.25,
+                        0.05000000074505806
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                }
+            },
+            "name": "Pentagon"
+        },
+        {
+            "components": {
+                "BillboardTagComponent": {},
+                "MaterialComponent": {
+                    "material_id": "Boring Default Material_clone_4"
+                },
+                "MeshComponent": {
+                    "mesh_id": "hexagon_mesh"
+                },
+                "MovementComponent": {
+                    "timePerStep": 0.05000000074505806
+                },
+                "TransformComponent": {
+                    "position": [
+                        3.0309998989105225,
+                        -14.25,
+                        0.05000000074505806
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                }
+            },
+            "name": "Hexagon"
+        },
+        {
+            "components": {
+                "BillboardTagComponent": {},
+                "MaterialComponent": {
+                    "material_id": "Boring Default Material_clone_5"
+                },
+                "MeshComponent": {
+                    "mesh_id": "oct_mesh"
+                },
+                "MovementComponent": {
+                    "timePerStep": 0.05000000074505806
+                },
+                "TransformComponent": {
+                    "position": [
+                        9.093000411987305,
+                        3.1510000228881836,
+                        0.05000000074505806
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                }
+            },
+            "name": "Octagon"
+        },
+        {
+            "components": {
+                "BillboardTagComponent": {},
+                "MaterialComponent": {
+                    "material_id": "Boring Default Material_clone_6"
+                },
+                "MeshComponent": {
+                    "mesh_id": "ring_mesh"
+                },
+                "MovementComponent": {
+                    "timePerStep": 0.05000000074505806
+                },
+                "TransformComponent": {
+                    "position": [
+                        -0.43299999833106995,
+                        8.25,
+                        0.05000000074505806
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                }
+            },
+            "name": "Ring"
+        },
+        {
+            "components": {
+                "BillboardTagComponent": {},
+                "MaterialComponent": {
+                    "material_id": "Boring Default Material_clone_7"
+                },
+                "MeshComponent": {
+                    "mesh_id": "sector_mesh"
+                },
+                "MovementComponent": {
+                    "timePerStep": 0.05000000074505806
+                },
+                "TransformComponent": {
+                    "position": [
+                        -0.8659999966621399,
+                        -10.5,
+                        0.05000000074505806
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                }
+            },
+            "name": "Sector"
+        },
+        {
+            "components": {
+                "BillboardTagComponent": {},
+                "MaterialComponent": {
+                    "material_id": "Boring Default Material"
+                },
+                "MeshComponent": {
+                    "mesh_id": "diamond_mesh"
+                },
+                "MovementComponent": {
+                    "timePerStep": 0.05000000074505806
+                },
+                "TransformComponent": {
+                    "position": [
+                        13.42300033569336,
+                        -14.25,
+                        0.05000000074505806
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                }
+            },
+            "name": "Diamond"
+        },
+        {
+            "components": {
+                "ScriptComponent": {
+                    "scriptPath": "assets/scripts/UIManager.obsl"
+                }
+            },
+            "name": "UIMgr"
+        }
+    ],
+    "grid": {
+        "map_file": "assets/maps/default.obmap",
+        "mesh_id": "[Engine] Hex",
+        "types": [
+            {
+                "id": 0,
+                "texture": "water_tex"
+            },
+            {
+                "id": 1,
+                "texture": "grass_tex"
+            },
+            {
+                "id": 2,
+                "texture": "sand_tex"
+            },
+            {
+                "id": 3,
+                "texture": "dirt_tex"
+            }
+        ]
+    },
+    "properties": {
+        "ambient_light": 0.12999999523162842,
+        "background_music": "assets/audio/music.wav",
+        "clear_color": [
+            0.9940000176429749,
+            0.8640000224113464,
+            0.7860000133514404,
+            1.0
+        ],
+        "name": "default"
+    },
+    "ui": {
+        "elements": [
+            {
+                "children": [
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "flags": 3,
+                        "font": "OpenSans-Regular",
+                        "name": "Text",
+                        "rect": {
+                            "position": [
+                                10.0,
+                                15.0
+                            ],
+                            "scale": [
+                                145.0,
+                                50.0
+                            ]
+                        },
+                        "text": "demo text :)",
+                        "type": "Text"
+                    }
+                ],
+                "color": [
+                    0.4309999942779541,
+                    0.4309999942779541,
+                    0.4309999942779541,
+                    1.0
+                ],
+                "flags": 3,
+                "name": "BackdropRect",
+                "rect": {
+                    "position": [
+                        10.0,
+                        25.0
+                    ],
+                    "scale": [
+                        180.0,
+                        80.0
+                    ]
+                },
+                "type": "Rect"
+            },
+            {
+                "bg_color": [
+                    0.25,
+                    0.25,
+                    0.25,
+                    1.0
+                ],
+                "color": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "flags": 3,
+                "font": "OpenSans-Regular",
+                "hovered_bg_color": [
+                    0.10000000149011612,
+                    0.10000000149011612,
+                    0.10000000149011612,
+                    1.0
+                ],
+                "name": "btnSwitch",
+                "rect": {
+                    "position": [
+                        214.0,
+                        26.0
+                    ],
+                    "scale": [
+                        239.0,
+                        69.0
+                    ]
+                },
+                "text": "click me to switch scene",
+                "type": "Button"
+            }
+        ]
+    }
+}

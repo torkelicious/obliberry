@@ -1,0 +1,21 @@
+// UIManager
+
+// Scene switch btn
+var switch_btn = FindUI("btnSwitch");
+
+fn sceneswitch () {
+    if( contains( GetCurrentScenePath() , "default.json") ){
+        LoadScene("assets/scenes/otherscene.json");
+    }
+    else{
+        LoadScene("assets/scenes/default.json");
+    }
+}
+
+fn on_update(dt){
+    if( switch_btn.WasClicked() ){
+        println "btn clicked";
+        sceneswitch();
+    }
+}
+

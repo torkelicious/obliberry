@@ -1,0 +1,6 @@
+{
+  "start_scene": "assets/scenes/default.json",
+  "window": {
+    "title": "DemoProject"
+  }
+}

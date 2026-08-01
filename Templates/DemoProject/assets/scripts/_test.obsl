@@ -1,0 +1,373 @@
+// EngineLib Integration Test
+// For Obliberry ObSL EngineLib Development
+// Tests most exposed EngineLib APIs
+// Probably dont use this script for anything other than a reference or testing...
+
+println "EngineLib Integration Test";
+println "";
+println "Core & Entity API";
+
+var ent = CreateEntity("TestRunner");
+assert(ent != null, "CreateEntity returned null");
+assert(has_field(ent, "id"), "Entity missing 'id' field");
+println "id=" + to_string(ent.id);
+
+ent.SetName("RenamedTest");
+assert(ent.GetName() == "RenamedTest", "SetName/GetName failed");
+println "SetName/GetName: PASS";
+
+var found = Find("RenamedTest");
+assert(found != null, "Find returned null");
+assert(found.id == ent.id, "Find wrong entity");
+println "Find: PASS";
+
+var by_id = GetEntity(ent.id);
+assert(by_id != null, "GetEntity returned null");
+assert(by_id.id == ent.id, "GetEntity wrong entity");
+println "GetEntity: PASS";
+
+var named = CreateEntity("CustomName");
+assert(named.GetName() == "CustomName", "CreateEntity with name failed");
+println "CreateEntity(name): PASS";
+
+assert(ent.HasComponent("Transform") == false, "Fresh entity should not have Transform");
+println "HasComponent(false): PASS";
+
+var comps = ent.GetComponents();
+assert(type_of(comps) == "array", "GetComponents type");
+assert(comps.len == 0, "Fresh entity should have 0 components");
+println "GetComponents (empty, len=" + to_string(comps.len) + "): PASS";
+
+println "";
+println "Component CRUD";
+
+ent.AddComponent("Transform");
+ent.AddComponent("PointLight");
+ent.AddComponent("Movement");
+ent.AddComponent("MapState");
+ent.AddComponent("BillboardTag");
+ent.AddComponent("DestroyTag");
+ent.AddComponent("DirectionalTexture");
+ent.AddComponent("ParticleEmitter");
+println "AddComponent (all 8): PASS";
+
+assert(ent.HasComponent("Transform"), "HasComponent Transform");
+assert(ent.HasComponent("PointLight"), "HasComponent PointLight");
+assert(ent.HasComponent("Movement"), "HasComponent Movement");
+assert(ent.HasComponent("MapState"), "HasComponent MapState");
+assert(ent.HasComponent("BillboardTag"), "HasComponent BillboardTag");
+assert(ent.HasComponent("DestroyTag"), "HasComponent DestroyTag");
+assert(ent.HasComponent("DirectionalTexture"), "HasComponent DirectionalTexture");
+assert(ent.HasComponent("ParticleEmitter"), "HasComponent ParticleEmitter");
+println "HasComponent (all 8): PASS";
+
+var comps2 = ent.GetComponents();
+assert(comps2.len == 8, "Should have 8 components, got " + to_string(comps2.len));
+println "GetComponents count=" + to_string(comps2.len) + ": PASS";
+
+var tf = ent.GetComponent("Transform");
+assert(tf != null, "GetComponent Transform");
+var light = ent.GetComponent("PointLight");
+assert(light != null, "GetComponent PointLight");
+var move = ent.GetComponent("Movement");
+assert(move != null, "GetComponent Movement");
+var ms = ent.GetComponent("MapState");
+assert(ms != null, "GetComponent MapState");
+var dtc = ent.GetComponent("DirectionalTexture");
+assert(dtc != null, "GetComponent DirectionalTexture");
+assert(ent.GetComponent("BillboardTag") != null, "GetComponent BillboardTag");
+assert(ent.GetComponent("DestroyTag") != null, "GetComponent DestroyTag");
+var emitter = ent.GetComponent("ParticleEmitter");
+assert(emitter != null, "GetComponent ParticleEmitter");
+println "GetComponent (all 8): PASS";
+
+assert(ent.GetComponent("NonExistent") == null, "GetComponent missing");
+println "GetComponent missing->null: PASS";
+
+var temp = CreateEntity("Temp");
+temp.AddComponent("Transform");
+assert(temp.HasComponent("Transform"), "Has before remove");
+temp.RemoveComponent("Transform");
+assert(temp.HasComponent("Transform") == false, "Not Has after remove");
+println "RemoveComponent: PASS";
+
+println "";
+println "Transform";
+
+tf.SetPosition(10.0, 20.0, 30.0);
+tf.SetRotation(1.0, 2.0, 3.0);
+tf.SetScale(2.0, 2.0, 2.0);
+println "Setters: PASS";
+
+var pos = tf.GetPosition();
+assert(type_of(pos) == "array", "GetPosition type");
+assert(pos.len == 3, "GetPosition len");
+var rot = tf.GetRotation();
+assert(type_of(rot) == "array", "GetRotation type");
+var scale = tf.GetScale();
+assert(type_of(scale) == "array", "GetScale type");
+assert(type_of(tf.IsMoving()) == "bool", "IsMoving type");
+println "Getters: PASS";
+
+println "";
+println "PointLight";
+light.SetColor(1.0, 0.0, 0.5);
+light.SetIntensity(2.5);
+light.SetRadius(200.0);
+println "Setters: PASS";
+
+println "";
+println "Movement";
+move.SetIsMoving(true);
+assert(type_of(move.GetIsMoving()) == "bool", "GetIsMoving type");
+move.SetTimePerStep(0.3);
+println "All: PASS";
+
+println "";
+println "MapState";
+assert(type_of(ms.GetHasSelection()) == "bool", "GetHasSelection type");
+var sh = ms.GetSelectedHex();
+assert(type_of(sh) == "array", "GetSelectedHex type");
+assert(sh.len == 2, "GetSelectedHex len");
+var ph = ms.GetPathToHex();
+assert(type_of(ph) == "array", "GetPathToHex type");
+assert(ph.len == 2, "GetPathToHex len");
+println "All: PASS";
+
+println "";
+println "ParticleEmitter";
+emitter.SetEmitRate(75.0);
+emitter.SetActive(false);
+assert(emitter.GetActive() == false, "GetActive should be false");
+emitter.SetActive(true);
+assert(emitter.GetActive() == true, "GetActive should be true");
+println "SetEmitRate/SetActive/GetActive: PASS";
+
+println "";
+println "DirectionalTexture";
+dtc.SetIndex(3);
+println "SetIndex: PASS";
+
+println "";
+println "Custom Script Data";
+
+var stats = Object();
+stats.hp = 100.0;
+stats.mana = 50.0;
+stats.alive = true;
+
+var ok = ent.AddCustomComponent("Stats", stats);
+assert(ok == true, "AddCustomComponent return");
+
+var got = ent.GetCustomComponent("Stats");
+assert(got != null, "GetCustomComponent null");
+assert(got.hp == 100.0, "Stats.hp");
+assert(got.alive == true, "Stats.alive");
+println "Round-trip: PASS";
+
+assert(ent.GetCustomComponent("Nope") == null, "Missing custom key");
+println "Missing -> null: PASS";
+
+println "";
+println "Window";
+var w = Window_GetWidth();
+var h = Window_GetHeight();
+assert(type_of(w) == "number", "GetWidth type");
+assert(type_of(h) == "number", "GetHeight type");
+println to_string(w) + "x" + to_string(h) + ": PASS";
+
+println "";
+println "Time";
+
+var fc = GetFrameCount();
+assert(type_of(fc) == "number", "GetFrameCount type");
+println "FrameCount: " + to_string(fc);
+
+var ts = GetTimeScale();
+assert(type_of(ts) == "number", "GetTimeScale type");
+SetTimeScale(0.5);
+assert(GetTimeScale() == 0.5, "SetTimeScale(0.5)");
+SetTimeScale(1.0);
+println "GetTimeScale/SetTimeScale: PASS";
+
+assert(type_of(GetRawDt()) == "number", "GetRawDt type");
+println "GetRawDt: PASS";
+
+println "";
+println "Scene";
+var sp = GetCurrentScenePath();
+assert(type_of(sp) == "string", "GetCurrentScenePath type");
+println "Path: '" + sp + "'";
+
+println "";
+println "Hex Math";
+
+var wld = Hex_HexToWorld(0, 0);
+assert(has_field(wld, "x"), "HexToWorld missing x");
+assert(has_field(wld, "y"), "HexToWorld missing y");
+println "Hex_HexToWorld(0,0): (" + to_string(wld.x) + ", " + to_string(wld.y) + ")";
+
+var hx = Math_WorldToHex(wld.x, wld.y);
+assert(has_field(hx, "q"), "WorldToHex missing q");
+assert(has_field(hx, "r"), "WorldToHex missing r");
+println "Math_WorldToHex round-trip: (" + to_string(hx.q) + ", " + to_string(hx.r) + ")";
+
+assert(Hex_Distance(0, 0, 3, 0) == 3.0, "Hex_Distance");
+println "Hex_Distance: PASS";
+
+var nbrs = Hex_GetNeighbors(0, 0);
+assert(type_of(nbrs) == "array", "GetNeighbors type");
+assert(nbrs.len == 6, "Hex(0,0) should have 6 neighbors, got " + to_string(nbrs.len));
+println "Hex_GetNeighbors: " + to_string(nbrs.len) + " neighbors";
+
+assert(type_of(Map_IsHexWalkable(0, 0)) == "bool", "IsHexWalkable type");
+println "Map_IsHexWalkable: PASS";
+
+var map_ent = Map_GetMapEntity();
+if (map_ent != null) {
+    println "Map_GetMapEntity: found (id=" + to_string(map_ent.id) + ")";
+} else {
+    println "Map_GetMapEntity: null";
+}
+
+println "";
+println "Selection & Pathfinding";
+
+var sel = GetSelectedHex();
+assert(has_field(sel, "hasSelection"), "missing hasSelection");
+assert(has_field(sel, "q"), "missing q");
+assert(has_field(sel, "r"), "missing r");
+var selState = "false";
+if (sel.hasSelection) { selState = "true"; }
+println "GetSelectedHex: hasSelection=" + selState;
+
+SetSelectedHex(1, 1);
+ClearSelectionOverlay();
+ClearPathTarget();
+println "SetSelectedHex/ClearSelectionOverlay/ClearPathTarget: PASS";
+
+if (move != null) {
+    SetPathToHex(ent.id, 2, 3);
+    println "SetPathToHex: PASS";
+}
+
+println "";
+println "Camera";
+
+var cp = Camera_GetPosition();
+assert(has_field(cp, "x"), "missing x");
+assert(has_field(cp, "y"), "missing y");
+assert(has_field(cp, "z"), "missing z");
+println "Pos: (" + to_string(cp.x) + ", " + to_string(cp.y) + ", " + to_string(cp.z) + ")";
+
+Camera_SetPosition(1.0, 2.0, 3.0);
+Camera_Move(0.5, 0.0, 0.0);
+Camera_PanScreenSpace(1.0, 0.0);
+println "Movers: PASS";
+
+var zoom = Camera_GetZoom();
+assert(type_of(zoom) == "number", "GetZoom type");
+Camera_SetZoom(zoom);
+println "Zoom: PASS";
+
+var ax = Camera_GetAngleX();
+var az = Camera_GetAngleZ();
+assert(type_of(ax) == "number", "GetAngleX type");
+assert(type_of(az) == "number", "GetAngleZ type");
+Camera_SetAngle(ax, az);
+println "Angles: PASS";
+
+println "";
+println "Audio";
+//PlaySound2D("assets/audio/boom.mp3", 0.5);
+//PlayMusic("assets/audio/music.wav", 0.5);
+//StopMusic();
+SetMasterVolume(0.8);
+SetMasterVolume(1.0);
+println "All: PASS";
+
+println "";
+println "Input";
+
+assert(type_of(Input_IsKeyDown("Space")) == "bool", "IsKeyDown");
+assert(type_of(Input_IsKeyPressed("Space")) == "bool", "IsKeyPressed");
+assert(type_of(Input_IsKeyReleased("Space")) == "bool", "IsKeyReleased");
+assert(type_of(Input_IsMouseDown(0)) == "bool", "IsMouseDown");
+assert(type_of(Input_IsMousePressed(0)) == "bool", "IsMousePressed");
+assert(type_of(Input_IsMouseReleased(0)) == "bool", "IsMouseReleased");
+println "State queries: PASS";
+
+assert(type_of(Input_GetMouseX()) == "number", "GetMouseX");
+assert(type_of(Input_GetMouseY()) == "number", "GetMouseY");
+assert(type_of(Input_GetScrollX()) == "number", "GetScrollX");
+assert(type_of(Input_GetScrollY()) == "number", "GetScrollY");
+println "Numeric reads: PASS";
+
+var wm = Input_GetMouseWorldPos();
+assert(has_field(wm, "x"), "missing x");
+assert(has_field(wm, "y"), "missing y");
+println "WorldPos: (" + to_string(wm.x) + ", " + to_string(wm.y) + ")";
+
+println "";
+println "ObSL StdLib";
+
+assert(sqrt(9.0) == 3.0, "sqrt");
+assert(abs(-5.0) == 5.0, "abs");
+assert(clamp(10.0, 0.0, 5.0) == 5.0, "clamp");
+assert(floor(3.7) == 3.0, "floor");
+assert(ceil(3.1) == 4.0, "ceil");
+assert(round(3.5) == 4.0, "round");
+assert(type_of(random()) == "number", "random");
+println "Math: PASS";
+
+assert(len("hello") == 5.0, "len");
+assert(starts_with("hello world", "hello") == true, "starts_with");
+assert(contains("hello world", "world") == true, "contains");
+assert(to_upper("hello") == "HELLO", "to_upper");
+assert(to_lower("HELLO") == "hello", "to_lower");
+assert(trim("  hi  ") == "hi", "trim");
+assert(replace("a-b-c", "-", "_") == "a_b_c", "replace");
+println "String: PASS";
+
+assert(type_of(null) == "null", "type_of null");
+assert(type_of("hi") == "string", "type_of string");
+assert(type_of(42.0) == "number", "type_of number");
+assert(type_of(true) == "bool", "type_of bool");
+assert(type_of(assert) == "callable", "type_of callable");
+println "Reflection: PASS";
+
+assert(to_string(42.0) == "42", "to_string");
+assert(to_num("42") == 42.0, "to_num");
+println "Conversion: PASS";
+
+//println "";
+//println "GUI";
+
+println "";
+println "Destroy";
+
+var doomed = CreateEntity("Doomed");
+doomed.AddComponent("DestroyTag");
+doomed.Destroy();
+println "Entity.Destroy: PASS";
+
+DestroyEntity(temp.id);
+println "DestroyEntity: PASS";
+
+println "";
+println "ALL SECTIONS PASSED";
+
+fn on_update(dt) {
+    var fc = GetFrameCount();
+    if (fc % 60.0 == 0.0) {
+        println "[tick] frame=" + to_string(fc) + " dt=" + to_string(dt);
+    }
+}
+
+fn on_destroy(dt) {
+    println "[on_destroy] frame=" + to_string(GetFrameCount());
+}
+
+fn on_exit(dt) {
+    println "[on_exit] Total frames: " + to_string(GetFrameCount());
+}

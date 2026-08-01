@@ -1,0 +1,19 @@
+println "Player movement initialized";
+
+fn on_update(dt) {
+
+    var movement = this.GetComponent("Movement");
+
+    if (Input_IsMousePressed(0)) {
+        var selection = GetSelectedHex();
+        if (selection.hasSelection) {
+            SetPathToHex(this.id, selection.q, selection.r);
+        }
+    }
+
+    if (movement != null) {
+        if (movement.GetIsMoving() == false) {
+            ClearPathTarget();
+        }
+    }
+}
