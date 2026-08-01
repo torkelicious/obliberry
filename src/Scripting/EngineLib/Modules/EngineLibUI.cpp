@@ -294,23 +294,17 @@ namespace Scripting {
                 "SetFont");
 
         obj->fields["GetFont"] = interp->gc.allocate<ObSL::NativeFunction>(
-                1,
-                [name, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
-                    if (!std::holds_alternative<std::string>(args[0]))
-                        return std::monostate{};
-                    if (ctx->uiCmdBuf) {
-                        ctx->uiCmdBuf->push([name](UI::UISystem &ui) {
-                            if (auto *el = ui.FindByName(name))
-                                if (const auto *btn = dynamic_cast<UI::UIButton *>(el)) {
-                                    if (const auto font = btn->GetFont()) {
-                                        auto key = Core::ResourceManager::GetInstance().GetKey(font);
-                                        return key;
-                                    }
-                                }
-                            return std::string{};
-                        });
-                    }
-                    return std::monostate{};
+                0,
+                [name, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+                    if (!ctx->uiSystem)
+                        return std::string{};
+                    if (auto *el = ctx->uiSystem->FindByName(name))
+                        if (const auto *btn = dynamic_cast<UI::UIButton *>(el)) {
+                            if (const auto font = btn->GetFont()) {
+                                return Core::ResourceManager::GetInstance().GetKey(font);
+                            }
+                        }
+                    return std::string{};
                 },
                 "GetFont");
 
