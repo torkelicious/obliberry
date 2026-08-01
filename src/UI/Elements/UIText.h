@@ -8,11 +8,6 @@
 
 namespace UI {
 
-    struct TextVertex {
-        glm::vec2 Position;
-        glm::vec2 UV;
-    };
-
     class UIText : public UIElement {
     public:
         void SetText(const std::string &text);
@@ -25,9 +20,6 @@ namespace UI {
 
         // the text width in pixels at the current font size
         [[nodiscard]] float GetTextWidth() const;
-
-        // quad vertices for each char
-        [[nodiscard]] std::vector<TextVertex> BuildVertices() const;
 
         // (skips glyphs with zero size , e.g. spaces)
         [[nodiscard]] size_t GetQuadCount() const;
