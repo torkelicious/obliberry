@@ -19,7 +19,7 @@ namespace ECS::Systems::HierarchySystem {
         std::queue<EntityID> queue;
 
         registry.ForEach<Components::RelationshipComponent>([&](const Entity entity, const Components::RelationshipComponent *rel) {
-            if (rel->parent == 0) {
+            if (rel->parent == INVALID_ENTITY_ID) {
                 queue.push(static_cast<EntityID>(entity));
             }
         });

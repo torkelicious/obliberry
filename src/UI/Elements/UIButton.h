@@ -35,15 +35,6 @@ namespace UI {
         void Draw(UIRenderer *renderer, glm::vec2 finalPos) override;
 
     private:
-        [[nodiscard]] float GetTextWidth() const {
-            if (!m_Font || m_Text.empty())
-                return 0.0f;
-            float width = 0.0f;
-            for (const char c : m_Text)
-                width += static_cast<float>(m_Font->GetGlyph(c).Advance);
-            return width;
-        }
-
         ButtonState m_ButtonState = ButtonState::NONE;
         glm::vec4 m_Color = {1.0f, 1.0f, 1.0f, 1.0f};
         glm::vec4 m_BackgroundColor = {0.2f, 0.2f, 0.2f, 1.0f};

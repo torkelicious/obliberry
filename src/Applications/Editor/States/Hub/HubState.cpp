@@ -34,8 +34,9 @@ namespace Editor::States {
         if (ImGui::Button("Create New Project", ImVec2(250, 50))) {
             if (const auto dir = Platform::FileDialogs::PickFolder(m_EditorLayer->m_Context)) {
                 m_EditorLayer->m_NewProjectDialog.SetDirectory(std::filesystem::path(*dir));
-                m_EditorLayer->m_NewProjectDialog.SetOnConfirm([this](const std::filesystem::path &pDir, const std::string &name) {
-                    const auto newProject = Core::Project::NewProject(pDir, name);
+                m_EditorLayer->m_NewProjectDialog.SetTemplates(Core::Project::GetAvailableTemplates());
+                m_EditorLayer->m_NewProjectDialog.SetOnConfirm([this](const std::filesystem::path &pDir, const std::string &name, const std::string &templateId) {
+                    const auto newProject = Core::Project::NewProject(pDir, name, templateId);
                     if (newProject) {
                         m_EditorLayer->LoadProject(newProject->GetProjectPath().string());
                     }

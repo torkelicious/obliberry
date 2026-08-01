@@ -1,5 +1,6 @@
 #pragma once
 #include "Applications/Editor/States/EditorStateBase.h"
+#include <string>
 
 namespace Editor::States {
     class PlayState : public EditorStateBase {
@@ -16,10 +17,13 @@ namespace Editor::States {
 
         void OnRender() override;
 
-        bool CanSaveScene() const override { return false; }
-        bool CanSaveSceneAs() const override { return false; }
-        bool IsPlayMode() const override { return true; }
-        const char *PlayStopLabel() const override { return "Stop"; }
-        bool ShouldDrawProjectBrowser() const override { return false; }
+        [[nodiscard]] bool CanSaveScene() const override { return false; }
+        [[nodiscard]] bool CanSaveSceneAs() const override { return false; }
+        [[nodiscard]] bool IsPlayMode() const override { return true; }
+        [[nodiscard]] const char *PlayStopLabel() const override { return "Stop"; }
+        [[nodiscard]] bool ShouldDrawProjectBrowser() const override { return false; }
+
+    private:
+        std::string m_EntryScenePath;
     };
 } // namespace Editor::States

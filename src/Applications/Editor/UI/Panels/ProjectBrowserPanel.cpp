@@ -466,7 +466,7 @@ namespace Editor::UI {
         if (!m_EngineContext)
             return;
 
-        const auto picked = Platform::FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Font", .filterExt = "ttf,otf,woff,woff2"});
+        const auto picked = Platform::FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Font", .filterExt = "ttf,otf"});
         if (!picked.has_value())
             return;
 
@@ -492,7 +492,7 @@ namespace Editor::UI {
         if (!m_EngineContext)
             return;
 
-        const auto picked = Platform::FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Font", .filterExt = "ttf,otf,woff,woff2"});
+        const auto picked = Platform::FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Font", .filterExt = "ttf,otf"});
         if (!picked.has_value())
             return;
 

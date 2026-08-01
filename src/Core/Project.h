@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace Core {
     class Project {
@@ -12,7 +13,14 @@ namespace Core {
 
         ~Project() = default;
 
-        static std::shared_ptr<Project> NewProject(const std::filesystem::path &baseDir, const std::string &name);
+        struct TemplateInfo {
+            std::string id;          // folder name
+            std::string displayName; // from the template project.json title
+        };
+
+        static std::vector<TemplateInfo> GetAvailableTemplates();
+
+        static std::shared_ptr<Project> NewProject(const std::filesystem::path &baseDir, const std::string &name, const std::string &templateId = "Default");
 
         static std::shared_ptr<Project> Load(const std::filesystem::path &projectFilePath);
 

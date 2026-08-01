@@ -2,6 +2,7 @@
 #include "UI/Rendering/UIRenderer.h"
 #include "Rendering/Texture.h"
 #include "UI/Rendering/UISystem.h"
+#include <algorithm>
 
 namespace UI {
 
@@ -39,15 +40,30 @@ namespace UI {
             if (!atlas)
                 return;
 
+            float naturalWidth = 0.0f;
+            float maxHeight = 0.0f;
+            float maxBearingY = 0.0f;
+            for (const char c : m_Text) {
+                const auto &glyph = m_Font->GetGlyph(c);
+                naturalWidth += static_cast<float>(glyph.Advance);
+                maxHeight = std::max(maxHeight, static_cast<float>(glyph.LayoutSize.y));
+                maxBearingY = std::max(maxBearingY, static_cast<float>(glyph.Bearing.y));
+            }
+
+            float scale = 1.0f;
+            if (naturalWidth > 0.0f && maxHeight > 0.0f && Rect.Scale.x > 0.0f && Rect.Scale.y > 0.0f) {
+                const float sx = Rect.Scale.x / naturalWidth;
+                const float sy = Rect.Scale.y / maxHeight;
+                scale = std::min(sx, sy);
+            }
+
+            const float textX = finalPos.x + (Rect.Scale.x - naturalWidth * scale) * 0.5f;
+            const float textTop = finalPos.y + (Rect.Scale.y - maxHeight * scale) * 0.5f;
+            const float textY = textTop + maxBearingY * scale;
+
             const bool isSDF = m_Font->IsSDF();
             const unsigned int spread = m_Font->GetSDFSpread();
-
-            // center text vertically
-            // ascent ~ 0.8 * fontSize, descent ~ 0.2 * fontSize so offset ~ 0.3 * fontSize
-            // i think at least
-            const float textWidth = GetTextWidth();
-            const float textX = finalPos.x + (Rect.Scale.x - textWidth) * 0.5f;
-            const float textY = finalPos.y + Rect.Scale.y * 0.5f + static_cast<float>(m_Font->GetFontSize()) * 0.3f;
+            const float sdfRenderScale = isSDF ? scale : 1.0f;
 
             float cursorX = 0.0f;
             for (const char c : m_Text) {
@@ -59,10 +75,10 @@ namespace UI {
                 const auto &UVSize = glyph.UVSize;
 
                 if (Size.x > 0 && Size.y > 0) {
-                    const float x = textX + cursorX + static_cast<float>(Bearing.x);
-                    const float y = textY - static_cast<float>(Bearing.y);
-                    const auto w = static_cast<float>(Size.x);
-                    const auto h = static_cast<float>(Size.y);
+                    const float x = textX + cursorX * scale + static_cast<float>(Bearing.x) * scale;
+                    const float y = textY - static_cast<float>(Bearing.y) * scale;
+                    const auto w = static_cast<float>(Size.x) * scale;
+                    const auto h = static_cast<float>(Size.y) * scale;
 
                     // prevent linear filter bleeding from adjacent atlas glyphs
                     const auto atlasW = static_cast<float>(atlas->GetWidth());
@@ -72,7 +88,7 @@ namespace UI {
                     const glm::vec2 uvMax = UVOffset + UVSize - halfTexel;
 
                     if (isSDF) {
-                        renderer->SubmitSDFQuad({x, y}, {w, h}, uvMin, uvMax, atlas.get(), m_Color, 1.0f, static_cast<float>(spread));
+                        renderer->SubmitSDFQuad({x, y}, {w, h}, uvMin, uvMax, atlas.get(), m_Color, sdfRenderScale, static_cast<float>(spread));
                     } else {
                         renderer->SubmitQuad({x, y}, {w, h}, uvMin, uvMax, atlas.get(), m_Color);
                     }

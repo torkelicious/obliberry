@@ -24,7 +24,7 @@ namespace ECS {
         bool operator==(const Entity &other) const { return m_EntityHandle == other.m_EntityHandle && m_Registry == other.m_Registry; }
 
         bool operator!=(const Entity &other) const { return !(*this == other); }
-        explicit operator bool() const { return m_EntityHandle != 0; }
+        explicit operator bool() const { return m_EntityHandle != INVALID_ENTITY_ID; }
         explicit operator EntityID() const { return m_EntityHandle; }
 
         // basically onlt for ui stuff / gameplay
@@ -39,7 +39,7 @@ namespace ECS {
         [[nodiscard]] const std::vector<EntityID> &GetChildren() const;
 
     private:
-        EntityID m_EntityHandle = 0;
+        EntityID m_EntityHandle = INVALID_ENTITY_ID;
         Registry *m_Registry = nullptr;
     };
 } // namespace ECS

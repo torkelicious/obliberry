@@ -1,7 +1,10 @@
 #pragma once
+#include "Core/Project.h"
 #include <filesystem>
 #include <functional>
 #include <string>
+#include <utility>
+#include <vector>
 #include <imgui.h>
 #include "EditorDialog.h"
 
@@ -16,15 +19,47 @@ namespace Editor::UI {
             strncpy(m_NameBuf, "UntitledProject", sizeof(m_NameBuf));
         }
 
-        void SetOnConfirm(const std::function<void(std::filesystem::path, std::string)> &cb) { m_OnConfirmCb = cb; }
+        void SetTemplates(std::vector<Core::Project::TemplateInfo> templates) {
+            m_Templates = std::move(templates);
+            m_SelectedTemplate = 0;
+            for (size_t i = 0; i < m_Templates.size(); ++i) {
+                if (m_Templates[i].id == "Default") {
+                    m_SelectedTemplate = i;
+                    break;
+                }
+            }
+        }
+
+        void SetOnConfirm(const std::function<void(std::filesystem::path, std::string, std::string)> &cb) { m_OnConfirmCb = cb; }
 
     protected:
         void DrawContent() override {
             ImGui::Text("Create project in: %s", m_Dir.string().c_str());
             ImGui::InputText("Project Name", m_NameBuf, sizeof(m_NameBuf));
+
+            if (!m_Templates.empty()) {
+                if (m_SelectedTemplate >= m_Templates.size())
+                    m_SelectedTemplate = 0;
+
+                ImGui::Spacing();
+                ImGui::Text("Template");
+                if (ImGui::BeginCombo("##template", m_Templates[m_SelectedTemplate].displayName.c_str())) {
+                    for (size_t i = 0; i < m_Templates.size(); ++i) {
+                        const bool selected = (m_SelectedTemplate == i);
+                        if (ImGui::Selectable(m_Templates[i].displayName.c_str(), selected))
+                            m_SelectedTemplate = i;
+                        if (selected)
+                            ImGui::SetItemDefaultFocus();
+                    }
+                    ImGui::EndCombo();
+                }
+            }
+
             if (ImGui::Button("Create")) {
-                if (m_OnConfirmCb)
-                    m_OnConfirmCb(m_Dir, m_NameBuf);
+                if (m_OnConfirmCb) {
+                    const std::string templateId = m_Templates.empty() ? "Default" : m_Templates[m_SelectedTemplate].id;
+                    m_OnConfirmCb(m_Dir, m_NameBuf, templateId);
+                }
                 Close();
             }
             ImGui::SameLine();
@@ -35,7 +70,9 @@ namespace Editor::UI {
     private:
         std::filesystem::path m_Dir;
         char m_NameBuf[128] = "UntitledProject";
-        std::function<void(std::filesystem::path, std::string)> m_OnConfirmCb;
+        std::vector<Core::Project::TemplateInfo> m_Templates;
+        size_t m_SelectedTemplate = 0;
+        std::function<void(std::filesystem::path, std::string, std::string)> m_OnConfirmCb;
     };
 
     // Create Scene Dialog

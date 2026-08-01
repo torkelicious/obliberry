@@ -35,7 +35,7 @@ namespace IO {
                 if (auto *logger = Logging::LoggerService::Get()) {
                     logger->log("PrefabManager", "Failed to instantiate: " + filepath + " (Not found in VFS)", Logging::LogSeverity::Error);
                 }
-                return 0;
+                return ECS::INVALID_ENTITY_ID;
             }
 
             nlohmann::json prefabJson;
@@ -50,7 +50,7 @@ namespace IO {
                 if (auto *logger = Logging::LoggerService::Get()) {
                     logger->log("PrefabManager", "Core decoding error for " + filepath + ": " + e.what(), Logging::LogSeverity::Error);
                 }
-                return 0;
+                return ECS::INVALID_ENTITY_ID;
             }
 
 

@@ -80,9 +80,9 @@ namespace ECS::Systems::LightingSystem {
             glBindVertexArray(0);
             lmPtr->lightQuadVAO = std::move(vao);
             lmPtr->framebuffer = std::make_shared<Rendering::FrameBuffer>(texW, texH);
+            // force the next Update to render into the new framebuffer.
+            lmPtr->lastLightCount = std::numeric_limits<size_t>::max();
         });
-
-        lm.lastLightCount = std::numeric_limits<size_t>::max();
     }
 
     inline bool ConsumeDirtyState(Registry &reg, const Components::MapComponent &mapComp, const size_t lightCount) {

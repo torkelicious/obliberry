@@ -19,7 +19,7 @@
 namespace {
     bool IsAncestorOf(ECS::Registry &registry, const ECS::EntityID entity, const ECS::EntityID candidate) {
         const auto *rel = registry.GetComponent<ECS::Components::RelationshipComponent>(entity);
-        while (rel && rel->parent != 0) {
+        while (rel && rel->parent != ECS::INVALID_ENTITY_ID) {
             if (rel->parent == candidate)
                 return true;
             rel = registry.GetComponent<ECS::Components::RelationshipComponent>(rel->parent);
@@ -83,7 +83,7 @@ void Editor::UI::RegistryPanel::OnImGuiRender() {
         static std::string pendingPrefabPath;
         if (FileCombo("Spawn Prefab", std::string(Core::PREFAB_PATH), std::string(".json"), pendingPrefabPath)) {
             if (!pendingPrefabPath.empty() && m_EngineContext) {
-                if (const ECS::EntityID newId = IO::PrefabManager::Instantiate(registry, *m_EngineContext->resources, pendingPrefabPath); newId != 0) {
+                if (const ECS::EntityID newId = IO::PrefabManager::Instantiate(registry, *m_EngineContext->resources, pendingPrefabPath); newId != ECS::INVALID_ENTITY_ID) {
                     m_SelectedEntity = ECS::Entity(newId, &registry);
                     MarkSceneChanged(m_EngineContext);
                 }
@@ -106,7 +106,7 @@ void Editor::UI::RegistryPanel::OnImGuiRender() {
         std::unordered_set<ECS::EntityID> hasVisibleParent;
 
         for (const ECS::EntityID id : visibleSet) {
-            if (const auto *rel = registry.GetComponent<ECS::Components::RelationshipComponent>(id); rel && rel->parent != 0 && visibleSet.contains(rel->parent)) {
+            if (const auto *rel = registry.GetComponent<ECS::Components::RelationshipComponent>(id); rel && rel->parent != ECS::INVALID_ENTITY_ID && visibleSet.contains(rel->parent)) {
                 parentToChildren[rel->parent].push_back(id);
                 hasVisibleParent.insert(id);
             }
@@ -185,9 +185,9 @@ void Editor::UI::RegistryPanel::OnImGuiRender() {
                     MarkSceneChanged(m_EngineContext);
                 }
 
-                if (rel && rel->parent != 0) {
+                if (rel && rel->parent != ECS::INVALID_ENTITY_ID) {
                     if (ImGui::MenuItem("Detach")) {
-                        registry.Reparent(id, 0);
+                        registry.Reparent(id, ECS::INVALID_ENTITY_ID);
                         MarkSceneChanged(m_EngineContext);
                     }
                 }

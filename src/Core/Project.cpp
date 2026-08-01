@@ -3,21 +3,67 @@
 #include "Core/Utils/PathUtils.h"
 #include "Logger/LoggerService.h"
 #include "IO/VFS/VFS.h"
+#include <algorithm>
 #include <filesystem>
+#include <fstream>
+#include <nlohmann/json.hpp>
+#include <utility>
 
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "Project"
 
+namespace {
+    // Templates
+    std::string ReadTemplateTitle(const std::filesystem::path &templateDir) {
+        const std::filesystem::path projectFile = templateDir / "project.json";
+        if (!std::filesystem::exists(projectFile))
+            return {};
+
+        try {
+            std::ifstream file(projectFile);
+            nlohmann::json j;
+            file >> j;
+            if (j.contains("window") && j["window"].contains("title"))
+                return j["window"]["title"].get<std::string>();
+        } catch (const std::exception &e) {
+            LOG_WARN(LOG_WHO, "Failed to parse template project.json: " + std::string(e.what()));
+        }
+        return {};
+    }
+} // namespace
+
 namespace Core {
 
-    std::shared_ptr<Project> Project::NewProject(const std::filesystem::path &baseDir, const std::string &name) {
+    std::vector<Project::TemplateInfo> Project::GetAvailableTemplates() {
+        std::vector<TemplateInfo> templates;
+        const std::filesystem::path templatesRoot = PathUtils::GetExecutableDirectory() / "Templates";
+        if (!std::filesystem::exists(templatesRoot)) {
+            LOG_WARN(LOG_WHO, "Templates directory not found at: " + std::filesystem::absolute(templatesRoot).string());
+            return templates;
+        }
+
+        for (const auto &entry : std::filesystem::directory_iterator(templatesRoot)) {
+            if (!entry.is_directory())
+                continue;
+
+            TemplateInfo info;
+            info.id = entry.path().filename().string();
+            info.displayName = ReadTemplateTitle(entry.path());
+            if (info.displayName.empty())
+                info.displayName = info.id;
+            templates.push_back(std::move(info));
+        }
+
+        std::sort(templates.begin(), templates.end(), [](const TemplateInfo &a, const TemplateInfo &b) { return a.id < b.id; });
+        return templates;
+    }
+
+    std::shared_ptr<Project> Project::NewProject(const std::filesystem::path &baseDir, const std::string &name, const std::string &templateId) {
         auto project = std::make_shared<Project>();
         const std::filesystem::path projectDir = baseDir / name;
         project->m_ProjectFilepath = projectDir / "project.json";
-        project->m_Config.Title = name;
-        project->m_Config.startScenePath = std::string(SCENE_PATH) + "default.json";
 
-        const std::filesystem::path templateDir = PathUtils::GetExecutableDirectory() / "Templates" / "Default";
+        const std::filesystem::path templateDir = PathUtils::GetExecutableDirectory() / "Templates" / templateId;
         if (!std::filesystem::exists(templateDir)) {
             LOG_ERROR(LOG_WHO, "Template directory not found at: " + std::filesystem::absolute(templateDir).string());
             return nullptr;
@@ -37,6 +83,13 @@ namespace Core {
         }
 
         IO::VFS::MountProject(project->m_ProjectFilepath.string());
+
+        // templates
+        project->m_Config = Config::ProjectConfig::Deserialize("project.json");
+        if (project->m_Config.startScenePath.empty())
+            project->m_Config.startScenePath = std::string(SCENE_PATH) + "default.json";
+        project->m_Config.Title = name;
+
         if (project->Save()) {
             s_ActiveProject = project;
             return project;

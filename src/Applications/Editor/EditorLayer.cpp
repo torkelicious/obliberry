@@ -83,6 +83,11 @@ void Editor::EditorLayer::Update(const float dt) {
         m_PendingSceneToLoad.clear();
     }
 
+    if (!m_Context.pendingScenePath.empty()) {
+        LoadScene(m_Context.pendingScenePath);
+        m_Context.pendingScenePath.clear();
+    }
+
     ExecutePendingStateTransfer();
 
     if (!m_Scene || !m_Registry)
@@ -496,8 +501,9 @@ void Editor::EditorLayer::DrawToolbar() {
 
                     auto onProceed = [this, pickedDir] {
                         m_NewProjectDialog.SetDirectory(pickedDir);
-                        m_NewProjectDialog.SetOnConfirm([this](const std::filesystem::path &pDir, const std::string &name) {
-                            const auto newProject = Core::Project::NewProject(pDir, name);
+                        m_NewProjectDialog.SetTemplates(Core::Project::GetAvailableTemplates());
+                        m_NewProjectDialog.SetOnConfirm([this](const std::filesystem::path &pDir, const std::string &name, const std::string &templateId) {
+                            const auto newProject = Core::Project::NewProject(pDir, name, templateId);
                             if (newProject) {
                                 LoadProject(newProject->GetProjectPath().string());
                             }

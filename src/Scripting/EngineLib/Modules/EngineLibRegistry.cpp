@@ -323,7 +323,7 @@ namespace Scripting {
             if (!registry.IsValid(id))
                 return std::monostate{};
             auto *rel = registry.GetComponent<ECS::Components::RelationshipComponent>(id);
-            if (!rel || rel->parent == 0 || !registry.IsValid(rel->parent))
+            if (!rel || rel->parent == ECS::INVALID_ENTITY_ID || !registry.IsValid(rel->parent))
                 return std::monostate{};
             return CreateEntityObject(interp, registry, rel->parent);
         };

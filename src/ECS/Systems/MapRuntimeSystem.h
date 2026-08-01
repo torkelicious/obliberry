@@ -66,7 +66,7 @@ namespace ECS::Systems::MapRuntimeSystem {
 
     inline void OnMapChanged(Registry &registry, const Core::EngineContext &ctx) {
         const EntityID mapEntity = registry.FindFirstEntity<Components::MapComponent, Components::MapStateComponent>();
-        if (!mapEntity) {
+        if (mapEntity == INVALID_ENTITY_ID) {
             return;
         }
 

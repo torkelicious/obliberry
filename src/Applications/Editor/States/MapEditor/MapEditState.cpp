@@ -1,6 +1,7 @@
 #include "MapEditState.h"
 #include "Rendering/Renderer.h"
 #include <algorithm>
+#include <filesystem>
 #include "Core/Constants.h"
 #include "Applications/Editor/EditorLayer.h"
 #include "Platform/Input/InputManager.h"
@@ -13,6 +14,14 @@
 #include "Applications/Editor/Commands/EditorCommands.h"
 #include "IO/MapSerialization.h"
 #include "IO/VFS/VFS.h"
+
+namespace {
+    std::string GetMapsDirectory() {
+        const std::string dir = IO::VFS::Resolve(std::string(Core::MAP_PATH)).string();
+        std::filesystem::create_directories(dir);
+        return dir;
+    }
+} // namespace
 
 
 #pragma push_macro("LOG_WHO")
@@ -188,7 +197,8 @@ void Editor::States::MapEditState::OnDrawModeToolbar() {
             }
             if (ImGui::MenuItem("Save Map As", nullptr, false, m_MapComp != nullptr)) {
                 LOG_INFO(LOG_WHO, "Save as requested");
-                if (const auto path = Platform::FileDialogs::SaveFile(m_EditorLayer->m_Context, {.filterName = "Map File", .filterExt = "obmap", .defaultName = "map"})) {
+                const std::string mapsDir = GetMapsDirectory();
+                if (const auto path = Platform::FileDialogs::SaveFile(m_EditorLayer->m_Context, {.filterName = "Map File", .filterExt = "obmap", .defaultPath = mapsDir.c_str(), .defaultName = "map.obmap"})) {
                     m_MapComp->mapFilePath = IO::VFS::ToRelative(*path);
                     m_EditorLayer->SaveScene();
                     m_MapComp->mapDirty = false;
@@ -196,7 +206,8 @@ void Editor::States::MapEditState::OnDrawModeToolbar() {
             }
             if (ImGui::MenuItem("Load Map from file", nullptr, false, m_MapComp != nullptr)) {
                 LOG_INFO(LOG_WHO, "Load requested");
-                if (const auto path = Platform::FileDialogs::OpenFile(m_EditorLayer->m_Context, {.filterName = "Map File", .filterExt = "obmap"})) {
+                const std::string mapsDir = GetMapsDirectory();
+                if (const auto path = Platform::FileDialogs::OpenFile(m_EditorLayer->m_Context, {.filterName = "Map File", .filterExt = "obmap", .defaultPath = mapsDir.c_str()})) {
                     if (IO::MapIO::Deserialize(*path, *m_CurrentGrid)) {
                         m_MapComp->mapFilePath = IO::VFS::ToRelative(*path);
                         m_MapComp->needsMeshUpdate = true;
@@ -276,7 +287,8 @@ void Editor::States::MapEditState::OnSceneLoaded() {
 void Editor::States::MapEditState::SaveMap() {
     if (m_MapComp->mapFilePath.empty()) {
         // no file yet
-        if (const auto path = Platform::FileDialogs::SaveFile(m_EditorLayer->m_Context, {.filterName = "Map File", .filterExt = "obmap", .defaultName = "map"})) {
+        const std::string mapsDir = GetMapsDirectory();
+        if (const auto path = Platform::FileDialogs::SaveFile(m_EditorLayer->m_Context, {.filterName = "Map File", .filterExt = "obmap", .defaultPath = mapsDir.c_str(), .defaultName = "map.obmap"})) {
             m_MapComp->mapFilePath = IO::VFS::ToRelative(*path);
             m_EditorLayer->SaveScene();
             m_MapComp->mapDirty = false;

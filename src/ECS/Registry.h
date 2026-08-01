@@ -56,7 +56,8 @@ namespace ECS {
             m_EntityStatus.resize(MAX_ENTITIES, false);
             m_EntityVersions.resize(MAX_ENTITIES, 0);
             m_EntityNames.resize(MAX_ENTITIES);
-            for (uint32_t i = 0; i < MAX_ENTITIES; ++i) {
+            // 0 is reserved as the invalid/null entity; real entities start at 1
+            for (uint32_t i = 1; i < MAX_ENTITIES; ++i) {
                 m_AvailableEntities.push(i);
             }
         }
@@ -86,7 +87,7 @@ namespace ECS {
 
             // remove self from parent children list
             if (const auto *rel = GetComponent<Components::RelationshipComponent>(id)) {
-                if (rel->parent != 0 && IsValid(rel->parent)) {
+                if (rel->parent != INVALID_ENTITY_ID && IsValid(rel->parent)) {
                     if (auto *parentRel = GetComponent<Components::RelationshipComponent>(rel->parent)) {
                         std::erase(parentRel->children, id);
                     }
@@ -146,7 +147,7 @@ namespace ECS {
                 if (m_EntityNames[GetEntityIndex(id)] == name)
                     return id;
             }
-            return 0;
+            return INVALID_ENTITY_ID;
         }
 
         void Reparent(const EntityID child, const EntityID newParent) {
@@ -162,14 +163,14 @@ namespace ECS {
                 childRel = &AddComponent<Components::RelationshipComponent>(child);
 
             // remove from old parent
-            if (childRel->parent != 0 && IsValid(childRel->parent)) {
+            if (childRel->parent != INVALID_ENTITY_ID && IsValid(childRel->parent)) {
                 if (auto *oldParentRel = GetComponent<Components::RelationshipComponent>(childRel->parent)) {
                     std::erase(oldParentRel->children, child);
                 }
             }
 
             // attach to new parent
-            if (newParent != 0 && IsValid(newParent)) {
+            if (newParent != INVALID_ENTITY_ID && IsValid(newParent)) {
                 childRel->parent = newParent;
                 childRel->parentName = GetEntityName(newParent);
 
@@ -192,7 +193,7 @@ namespace ECS {
                     childTrans->transform.SetScale(scale);
                 }
             } else {
-                childRel->parent = 0;
+                childRel->parent = INVALID_ENTITY_ID;
                 childRel->parentName.clear();
 
                 // world becomes local
@@ -230,7 +231,7 @@ namespace ECS {
                     return id;
                 }
             }
-            return 0;
+            return INVALID_ENTITY_ID;
         }
 
         template <typename Primary, typename T = Primary> T *GetFirst() {
@@ -264,7 +265,7 @@ namespace ECS {
     inline void Entity::SetParent(const EntityID parentId) const { m_Registry->Reparent(m_EntityHandle, parentId); }
 
     inline Entity Entity::GetParent() const {
-        if (const auto *rel = m_Registry->GetComponent<Components::RelationshipComponent>(m_EntityHandle); rel && rel->parent != 0 && m_Registry->IsValid(rel->parent))
+        if (const auto *rel = m_Registry->GetComponent<Components::RelationshipComponent>(m_EntityHandle); rel && rel->parent != INVALID_ENTITY_ID && m_Registry->IsValid(rel->parent))
             return Entity(rel->parent, m_Registry);
         return Entity{};
     }

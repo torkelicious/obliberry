@@ -1,0 +1,12 @@
+{
+  "entities": [],
+  "properties": {
+    "name": "Empty",
+    "clear_color": [
+      0.25,
+      0.40,
+      0.6,
+      1.0
+    ]
+  }
+}

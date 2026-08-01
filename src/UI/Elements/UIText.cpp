@@ -2,6 +2,7 @@
 #include "UIText.h"
 #include "UI/Rendering/UIRenderer.h"
 #include "Rendering/Texture.h"
+#include <algorithm>
 
 namespace UI {
 
@@ -53,11 +54,12 @@ namespace UI {
 
         float naturalWidth = 0.0f;
         float maxHeight = 0.0f;
+        float maxBearingY = 0.0f;
         for (const char c : m_Text) {
             const auto &glyph = m_Font->GetGlyph(c);
             naturalWidth += static_cast<float>(glyph.Advance);
-            if (const float glyphHeight = static_cast<float>(glyph.LayoutSize.y); glyphHeight > maxHeight)
-                maxHeight = glyphHeight;
+            maxHeight = std::max(maxHeight, static_cast<float>(glyph.LayoutSize.y));
+            maxBearingY = std::max(maxBearingY, static_cast<float>(glyph.Bearing.y));
         }
 
         float scale = 1.0f;
@@ -71,6 +73,10 @@ namespace UI {
         const unsigned int spread = m_Font->GetSDFSpread();
         const float sdfRenderScale = isSDF ? scale : 1.0f;
 
+        const bool centerVertically = Rect.Scale.y > 0.0f;
+        const float textTop = finalPos.y + (centerVertically ? (Rect.Scale.y - maxHeight * scale) * 0.5f : 0.0f);
+        const float baselineAnchor = textTop + (centerVertically ? maxBearingY * scale : 0.0f);
+
         float cursorX = 0.0f;
 
         for (const char c : m_Text) {
@@ -78,7 +84,7 @@ namespace UI {
 
             if (glyph.Size.x > 0 && glyph.Size.y > 0) {
                 const float x = finalPos.x + cursorX * scale + static_cast<float>(glyph.Bearing.x) * scale;
-                const float y = finalPos.y - static_cast<float>(glyph.Bearing.y) * scale;
+                const float y = baselineAnchor - static_cast<float>(glyph.Bearing.y) * scale;
                 const auto w = static_cast<float>(glyph.Size.x) * scale;
                 const auto h = static_cast<float>(glyph.Size.y) * scale;
 

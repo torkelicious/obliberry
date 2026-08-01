@@ -6,7 +6,7 @@
 
 namespace ECS::Components {
     struct RelationshipComponent {
-        EntityID parent = 0;
+        EntityID parent = INVALID_ENTITY_ID;
         std::string parentName; // for serialization
         std::vector<EntityID> children;
     };

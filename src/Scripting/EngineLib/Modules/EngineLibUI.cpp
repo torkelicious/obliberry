@@ -389,6 +389,26 @@ namespace Scripting {
                 },
                 "SetColor");
 
+        obj->fields["SetFont"] = interp->gc.allocate<ObSL::NativeFunction>(
+                1,
+                [name, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+                    if (!std::holds_alternative<std::string>(args[0]))
+                        return std::monostate{};
+                    auto fontname = std::get<std::string>(args[0]);
+                    if (ctx->uiCmdBuf) {
+                        ctx->uiCmdBuf->push([name, fontname](UI::UISystem &ui) {
+                            if (auto *el = ui.FindByName(name))
+                                if (auto *txt = dynamic_cast<UI::UIText *>(el)) {
+                                    if (const auto font = Core::ResourceManager::GetInstance().Get<UI::Font>(fontname)) {
+                                        txt->SetFont(font);
+                                    }
+                                }
+                        });
+                    }
+                    return std::monostate{};
+                },
+                "SetFont");
+
         return obj;
     }
 

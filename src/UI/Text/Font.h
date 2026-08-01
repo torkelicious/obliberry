@@ -2,6 +2,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <vector>
 #include <glad/glad.h>
 #include <freetype/freetype.h>
 #include <glm/vec2.hpp>
@@ -56,6 +57,7 @@ namespace UI {
         unsigned int m_SDFSpread = 0;
         std::map<char, Glyph> m_Glyphs;
         std::shared_ptr<Rendering::Texture> m_AtlasTexture;
+        std::vector<unsigned char> m_FontData;
     };
 
 } // namespace UI

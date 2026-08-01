@@ -107,19 +107,32 @@ namespace UI {
             return;
         }
 
-        const std::string resolvedPath = IO::VFS::Resolve(m_FilePath).string();
-        if (resolvedPath.empty()) {
-            LOG_ERROR(LOG_WHO, "Could not resolve font path: " + m_FilePath);
-            FT_Done_FreeType(m_FTLibrary);
-            m_FTLibrary = nullptr;
-            return;
+        bool faceLoaded = false;
+        if (auto data = IO::VFS::ReadVirtual(m_FilePath)) {
+            m_FontData.assign(data->begin(), data->end());
+            if (!m_FontData.empty()) {
+                faceLoaded = FT_New_Memory_Face(m_FTLibrary, m_FontData.data(), static_cast<FT_Long>(m_FontData.size()), 0, &m_Face) == 0;
+                if (!faceLoaded) {
+                    LOG_ERROR(LOG_WHO, "Failed to load font from memory: " + m_FilePath);
+                }
+            }
         }
 
-        if (FT_New_Face(m_FTLibrary, resolvedPath.c_str(), 0, &m_Face)) {
-            LOG_ERROR(LOG_WHO, "Failed to load font: " + m_FilePath + " (resolved: " + resolvedPath + ")");
-            FT_Done_FreeType(m_FTLibrary);
-            m_FTLibrary = nullptr;
-            return;
+        if (!faceLoaded) {
+            const std::string resolvedPath = IO::VFS::Resolve(m_FilePath).string();
+            if (resolvedPath.empty()) {
+                LOG_ERROR(LOG_WHO, "Could not resolve font path: " + m_FilePath);
+                FT_Done_FreeType(m_FTLibrary);
+                m_FTLibrary = nullptr;
+                return;
+            }
+
+            if (FT_New_Face(m_FTLibrary, resolvedPath.c_str(), 0, &m_Face)) {
+                LOG_ERROR(LOG_WHO, "Failed to load font: " + m_FilePath + " (resolved: " + resolvedPath + ")");
+                FT_Done_FreeType(m_FTLibrary);
+                m_FTLibrary = nullptr;
+                return;
+            }
         }
 
         if (m_IsSDF) {

@@ -6,6 +6,8 @@ namespace ECS {
     using EntityID = uint32_t;
     constexpr uint32_t MAX_ENTITIES = 5000;
 
+    constexpr EntityID INVALID_ENTITY_ID = 0;
+
     // Generational ID Masks
     constexpr uint32_t ENTITY_INDEX_MASK = 0xFFFFF;      // lower 20 bits for Index
     constexpr uint32_t ENTITY_VERSION_MASK = 0xFFF00000; // upper 12 bits for Version/Gen

@@ -296,7 +296,7 @@ namespace IO::SceneIO {
             EntityFactory::SerializeEntity(entity, entityJson, resources);
 
             if (const auto *rel = scene.GetRegistry().GetComponent<ECS::Components::RelationshipComponent>(entityID)) {
-                if (rel->parent != 0) {
+                if (rel->parent != ECS::INVALID_ENTITY_ID) {
                     if (auto it = entityIdToIndex.find(rel->parent); it != entityIdToIndex.end()) {
                         entityJson["parent"] = it->second;
                     }
