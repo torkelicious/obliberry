@@ -1,5 +1,6 @@
 #include "AssetPacking.h"
 #include "FileIO.h"
+#include "IgnoreRules.h"
 #include "Logger/LoggerService.h"
 #include <ObSL/Lexer.h>
 #include <ObSL/Parser.h>
@@ -13,12 +14,6 @@
 #define LOG_WHO "AssetPacking"
 
 namespace IO::Package::Tools {
-    const std::filesystem::path ignorelist[] = {
-            "imgui.ini",
-            ".DS_Store",
-            "graphics.json",
-    };
-
     static std::string lower_ext(const std::filesystem::path &p) {
         std::string ext = p.extension().string();
         std::ranges::transform(ext, ext.begin(), tolower);
@@ -86,8 +81,10 @@ namespace IO::Package::Tools {
         std::string canonical_path = std::filesystem::relative(filepath, project_dir).generic_string();
         std::string ext = lower_ext(filepath);
 
-        if (std::ranges::find(ignorelist, filepath.filename()) != std::end(ignorelist)) {
-            return true; // silently skipped not a failure
+        if (opts.ignore && opts.ignore->IsIgnored(filepath, /*is_dir=*/false)) {
+            if (opts.verbose && !opts.quiet)
+                LOG_INFO(LOG_WHO, "[IGNORED] " + canonical_path);
+            return true; // skipped by ignore rules, not a failure
         }
 
         if (ext == ".obsl") {

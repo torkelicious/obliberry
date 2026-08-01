@@ -4,6 +4,7 @@
 #include <iostream>
 #include "AssetPacking.h"
 #include "DependencyGraph.h"
+#include "IgnoreRules.h"
 #include <string>
 #include <cctype>
 #include "Core/Project.h"
@@ -60,19 +61,24 @@ namespace IO::Package::Tools {
 
         ContainerWriter writer;
         DependencyGraph dep_graph;
+        IgnoreRules ignore_rules = IgnoreRules::ForProject(project_dir);
         PackOptions opts{true, true, false, BINARY_NAME};
-
+        opts.ignore = &ignore_rules;
 
         int success_count = 0, fail_count = 0;
 
-        for (const auto &entry : std::filesystem::recursive_directory_iterator(project_dir)) {
-            if (entry.is_directory())
+        for (std::filesystem::recursive_directory_iterator it(project_dir), end_it; it != end_it; ++it) {
+            if (it->is_directory()) {
+                // prune ignored directories
+                if (ignore_rules.IsIgnored(it->path(), /*is_dir=*/true))
+                    it.disable_recursion_pending();
                 continue;
+            }
             try {
-                if (pack_one_file(entry.path(), project_dir, script_root, writer, dep_graph, opts))
+                if (pack_one_file(it->path(), project_dir, script_root, writer, dep_graph, opts))
                     ++success_count;
             } catch (const std::exception &e) {
-                LOG_ERROR(LOG_WHO, entry.path().string() + " - " + e.what());
+                LOG_ERROR(LOG_WHO, it->path().string() + " - " + e.what());
                 ++fail_count;
             }
         }
@@ -109,13 +115,11 @@ namespace IO::Package::Tools {
         // Locate the runtime
         const std::filesystem::path runtime_src = GetInternalsDirectory() / runtime_name;
         const std::filesystem::path dest_exe = std::filesystem::path(output_dir) / export_name;
-
         const std::filesystem::path project_dir = VFS::GetProjectRoot();
-
         try {
             if (std::filesystem::exists(runtime_src)) {
                 std::filesystem::copy_file(runtime_src, dest_exe, std::filesystem::copy_options::overwrite_existing);
-                std::cout << "[Export] Successfully copied runtime binary to " << dest_exe.string() << "\n";
+                LOG_INFO(LOG_WHO, "Export Successfully copied runtime binary to " + dest_exe.string());
             } else {
                 LOG_ERROR(LOG_WHO, "Error: Could not find runtime binary at " + runtime_src.string());
                 LOG_ERROR(LOG_WHO, "Ensure obliberry_runtime is built and located in the 'internal' folder next to the editor");

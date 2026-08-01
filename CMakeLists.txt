@@ -282,6 +282,7 @@ add_library(obliberry_engine STATIC
     src/IO/Package/ContainerReader.cpp
     src/IO/Package/Tools/AssetPacking.cpp
     src/IO/Package/Tools/DependencyGraph.cpp
+    src/IO/Package/Tools/IgnoreRules.cpp
 
     # UI
     src/UI/Text/Font.cpp

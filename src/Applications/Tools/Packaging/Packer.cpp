@@ -5,6 +5,7 @@
 #include <string>
 #include "IO/Package/Tools/AssetPacking.h"
 #include "IO/Package/Tools/DependencyGraph.h"
+#include "IO/Package/Tools/IgnoreRules.h"
 #include "IO/Package/Container.h"
 #include "Logger/LoggerService.h"
 
@@ -98,18 +99,24 @@ int main(int argc, char *argv[]) {
 
     IO::ContainerWriter writer;
     IO::Package::Tools::DependencyGraph dep_graph;
+    IO::Package::Tools::IgnoreRules ignore_rules = IO::Package::Tools::IgnoreRules::ForProject(project_dir);
     IO::Package::Tools::PackOptions opts{global_compress, verbose, quiet, BINARY_NAME};
+    opts.ignore = &ignore_rules;
 
     int success_count = 0, fail_count = 0;
 
-    for (const auto &entry : fs::recursive_directory_iterator(project_dir)) {
-        if (entry.is_directory())
+    for (fs::recursive_directory_iterator it(project_dir), end_it; it != end_it; ++it) {
+        if (it->is_directory()) {
+            // Prune ignored directories instead of descending into them.
+            if (ignore_rules.IsIgnored(it->path(), /*is_dir=*/true))
+                it.disable_recursion_pending();
             continue;
+        }
         try {
-            if (IO::Package::Tools::pack_one_file(entry.path(), project_dir, script_root, writer, dep_graph, opts))
+            if (IO::Package::Tools::pack_one_file(it->path(), project_dir, script_root, writer, dep_graph, opts))
                 ++success_count;
         } catch (const std::exception &e) {
-            LOG_ERROR(LOG_WHO, entry.path().string() + " - " + e.what());
+            LOG_ERROR(LOG_WHO, it->path().string() + " - " + e.what());
             ++fail_count;
         }
     }
