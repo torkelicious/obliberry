@@ -24,13 +24,26 @@ namespace Editor::UI {
         return false;
     }
 
+    static glm::vec2 GetWorldPosition(const ::UI::UIElement *element) {
+        if (!element)
+            return {0.0f, 0.0f};
+        glm::vec2 pos = element->Rect.Position;
+        const auto *p = element->Parent;
+        while (p) {
+            pos += p->Rect.Position;
+            p = p->Parent;
+        }
+        return pos;
+    }
+
     static void ReparentUIElement(::UI::UIElement *element, ::UI::UIElement *newParent) {
         if (!element || !newParent || element == newParent)
             return;
-        if (element == newParent)
-            return;
         if (IsUIDescendantOf(element, newParent))
             return;
+
+        // preserve world position before changing hierarchy
+        const glm::vec2 worldPosBefore = GetWorldPosition(element);
 
         // remove from old parent
         if (element->Parent) {
@@ -41,6 +54,10 @@ namespace Editor::UI {
         // attach to new parent
         element->Parent = newParent;
         newParent->Children.push_back(element);
+
+        // convert world position to local space relative to new parent
+        const glm::vec2 newParentWorldPos = GetWorldPosition(newParent);
+        element->Rect.Position = worldPosBefore - newParentWorldPos;
     }
 
     void UIPanel::DrawElementNode(::UI::UIElement *element) {
