@@ -271,7 +271,7 @@ namespace ECS {
     }
 
     inline const std::vector<EntityID> &Entity::GetChildren() const {
-        static constexpr std::vector<EntityID> empty;
+        static const std::vector<EntityID> empty;
         auto *rel = m_Registry->GetComponent<Components::RelationshipComponent>(m_EntityHandle);
         return rel ? rel->children : empty;
     }

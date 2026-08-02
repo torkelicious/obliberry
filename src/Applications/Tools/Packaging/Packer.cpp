@@ -10,7 +10,7 @@
 #include "Logger/LoggerService.h"
 
 const std::string TITLE_NAME = "Obliberry-Working-Name-Packager";
-constexpr std::string BINARY_NAME = "ob_packer";
+const std::string BINARY_NAME = "ob_packer";
 constexpr float VERSION = 1.1f;
 
 namespace fs = std::filesystem;

@@ -11,7 +11,7 @@
 #include "Logger/LoggerService.h"
 
 const std::string TITLE_NAME = "Obliberry-Working-Name-Runner";
-constexpr std::string BINARY_NAME = "obsl_pack_run";
+const std::string BINARY_NAME = "obsl_pack_run";
 constexpr float VERSION = 1.0f;
 
 #pragma push_macro("LOG_WHO")
