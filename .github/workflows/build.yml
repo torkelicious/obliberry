@@ -9,6 +9,17 @@ name: Cross-platform build
 
 on:
     workflow_dispatch:
+        inputs:
+            publish_release:
+                description: 'Publish a GitHub release from these builds'
+                required: false
+                default: false
+                type: boolean
+            release_tag:
+                description: 'Tag for the release (only used when publish_release is checked)'
+                required: false
+                default: v0.0.0
+                type: string
     push:
         tags:
             - 'v*'
@@ -80,7 +91,7 @@ jobs:
     release:
         name: Publish release
         needs: build
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && github.event.inputs.publish_release == 'true')
         runs-on: ubuntu-latest
         permissions:
             contents: write
@@ -106,6 +117,7 @@ jobs:
             -   name: Create release
                 uses: softprops/action-gh-release@v2
                 with:
+                    tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || github.event.inputs.release_tag }}
                     files: |
                         obliberry-*.zip
                         SHA256SUMS
