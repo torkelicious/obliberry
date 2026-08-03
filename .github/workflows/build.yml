@@ -37,6 +37,8 @@ jobs:
         name: Build (${{ matrix.name }})
         runs-on: ${{ matrix.os }}
         timeout-minutes: 60
+        env:
+            SCCACHE_DIR: ${{ github.workspace }}/.sccache-store
         strategy:
             fail-fast: false
             matrix:
@@ -96,16 +98,12 @@ jobs:
                         sccache-${{ matrix.name }}-${{ hashFiles('CMakeLists.txt') }}-
 
             -   name: Configure
-                env:
-                    SCCACHE_DIR: ${{ github.workspace }}/.sccache-store
                 run: >
                     cmake --preset ${{ matrix.configure_preset }}
                     -DCMAKE_C_COMPILER_LAUNCHER=sccache
                     -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
             -   name: Build (all targets)
-                env:
-                    SCCACHE_DIR: ${{ github.workspace }}/.sccache-store
                 run: cmake --build --preset ${{ matrix.build_preset }} --parallel
 
             -   name: sccache stats
