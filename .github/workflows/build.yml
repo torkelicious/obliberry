@@ -71,7 +71,7 @@ jobs:
                     sudo apt-get update
                     sudo apt-get install -y libwayland-dev wayland-protocols libxkbcommon-dev libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev libgtk-3-dev libdbus-1-dev
 
-            # windows cl.exe / lib.exe / link.exe on PATH for the Ninja generator
+            # Windows: cl.exe / lib.exe / link.exe on PATH for the Ninja generator
             -   name: Set up MSVC dev environment
                 if: runner.os == 'Windows'
                 uses: ilammy/msvc-dev-cmd@v1
@@ -84,19 +84,20 @@ jobs:
                     key: deps-${{ runner.os }}-${{ hashFiles('CMakeLists.txt') }}
 
             -   name: Install sccache
-                uses: mozilla-actions/sccache-action@v0.0.6
+                uses: mozilla-actions/sccache-action@v0.0.9
 
+            # Local-disk cache bc gh sucks with outages and all
             -   name: Cache sccache storage
                 uses: actions/cache@v6
                 with:
-                    path: ${{ runner.os == 'Windows' && '~\AppData\Local\Mozilla\sccache\cache' || '~/.cache/sccache' }}
+                    path: ${{ github.workspace }}/.sccache-store
                     key: sccache-${{ matrix.name }}-${{ hashFiles('CMakeLists.txt') }}-${{ github.sha }}
                     restore-keys: |
                         sccache-${{ matrix.name }}-${{ hashFiles('CMakeLists.txt') }}-
 
             -   name: Configure
                 env:
-                    SCCACHE_GHA_ENABLED: "true"
+                    SCCACHE_DIR: ${{ github.workspace }}/.sccache-store
                 run: >
                     cmake --preset ${{ matrix.configure_preset }}
                     -DCMAKE_C_COMPILER_LAUNCHER=sccache
@@ -104,7 +105,7 @@ jobs:
 
             -   name: Build (all targets)
                 env:
-                    SCCACHE_GHA_ENABLED: "true"
+                    SCCACHE_DIR: ${{ github.workspace }}/.sccache-store
                 run: cmake --build --preset ${{ matrix.build_preset }} --parallel
 
             -   name: sccache stats
