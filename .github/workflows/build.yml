@@ -4,6 +4,7 @@
 # msvc
 # macos clang
 
+
 name: Cross-platform build
 
 on:
@@ -24,8 +25,8 @@ jobs:
                         build_preset: linux-release
                     -   name: windows
                         os: windows-latest
-                        configure_preset: windows-default
-                        build_preset: windows-release
+                        configure_preset: windows-default-2026
+                        build_preset: windows-release-2026
                     -   name: macos
                         os: macos-latest
                         configure_preset: macos-release
@@ -37,15 +38,14 @@ jobs:
                 with:
                     submodules: recursive
 
-            # GLFW builds both its Wayland and X11 backends on Linux.
-            # needs the Wayland scanner and X11 dev headers.
-            -   name: Install Linux dependencies (GLFW)
+            # deps for the deps :)
+            -   name: Install Linux dependencies (GLFW, nativefiledialog)
                 if: runner.os == 'Linux'
                 run: |
                     sudo apt-get update
-                    sudo apt-get install -y libwayland-dev wayland-protocols libxkbcommon-dev libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev
+                    sudo apt-get install -y libwayland-dev wayland-protocols libxkbcommon-dev libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev libgtk-3-dev libdbus-1-dev
 
-            # Cache deps
+            # cache deps
             -   name: Cache fetched dependencies
                 uses: actions/cache@v4
                 with:
