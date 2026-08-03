@@ -1,89 +1,89 @@
-# Build Instructions
+# The Obliberry Game Engine
 
-## Prerequisites
+A Fallout-inspired isometric game engine for hex-grid games, written in C++20 with OpenGL, featuring a visual editor,
+an ECS core, its own scripting language, and one-file packaging.
 
-* **CMake:** Version 3.23 or newer.
-* **Compiler:** with C++20 and C11 support (GCC, Clang, or MSVC).
-* >*(Optional)* **Performance tools:** `ccache` and alternative linkers (`mold` or `lld`) are supported and recommended for faster builds on Linux.
+> **note:** still in active development. Scripting APIs, file formats, and the ObSL language can still change.
 
-## Clone the Repository
+![Editor application in use](docs/img/demo-projects.gif)
 
-You must clone with submodules to fetch required libraries for the ObSL scripting language:
+## Quick start
 
-```bash
-git clone --recurse-submodules https://github.com/torkelicious/obliberry
-cd obliberry
-```
+There is no hosted demo yet, but the repo ships with a playable demo project (`Templates/DemoProject`, copied to
+`bin/Templates` on build).
 
-> **Note:** A handful of additional dependencies (GLFW, GLM, nlohmann/json, nativefiledialog-extended, LZ4, FreeType) are *not* submodules, they are fetched automatically via CMake's `FetchContent` the first time you configure the project. This means an internet connection is required at configure time, and the initial `cmake --preset` step may take a while as these are downloaded into `.deps/`.
+To build and run it yourself, see the [build instructions](docs/build.md).
 
-## Configure the Project
+> **note:** this is developed and tested on Linux, sometimes tested in a Windows VM. macOS is expected to maybe work
+> but is untested.
 
-Generate the build files using one of the available CMake presets:
+<!-- setup release w. instructions -->
 
-```bash
-cmake --preset <preset> [options]
-```
+## Features
 
-### Available Presets
+- Visual editor with Hub, Edit, Play, and MapEditor states, gizmo transforms, and pixel-based entity picking.
+- ECS core with versioned entity handles and dense component pools.
+- Hex-grid maps (odd-r offset, pointy-top) with built-in A* pathfinding.
+- ObSL scripting: a small embedded language with hot reload, parallel execution, and lifecycle hooks like
+  `on_update(dt)`.
+- Ship a game as a single `.obpak` package with LZ4 compression and pre-parsed scripts.
+- Built-in scene UI (text, buttons, images) and audio (2D sound effects and looping music).
+- Basic particle and lighting systems.
 
-**Linux**
-* `linux-debug`: Debug build without optimizations.
-* `linux-release`: Standard release build (includes LTO if supported).
-* `linux-native`: Release build optimized specifically for your host CPU architecture.
-* `linux-profile`: Release build with debug info (`RelWithDebInfo`) for profiling.
+## How it works
 
-**macOS** (Requires macOS 11.0+)
-* `macos-debug`
-* `macos-release`
+Obliberry splits the main loop from rendering: the main thread updates game logic, ECS systems, and scripts, submits a
+frame, and hands it to a dedicated render thread with its own GL context. Frames are double-buffered at the frame level,
+so the main thread prepares the next frame while the previous one is still being drawn. ObSL scripts run in parallel
+across a thread pool, one interpreter per worker, but they cannot mutate the ECS directly: writes are routed through
+command buffers that the main thread flushes, which keeps parallel scripts safe without locking every component access.
 
-> **Note:** macOS is untested, but should work
+Hex maps use an odd-r offset layout with pointy-top hexes, a compact binary format (`.obmap`), and A* pathfinding over
+the grid. Projects are packaged into a single `.obpak` file: a header, a table of contents, a string
+table, and an LZ4-compressed blob. Scripts are pre-parsed at pack time and stored as serialized ASTs, so a packaged game
+skips parsing on startup, and media files are stored uncompressed by design since compressing textures and audio rarely
+pays off.
 
-**Windows**
-* `windows-debug`: Debug build with Visual Studio 2022.
-* `windows-release`: Release build with Visual Studio 2022.
-* `windows-debug-2026`: Debug build with Visual Studio 2026.
-* `windows-release-2026`: Release build with Visual Studio 2026.
+## Credits and thanks
 
-### Build Options
+Open-source projects used:
 
-You can customize the build by passing standard CMake options (`-D<OPTION>=<VALUE>`) during the configuration step:
+| Project                                                                        | Where it is used                                                |
+|--------------------------------------------------------------------------------|-----------------------------------------------------------------|
+| [ObSL](https://github.com/torkelicious/ObSL)                                   | The embedded scripting language (submodule, MIT), made by me :D |
+| [GLAD](https://github.com/Dav1dde/glad)                                        | OpenGL loader                                                   |
+| [GLFW](https://github.com/glfw/glfw)                                           | Window and input                                                |
+| [GLM](https://github.com/g-truc/glm)                                           | Math                                                            |
+| [stb_image](https://github.com/nothings/stb/tree/master)                       | Image loading                                                   |
+| [Dear ImGui](https://github.com/ocornut/imgui)                                 | Editor UI                                                       |
+| [ImGuizmo](https://github.com/CedricGuillemet/ImGuizmo)                        | Gizmo transforms                                                |
+| [nlohmann/json](https://github.com/nlohmann/json)                              | JSON serialization                                              |
+| [miniaudio](https://github.com/mackron/miniaudio)                              | Audio                                                           |
+| [nativefiledialog-extended](https://github.com/btzy/nativefiledialog-extended) | File dialogs                                                    |
+| [FreeType](https://github.com/freetype/freetype)                               | Font rendering                                                  |
+| [Open Sans](https://github.com/googlefonts/opensans)                           | Demo project UI font (SIL OFL 1.1)                              |
+| [LZ4](https://github.com/lz4/lz4)                                              | `.obpak` compression                                            |
 
-* **`-DBUILD_PACK_TOOLS=ON|OFF`** (Default: `ON`)
-  Toggles the compilation of `.obpak` packaging tools (`ob_packer`, `ob_unpacker`, `obsl_pack_run`).
+Full license texts for all of the above: [THIRD_PARTY_LICENSES.md](docs/THIRD_PARTY_LICENSES.md).
 
-* **`-DENGINE_ARCH_LEVEL="<arch>"`** (Default: `"x86-64-v2"`)
-  Sets the target CPU architecture baseline for GCC/Clang on x86 architectures. Common options include `x86-64-v2`, `x86-64-v3`, or `native`.
+Learning resources that shaped the codebase:
 
-* **`-DENABLE_UNITY_BUILD=ON|OFF`** (Default: `OFF`)
-  Enables Unity (jumbo) builds for `obliberry_engine` and `obliberry_editor` to speed up compilation times. *Note: might be broken on Windows.*
+* [LearnOpenGL](http://learnopengl.com/) and [docs.gl](https://docs.gl/) for OpenGL.
+* [Red Blob Games](https://www.redblobgames.com/grids/hexagons/) for hex grid math.
+* [Crafting Interpreters](https://craftinginterpreters.com/contents.html) for the ObSL interpreter.
+* [A Quick Guide to Interpreter Design in Modern C++](https://simplifycpp.org/books/cpp/Quick_Guide_to_Interpreter_Design_by_Modern_CPP.pdf)
+  by Ayman Alheraki, for the ObSL interpreter.
+* [rgbguy's framebuffer picking guide](https://rgbguy.in/blogs/object-picking.html) for entity picking.
 
-* **`-DCMAKE_OSX_DEPLOYMENT_TARGET="<version>"`** (Default: `"11.0"`, macOS only)
-  Sets the minimum supported macOS deployment version.
+Assets: the textures in the demo project were drawn in GIMP by me, and the music was also made by me.
 
-## Build the Project
+Big thanks to all of these great open-source projects and resources for making this learning project possible :)
 
-It is **highly recommended to build all targets**. To do so, omit the target flag:
+## Documentation
 
-```bash
-cmake --build --preset <preset>
-```
+Full documentation lives
+in [docs/](docs/index.md): [build instructions](docs/build.md), [architecture notes](docs/architecture.md),
+the [ObSL scripting guide](docs/scripting/getting-started.md) and [API reference](docs/scripting/api-reference.md),
+and [file format specs](docs/formats/project-json.md).
 
-To build a specific target, pass the `--target` flag:
-
-```bash
-cmake --build --preset <preset> --target <target_name>
-```
-
-### Available Targets
-
-**Applications**
-* `obliberry_editor`: The Editor application.
-  >*(Note: `obliberry_runtime` must also be built for project exporting to function.)*
-* `obliberry_runtime`: The standalone runtime application.
-
-**Packaging Tools** *(Requires `BUILD_PACK_TOOLS=ON`)*
-* `ob_packer`: Builds `.obpak` packager tool.
-* `ob_unpacker`: Extracts `.obpak` packages.
-* `obsl_pack_run`: Run pre-parsed obsl scripts directly from .obpak archives.
-
+Licensed under the MIT License. See [LICENSE](LICENSE).
