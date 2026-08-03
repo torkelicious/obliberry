@@ -1,0 +1,57 @@
+# cross platform builds
+#
+# ubuntu gcc
+# msvc VS22
+# macos clang
+
+
+name: Cross-platform build
+
+on:
+    workflow_dispatch:
+
+jobs:
+    build:
+        name: Build (${{ matrix.name }})
+        runs-on: ${{ matrix.os }}
+        timeout-minutes: 60
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    -   name: linux
+                        os: ubuntu-latest
+                        preset: linux-release
+                    -   name: windows
+                        os: windows-latest
+                        preset: windows-release
+                    -   name: macos
+                        os: macos-latest
+                        preset: macos-release
+
+        steps:
+            -   name: Checkout (with submodules)
+                uses: actions/checkout@v4
+                with:
+                    submodules: recursive
+
+            # Cache deps
+            -   name: Cache fetched dependencies
+                uses: actions/cache@v4
+                with:
+                    path: .deps
+                    key: deps-${{ runner.os }}-${{ hashFiles('CMakeLists.txt') }}
+
+            -   name: Configure
+                run: cmake --preset ${{ matrix.preset }}
+
+            -   name: Build (all targets)
+                run: cmake --build --preset ${{ matrix.preset }}
+
+            -   name: Upload binaries
+                uses: actions/upload-artifact@v4
+                with:
+                    name: obliberry-${{ matrix.name }}
+                    path: build/${{ matrix.preset }}/bin
+                    if-no-files-found: error
+                    retention-days: 7
