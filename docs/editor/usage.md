@@ -77,8 +77,8 @@ The toolbar has three tools:
 * **Select** - click a tile to inspect and edit its properties.
 
 The **Size** slider sets the brush radius in hexes (1 to 5) and affects Paint and Erase. Use the **Tile Editor** panel
-to pick which tile type to paint. The **Map** menu saves the map (Ctrl+S), saves it under a new name, or loads a
-`.obmap` file. Map edits are undoable.
+to pick which tile type to paint. The **Map** menu starts a fresh empty map (prompting to save the current one first),
+saves the map (Ctrl+S), saves it under a new name, or loads a `.obmap` file. Map edits are undoable.
 
 Maps are stored on a MAP entity in the scene, so the map file path is part of the scene and gets saved with it.
 

@@ -187,10 +187,22 @@ void Editor::States::MapEditState::OnDrawModeToolbar() {
             ImGui::OpenPopup("MapMenuPopup");
         }
         if (ImGui::BeginPopup("MapMenuPopup")) {
-            if (ImGui::MenuItem("Create New Map")) {
-                // todo: implement
-                // maybe remove
-                LOG_INFO(LOG_WHO, "Create new map requested");
+            if (ImGui::MenuItem("Create New Map", nullptr, false, m_MapComp != nullptr)) {
+                m_EditorLayer->PromptSaveDirtyMap([this] {
+                    if (!m_CurrentGrid || !m_MapComp)
+                        return;
+                    m_CurrentGrid->Clear();
+                    m_MapComp->typeMats.clear();
+                    m_MapComp->mapFilePath.clear();
+                    m_MapComp->mapDirty = false;
+                    m_MapComp->needsMeshUpdate = true;
+                    m_selectedTile = nullptr;
+                    m_TileEditorPanel.SetSelectedTile(nullptr);
+                    m_TileEditorPanel.InitBrushFromFirstType();
+                    // old undo commands reference tiles from the wiped grid
+                    m_EditorLayer->m_UndoManager.Clear();
+                    SetWindowTitle("Unsaved Map");
+                });
             }
             if (ImGui::MenuItem("Save Map", nullptr, false, m_MapComp != nullptr)) {
                 SaveMap();
