@@ -18,12 +18,6 @@
 
 namespace ECS::Systems::LightingSystem {
 
-    struct GPULight {
-        float x, y;
-        float radius;
-        float colorR, colorG, colorB;
-    };
-
     inline void GenerateLightmap(Components::MapComponent &map, Core::ResourceManager *resources) {
         auto &lm = map.lightmap;
 
@@ -85,31 +79,15 @@ namespace ECS::Systems::LightingSystem {
         });
     }
 
-    inline bool ConsumeDirtyState(Registry &reg, const Components::MapComponent &mapComp, const size_t lightCount) {
-        if (lightCount != mapComp.lightmap.lastLightCount)
-            return true;
-
-        auto *lightPool = reg.GetPool<Components::PointLightComponent>();
-        auto *transformPool = reg.GetPool<Components::TransformComponent>();
-        for (const EntityID id : lightPool->GetDenseEntities()) {
-            const auto *light = lightPool->Get(id);
-            if (const auto *transform = transformPool ? transformPool->Get(id) : nullptr; light && (light->dirty || (transform && transform->transform.IsDirty())))
-                return true;
-        }
-
-        return false;
-    }
-
     inline void Update(Registry &reg) {
         auto *mapComp = reg.GetFirst<Components::MapComponent>();
         if (!mapComp || !mapComp->lightmap.framebuffer) {
             return;
         }
 
+        auto &lm = mapComp->lightmap;
         auto *lightPool = reg.GetPool<Components::PointLightComponent>();
         const size_t lightCount = lightPool->GetDenseEntities().size();
-
-        auto &lm = mapComp->lightmap;
 
         // capture shared_ptrs
         auto fbo = lm.framebuffer;
@@ -122,27 +100,8 @@ namespace ECS::Systems::LightingSystem {
         const int texW = fbo->GetWidth();
         const int texH = fbo->GetHeight();
 
-        if (lightCount == 0) {
-            Rendering::Renderer::SubmitInitTask([fbo, ambient] {
-                GLint prevFbo;
-                glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prevFbo);
-
-                fbo->Bind();
-                constexpr GLenum colorBuf = GL_COLOR_ATTACHMENT0;
-                glDrawBuffers(1, &colorBuf);
-                glClearColor(ambient, ambient, ambient, 1.0f);
-                glClear(GL_COLOR_BUFFER_BIT);
-
-                glBindFramebuffer(GL_FRAMEBUFFER, prevFbo);
-            });
-            return;
-        }
-
-        if (!ConsumeDirtyState(reg, *mapComp, lightCount))
-            return;
-
-        // pack lights
-        std::vector<GPULight> packedLights;
+        // pack lights; re-render only if the state changed
+        std::vector<Rendering::GPULight> packedLights;
         packedLights.reserve(lightCount);
 
         auto *transformPool = reg.GetPool<Components::TransformComponent>();
@@ -165,8 +124,31 @@ namespace ECS::Systems::LightingSystem {
             light->dirty = false;
         }
 
+        // skip when unchanged
+        if (lightCount == lm.lastLightCount && packedLights == lm.lastPackedLights)
+            return;
+
+        if (packedLights.empty()) {
+            lm.lastLightCount = lightCount;
+            lm.lastPackedLights.clear();
+
+            Rendering::Renderer::SubmitInitTask([fbo, ambient] {
+                GLint prevFbo;
+                glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prevFbo);
+
+                fbo->Bind();
+                constexpr GLenum colorBuf = GL_COLOR_ATTACHMENT0;
+                glDrawBuffers(1, &colorBuf);
+                glClearColor(ambient, ambient, ambient, 1.0f);
+                glClear(GL_COLOR_BUFFER_BIT);
+
+                glBindFramebuffer(GL_FRAMEBUFFER, prevFbo);
+            });
+            return;
+        }
+
         // submit to renderer
-        Rendering::Renderer::SubmitInitTask([fbo, shader, quad, quadVAO, lights = std::move(packedLights), ambient, mapOffset, mapSize, texW, texH] {
+        Rendering::Renderer::SubmitInitTask([fbo, shader, quad, quadVAO, lights = packedLights, ambient, mapOffset, mapSize, texW, texH] {
             // Save only the GL state this pass modifies
             GLint prevFbo, prevProgram, prevVao, prevBlendSrc, prevBlendDst, prevBlendEq;
             GLenum prevDrawBuf;
@@ -222,5 +204,6 @@ namespace ECS::Systems::LightingSystem {
             glBlendEquationSeparate(prevBlendEq, prevBlendEq);
         });
         lm.lastLightCount = lightCount;
+        lm.lastPackedLights = std::move(packedLights);
     }
 } // namespace ECS::Systems::LightingSystem
