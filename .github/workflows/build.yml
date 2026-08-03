@@ -39,7 +39,7 @@ jobs:
                     submodules: recursive
 
             # deps for the deps :)
-            -   name: Install Linux dependencies (GLFW, nativefiledialog)
+            -   name: Install Linux dependencies (GLFW, nativefiledialog-extended)
                 if: runner.os == 'Linux'
                 run: |
                     sudo apt-get update
