@@ -9,15 +9,18 @@ an ECS core, its own scripting language, and one-file packaging.
 
 ## Quick start
 
-There is no hosted demo yet, but the repo ships with a playable demo project (`Templates/DemoProject`, copied to
-`bin/Templates` on build).
+Download the latest prebuilt binaries from
+the [releases page](https://github.com/torkelicious/obliberry/releases/latest).
+They come with the editor, runtime, tools, and project templates. Unzip and run `obliberry_editor` to get started.
 
-To build and run it yourself, see the [build instructions](docs/build.md).
+Want a look at something made with the engine? There is also a prebuilt Demo project at the
+[demo release](https://github.com/torkelicious/obliberry/releases/tag/demo): download the version for your OS and run
+the `DemoProject` executable.
+
+To build the engine from source instead, see the [build instructions](docs/build.md).
 
 > **note:** this is developed and tested on Linux, sometimes tested in a Windows VM. macOS is expected to maybe work
 > but is untested.
-
-<!-- setup release w. instructions -->
 
 ## Features
 
@@ -87,3 +90,4 @@ the [ObSL scripting guide](docs/scripting/getting-started.md) and [API reference
 and [file format specs](docs/formats/project-json.md).
 
 Licensed under the MIT License. See [LICENSE](LICENSE).
+
