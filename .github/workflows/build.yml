@@ -10,6 +10,10 @@ name: Cross-platform build
 on:
     workflow_dispatch:
 
+permissions:
+    contents: read
+    actions: read
+
 jobs:
     build:
         name: Build (${{ matrix.name }})
@@ -34,7 +38,7 @@ jobs:
 
         steps:
             -   name: Checkout (with submodules)
-                uses: actions/checkout@v4
+                uses: actions/checkout@v7
                 with:
                     submodules: recursive
 
@@ -47,7 +51,7 @@ jobs:
 
             # cache deps
             -   name: Cache fetched dependencies
-                uses: actions/cache@v4
+                uses: actions/cache@v6
                 with:
                     path: .deps
                     key: deps-${{ runner.os }}-${{ hashFiles('CMakeLists.txt') }}
@@ -59,7 +63,7 @@ jobs:
                 run: cmake --build --preset ${{ matrix.build_preset }}
 
             -   name: Upload binaries
-                uses: actions/upload-artifact@v4
+                uses: actions/upload-artifact@v7
                 with:
                     name: obliberry-${{ matrix.name }}
                     path: build/${{ matrix.configure_preset }}/bin
