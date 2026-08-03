@@ -58,14 +58,14 @@ if (dirTex != null) {
 
 var moveComp = ent.GetComponent("Movement");
 if (moveComp != null) {
-    moveComp.SetSpeed(20.0);
+    moveComp.SetTimePerStep(0.05); // seconds per hex step (default 0.15)
     var is_moving = moveComp.GetIsMoving(); // returns bool
 }
 
 var mapState = ent.GetComponent("MapState");
 if (mapState != null) {
-    var selected = mapState.GetSelectedHex(); // returns ObSLObject: {q, r}
-    var pathTarget = mapState.GetPathToHex(); // returns ObSLObject: {q, r}
+    var selected = mapState.GetSelectedHex(); // returns array: [q, r]
+    var pathTarget = mapState.GetPathToHex(); // returns array: [q, r]
 }
 
 // Audio System (Global)
