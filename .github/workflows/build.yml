@@ -96,6 +96,9 @@ jobs:
         permissions:
             contents: write
         steps:
+            -   name: Checkout (for license files)
+                uses: actions/checkout@v7
+
             -   name: Download platform builds
                 uses: actions/download-artifact@v7
                 with:
@@ -109,6 +112,8 @@ jobs:
                 run: |
                     cd artifacts
                     for dir in obliberry-*/; do
+                        # include the license texts with every platform zip
+                        cp ../LICENSE ../docs/THIRD_PARTY_LICENSES.md "$dir"
                         zip -r "../${dir%/}.zip" "$dir"
                     done
                     cd ..
