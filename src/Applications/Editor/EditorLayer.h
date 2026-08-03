@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <sstream>
 #include "Core/ApplicationLayer.h"
 #include "Applications/Editor/UI/Panels/Editor/InspectorPanel.h"
 #include "UI/Panels/ProjectBrowserPanel.h"

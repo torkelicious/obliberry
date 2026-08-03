@@ -1,6 +1,7 @@
 #include "MapSerialization.h"
 #include <fstream>
 #include <ios>
+#include <sstream>
 #include "Logger/LoggerService.h"
 #include "VFS/VFS.h"
 

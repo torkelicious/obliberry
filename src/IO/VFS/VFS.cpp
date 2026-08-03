@@ -1,5 +1,6 @@
 #include "VFS.h"
 #include <fstream>
+#include <sstream>
 #include "Logger/LoggerService.h"
 #include "IO/Package/Container.h"
 

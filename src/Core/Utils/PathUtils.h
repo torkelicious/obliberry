@@ -2,6 +2,8 @@
 #include <filesystem>
 #ifdef _WIN32
 #include <windows.h>
+#elif defined(__APPLE__)
+#include <mach-o/dyld.h>
 #endif
 
 namespace Core::PathUtils {
@@ -21,6 +23,14 @@ namespace Core::PathUtils {
         wchar_t path[MAX_PATH];
         GetModuleFileNameW(nullptr, path, MAX_PATH);
         return std::filesystem::path(path).parent_path();
+#elif defined(__APPLE__)
+        // macOS has no /proc/self/exe; _NSGetExecutablePath gives the path of the
+        // running binary, and weakly_canonical resolves symlinks like /proc does.
+        uint32_t size = 0;
+        _NSGetExecutablePath(nullptr, &size);
+        std::string buffer(size, '\0');
+        _NSGetExecutablePath(buffer.data(), &size);
+        return std::filesystem::weakly_canonical(buffer).parent_path();
 #else
         return std::filesystem::canonical("/proc/self/exe").parent_path();
 #endif
