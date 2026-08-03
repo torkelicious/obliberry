@@ -77,6 +77,9 @@ jobs:
             -   name: Set up MSVC dev environment
                 if: runner.os == 'Windows'
                 uses: TheMrMilchmann/setup-msvc-dev@v4
+                with:
+                  arch: x64
+                  exportVCVarsall: true
 
             # cache deps
             -   name: Cache fetched dependencies
