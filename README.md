@@ -85,9 +85,9 @@ Big thanks to all of these great open-source projects and resources for making t
 ## Documentation
 
 Full documentation lives
-in [docs/](docs/index.md): [build instructions](docs/build.md), [architecture notes](docs/architecture.md),
-the [ObSL scripting guide](docs/scripting/getting-started.md) and [API reference](docs/scripting/api-reference.md),
-and [file format specs](docs/formats/project-json.md).
+in [docs/](docs/index.md): [build instructions](docs/build.md), [editor guide](docs/editor/usage.md),
+[architecture notes](docs/architecture.md), the [ObSL scripting guide](docs/scripting/getting-started.md) and
+[API reference](docs/scripting/api-reference.md), and [file format specs](docs/formats/project-json.md).
 
 Licensed under the MIT License. See [LICENSE](LICENSE).
 
