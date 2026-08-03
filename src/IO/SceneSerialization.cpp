@@ -97,11 +97,9 @@ namespace IO::SceneIO {
             // bind visual resources from scene json grid section
             auto &gridJson = j["grid"];
             std::string meshId = gridJson.value("mesh_id", "[Engine] Hex");
-            std::string shaderId = gridJson.value("shader_id", "[Engine] Base");
-
 
             auto hexMesh = resources.Get<Rendering::Mesh>(meshId);
-            auto shader = resources.Get<Rendering::Shader>(shaderId);
+            auto shader = resources.Get<Rendering::Shader>("[Engine] Base");
             mapComp.hexMesh = hexMesh;
 
             if (gridJson.contains("types")) {
