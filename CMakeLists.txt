@@ -89,7 +89,8 @@ endif ()
 
 # Ccache configuration
 find_program(CCACHE_PROGRAM ccache)
-if (CCACHE_PROGRAM)
+if (CCACHE_PROGRAM AND NOT CMAKE_C_COMPILER_LAUNCHER AND NOT CMAKE_CXX_COMPILER_LAUNCHER)
+    # only fall back to ccache when nothing was already requested
     set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
     set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
     message(STATUS "ccache found and enabled")

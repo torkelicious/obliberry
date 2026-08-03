@@ -76,7 +76,7 @@ jobs:
             # Windows: cl.exe / lib.exe / link.exe on PATH for the Ninja generator
             -   name: Set up MSVC dev environment
                 if: runner.os == 'Windows'
-                uses: ilammy/msvc-dev-cmd@v1
+                uses: TheMrMilchmann/setup-msvc-dev@v4
 
             # cache deps
             -   name: Cache fetched dependencies
