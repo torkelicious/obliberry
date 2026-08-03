@@ -5,7 +5,7 @@
 # macos clang
 
 
-name: Cross-platform build
+name: Cross-platform build / release
 
 on:
     workflow_dispatch:
@@ -16,7 +16,7 @@ on:
                 default: false
                 type: boolean
             release_tag:
-                description: 'Tag for the release (only used when publish_release is checked)'
+                description: 'Tag for the release (only when publish_release is checked)'
                 required: false
                 default: v0.0.0
                 type: string
