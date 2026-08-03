@@ -9,6 +9,9 @@ name: Cross-platform build
 
 on:
     workflow_dispatch:
+    push:
+        tags:
+            - 'v*'
 
 permissions:
     contents: read
@@ -25,14 +28,17 @@ jobs:
                 include:
                     -   name: linux
                         os: ubuntu-latest
+                        arch: x86_64
                         configure_preset: linux-release
                         build_preset: linux-release
                     -   name: windows
                         os: windows-latest
+                        arch: x86_64
                         configure_preset: windows-default-2026
                         build_preset: windows-release-2026
                     -   name: macos
                         os: macos-latest
+                        arch: arm64
                         configure_preset: macos-release
                         build_preset: macos-release
 
@@ -65,7 +71,42 @@ jobs:
             -   name: Upload binaries
                 uses: actions/upload-artifact@v7
                 with:
-                    name: obliberry-${{ matrix.name }}
+                    name: obliberry-${{ matrix.name }}-${{ matrix.arch }}
                     path: build/${{ matrix.configure_preset }}/bin
                     if-no-files-found: error
                     retention-days: 7
+
+    # github releases
+    release:
+        name: Publish release
+        needs: build
+        if: startsWith(github.ref, 'refs/tags/v')
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+        steps:
+            -   name: Download platform builds
+                uses: actions/download-artifact@v7
+                with:
+                    path: artifacts
+
+            -   name: Install zip
+                run: sudo apt-get install -y zip
+
+            # artifact folder to (obliberry-<os>-<arch>).zip
+            -   name: Package zips and checksums
+                run: |
+                    cd artifacts
+                    for dir in obliberry-*/; do
+                        zip -r "../${dir%/}.zip" "$dir"
+                    done
+                    cd ..
+                    sha256sum obliberry-*.zip > SHA256SUMS
+
+            -   name: Create release
+                uses: softprops/action-gh-release@v2
+                with:
+                    files: |
+                        obliberry-*.zip
+                        SHA256SUMS
+                    generate_release_notes: true
