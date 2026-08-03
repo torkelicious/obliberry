@@ -84,7 +84,7 @@ jobs:
                     key: deps-${{ runner.os }}-${{ hashFiles('CMakeLists.txt') }}
 
             -   name: Install sccache
-                uses: mozilla-actions/sccache-action@v0.0.9
+                uses: mozilla-actions/sccache-action@v0.0.11
 
             # Local-disk cache bc gh sucks with outages and all
             -   name: Cache sccache storage
