@@ -61,6 +61,21 @@
       }
     },
     {
+      "name": "windows-ninja-base",
+      "hidden": true,
+      "inherits": "base",
+      "generator": "Ninja",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "cl",
+        "CMAKE_CXX_COMPILER": "cl"
+      }
+    },
+    {
       "name": "linux-debug",
       "displayName": "Linux Debug",
       "inherits": "linux-base",
@@ -111,6 +126,22 @@
       "name": "windows-default-2026",
       "displayName": "Windows (VS26)",
       "inherits": "windows-base-2026"
+    },
+    {
+      "name": "windows-ninja-release",
+      "displayName": "Windows Release (Ninja/cl, for CI)",
+      "inherits": "windows-ninja-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "windows-ninja-debug",
+      "displayName": "Windows Debug (Ninja/cl, for CI)",
+      "inherits": "windows-ninja-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
     }
   ],
   "buildPresets": [
@@ -158,6 +189,16 @@
       "displayName": "Windows Release (VS26)",
       "configurePreset": "windows-default-2026",
       "configuration": "Release"
+    },
+    {
+      "name": "windows-ninja-release",
+      "displayName": "Windows Release (Ninja/cl)",
+      "configurePreset": "windows-ninja-release"
+    },
+    {
+      "name": "windows-ninja-debug",
+      "displayName": "Windows Debug (Ninja/cl)",
+      "configurePreset": "windows-ninja-debug"
     }
   ]
 }

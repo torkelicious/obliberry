@@ -36,7 +36,6 @@ cmake --preset <preset> [options]
 
 * `linux-debug`: Debug build without optimizations.
 * `linux-release`: Standard release build (includes LTO if supported).
-* `linux-native`: Release build optimized specifically for your host CPU architecture.
 * `linux-profile`: Release build with debug info (`RelWithDebInfo`) for profiling.
 
 **macOS** (Requires macOS 11.0+)
@@ -52,6 +51,8 @@ cmake --preset <preset> [options]
 * `windows-release`: Release build with Visual Studio 2022.
 * `windows-debug-2026`: Debug build with Visual Studio 2026.
 * `windows-release-2026`: Release build with Visual Studio 2026.
+* `windows-ninja-debug`: Debug build with Ninja and the MSVC `cl` compiler (used by CI).
+* `windows-ninja-release`: Release build with Ninja and the MSVC `cl` compiler (used by CI).
 
 ### Build Options
 

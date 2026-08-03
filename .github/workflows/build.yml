@@ -28,6 +28,10 @@ permissions:
     contents: read
     actions: read
 
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
 jobs:
     build:
         name: Build (${{ matrix.name }})
@@ -45,8 +49,8 @@ jobs:
                     -   name: windows
                         os: windows-latest
                         arch: x86_64
-                        configure_preset: windows-default-2026
-                        build_preset: windows-release-2026
+                        configure_preset: windows-ninja-release
+                        build_preset: windows-ninja-release
                     -   name: macos
                         os: macos-latest
                         arch: arm64
@@ -58,6 +62,7 @@ jobs:
                 uses: actions/checkout@v7
                 with:
                     submodules: recursive
+                    fetch-depth: 1
 
             # deps for the deps :)
             -   name: Install Linux dependencies (GLFW, nativefiledialog-extended)
@@ -66,6 +71,11 @@ jobs:
                     sudo apt-get update
                     sudo apt-get install -y libwayland-dev wayland-protocols libxkbcommon-dev libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev libgtk-3-dev libdbus-1-dev
 
+            # windows cl.exe / lib.exe / link.exe on PATH for the Ninja generator
+            -   name: Set up MSVC dev environment
+                if: runner.os == 'Windows'
+                uses: ilammy/msvc-dev-cmd@v1
+
             # cache deps
             -   name: Cache fetched dependencies
                 uses: actions/cache@v6
@@ -73,11 +83,32 @@ jobs:
                     path: .deps
                     key: deps-${{ runner.os }}-${{ hashFiles('CMakeLists.txt') }}
 
+            -   name: Install sccache
+                uses: mozilla-actions/sccache-action@v0.0.6
+
+            -   name: Cache sccache storage
+                uses: actions/cache@v6
+                with:
+                    path: ${{ runner.os == 'Windows' && '~\AppData\Local\Mozilla\sccache\cache' || '~/.cache/sccache' }}
+                    key: sccache-${{ matrix.name }}-${{ hashFiles('CMakeLists.txt') }}-${{ github.sha }}
+                    restore-keys: |
+                        sccache-${{ matrix.name }}-${{ hashFiles('CMakeLists.txt') }}-
+
             -   name: Configure
-                run: cmake --preset ${{ matrix.configure_preset }}
+                env:
+                    SCCACHE_GHA_ENABLED: "true"
+                run: >
+                    cmake --preset ${{ matrix.configure_preset }}
+                    -DCMAKE_C_COMPILER_LAUNCHER=sccache
+                    -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
             -   name: Build (all targets)
-                run: cmake --build --preset ${{ matrix.build_preset }}
+                env:
+                    SCCACHE_GHA_ENABLED: "true"
+                run: cmake --build --preset ${{ matrix.build_preset }} --parallel
+
+            -   name: sccache stats
+                run: sccache --show-stats
 
             -   name: Upload binaries
                 uses: actions/upload-artifact@v7
@@ -86,6 +117,7 @@ jobs:
                     path: build/${{ matrix.configure_preset }}/bin
                     if-no-files-found: error
                     retention-days: 7
+                    compression-level: 1
 
     # github releases
     release:

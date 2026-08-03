@@ -40,6 +40,15 @@ if (MSVC)
         $<$<NOT:$<CONFIG:Debug>>:/OPT:REF>
         $<$<NOT:$<CONFIG:Debug>>:/OPT:ICF>
     )
+
+    # lld-link is generally faster than link.exe,
+    # Only takes effect with the Ninja generator;
+    # the Visual Studio generator always uses link.exe regardless of CMAKE_LINKER.
+    find_program(LLD_LINK_PROGRAM lld-link)
+    if (LLD_LINK_PROGRAM AND CMAKE_GENERATOR MATCHES "Ninja")
+        set(CMAKE_LINKER ${LLD_LINK_PROGRAM} CACHE FILEPATH "" FORCE)
+        message(STATUS "Using lld-link for faster MSVC linking")
+    endif ()
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(obliberry_options INTERFACE
         $<$<NOT:$<CONFIG:Debug>>:-ffunction-sections>
@@ -87,15 +96,26 @@ if (CCACHE_PROGRAM)
 endif ()
 
 # LTO
-include(CheckIPOSupported)
-check_ipo_supported(RESULT lto_supported OUTPUT error)
-if (lto_supported)
-    message(STATUS "LTO/IPO enabled for Release and RelWithDebInfo builds.")
-    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
-    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_MINSIZEREL ON)
-    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO ON)
+# Clang gets ThinLTO
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_compile_options(obliberry_options INTERFACE
+        $<$<CONFIG:Release,MinSizeRel,RelWithDebInfo>:-flto=thin>
+    )
+    target_link_options(obliberry_options INTERFACE
+        $<$<CONFIG:Release,MinSizeRel,RelWithDebInfo>:-flto=thin>
+    )
+    message(STATUS "ThinLTO enabled for Clang Release/RelWithDebInfo/MinSizeRel builds.")
 else ()
-    message(WARNING "LTO/IPO is not supported by your compiler: ${error}")
+    include(CheckIPOSupported)
+    check_ipo_supported(RESULT lto_supported OUTPUT error)
+    if (lto_supported)
+        message(STATUS "LTO/IPO enabled for Release and RelWithDebInfo builds.")
+        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
+        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_MINSIZEREL ON)
+        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO ON)
+    else ()
+        message(WARNING "LTO/IPO is not supported by your compiler: ${error}")
+    endif ()
 endif ()
 
 # Output Directories
