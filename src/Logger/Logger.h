@@ -12,14 +12,24 @@
 #include <utility>
 #include <format>
 #include <chrono>
+#include <ctime>
 
 namespace Logging {
 
     // to format the raw time_point into a readable string
     inline std::string getTimestamp(const std::chrono::system_clock::time_point time) {
-        const auto local_time = std::chrono::current_zone()->to_local(time);
         const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(time.time_since_epoch()) % 1000;
-        return std::format("{:%Y-%m-%d %H:%M:%S}.{:03}", std::chrono::floor<std::chrono::seconds>(local_time), ms.count());
+        const std::time_t tt = std::chrono::system_clock::to_time_t(time);
+        std::tm local_tm{};
+#if defined(_WIN32)
+        localtime_s(&local_tm, &tt);
+#else
+        localtime_r(&tt, &local_tm);
+#endif
+
+        char buffer[32];
+        std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &local_tm);
+        return std::format("{}.{:03}", buffer, ms.count());
     }
 
     struct Log {

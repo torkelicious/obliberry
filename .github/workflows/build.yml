@@ -1,9 +1,8 @@
 # cross platform builds
 #
 # ubuntu gcc
-# msvc VS22
+# msvc
 # macos clang
-
 
 name: Cross-platform build
 
@@ -21,19 +20,30 @@ jobs:
                 include:
                     -   name: linux
                         os: ubuntu-latest
-                        preset: linux-release
+                        configure_preset: linux-release
+                        build_preset: linux-release
                     -   name: windows
                         os: windows-latest
-                        preset: windows-release
+                        configure_preset: windows-default
+                        build_preset: windows-release
                     -   name: macos
                         os: macos-latest
-                        preset: macos-release
+                        configure_preset: macos-release
+                        build_preset: macos-release
 
         steps:
             -   name: Checkout (with submodules)
                 uses: actions/checkout@v4
                 with:
                     submodules: recursive
+
+            # GLFW builds both its Wayland and X11 backends on Linux.
+            # needs the Wayland scanner and X11 dev headers.
+            -   name: Install Linux dependencies (GLFW)
+                if: runner.os == 'Linux'
+                run: |
+                    sudo apt-get update
+                    sudo apt-get install -y libwayland-dev wayland-protocols libxkbcommon-dev libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev
 
             # Cache deps
             -   name: Cache fetched dependencies
@@ -43,15 +53,15 @@ jobs:
                     key: deps-${{ runner.os }}-${{ hashFiles('CMakeLists.txt') }}
 
             -   name: Configure
-                run: cmake --preset ${{ matrix.preset }}
+                run: cmake --preset ${{ matrix.configure_preset }}
 
             -   name: Build (all targets)
-                run: cmake --build --preset ${{ matrix.preset }}
+                run: cmake --build --preset ${{ matrix.build_preset }}
 
             -   name: Upload binaries
                 uses: actions/upload-artifact@v4
                 with:
                     name: obliberry-${{ matrix.name }}
-                    path: build/${{ matrix.preset }}/bin
+                    path: build/${{ matrix.configure_preset }}/bin
                     if-no-files-found: error
                     retention-days: 7
