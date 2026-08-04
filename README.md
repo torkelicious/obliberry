@@ -7,6 +7,8 @@ an ECS core, its own scripting language, and one-file packaging.
 
 ![Editor application in use](docs/img/demo-projects.gif)
 
+<sup><sub>Yes there is a lighting system bug in this gif, it has since been fixed :)</sub></sup>
+
 ## Quick start
 
 Download the latest prebuilt binaries from
