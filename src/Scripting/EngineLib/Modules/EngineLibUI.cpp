@@ -9,9 +9,6 @@
 #include "UI/Elements/UIImage.h"
 #include <ObSL/Interpreter.h>
 
-// todo:
-//  finish and test this shit
-
 namespace Scripting {
 
     void BuildBaseUIFields(ObSL::ObSLObject *obj, ObSL::Interpreter *interp, const std::string &name, Core::EngineContext *ctx) {

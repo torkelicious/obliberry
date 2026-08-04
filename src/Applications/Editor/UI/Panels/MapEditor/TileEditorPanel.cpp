@@ -10,8 +10,6 @@
 #include <utility>
 
 
-// todo: fix map detection
-
 namespace Editor::UI {
     namespace {
         std::unordered_map<uint8_t, size_t> CountTilesPerType(const ECS::Components::MapComponent &mapComp) {

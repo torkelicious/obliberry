@@ -44,7 +44,7 @@ namespace Scenes {
 
         SceneProperties &GetProperties() { return m_Properties; }
 
-        void MarkAsChanged() { m_HasUnsavedChanges = true; } // TODO: use
+        void MarkAsChanged() { m_HasUnsavedChanges = true; }
         [[nodiscard]] bool HasUnsavedChanges() const { return m_HasUnsavedChanges; }
         void ClearUnsavedChanges() { m_HasUnsavedChanges = false; }
 

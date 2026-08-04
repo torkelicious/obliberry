@@ -27,14 +27,6 @@
 #include "States/Hub/HubState.h"
 #include "Rendering/Renderer.h"
 
-/* TODO:
- * map editor - wip
- * project browser (asset view ig) - wip
- * whatever else an editor needs?
- * TODO/FIX: Reload map if changes unsaved, otherwise innacurate scene view in relation to actual file
- */
-
-
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "EditorLayer"
 
