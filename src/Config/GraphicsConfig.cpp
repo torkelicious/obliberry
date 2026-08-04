@@ -100,6 +100,7 @@ namespace Config {
                 else if (j["vsync"].is_boolean())
                     config.VSync = j["vsync"].get<bool>() ? VSyncType::STANDARD : VSyncType::NONE;
             }
+
             if (j.contains("overlay")) {
                 config.ShowPerformanceOverlay = j["overlay"].get<bool>();
             }
@@ -109,6 +110,7 @@ namespace Config {
             LOG_INFO(LOG_WHO, "  VSync:         " + std::string(VSyncToString(config.VSync)));
             LOG_INFO(LOG_WHO, "  Target FPS:    " + std::to_string(config.TargetFPS));
             LOG_INFO(LOG_WHO, "  MSAA:          " + std::string(config.MSAAEnabled ? "on (" + std::to_string(config.AASamples) + "x)" : "off"));
+            LOG_INFO(LOG_WHO, "  FPS Overlay:   " + std::string(config.ShowPerformanceOverlay ? "on" : "off"));
         } catch (const std::exception &e) {
             LOG_ERROR(LOG_WHO, "Failed to parse graphics config: " + std::string(e.what()));
         }

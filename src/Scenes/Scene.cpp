@@ -60,10 +60,12 @@ void Scenes::Scene::OnEnter() {
         Rendering::Renderer::SetClearColor(m_Properties.BackgroundClearColor);
     }
 
+    if (!m_Properties.EnableLightingSystem) {
+        return;
+    }
     if (auto *mapComp = m_Registry.GetFirst<ECS::Components::MapComponent>()) {
         ECS::Systems::LightingSystem::GenerateLightmap(*mapComp, m_Context->resources);
     }
-
     ECS::Systems::LightingSystem::Update(m_Registry);
 }
 
@@ -83,7 +85,9 @@ void Scenes::Scene::Update(const float dt) {
     ECS::Systems::MovementSystem::Update(m_Registry, dt);
     ECS::Systems::ScriptSystem::Update(m_Registry, *m_Context);
     m_UICmdBuf.flush(m_UISystem);
-    ECS::Systems::LightingSystem::Update(m_Registry);
+    if (m_Properties.EnableLightingSystem) {
+        ECS::Systems::LightingSystem::Update(m_Registry);
+    }
     ECS::Systems::ParticleSystem::Update(m_Registry, dt);
 }
 
@@ -109,6 +113,9 @@ void Scenes::Scene::Render() {
 
     if (m_Context->uiSystem) {
         m_Context->uiSystem->Render();
+    }
+    if (!m_Properties.EnableLightingSystem) {
+        m_Context->renderer->SetLightmap(nullptr);
     }
 }
 

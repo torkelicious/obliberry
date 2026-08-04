@@ -36,7 +36,7 @@ namespace IO::SceneIO {
             return false;
         }
 
-        auto &[ScenePath, Name, BackgroundMusicPath, BackgroundClearColor, AmbientLight] = scene.GetProperties();
+        auto &[ScenePath, Name, BackgroundMusicPath, BackgroundClearColor, AmbientLight, EnableLighting] = scene.GetProperties();
         ScenePath = VFS::ToRelative(path);
 
         json j;
@@ -67,6 +67,10 @@ namespace IO::SceneIO {
 
             if (properties.contains("background_music")) {
                 BackgroundMusicPath = VFS::ToRelative(properties["background_music"].get<std::string>());
+            }
+
+            if (properties.contains("lighting")) {
+                EnableLighting = j["lighting"].get<bool>();
             }
 
             if (properties.contains("ambient_light")) {
@@ -192,6 +196,7 @@ namespace IO::SceneIO {
         j["properties"]["clear_color"] = {c[0], c[1], c[2], c[3]};
         j["properties"]["background_music"] = sceneProps.BackgroundMusicPath;
 
+        j["properties"]["lighting"] = sceneProps.EnableLightingSystem;
         j["properties"]["ambient_light"] = sceneProps.AmbientLight;
 
         // ecs query to save grid

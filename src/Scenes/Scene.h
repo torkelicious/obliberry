@@ -15,6 +15,7 @@ namespace Scenes {
         std::string BackgroundMusicPath;
         glm::vec4 BackgroundClearColor = {0, 0, 0, 1};
         float AmbientLight = 0.2f;
+        bool EnableLightingSystem = true;
     };
 
     class Scene {

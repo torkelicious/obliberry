@@ -111,7 +111,7 @@ namespace ECS::Systems::LightingSystem {
             if (!light || !transform || light->intensity <= 0.0f)
                 continue;
 
-            const glm::vec3 pos = transform->transform.GetPosition();
+            const glm::vec3 pos = transform->worldTransform.GetPosition();
             packedLights.push_back({
                     pos.x,
                     pos.y,
@@ -120,7 +120,6 @@ namespace ECS::Systems::LightingSystem {
                     light->color.g * light->intensity,
                     light->color.b * light->intensity,
             });
-
             light->dirty = false;
         }
 

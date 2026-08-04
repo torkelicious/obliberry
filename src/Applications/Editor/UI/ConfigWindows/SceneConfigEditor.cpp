@@ -63,6 +63,7 @@ namespace Editor::UI {
 
         ImGui::ColorEdit4("Clear Color", &m_LocalProperties.BackgroundClearColor.x, ImGuiColorEditFlags_AlphaBar);
 
+        ImGui::Checkbox("Enable Lighting System", &m_LocalProperties.EnableLightingSystem);
         ImGui::SliderFloat("Ambient Light", &m_LocalProperties.AmbientLight, 0.0f, 1.0f, "%.3f");
 
         ImGui::Separator();
