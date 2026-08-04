@@ -1,5 +1,6 @@
 #include "EditorLayer.h"
 #include "Core/Project.h"
+#include "Core/ResourceManager.h"
 #include "Config/ProjectConfig.h"
 #include "Logger/LoggerService.h"
 #include "ECS/Entity.h"
@@ -294,6 +295,8 @@ void Editor::EditorLayer::LoadProject(const std::string &projectFilePath) {
     ClearCurrentProject();
 
     IO::VFS::UnmountProject();
+
+    Core::ResourceManager::GetInstance().ClearProjectResources();
 
     Core::Project::Load(projectFilePath);
 
@@ -596,6 +599,7 @@ void Editor::EditorLayer::DrawToolbar() {
                             m_ProjectConfigEditor.SaveConfig();
                         }
                         ClearCurrentProject();
+                        Core::ResourceManager::GetInstance().ClearProjectResources();
                         Core::Project::SetActive(nullptr);
                         IO::VFS::UnmountProject();
                         // s_ShouldBuildDock = true;
@@ -603,6 +607,7 @@ void Editor::EditorLayer::DrawToolbar() {
                     });
                     m_SaveChangesDialog.SetOnDiscard([this] {
                         ClearCurrentProject();
+                        Core::ResourceManager::GetInstance().ClearProjectResources();
                         Core::Project::SetActive(nullptr);
                         IO::VFS::UnmountProject();
                         // s_ShouldBuildDock = true;
@@ -612,6 +617,7 @@ void Editor::EditorLayer::DrawToolbar() {
                 } else {
                     PromptSaveDirtyMap([this] {
                         ClearCurrentProject();
+                        Core::ResourceManager::GetInstance().ClearProjectResources();
                         Core::Project::SetActive(nullptr);
                         IO::VFS::UnmountProject();
                         // s_ShouldBuildDock = true;

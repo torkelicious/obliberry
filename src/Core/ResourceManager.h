@@ -11,12 +11,18 @@ namespace Core {
     class IResourceCache {
     public:
         virtual ~IResourceCache() = default;
+        virtual void ClearProjectResources() = 0;
     };
 
     // cache per resource type
     template <typename T> class ResourceCache : public IResourceCache {
     public:
         std::unordered_map<std::string, std::shared_ptr<T>> storage;
+
+        // dont clear builting shaders etc
+        void ClearProjectResources() override {
+            std::erase_if(storage, [](const auto &kv) { return kv.first.rfind("[Engine]", 0) != 0; });
+        }
     };
 
     class ResourceManager {
@@ -81,6 +87,11 @@ namespace Core {
         }
 
         template <typename T> bool Unload(const std::string &key) { return GetCache<T>().storage.erase(key) > 0; }
+
+        void ClearProjectResources() {
+            for (auto &[typeIdx, cache] : m_Caches)
+                cache->ClearProjectResources();
+        }
 
     private:
         ResourceManager() = default;
