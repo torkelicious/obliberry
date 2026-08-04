@@ -96,7 +96,7 @@ jobs:
                 uses: actions/cache@v6
                 with:
                     path: ${{ github.workspace }}/.sccache-store
-                    key: sccache-${{ matrix.name }}-${{ hashFiles('CMakeLists.txt') }}-${{ github.sha }}
+                    key: sccache-${{ matrix.name }}-${{ hashFiles('CMakeLists.txt') }}
                     restore-keys: |
                         sccache-${{ matrix.name }}-${{ hashFiles('CMakeLists.txt') }}-
 
