@@ -76,6 +76,10 @@ Learning resources that shaped the codebase:
 * [Crafting Interpreters](https://craftinginterpreters.com/contents.html) for the ObSL interpreter.
 * [A Quick Guide to Interpreter Design in Modern C++](https://simplifycpp.org/books/cpp/Quick_Guide_to_Interpreter_Design_by_Modern_CPP.pdf)
   by Ayman Alheraki, for the ObSL interpreter.
+* For the ECS: [C++ Game Engine Design: Basics to Advanced](https://codezup.com/cpp-game-engine-design-basics-advanced/),
+  [A Simple Entity Component System (ECS) [C++]](https://austinmorlan.com/posts/entity_component_system/),
+  [An Entity Component System from Scratch](https://www.codingwiththomas.com/blog/an-entity-component-system-from-scratch), and
+  [Making a Simple ECS](https://www.david-colson.com/2020/02/09/making-a-simple-ecs.html).
 * [rgbguy's framebuffer picking guide](https://rgbguy.in/blogs/object-picking.html) for entity picking.
 
 Assets: the textures in the demo project were drawn in GIMP by me, and the music was also made by me.
