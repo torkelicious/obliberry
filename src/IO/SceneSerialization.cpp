@@ -70,7 +70,7 @@ namespace IO::SceneIO {
             }
 
             if (properties.contains("lighting")) {
-                EnableLighting = j["lighting"].get<bool>();
+                EnableLighting = properties["lighting"].get<bool>();
             }
 
             if (properties.contains("ambient_light")) {
