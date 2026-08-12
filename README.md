@@ -1,7 +1,7 @@
 # The Obliberry Game Engine
 
 A Fallout-inspired isometric game engine for hex-grid games, written in C++20 with OpenGL, featuring a visual editor,
-an ECS core, its own scripting language, and one-file packaging.
+an ECS core, [its own scripting language](https://github.com/torkelicious/ObSL), and one-file packaging.
 
 > **note:** still in active development. Scripting APIs, file formats, and the ObSL language can still change.
 
