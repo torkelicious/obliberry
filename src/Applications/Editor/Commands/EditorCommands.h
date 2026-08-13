@@ -1,5 +1,7 @@
 #pragma once
 #include "ICommand.h"
+#include "Applications/Editor/EditorContext.h"
+#include "Applications/Editor/UI/Themeing/EditorTheme.h"
 #include "Config/ProjectConfig.h"
 #include "Platform/Window/Window.h"
 #include <glm/glm.hpp>
@@ -386,6 +388,23 @@ namespace Editor::Commands {
         std::string m_FieldName;
         std::vector<uint8_t> m_OldData;
         std::vector<uint8_t> m_NewData;
+    };
+
+    // = = = //
+    // Theme //
+    // = = = //
+
+    class ThemeUpdateCommand : public ICommand {
+    public:
+        ThemeUpdateCommand(const UI::Theme::Theme &oldCfg, const UI::Theme::Theme &newCfg, EditorContext &eCtx);
+        void Execute(Core::EngineContext &ctx) override;
+        void Undo(Core::EngineContext &ctx) override;
+        [[nodiscard]] std::string_view Name() const noexcept override;
+
+    private:
+        EditorContext *m_EditorCtx;
+        UI::Theme::Theme m_OldData;
+        UI::Theme::Theme m_NewData;
     };
 
 } // namespace Editor::Commands

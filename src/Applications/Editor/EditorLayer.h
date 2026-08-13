@@ -1,4 +1,5 @@
 #pragma once
+#include "EditorContext.h"
 #include <memory>
 #include <sstream>
 #include "Core/ApplicationLayer.h"
@@ -18,6 +19,7 @@
 #include "UI/ConfigWindows/GraphicsConfigEditor.h"
 #include "UI/Panels/Editor/UIPanel.h"
 #include "Platform/Input/InputManager.h"
+#include "UI/ConfigWindows/ThemeConfigEditor.h"
 
 namespace Editor {
     namespace States {
@@ -42,6 +44,8 @@ namespace Editor {
         void Render() override;
 
         void Shutdown() override;
+
+        EditorContext *GetEditorContext() { return &m_EditorContext; }
 
         inline static bool s_ShouldBuildDock = true;
 
@@ -77,6 +81,7 @@ namespace Editor {
         void PromptSaveDirtyMap(const std::function<void()> &onProceed);
 
         Core::EngineContext m_Context;
+        EditorContext m_EditorContext;
         Scenes::Scene *m_Scene = nullptr;
         std::string m_CurrentScenePath;
         EditorCamera m_Camera;
@@ -105,9 +110,11 @@ namespace Editor {
         UI::SceneConfigEditor m_SceneConfigEditor;
         UI::ProjectConfigEditor m_ProjectConfigEditor;
         UI::GraphicsConfigEditor m_GraphicsConfigEditor;
+        UI::ThemeConfigEditor m_ThemeConfigEditor;
         bool m_ShowSceneConfig = false;
         bool m_ShowProjectConfig = false;
         bool m_ShowGraphicsConfig = false;
+        bool m_ShowThemeConfig = false;
 
         // commands
         Commands::UndoManager m_UndoManager;

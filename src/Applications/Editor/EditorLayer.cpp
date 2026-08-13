@@ -26,16 +26,18 @@
 #include "Applications/Editor/States/MapEditor/MapEditState.h"
 #include "States/Hub/HubState.h"
 #include "Rendering/Renderer.h"
+#include "UI/Themeing/EditorTheme.h"
+#include "UI/Themeing/ThemeSerializer.h"
 
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "EditorLayer"
 
 void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
     m_Context = ctx;
+    m_Context.isEditorMode = true;
 
     m_Context.camera = &m_Camera;
     m_Context.sceneManager = &m_SceneManager;
-    m_Context.isEditorMode = true;
 
     ctx.camera = &m_Camera;
     ctx.sceneManager = &m_SceneManager;
@@ -47,6 +49,9 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
     m_SceneManager.SetContext(m_Context);
 
     m_Input = m_Context.input;
+
+    UI::Theme::IO::Deserialize(m_EditorContext.theme);
+    Editor::UI::Theme::Apply(m_EditorContext.theme);
 
     if (Core::Project::GetActive()) {
         LoadStartScene();
@@ -67,6 +72,8 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
     m_SceneConfigEditor.SetUndoMgr(&m_UndoManager);
     m_GraphicsConfigEditor.Init();
     m_GraphicsConfigEditor.SetUndoMgr(&m_UndoManager);
+    m_ThemeConfigEditor.Init(m_EditorContext);
+    m_ThemeConfigEditor.SetUndoMgr(&m_UndoManager);
 }
 
 
@@ -105,6 +112,7 @@ void Editor::EditorLayer::Render() {
     m_SceneConfigEditor.OnImGuiRender(m_ShowSceneConfig);
     m_ProjectConfigEditor.OnImGuiRender(m_ShowProjectConfig);
     m_GraphicsConfigEditor.OnImGuiRender(m_ShowGraphicsConfig);
+    m_ThemeConfigEditor.OnImGuiRender(m_ShowThemeConfig);
 
     m_NewProjectDialog.Update();
     if (Core::Project::GetActive()) {
@@ -275,6 +283,7 @@ void Editor::EditorLayer::ClearCurrentProject() {
     m_ShowSceneConfig = false;
     m_ShowProjectConfig = false;
     m_ShowGraphicsConfig = false; // not at all needed but i want consistent UI.
+    m_ShowThemeConfig = false;
 
     m_RegistryPanel.SetSelectedEntity(ECS::Entity{});
     m_InspectorPanel.SetSelectedEntity(ECS::Entity{});
@@ -486,6 +495,11 @@ void Editor::EditorLayer::DrawToolbar() {
         }
 
         ImGui::Separator();
+
+        if (ImGui::BeginMenu("Help")) {
+            // TODO: Implement
+            ImGui::EndMenu();
+        }
 
         // file
 
@@ -699,6 +713,11 @@ void Editor::EditorLayer::DrawToolbar() {
             if (ImGui::MenuItem("Reset Window Layout")) {
                 s_ShouldBuildDock = true;
             }
+            if (ImGui::MenuItem("Theme Editor")) {
+                m_ThemeConfigEditor.Reload();
+                m_ShowThemeConfig = true;
+            }
+
             ImGui::EndMenu();
         }
 
@@ -785,7 +804,7 @@ void Editor::EditorLayer::DrawToolbar() {
                 });
             }
         }
+        ImGui::EndMainMenuBar();
     }
-    ImGui::EndMainMenuBar();
 }
 #pragma pop_macro("LOG_WHO")

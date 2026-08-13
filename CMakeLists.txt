@@ -361,6 +361,7 @@ add_executable(obliberry_editor
         src/Applications/Editor/Commands/UndoManager.cpp
         src/Applications/Editor/Commands/EditorCommands.cpp
         src/Applications/Editor/UI/ConfigWindows/GraphicsConfigEditor.cpp
+        src/Applications/Editor/UI/ConfigWindows/ThemeConfigEditor.cpp
         src/Applications/Editor/UI/ConfigWindows/ConfigWindow.cpp
         src/Applications/Editor/UI/Panels/Editor/UIPanel.cpp
 )

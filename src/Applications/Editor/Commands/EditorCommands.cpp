@@ -4,6 +4,7 @@
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Components/MapComponent.h"
 #include "Applications/Editor/UI/Panels/Editor/EditorWidgets.h"
+#include "Applications/Editor/UI/Themeing/ThemeSerializer.h"
 #include "Rendering/Renderer.h"
 #include "Scenes/SceneManager.h"
 #include "Sound/AudioEngine.h"
@@ -412,5 +413,23 @@ namespace Editor::Commands {
             m_Restored = m_UISystem->AddChild(m_Parent, std::move(el));
         }
     }
+
+    //
+    // Themeing
+    //
+    ThemeUpdateCommand::ThemeUpdateCommand(const UI::Theme::Theme &oldCfg, const UI::Theme::Theme &newCfg, EditorContext &eCtx) : m_EditorCtx(&eCtx), m_OldData(oldCfg), m_NewData(newCfg) {}
+
+    void ThemeUpdateCommand::Execute(Core::EngineContext &ctx) {
+        m_EditorCtx->theme = m_NewData;
+        UI::Theme::Apply(m_NewData);
+        UI::Theme::IO::Serialize(m_NewData);
+    }
+
+    void ThemeUpdateCommand::Undo(Core::EngineContext &ctx) {
+        m_EditorCtx->theme = m_OldData;
+        UI::Theme::Apply(m_OldData);
+        UI::Theme::IO::Serialize(m_OldData);
+    }
+    std::string_view ThemeUpdateCommand::Name() const noexcept { return "Theme change"; }
 
 } // namespace Editor::Commands
