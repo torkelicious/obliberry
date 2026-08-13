@@ -62,5 +62,6 @@ namespace Core {
         int m_MainFrameIndex = 0;
 
         ImDrawData *m_FrameImGuiData[2] = {nullptr, nullptr};
+        std::mutex m_ImGuiTextureMutex;
     };
 } // namespace Core

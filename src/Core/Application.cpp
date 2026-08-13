@@ -151,6 +151,9 @@ void Core::Application::Run() {
         m_InputManager.BeginFrame();
         Platform::Window::Window::PollEvents();
 
+        // imgui lock
+        std::unique_lock imguiTextureLock(m_ImGuiTextureMutex);
+
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
@@ -167,6 +170,9 @@ void Core::Application::Run() {
         m_UIRenderer.BeginFrame(m_Window.GetWidth(), m_Window.GetHeight());
         m_Layer->Render();
         ImGui::Render();
+
+        // prolly safe to unlock
+        imguiTextureLock.unlock();
 
         renderer.SwapBuffers();
         m_UIRenderer.SwapBuffers();
@@ -299,6 +305,7 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer, UI::UI
         }
 
         if (m_FrameImGuiData[frameIdx] && m_FrameImGuiData[frameIdx]->CmdListsCount > 0) {
+            std::lock_guard imguiTextureLock(m_ImGuiTextureMutex);
             ImGui_ImplOpenGL3_RenderDrawData(m_FrameImGuiData[frameIdx]);
         }
 
