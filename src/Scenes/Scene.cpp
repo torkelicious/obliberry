@@ -17,6 +17,7 @@
 #include "ECS/Systems/HierarchySystem.h"
 #include "IO/Loaders/PrefabManager.h"
 #include "Math/Frustum.h"
+#include "../Platform/Timeout.h"
 #include "Scripting/EngineLib/EngineLib.h"
 #include "Sound/AudioEngine.h"
 
@@ -89,6 +90,7 @@ void Scenes::Scene::Update(const float dt) {
         ECS::Systems::LightingSystem::Update(m_Registry);
     }
     ECS::Systems::ParticleSystem::Update(m_Registry, dt);
+    Platform::Time::updateTimers();
 }
 
 void Scenes::Scene::Render() {
