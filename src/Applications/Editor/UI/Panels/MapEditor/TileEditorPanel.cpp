@@ -183,7 +183,7 @@ namespace Editor::UI {
             ImGui::SeparatorText("Brush");
 
             if (typeMats.empty()) {
-                ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "No tile types defined.");
+                ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "No tile types defined, no map will be visible!");
                 ImGui::TextDisabled("Use 'Save as New Type' below to create one.");
             }
 
