@@ -33,11 +33,13 @@ namespace Editor::UI {
     }
 
     bool FontCombo(const char *label, Core::ResourceManager &resources, std::shared_ptr<::UI::Font> &current) {
-        return AssetComboImpl(label, resources, current, [](const std::shared_ptr<::UI::Font> &font) {
-            if (font) {
-                ImGui::TextDisabled("%upx%s", font->GetFontSize(), font->IsSDF() ? " SDF" : "");
-            }
-        });
+        const bool changed = AssetComboImpl(label, resources, current, [](const std::shared_ptr<::UI::Font> &font) { ImGui::TextDisabled("%upx%s", font->GetFontSize(), font->IsSDF() ? " SDF" : ""); });
+        if (!current) {
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.4f, 0.4f, 1.0f));
+            ImGui::TextWrapped("No font selected, text will not render!");
+            ImGui::PopStyleColor();
+        }
+        return changed;
     }
 
     bool FileCombo(const char *label, const std::string &subDir, const std::string &extension, std::string &current) {
