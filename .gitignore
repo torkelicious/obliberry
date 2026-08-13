@@ -20,7 +20,6 @@ out/
 imgui.ini
 imgui*.ini
 
-dc.txt
 todo.txt
 compile_commands.json
 /.zed/
