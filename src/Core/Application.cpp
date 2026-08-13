@@ -85,9 +85,7 @@ void Core::Application::Run() {
     ImGui::StyleColorsDark();
     float xscale, yscale;
     glfwGetWindowContentScale(m_Window.GetNativeWindow(), &xscale, &yscale);
-    ImGui::GetStyle().ScaleAllSizes(xscale);
     ImGuiIO &io = ImGui::GetIO();
-    io.FontGlobalScale = xscale;
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;        // Docking
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;    // Keyboard UI navigation
     io.ConfigFlags |= ImGuiConfigFlags_NavNoCaptureKeyboard; // Don't capture keyboard for navigation
