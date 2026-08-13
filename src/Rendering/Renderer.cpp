@@ -203,9 +203,11 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
             const auto overlayStart = std::ranges::lower_bound(instCmds, 1, {}, [](const InstancedRenderCommand &cmd) { return cmd.renderOrder; });
 
             const GLboolean prevBlend = glIsEnabled(GL_BLEND);
-            GLint prevBlendSrc, prevBlendDst;
-            glGetIntegerv(GL_BLEND_SRC_RGB, &prevBlendSrc);
-            glGetIntegerv(GL_BLEND_DST_RGB, &prevBlendDst);
+            GLint prevBlendSrcRGB, prevBlendDstRGB, prevBlendSrcAlpha, prevBlendDstAlpha;
+            glGetIntegerv(GL_BLEND_SRC_RGB, &prevBlendSrcRGB);
+            glGetIntegerv(GL_BLEND_DST_RGB, &prevBlendDstRGB);
+            glGetIntegerv(GL_BLEND_SRC_ALPHA, &prevBlendSrcAlpha);
+            glGetIntegerv(GL_BLEND_DST_ALPHA, &prevBlendDstAlpha);
             int currentBlendMode = -1;
 
             for (auto it = instCmds.begin(); it != overlayStart; ++it) {
@@ -239,16 +241,18 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
 
             // restore blend state
             prevBlend ? glEnable(GL_BLEND) : glDisable(GL_BLEND);
-            glBlendFuncSeparate(prevBlendSrc, prevBlendDst, prevBlendSrc, prevBlendDst);
+            glBlendFuncSeparate(prevBlendSrcRGB, prevBlendDstRGB, prevBlendSrcAlpha, prevBlendDstAlpha);
         }
     }
 
     // merge and render single commands
     {
         const GLboolean prevBlend = glIsEnabled(GL_BLEND);
-        GLint prevBlendSrc, prevBlendDst;
-        glGetIntegerv(GL_BLEND_SRC_RGB, &prevBlendSrc);
-        glGetIntegerv(GL_BLEND_DST_RGB, &prevBlendDst);
+        GLint prevBlendSrcRGB, prevBlendDstRGB, prevBlendSrcAlpha, prevBlendDstAlpha;
+        glGetIntegerv(GL_BLEND_SRC_RGB, &prevBlendSrcRGB);
+        glGetIntegerv(GL_BLEND_DST_RGB, &prevBlendDstRGB);
+        glGetIntegerv(GL_BLEND_SRC_ALPHA, &prevBlendSrcAlpha);
+        glGetIntegerv(GL_BLEND_DST_ALPHA, &prevBlendDstAlpha);
 
         m_BatchRanges.clear();
         m_MergedTransforms.clear();
@@ -282,7 +286,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
 
         // restore blend state
         prevBlend ? glEnable(GL_BLEND) : glDisable(GL_BLEND);
-        glBlendFuncSeparate(prevBlendSrc, prevBlendDst, prevBlendSrc, prevBlendDst);
+        glBlendFuncSeparate(prevBlendSrcRGB, prevBlendDstRGB, prevBlendSrcAlpha, prevBlendDstAlpha);
     }
 
     // overlay instanced commands
@@ -291,9 +295,11 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
 
         if (const auto overlayStart = std::ranges::lower_bound(instCmds, 1, {}, [](const InstancedRenderCommand &cmd) { return cmd.renderOrder; }); overlayStart != instCmds.end()) {
             const GLboolean prevBlend = glIsEnabled(GL_BLEND);
-            GLint prevBlendSrc, prevBlendDst;
-            glGetIntegerv(GL_BLEND_SRC_RGB, &prevBlendSrc);
-            glGetIntegerv(GL_BLEND_DST_RGB, &prevBlendDst);
+            GLint prevBlendSrcRGB, prevBlendDstRGB, prevBlendSrcAlpha, prevBlendDstAlpha;
+            glGetIntegerv(GL_BLEND_SRC_RGB, &prevBlendSrcRGB);
+            glGetIntegerv(GL_BLEND_DST_RGB, &prevBlendDstRGB);
+            glGetIntegerv(GL_BLEND_SRC_ALPHA, &prevBlendSrcAlpha);
+            glGetIntegerv(GL_BLEND_DST_ALPHA, &prevBlendDstAlpha);
             int currentBlendMode = -1;
 
             for (auto it = overlayStart; it != instCmds.end(); ++it) {
@@ -326,7 +332,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
             }
 
             prevBlend ? glEnable(GL_BLEND) : glDisable(GL_BLEND);
-            glBlendFuncSeparate(prevBlendSrc, prevBlendDst, prevBlendSrc, prevBlendDst);
+            glBlendFuncSeparate(prevBlendSrcRGB, prevBlendDstRGB, prevBlendSrcAlpha, prevBlendDstAlpha);
         }
     }
 
