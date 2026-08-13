@@ -45,7 +45,7 @@ namespace Editor::UI {
     bool FileCombo(const char *label, const std::string &subDir, const std::string &extension, std::string &current) {
         const auto resolved = IO::VFS::Resolve(subDir);
         std::vector<std::string> files;
-        files.push_back("None");
+        files.emplace_back("None");
         if (std::filesystem::exists(resolved)) {
             for (const auto &entry : std::filesystem::directory_iterator(resolved)) {
                 if (entry.is_regular_file() && entry.path().extension() == extension) {
