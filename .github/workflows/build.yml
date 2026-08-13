@@ -20,6 +20,10 @@ on:
                 required: false
                 default: v0.0.0
                 type: string
+            custom_release_text:
+                description: 'Additional text for release notes'
+                required: false
+                type: string
     push:
         tags:
             - 'v*'
@@ -161,3 +165,9 @@ jobs:
                         obliberry-*.zip
                         SHA256SUMS
                     generate_release_notes: true
+                    body: |
+
+                        Unzip the downloaded archive and run `obliberry_editor` for your platform.
+                        > **Note for Linux / macOS:** You may need to run `chmod +x obliberry_editor` in your terminal to make the application executable.
+
+                        ${{ github.event.inputs.custom_release_text }}
