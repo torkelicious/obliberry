@@ -50,7 +50,7 @@ void Scripting::EngineLib::register_time_modules(ObSL::Interpreter &interpreter)
             interpreter.gc.allocate<ObSL::NativeFunction>(0, [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value { return ctx ? static_cast<double>(ctx->deltaTime) : 0.0; }, "GetRawDt"));
 
 
-    //this a lil janky
+    // this a lil janky
     interpreter.get_global_environment()->define("SetTimeout", interpreter.gc.allocate<ObSL::NativeFunction>(
                                                                        2,
                                                                        // func, ms
