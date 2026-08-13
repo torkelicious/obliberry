@@ -32,13 +32,13 @@ endif ()
 # Platform-specific compiler & linker options
 if (MSVC)
     target_compile_options(obliberry_options INTERFACE
-        $<$<NOT:$<CONFIG:Debug>>:/Gy>
-        /utf-8 # Force UTF-8 encoding
-        /EHsc  # exception handling
+            $<$<NOT:$<CONFIG:Debug>>:/Gy>
+            /utf-8 # Force UTF-8 encoding
+            /EHsc  # exception handling
     )
     target_link_options(obliberry_options INTERFACE
-        $<$<NOT:$<CONFIG:Debug>>:/OPT:REF>
-        $<$<NOT:$<CONFIG:Debug>>:/OPT:ICF>
+            $<$<NOT:$<CONFIG:Debug>>:/OPT:REF>
+            $<$<NOT:$<CONFIG:Debug>>:/OPT:ICF>
     )
 
     # lld-link is generally faster than link.exe,
@@ -51,10 +51,10 @@ if (MSVC)
     endif ()
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(obliberry_options INTERFACE
-        $<$<NOT:$<CONFIG:Debug>>:-ffunction-sections>
-        $<$<NOT:$<CONFIG:Debug>>:-fdata-sections>
-        $<$<CONFIG:RelWithDebInfo>:-fno-omit-frame-pointer>
-        $<$<CONFIG:RelWithDebInfo>:-g>
+            $<$<NOT:$<CONFIG:Debug>>:-ffunction-sections>
+            $<$<NOT:$<CONFIG:Debug>>:-fdata-sections>
+            $<$<CONFIG:RelWithDebInfo>:-fno-omit-frame-pointer>
+            $<$<CONFIG:RelWithDebInfo>:-g>
     )
 
     if (APPLE)
@@ -63,9 +63,9 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     elseif (CMAKE_SYSTEM_NAME MATCHES "Linux")
         # Linux specific linker flags
         target_link_options(obliberry_options INTERFACE
-            $<$<NOT:$<CONFIG:Debug>>:-Wl,--gc-sections>
-            $<$<CONFIG:RelWithDebInfo>:-Wl,--build-id>
-            $<$<CONFIG:Release,MinSizeRel>:-s>
+                $<$<NOT:$<CONFIG:Debug>>:-Wl,--gc-sections>
+                $<$<CONFIG:RelWithDebInfo>:-Wl,--build-id>
+                $<$<CONFIG:Release,MinSizeRel>:-s>
         )
     endif ()
 endif ()
@@ -100,10 +100,10 @@ endif ()
 # Clang gets ThinLTO
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     target_compile_options(obliberry_options INTERFACE
-        $<$<CONFIG:Release,MinSizeRel,RelWithDebInfo>:-flto=thin>
+            $<$<CONFIG:Release,MinSizeRel,RelWithDebInfo>:-flto=thin>
     )
     target_link_options(obliberry_options INTERFACE
-        $<$<CONFIG:Release,MinSizeRel,RelWithDebInfo>:-flto=thin>
+            $<$<CONFIG:Release,MinSizeRel,RelWithDebInfo>:-flto=thin>
     )
     message(STATUS "ThinLTO enabled for Clang Release/RelWithDebInfo/MinSizeRel builds.")
 else ()
@@ -131,11 +131,11 @@ endforeach ()
 function(set_output_subdir SUBDIR)
     foreach (TGT ${ARGN})
         set_target_properties(${TGT} PROPERTIES
-            RUNTIME_OUTPUT_DIRECTORY "${OUTPUT_BIN_DIR}/${SUBDIR}")
+                RUNTIME_OUTPUT_DIRECTORY "${OUTPUT_BIN_DIR}/${SUBDIR}")
         foreach (CONFIG ${CONFIG_TYPES})
             string(TOUPPER "${CONFIG}" CONFIG_UPPER)
             set_target_properties(${TGT} PROPERTIES
-                RUNTIME_OUTPUT_DIRECTORY_${CONFIG_UPPER} "${OUTPUT_BIN_DIR}/${SUBDIR}")
+                    RUNTIME_OUTPUT_DIRECTORY_${CONFIG_UPPER} "${OUTPUT_BIN_DIR}/${SUBDIR}")
         endforeach ()
     endforeach ()
 endfunction()
@@ -146,11 +146,11 @@ set(FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}/.deps")
 
 function(fetch_dep NAME REPO TAG)
     FetchContent_Declare(
-        ${NAME}
-        GIT_REPOSITORY ${REPO}
-        GIT_TAG ${TAG}
-        GIT_SHALLOW TRUE
-        ${ARGN}
+            ${NAME}
+            GIT_REPOSITORY ${REPO}
+            GIT_TAG ${TAG}
+            GIT_SHALLOW TRUE
+            ${ARGN}
     )
 endfunction()
 
@@ -169,7 +169,7 @@ fetch_dep(nlohmann_json https://github.com/nlohmann/json.git v3.12.0)
 set(JSON_BuildTests OFF CACHE INTERNAL "")
 FetchContent_MakeAvailable(nlohmann_json)
 
-fetch_dep(nfd https://github.com/btzy/nativefiledialog-extended.git 3cd252a)
+fetch_dep(nfd https://github.com/btzy/nativefiledialog-extended.git 7bbbd9fe6b1d1549b41df138f614d1a44df9ba08)
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     set(NFD_PORTAL ON CACHE BOOL "Enable XDG Desktop Portal for Linux" FORCE)
 endif ()
@@ -202,38 +202,38 @@ add_subdirectory(external/obsl)
 
 # Vendor Library
 add_library(obliberry_vendor STATIC
-    # GLAD
-    external/glad/src/glad.c
-    external/stb_image/stb_image.cpp
+        # GLAD
+        external/glad/src/glad.c
+        external/stb_image/stb_image.cpp
 
-    # ImGui
-    external/imgui/backends/imgui_impl_glfw.cpp
-    external/imgui/backends/imgui_impl_opengl3.cpp
-    external/imgui/imgui.cpp
-    external/imgui/imgui_demo.cpp
-    external/imgui/imgui_draw.cpp
-    external/imgui/imgui_tables.cpp
-    external/imgui/imgui_widgets.cpp
+        # ImGui
+        external/imgui/backends/imgui_impl_glfw.cpp
+        external/imgui/backends/imgui_impl_opengl3.cpp
+        external/imgui/imgui.cpp
+        external/imgui/imgui_demo.cpp
+        external/imgui/imgui_draw.cpp
+        external/imgui/imgui_tables.cpp
+        external/imgui/imgui_widgets.cpp
 
-    # ImGuizmo
-    external/imguizmo/ImGuizmo.cpp
-    external/imguizmo/GraphEditor.cpp
-    external/imguizmo/ImCurveEdit.cpp
-    external/imguizmo/ImGradient.cpp
-    external/imguizmo/ImSequencer.cpp
-    external/imguizmo/ImVectorEditor.cpp
+        # ImGuizmo
+        external/imguizmo/ImGuizmo.cpp
+        external/imguizmo/GraphEditor.cpp
+        external/imguizmo/ImCurveEdit.cpp
+        external/imguizmo/ImGradient.cpp
+        external/imguizmo/ImSequencer.cpp
+        external/imguizmo/ImVectorEditor.cpp
 
-    # Miniaudio
-    external/miniaudio/miniaudio.c
+        # Miniaudio
+        external/miniaudio/miniaudio.c
 )
 
 target_include_directories(obliberry_vendor SYSTEM PUBLIC
-    external/glad/include
-    external/imgui
-    external/imgui/backends
-    external/imguizmo
-    external/stb_image
-    external/miniaudio
+        external/glad/include
+        external/imgui
+        external/imgui/backends
+        external/imguizmo
+        external/stb_image
+        external/miniaudio
 )
 
 target_link_libraries(obliberry_vendor PUBLIC glfw freetype)
@@ -247,122 +247,122 @@ endif ()
 
 # Engine Target
 add_library(obliberry_engine STATIC
-    # Engine core
-    src/Core/Application.cpp
-    src/Platform/Window/Window.cpp
-    src/Platform/Input/InputManager.cpp
-    src/Config/ProjectConfig.cpp
-    src/Config/GraphicsConfig.cpp
-    src/Platform/Input/KeyMappings.cpp
-    src/Core/Project.cpp
-    src/Platform/Threading/ThreadPool.cpp
-    src/Logger/LoggerService.cpp
+        # Engine core
+        src/Core/Application.cpp
+        src/Platform/Window/Window.cpp
+        src/Platform/Input/InputManager.cpp
+        src/Config/ProjectConfig.cpp
+        src/Config/GraphicsConfig.cpp
+        src/Platform/Input/KeyMappings.cpp
+        src/Core/Project.cpp
+        src/Platform/Threading/ThreadPool.cpp
+        src/Logger/LoggerService.cpp
 
-    # Rendering
-    src/Rendering/VertexBuffer.cpp
-    src/Rendering/VertexArray.cpp
-    src/Rendering/IndexBuffer.cpp
-    src/Rendering/Renderer.cpp
-    src/Rendering/Texture.cpp
-    src/Rendering/Shader.cpp
-    src/Rendering/GLDebug.cpp
-    src/Rendering/MeshFactory.cpp
+        # Rendering
+        src/Rendering/VertexBuffer.cpp
+        src/Rendering/VertexArray.cpp
+        src/Rendering/IndexBuffer.cpp
+        src/Rendering/Renderer.cpp
+        src/Rendering/Texture.cpp
+        src/Rendering/Shader.cpp
+        src/Rendering/GLDebug.cpp
+        src/Rendering/MeshFactory.cpp
 
-    # Scenes / gameplay
-    src/Scenes/Scene.cpp
-    src/Scenes/SceneManager.cpp
-    src/Applications/Runtime/Game/GameLayer.cpp
-    src/Applications/Runtime/Game/GameUI.cpp
+        # Scenes / gameplay
+        src/Scenes/Scene.cpp
+        src/Scenes/SceneManager.cpp
+        src/Applications/Runtime/Game/GameLayer.cpp
+        src/Applications/Runtime/Game/GameUI.cpp
 
-    # IO
-    src/IO/MapSerialization.cpp
-    src/IO/Loaders/AssetLoader.cpp
-    src/IO/Loaders/EntityFactory.cpp
-    src/IO/Loaders/UISerializer.cpp
-    src/IO/SceneSerialization.cpp
-    src/IO/VFS/VFS.cpp
+        # IO
+        src/IO/MapSerialization.cpp
+        src/IO/Loaders/AssetLoader.cpp
+        src/IO/Loaders/EntityFactory.cpp
+        src/IO/Loaders/UISerializer.cpp
+        src/IO/SceneSerialization.cpp
+        src/IO/VFS/VFS.cpp
 
-    # Sound
-    src/Sound/AudioEngine.cpp
+        # Sound
+        src/Sound/AudioEngine.cpp
 
-    # Scripting / EngineLib
-    src/Scripting/EngineLib/EngineLib.cpp
-    src/Scripting/EngineLib/ScriptCommandBuffer.cpp
-    src/Scripting/EngineLib/Modules/EngineLibAudio.cpp
-    src/Scripting/EngineLib/Modules/EngineLibMap.cpp
-    src/Scripting/EngineLib/Modules/EngineLibCore.cpp
-    src/Scripting/EngineLib/Modules/EngineLibInput.cpp
-    src/Scripting/EngineLib/Modules/EngineLibCamera.cpp
-    src/Scripting/EngineLib/Modules/EngineLibSceneManagement.cpp
-    src/Scripting/EngineLib/Modules/EngineLibTime.cpp
-    src/Scripting/EngineLib/Modules/EngineLibUI.cpp
-    src/Scripting/EngineLib/Modules/EngineLibRegistry.cpp
+        # Scripting / EngineLib
+        src/Scripting/EngineLib/EngineLib.cpp
+        src/Scripting/EngineLib/ScriptCommandBuffer.cpp
+        src/Scripting/EngineLib/Modules/EngineLibAudio.cpp
+        src/Scripting/EngineLib/Modules/EngineLibMap.cpp
+        src/Scripting/EngineLib/Modules/EngineLibCore.cpp
+        src/Scripting/EngineLib/Modules/EngineLibInput.cpp
+        src/Scripting/EngineLib/Modules/EngineLibCamera.cpp
+        src/Scripting/EngineLib/Modules/EngineLibSceneManagement.cpp
+        src/Scripting/EngineLib/Modules/EngineLibTime.cpp
+        src/Scripting/EngineLib/Modules/EngineLibUI.cpp
+        src/Scripting/EngineLib/Modules/EngineLibRegistry.cpp
 
-    # Packaging
-    src/IO/Package/ContainerWriter.cpp
-    src/IO/Package/ContainerReader.cpp
-    src/IO/Package/Tools/AssetPacking.cpp
-    src/IO/Package/Tools/DependencyGraph.cpp
-    src/IO/Package/Tools/IgnoreRules.cpp
+        # Packaging
+        src/IO/Package/ContainerWriter.cpp
+        src/IO/Package/ContainerReader.cpp
+        src/IO/Package/Tools/AssetPacking.cpp
+        src/IO/Package/Tools/DependencyGraph.cpp
+        src/IO/Package/Tools/IgnoreRules.cpp
 
-    # UI
-    src/UI/Text/Font.cpp
-    src/UI/Text/Font.h
-    src/UI/Elements/UIText.cpp
-    src/UI/Elements/UIButton.cpp
-    src/UI/Elements/UIImage.cpp
-    src/UI/Elements/UIRect.cpp
-    src/UI/Rendering/UIRenderer.cpp
-    src/UI/Rendering/UISystem.h
-    src/UI/Rendering/UISystem.cpp
+        # UI
+        src/UI/Text/Font.cpp
+        src/UI/Text/Font.h
+        src/UI/Elements/UIText.cpp
+        src/UI/Elements/UIButton.cpp
+        src/UI/Elements/UIImage.cpp
+        src/UI/Elements/UIRect.cpp
+        src/UI/Rendering/UIRenderer.cpp
+        src/UI/Rendering/UISystem.h
+        src/UI/Rendering/UISystem.cpp
 )
 
 target_include_directories(obliberry_engine PUBLIC src)
 
 target_compile_definitions(obliberry_engine PUBLIC
-    $<$<CONFIG:Debug>:DEBUG_BUILD>
+        $<$<CONFIG:Debug>:DEBUG_BUILD>
 )
 
 target_link_libraries(obliberry_engine PUBLIC
-    obliberry_options
-    obliberry_vendor
-    glm::glm
-    obsl
-    nlohmann_json::nlohmann_json
-    nfd
-    lz4
+        obliberry_options
+        obliberry_vendor
+        glm::glm
+        obsl
+        nlohmann_json::nlohmann_json
+        nfd
+        lz4
 )
 
 # Runtime Executable
 add_executable(obliberry_runtime
-    src/Applications/Runtime/RuntimeMain.cpp
+        src/Applications/Runtime/RuntimeMain.cpp
 )
 target_link_libraries(obliberry_runtime PRIVATE obliberry_engine)
 
 # Editor Executable
 add_executable(obliberry_editor
-    src/Applications/Editor/EditorMain.cpp
-    src/Applications/Editor/EditorLayer.cpp
-    src/Applications/Editor/States/Editor/EditState.cpp
-    src/Applications/Editor/States/Play/PlayState.cpp
-    src/Applications/Editor/States/MapEditor/MapEditState.cpp
-    src/Applications/Editor/States/Hub/HubState.cpp
-    src/Applications/Editor/UI/Panels/Editor/EditorWidgetsCombo.cpp
-    src/Applications/Editor/UI/Panels/Editor/EditorWidgets.cpp
-    src/Applications/Editor/UI/Panels/Editor/InspectorPanel.cpp
-    src/Applications/Editor/UI/Panels/ProjectBrowserPanel.cpp
-    src/Applications/Editor/UI/Panels/Editor/RegistryPanel.cpp
-    src/Applications/Editor/UI/Panels/ViewportPanel.cpp
-    src/Applications/Editor/UI/ConfigWindows/ProjectConfigEditor.cpp
-    src/Applications/Editor/UI/ConfigWindows/SceneConfigEditor.cpp
-    src/Applications/Editor/Platform/FileDialogs.cpp
-    src/IO/Package/Tools/ObpakTools.cpp
-    src/Applications/Editor/UI/Panels/MapEditor/TileEditorPanel.cpp
-    src/Applications/Editor/Commands/UndoManager.cpp
-    src/Applications/Editor/Commands/EditorCommands.cpp
-    src/Applications/Editor/UI/ConfigWindows/GraphicsConfigEditor.cpp
-    src/Applications/Editor/UI/ConfigWindows/ConfigWindow.cpp
-    src/Applications/Editor/UI/Panels/Editor/UIPanel.cpp
+        src/Applications/Editor/EditorMain.cpp
+        src/Applications/Editor/EditorLayer.cpp
+        src/Applications/Editor/States/Editor/EditState.cpp
+        src/Applications/Editor/States/Play/PlayState.cpp
+        src/Applications/Editor/States/MapEditor/MapEditState.cpp
+        src/Applications/Editor/States/Hub/HubState.cpp
+        src/Applications/Editor/UI/Panels/Editor/EditorWidgetsCombo.cpp
+        src/Applications/Editor/UI/Panels/Editor/EditorWidgets.cpp
+        src/Applications/Editor/UI/Panels/Editor/InspectorPanel.cpp
+        src/Applications/Editor/UI/Panels/ProjectBrowserPanel.cpp
+        src/Applications/Editor/UI/Panels/Editor/RegistryPanel.cpp
+        src/Applications/Editor/UI/Panels/ViewportPanel.cpp
+        src/Applications/Editor/UI/ConfigWindows/ProjectConfigEditor.cpp
+        src/Applications/Editor/UI/ConfigWindows/SceneConfigEditor.cpp
+        src/Applications/Editor/Platform/FileDialogs.cpp
+        src/IO/Package/Tools/ObpakTools.cpp
+        src/Applications/Editor/UI/Panels/MapEditor/TileEditorPanel.cpp
+        src/Applications/Editor/Commands/UndoManager.cpp
+        src/Applications/Editor/Commands/EditorCommands.cpp
+        src/Applications/Editor/UI/ConfigWindows/GraphicsConfigEditor.cpp
+        src/Applications/Editor/UI/ConfigWindows/ConfigWindow.cpp
+        src/Applications/Editor/UI/Panels/Editor/UIPanel.cpp
 )
 target_link_libraries(obliberry_editor PRIVATE obliberry_engine)
 
@@ -386,11 +386,11 @@ endif ()
 
 # Post-build Project Template
 add_custom_command(
-    TARGET obliberry_editor POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-    "${CMAKE_SOURCE_DIR}/Templates"
-    "${OUTPUT_BIN_DIR}/Templates"
-    COMMENT "Copying templates to Editor output directory"
+        TARGET obliberry_editor POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_SOURCE_DIR}/Templates"
+        "${OUTPUT_BIN_DIR}/Templates"
+        COMMENT "Copying templates to Editor output directory"
 )
 
 # Output Routing
