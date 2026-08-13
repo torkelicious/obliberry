@@ -216,12 +216,13 @@ These are the objects returned by `entity.GetComponent(name)`.
 
 ## Time
 
-| Function              | Args   | Returns | Description                                             |
-|-----------------------|--------|---------|---------------------------------------------------------|
-| `GetFrameCount()`     | -      | number  | Frames elapsed since the engine started.                |
-| `GetTimeScale()`      | -      | number  | Current time scale (default `1.0`).                     |
-| `SetTimeScale(scale)` | number | bool    | Sets the time scale, clamped to ≥ 0. `true` on success. |
-| `GetRawDt()`          | -      | number  | Raw (unscaled) delta time see also `get_dt()` (scaled). |
+| Function              | Args             | Returns | Description                                                                                                                                |
+|-----------------------|------------------|---------|--------------------------------------------------------------------------------------------------------------------------------------------|
+| `GetFrameCount()`     | -                | number  | Frames elapsed since the engine started.                                                                                                   |
+| `GetTimeScale()`      | -                | number  | Current time scale (default `1.0`).                                                                                                        |
+| `SetTimeScale(scale)` | number           | bool    | Sets the time scale, clamped to ≥ 0. `true` on success.                                                                                    |
+| `GetRawDt()`          | -                | number  | Raw (unscaled) delta time; see also `get_dt()` (scaled).                                                                                   |
+| `SetTimeout(fn, ms)`  | callable, number | bool    | Calls `fn()` after `ms` milliseconds. Runs on the main thread with a command buffer so registry mutations work. Returns `true` on success. |
 
 ## UI (GUI)
 
