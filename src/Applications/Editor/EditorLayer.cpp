@@ -55,7 +55,7 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
         const ImGuiIO &io = ImGui::GetIO();
         UI::Theme::IO::Deserialize(m_EditorContext.theme);
         Editor::UI::Theme::Apply(m_EditorContext.theme);
-        for (const auto &font : m_EditorContext.fontset.fonts) {
+        for (auto &font : m_EditorContext.fontset.fonts) {
             font.fontPtr = io.Fonts->AddFontFromFileTTF(font.path.c_str());
         }
     }

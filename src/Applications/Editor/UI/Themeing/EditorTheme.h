@@ -348,7 +348,7 @@ namespace Editor::UI::Theme {
     // Fonts
 
     // todo: use
-    enum class FontRole {
+    enum class FontRole : uint8_t {
         Body,
         Bold,
         Monospace,
@@ -362,7 +362,7 @@ namespace Editor::UI::Theme {
         FontRole role = FontRole::Body;
         bool mergeIntoPrevious = false;
         float iconMinAdvanceX = 0.0f;
-        mutable ImFont *fontPtr = nullptr;
+        ImFont *fontPtr = nullptr;
     };
 
     struct FontSet {
