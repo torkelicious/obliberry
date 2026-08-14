@@ -423,7 +423,7 @@ namespace Editor::UI::Theme {
         return style;
     }
 
-    inline std::string FullFontName(const char *path) {
+    inline std::string GetFullFontName(const char *path) {
         FT_Face face = nullptr;
 
         if (FT_New_Face(FreeType::library(), path, 0, &face) != 0)
@@ -441,6 +441,10 @@ namespace Editor::UI::Theme {
         return name;
     }
 
+    // load a fontconfig directly from path
+    inline FontConfig LoadFontConfig(const std::filesystem::path &path, const FontRole &role = FontRole::Body) {
+        return {.name = GetFullFontName(path.c_str()), .path = path, .role = role, .fontPtr = ImGui::GetIO().Fonts->AddFontFromFileTTF(path.c_str())};
+    }
 
     // serialization
     using KeyValueList = std::vector<std::pair<std::string, std::string>>;
