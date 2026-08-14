@@ -385,6 +385,16 @@ if (BUILD_PACK_TOOLS)
     target_link_libraries(obsl_pack_run PRIVATE obliberry_engine)
 endif ()
 
+
+# internal resources
+add_custom_command(
+        TARGET obliberry_editor POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_SOURCE_DIR}/resources"
+        "${OUTPUT_BIN_DIR}/internal/resources"
+        COMMENT "Copying internal resources to Editor internal/ output directory"
+)
+
 # Post-build Project Template
 add_custom_command(
         TARGET obliberry_editor POST_BUILD
