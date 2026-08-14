@@ -45,6 +45,7 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
     m_SceneConfigEditor.SetContext(m_Context);
     m_ProjectConfigEditor.SetContext(m_Context);
     m_GraphicsConfigEditor.SetContext(m_Context);
+    m_ThemeConfigEditor.SetContext(m_Context);
 
     m_SceneManager.SetContext(m_Context);
 
