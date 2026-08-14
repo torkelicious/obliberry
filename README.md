@@ -5,8 +5,6 @@ an ECS core, [its own scripting language](https://github.com/torkelicious/ObSL),
 
 > **note:** still in active development. Scripting APIs, file formats, and the ObSL language can still change.
 
-![Editor application themed](docs/img/themed.png)
-
 ![Editor application in use](docs/img/demo-projects.gif)
 
 <sup><sub>Yes there is a lighting system bug in this gif, it has since been fixed :)</sub></sup>
