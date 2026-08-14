@@ -158,6 +158,8 @@ void Core::Application::Run() {
         // imgui lock
         std::unique_lock imguiTextureLock(m_ImGuiTextureMutex);
 
+        m_Layer->PreImGuiFrame();
+
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 

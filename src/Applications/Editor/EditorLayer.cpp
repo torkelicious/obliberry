@@ -52,14 +52,9 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
     m_Input = m_Context.input;
 
     // theme / fonts
-    {
-        const ImGuiIO &io = ImGui::GetIO();
-        UI::Theme::IO::Deserialize(m_EditorContext.theme);
-        Editor::UI::Theme::Apply(m_EditorContext.theme);
-        for (auto &font : m_EditorContext.fontset.fonts) {
-            font.fontPtr = io.Fonts->AddFontFromFileTTF(font.path.c_str());
-        }
-    }
+    UI::Theme::IO::Deserialize(m_EditorContext);
+    Editor::UI::Theme::Apply(m_EditorContext.theme);
+    UI::Theme::ApplyFontSet(m_EditorContext.fontset);
 
     if (Core::Project::GetActive()) {
         LoadStartScene();
@@ -82,6 +77,12 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
     m_GraphicsConfigEditor.SetUndoMgr(&m_UndoManager);
     m_ThemeConfigEditor.Init(m_EditorContext);
     m_ThemeConfigEditor.SetUndoMgr(&m_UndoManager);
+}
+
+void Editor::EditorLayer::PreImGuiFrame() {
+    if (m_EditorContext.fontsDirty.exchange(false, std::memory_order_acq_rel)) {
+        Editor::UI::Theme::ApplyFontSet(m_EditorContext.fontset);
+    }
 }
 
 

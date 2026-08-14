@@ -13,6 +13,7 @@
 #include <cmath>
 #include <cstdio>
 #include <format>
+#include <imgui_internal.h>
 #include <optional>
 #include <span>
 #include <string>
@@ -321,8 +322,8 @@ namespace Editor::UI::Theme {
         t.SetColor(ImGuiCol_NavWindowingDimBg, ImVec4(p.bg.x, p.bg.y, p.bg.z, 0.6f));
         t.SetColor(ImGuiCol_ModalWindowDimBg, ImVec4(p.bg.x, p.bg.y, p.bg.z, 0.6f));
 
-        t.SetFloat(ImGuiStyleVar_WindowRounding, 0.0f);
-        t.SetFloat(ImGuiStyleVar_ChildRounding, 0.0f);
+        t.SetFloat(ImGuiStyleVar_WindowRounding, 10.0f);
+        t.SetFloat(ImGuiStyleVar_ChildRounding, 5.0f);
         t.SetFloat(ImGuiStyleVar_PopupRounding, 3.0f);
         t.SetFloat(ImGuiStyleVar_FrameRounding, 3.0f);
         t.SetFloat(ImGuiStyleVar_GrabRounding, 3.0f);
@@ -352,6 +353,8 @@ namespace Editor::UI::Theme {
         Body,
         Bold,
         Monospace,
+        Small,
+        Heading,
         Icons,
     };
 
@@ -375,7 +378,10 @@ namespace Editor::UI::Theme {
         }
 
         // wrapper to return ImFont pointer for use with ImGui::PushFont etc
-        [[nodiscard]] ImFont *FindFont(const FontRole role) const noexcept { return Find(role)->fontPtr; }
+        [[nodiscard]] ImFont *FindFont(const FontRole role) const noexcept {
+            const auto f = Find(role);
+            return f == nullptr ? ImGui::GetDefaultFont() : f->fontPtr;
+        }
     };
 
     [[nodiscard]] inline FontSet DefaultFontSet() {
@@ -383,7 +389,6 @@ namespace Editor::UI::Theme {
         // todo:
         //  serialize fonts to theme.json
         //  add google fonts credit for inter / jetbrainsmono (both ofl)
-        // static const std::string FONT_PATH = "internal/resources/fonts/";
 
         return FontSet{.fonts = {
                                {.name = "Inter Variable",
@@ -443,8 +448,39 @@ namespace Editor::UI::Theme {
 
     // load a fontconfig directly from path
     inline FontConfig LoadFontConfig(const std::filesystem::path &path, const FontRole &role = FontRole::Body) {
-        return {.name = GetFullFontName(path.c_str()), .path = path, .role = role, .fontPtr = ImGui::GetIO().Fonts->AddFontFromFileTTF(path.c_str())};
+        return {
+                .name = GetFullFontName(path.c_str()), .path = path, .sizePixels = 16.0f, .role = role
+                /*explicitly avoiding assigning the ptr here, should only be assigned on apply*/
+        };
     }
+
+    inline void ApplyFontSet(FontSet &set) {
+        // must be called outside the NewFrame() .. Render() scope
+        const ImGuiIO &io = ImGui::GetIO();
+
+        io.Fonts->Clear();
+
+        // role changes take visual effect.
+        for (constexpr FontRole roleOrder[] = {FontRole::Body, FontRole::Bold, FontRole::Monospace, FontRole::Small, FontRole::Heading, FontRole::Icons}; const FontRole role : roleOrder) {
+            for (auto &font : set.fonts) {
+                if (font.role == role) {
+                    font.fontPtr = nullptr;
+                    ImFontConfig cfg;
+                    cfg.SizePixels = font.sizePixels;
+                    cfg.MergeMode = font.mergeIntoPrevious;
+                    cfg.GlyphMinAdvanceX = font.iconMinAdvanceX;
+                    cfg.FontDataOwnedByAtlas = true;
+                    font.fontPtr = io.Fonts->AddFontFromFileTTF(font.path.c_str(), font.sizePixels, &cfg);
+                    if (!font.mergeIntoPrevious) {
+                        const ImFont *prevFont = nullptr;
+                        prevFont = font.fontPtr;
+                    }
+                }
+            }
+        }
+        io.Fonts->Build();
+    }
+
 
     // serialization
     using KeyValueList = std::vector<std::pair<std::string, std::string>>;

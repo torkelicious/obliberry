@@ -39,6 +39,8 @@ namespace Editor {
     public:
         void Init(Core::EngineContext &ctx) override;
 
+        void PreImGuiFrame() override;
+
         void Update(float dt) override;
 
         void Render() override;
