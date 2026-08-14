@@ -4,6 +4,8 @@
 #pragma once
 
 #include "imgui.h"
+#include "Core/Constants.h"
+#include "Core/Utils/PathUtils.h"
 #include <algorithm>
 #include <array>
 #include <charconv>
@@ -379,14 +381,20 @@ namespace Editor::UI::Theme {
         // todo:
         //  serialize fonts to theme.json
         //  add google fonts credit for inter / jetbrainsmono (both ofl)
-        static const std::string FONT_PATH = "internal/resources/fonts/";
+        // static const std::string FONT_PATH = "internal/resources/fonts/";
 
         return FontSet{.fonts = {
-                               {.name = "Inter Variable", .path = FONT_PATH + "Inter/Inter-VariableFont_opsz,wght.ttf", .sizePixels = 16.0f, .role = FontRole::Body},
+                               {.name = "Inter Variable",
 
-                               {.name = "Inter Bold", .path = FONT_PATH + "Inter/static/Inter_24pt-Bold.ttf", .sizePixels = 24.0f, .role = FontRole::Bold},
 
-                               {.name = "JetBrains Mono", .path = FONT_PATH + "JetBrains_Mono/JetBrainsMono-VariableFont_wght.ttf", .sizePixels = 15.0f, .role = FontRole::Monospace},
+                                .path = Core::PathUtils::Join(Core::E_EDITOR_FONTS_PATH, "Inter/Inter-VariableFont_opsz,wght.ttf"),
+                                .sizePixels = 16.0f,
+                                .role = FontRole::Body},
+
+
+                               {.name = "Inter Bold", .path = Core::PathUtils::Join(Core::E_EDITOR_FONTS_PATH, "Inter/static/Inter_24pt-Bold.ttf"), .sizePixels = 24.0f, .role = FontRole::Bold},
+
+                               {.name = "JetBrains Mono", .path = Core::PathUtils::Join(Core::E_EDITOR_FONTS_PATH, "JetBrains_Mono/JetBrainsMono-VariableFont_wght.ttf"), .sizePixels = 15.0f, .role = FontRole::Monospace},
                        }};
     }
 

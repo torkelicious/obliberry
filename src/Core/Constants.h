@@ -11,7 +11,7 @@ namespace Core {
     // We do not reserve Logger since it's mostly idle in most cases. It can share.
     constexpr unsigned ReservedThreads = 2;
 
-    // filepaths
+    // filepaths (vfs relative)
     constexpr std::string_view ASSET_PATH = "assets/";
     constexpr std::string_view SHADER_PATH = "assets/shaders/";
     constexpr std::string_view TEXTURE_PATH = "assets/textures/";
@@ -22,6 +22,10 @@ namespace Core {
     constexpr std::string_view PREFAB_PATH = "assets/prefabs/";
     constexpr std::string_view PARTICLE_PRESET_PATH = "assets/particle_presets/";
     constexpr std::string_view FONT_PATH = "assets/fonts/";
+
+    // editor executable-relative
+    constexpr std::string_view E_RESOURCES_PATH = "internal/resources/";
+    constexpr std::string_view E_EDITOR_FONTS_PATH = "internal/resources/fonts/";
 
     // fs extensions
     constexpr std::string_view MAP_FILE_EXTENSION = ".obmap";
