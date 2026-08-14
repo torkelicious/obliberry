@@ -46,4 +46,8 @@ namespace Core::PathUtils {
         return path ? std::filesystem::path(path) : std::filesystem::path{};
     }
 
+    inline std::filesystem::path GetInternalDir() { return GetExecutableDirectory() / "internal"; }
+
+    inline std::filesystem::path GetInternalRecourcesDir() { return GetInternalDir() / "resources"; }
+
 } // namespace Core::PathUtils
