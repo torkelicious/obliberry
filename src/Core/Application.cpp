@@ -77,18 +77,24 @@ void Core::Application::Run() {
 
     glfwSwapInterval(static_cast<int>(m_GraphicsConfig.VSync));
 
-    // ImGui Setup
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGui_ImplGlfw_InitForOpenGL(m_Window.GetNativeWindow(), true);
-    ImGui_ImplOpenGL3_Init();
-    ImGui::StyleColorsDark();
-    float xscale, yscale;
-    glfwGetWindowContentScale(m_Window.GetNativeWindow(), &xscale, &yscale);
-    ImGuiIO &io = ImGui::GetIO();
-    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;        // Docking
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;    // Keyboard UI navigation
-    io.ConfigFlags |= ImGuiConfigFlags_NavNoCaptureKeyboard; // Don't capture keyboard for navigation
+    {
+        // ImGui Setup
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGui_ImplGlfw_InitForOpenGL(m_Window.GetNativeWindow(), true);
+        ImGui_ImplOpenGL3_Init();
+        ImGui::StyleColorsDark();
+        ImGuiStyle &style = ImGui::GetStyle();
+        ImGuiIO &io = ImGui::GetIO();
+        // dpi
+        style.FontSizeBase = 20.0f;
+        io.ConfigDpiScaleFonts = true;
+        io.ConfigDpiScaleViewports = true;
+        // features
+        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;        // Docking
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;    // Keyboard UI navigation
+        io.ConfigFlags |= ImGuiConfigFlags_NavNoCaptureKeyboard; // Don't capture keyboard for navigation
+    }
 
     // Renderer
     Rendering::Renderer renderer;
