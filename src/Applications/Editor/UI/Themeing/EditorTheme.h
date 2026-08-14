@@ -358,29 +358,35 @@ namespace Editor::UI::Theme {
         FontRole role = FontRole::Body;
         bool mergeIntoPrevious = false;
         float iconMinAdvanceX = 0.0f;
+        mutable ImFont *fontPtr = nullptr;
     };
 
     struct FontSet {
         std::vector<FontConfig> fonts;
 
+
         [[nodiscard]] const FontConfig *Find(const FontRole role) const noexcept {
             const auto it = std::ranges::find(fonts, role, &FontConfig::role);
             return it != fonts.end() ? &*it : nullptr;
         }
+
+        // wrapper to return ImFont pointer for use with ImGui::PushFont etc
+        [[nodiscard]] ImFont *FindFont(const FontRole role) const noexcept { return Find(role)->fontPtr; }
     };
 
     [[nodiscard]] inline FontSet DefaultFontSet() {
         // i love inter but idk wat im doing
         // todo:
-        //  either set sane (platform) defaults, or ship fonts w. editor somewhere?
-        //  shipping would be good for usage in ui sys too? idk
-        //  at least figure it out before actually implementing...
-        // note2self: this is more-or-less an example do not use
+        //  serialize fonts to theme.json
+        //  add google fonts credit for inter / jetbrainsmono (both ofl)
+        static const std::string FONT_PATH = "internal/resources/fonts/";
+
         return FontSet{.fonts = {
-                               {.name = "Inter Regular", .path = "fonts/Inter-Regular.ttf", .sizePixels = 16.0f, .role = FontRole::Body},
-                               {.name = "Inter SemiBold", .path = "fonts/Inter-SemiBold.ttf", .sizePixels = 16.0f, .role = FontRole::Bold},
-                               {.name = "JetBrains Mono", .path = "fonts/JetBrainsMono-Regular.ttf", .sizePixels = 15.0f, .role = FontRole::Monospace},
-                               {.name = "Icons", .path = "fonts/iconfonfdjfsdsdft.ttf", .sizePixels = 15.0f, .role = FontRole::Icons, .mergeIntoPrevious = true, .iconMinAdvanceX = 15.0f},
+                               {.name = "Inter Variable", .path = FONT_PATH + "Inter/Inter-VariableFont_opsz,wght.ttf", .sizePixels = 16.0f, .role = FontRole::Body},
+
+                               {.name = "Inter Bold", .path = FONT_PATH + "Inter/static/Inter_24pt-Bold.ttf", .sizePixels = 24.0f, .role = FontRole::Bold},
+
+                               {.name = "JetBrains Mono", .path = FONT_PATH + "JetBrains_Mono/JetBrainsMono-VariableFont_wght.ttf", .sizePixels = 15.0f, .role = FontRole::Monospace},
                        }};
     }
 

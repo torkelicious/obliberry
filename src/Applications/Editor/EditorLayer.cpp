@@ -50,8 +50,15 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
 
     m_Input = m_Context.input;
 
-    UI::Theme::IO::Deserialize(m_EditorContext.theme);
-    Editor::UI::Theme::Apply(m_EditorContext.theme);
+    // theme / fonts
+    {
+        const ImGuiIO &io = ImGui::GetIO();
+        UI::Theme::IO::Deserialize(m_EditorContext.theme);
+        Editor::UI::Theme::Apply(m_EditorContext.theme);
+        for (const auto &font : m_EditorContext.fontset.fonts) {
+            font.fontPtr = io.Fonts->AddFontFromFileTTF(font.path.c_str());
+        }
+    }
 
     if (Core::Project::GetActive()) {
         LoadStartScene();
@@ -462,6 +469,7 @@ void Editor::EditorLayer::DrawUtilityWindows() {
 
     ImGui::Separator();
 
+    ImGui::PushFont(m_EditorContext.fontset.FindFont(UI::Theme::FontRole::Monospace));
     ImGui::BeginChild("##console_scroll", ImVec2(-1, -1), ImGuiChildFlags_None, ImGuiWindowFlags_HorizontalScrollbar);
     for (const auto &line : m_ConsoleLogs) {
         ImGui::TextUnformatted(line.c_str());
@@ -471,6 +479,7 @@ void Editor::EditorLayer::DrawUtilityWindows() {
         m_PreviousLogCount = m_ConsoleLogs.size();
     }
     ImGui::EndChild();
+    ImGui::PopFont();
 
     ImGui::End();
 
@@ -498,6 +507,7 @@ void Editor::EditorLayer::DrawToolbar() {
 
         if (ImGui::BeginMenu("Help")) {
             // TODO: Implement
+            ImGui::Text("rtfm :)");
             ImGui::EndMenu();
         }
 
