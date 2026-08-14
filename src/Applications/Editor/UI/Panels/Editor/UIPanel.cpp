@@ -70,6 +70,8 @@ namespace Editor::UI {
         ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
         if (!hasChildren)
             flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+        else
+            flags |= ImGuiTreeNodeFlags_DefaultOpen;
 
         if (element == m_SelectedElement)
             flags |= ImGuiTreeNodeFlags_Selected;
