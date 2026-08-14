@@ -423,6 +423,24 @@ namespace Editor::UI::Theme {
         return style;
     }
 
+    inline std::string FullFontName(const char *path) {
+        FT_Face face = nullptr;
+
+        if (FT_New_Face(FreeType::library(), path, 0, &face) != 0)
+            return {};
+
+        std::string name = face->family_name ? face->family_name : "";
+
+        if (face->style_name && *face->style_name) {
+            if (!name.empty())
+                name += ' ';
+            name += face->style_name;
+        }
+
+        FT_Done_Face(face);
+        return name;
+    }
+
 
     // serialization
     using KeyValueList = std::vector<std::pair<std::string, std::string>>;
