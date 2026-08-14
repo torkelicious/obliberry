@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <ranges>
 #include <utility>
 #include <vector>
 
@@ -102,16 +103,11 @@ namespace UI {
         if (m_Valid)
             return;
 
-        if (FT_Init_FreeType(&m_FTLibrary)) {
-            LOG_ERROR(LOG_WHO, "Could not init FreeType");
-            return;
-        }
-
         bool faceLoaded = false;
         if (auto data = IO::VFS::ReadVirtual(m_FilePath)) {
             m_FontData.assign(data->begin(), data->end());
             if (!m_FontData.empty()) {
-                faceLoaded = FT_New_Memory_Face(m_FTLibrary, m_FontData.data(), static_cast<FT_Long>(m_FontData.size()), 0, &m_Face) == 0;
+                faceLoaded = FT_New_Memory_Face(FTLibrary, m_FontData.data(), static_cast<FT_Long>(m_FontData.size()), 0, &m_Face) == 0;
                 if (!faceLoaded) {
                     LOG_ERROR(LOG_WHO, "Failed to load font from memory: " + m_FilePath);
                 }
@@ -122,15 +118,11 @@ namespace UI {
             const std::string resolvedPath = IO::VFS::Resolve(m_FilePath).string();
             if (resolvedPath.empty()) {
                 LOG_ERROR(LOG_WHO, "Could not resolve font path: " + m_FilePath);
-                FT_Done_FreeType(m_FTLibrary);
-                m_FTLibrary = nullptr;
                 return;
             }
 
-            if (FT_New_Face(m_FTLibrary, resolvedPath.c_str(), 0, &m_Face)) {
+            if (FT_New_Face(FTLibrary, resolvedPath.c_str(), 0, &m_Face)) {
                 LOG_ERROR(LOG_WHO, "Failed to load font: " + m_FilePath + " (resolved: " + resolvedPath + ")");
-                FT_Done_FreeType(m_FTLibrary);
-                m_FTLibrary = nullptr;
                 return;
             }
         }
@@ -218,8 +210,6 @@ namespace UI {
             LOG_ERROR(LOG_WHO, "No glyphs loaded from font: " + filepath);
             FT_Done_Face(m_Face);
             m_Face = nullptr;
-            FT_Done_FreeType(m_FTLibrary);
-            m_FTLibrary = nullptr;
             return;
         }
 
@@ -252,7 +242,7 @@ namespace UI {
         // normalize UV
         constexpr float invAtlasW = 1.0f / static_cast<float>(atlasWidth);
         const float invAtlasH = 1.0f / static_cast<float>(atlasHeight);
-        for (auto &[c, g] : m_Glyphs) {
+        for (auto &g : m_Glyphs | std::views::values) {
             g.UVOffset.x *= invAtlasW;
             g.UVOffset.y *= invAtlasH;
             g.UVSize.x *= invAtlasW;
@@ -265,9 +255,6 @@ namespace UI {
         // free FreeType resources
         FT_Done_Face(m_Face);
         m_Face = nullptr;
-        FT_Done_FreeType(m_FTLibrary);
-        m_FTLibrary = nullptr;
-
         m_Valid = true;
         LOG_INFO(LOG_WHO, "Font loaded: " + filepath + " (" + std::to_string(m_Glyphs.size()) + " glyphs, " + std::to_string(atlasWidth) + "x" + std::to_string(atlasHeight) + " atlas)");
     }
@@ -355,8 +342,6 @@ namespace UI {
             LOG_ERROR(LOG_WHO, "No glyphs loaded from font: " + filepath);
             FT_Done_Face(m_Face);
             m_Face = nullptr;
-            FT_Done_FreeType(m_FTLibrary);
-            m_FTLibrary = nullptr;
             return;
         }
 
@@ -413,8 +398,6 @@ namespace UI {
 
         FT_Done_Face(m_Face);
         m_Face = nullptr;
-        FT_Done_FreeType(m_FTLibrary);
-        m_FTLibrary = nullptr;
 
         m_Valid = true;
         LOG_INFO(LOG_WHO, "Font loaded (SDF): " + filepath + " (" + std::to_string(m_Glyphs.size()) + " glyphs, spread=" + std::to_string(spread) + ", " + std::to_string(atlasWidth) + "x" + std::to_string(atlasHeight) +
@@ -426,10 +409,6 @@ namespace UI {
         if (m_Face) {
             FT_Done_Face(m_Face);
             m_Face = nullptr;
-        }
-        if (m_FTLibrary) {
-            FT_Done_FreeType(m_FTLibrary);
-            m_FTLibrary = nullptr;
         }
     }
 

@@ -6,6 +6,7 @@
 #include "imgui.h"
 #include "Core/Constants.h"
 #include "Core/Utils/PathUtils.h"
+#include "Platform/FreeType.h"
 #include <algorithm>
 #include <array>
 #include <charconv>
@@ -19,6 +20,7 @@
 #include <utility>
 #include <variant>
 #include <vector>
+#include <freetype/freetype.h>
 
 namespace Editor::UI::Theme {
 
@@ -397,6 +399,30 @@ namespace Editor::UI::Theme {
                                {.name = "JetBrains Mono", .path = Core::PathUtils::Join(Core::E_EDITOR_FONTS_PATH, "JetBrains_Mono/JetBrainsMono-VariableFont_wght.ttf"), .sizePixels = 15.0f, .role = FontRole::Monospace},
                        }};
     }
+
+    inline std::string GetFontName(const char *path) {
+        FT_Face face = nullptr;
+        if (FT_New_Face(FreeType::library(), path, 0, &face) != 0) {
+            return {};
+        }
+        std::string name = face->family_name ? face->family_name : "";
+        FT_Done_Face(face);
+        return name;
+    }
+
+    inline std::string GetFontStyle(const char *path) {
+        FT_Face face = nullptr;
+
+        if (FT_New_Face(FreeType::library(), path, 0, &face) != 0)
+            return {};
+
+        std::string style = face->style_name ? face->style_name : "";
+
+        FT_Done_Face(face);
+
+        return style;
+    }
+
 
     // serialization
     using KeyValueList = std::vector<std::pair<std::string, std::string>>;

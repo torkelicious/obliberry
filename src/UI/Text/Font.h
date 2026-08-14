@@ -1,4 +1,5 @@
 #pragma once
+#include "Platform/FreeType.h"
 #include <map>
 #include <memory>
 #include <string>
@@ -48,7 +49,7 @@ namespace UI {
         void BuildSDFAtlas(const std::string &filepath, unsigned int fontSize, unsigned int spread);
         void BuildBitmapAtlas(const std::string &filepath, unsigned int fontSize);
 
-        FT_Library m_FTLibrary = nullptr;
+        FT_Library FTLibrary = FreeType::library();
         FT_Face m_Face = nullptr;
         std::string m_FilePath;
         bool m_Valid = false;
