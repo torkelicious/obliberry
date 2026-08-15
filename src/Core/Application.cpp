@@ -166,7 +166,7 @@ void Core::Application::Run() {
         std::unique_lock imguiTextureLock(m_ImGuiTextureMutex);
 
         // synchronize font updates with render thread
-        if (m_FontsDirty.load()) {
+        if (context.isEditorMode && m_FontsDirty.load()) {
             // unlock so the render thread can finish rendering the old frame
             imguiTextureLock.unlock();
 
@@ -179,7 +179,9 @@ void Core::Application::Run() {
         }
 
         // handle font updates
-        m_Layer->PreImGuiFrame();
+        if (context.isEditorMode) {
+            m_Layer->PreImGuiFrame();
+        }
 
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
