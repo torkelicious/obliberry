@@ -124,6 +124,9 @@ namespace Editor::UI {
                 for (int i = 0; i < static_cast<int>(fonts.size()); ++i) {
                     ImGui::PushID(i);
                     ImGui::PushFont(fonts[i].fontPtr);
+                    //^^^^^^^^ why isnt this working i dont know...
+                    // ...probably due to ordering of roles?
+
                     if (const bool selected = (selectedFontIdx == i); ImGui::Selectable(fonts[i].name.c_str(), selected)) {
                         selectedFontIdx = i;
                         std::snprintf(fontNameBuffer, sizeof(fontNameBuffer), "%s", fonts[i].name.c_str());
@@ -203,14 +206,14 @@ namespace Editor::UI {
 
 
             if (ImGui::Button("Import new UI font")) {
-                fonts.push_back(FontFromDialog());
-
-                selectedFontIdx = static_cast<int>(fonts.size()) - 1;
-
-                std::snprintf(fontNameBuffer, sizeof(fontNameBuffer), "%s", fonts.back().name.c_str());
-                nameBufferFontIdx = selectedFontIdx;
-                if (IsFontRoleTaken(fonts, fonts[selectedFontIdx].role, selectedFontIdx)) {
-                    ImGui::TextColored({1.0f, 0.0f, 0.0f, 1.0f}, "Imported font has conflicting role!"); // todo: improve this msg
+                if (const auto font = FontFromDialog(); !font.path.empty()) {
+                    fonts.push_back(FontFromDialog());
+                    selectedFontIdx = static_cast<int>(fonts.size()) - 1;
+                    std::snprintf(fontNameBuffer, sizeof(fontNameBuffer), "%s", fonts.back().name.c_str());
+                    nameBufferFontIdx = selectedFontIdx;
+                    if (IsFontRoleTaken(fonts, fonts[selectedFontIdx].role, selectedFontIdx)) {
+                        ImGui::TextColored({1.0f, 0.0f, 0.0f, 1.0f}, "Imported font has conflicting role!"); // todo: improve this msg
+                    }
                 }
             }
 
