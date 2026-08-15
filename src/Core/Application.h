@@ -61,6 +61,8 @@ namespace Core {
         FrameSync m_Frames[2];
         int m_MainFrameIndex = 0;
 
+        std::atomic<bool> m_FontsDirty{false};
+
         ImDrawData *m_FrameImGuiData[2] = {nullptr, nullptr};
         std::mutex m_ImGuiTextureMutex;
     };

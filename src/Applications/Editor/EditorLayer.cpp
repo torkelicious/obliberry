@@ -80,8 +80,8 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
 }
 
 void Editor::EditorLayer::PreImGuiFrame() {
-    if (m_EditorContext.fontsDirty.exchange(false, std::memory_order_acq_rel)) {
-        Editor::UI::Theme::ApplyFontSet(m_EditorContext.fontset);
+    if (m_EditorContext.fontsDirty->exchange(false)) {
+        UI::Theme::ApplyFontSet(m_EditorContext.fontset);
     }
 }
 

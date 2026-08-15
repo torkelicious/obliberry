@@ -425,17 +425,21 @@ namespace Editor::Commands {
         UI::Theme::Apply(m_NewData);
 
         m_EditorCtx->fontset = m_NewSet;
-        m_EditorCtx->fontsDirty.store(true, std::memory_order_release);
+
+        if (m_EditorCtx->fontsDirty) {
+            m_EditorCtx->fontsDirty->store(true, std::memory_order_release);
+        }
 
         UI::Theme::IO::Serialize(*m_EditorCtx);
     }
+
 
     void ThemeUpdateCommand::Undo(Core::EngineContext &ctx) {
         m_EditorCtx->theme = m_OldData;
         UI::Theme::Apply(m_OldData);
 
         m_EditorCtx->fontset = m_OldSet;
-        m_EditorCtx->fontsDirty.store(true, std::memory_order_release);
+        m_EditorCtx->fontsDirty->store(true, std::memory_order_release);
 
         UI::Theme::IO::Serialize(*m_EditorCtx);
     }

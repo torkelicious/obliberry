@@ -180,7 +180,8 @@ namespace Editor::UI {
                         const auto role = static_cast<Theme::FontRole>(i);
                         const bool selected = (selectedFont.role == role);
 
-                        if (const bool taken = IsFontRoleTaken(fonts, role, selectedFontIdx); ImGui::Selectable(fontRoles[i], selected, taken && !selected ? ImGuiSelectableFlags_Disabled : 0)) {
+                        const bool taken = IsFontRoleTaken(fonts, role, selectedFontIdx);
+                        if (ImGui::Selectable(fontRoles[i], selected)) {
                             if (taken && !selected) {
                                 // swap roles
                                 for (auto &otherFont : fonts) {

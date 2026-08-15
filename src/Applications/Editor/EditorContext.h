@@ -6,5 +6,5 @@
 struct EditorContext {
     Editor::UI::Theme::Theme theme = Editor::UI::Theme::DefaultDarkTheme();
     Editor::UI::Theme::FontSet fontset = Editor::UI::Theme::DefaultFontSet();
-    std::atomic<bool> fontsDirty{false};
+    std::atomic<bool>* fontsDirty = nullptr;
 };

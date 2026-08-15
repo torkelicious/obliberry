@@ -28,12 +28,12 @@ static void UpdateImDrawData(ImDrawData *&dst, const ImDrawData *src) {
         dst = IM_NEW(ImDrawData)();
     }
 
-    for (int i = 0; i < dst->CmdListsCount; ++i) {
-        IM_DELETE(dst->CmdLists[i]);
+    for (const auto &CmdList : dst->CmdLists) {
+        IM_DELETE(CmdList);
     }
     dst->CmdLists.clear();
 
-    if (!src || src->CmdListsCount == 0) {
+    if (!src || src->CmdLists.empty()) {
         dst->Valid = false;
         dst->CmdListsCount = 0;
         dst->TotalIdxCount = 0;
@@ -91,9 +91,11 @@ void Core::Application::Run() {
         io.ConfigDpiScaleFonts = true;
         io.ConfigDpiScaleViewports = true;
         // features
-        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;        // Docking
-        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;    // Keyboard UI navigation
-        io.ConfigFlags |= ImGuiConfigFlags_NavNoCaptureKeyboard; // Don't capture keyboard for navigation
+        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Docking
+        // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;    // Keyboard UI navigation
+        // io.ConfigFlags |= ImGuiConfigFlags_NavNoCaptureKeyboard; // Don't capture keyboard for navigation
+        io.NavActive = true;
+        io.ConfigNavCaptureKeyboard = false;
     }
 
     // Renderer
@@ -117,6 +119,11 @@ void Core::Application::Run() {
     context.threadPool = &m_ThreadPool;
     context.audioEngine = m_AudioEngine.get();
     context.logger = Logging::LoggerService::Get();
+
+    // hack:
+    if (auto *editorlayer = dynamic_cast<Editor::EditorLayer *>(m_Layer.get())) {
+        editorlayer->GetEditorContext()->fontsDirty = &m_FontsDirty;
+    }
 
     // MSAA supported samples, must be called before gl context handover!!!
     Config::GraphicsCapabilities::CacheSampleCounts();
@@ -157,6 +164,19 @@ void Core::Application::Run() {
 
         // imgui lock
         std::unique_lock imguiTextureLock(m_ImGuiTextureMutex);
+
+        // synchronize font updates
+        if (m_FontsDirty.exchange(false)) {
+            // unlock so the render thread can finish rendering the old frame
+            imguiTextureLock.unlock();
+
+            // wait for render thread
+            for (auto &[mutex, cv, state] : m_Frames) {
+                std::unique_lock frameLock(mutex);
+                cv.wait(frameLock, [&] { return state == FrameState::Free || !m_Running.load(); });
+            }
+            imguiTextureLock.lock();
+        }
 
         m_Layer->PreImGuiFrame();
 
