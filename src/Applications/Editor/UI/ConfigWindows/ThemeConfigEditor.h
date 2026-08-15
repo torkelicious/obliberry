@@ -46,5 +46,11 @@ namespace Editor::UI {
 
         Theme::FontSet m_LocalFontSet;
         Theme::FontSet m_OldFontSet;
-    };
+
+        int m_SelectedFontIdx = -1;
+        char m_FontNameBuffer[128] = {};
+        int m_NameBufferFontIdx = -1;
+        char m_ColorSearchBuffer[128] = {};
+        char m_LayoutSearchBuffer[128] = {};
+        };
 } // namespace Editor::UI

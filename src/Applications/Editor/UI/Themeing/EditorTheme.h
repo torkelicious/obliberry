@@ -360,7 +360,7 @@ namespace Editor::UI::Theme {
 
     struct FontConfig {
         std::string name;
-        std::string path;
+        std::filesystem::path path;
         float sizePixels = 16.0f;
         FontRole role = FontRole::Body;
         bool mergeIntoPrevious = false;
@@ -405,9 +405,9 @@ namespace Editor::UI::Theme {
                        }};
     }
 
-    inline std::string GetFontName(const char *path) {
+    inline std::string GetFontName(const std::filesystem::path &path) {
         FT_Face face = nullptr;
-        if (FT_New_Face(FreeType::library(), path, 0, &face) != 0) {
+        if (FT_New_Face(FreeType::library(), path.string().c_str(), 0, &face) != 0) {
             return {};
         }
         std::string name = face->family_name ? face->family_name : "";
@@ -415,10 +415,10 @@ namespace Editor::UI::Theme {
         return name;
     }
 
-    inline std::string GetFontStyle(const char *path) {
+    inline std::string GetFontStyle(const std::filesystem::path &path) {
         FT_Face face = nullptr;
 
-        if (FT_New_Face(FreeType::library(), path, 0, &face) != 0)
+        if (FT_New_Face(FreeType::library(), path.string().c_str(), 0, &face) != 0)
             return {};
 
         std::string style = face->style_name ? face->style_name : "";
@@ -428,10 +428,10 @@ namespace Editor::UI::Theme {
         return style;
     }
 
-    inline std::string GetFullFontName(const char *path) {
+    inline std::string GetFullFontName(const std::filesystem::path &path) {
         FT_Face face = nullptr;
 
-        if (FT_New_Face(FreeType::library(), path, 0, &face) != 0)
+        if (FT_New_Face(FreeType::library(), path.string().c_str(), 0, &face) != 0)
             return {};
 
         std::string name = face->family_name ? face->family_name : "";
@@ -449,7 +449,7 @@ namespace Editor::UI::Theme {
     // load a fontconfig directly from path
     inline FontConfig LoadFontConfig(const std::filesystem::path &path, const FontRole &role = FontRole::Body) {
         return {
-                .name = GetFullFontName(path.string().c_str()), .path = path, .sizePixels = 16.0f, .role = role
+                .name = GetFullFontName(path), .path = path, .sizePixels = 16.0f, .role = role
                 /*explicitly avoiding assigning the ptr here, should only be assigned on apply*/
         };
     }
@@ -475,7 +475,7 @@ namespace Editor::UI::Theme {
                     cfg.FontDataOwnedByAtlas = true;
                     LOG_INFO("Theme",
                              "Adding font: '" + font.name + "', role: " + std::to_string(static_cast<int>(role)) + ", size: " + std::to_string(font.sizePixels) + ", merge: " + std::to_string(font.mergeIntoPrevious));
-                    font.fontPtr = io.Fonts->AddFontFromFileTTF(font.path.c_str(), font.sizePixels, &cfg);
+                    font.fontPtr = io.Fonts->AddFontFromFileTTF(font.path.string().c_str(), font.sizePixels, &cfg);
                     if (!font.mergeIntoPrevious && font.fontPtr) {
                         lastNonMergedFont = font.fontPtr;
                     }

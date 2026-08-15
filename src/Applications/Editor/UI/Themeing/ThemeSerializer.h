@@ -112,7 +112,7 @@ namespace Editor::UI::Theme::IO {
 
         for (const auto &font : set.fonts) {
             j["fonts"].push_back({{"name", font.name},
-                                  {"path", font.path},
+                                  {"path", font.path.string()},
                                   {"sizePixels", font.sizePixels},
                                   {"role", static_cast<int>(font.role)},
                                   {"mergeIntoPrevious", font.mergeIntoPrevious},

@@ -104,33 +104,36 @@ namespace Editor::UI {
         if (ImGui::CollapsingHeader("Fonts")) {
             ImGui::PushID("FontScope");
 
-            static int selectedFontIdx = -1;
-            static char fontNameBuffer[128] = {};
-            static int nameBufferFontIdx = -1;
-
             auto &fonts = m_LocalFontSet.fonts;
 
             ImGui::BeginChild("Fontset", ImVec2(0, 0), ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY);
 
             if (fonts.empty()) {
                 ImGui::TextDisabled("No fonts loaded");
-                selectedFontIdx = -1;
-                nameBufferFontIdx = -1;
+                m_SelectedFontIdx = -1;
+                m_NameBufferFontIdx = -1;
             } else {
-                if (selectedFontIdx >= static_cast<int>(fonts.size())) {
-                    selectedFontIdx = static_cast<int>(fonts.size()) - 1;
+                if (m_SelectedFontIdx >= static_cast<int>(fonts.size())) {
+                    m_SelectedFontIdx = static_cast<int>(fonts.size()) - 1;
                 }
 
                 for (int i = 0; i < static_cast<int>(fonts.size()); ++i) {
                     ImGui::PushID(i);
                     ImGui::PushFont(fonts[i].fontPtr);
-                    //^^^^^^^^ why isnt this working i dont know...
 
-                    if (const bool selected = (selectedFontIdx == i); ImGui::Selectable(fonts[i].name.c_str(), selected)) {
-                        selectedFontIdx = i;
-                        std::snprintf(fontNameBuffer, sizeof(fontNameBuffer), "%s", fonts[i].name.c_str());
-                        nameBufferFontIdx = i;
+                    std::string label = (fonts[i].role == Theme::FontRole::Body) ? "★ " : "  ";
+                    label += fonts[i].name;
+
+                    if (const bool selected = (m_SelectedFontIdx == i); ImGui::Selectable(label.c_str(), selected)) {
+                        m_SelectedFontIdx = i;
+                        std::snprintf(m_FontNameBuffer, sizeof(m_FontNameBuffer), "%s", fonts[i].name.c_str());
+                        m_NameBufferFontIdx = i;
                     }
+
+                    if (ImGui::IsItemHovered()) {
+                        ImGui::SetTooltip("%s", fonts[i].path.string().c_str());
+                    }
+
                     ImGui::PopFont();
                     ImGui::PopID();
                 }
@@ -139,22 +142,22 @@ namespace Editor::UI {
             ImGui::EndChild();
 
             // font options
-            if (selectedFontIdx >= 0 && selectedFontIdx < static_cast<int>(fonts.size())) {
+            if (m_SelectedFontIdx >= 0 && m_SelectedFontIdx < static_cast<int>(fonts.size())) {
 
-                auto &selectedFont = fonts[selectedFontIdx];
+                auto &selectedFont = fonts[m_SelectedFontIdx];
 
-                if (nameBufferFontIdx != selectedFontIdx) {
-                    std::snprintf(fontNameBuffer, sizeof(fontNameBuffer), "%s", selectedFont.name.c_str());
+                if (m_NameBufferFontIdx != m_SelectedFontIdx) {
+                    std::snprintf(m_FontNameBuffer, sizeof(m_FontNameBuffer), "%s", selectedFont.name.c_str());
 
-                    nameBufferFontIdx = selectedFontIdx;
+                    m_NameBufferFontIdx = m_SelectedFontIdx;
                 }
 
                 ImGui::BeginChild("FontOptions", ImVec2(0, 0), ImGuiChildFlags_Borders);
 
-                ImGui::InputText("Name", fontNameBuffer, IM_ARRAYSIZE(fontNameBuffer));
+                ImGui::InputText("Name", m_FontNameBuffer, IM_ARRAYSIZE(m_FontNameBuffer));
 
                 if (ImGui::IsItemDeactivatedAfterEdit()) {
-                    selectedFont.name = fontNameBuffer;
+                    selectedFont.name = m_FontNameBuffer;
                 }
 
                 ImGui::Separator();
@@ -180,7 +183,7 @@ namespace Editor::UI {
                         const auto role = static_cast<Theme::FontRole>(i);
                         const bool selected = (selectedFont.role == role);
 
-                        const bool taken = IsFontRoleTaken(fonts, role, selectedFontIdx);
+                        const bool taken = IsFontRoleTaken(fonts, role, m_SelectedFontIdx);
                         if (ImGui::Selectable(fontRoles[i], selected)) {
                             if (taken && !selected) {
                                 // swap roles
@@ -210,27 +213,27 @@ namespace Editor::UI {
             if (ImGui::Button("Import new UI font")) {
                 if (const auto font = FontFromDialog(); !font.path.empty()) {
                     fonts.push_back(font);
-                    selectedFontIdx = static_cast<int>(fonts.size()) - 1;
-                    std::snprintf(fontNameBuffer, sizeof(fontNameBuffer), "%s", fonts.back().name.c_str());
-                    nameBufferFontIdx = selectedFontIdx;
+                    m_SelectedFontIdx = static_cast<int>(fonts.size()) - 1;
+                    std::snprintf(m_FontNameBuffer, sizeof(m_FontNameBuffer), "%s", fonts.back().name.c_str());
+                    m_NameBufferFontIdx = m_SelectedFontIdx;
                 }
             }
 
-            if (selectedFontIdx >= 0 && selectedFontIdx < static_cast<int>(fonts.size())) {
-                if (IsFontRoleTaken(fonts, fonts[selectedFontIdx].role, selectedFontIdx)) {
+            if (m_SelectedFontIdx >= 0 && m_SelectedFontIdx < static_cast<int>(fonts.size())) {
+                if (IsFontRoleTaken(fonts, fonts[m_SelectedFontIdx].role, m_SelectedFontIdx)) {
                     ImGui::Spacing();
                     ImGui::TextColored({1.0f, 0.3f, 0.3f, 1.0f}, "Warning: Selected font has a conflicting role with another font!");
                 }
             }
 
-            if (selectedFontIdx >= 0 && selectedFontIdx < static_cast<int>(fonts.size())) {
+            if (m_SelectedFontIdx >= 0 && m_SelectedFontIdx < static_cast<int>(fonts.size())) {
                 ImGui::SameLine();
                 if (ImGui::Button("Delete")) {
-                    fonts.erase(fonts.begin() + selectedFontIdx);
+                    fonts.erase(fonts.begin() + m_SelectedFontIdx);
                     if (fonts.empty()) {
-                        selectedFontIdx = -1;
-                    } else if (selectedFontIdx >= static_cast<int>(fonts.size())) {
-                        selectedFontIdx = static_cast<int>(fonts.size()) - 1;
+                        m_SelectedFontIdx = -1;
+                    } else if (m_SelectedFontIdx >= static_cast<int>(fonts.size())) {
+                        m_SelectedFontIdx = static_cast<int>(fonts.size()) - 1;
                     }
                 }
             }
@@ -249,6 +252,7 @@ namespace Editor::UI {
         if (ImGui::Button("Close & Discard changes")) {
             m_eCtx->theme = m_OldTheme;
             Theme::Apply(m_eCtx->theme);
+            m_LocalFontSet = m_OldFontSet;
             isOpen = false;
         }
 
@@ -261,6 +265,10 @@ namespace Editor::UI {
 
         m_LocalFontSet = m_eCtx->fontset;
         m_OldFontSet = m_LocalFontSet;
+
+        m_SelectedFontIdx = -1;
+        m_NameBufferFontIdx = -1;
+        m_FontNameBuffer[0] = '\0';
 
         m_Palette.bg = m_LocalTheme.GetColor(ImGuiCol_WindowBg).value_or(m_Palette.bg);
         m_Palette.bgAlt = m_LocalTheme.GetColor(ImGuiCol_MenuBarBg).value_or(m_Palette.bgAlt);
