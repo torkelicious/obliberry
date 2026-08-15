@@ -125,7 +125,6 @@ namespace Editor::UI {
                     ImGui::PushID(i);
                     ImGui::PushFont(fonts[i].fontPtr);
                     //^^^^^^^^ why isnt this working i dont know...
-                    // ...probably due to ordering of roles?
 
                     if (const bool selected = (selectedFontIdx == i); ImGui::Selectable(fonts[i].name.c_str(), selected)) {
                         selectedFontIdx = i;
@@ -207,13 +206,17 @@ namespace Editor::UI {
 
             if (ImGui::Button("Import new UI font")) {
                 if (const auto font = FontFromDialog(); !font.path.empty()) {
-                    fonts.push_back(FontFromDialog());
+                    fonts.push_back(font);
                     selectedFontIdx = static_cast<int>(fonts.size()) - 1;
                     std::snprintf(fontNameBuffer, sizeof(fontNameBuffer), "%s", fonts.back().name.c_str());
                     nameBufferFontIdx = selectedFontIdx;
-                    if (IsFontRoleTaken(fonts, fonts[selectedFontIdx].role, selectedFontIdx)) {
-                        ImGui::TextColored({1.0f, 0.0f, 0.0f, 1.0f}, "Imported font has conflicting role!"); // todo: improve this msg
-                    }
+                }
+            }
+
+            if (selectedFontIdx >= 0 && selectedFontIdx < static_cast<int>(fonts.size())) {
+                if (IsFontRoleTaken(fonts, fonts[selectedFontIdx].role, selectedFontIdx)) {
+                    ImGui::Spacing();
+                    ImGui::TextColored({1.0f, 0.3f, 0.3f, 1.0f}, "Warning: Selected font has a conflicting role with another font!");
                 }
             }
 
