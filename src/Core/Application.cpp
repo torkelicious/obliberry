@@ -42,7 +42,7 @@ static void UpdateImDrawData(ImDrawData *&dst, const ImDrawData *src) {
     }
 
     dst->Valid = src->Valid;
-    dst->CmdListsCount = src->CmdListsCount;
+    dst->CmdListsCount = src->CmdListsCount; // should Prefer using ImDrawData::CmdList.Size
     dst->TotalIdxCount = src->TotalIdxCount;
     dst->TotalVtxCount = src->TotalVtxCount;
     dst->DisplayPos = src->DisplayPos;
