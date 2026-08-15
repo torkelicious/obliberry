@@ -1,5 +1,5 @@
 // editor theme data
-// for ImGui 1.92.9 (docking)
+// for ImGui 1.92.9b (docking)
 //
 #pragma once
 
