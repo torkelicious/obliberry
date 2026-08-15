@@ -262,13 +262,6 @@ namespace Editor::UI {
         m_LocalFontSet = m_eCtx->fontset;
         m_OldFontSet = m_LocalFontSet;
 
-        for (auto &font : m_LocalFontSet.fonts) {
-            font.fontPtr = nullptr;
-        }
-        for (auto &font : m_OldFontSet.fonts) {
-            font.fontPtr = nullptr;
-        }
-
         m_Palette.bg = m_LocalTheme.GetColor(ImGuiCol_WindowBg).value_or(m_Palette.bg);
         m_Palette.bgAlt = m_LocalTheme.GetColor(ImGuiCol_MenuBarBg).value_or(m_Palette.bgAlt);
         m_Palette.bgActive = m_LocalTheme.GetColor(ImGuiCol_FrameBgActive).value_or(m_Palette.bgActive);
