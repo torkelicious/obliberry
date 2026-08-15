@@ -456,11 +456,14 @@ namespace Editor::UI::Theme {
 
     inline void ApplyFontSet(FontSet &set) {
         // must be called outside the NewFrame() .. Render() scope
-        const ImGuiIO &io = ImGui::GetIO();
+        ImGuiIO &io = ImGui::GetIO();
 
+        LOG_INFO("Theme", "ApplyFontSet: Clearing font atlas, fonts in set: " + std::to_string(set.fonts.size()));
         io.Fonts->Clear();
 
         // role changes take visual effect.
+        // Track the last non-merged font for mergeIntoPrevious to work correctly
+        ImFont *lastNonMergedFont = nullptr;
         for (constexpr FontRole roleOrder[] = {FontRole::Body, FontRole::Bold, FontRole::Monospace, FontRole::Small, FontRole::Heading, FontRole::Icons}; const FontRole role : roleOrder) {
             for (auto &font : set.fonts) {
                 if (font.role == role) {
@@ -470,15 +473,19 @@ namespace Editor::UI::Theme {
                     cfg.MergeMode = font.mergeIntoPrevious;
                     cfg.GlyphMinAdvanceX = font.iconMinAdvanceX;
                     cfg.FontDataOwnedByAtlas = true;
+                    LOG_INFO("Theme",
+                             "Adding font: '" + font.name + "', role: " + std::to_string(static_cast<int>(role)) + ", size: " + std::to_string(font.sizePixels) + ", merge: " + std::to_string(font.mergeIntoPrevious));
                     font.fontPtr = io.Fonts->AddFontFromFileTTF(font.path.c_str(), font.sizePixels, &cfg);
-                    if (!font.mergeIntoPrevious) {
-                        const ImFont *prevFont = nullptr;
-                        prevFont = font.fontPtr;
+                    if (!font.mergeIntoPrevious && font.fontPtr) {
+                        lastNonMergedFont = font.fontPtr;
                     }
                 }
             }
         }
+        LOG_INFO("Theme", "Building font atlas...");
         io.Fonts->Build();
+        LOG_INFO("Theme", "Font atlas built. Total fonts: " + std::to_string(io.Fonts->Fonts.Size));
+        io.FontDefault = nullptr;
     }
 
 

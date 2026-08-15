@@ -186,11 +186,13 @@ namespace Editor::UI {
                                 // swap roles
                                 for (auto &otherFont : fonts) {
                                     if (&otherFont != &selectedFont && otherFont.role == role) {
+                                        LOG_INFO("ThemeConfig", "Swapping role " + std::to_string(static_cast<int>(role)) + " from font '" + otherFont.name + "' to font '" + selectedFont.name + "'");
                                         otherFont.role = selectedFont.role;
                                         break;
                                     }
                                 }
                             }
+                            LOG_INFO("ThemeConfig", "Changed font '" + selectedFont.name + "' role from " + std::to_string(static_cast<int>(selectedFont.role)) + " to " + std::to_string(static_cast<int>(role)));
                             selectedFont.role = role;
                         }
 

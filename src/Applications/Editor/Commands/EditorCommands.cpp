@@ -427,6 +427,7 @@ namespace Editor::Commands {
         m_EditorCtx->fontset = m_NewSet;
 
         if (m_EditorCtx->fontsDirty) {
+            LOG_INFO("ThemeCmd", "Execute: Setting fontsDirty = true");
             m_EditorCtx->fontsDirty->store(true, std::memory_order_release);
         }
 
@@ -439,6 +440,7 @@ namespace Editor::Commands {
         UI::Theme::Apply(m_OldData);
 
         m_EditorCtx->fontset = m_OldSet;
+        LOG_INFO("ThemeCmd", "Undo: Setting fontsDirty = true");
         m_EditorCtx->fontsDirty->store(true, std::memory_order_release);
 
         UI::Theme::IO::Serialize(*m_EditorCtx);

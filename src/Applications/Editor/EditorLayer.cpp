@@ -81,6 +81,7 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
 
 void Editor::EditorLayer::PreImGuiFrame() {
     if (m_EditorContext.fontsDirty->exchange(false)) {
+        LOG_INFO("EditorLayer", "PreImGuiFrame: fontsDirty detected, applying font set");
         UI::Theme::ApplyFontSet(m_EditorContext.fontset);
     }
 }
