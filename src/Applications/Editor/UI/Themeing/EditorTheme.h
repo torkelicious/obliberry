@@ -449,7 +449,7 @@ namespace Editor::UI::Theme {
     // load a fontconfig directly from path
     inline FontConfig LoadFontConfig(const std::filesystem::path &path, const FontRole &role = FontRole::Body) {
         return {
-                .name = GetFullFontName(path.c_str()), .path = path, .sizePixels = 16.0f, .role = role
+                .name = GetFullFontName(path.string().c_str()), .path = path, .sizePixels = 16.0f, .role = role
                 /*explicitly avoiding assigning the ptr here, should only be assigned on apply*/
         };
     }
