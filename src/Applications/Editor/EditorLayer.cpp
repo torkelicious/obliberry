@@ -79,6 +79,10 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
     m_ThemeConfigEditor.SetUndoMgr(&m_UndoManager);
 }
 
+void Editor::EditorLayer::SetupFontSync(std::atomic<bool> *fontsDirty) {
+    m_EditorContext.fontsDirty = fontsDirty;
+}
+
 void Editor::EditorLayer::PreImGuiFrame() {
     if (m_EditorContext.fontsDirty->exchange(false)) {
         LOG_INFO("EditorLayer", "PreImGuiFrame: fontsDirty detected, applying font set");
@@ -86,6 +90,9 @@ void Editor::EditorLayer::PreImGuiFrame() {
     }
 }
 
+void Editor::EditorLayer::SyncFonts(Core::EngineContext &ctx, std::mutex &imguiTextureMutex) {
+    PreImGuiFrame();
+}
 
 void Editor::EditorLayer::Update(const float dt) {
     if (!m_PendingSceneToLoad.empty()) {

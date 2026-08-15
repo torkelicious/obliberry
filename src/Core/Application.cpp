@@ -120,10 +120,7 @@ void Core::Application::Run() {
     context.audioEngine = m_AudioEngine.get();
     context.logger = Logging::LoggerService::Get();
 
-    // hack:
-    if (auto *editorlayer = dynamic_cast<Editor::EditorLayer *>(m_Layer.get())) {
-        editorlayer->GetEditorContext()->fontsDirty = &m_FontsDirty;
-    }
+    m_Layer->SetupFontSync(&m_FontsDirty);
 
     // MSAA supported samples, must be called before gl context handover!!!
     Config::GraphicsCapabilities::CacheSampleCounts();
@@ -166,7 +163,7 @@ void Core::Application::Run() {
         std::unique_lock imguiTextureLock(m_ImGuiTextureMutex);
 
         // synchronize font updates with render thread
-        if (context.isEditorMode && m_FontsDirty.load()) {
+        if (m_FontsDirty.load()) {
             // unlock so the render thread can finish rendering the old frame
             imguiTextureLock.unlock();
 
@@ -178,10 +175,8 @@ void Core::Application::Run() {
             imguiTextureLock.lock();
         }
 
-        // handle font updates
-        if (context.isEditorMode) {
-            m_Layer->PreImGuiFrame();
-        }
+        // handle font updates via layer
+        m_Layer->SyncFonts(context, m_ImGuiTextureMutex);
 
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();

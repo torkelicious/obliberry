@@ -8,7 +8,11 @@ namespace Core {
 
         virtual void Init(EngineContext &ctx) {}
 
-        virtual void PreImGuiFrame() {} // mayb move away type shit im tird
+        virtual void SetupFontSync(std::atomic<bool> *fontsDirty) {}
+
+        virtual void PreImGuiFrame() {}
+
+        virtual void SyncFonts(EngineContext &ctx, std::mutex &imguiTextureMutex) {}
 
         virtual void Update(float dt) {}
 

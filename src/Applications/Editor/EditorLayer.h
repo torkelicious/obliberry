@@ -39,7 +39,11 @@ namespace Editor {
     public:
         void Init(Core::EngineContext &ctx) override;
 
+        void SetupFontSync(std::atomic<bool> *fontsDirty) override;
+
         void PreImGuiFrame() override;
+
+        void SyncFonts(Core::EngineContext &ctx, std::mutex &imguiTextureMutex) override;
 
         void Update(float dt) override;
 
