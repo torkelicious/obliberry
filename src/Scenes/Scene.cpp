@@ -140,4 +140,7 @@ void Scenes::Scene::OnExit() {
 }
 
 void Scenes::Scene::OnSaved() { ClearUnsavedChanges(); }
+
+ECS::Components::MapComponent *Scenes::Scene::GetMapComp() { return m_Registry.GetFirst<ECS::Components::MapComponent>(); }
+
 #pragma pop_macro("LOG_WHO")

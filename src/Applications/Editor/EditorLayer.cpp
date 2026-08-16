@@ -24,6 +24,7 @@
 #include "Applications/Editor/States/Editor/EditState.h"
 #include "Applications/Editor/States/Play/PlayState.h"
 #include "Applications/Editor/States/MapEditor/MapEditState.h"
+#include "IO/MapSerialization.h"
 #include "States/Hub/HubState.h"
 #include "Rendering/Renderer.h"
 #include "UI/Themeing/EditorTheme.h"
@@ -79,9 +80,7 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
     m_ThemeConfigEditor.SetUndoMgr(&m_UndoManager);
 }
 
-void Editor::EditorLayer::SetupFontSync(std::atomic<bool> *fontsDirty) {
-    m_EditorContext.fontsDirty = fontsDirty;
-}
+void Editor::EditorLayer::SetupFontSync(std::atomic<bool> *fontsDirty) { m_EditorContext.fontsDirty = fontsDirty; }
 
 void Editor::EditorLayer::PreImGuiFrame() {
     if (m_EditorContext.fontsDirty->exchange(false)) {
@@ -90,9 +89,7 @@ void Editor::EditorLayer::PreImGuiFrame() {
     }
 }
 
-void Editor::EditorLayer::SyncFonts(Core::EngineContext &ctx, std::mutex &imguiTextureMutex) {
-    PreImGuiFrame();
-}
+void Editor::EditorLayer::SyncFonts(Core::EngineContext &ctx, std::mutex &imguiTextureMutex) { PreImGuiFrame(); }
 
 void Editor::EditorLayer::Update(const float dt) {
     if (!m_PendingSceneToLoad.empty()) {
@@ -391,7 +388,10 @@ void Editor::EditorLayer::PromptSaveDirtyMap(const std::function<void()> &onProc
         onProceed();
     });
     m_SaveMapDialog.SetOnDiscard([this, onProceed] {
-        m_Registry->ForEach<ECS::Components::MapComponent>([&](ECS::Entity, ECS::Components::MapComponent *mapComp) { mapComp->mapDirty = false; });
+        m_Registry->ForEach<ECS::Components::MapComponent>([&](ECS::Entity, ECS::Components::MapComponent *mapComp) {
+            mapComp->mapDirty = false;
+            ReloadCurrentMap();
+        });
         onProceed();
     });
     m_SaveMapDialog.Open();
@@ -412,6 +412,12 @@ void Editor::EditorLayer::DrawEditorUI() {
 void Editor::EditorLayer::DrawEditorLayout() {
     DrawEditorUI();
     m_SceneManager.Render();
+}
+
+void Editor::EditorLayer::ReloadCurrentMap() const {
+    if (const auto mapcomp = m_Scene->GetMapComp(); IO::MapIO::Deserialize(mapcomp->mapFilePath, mapcomp->grid)) {
+        mapcomp->needsMeshUpdate = true;
+    }
 }
 
 void Editor::EditorLayer::DrawDockSpace() {

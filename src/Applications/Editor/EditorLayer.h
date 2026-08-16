@@ -57,6 +57,8 @@ namespace Editor {
 
         inline static bool s_RenderParticlesInEditor = false;
 
+        void ReloadCurrentMap() const;
+
     private:
         static void DrawDockSpace();
 

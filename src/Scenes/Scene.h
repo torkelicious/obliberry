@@ -6,6 +6,7 @@
 #include "UI/Rendering/UISystem.h"
 #include "Core/EngineContext.h"
 #include "ECS/ECS.h"
+#include "ECS/Components/MapComponent.h"
 #include "Scripting/EngineLib/UICommandBuffer.h"
 
 namespace Scenes {
@@ -50,6 +51,8 @@ namespace Scenes {
         void ClearUnsavedChanges() { m_HasUnsavedChanges = false; }
 
         void OnSaved();
+
+        ECS::Components::MapComponent *GetMapComp();
 
     private:
         SceneProperties m_Properties;
