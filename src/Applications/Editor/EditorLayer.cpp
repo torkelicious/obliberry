@@ -45,20 +45,16 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
     m_SceneConfigEditor.SetContext(m_Context);
     m_ProjectConfigEditor.SetContext(m_Context);
     m_GraphicsConfigEditor.SetContext(m_Context);
+    m_ThemeConfigEditor.SetContext(m_Context);
 
     m_SceneManager.SetContext(m_Context);
 
     m_Input = m_Context.input;
 
     // theme / fonts
-    {
-        const ImGuiIO &io = ImGui::GetIO();
-        UI::Theme::IO::Deserialize(m_EditorContext.theme);
-        Editor::UI::Theme::Apply(m_EditorContext.theme);
-        for (const auto &font : m_EditorContext.fontset.fonts) {
-            font.fontPtr = io.Fonts->AddFontFromFileTTF(font.path.c_str());
-        }
-    }
+    UI::Theme::IO::Deserialize(m_EditorContext);
+    Editor::UI::Theme::Apply(m_EditorContext.theme);
+    UI::Theme::ApplyFontSet(m_EditorContext.fontset);
 
     if (Core::Project::GetActive()) {
         LoadStartScene();
@@ -83,6 +79,20 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
     m_ThemeConfigEditor.SetUndoMgr(&m_UndoManager);
 }
 
+void Editor::EditorLayer::SetupFontSync(std::atomic<bool> *fontsDirty) {
+    m_EditorContext.fontsDirty = fontsDirty;
+}
+
+void Editor::EditorLayer::PreImGuiFrame() {
+    if (m_EditorContext.fontsDirty->exchange(false)) {
+        LOG_INFO("EditorLayer", "PreImGuiFrame: fontsDirty detected, applying font set");
+        UI::Theme::ApplyFontSet(m_EditorContext.fontset);
+    }
+}
+
+void Editor::EditorLayer::SyncFonts(Core::EngineContext &ctx, std::mutex &imguiTextureMutex) {
+    PreImGuiFrame();
+}
 
 void Editor::EditorLayer::Update(const float dt) {
     if (!m_PendingSceneToLoad.empty()) {

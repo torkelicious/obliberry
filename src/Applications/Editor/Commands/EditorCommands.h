@@ -396,7 +396,7 @@ namespace Editor::Commands {
 
     class ThemeUpdateCommand : public ICommand {
     public:
-        ThemeUpdateCommand(const UI::Theme::Theme &oldCfg, const UI::Theme::Theme &newCfg, EditorContext &eCtx);
+        ThemeUpdateCommand(const UI::Theme::Theme &oldCfg, const UI::Theme::Theme &newCfg, const UI::Theme::FontSet &oldSet, const UI::Theme::FontSet &newSet, EditorContext &eCtx);
         void Execute(Core::EngineContext &ctx) override;
         void Undo(Core::EngineContext &ctx) override;
         [[nodiscard]] std::string_view Name() const noexcept override;
@@ -405,6 +405,9 @@ namespace Editor::Commands {
         EditorContext *m_EditorCtx;
         UI::Theme::Theme m_OldData;
         UI::Theme::Theme m_NewData;
+
+        UI::Theme::FontSet m_OldSet;
+        UI::Theme::FontSet m_NewSet;
     };
 
 } // namespace Editor::Commands

@@ -8,6 +8,12 @@ namespace Core {
 
         virtual void Init(EngineContext &ctx) {}
 
+        virtual void SetupFontSync(std::atomic<bool> *fontsDirty) {}
+
+        virtual void PreImGuiFrame() {}
+
+        virtual void SyncFonts(EngineContext &ctx, std::mutex &imguiTextureMutex) {}
+
         virtual void Update(float dt) {}
 
         virtual void Render() {}

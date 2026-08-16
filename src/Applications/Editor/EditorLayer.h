@@ -3,6 +3,7 @@
 #include <memory>
 #include <sstream>
 #include "Core/ApplicationLayer.h"
+#include "Platform/Input/InputManager.h"
 #include "Applications/Editor/UI/Panels/Editor/InspectorPanel.h"
 #include "UI/Panels/ProjectBrowserPanel.h"
 #include "Applications/Editor/UI/Panels/Editor/RegistryPanel.h"
@@ -18,7 +19,6 @@
 #include "Applications/Editor/UI/ConfigWindows/SceneConfigEditor.h"
 #include "UI/ConfigWindows/GraphicsConfigEditor.h"
 #include "UI/Panels/Editor/UIPanel.h"
-#include "Platform/Input/InputManager.h"
 #include "UI/ConfigWindows/ThemeConfigEditor.h"
 
 namespace Editor {
@@ -38,6 +38,12 @@ namespace Editor {
 
     public:
         void Init(Core::EngineContext &ctx) override;
+
+        void SetupFontSync(std::atomic<bool> *fontsDirty) override;
+
+        void PreImGuiFrame() override;
+
+        void SyncFonts(Core::EngineContext &ctx, std::mutex &imguiTextureMutex) override;
 
         void Update(float dt) override;
 
@@ -85,7 +91,7 @@ namespace Editor {
         Scenes::Scene *m_Scene = nullptr;
         std::string m_CurrentScenePath;
         EditorCamera m_Camera;
-        Platform::Input::InputManager *m_Input = nullptr;
+        ::Platform::Input::InputManager *m_Input = nullptr;
         ECS::Registry *m_Registry = nullptr;
         Scenes::SceneManager m_SceneManager;
 

@@ -417,18 +417,33 @@ namespace Editor::Commands {
     //
     // Themeing
     //
-    ThemeUpdateCommand::ThemeUpdateCommand(const UI::Theme::Theme &oldCfg, const UI::Theme::Theme &newCfg, EditorContext &eCtx) : m_EditorCtx(&eCtx), m_OldData(oldCfg), m_NewData(newCfg) {}
+    ThemeUpdateCommand::ThemeUpdateCommand(const UI::Theme::Theme &oldCfg, const UI::Theme::Theme &newCfg, const UI::Theme::FontSet &oldSet, const UI::Theme::FontSet &newSet, EditorContext &eCtx)
+        : m_EditorCtx(&eCtx), m_OldData(oldCfg), m_NewData(newCfg), m_OldSet(oldSet), m_NewSet(newSet) {}
 
     void ThemeUpdateCommand::Execute(Core::EngineContext &ctx) {
         m_EditorCtx->theme = m_NewData;
         UI::Theme::Apply(m_NewData);
-        UI::Theme::IO::Serialize(m_NewData);
+
+        m_EditorCtx->fontset = m_NewSet;
+
+        if (m_EditorCtx->fontsDirty) {
+            LOG_INFO("ThemeCmd", "Execute: Setting fontsDirty = true");
+            m_EditorCtx->fontsDirty->store(true, std::memory_order_release);
+        }
+
+        UI::Theme::IO::Serialize(*m_EditorCtx);
     }
+
 
     void ThemeUpdateCommand::Undo(Core::EngineContext &ctx) {
         m_EditorCtx->theme = m_OldData;
         UI::Theme::Apply(m_OldData);
-        UI::Theme::IO::Serialize(m_OldData);
+
+        m_EditorCtx->fontset = m_OldSet;
+        LOG_INFO("ThemeCmd", "Undo: Setting fontsDirty = true");
+        m_EditorCtx->fontsDirty->store(true, std::memory_order_release);
+
+        UI::Theme::IO::Serialize(*m_EditorCtx);
     }
     std::string_view ThemeUpdateCommand::Name() const noexcept { return "Theme change"; }
 

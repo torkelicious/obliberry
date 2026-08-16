@@ -1,5 +1,5 @@
 // editor theme data
-// for ImGui 1.92.9 (docking)
+// for ImGui 1.92.9b (docking)
 //
 #pragma once
 
@@ -13,6 +13,7 @@
 #include <cmath>
 #include <cstdio>
 #include <format>
+#include <imgui_internal.h>
 #include <optional>
 #include <span>
 #include <string>
@@ -321,8 +322,8 @@ namespace Editor::UI::Theme {
         t.SetColor(ImGuiCol_NavWindowingDimBg, ImVec4(p.bg.x, p.bg.y, p.bg.z, 0.6f));
         t.SetColor(ImGuiCol_ModalWindowDimBg, ImVec4(p.bg.x, p.bg.y, p.bg.z, 0.6f));
 
-        t.SetFloat(ImGuiStyleVar_WindowRounding, 0.0f);
-        t.SetFloat(ImGuiStyleVar_ChildRounding, 0.0f);
+        t.SetFloat(ImGuiStyleVar_WindowRounding, 10.0f);
+        t.SetFloat(ImGuiStyleVar_ChildRounding, 5.0f);
         t.SetFloat(ImGuiStyleVar_PopupRounding, 3.0f);
         t.SetFloat(ImGuiStyleVar_FrameRounding, 3.0f);
         t.SetFloat(ImGuiStyleVar_GrabRounding, 3.0f);
@@ -348,21 +349,23 @@ namespace Editor::UI::Theme {
     // Fonts
 
     // todo: use
-    enum class FontRole {
+    enum class FontRole : uint8_t {
         Body,
         Bold,
         Monospace,
+        Small,
+        Heading,
         Icons,
     };
 
     struct FontConfig {
         std::string name;
-        std::string path;
+        std::filesystem::path path;
         float sizePixels = 16.0f;
         FontRole role = FontRole::Body;
         bool mergeIntoPrevious = false;
         float iconMinAdvanceX = 0.0f;
-        mutable ImFont *fontPtr = nullptr;
+        ImFont *fontPtr = nullptr;
     };
 
     struct FontSet {
@@ -375,7 +378,10 @@ namespace Editor::UI::Theme {
         }
 
         // wrapper to return ImFont pointer for use with ImGui::PushFont etc
-        [[nodiscard]] ImFont *FindFont(const FontRole role) const noexcept { return Find(role)->fontPtr; }
+        [[nodiscard]] ImFont *FindFont(const FontRole role) const noexcept {
+            const auto f = Find(role);
+            return f == nullptr ? ImGui::GetDefaultFont() : f->fontPtr;
+        }
     };
 
     [[nodiscard]] inline FontSet DefaultFontSet() {
@@ -383,7 +389,6 @@ namespace Editor::UI::Theme {
         // todo:
         //  serialize fonts to theme.json
         //  add google fonts credit for inter / jetbrainsmono (both ofl)
-        // static const std::string FONT_PATH = "internal/resources/fonts/";
 
         return FontSet{.fonts = {
                                {.name = "Inter Variable",
@@ -400,9 +405,9 @@ namespace Editor::UI::Theme {
                        }};
     }
 
-    inline std::string GetFontName(const char *path) {
+    inline std::string GetFontName(const std::filesystem::path &path) {
         FT_Face face = nullptr;
-        if (FT_New_Face(FreeType::library(), path, 0, &face) != 0) {
+        if (FT_New_Face(FreeType::library(), path.string().c_str(), 0, &face) != 0) {
             return {};
         }
         std::string name = face->family_name ? face->family_name : "";
@@ -410,10 +415,10 @@ namespace Editor::UI::Theme {
         return name;
     }
 
-    inline std::string GetFontStyle(const char *path) {
+    inline std::string GetFontStyle(const std::filesystem::path &path) {
         FT_Face face = nullptr;
 
-        if (FT_New_Face(FreeType::library(), path, 0, &face) != 0)
+        if (FT_New_Face(FreeType::library(), path.string().c_str(), 0, &face) != 0)
             return {};
 
         std::string style = face->style_name ? face->style_name : "";
@@ -423,10 +428,10 @@ namespace Editor::UI::Theme {
         return style;
     }
 
-    inline std::string FullFontName(const char *path) {
+    inline std::string GetFullFontName(const std::filesystem::path &path) {
         FT_Face face = nullptr;
 
-        if (FT_New_Face(FreeType::library(), path, 0, &face) != 0)
+        if (FT_New_Face(FreeType::library(), path.string().c_str(), 0, &face) != 0)
             return {};
 
         std::string name = face->family_name ? face->family_name : "";
@@ -439,6 +444,48 @@ namespace Editor::UI::Theme {
 
         FT_Done_Face(face);
         return name;
+    }
+
+    // load a fontconfig directly from path
+    inline FontConfig LoadFontConfig(const std::filesystem::path &path, const FontRole &role = FontRole::Body) {
+        return {
+                .name = GetFullFontName(path), .path = path, .sizePixels = 16.0f, .role = role
+                /*explicitly avoiding assigning the ptr here, should only be assigned on apply*/
+        };
+    }
+
+    inline void ApplyFontSet(FontSet &set) {
+        // must be called outside the NewFrame() .. Render() scope
+        ImGuiIO &io = ImGui::GetIO();
+
+        LOG_INFO("Theme", "ApplyFontSet: Clearing font atlas, fonts in set: " + std::to_string(set.fonts.size()));
+        io.Fonts->Clear();
+
+        // role changes take visual effect.
+        // Track the last non-merged font for mergeIntoPrevious to work correctly
+        ImFont *lastNonMergedFont = nullptr;
+        for (constexpr FontRole roleOrder[] = {FontRole::Body, FontRole::Bold, FontRole::Monospace, FontRole::Small, FontRole::Heading, FontRole::Icons}; const FontRole role : roleOrder) {
+            for (auto &font : set.fonts) {
+                if (font.role == role) {
+                    font.fontPtr = nullptr;
+                    ImFontConfig cfg;
+                    cfg.SizePixels = font.sizePixels;
+                    cfg.MergeMode = font.mergeIntoPrevious;
+                    cfg.GlyphMinAdvanceX = font.iconMinAdvanceX;
+                    cfg.FontDataOwnedByAtlas = true;
+                    LOG_INFO("Theme",
+                             "Adding font: '" + font.name + "', role: " + std::to_string(static_cast<int>(role)) + ", size: " + std::to_string(font.sizePixels) + ", merge: " + std::to_string(font.mergeIntoPrevious));
+                    font.fontPtr = io.Fonts->AddFontFromFileTTF(font.path.string().c_str(), font.sizePixels, &cfg);
+                    if (!font.mergeIntoPrevious && font.fontPtr) {
+                        lastNonMergedFont = font.fontPtr;
+                    }
+                }
+            }
+        }
+        LOG_INFO("Theme", "Building font atlas...");
+        io.Fonts->Build();
+        LOG_INFO("Theme", "Font atlas built. Total fonts: " + std::to_string(io.Fonts->Fonts.Size));
+        io.FontDefault = nullptr;
     }
 
 
