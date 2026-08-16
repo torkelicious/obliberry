@@ -52,5 +52,5 @@ namespace Editor::UI {
         int m_NameBufferFontIdx = -1;
         char m_ColorSearchBuffer[128] = {};
         char m_LayoutSearchBuffer[128] = {};
-        };
+    };
 } // namespace Editor::UI
