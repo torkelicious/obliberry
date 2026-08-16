@@ -7,6 +7,7 @@
 #include "IO/SceneSerialization.h"
 #include "IO/VFS/VFS.h"
 #include "Scenes/Scene.h"
+#include "../Platform/Timeout.h"
 #include <ObSL/ScriptRuntime.h>
 #include <algorithm>
 #include <exception>
@@ -152,6 +153,8 @@ namespace Scenes {
         }
 
         if (m_Context->scriptPool) {
+            Platform::Time::invalidateGeneration();
+
             m_Context->scriptPool->shutdown();
             m_Context->scriptPool->init(IO::VFS::GetAssetsDirectory().string() + "/scripts");
         }
