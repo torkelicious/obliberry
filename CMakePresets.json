@@ -102,6 +102,16 @@
       }
     },
     {
+      "name": "linux-sanitizers",
+      "displayName": "Linux Debug + ASan/UBSan",
+      "inherits": "linux-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "ENABLE_SANITIZERS": "ON",
+        "ENABLE_UNITY_BUILD": "OFF"
+      }
+    },
+    {
       "name": "macos-debug",
       "displayName": "macOS Debug",
       "inherits": "macos-base",
@@ -115,6 +125,16 @@
       "inherits": "macos-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "macos-sanitizers",
+      "displayName": "macOS Debug + ASan/UBSan",
+      "inherits": "macos-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "ENABLE_SANITIZERS": "ON",
+        "ENABLE_UNITY_BUILD": "OFF"
       }
     },
     {
@@ -159,12 +179,22 @@
       "configurePreset": "linux-profile"
     },
     {
+      "name": "linux-sanitizers",
+      "displayName": "Linux ASan/UBSan",
+      "configurePreset": "linux-sanitizers"
+    },
+    {
       "name": "macos-debug",
       "configurePreset": "macos-debug"
     },
     {
       "name": "macos-release",
       "configurePreset": "macos-release"
+    },
+    {
+      "name": "macos-sanitizers",
+      "displayName": "macOS ASan/UBSan",
+      "configurePreset": "macos-sanitizers"
     },
     {
       "name": "windows-debug",
