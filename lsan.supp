@@ -1,10 +1,10 @@
-# drivers
-
+# driver
 leak:libnvidia
 leak:libGLX
 leak:libGL.so
 leak:libEGL
 leak:swrast_dri
+# windowing
 leak:glXCreateContext
 leak:glXMakeCurrent
 leak:glfwCreateWindow
@@ -12,3 +12,15 @@ leak:glfwInit
 leak:libX11
 leak:libxcb
 leak:libwayland
+# nfd-e
+leak:libdbus-1
+leak:libfontconfig
+leak:libpangocairo
+leak:libpango-1.0
+leak:libglib-2.0
+leak:libgobject-2.0
+leak:libgio-2.0
+leak:libffi
+leak:FcValueSave
+leak:FcFontRenderPrepare
+leak:FcLangSetCopy
