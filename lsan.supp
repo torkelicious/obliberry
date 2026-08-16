@@ -1,0 +1,14 @@
+# drivers
+
+leak:libnvidia
+leak:libGLX
+leak:libGL.so
+leak:libEGL
+leak:swrast_dri
+leak:glXCreateContext
+leak:glXMakeCurrent
+leak:glfwCreateWindow
+leak:glfwInit
+leak:libX11
+leak:libxcb
+leak:libwayland

@@ -15,6 +15,9 @@ set(CONFIG_TYPES Debug Release RelWithDebInfo MinSizeRel)
 # Target CPU Architecture Baseline
 set(ENGINE_ARCH_LEVEL "x86-64-v2" CACHE STRING "Target CPU architecture (x86-64-v2, x86-64-v3, native)")
 
+# Sanitizers
+option(ENABLE_SANITIZERS "Enable AddressSanitizer and UndefinedBehaviorSanitizer" OFF)
+
 if (WIN32)
     add_compile_definitions(NOMINMAX)
     add_compile_definitions(WIN32_LEAN_AND_MEAN)
@@ -63,9 +66,9 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     elseif (CMAKE_SYSTEM_NAME MATCHES "Linux")
         # Linux specific linker flags
         target_link_options(obliberry_options INTERFACE
-                $<$<NOT:$<CONFIG:Debug>>:-Wl,--gc-sections>
+                $<$<AND:$<NOT:$<CONFIG:Debug>>,$<NOT:$<BOOL:${ENABLE_SANITIZERS}>>>:-Wl,--gc-sections>
                 $<$<CONFIG:RelWithDebInfo>:-Wl,--build-id>
-                $<$<CONFIG:Release,MinSizeRel>:-s>
+                $<$<AND:$<CONFIG:Release,MinSizeRel>,$<NOT:$<BOOL:${ENABLE_SANITIZERS}>>>:-s>
         )
     endif ()
 endif ()
@@ -97,8 +100,11 @@ if (CCACHE_PROGRAM AND NOT CMAKE_C_COMPILER_LAUNCHER AND NOT CMAKE_CXX_COMPILER_
 endif ()
 
 # LTO
-# Clang gets ThinLTO
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+# Skipped entirely when sanitizers are enabled
+if (ENABLE_SANITIZERS)
+    message(STATUS "Sanitizers enabled. skipping LTO/IPO")
+elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    # Clang gets ThinLTO
     target_compile_options(obliberry_options INTERFACE
             $<$<CONFIG:Release,MinSizeRel,RelWithDebInfo>:-flto=thin>
     )
@@ -117,6 +123,21 @@ else ()
     else ()
         message(WARNING "LTO/IPO is not supported by your compiler: ${error}")
     endif ()
+endif ()
+
+if (ENABLE_SANITIZERS)
+    if (NOT CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        message(FATAL_ERROR "Sanitizers are only supported with GCC or Clang")
+    endif ()
+    target_compile_options(obliberry_options INTERFACE
+            -fsanitize=address,undefined
+            -fno-omit-frame-pointer
+            -g
+    )
+    target_link_options(obliberry_options INTERFACE
+            -fsanitize=address,undefined
+    )
+    message(STATUS "Sanitizers enabled")
 endif ()
 
 # Output Directories
