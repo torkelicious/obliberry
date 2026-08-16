@@ -20,15 +20,20 @@ namespace Platform::Time {
         }
 
         const auto now = std::chrono::steady_clock::now();
+        std::vector<Threading::SmallTask> due;
         for (auto it = timers.begin(); it != timers.end();) {
             if (now >= it->endTime) {
-                auto callback = std::move(it->callback);
+                due.push_back(std::move(it->callback));
                 it = timers.erase(it);
-                callback();
             } else {
                 ++it;
             }
         }
+
+        for (auto &callback : due) {
+            callback();
+        }
     }
+
 
 } // namespace Platform::Time
