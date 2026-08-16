@@ -2,6 +2,7 @@
 
 #include "Applications/Editor/UI/Panels/EditorPanel.h"
 #include "Core/ResourceManager.h"
+#include "IO/VFS/VFS.h"
 #include <filesystem>
 #include <glm/glm.hpp>
 #include <string>

@@ -5,6 +5,7 @@
 #include "Core/Constants.h"
 #include "Logger/LoggerService.h"
 #include "Applications/Editor/Platform/FileDialogs.h"
+#include "Core/Utils/ScriptingUtils.h"
 #include "Core/Utils/UiUtils.h"
 #include "IO/VFS/VFS.h"
 #include "IO/Loaders/AssetLoader.h"
@@ -542,6 +543,12 @@ void Editor::UI::ProjectBrowserPanel::DrawFileSection(const char *label, const s
                 ImGui::BeginGroup();
                 ImGui::Text("%s", virtualPath.c_str());
 
+                if (isScripts) {
+                    if (ImGui::SmallButton("Edit")) {
+                        Core::Utils::Scripting::OsOpenFile(IO::VFS::Resolve(virtualPath));
+                    }
+                }
+
                 if (ImGui::SmallButton("Remove")) {
                     m_DeleteConfirmKey = virtualPath;
                     m_DeleteConfirmFilePath = virtualPath;
@@ -565,6 +572,12 @@ void Editor::UI::ProjectBrowserPanel::DrawFileSection(const char *label, const s
                 ImGui::PushID(virtualPath.c_str());
                 ImGui::Text("%s", virtualPath.c_str());
                 ImGui::SameLine();
+
+                if (isScripts) {
+                    if (ImGui::SmallButton("Edit")) {
+                        Core::Utils::Scripting::OsOpenFile(IO::VFS::Resolve(virtualPath));
+                    }
+                }
 
                 if (ImGui::SmallButton("Remove")) {
                     m_DeleteConfirmKey = virtualPath;
