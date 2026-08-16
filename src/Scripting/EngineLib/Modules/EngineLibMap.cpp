@@ -303,4 +303,104 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
                                                                                return obj;
                                                                            },
                                                                            "Hex_HexToWorld"));
+
+    // muts
+    interpreter.get_global_environment()->define("Map_SetHexWalkable", interpreter.gc.allocate<ObSL::NativeFunction>(
+                                                                               2, // obj , bool
+                                                                               [reg = m_registry](const ObSL::Interpreter *interpreter, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+                                                                                   if (args.size() < 2 || !std::holds_alternative<ObSL::ObSLObject *>(args[0]) || !std::holds_alternative<bool>(args[1])) {
+                                                                                       return std::monostate{};
+                                                                                   }
+
+                                                                                   const auto *obj = std::get<ObSL::ObSLObject *>(args[0]);
+                                                                                   const bool walkable = std::get<bool>(args[1]);
+
+                                                                                   if (!obj->fields.contains("q") || !obj->fields.contains("r")) {
+                                                                                       return std::monostate{};
+                                                                                   }
+
+                                                                                   const auto &qVal = obj->fields.at("q");
+                                                                                   const auto &rVal = obj->fields.at("r");
+
+                                                                                   if (!std::holds_alternative<double>(qVal) || !std::holds_alternative<double>(rVal)) {
+                                                                                       return std::monostate{};
+                                                                                   }
+
+                                                                                   const int32_t q = static_cast<int32_t>(std::get<double>(qVal));
+                                                                                   const int32_t r = static_cast<int32_t>(std::get<double>(rVal));
+                                                                                   const Map::HexCoords coords{q, r};
+
+                                                                                   auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
+                                                                                   auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
+                                                                                   if (cmd_buf) {
+                                                                                       cmd_buf->push([coords, walkable](ECS::Registry &reg) {
+                                                                                           reg.ForEach<ECS::Components::MapComponent>([&](ECS::Entity, ECS::Components::MapComponent *mapComp) {
+                                                                                               if (auto *tile = mapComp->grid.Get(coords)) {
+                                                                                                   tile->walkable = walkable;
+                                                                                                   mapComp->grid.SyncTileWalkableCache(coords);
+                                                                                               }
+                                                                                           });
+                                                                                       });
+                                                                                   } else if (reg) {
+                                                                                       std::unique_lock lock(g_RegistryMutex);
+                                                                                       reg->ForEach<ECS::Components::MapComponent>([&](ECS::Entity, ECS::Components::MapComponent *mapComp) {
+                                                                                           if (auto *tile = mapComp->grid.Get(coords)) {
+                                                                                               tile->walkable = walkable;
+                                                                                               mapComp->grid.SyncTileWalkableCache(coords);
+                                                                                           }
+                                                                                       });
+                                                                                   }
+
+                                                                                   return std::monostate{};
+                                                                               },
+                                                                               "Map_SetHexWalkable"));
+
+
+    interpreter.get_global_environment()->define("Map_SetTileType", interpreter.gc.allocate<ObSL::NativeFunction>(
+                                                                            2, // obj ,num
+                                                                            [reg = m_registry](const ObSL::Interpreter *interpreter, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+                                                                                if (args.size() < 2 || !std::holds_alternative<ObSL::ObSLObject *>(args[0]) || !std::holds_alternative<double>(args[1])) {
+                                                                                    return std::monostate{};
+                                                                                }
+
+                                                                                const auto *obj = std::get<ObSL::ObSLObject *>(args[0]);
+                                                                                const double type = std::get<double>(args[1]);
+
+                                                                                if (!obj->fields.contains("q") || !obj->fields.contains("r")) {
+                                                                                    return std::monostate{};
+                                                                                }
+
+                                                                                const auto &qVal = obj->fields.at("q");
+                                                                                const auto &rVal = obj->fields.at("r");
+
+                                                                                if (!std::holds_alternative<double>(qVal) || !std::holds_alternative<double>(rVal)) {
+                                                                                    return std::monostate{};
+                                                                                }
+
+                                                                                const int32_t q = static_cast<int32_t>(std::get<double>(qVal));
+                                                                                const int32_t r = static_cast<int32_t>(std::get<double>(rVal));
+                                                                                const Map::HexCoords coords{q, r};
+
+                                                                                auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
+                                                                                auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
+                                                                                if (cmd_buf) {
+                                                                                    cmd_buf->push([coords, type](ECS::Registry &reg) {
+                                                                                        reg.ForEach<ECS::Components::MapComponent>([&](ECS::Entity, ECS::Components::MapComponent *mapComp) {
+                                                                                            if (auto *tile = mapComp->grid.Get(coords)) {
+                                                                                                tile->type = static_cast<uint8_t>(type);
+                                                                                            }
+                                                                                        });
+                                                                                    });
+                                                                                } else if (reg) {
+                                                                                    std::unique_lock lock(g_RegistryMutex);
+                                                                                    reg->ForEach<ECS::Components::MapComponent>([&](ECS::Entity, ECS::Components::MapComponent *mapComp) {
+                                                                                        if (auto *tile = mapComp->grid.Get(coords)) {
+                                                                                            tile->type = static_cast<uint8_t>(type);
+                                                                                        }
+                                                                                    });
+                                                                                }
+
+                                                                                return std::monostate{};
+                                                                            },
+                                                                            "Map_SetTileType"));
 }
