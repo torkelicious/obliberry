@@ -152,7 +152,7 @@ namespace Editor::UI {
                     m_NameBufferFontIdx = m_SelectedFontIdx;
                 }
 
-                ImGui::BeginChild("FontOptions", ImVec2(0, 0), ImGuiChildFlags_Borders);
+                ImGui::BeginChild("FontOptions", ImVec2(0, 225), ImGuiChildFlags_Borders);
 
                 ImGui::InputText("Name", m_FontNameBuffer, IM_ARRAYSIZE(m_FontNameBuffer));
 
@@ -208,7 +208,6 @@ namespace Editor::UI {
                 }
                 ImGui::EndChild();
             }
-
 
             if (ImGui::Button("Import new UI font")) {
                 if (const auto font = FontFromDialog(); !font.path.empty()) {
