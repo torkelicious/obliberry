@@ -164,7 +164,7 @@ namespace IO::SceneIO {
             for (size_t i = 0; i < deserializedIds.size(); ++i) {
                 if (const auto &entityData = j["entities"][i]; entityData.contains("parent")) {
                     if (const size_t parentIndex = entityData["parent"].get<size_t>(); parentIndex < deserializedIds.size() && parentIndex != i) {
-                        scene.GetRegistry().Reparent(deserializedIds[i], deserializedIds[parentIndex]);
+                        scene.GetRegistry().SetParentDirect(deserializedIds[i], deserializedIds[parentIndex]);
                     }
                 }
             }

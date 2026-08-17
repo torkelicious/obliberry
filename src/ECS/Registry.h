@@ -211,6 +211,36 @@ namespace ECS {
             }
         }
 
+        void SetParentDirect(const EntityID child, const EntityID newParent) {
+            if (!IsValid(child) || child == newParent)
+                return;
+
+            auto *childRel = GetComponent<Components::RelationshipComponent>(child);
+            if (!childRel)
+                childRel = &AddComponent<Components::RelationshipComponent>(child);
+
+            // remove from old parent (shouldn't happen during deserialization but safe whatever)
+            if (childRel->parent != INVALID_ENTITY_ID && IsValid(childRel->parent)) {
+                if (auto *oldParentRel = GetComponent<Components::RelationshipComponent>(childRel->parent)) {
+                    std::erase(oldParentRel->children, child);
+                }
+            }
+
+            // attach to new parent
+            if (newParent != INVALID_ENTITY_ID && IsValid(newParent)) {
+                childRel->parent = newParent;
+                childRel->parentName = GetEntityName(newParent);
+
+                auto *newParentRel = GetComponent<Components::RelationshipComponent>(newParent);
+                if (!newParentRel)
+                    newParentRel = &AddComponent<Components::RelationshipComponent>(newParent);
+                newParentRel->children.push_back(child);
+            } else {
+                childRel->parent = INVALID_ENTITY_ID;
+                childRel->parentName.clear();
+            }
+        }
+
         template <typename Primary, typename... Rest, typename Func> void ForEach(Func &&func) {
             auto *primaryPool = GetPool<Primary>();
             auto restPools = std::make_tuple(GetPool<Rest>()...);
