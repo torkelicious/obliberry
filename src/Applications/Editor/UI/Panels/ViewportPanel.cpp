@@ -42,19 +42,17 @@ void Editor::UI::ViewportPanel::OnImGuiRender() {
             m_EngineContext->renderer->ClearPixelReadResult();
         }
 
-        if (const int pickedEntity = m_EngineContext->renderer->GetLastReadPixel(); pickedEntity != -1) {
-            m_SelectedEntityID = pickedEntity;
-            m_HadEmptyClick = false;
-            m_EngineContext->renderer->ClearPixelReadResult();
-            m_ExpectingPick = false;
-        } else if (m_ExpectingPick && !m_EngineContext->renderer->IsPixelReadRequested() && !ImGuizmo::IsUsing()) {
-            // Pixel read was processed but returned empty space, or gizmo was in use
-            m_SelectedEntityID = -1;
-            m_HadEmptyClick = true;
+        if (m_ExpectingPick && !m_EngineContext->renderer->IsPixelReadRequested() && !ImGuizmo::IsUsing()) {
+            if (const int pickedEntity = m_EngineContext->renderer->GetLastReadPixel(); pickedEntity != -1) {
+                m_SelectedEntityID = pickedEntity;
+                m_HadEmptyClick = false;
+            } else {
+                m_SelectedEntityID = -1;
+                m_HadEmptyClick = true;
+            }
             m_EngineContext->renderer->ClearPixelReadResult();
             m_ExpectingPick = false;
         }
-        // wait for next frame
     }
 
     if (const ImVec2 viewportSize = ImGui::GetContentRegionAvail(); viewportSize.x > 0.0f && viewportSize.y > 0.0f) {

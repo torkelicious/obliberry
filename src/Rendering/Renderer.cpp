@@ -148,6 +148,10 @@ void Rendering::Renderer::SubmitPersistent(const std::shared_ptr<Mesh> &mesh, co
 }
 
 void Rendering::Renderer::Flush(const size_t renderIndex) {
+    if (m_EditorFramebuffer) {
+        constexpr int32_t kEmptyEntityID = -1;
+        glClearBufferiv(GL_COLOR, 1, &kEmptyEntityID);
+    }
     m_LastBoundVAO = nullptr;
     m_LastBoundShader = nullptr;
     m_LastBoundTexture = nullptr;
