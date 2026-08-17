@@ -545,7 +545,7 @@ void Editor::UI::ProjectBrowserPanel::DrawFileSection(const char *label, const s
 
                 if (isScripts) {
                     if (ImGui::SmallButton("Edit")) {
-                        Core::Utils::Scripting::OsOpenFile(IO::VFS::Resolve(virtualPath));
+                        Core::Utils::OS::OsOpenFile(IO::VFS::Resolve(virtualPath));
                     }
                 }
 
@@ -575,7 +575,7 @@ void Editor::UI::ProjectBrowserPanel::DrawFileSection(const char *label, const s
 
                 if (isScripts) {
                     if (ImGui::SmallButton("Edit")) {
-                        Core::Utils::Scripting::OsOpenFile(IO::VFS::Resolve(virtualPath));
+                        Core::Utils::OS::OsOpenFile(IO::VFS::Resolve(virtualPath));
                     }
                 }
 

@@ -24,6 +24,7 @@
 #include "Applications/Editor/States/Editor/EditState.h"
 #include "Applications/Editor/States/Play/PlayState.h"
 #include "Applications/Editor/States/MapEditor/MapEditState.h"
+#include "Core/Utils/ScriptingUtils.h"
 #include "IO/MapSerialization.h"
 #include "States/Hub/HubState.h"
 #include "Rendering/Renderer.h"
@@ -522,8 +523,12 @@ void Editor::EditorLayer::DrawToolbar() {
         ImGui::Separator();
 
         if (ImGui::BeginMenu("Help")) {
-            // TODO: Implement
-            ImGui::Text("rtfm :)");
+            if (ImGui::MenuItem("Editor Handbook")) {
+                Core::Utils::OS::OsOpenUrl("https://github.com/torkelicious/obliberry/blob/master/docs/editor/index.md");
+            }
+            if (ImGui::MenuItem("Keybind Reference")) {
+                Core::Utils::OS::OsOpenUrl("https://github.com/torkelicious/obliberry/blob/master/docs/editor/usage.md#keybind-reference");
+            }
             ImGui::EndMenu();
         }
 
