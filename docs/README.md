@@ -4,8 +4,8 @@
 > itself may change
 
 ### Editor
-If you want to get started with the Obliberry editor, please see: [Editor Docs](editor/index.md)
 
+If you want to get started with the Obliberry editor, please see: [Editor Docs](editor/index.md)
 
 ## Contents
 

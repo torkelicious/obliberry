@@ -1,6 +1,7 @@
 # Core Concepts
 
-This page explains the mental model behind Obliberry. Understanding these concepts will make the editor and scripting make sense.
+This page explains the mental model behind Obliberry. Understanding these concepts will make the editor and scripting
+make sense.
 
 ---
 
@@ -17,7 +18,8 @@ An **entity** is just a unique ID. It has no data, no behavior, just an entry in
 
 ## Components
 
-A **component** is a plain data structure. Examples: `TransformComponent` (position/rotation/scale), `MeshComponent` (mesh ID), `ScriptComponent` (list of script paths).
+A **component** is a plain data structure. Examples: `TransformComponent` (position/rotation/scale), `MeshComponent` (
+mesh ID), `ScriptComponent` (list of script paths).
 
 * **One per entity per type** - You can't have two `TransformComponent`s on one entity
 * **But components can hold arrays** - One `ScriptComponent` holds *many* script paths
@@ -27,10 +29,10 @@ A **component** is a plain data structure. Examples: `TransformComponent` (posit
 
 Some components are **tags** - empty structs that just mark an entity for a system:
 
-| Tag | Meaning |
-|-----|---------|
-| `BillboardTag` | Render this entity as a billboard (always faces camera) |
-| `DestroyTag` | Delete this entity at end of frame |
+| Tag            | Meaning                                                     |
+|----------------|-------------------------------------------------------------|
+| `BillboardTag` | Render this entity as a billboard (always faces camera)     |
+| `DestroyTag`   | Delete this entity at end of frame                          |
 | `Relationship` | Stores parent/child links (not shown in Add Component menu) |
 
 Tags appear as **checkboxes/flags** in the Inspector, not as expandable components.
@@ -39,20 +41,22 @@ Tags appear as **checkboxes/flags** in the Inspector, not as expandable componen
 
 ## Systems
 
-**Systems** contain the actual logic. They run every frame (or fixed timestep) and process all entities that have a specific set of components.
+**Systems** contain the actual logic. They run every frame (or fixed timestep) and process all entities that have a
+specific set of components.
 
-| System | Required Components | What It Does |
-|--------|---------------------|--------------|
-| `RenderSystem` | Transform + Mesh + Material | Draws the entity |
-| `MovementSystem` | Transform + Movement | Moves entity along hex path |
+| System                     | Required Components                                  | What It Does                  |
+|----------------------------|------------------------------------------------------|-------------------------------|
+| `RenderSystem`             | Transform + Mesh + Material                          | Draws the entity              |
+| `MovementSystem`           | Transform + Movement                                 | Moves entity along hex path   |
 | `DirectionalTextureSystem` | Transform + Movement + DirectionalTexture + Material | Swaps texture based on facing |
-| `ScriptSystem` | Script | Runs ObSL scripts |
-| `ParticleSystem` | Transform + ParticleEmitter + Material | Spawns/updates particles |
-| `LightingSystem` | PointLight | Computes lighting |
-| `UISystem` | (UI elements) | Layout, input, rendering |
+| `ScriptSystem`             | Script                                               | Runs ObSL scripts             |
+| `ParticleSystem`           | Transform + ParticleEmitter + Material               | Spawns/updates particles      |
+| `LightingSystem`           | PointLight                                           | Computes lighting             |
+| `UISystem`                 | (UI elements)                                        | Layout, input, rendering      |
 
 > [!NOTE]
-> You don't interact with systems directly in the editor. They run automatically in Play mode. In Edit mode, only the `RenderSystem` runs (for the Scene View).
+> You don't interact with systems directly in the editor. They run automatically in Play mode. In Edit mode, only the
+`RenderSystem` runs (for the Scene View).
 
 ---
 
@@ -79,7 +83,8 @@ Assets (textures, meshes, materials, shaders, fonts) are **referenced by ID**, n
 * **Project Browser** (bottom panel) - Browse and create assets
 * **Material** - Links a shader + texture + color. Entities reference a Material ID.
 * **Mesh** - Procedural shapes (Quad, Hexagon, etc.) or loaded models. Entities reference a Mesh ID.
-* **Engine assets** - IDs prefixed with `[Engine]` (e.g., `[Engine] Base` shader, `[Engine] Hex` mesh). You should not try to delete these.
+* **Engine assets** - IDs prefixed with `[Engine]` (e.g., `[Engine] Base` shader, `[Engine] Hex` mesh). You should not
+  try to delete these.
 
 ---
 
@@ -123,7 +128,8 @@ my-project/
 ```
 
 > [!NOTE]
-> Materials and meshes are **not** separate asset files. They're stored inline in scene/prefab JSON and created in the editor via the Inspector. The Project Browser shows them for reference, but they live in the scene/prefab data.
+> Materials and meshes are **not** separate asset files. They're stored inline in scene/prefab JSON and created in the
+> editor via the Inspector. The Project Browser shows them for reference, but they live in the scene/prefab data.
 
 ---
 
@@ -143,14 +149,14 @@ The `obliberry_runtime` loads `.obpak` files directly, that's your "game" execut
 
 ## Summary
 
-| Concept | Key Point |
-|---------|-----------|
-| **Entity** | an ID. Add components to give it behavior. |
-| **Component** | data. One per type per entity. |
-| **System** | Logic that runs on entities with matching components. |
-| **Registry** | The entity list (left panel). Shows hierarchy. |
-| **Asset** | Referenced by ID. Materials link shaders + textures. |
-| **Map** | Hex grid painted in Map Edit mode. Saved as `.obmap`. |
-| **Script** | ObSL files attached via ScriptComponent. Run in Play mode. |
-| **Prefab** | Reusable entity template. Instantiate from script. |
-| **Export** | Packages everything into `.obpak` for the runtime. |
+| Concept       | Key Point                                                  |
+|---------------|------------------------------------------------------------|
+| **Entity**    | an ID. Add components to give it behavior.                 |
+| **Component** | data. One per type per entity.                             |
+| **System**    | Logic that runs on entities with matching components.      |
+| **Registry**  | The entity list (left panel). Shows hierarchy.             |
+| **Asset**     | Referenced by ID. Materials link shaders + textures.       |
+| **Map**       | Hex grid painted in Map Edit mode. Saved as `.obmap`.      |
+| **Script**    | ObSL files attached via ScriptComponent. Run in Play mode. |
+| **Prefab**    | Reusable entity template. Instantiate from script.         |
+| **Export**    | Packages everything into `.obpak` for the runtime.         |

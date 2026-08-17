@@ -1,6 +1,7 @@
 # Prefabs
 
-A **prefab** is a reusable entity template. Create it once, instantiate it many times - across scenes, from scripts, or in the editor.
+A **prefab** is a reusable entity template. Create it once, instantiate it many times - across scenes, from scripts, or
+in the editor.
 
 ---
 
@@ -24,11 +25,13 @@ A **prefab** is a reusable entity template. Create it once, instantiate it many 
 ## Prefab Contents
 
 A prefab file stores:
+
 * The root entity's components
 * All child entities (recursively) with their components
 * Relative hierarchy (parent/child relationships)
 
 It does **not** store:
+
 * Scene-specific data (map references, scene properties)
 * Runtime state (movement progress, particle timers)
 
@@ -37,9 +40,11 @@ It does **not** store:
 ## Using Prefabs
 
 ### In the Editor
+
 **Project Browser → Prefabs tab** → Drag a prefab into the Scene View or Registry.
 
-This creates a new entity (or hierarchy) with the same components. The new entity has a `PrefabSourceComponent` linking back to the prefab file (editor-only, for "Select Prefab Source" context menu).
+This creates a new entity (or hierarchy) with the same components. The new entity has a `PrefabSourceComponent` linking
+back to the prefab file (editor-only, for "Select Prefab Source" context menu).
 
 ### In Scripts (ObSL)
 
@@ -54,13 +59,15 @@ tf.SetPosition(x, y, z);
 
 ```
 
-The `Instantiate` function returns an entity object (or `nil` on failure). Set position via the Transform component after instantiating.
+The `Instantiate` function returns an entity object (or `nil` on failure). Set position via the Transform component
+after instantiating.
 
 ---
 
 ## Prefab File Format
 
-Prefabs use the same entity serialization as scenes (see [scene-json.md](../formats/scene-json.md#entities)), just without the `properties`, `assets`, `grid`, and `ui` sections.
+Prefabs use the same entity serialization as scenes (see [scene-json.md](../formats/scene-json.md#entities)), just
+without the `properties`, `assets`, `grid`, and `ui` sections.
 
 Example `assets/prefabs/enemy_basic.json`:
 
