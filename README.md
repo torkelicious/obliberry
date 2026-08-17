@@ -12,8 +12,10 @@ an ECS core, [its own scripting language](https://github.com/torkelicious/ObSL),
 ## Quick start
 
 Download the latest prebuilt binaries from
-the [releases page](https://github.com/torkelicious/obliberry/releases/latest).
+**the [releases page](https://github.com/torkelicious/obliberry/releases/latest).**
 They come with the editor, runtime, tools, and project templates. Unzip and run `obliberry_editor` to get started.
+
+### [How to use the editor](docs/editor/index.md)
 
 Want a look at something made with the engine? There is also a prebuilt Demo project at the
 [demo release](https://github.com/torkelicious/obliberry/releases/tag/demo): download the version for your OS and run
@@ -23,6 +25,7 @@ To build the engine from source instead, see the [build instructions](docs/build
 
 > **note:** this is developed and tested on Linux, sometimes tested in a Windows VM. macOS is expected to maybe work
 > but is untested.
+
 
 ## Features
 
