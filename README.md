@@ -9,7 +9,7 @@ an ECS core, [its own scripting language](https://github.com/torkelicious/ObSL),
 
 <sup><sub>Yes there is a lighting system bug in this gif, it has since been fixed :)</sub></sup>
 
-## Quick start
+# Quick start
 
 Download the latest prebuilt binaries from
 **the [releases page](https://github.com/torkelicious/obliberry/releases/latest).**
