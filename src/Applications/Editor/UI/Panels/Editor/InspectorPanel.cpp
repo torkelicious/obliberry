@@ -137,12 +137,6 @@ void Editor::UI::InspectorPanel::OnImGuiRender() {
                          [this, entId] {
                              m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::DirectionalTextureComponent>>(entId, ECS::Components::DirectionalTextureComponent{}), *m_EngineContext);
                          }},
-                        /*
-                        {"Map", m_SelectedEntity.HasComponent<ECS::Components::MapComponent>(),
-                         [this, entId] { m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::MapComponent>>(entId, ECS::Components::MapComponent{}), *m_EngineContext); }},
-                        {"Map State", m_SelectedEntity.HasComponent<ECS::Components::MapStateComponent>(),
-                         [this, entId] { m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::MapStateComponent>>(entId, ECS::Components::MapStateComponent{}), *m_EngineContext); }},
-                        */
                         {"Particle Emitter", m_SelectedEntity.HasComponent<ECS::Components::ParticleEmitterComponent>(),
                          [this, entId] {
                              if (!m_SelectedEntity.HasComponent<ECS::Components::TransformComponent>())
