@@ -133,9 +133,9 @@ target to be built too. See the [architecture notes](../architecture.md) for how
 | `F5`     | Enter Play mode, or stop it                                    |
 | `F1`     | Stop Play mode                                                 |
 
-> > [!NOTE]
+> [!NOTE]
 > Some actions cannot be undone, deleting an entity in the editor currently is not undoable, and some other stuff. but
-> > most editor actions are saved to the undo/redo stack. Just be carefull :)
+  most editor actions are saved to the undo/redo stack. Just be carefull :)
 
 ### Edit Mode
 
@@ -160,4 +160,4 @@ target to be built too. See the [architecture notes](../architecture.md) for how
 
 > [!NOTE]
 > Camera controls only work while the mouse is over the Scene View, and keyboard input is ignored while you are typing
-> into a text field, so the editor does not steal your keystrokes.
+ into a text field, so the editor does not steal your keystrokes.
