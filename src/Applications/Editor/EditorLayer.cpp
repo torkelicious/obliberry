@@ -24,7 +24,7 @@
 #include "Applications/Editor/States/Editor/EditState.h"
 #include "Applications/Editor/States/Play/PlayState.h"
 #include "Applications/Editor/States/MapEditor/MapEditState.h"
-#include "Core/Utils/ScriptingUtils.h"
+#include "Core/Utils/OsUtils.h"
 #include "IO/MapSerialization.h"
 #include "States/Hub/HubState.h"
 #include "Rendering/Renderer.h"
