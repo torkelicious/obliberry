@@ -44,16 +44,16 @@ Tags appear as **checkboxes/flags** in the Inspector, not as expandable componen
 **Systems** contain the actual logic. They run every frame (or fixed timestep) and process all entities that have a
 specific set of components.
 
-| System                     | Required Components                                  | What It Does                  |
-|----------------------------|------------------------------------------------------|-------------------------------|
-| `RenderSystem`             | Transform + Mesh + Material                          | Draws the entity              |
-| `MovementSystem`           | Transform + Movement                                 | Moves entity along hex path   |
+| System                     | Required Components                                  | What It Does                                                             |
+|----------------------------|------------------------------------------------------|--------------------------------------------------------------------------|
+| `RenderSystem`             | Transform + Mesh + Material                          | Draws the entity                                                         |
+| `MovementSystem`           | Transform + Movement                                 | Moves entity along hex path                                              |
 | `AISystem`                 | —                                                    | Randomly wanders entities with `autoMove` enabled on `MovementComponent` |
-| `DirectionalTextureSystem` | Transform + Movement + DirectionalTexture + Material | Swaps texture based on facing |
-| `ScriptSystem`             | Script                                               | Runs ObSL scripts             |
-| `ParticleSystem`           | Transform + ParticleEmitter + Material               | Spawns/updates particles      |
-| `LightingSystem`           | PointLight                                           | Computes lighting             |
-| `UISystem`                 | (UI elements)                                        | Layout, input, rendering      |
+| `DirectionalTextureSystem` | Transform + Movement + DirectionalTexture + Material | Swaps texture based on facing                                            |
+| `ScriptSystem`             | Script                                               | Runs ObSL scripts                                                        |
+| `ParticleSystem`           | Transform + ParticleEmitter + Material               | Spawns/updates particles                                                 |
+| `LightingSystem`           | PointLight                                           | Computes lighting                                                        |
+| `UISystem`                 | (UI elements)                                        | Layout, input, rendering                                                 |
 
 > [!NOTE]
 > You don't interact with systems directly in the editor. They run automatically in Play mode. In Edit mode, only the

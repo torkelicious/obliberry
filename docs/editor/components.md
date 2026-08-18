@@ -68,7 +68,7 @@ Allows an entity to navigate the hex grid using the movement system.
 | **Step Timer**         | Float (read-only) | Internal timer for current step     |
 | **Idle Timer**         | Float (read-only) | Time spent idle                     |
 | **Is Moving**          | Bool (read-only)  | Whether entity is currently moving  |
-| **Auto-move**          | Bool              | Enable AI-controlled movement |
+| **Auto-move**          | Bool              | Enable AI-controlled movement       |
 | **Path Nodes**         | Read-only text    | Number of hexes in current path     |
 | **Current Path Index** | Read-only text    | Progress along path                 |
 
