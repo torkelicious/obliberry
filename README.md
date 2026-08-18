@@ -27,7 +27,6 @@ To build the engine from source instead, see the [build instructions](docs/build
 > **note:** this is developed and tested on Linux, sometimes tested in a Windows VM. macOS is expected to maybe work
 > but is untested.
 
-
 ## Features
 
 - Visual editor with Hub, Edit, Play, and MapEditor states, gizmo transforms, and pixel-based entity picking.
@@ -57,23 +56,24 @@ pays off.
 
 Open-source projects used:
 
-| Project                                                                        | Where it is used                                                |
-|--------------------------------------------------------------------------------|-----------------------------------------------------------------|
-| [ObSL](https://github.com/torkelicious/ObSL)                                   | The embedded scripting language (submodule, MIT), made by me :D |
-| [GLAD](https://github.com/Dav1dde/glad)                                        | OpenGL loader                                                   |
-| [GLFW](https://github.com/glfw/glfw)                                           | Window and input                                                |
-| [GLM](https://github.com/g-truc/glm)                                           | Math                                                            |
-| [stb_image](https://github.com/nothings/stb/tree/master)                       | Image loading                                                   |
-| [Dear ImGui](https://github.com/ocornut/imgui)                                 | Editor UI                                                       |
-| [ImGuizmo](https://github.com/CedricGuillemet/ImGuizmo)                        | Gizmo transforms                                                |
-| [nlohmann/json](https://github.com/nlohmann/json)                              | JSON serialization                                              |
-| [miniaudio](https://github.com/mackron/miniaudio)                              | Audio                                                           |
-| [nativefiledialog-extended](https://github.com/btzy/nativefiledialog-extended) | File dialogs                                                    |
-| [FreeType](https://github.com/freetype/freetype)                               | Font rendering                                                  |
-| [Open Sans](https://github.com/googlefonts/opensans)                           | Demo project UI font (SIL OFL 1.1)                              |
-| [LZ4](https://github.com/lz4/lz4)                                              | `.obpak` compression                                            |
+| Project                                                                                                                                                                                   | Where it is used                                                |
+|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------|
+| [ObSL](https://github.com/torkelicious/ObSL)                                                                                                                                              | The embedded scripting language (submodule, MIT), made by me :D |
+| [GLAD](https://github.com/Dav1dde/glad)                                                                                                                                                   | OpenGL loader                                                   |
+| [GLFW](https://github.com/glfw/glfw)                                                                                                                                                      | Window and input                                                |
+| [GLM](https://github.com/g-truc/glm)                                                                                                                                                      | Math                                                            |
+| [stb_image](https://github.com/nothings/stb/tree/master)                                                                                                                                  | Image loading                                                   |
+| [Dear ImGui](https://github.com/ocornut/imgui)                                                                                                                                            | Editor UI                                                       |
+| [ImGuizmo](https://github.com/CedricGuillemet/ImGuizmo)                                                                                                                                   | Gizmo transforms                                                |
+| [nlohmann/json](https://github.com/nlohmann/json)                                                                                                                                         | JSON serialization                                              |
+| [miniaudio](https://github.com/mackron/miniaudio)                                                                                                                                         | Audio                                                           |
+| [nativefiledialog-extended](https://github.com/btzy/nativefiledialog-extended)                                                                                                            | File dialogs                                                    |
+| [FreeType](https://github.com/freetype/freetype)                                                                                                                                          | Font rendering                                                  |
+| [Open Sans](https://github.com/googlefonts/opensans)                                                                                                                                      | Demo project UI font (SIL OFL 1.1)                              |
+| More fonts from [Google Fonts](https://fonts.google.com/) are bundeled with their licenses, see [resources/fonts/](https://github.com/torkelicious/obliberry/tree/master/resources/fonts) | Editor UI text                                                  |
+| [LZ4](https://github.com/lz4/lz4)                                                                                                                                                         | `.obpak` compression                                            |
 
-Full license texts for all of the above: [THIRD_PARTY_LICENSES.md](docs/THIRD_PARTY_LICENSES.md).
+Full license texts for the above: [THIRD_PARTY_LICENSES.md](docs/THIRD_PARTY_LICENSES.md).
 
 Learning resources that shaped the codebase:
 
@@ -82,9 +82,11 @@ Learning resources that shaped the codebase:
 * [Crafting Interpreters](https://craftinginterpreters.com/contents.html) for the ObSL interpreter.
 * [A Quick Guide to Interpreter Design in Modern C++](https://simplifycpp.org/books/cpp/Quick_Guide_to_Interpreter_Design_by_Modern_CPP.pdf)
   by Ayman Alheraki, for the ObSL interpreter.
-* For the ECS: [C++ Game Engine Design: Basics to Advanced](https://codezup.com/cpp-game-engine-design-basics-advanced/),
+* For the
+  ECS: [C++ Game Engine Design: Basics to Advanced](https://codezup.com/cpp-game-engine-design-basics-advanced/),
   [A Simple Entity Component System (ECS) [C++]](https://austinmorlan.com/posts/entity_component_system/),
-  [An Entity Component System from Scratch](https://www.codingwiththomas.com/blog/an-entity-component-system-from-scratch), and
+  [An Entity Component System from Scratch](https://www.codingwiththomas.com/blog/an-entity-component-system-from-scratch),
+  and
   [Making a Simple ECS](https://www.david-colson.com/2020/02/09/making-a-simple-ecs.html).
 * [rgbguy's framebuffer picking guide](https://rgbguy.in/blogs/object-picking.html) for entity picking.
 

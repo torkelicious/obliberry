@@ -24,6 +24,13 @@ time. Both are covered here.
 | [Open Sans](https://github.com/googlefonts/opensans)                           | SIL Open Font License 1.1      | (c) 2020 The Open Sans Project Authors                                                                |
 | [LZ4](https://github.com/lz4/lz4)                                              | BSD 2-Clause                   | (c) 2011-2020 Yann Collet                                                                             |
 
+**Fonts used in the Editor UI have their Licenses are bundeled with them and are not listed here since they may be
+switched out and often use the same license.
+see [resources/fonts/](https://github.com/torkelicious/obliberry/tree/master/resources/fonts) in the source tree, or
+`internal/resources/fonts/` in releases to find their licensing and attribution.**
+
+---
+
 ## Licenses
 
 ### ObSL (MIT)
