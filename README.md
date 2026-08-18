@@ -70,7 +70,7 @@ Open-source projects used:
 | [nativefiledialog-extended](https://github.com/btzy/nativefiledialog-extended)                                                                                                            | File dialogs                                                    |
 | [FreeType](https://github.com/freetype/freetype)                                                                                                                                          | Font rendering                                                  |
 | [Open Sans](https://github.com/googlefonts/opensans)                                                                                                                                      | Demo project UI font (SIL OFL 1.1)                              |
-| More fonts from [Google Fonts](https://fonts.google.com/) are bundeled with their licenses, see [resources/fonts/](https://github.com/torkelicious/obliberry/tree/master/resources/fonts) | Editor UI text                                                  |
+| More fonts from [Google Fonts](https://fonts.google.com/) are bundled with their licenses, see [resources/fonts/](https://github.com/torkelicious/obliberry/tree/master/resources/fonts) | Editor UI text                                                  |
 | [LZ4](https://github.com/lz4/lz4)                                                                                                                                                         | `.obpak` compression                                            |
 
 Full license texts for the above: [THIRD_PARTY_LICENSES.md](docs/THIRD_PARTY_LICENSES.md).
