@@ -12,5 +12,6 @@ namespace ECS::Components {
         float timePerStep = 0.15f;
         float idleTimer = 0.0f;
         bool isMoving = false;
+        bool autoMove = false;
     };
 } // namespace ECS::Components

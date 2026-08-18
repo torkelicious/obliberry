@@ -88,7 +88,8 @@ Example `assets/prefabs/enemy_basic.json`:
         "material_id": "enemy_mat"
       },
       "MovementComponent": {
-        "timePerStep": 0.5
+        "timePerStep": 0.5,
+        "autoMove": true
       },
       "ScriptComponent": {
         "scriptPaths": ["assets/scripts/EnemyAI.obsl"]

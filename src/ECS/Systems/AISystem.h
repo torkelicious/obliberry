@@ -17,15 +17,6 @@ namespace ECS::Systems::AISystem {
         if (!map)
             return;
 
-        Map::HexCoords playerHex{0, 0};
-
-        registry.ForEach<Components::TransformComponent>([&](const Entity entity, const Components::TransformComponent *pt) {
-            if (entity.GetName() == "Player") {
-                const glm::vec3 pos = pt->worldTransform.GetPosition();
-                playerHex = Math::HexMath::PixelToHex({pos.x, pos.y});
-            }
-        });
-
         if (map->grid.walkableTiles.empty())
             return;
 
@@ -35,8 +26,9 @@ namespace ECS::Systems::AISystem {
 
         registry.ForEach<Components::MovementComponent, Components::TransformComponent, Components::MaterialComponent>(
                 [&](const Entity entity, Components::MovementComponent *move, const Components::TransformComponent *trans, const Components::MaterialComponent *mat) {
-                    if (entity.GetName() == "Player")
+                    if (!move->autoMove) {
                         return;
+                    }
 
                     if (!move->isMoving) {
                         move->idleTimer -= dt;
@@ -48,8 +40,8 @@ namespace ECS::Systems::AISystem {
 
                             while (!valid && attempts-- > 0) {
                                 target = map->grid.walkableTiles[dist(rng)];
-                                if (target != playerHex)
-                                    valid = true;
+                                /*if (target != playerHex)*/
+                                valid = true;
                             }
 
                             if (valid) {

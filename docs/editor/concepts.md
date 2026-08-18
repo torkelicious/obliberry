@@ -48,6 +48,7 @@ specific set of components.
 |----------------------------|------------------------------------------------------|-------------------------------|
 | `RenderSystem`             | Transform + Mesh + Material                          | Draws the entity              |
 | `MovementSystem`           | Transform + Movement                                 | Moves entity along hex path   |
+| `AISystem`                 | —                                                    | Randomly wanders entities with `autoMove` enabled on `MovementComponent` |
 | `DirectionalTextureSystem` | Transform + Movement + DirectionalTexture + Material | Swaps texture based on facing |
 | `ScriptSystem`             | Script                                               | Runs ObSL scripts             |
 | `ParticleSystem`           | Transform + ParticleEmitter + Material               | Spawns/updates particles      |

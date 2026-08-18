@@ -104,6 +104,7 @@ Editor::UI::MovementWidget::MovementWidget() : AutoComponentWidget("Movement") {
     m_Fields.push_back({"Step Timer", FieldType::Float, offsetof(ECS::Components::MovementComponent, stepTimer)});
     m_Fields.push_back({"Idle Timer", FieldType::Float, offsetof(ECS::Components::MovementComponent, idleTimer)});
     m_Fields.push_back({"Is Moving", FieldType::Bool, offsetof(ECS::Components::MovementComponent, isMoving)});
+    m_Fields.push_back({"Auto-move (use 'ai' system)", FieldType::Bool, offsetof(ECS::Components::MovementComponent, autoMove)});
 }
 
 void Editor::UI::MovementWidget::DrawExtras(ECS::Entity entity, ECS::Components::MovementComponent *component, Core::EngineContext *engineContext, UndoManager *undoManager) {

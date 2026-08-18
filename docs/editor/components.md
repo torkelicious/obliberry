@@ -68,12 +68,13 @@ Allows an entity to navigate the hex grid using the movement system.
 | **Step Timer**         | Float (read-only) | Internal timer for current step     |
 | **Idle Timer**         | Float (read-only) | Time spent idle                     |
 | **Is Moving**          | Bool (read-only)  | Whether entity is currently moving  |
+| **Auto-move**          | Bool              | Enable AI-controlled movement |
 | **Path Nodes**         | Read-only text    | Number of hexes in current path     |
 | **Current Path Index** | Read-only text    | Progress along path                 |
 
 > [!NOTE]
 > `Step Timer`, `Idle Timer`, `Is Moving`, `Path Nodes`, and `Current Path Index` are runtime state shown for debugging.
-> Only **Time Per Step** is editable.
+> Only **Time Per Step** and **Auto-move** are editable.
 
 ---
 
@@ -229,4 +230,3 @@ enabled), `children` (array).
 | Light source                      | Transform + PointLight                                               |
 | Particle effect (fire, magic)     | Transform + Material + ParticleEmitter                               |
 | Billboard sprite (tree, particle) | Transform + Mesh + Material (check "Use Billboard" in Transform)     |
-

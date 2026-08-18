@@ -52,6 +52,9 @@ void IO::EntityFactory::RegisterDeserializers() {
         if (data.contains("timePerStep")) {
             mc.timePerStep = data["timePerStep"].get<float>();
         }
+        if (data.contains("autoMove")) {
+            mc.autoMove = data["autoMove"].get<bool>();
+        }
         entity.AddComponent<ECS::Components::MovementComponent>(mc);
     };
 
@@ -218,6 +221,7 @@ void IO::EntityFactory::RegisterSerializers() {
         if (entity.HasComponent<ECS::Components::MovementComponent>()) {
             auto *mc = entity.GetComponent<ECS::Components::MovementComponent>();
             data["MovementComponent"]["timePerStep"] = mc->timePerStep;
+            data["MovementComponent"]["autoMove"] = mc->autoMove;
             // state data is ignored
         }
     };
