@@ -16,8 +16,8 @@ The editor has four states. You start in the Hub, and everything else hangs off 
 | **Map Edit** | Paint and edit the hex-grid map.                                                        |
 
 > [!NOTE]
-> **Switching modes:** Use the mode dropdown in the top toolbar to switch between **Edit** and **Map Edit**. The *
-*Play/Stop** button next to it runs or stops the scene. Both are disabled while playing - stop Play first.
+> **Switching modes:** Use the mode dropdown in the top toolbar to switch between **Edit** and **Map Edit**.
+ The **Play/Stop** button next to it runs or stops the scene. Both are disabled while playing.
 
 ---
 
