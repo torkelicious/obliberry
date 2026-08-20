@@ -13,6 +13,7 @@
 #include "ECS/Components/ScriptComponent.h"
 #include "ECS/Components/PrefabSourceComponent.h"
 #include "ECS/Components/ParticleEmitterComponent.h"
+#include "ECS/Components/PersistentTagComponent.h"
 
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "EntityFactory"
@@ -197,6 +198,8 @@ void IO::EntityFactory::RegisterDeserializers() {
         }
         entity.AddComponent<ECS::Components::ParticleEmitterComponent>(ec);
     };
+
+    s_Deserializers["PersistentComponent"] = [](ECS::Entity &entity, const nlohmann::json &, Core::ResourceManager &) { entity.AddComponent<ECS::Components::PersistentTagComponent>(); };
 }
 
 void IO::EntityFactory::RegisterSerializers() {
@@ -326,6 +329,12 @@ void IO::EntityFactory::RegisterSerializers() {
                     data["ParticleEmitterComponent"]["material_id"] = id;
                 }
             }
+        }
+    };
+
+    s_Serializers["PersistentTagComponent"] = [](const ECS::Entity &entity, nlohmann::json &data, Core::ResourceManager &) {
+        if (entity.HasComponent<ECS::Components::PersistentTagComponent>()) {
+            data["PersistentTagComponent"] = nlohmann::json::object();
         }
     };
 }
