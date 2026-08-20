@@ -11,6 +11,7 @@
 #include "ECS/Components/PointLightComponent.h"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Components/ParticleEmitterComponent.h"
+#include "ECS/Components/PersistentTagComponent.h"
 #include "ECS/Components/RelationshipComponent.h"
 #include "IO/Loaders/PrefabManager.h"
 #include "Scripting/EngineLib/EngineLibFactories.h"
@@ -308,6 +309,42 @@ namespace Scripting {
         obj->fields["RemoveComponent"] = interpreter->gc.allocate<ObSL::NativeFunction>(1, std::move(remove_comp_body), "RemoveComponent");
         obj->fields["GetComponents"] = interpreter->gc.allocate<ObSL::NativeFunction>(0, std::move(get_components_body), "GetComponents");
         obj->fields["Destroy"] = interpreter->gc.allocate<ObSL::NativeFunction>(0, std::move(destroy_body), "Destroy");
+
+        auto set_persistent_body = [id, reg_ptr = &registry](const ObSL::Interpreter *interpreter, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+            if (args.empty() || !std::holds_alternative<bool>(args[0]))
+                return std::monostate{};
+            const bool shouldPersist = std::get<bool>(args[0]);
+            auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
+            if (auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>()) {
+                cmd_buf->push([id, shouldPersist](ECS::Registry &reg) {
+                    if (!reg.IsValid(id))
+                        return;
+                    if (shouldPersist)
+                        reg.AddComponent<ECS::Components::PersistentTagComponent>(id);
+                    else
+                        reg.RemoveComponent<ECS::Components::PersistentTagComponent>(id);
+                });
+            } else if (reg_ptr) {
+                std::unique_lock lock(g_RegistryMutex);
+                if (!reg_ptr->IsValid(id))
+                    return std::monostate{};
+                if (shouldPersist)
+                    reg_ptr->AddComponent<ECS::Components::PersistentTagComponent>(id);
+                else
+                    reg_ptr->RemoveComponent<ECS::Components::PersistentTagComponent>(id);
+            }
+            return std::monostate{};
+        };
+
+        auto is_persistent_body = [id, &registry](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+            std::shared_lock lock(g_RegistryMutex);
+            if (!registry.IsValid(id))
+                return false;
+            return registry.HasComponent<ECS::Components::PersistentTagComponent>(id);
+        };
+
+        obj->fields["SetPersistent"] = interpreter->gc.allocate<ObSL::NativeFunction>(1, std::move(set_persistent_body), "SetPersistent");
+        obj->fields["IsPersistent"] = interpreter->gc.allocate<ObSL::NativeFunction>(0, std::move(is_persistent_body), "IsPersistent");
         obj->fields["AddCustomComponent"] = interpreter->gc.allocate<ObSL::NativeFunction>(2, std::move(add_custom_comp), "AddCustomComponent");
         obj->fields["GetCustomComponent"] = interpreter->gc.allocate<ObSL::NativeFunction>(1, std::move(get_custom_comp), "GetCustomComponent");
 
