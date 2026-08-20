@@ -78,13 +78,39 @@ namespace {
         if (!scene || batch.empty())
             return;
 
+        // name based deduplication
+        // maybe not the best but ion wanna deal with more complicated shit for now
+        std::unordered_set<std::string> batchNames;
+        for (const auto &[data, parentBatchIndex] : batch) {
+            if (data.contains("name") && !data["name"].is_null()) {
+                batchNames.insert(data["name"].get<std::string>());
+            }
+        }
+
+        if (!batchNames.empty()) {
+            std::vector<ECS::EntityID> toDestroy;
+            for (const ECS::EntityID entityID : scene->GetRegistry().GetLivingEntities()) {
+                if (!scene->GetRegistry().IsValid(entityID))
+                    continue;
+                if (const std::string &name = scene->GetRegistry().GetEntityName(entityID); !name.empty() && batchNames.contains(name)) {
+                    toDestroy.push_back(entityID);
+                }
+            }
+            for (const ECS::EntityID id : toDestroy) {
+                scene->GetRegistry().DestroyEntity(id);
+            }
+        }
+
+        // inject migrated entities
         std::vector<ECS::EntityID> newIds;
         newIds.reserve(batch.size());
 
-        for (const auto &item : batch) {
+        for (const auto &[data, parentBatchIndex] : batch) {
             ECS::EntityID id = scene->GetRegistry().CreateEntity();
             ECS::Entity newEntity(id, &scene->GetRegistry());
-            IO::EntityFactory::DeserializeEntity(newEntity, item.data, *context->resources);
+            IO::EntityFactory::DeserializeEntity(newEntity, data, *context->resources);
+            // PersistentTagComponent is not serialized
+            newEntity.AddComponent<ECS::Components::PersistentTagComponent>();
             newIds.push_back(id);
         }
 
