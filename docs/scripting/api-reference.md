@@ -147,10 +147,32 @@ Entity objects are returned by `GetEntity`, `Find`, `CreateEntity`, `Instantiate
 | `SetParent(parent)`               | number or entity | void               | Reparents under the given entity (accepts an id or an entity object).               |
 | `GetChildCount()`                 | -                | number             | Number of direct children.                                                          |
 | `Find(childName)`                 | string           | entity or `nil`    | Finds a direct child by name.                                                       |
+| `SetPersistent(persistent)`       | bool             | void               | Marks the entity to survive scene loads.                                            |
+| `IsPersistent()`                  | -                | bool               | Whether the entity is marked as persistent.                                         |
 
 **Built-in component names** (accepted by `GetComponent`/`HasComponent`/`AddComponent`/`RemoveComponent`):
 `"Transform"`, `"PointLight"`, `"Movement"`, `"MapState"`, `"DirectionalTexture"`, `"BillboardTag"`, `"DestroyTag"`,
 `"ParticleEmitter"`.
+
+### persistence
+
+Entities can be marked as **persistent**,
+these survive scene transitions.
+> (though scripts are reinitalized!)
+
+The `PersistentTagComponent` is not serialized to scene files
+and has no editor Inspector UI. It is intended to be set from scripts during gameplay (typically
+in top-level code).
+
+```obsl
+// runs once when the script is loaded
+this.SetPersistent(true);
+```
+
+> [!NOTE]
+> Deduplication is **name-based**. For the carry-over to work cleanly, give your persistent entity a unique name. If an
+> entity in the scene shares the same name as a persistent entity, it is destroyed before the
+> runtime copy is injected
 
 ### Component wrappers
 
@@ -211,10 +233,10 @@ These are the objects returned by `entity.GetComponent(name)`.
 
 ## Scene management
 
-| Function                | Args   | Returns | Description                                                         |
-|-------------------------|--------|---------|---------------------------------------------------------------------|
-| `LoadScene(scenePath)`  | string | void    | Requests a scene load (deferred; performed by the engine).          |
-| `GetCurrentScenePath()` | -      | string  | VFS path of the current scene (e.g. `"assets/scenes/level1.json"`). |
+| Function                | Args   | Returns | Description                                                                                                                                                                    |
+|-------------------------|--------|---------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `LoadScene(scenePath)`  | string | void    | Requests a scene load (deferred; performed by the engine). Persistent entities in the current scene are carried over to the new scene (see [Scene Persistence](#persistence)). |
+| `GetCurrentScenePath()` | -      | string  | VFS path of the current scene (e.g. `"assets/scenes/level1.json"`).                                                                                                            |
 
 ## Time
 
