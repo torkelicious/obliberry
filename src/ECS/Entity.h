@@ -37,6 +37,7 @@ namespace ECS {
         void SetParent(EntityID parentId) const;
         [[nodiscard]] Entity GetParent() const;
         [[nodiscard]] const std::vector<EntityID> &GetChildren() const;
+        [[nodiscard]] Registry *GetRegistry() const { return m_Registry; }
 
     private:
         EntityID m_EntityHandle = INVALID_ENTITY_ID;
