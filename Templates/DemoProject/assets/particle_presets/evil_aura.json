@@ -1,44 +1,44 @@
 {
-    "blendMode": 1,
-    "colorEnd": [
-        0.7735000252723694,
-        0.0,
-        1.0,
-        0.21549999713897705
-    ],
-    "colorStart": [
-        0.0,
-        0.784500002861023,
-        1.0,
-        0.09799999743700027
-    ],
-    "emitRate": 100.0,
-    "gravity": [
-        -0.10000000149011612,
-        -0.10000000149011612,
-        0.10000000149011612
-    ],
-    "isBillboard": true,
-    "lifetimeMax": 2.049999952316284,
-    "lifetimeMin": 0.5,
-    "material_id": "Particle Material",
-    "maxParticles": 500,
-    "renderOrder": 1,
-    "rotationSpeedMax": 10.0,
-    "rotationSpeedMin": 0.0,
-    "shape": 2,
-    "sizeEndMax": 0.009999999776482582,
-    "sizeEndMin": 0.0,
-    "sizeStartMax": 0.5709999799728394,
-    "sizeStartMin": 0.07999999821186066,
-    "velocityMax": [
-        0.10000000149011612,
-        0.10000000149011612,
-        0.8999999761581421
-    ],
-    "velocityMin": [
-        -0.10000000149011612,
-        -0.10000000149011612,
-        0.10000000149011612
-    ]
+  "blendMode": 1,
+  "colorEnd": [
+    0.7735000252723694,
+    0.0,
+    1.0,
+    0.21549999713897705
+  ],
+  "colorStart": [
+    0.0,
+    0.784500002861023,
+    1.0,
+    0.09799999743700027
+  ],
+  "emitRate": 100.0,
+  "gravity": [
+    -0.10000000149011612,
+    -0.10000000149011612,
+    0.10000000149011612
+  ],
+  "isBillboard": true,
+  "lifetimeMax": 2.049999952316284,
+  "lifetimeMin": 0.5,
+  "material_id": "Particle Material",
+  "maxParticles": 500,
+  "renderOrder": 1,
+  "rotationSpeedMax": 10.0,
+  "rotationSpeedMin": 0.0,
+  "shape": 2,
+  "sizeEndMax": 0.009999999776482582,
+  "sizeEndMin": 0.0,
+  "sizeStartMax": 0.5709999799728394,
+  "sizeStartMin": 0.07999999821186066,
+  "velocityMax": [
+    0.10000000149011612,
+    0.10000000149011612,
+    0.8999999761581421
+  ],
+  "velocityMin": [
+    -0.10000000149011612,
+    -0.10000000149011612,
+    0.10000000149011612
+  ]
 }

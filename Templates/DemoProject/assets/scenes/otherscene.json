@@ -1,494 +1,494 @@
 {
-    "assets": {
-        "fonts": [
-            {
-                "id": "OpenSans-Regular",
-                "path": "assets/fonts/OpenSans-Regular.ttf",
-                "sdf": true,
-                "size": 48,
-                "spread": 8
-            }
-        ],
-        "materials": [
-            {
-                "color": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                ],
-                "id": "[Engine] DefaultMaterial",
-                "shader": "[Engine] Base",
-                "texture": ""
-            },
-            {
-                "color": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                ],
-                "id": "player_mat",
-                "shader": "[Engine] Base",
-                "texture": "p_north_east"
-            },
-            {
-                "color": [
-                    1.0,
-                    0.5,
-                    0.5,
-                    1.0
-                ],
-                "id": "npc_mat",
-                "shader": "[Engine] Base",
-                "texture": "p_north_east"
-            },
-            {
-                "color": [
-                    0.7350000143051147,
-                    0.9300000071525574,
-                    1.0,
-                    1.0
-                ],
-                "id": "Boring Default Material_clone_6",
-                "shader": "[Engine] Base",
-                "texture": ""
-            },
-            {
-                "color": [
-                    0.7059999704360962,
-                    1.0,
-                    0.0,
-                    1.0
-                ],
-                "id": "Boring Default Material_clone",
-                "shader": "[Engine] Base",
-                "texture": ""
-            },
-            {
-                "color": [
-                    0.0,
-                    0.7350000143051147,
-                    1.0,
-                    1.0
-                ],
-                "id": "Boring Default Material",
-                "shader": "[Engine] Base",
-                "texture": ""
-            },
-            {
-                "color": [
-                    0.5389999747276306,
-                    0.23800000548362732,
-                    0.0,
-                    1.0
-                ],
-                "id": "Boring Default Material_clone_7",
-                "shader": "[Engine] Base",
-                "texture": ""
-            },
-            {
-                "color": [
-                    1.0,
-                    0.0,
-                    0.8240000009536743,
-                    1.0
-                ],
-                "id": "Boring Default Material_clone_5",
-                "shader": "[Engine] Base",
-                "texture": ""
-            },
-            {
-                "color": [
-                    0.29100000858306885,
-                    0.45100000500679016,
-                    0.11100000143051147,
-                    1.0
-                ],
-                "id": "Boring Default Material_clone_4",
-                "shader": "[Engine] Base",
-                "texture": ""
-            },
-            {
-                "color": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                ],
-                "id": "mat_ent_1",
-                "shader": "[Engine] Base",
-                "texture": ""
-            },
-            {
-                "color": [
-                    1.0,
-                    0.0,
-                    0.0,
-                    1.0
-                ],
-                "id": "Boring Default Material_clone_1",
-                "shader": "[Engine] Base",
-                "texture": ""
-            },
-            {
-                "color": [
-                    0.2939999997615814,
-                    0.0,
-                    1.0,
-                    1.0
-                ],
-                "id": "Boring Default Material_clone_2",
-                "shader": "[Engine] Base",
-                "texture": ""
-            },
-            {
-                "color": [
-                    0.9629999995231628,
-                    1.0,
-                    0.5830000042915344,
-                    1.0
-                ],
-                "id": "Boring Default Material_clone_3",
-                "shader": "[Engine] Base",
-                "texture": ""
-            },
-            {
-                "color": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                ],
-                "id": "Particle Material",
-                "shader": "[Engine] Particle",
-                "texture": ""
-            }
-        ],
-        "meshes": [
-            {
-                "factory": "Ring",
-                "id": "ring_mesh"
-            },
-            {
-                "factory": "Octagon",
-                "id": "oct_mesh"
-            },
-            {
-                "factory": "Hexagon",
-                "id": "hexagon_mesh"
-            },
-            {
-                "factory": "Pentagon",
-                "id": "pent_mesh"
-            },
-            {
-                "factory": "Ellipse",
-                "id": "ellipse"
-            },
-            {
-                "factory": "ETriang",
-                "id": "tri_mesh"
-            },
-            {
-                "factory": "Diamond",
-                "id": "diamond_mesh"
-            },
-            {
-                "factory": "Sector",
-                "id": "sector_mesh"
-            },
-            {
-                "factory": "Circle",
-                "id": "circle_mesh"
-            },
-            {
-                "factory": "Quad",
-                "id": "p_mesh"
-            },
-            {
-                "factory": "Quad",
-                "id": "mesh_ent_1"
-            },
-            {
-                "factory": "PointTopHex",
-                "id": "[Engine] Hex"
-            },
-            {
-                "factory": "Quad",
-                "id": "[Engine] Quad"
-            }
-        ],
-        "shaders": [],
-        "textures": [
-            {
-                "id": "dirt_tex",
-                "path": "assets/textures/HexDirt.png"
-            },
-            {
-                "id": "p_east",
-                "path": "assets/textures/player/player_e.png"
-            },
-            {
-                "id": "p_north_east",
-                "path": "assets/textures/player/player_ne.png"
-            },
-            {
-                "id": "p_north_west",
-                "path": "assets/textures/player/player_nw.png"
-            },
-            {
-                "id": "p_west",
-                "path": "assets/textures/player/player_w.png"
-            },
-            {
-                "id": "p_south_west",
-                "path": "assets/textures/player/player_sw.png"
-            },
-            {
-                "id": "p_south_east",
-                "path": "assets/textures/player/player_se.png"
-            },
-            {
-                "id": "grass_tex",
-                "path": "assets/textures/HexGrass.png"
-            },
-            {
-                "id": "water_tex",
-                "path": "assets/textures/HexWater.png"
-            },
-            {
-                "id": "sand_tex",
-                "path": "assets/textures/HexSand.png"
-            }
-        ]
-    },
-    "entities": [
-        {
-            "components": {
-                "MaterialComponent": {
-                    "material_id": "[Engine] DefaultMaterial"
-                },
-                "MeshComponent": {
-                    "mesh_id": "[Engine] Quad"
-                },
-                "TransformComponent": {
-                    "position": [
-                        -1.496000051498413,
-                        0.5450000166893005,
-                        1.0110000371932983
-                    ],
-                    "rotation": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ]
-                }
-            }
-        },
-        {
-            "components": {
-                "MaterialComponent": {
-                    "material_id": "[Engine] DefaultMaterial"
-                },
-                "MeshComponent": {
-                    "mesh_id": "[Engine] Quad"
-                },
-                "TransformComponent": {
-                    "position": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    "rotation": [
-                        0.0,
-                        -0.0,
-                        0.0
-                    ],
-                    "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ]
-                }
-            },
-            "name": "Child of Entity",
-            "parent": 0
-        },
-        {
-            "components": {
-                "MaterialComponent": {
-                    "material_id": "[Engine] DefaultMaterial"
-                },
-                "MeshComponent": {
-                    "mesh_id": "[Engine] Quad"
-                },
-                "ScriptComponent": {
-                    "scriptPath": "assets/scripts/UITest.obsl"
-                },
-                "TransformComponent": {
-                    "position": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    "rotation": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ]
-                }
-            }
-        },
-        {
-            "components": {
-                "TransformComponent": {
-                    "position": [
-                        6.818999767303467,
-                        0.0,
-                        0.0
-                    ],
-                    "rotation": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ]
-                }
-            },
-            "name": "script_holder"
-        },
-        {
-            "components": {
-                "BillboardTagComponent": {},
-                "MaterialComponent": {
-                    "material_id": "Boring Default Material_clone_7"
-                },
-                "MeshComponent": {
-                    "mesh_id": "tri_mesh"
-                },
-                "PointLightComponent": {
-                    "color": [
-                        1.0,
-                        0.0,
-                        0.0
-                    ],
-                    "intensity": 5.0,
-                    "radius": 2.0
-                },
-                "TransformComponent": {
-                    "position": [
-                        3.446000099182129,
-                        0.0,
-                        0.05000000074505806
-                    ],
-                    "rotation": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ]
-                }
-            },
-            "name": "Test"
-        },
-        {
-            "components": {
-                "ScriptComponent": {
-                    "scriptPath": "assets/scripts/UIManager.obsl"
-                }
-            },
-            "name": "UIMgr"
-        }
+  "assets": {
+    "fonts": [
+      {
+        "id": "OpenSans-Regular",
+        "path": "assets/fonts/OpenSans-Regular.ttf",
+        "sdf": true,
+        "size": 48,
+        "spread": 8
+      }
     ],
-    "grid": {
-        "map_file": "assets/maps/lvl2.obmap",
-        "mesh_id": "[Engine] Hex",
-        "types": [
-            {
-                "id": 0,
-                "texture": "sand_tex"
-            },
-            {
-                "id": 1,
-                "texture": "water_tex"
-            },
-            {
-                "id": 2,
-                "texture": "grass_tex"
-            },
-            {
-                "id": 3,
-                "texture": "dirt_tex"
-            }
-        ]
-    },
-    "properties": {
-        "ambient_light": 0.20000000298023224,
-        "background_music": "",
-        "clear_color": [
-            0.10000000149011612,
-            0.10000000149011612,
-            0.10000000149011612,
-            1.0
+    "materials": [
+      {
+        "color": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
         ],
-        "name": "otherscene"
+        "id": "[Engine] DefaultMaterial",
+        "shader": "[Engine] Base",
+        "texture": ""
+      },
+      {
+        "color": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "id": "player_mat",
+        "shader": "[Engine] Base",
+        "texture": "p_north_east"
+      },
+      {
+        "color": [
+          1.0,
+          0.5,
+          0.5,
+          1.0
+        ],
+        "id": "npc_mat",
+        "shader": "[Engine] Base",
+        "texture": "p_north_east"
+      },
+      {
+        "color": [
+          0.7350000143051147,
+          0.9300000071525574,
+          1.0,
+          1.0
+        ],
+        "id": "Boring Default Material_clone_6",
+        "shader": "[Engine] Base",
+        "texture": ""
+      },
+      {
+        "color": [
+          0.7059999704360962,
+          1.0,
+          0.0,
+          1.0
+        ],
+        "id": "Boring Default Material_clone",
+        "shader": "[Engine] Base",
+        "texture": ""
+      },
+      {
+        "color": [
+          0.0,
+          0.7350000143051147,
+          1.0,
+          1.0
+        ],
+        "id": "Boring Default Material",
+        "shader": "[Engine] Base",
+        "texture": ""
+      },
+      {
+        "color": [
+          0.5389999747276306,
+          0.23800000548362732,
+          0.0,
+          1.0
+        ],
+        "id": "Boring Default Material_clone_7",
+        "shader": "[Engine] Base",
+        "texture": ""
+      },
+      {
+        "color": [
+          1.0,
+          0.0,
+          0.8240000009536743,
+          1.0
+        ],
+        "id": "Boring Default Material_clone_5",
+        "shader": "[Engine] Base",
+        "texture": ""
+      },
+      {
+        "color": [
+          0.29100000858306885,
+          0.45100000500679016,
+          0.11100000143051147,
+          1.0
+        ],
+        "id": "Boring Default Material_clone_4",
+        "shader": "[Engine] Base",
+        "texture": ""
+      },
+      {
+        "color": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "id": "mat_ent_1",
+        "shader": "[Engine] Base",
+        "texture": ""
+      },
+      {
+        "color": [
+          1.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "id": "Boring Default Material_clone_1",
+        "shader": "[Engine] Base",
+        "texture": ""
+      },
+      {
+        "color": [
+          0.2939999997615814,
+          0.0,
+          1.0,
+          1.0
+        ],
+        "id": "Boring Default Material_clone_2",
+        "shader": "[Engine] Base",
+        "texture": ""
+      },
+      {
+        "color": [
+          0.9629999995231628,
+          1.0,
+          0.5830000042915344,
+          1.0
+        ],
+        "id": "Boring Default Material_clone_3",
+        "shader": "[Engine] Base",
+        "texture": ""
+      },
+      {
+        "color": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "id": "Particle Material",
+        "shader": "[Engine] Particle",
+        "texture": ""
+      }
+    ],
+    "meshes": [
+      {
+        "factory": "Ring",
+        "id": "ring_mesh"
+      },
+      {
+        "factory": "Octagon",
+        "id": "oct_mesh"
+      },
+      {
+        "factory": "Hexagon",
+        "id": "hexagon_mesh"
+      },
+      {
+        "factory": "Pentagon",
+        "id": "pent_mesh"
+      },
+      {
+        "factory": "Ellipse",
+        "id": "ellipse"
+      },
+      {
+        "factory": "ETriang",
+        "id": "tri_mesh"
+      },
+      {
+        "factory": "Diamond",
+        "id": "diamond_mesh"
+      },
+      {
+        "factory": "Sector",
+        "id": "sector_mesh"
+      },
+      {
+        "factory": "Circle",
+        "id": "circle_mesh"
+      },
+      {
+        "factory": "Quad",
+        "id": "p_mesh"
+      },
+      {
+        "factory": "Quad",
+        "id": "mesh_ent_1"
+      },
+      {
+        "factory": "PointTopHex",
+        "id": "[Engine] Hex"
+      },
+      {
+        "factory": "Quad",
+        "id": "[Engine] Quad"
+      }
+    ],
+    "shaders": [],
+    "textures": [
+      {
+        "id": "dirt_tex",
+        "path": "assets/textures/HexDirt.png"
+      },
+      {
+        "id": "p_east",
+        "path": "assets/textures/player/player_e.png"
+      },
+      {
+        "id": "p_north_east",
+        "path": "assets/textures/player/player_ne.png"
+      },
+      {
+        "id": "p_north_west",
+        "path": "assets/textures/player/player_nw.png"
+      },
+      {
+        "id": "p_west",
+        "path": "assets/textures/player/player_w.png"
+      },
+      {
+        "id": "p_south_west",
+        "path": "assets/textures/player/player_sw.png"
+      },
+      {
+        "id": "p_south_east",
+        "path": "assets/textures/player/player_se.png"
+      },
+      {
+        "id": "grass_tex",
+        "path": "assets/textures/HexGrass.png"
+      },
+      {
+        "id": "water_tex",
+        "path": "assets/textures/HexWater.png"
+      },
+      {
+        "id": "sand_tex",
+        "path": "assets/textures/HexSand.png"
+      }
+    ]
+  },
+  "entities": [
+    {
+      "components": {
+        "MaterialComponent": {
+          "material_id": "[Engine] DefaultMaterial"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "TransformComponent": {
+          "position": [
+            -1.496000051498413,
+            0.5450000166893005,
+            1.0110000371932983
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
     },
-    "ui": {
-        "elements": [
-            {
-                "bg_color": [
-                    0.5040000081062317,
-                    0.5400000214576721,
-                    0.8040000200271606,
-                    1.0
-                ],
-                "color": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                ],
-                "flags": 3,
-                "font": "OpenSans-Regular",
-                "hovered_bg_color": [
-                    0.4569999873638153,
-                    0.4950000047683716,
-                    0.5289999842643738,
-                    1.0
-                ],
-                "name": "btnSwitch",
-                "rect": {
-                    "position": [
-                        160.0,
-                        270.0
-                    ],
-                    "scale": [
-                        251.0,
-                        59.0
-                    ]
-                },
-                "text": "now click me 2 go back :)",
-                "type": "Button"
-            }
-        ]
+    {
+      "components": {
+        "MaterialComponent": {
+          "material_id": "[Engine] DefaultMaterial"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "TransformComponent": {
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rotation": [
+            0.0,
+            -0.0,
+            0.0
+          ],
+          "scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "name": "Child of Entity",
+      "parent": 0
+    },
+    {
+      "components": {
+        "MaterialComponent": {
+          "material_id": "[Engine] DefaultMaterial"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "ScriptComponent": {
+          "scriptPath": "assets/scripts/UITest.obsl"
+        },
+        "TransformComponent": {
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "components": {
+        "TransformComponent": {
+          "position": [
+            6.818999767303467,
+            0.0,
+            0.0
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "name": "script_holder"
+    },
+    {
+      "components": {
+        "BillboardTagComponent": {},
+        "MaterialComponent": {
+          "material_id": "Boring Default Material_clone_7"
+        },
+        "MeshComponent": {
+          "mesh_id": "tri_mesh"
+        },
+        "PointLightComponent": {
+          "color": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "intensity": 5.0,
+          "radius": 2.0
+        },
+        "TransformComponent": {
+          "position": [
+            3.446000099182129,
+            0.0,
+            0.05000000074505806
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "name": "Test"
+    },
+    {
+      "components": {
+        "ScriptComponent": {
+          "scriptPath": "assets/scripts/UIManager.obsl"
+        }
+      },
+      "name": "UIMgr"
     }
+  ],
+  "grid": {
+    "map_file": "assets/maps/lvl2.obmap",
+    "mesh_id": "[Engine] Hex",
+    "types": [
+      {
+        "id": 0,
+        "texture": "sand_tex"
+      },
+      {
+        "id": 1,
+        "texture": "water_tex"
+      },
+      {
+        "id": 2,
+        "texture": "grass_tex"
+      },
+      {
+        "id": 3,
+        "texture": "dirt_tex"
+      }
+    ]
+  },
+  "properties": {
+    "ambient_light": 0.20000000298023224,
+    "background_music": "",
+    "clear_color": [
+      0.10000000149011612,
+      0.10000000149011612,
+      0.10000000149011612,
+      1.0
+    ],
+    "name": "otherscene"
+  },
+  "ui": {
+    "elements": [
+      {
+        "bg_color": [
+          0.5040000081062317,
+          0.5400000214576721,
+          0.8040000200271606,
+          1.0
+        ],
+        "color": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "flags": 3,
+        "font": "OpenSans-Regular",
+        "hovered_bg_color": [
+          0.4569999873638153,
+          0.4950000047683716,
+          0.5289999842643738,
+          1.0
+        ],
+        "name": "btnSwitch",
+        "rect": {
+          "position": [
+            160.0,
+            270.0
+          ],
+          "scale": [
+            251.0,
+            59.0
+          ]
+        },
+        "text": "now click me 2 go back :)",
+        "type": "Button"
+      }
+    ]
+  }
 }

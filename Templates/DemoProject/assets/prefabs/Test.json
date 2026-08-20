@@ -1,33 +1,33 @@
 {
-    "components": {
-        "BillboardTagComponent": {},
-        "MaterialComponent": {
-            "material_id": "Boring Default Material_clone_7"
-        },
-        "MeshComponent": {
-            "mesh_id": "tri_mesh"
-        },
-        "PointLightComponent": {
-            "color": [
-                1.0,
-                0.0,
-                0.0
-            ],
-            "intensity": 5.0,
-            "radius": 2.0
-        },
-        "TransformComponent": {
-            "position": [
-                3.4462738037109375,
-                0.0,
-                0.05000000074505806
-            ],
-            "scale": [
-                1.0,
-                1.0,
-                1.0
-            ]
-        }
+  "components": {
+    "BillboardTagComponent": {},
+    "MaterialComponent": {
+      "material_id": "Boring Default Material_clone_7"
     },
-    "name": "Test"
+    "MeshComponent": {
+      "mesh_id": "tri_mesh"
+    },
+    "PointLightComponent": {
+      "color": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "intensity": 5.0,
+      "radius": 2.0
+    },
+    "TransformComponent": {
+      "position": [
+        3.4462738037109375,
+        0.0,
+        0.05000000074505806
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    }
+  },
+  "name": "Test"
 }
