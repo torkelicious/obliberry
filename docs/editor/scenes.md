@@ -101,8 +101,8 @@ they carry themselves over to the next scene, and reinitialize scripts.
 see: [api reference](../scripting/api-reference.md#persistence)
 
 > [!NOTE]
-> (scripts are re-initalized on scene change, use ObSL custom data if you are looking to to store persitent values
-> between scenes!)
+> scripts are re-initalized on scene change, use ObSL custom data if you are looking to to store persitent values
+> between scenes!
 
 ---
 
