@@ -1,18 +1,16 @@
 include(FetchContent)
 
+set(FT_DISABLE_ZLIB ON CACHE BOOL "" FORCE)
+set(FT_DISABLE_BZIP2 ON CACHE BOOL "" FORCE)
+set(FT_DISABLE_PNG ON CACHE BOOL "" FORCE)
+set(FT_DISABLE_HARFBUZZ ON CACHE BOOL "" FORCE)
+set(FT_DISABLE_BROTLI ON CACHE BOOL "" FORCE)
+
 FetchContent_Declare(
-        freetype
-        GIT_REPOSITORY https://github.com/freetype/freetype.git
-        GIT_TAG VER-2-14-3
+    freetype
+    GIT_REPOSITORY https://github.com/freetype/freetype.git
+    GIT_TAG VER-2-14-3
+    GIT_SHALLOW TRUE
 )
 
-set(FT_REQUIRE_ZLIB OFF CACHE BOOL "Disable ZLIB" FORCE)
-set(FT_REQUIRE_BZIP2 OFF CACHE BOOL "Disable BZIP2" FORCE)
-set(FT_REQUIRE_PNG OFF CACHE BOOL "Disable PNG" FORCE)
-set(FT_REQUIRE_HARFBUZZ OFF CACHE BOOL "Disable HarfBuzz" FORCE)
-set(FT_REQUIRE_BROTLI OFF CACHE BOOL "Disable Brotli" FORCE)
-
 FetchContent_MakeAvailable(freetype)
-
-
-

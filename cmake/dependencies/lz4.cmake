@@ -9,6 +9,7 @@ FetchContent_Declare(
         GIT_REPOSITORY https://github.com/lz4/lz4.git
         GIT_TAG v1.10.0
         SOURCE_SUBDIR build/cmake
+        GIT_SHALLOW TRUE
 )
 
 FetchContent_MakeAvailable(lz4)
