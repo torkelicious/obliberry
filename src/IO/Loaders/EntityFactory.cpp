@@ -197,7 +197,6 @@ void IO::EntityFactory::RegisterDeserializers() {
         }
         entity.AddComponent<ECS::Components::ParticleEmitterComponent>(ec);
     };
-
 }
 
 void IO::EntityFactory::RegisterSerializers() {
@@ -329,7 +328,6 @@ void IO::EntityFactory::RegisterSerializers() {
             }
         }
     };
-
 }
 
 void IO::EntityFactory::DeserializeEntity(ECS::Entity &entity, const nlohmann::json &entityData, Core::ResourceManager &resources) {
