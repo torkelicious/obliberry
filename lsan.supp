@@ -1,10 +1,12 @@
-# driver
+# driver / graphics
 leak:libnvidia
 leak:libGLX
 leak:libGL.so
 leak:libEGL
 leak:swrast_dri
-# windowing
+leak:libEGL_mesa.so
+
+# windowing / context creation
 leak:glXCreateContext
 leak:glXMakeCurrent
 leak:glfwCreateWindow
@@ -12,10 +14,13 @@ leak:glfwInit
 leak:libX11
 leak:libxcb
 leak:libwayland
-# nfd-e
+
+# UI (nfd-e mostly)
 leak:libdbus-1
 leak:libfontconfig
+leak:libfontconfig.so
 leak:libpangocairo
+leak:libpangocairo-1.0.so
 leak:libpango-1.0
 leak:libglib-2.0
 leak:libgobject-2.0
