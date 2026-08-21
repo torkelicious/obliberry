@@ -95,13 +95,13 @@ namespace Editor::UI {
             DrawFontSection(resources);
         }
         if (ImGui::CollapsingHeader("Scripts")) {
-            DrawFileSection("Scripts", std::string(Core::SCRIPT_PATH), std::string(Core::SCRIPT_FILE_EXTENSION), ".obsl,txt", "Script Files");
+            DrawFileSection("Scripts", std::string(Core::SCRIPT_PATH), std::string(Core::SCRIPT_FILE_EXTENSION), "obsl,txt", "Script Files");
         }
         if (ImGui::CollapsingHeader("Maps")) {
-            DrawFileSection("Maps", std::string(Core::MAP_PATH), std::string(Core::MAP_FILE_EXTENSION), ".obmap", "Map Files");
+            DrawFileSection("Maps", std::string(Core::MAP_PATH), std::string(Core::MAP_FILE_EXTENSION), "obmap", "Map Files");
         }
         if (ImGui::CollapsingHeader("Scenes")) {
-            DrawFileSection("Scenes", std::string(Core::SCENE_PATH), ".json", ".json", "Scene Files");
+            DrawFileSection("Scenes", std::string(Core::SCENE_PATH), ".json", "json", "Scene Files");
         }
 
         DrawDeleteConfirmPopup(resources);
@@ -835,11 +835,12 @@ void Editor::UI::ProjectBrowserPanel::CreateMesh(Core::ResourceManager &resource
 void Editor::UI::ProjectBrowserPanel::ImportFile(const std::string &targetSubDir, const char *filterExt, const char *filterName) const {
     if (!m_EngineContext)
         return;
-
     const auto picked = Platform::FileDialogs::OpenFile(*m_EngineContext, {.filterName = filterName, .filterExt = filterExt});
     if (!picked.has_value())
         return;
-
-    IO::AssetLoader::ImportAsset(picked.value(), targetSubDir);
+    if (const auto dir = IO::VFS::Resolve(targetSubDir); !dir.empty()) {
+        std::filesystem::create_directories(dir);
+        std::filesystem::copy(picked.value(), dir / std::filesystem::path(picked.value()).filename(), std::filesystem::copy_options::overwrite_existing);
+    }
 }
 #pragma pop_macro("LOG_WHO")

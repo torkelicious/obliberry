@@ -1,6 +1,5 @@
 #pragma once
 #include "Camera.h"
-#include "Lightmap.h"
 #include "Material.h"
 #include "Mesh.h"
 #include "FrameBuffer.h"
@@ -15,6 +14,15 @@
 #include <vector>
 
 namespace Rendering {
+    struct Lightmap;
+
+    struct LightmapData {
+        std::shared_ptr<FrameBuffer> framebuffer = nullptr;
+        glm::vec2 mapSize{1.0f, 1.0f};
+        glm::vec2 mapOffset{0.0f, 0.0f};
+        float ambient = 1.0f;
+    };
+
     struct RenderCommand {
         const Mesh *mesh;
         const Material *material;
@@ -22,7 +30,7 @@ namespace Rendering {
         glm::vec4 color;
         glm::mat4 model;
         int32_t sortKey;
-        int32_t entityID; // signed int since -1 is used to represent invalid/non-entities
+        int32_t entityID;
     };
 
     struct InstancedRenderCommand {
@@ -30,9 +38,9 @@ namespace Rendering {
         const Material *material;
         const Texture *effectiveTexture;
         glm::vec4 color;
-        int8_t blendMode = 0;    // 0 = alpha, 1 = additive
-        int32_t renderOrder = 0; // higher is drawn later
-        int8_t shape = 0;        // 0 = quad, 1 = circle, 2 = soft circle
+        int8_t blendMode = 0;
+        int32_t renderOrder = 0;
+        int8_t shape = 0;
 
         const glm::mat4 *transformPtr = nullptr;
         size_t transformOffset = 0;
@@ -66,12 +74,9 @@ namespace Rendering {
         void BeginFrame();
 
         void Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const Transform &transform, const Texture *textureOverride = nullptr, int32_t entityID = -1);
-
         void Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> &transforms, const std::vector<int32_t> &entityIDs = {});
-
         void Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> &transforms, const std::vector<glm::vec4> &colors, int32_t blendMode = 0,
                     int32_t renderOrder = 0, int8_t shape = 0);
-
         void SubmitPersistent(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> *transforms, const std::vector<int32_t> *entityIDs = nullptr);
 
         template <typename T> void Pin(const std::shared_ptr<T> &resource) {
@@ -80,31 +85,23 @@ namespace Rendering {
         }
 
         void Flush(size_t renderIndex);
-
         void Clean();
-
         void InvalidateGLCache();
-
         void SwapBuffers();
 
         void SetLightmap(const Lightmap *lightmap);
 
         static void SetClearColor(glm::vec4 color);
-
         static void ApplyClearColor();
 
         static void SubmitInitTask(Platform::Threading::SmallTask task);
         static void SubmitInitTask(std::function<void()> task);
-
         static void ProcessInitQ();
 
         [[nodiscard]] std::shared_ptr<FrameBuffer> GetEditorFramebuffer() const { return m_EditorFramebuffer; }
-
         void EnsureFramebufferSize(uint32_t width, uint32_t height);
-
         void SetFallbackShader(Shader *shader) { m_FallbackShader = shader; }
 
-        // Picking
         void RequestPixelRead(const int x, const int y) {
             m_PixelReadX.store(x);
             m_PixelReadY.store(y);
@@ -117,7 +114,6 @@ namespace Rendering {
 
     private:
         void BindLightmap(Shader *shader, size_t renderIndex) const;
-
         void RenderBatch(const BatchKey &key, const glm::mat4 *transforms, const int32_t *entityIDs, size_t count, size_t renderIndex, const glm::vec4 *perInstanceColors = nullptr);
 
         std::vector<std::shared_ptr<void>> m_ResourcePins[2];
@@ -138,7 +134,7 @@ namespace Rendering {
         std::vector<glm::vec4> m_InstancedColorsStaging[2];
 
         const Camera *m_Camera = nullptr;
-        const Lightmap *m_Lightmap[2] = {nullptr, nullptr};
+        LightmapData m_Lightmap[2];
 
         float m_Aspect = 1.7777777f;
         glm::mat4 m_VP[2] = {glm::mat4(1.0f), glm::mat4(1.0f)};
@@ -164,7 +160,6 @@ namespace Rendering {
         const Texture *m_LastBoundTexture = nullptr;
         glm::vec4 m_LastBoundColor{0.0f};
 
-        // per frame merge buffers
         std::vector<BatchRange> m_BatchRanges;
         std::vector<glm::mat4> m_MergedTransforms;
         std::vector<int32_t> m_MergedEntityIDs;
@@ -176,7 +171,6 @@ namespace Rendering {
 
         Shader *m_FallbackShader = nullptr;
 
-        // picking
         std::atomic<bool> m_PixelReadRequested{false};
         std::atomic<int> m_PixelReadX{0};
         std::atomic<int> m_PixelReadY{0};

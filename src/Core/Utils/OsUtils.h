@@ -44,8 +44,13 @@ namespace Core::Utils::OS {
         if (!target || !*target)
             return false;
 
-        const HINSTANCE result = ShellExecuteW(nullptr, L"open", target, nullptr, nullptr, SW_SHOWNORMAL);
+        // default action
+        HINSTANCE result = ShellExecuteW(nullptr, nullptr, target, nullptr, nullptr, SW_SHOWNORMAL);
 
+        // (on error 31) show "Open With" dialog
+        if (reinterpret_cast<INT_PTR>(result) == SE_ERR_NOASSOC) {
+            result = ShellExecuteW(nullptr, L"openas", target, nullptr, nullptr, SW_SHOWNORMAL);
+        }
         return reinterpret_cast<INT_PTR>(result) > 32;
     }
 
@@ -71,16 +76,19 @@ namespace Core::Utils::OS {
     }
 
 #endif
+
     inline bool OsOpenFile(const std::filesystem::path &path) {
 #ifdef _WIN32
-        return OsOpen(path.c_str());
+        std::filesystem::path nativePath = path;
+        nativePath.make_preferred();
+        return OsOpen(nativePath.c_str());
 #else
         const std::string nativePath = path.string();
         return OsOpen(nativePath.c_str());
 #endif
     }
 
-    inline bool OsOpenUrl(std::string_view url) {
+    inline bool OsOpenUrl(const std::string_view url) {
         if (url.empty())
             return false;
 
