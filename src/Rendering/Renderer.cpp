@@ -140,19 +140,31 @@ void Rendering::Renderer::SubmitPersistent(const std::shared_ptr<Mesh> &mesh, co
     const Texture *tex = material && material->texture ? material->texture.get() : nullptr;
     const glm::vec4 col = material ? material->color : glm::vec4(1.0f);
 
+    // copy transforms into staging mem
+    const size_t transformOffset = m_InstancedTransformsStaging[m_SubmitIndex].size();
+    m_InstancedTransformsStaging[m_SubmitIndex].insert(m_InstancedTransformsStaging[m_SubmitIndex].end(), transforms->begin(), transforms->end());
+
+    // copy entityIDs into staging mem
+    const size_t entityIDOffset = m_InstancedEntityIDsStaging[m_SubmitIndex].size();
+    if (entityIDs && entityIDs->size() >= transforms->size()) {
+        m_InstancedEntityIDsStaging[m_SubmitIndex].insert(m_InstancedEntityIDsStaging[m_SubmitIndex].end(), entityIDs->begin(), entityIDs->begin() + transforms->size());
+    } else {
+        m_InstancedEntityIDsStaging[m_SubmitIndex].resize(entityIDOffset + transforms->size(), -1);
+    }
+
     m_InstancedCommands[m_SubmitIndex].push_back({.mesh = mesh.get(),
                                                   .material = material.get(),
                                                   .effectiveTexture = tex,
                                                   .color = col,
-                                                  .transformPtr = transforms->data(),
-                                                  .transformOffset = 0,
+                                                  .transformPtr = nullptr,
+                                                  .transformOffset = transformOffset,
                                                   .transformCount = transforms->size(),
                                                   .colorPtr = nullptr,
                                                   .colorOffset = 0,
                                                   .colorCount = 0,
-                                                  .entityIDPtr = entityIDs && entityIDs->size() >= transforms->size() ? entityIDs->data() : nullptr,
-                                                  .entityIDOffset = 0,
-                                                  .entityIDCount = entityIDs && entityIDs->size() >= transforms->size() ? entityIDs->size() : 0});
+                                                  .entityIDPtr = nullptr,
+                                                  .entityIDOffset = entityIDOffset,
+                                                  .entityIDCount = transforms->size()});
 }
 
 void Rendering::Renderer::Flush(const size_t renderIndex) {
