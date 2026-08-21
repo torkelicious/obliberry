@@ -1,0 +1,15 @@
+// timertest
+
+println "timertest loaded";
+
+fn testtim(){
+    println("hi timer hit");
+
+    // reccurse 
+    SetTimeout(testtim,500);
+
+}
+
+// first call
+testtim();
+

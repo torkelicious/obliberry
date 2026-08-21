@@ -238,7 +238,8 @@ void Editor::EditorLayer::LoadScene(std::string path) {
     if (m_Context.audioEngine)
         m_Context.audioEngine->StopMusic();
 
-    ClearCurrentProject();
+    if (m_Context.isEditorMode)
+        ClearCurrentProject();
 
     if (m_Context.renderer) {
         m_Context.renderer->InvalidateGLCache();

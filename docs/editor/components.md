@@ -178,14 +178,15 @@ Runtime state for map editing (selection, pathfinding).
 These are used by the engine internally. You generally **don't add them manually** - they're assigned automatically or
 shown as tag flags in the Inspector.
 
-| Tag                    | How It Appears in UI                                                                                  |
-|------------------------|-------------------------------------------------------------------------------------------------------|
-| **BillboardTag**       | As **"Use Billboard"** checkbox in Transform widget                                                   |
-| **DestroyTag**         | Not shown (entity queued for deletion)                                                                |
-| **Relationship**       | Managed via Registry context menu (Create Child, Set Parent, Detach)                                  |
-| **CustomData**         | Shows as **ObSL Custom Data** widget (read-only list of script-defined variables)                     |
-| **PrefabSource**       | Added automatically when dragging a prefab in. Shows "Select Prefab Source" in Registry context menu. |
-| **MapState** / **Map** | On the MAP entity (see above)                                                                         |
+| Tag                    | How It Appears in UI                                                                                                                                          |
+|------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **BillboardTag**       | As **"Use Billboard"** checkbox in Transform widget                                                                                                           |
+| **DestroyTag**         | Not shown (entity queued for deletion)                                                                                                                        |
+| **Relationship**       | Managed via Registry context menu (Create Child, Set Parent, Detach)                                                                                          |
+| **CustomData**         | Shows as **ObSL Custom Data** widget (read-only list of script-defined variables)                                                                             |
+| **PrefabSource**       | Added automatically when dragging a prefab in. Shows "Select Prefab Source" in Registry context menu.                                                         |
+| **MapState** / **Map** | On the MAP entity (see above)                                                                                                                                 |
+| **PersistentTag**      | Runtime-only (not serialized). Added/removed via `entity.SetPersistent(bool)` in scripts. See [Scene Persistence](../scripting/api-reference.md#persistence). |
 
 ---
 
@@ -208,15 +209,15 @@ enabled), `children` (array).
 
 ## Quick Reference Table
 
-| Category                   | Components                                                                       |
-|----------------------------|----------------------------------------------------------------------------------|
-| **Required for rendering** | Transform, Mesh, Material                                                        |
-| **Movement & AI**          | Movement, DirectionalTexture                                                     |
-| **Logic**                  | Script                                                                           |
-| **Visual effects**         | ParticleEmitter, PointLight                                                      |
-| **Map**                    | Map, Map State (on MAP entity)                                                   |
-| **Internal tags**          | BillboardTag (via Transform), DestroyTag, Relationship, CustomData, PrefabSource |
-| **UI**                     | Text, Button, Image, Rect (in UI Hierarchy)                                      |
+| Category                   | Components                                                                                      |
+|----------------------------|-------------------------------------------------------------------------------------------------|
+| **Required for rendering** | Transform, Mesh, Material                                                                       |
+| **Movement & AI**          | Movement, DirectionalTexture                                                                    |
+| **Logic**                  | Script                                                                                          |
+| **Visual effects**         | ParticleEmitter, PointLight                                                                     |
+| **Map**                    | Map, Map State (on MAP entity)                                                                  |
+| **Internal tags**          | BillboardTag (via Transform), DestroyTag, Relationship, CustomData, PersistentTag, PrefabSource |
+| **UI**                     | Text, Button, Image, Rect (in UI Hierarchy)                                                     |
 
 ---
 
