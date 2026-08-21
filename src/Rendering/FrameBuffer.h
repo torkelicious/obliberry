@@ -6,6 +6,7 @@
 namespace Rendering {
     class FrameBuffer {
     public:
+        FrameBuffer() = default;
         FrameBuffer(const uint32_t width, const uint32_t height) { Invalidate(width, height); }
 
         ~FrameBuffer() {

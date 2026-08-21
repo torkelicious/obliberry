@@ -50,32 +50,22 @@ namespace ECS::Systems::LightingSystem {
 
         // create quad mesh on game thread
         auto lightQuad = std::make_shared<Rendering::Mesh>(Rendering::MeshFactory::CreateQuad());
-
-        // capture old resources so their destructors run on the GL thread
-        auto oldFbo = lm.framebuffer;
-        auto oldMesh = lm.lightQuad;
-        auto oldShader = lm.lightShader;
-        auto oldVAO = lm.lightQuadVAO;
-
-        // new resources
+        auto vao = std::make_shared<Rendering::VertexArray>();
+        auto fbo = std::make_shared<Rendering::FrameBuffer>();
         lm.lightQuad = lightQuad;
         lm.lightShader = lightShader;
+        lm.lightQuadVAO = vao;
+        lm.framebuffer = fbo;
+        lm.lastLightCount = std::numeric_limits<size_t>::max();
 
-        // capture lightmap pointer and dimensions
-        // FBO created on render thread !!!
-        Rendering::Lightmap *lmPtr = &lm;
-        Rendering::Renderer::SubmitInitTask([lmPtr, lightQuad, texW, texH] {
+        Rendering::Renderer::SubmitInitTask([fbo, vao, lightQuad, texW, texH] {
             lightQuad->InitGL();
-            auto vao = std::make_shared<Rendering::VertexArray>();
             vao->Init();
             vao->Bind();
             vao->AddBuffer(lightQuad->GetVBO(), Rendering::VertexTraits<Rendering::Vertex>::GetLayout());
             vao->SetIndexBuffer(lightQuad->GetIBO());
             glBindVertexArray(0);
-            lmPtr->lightQuadVAO = std::move(vao);
-            lmPtr->framebuffer = std::make_shared<Rendering::FrameBuffer>(texW, texH);
-            // force the next Update to render into the new framebuffer.
-            lmPtr->lastLightCount = std::numeric_limits<size_t>::max();
+            fbo->Invalidate(texW, texH);
         });
     }
 
