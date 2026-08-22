@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <vector>
+#include <map>
 #include "Logger/LoggerService.h"
 #include "Core/EngineContext.h"
 #include "ECS/Registry.h"
@@ -18,6 +19,9 @@
 #include "Platform/Threading/ThreadPool.h"
 
 namespace ECS::Systems::ScriptSystem {
+
+    // map tied to the AST instance :  ( EntityID , script slot index )
+    inline std::map<std::pair<EntityID, size_t>, decltype(ObSL::ASTDeserializer::deserialize(std::vector<uint8_t>()))> s_PackagedStringPools;
 
     inline void InitializeScript(Registry &registry, const EntityID entityId, Components::ScriptComponent *script, ObSL::ScriptRuntime &runtime, const size_t scriptIndex = 0) {
         if (scriptIndex >= script->slots.size() || script->slots[scriptIndex].isInitialized)
@@ -67,11 +71,10 @@ namespace ECS::Systems::ScriptSystem {
             if (IO::VFS::IsPackaged()) {
                 const std::vector<uint8_t> binary_blob(fileData->begin(), fileData->end());
                 try {
-                    // static container keeps the deserialized string_pools alive for the application lifetime to avoid
-                    // pointing at dead mem nce goes oos
-                    static std::vector<decltype(ObSL::ASTDeserializer::deserialize(std::vector<uint8_t>()))> s_PackagedStringPools;
+                    // replaces old entry
+                    auto &deserialized = s_PackagedStringPools[{entityId, scriptIndex}];
+                    deserialized = ObSL::ASTDeserializer::deserialize(binary_blob);
 
-                    auto &deserialized = s_PackagedStringPools.emplace_back(ObSL::ASTDeserializer::deserialize(binary_blob));
                     auto &[string_pool, statements] = deserialized;
 
                     slot.ast_nodes = std::move(statements);
@@ -272,6 +275,7 @@ namespace ECS::Systems::ScriptSystem {
             if (const auto script = registry.GetComponent<Components::ScriptComponent>(entity_id)) {
                 for (size_t i = 0; i < script->slots.size(); i++) {
                     auto &slot = script->slots[i];
+                    s_PackagedStringPools.erase({entity_id, i});
                     if (slot.isInitialized && !slot.on_destroy_functions.empty() && slot.on_destroy_functions[0]) {
                         const size_t w = (entity_id + i) % num_workers;
                         s_Buckets[w].push_back({slot.on_destroy_functions[w], slot.instance_envs[w], slot.scriptPath, "on_destroy"});
@@ -383,7 +387,7 @@ namespace ECS::Systems::ScriptSystem {
 
         ctx.threadPool->wait();
         cmd_buf.flush(registry);
-
+        s_PackagedStringPools.clear();
         for (size_t w = 0; w < num_workers; ++w)
             ctx.scriptPool->get_worker(w)->clear_frame_context();
     }
