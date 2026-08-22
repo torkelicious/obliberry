@@ -6,13 +6,11 @@
 #include "ECS/Components/TransformComponent.h"
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 #include <array>
 #include <cassert>
 #include <memory>
 #include <queue>
-#include <ranges>
 #include <string>
 #include <utility>
 
@@ -63,10 +61,16 @@ namespace ECS {
         }
 
         EntityID CreateEntity() {
+            if (m_AvailableEntities.empty()) {
+                assert(false && "entity limit reached");
+                return INVALID_ENTITY_ID;
+            }
+
             const uint32_t index = m_AvailableEntities.front();
             m_AvailableEntities.pop();
 
-            const uint32_t version = m_EntityVersions[index];
+
+            const uint32_t version = m_EntityVersions[index] & (ENTITY_VERSION_MASK >> ENTITY_VERSION_SHIFT);
             const EntityID newId = index | version << ENTITY_VERSION_SHIFT;
 
             m_EntityStatus[index] = true;
@@ -102,7 +106,7 @@ namespace ECS {
             }
 
             // Increment generation to invalidate old handles
-            m_EntityVersions[index]++;
+            m_EntityVersions[index] = (m_EntityVersions[index] + 1) & (ENTITY_VERSION_MASK >> ENTITY_VERSION_SHIFT);
             m_EntityStatus[index] = false;
             m_AvailableEntities.push(index);
 
@@ -134,11 +138,28 @@ namespace ECS {
             return GetPool<T>()->Get(entity);
         }
 
-        template <typename T> bool HasComponent(EntityID entity) { return GetPool<T>()->Has(entity); }
+        template <typename T> bool HasComponent(EntityID entity) {
+            const uint32_t index = ComponentTypeID<T>::ID();
+            assert(index < MAX_COMPONENT_TYPES && "too many component types");
+            if (!m_PoolCache[index])
+                return false;
+            return static_cast<ComponentPool<T> *>(m_PoolCache[index])->Has(entity);
+        }
 
-        void SetEntityName(const EntityID id, const std::string &name) { m_EntityNames[GetEntityIndex(id)] = name; }
 
-        [[nodiscard]] const std::string &GetEntityName(const EntityID id) const { return m_EntityNames[GetEntityIndex(id)]; }
+        void SetEntityName(const EntityID id, const std::string &name) {
+            if (const uint32_t index = GetEntityIndex(id); index < MAX_ENTITIES)
+                m_EntityNames[index] = name;
+        }
+
+
+        [[nodiscard]] const std::string &GetEntityName(const EntityID id) const {
+            // ReSharper disable once CppVariableCanBeMadeConstexpr
+            static const std::string empty;
+            const uint32_t index = GetEntityIndex(id);
+            return index < MAX_ENTITIES ? m_EntityNames[index] : empty;
+        }
+
 
         [[nodiscard]] const std::vector<EntityID> &GetLivingEntities() const { return m_LivingEntities; }
 
@@ -154,13 +175,29 @@ namespace ECS {
             if (!IsValid(child) || child == newParent)
                 return;
 
+            // must not be descenednt of child either
+            if (newParent != INVALID_ENTITY_ID && IsValid(newParent)) {
+                EntityID ancestor = newParent;
+                while (ancestor != INVALID_ENTITY_ID) {
+                    if (ancestor == child) {
+                        return;
+                    }
+                    const auto *rel = GetComponent<Components::RelationshipComponent>(ancestor);
+                    ancestor = (rel && IsValid(rel->parent)) ? rel->parent : INVALID_ENTITY_ID;
+                }
+            }
+
             // preserve world transform before changing hierarchy
             auto *childTrans = GetComponent<Components::TransformComponent>(child);
             const glm::mat4 worldBefore = childTrans ? childTrans->worldTransform.GetMatrix() : glm::mat4(1.0f);
 
             auto *childRel = GetComponent<Components::RelationshipComponent>(child);
-            if (!childRel)
-                childRel = &AddComponent<Components::RelationshipComponent>(child);
+
+            if (!childRel) {
+                AddComponent<Components::RelationshipComponent>(child);
+                childRel = GetComponent<Components::RelationshipComponent>(child);
+            }
+
 
             // remove from old parent
             if (childRel->parent != INVALID_ENTITY_ID && IsValid(childRel->parent)) {
@@ -171,12 +208,14 @@ namespace ECS {
 
             // attach to new parent
             if (newParent != INVALID_ENTITY_ID && IsValid(newParent)) {
+                auto *newParentRel = GetComponent<Components::RelationshipComponent>(newParent);
+                if (!newParentRel) {
+                    AddComponent<Components::RelationshipComponent>(newParent);
+                    newParentRel = GetComponent<Components::RelationshipComponent>(newParent);
+                }
+                childRel = GetComponent<Components::RelationshipComponent>(child);
                 childRel->parent = newParent;
                 childRel->parentName = GetEntityName(newParent);
-
-                auto *newParentRel = GetComponent<Components::RelationshipComponent>(newParent);
-                if (!newParentRel)
-                    newParentRel = &AddComponent<Components::RelationshipComponent>(newParent);
                 newParentRel->children.push_back(child);
 
                 // convert world transform to local space relative to new parent
@@ -216,8 +255,11 @@ namespace ECS {
                 return;
 
             auto *childRel = GetComponent<Components::RelationshipComponent>(child);
-            if (!childRel)
-                childRel = &AddComponent<Components::RelationshipComponent>(child);
+
+            if (!childRel) {
+                AddComponent<Components::RelationshipComponent>(child);
+                childRel = GetComponent<Components::RelationshipComponent>(child);
+            }
 
             // remove from old parent (shouldn't happen during deserialization but safe whatever)
             if (childRel->parent != INVALID_ENTITY_ID && IsValid(childRel->parent)) {
@@ -228,12 +270,16 @@ namespace ECS {
 
             // attach to new parent
             if (newParent != INVALID_ENTITY_ID && IsValid(newParent)) {
+                auto *newParentRel = GetComponent<Components::RelationshipComponent>(newParent);
+                if (!newParentRel) {
+                    AddComponent<Components::RelationshipComponent>(newParent);
+                    newParentRel = GetComponent<Components::RelationshipComponent>(newParent);
+                }
+                childRel = GetComponent<Components::RelationshipComponent>(child);
+
                 childRel->parent = newParent;
                 childRel->parentName = GetEntityName(newParent);
 
-                auto *newParentRel = GetComponent<Components::RelationshipComponent>(newParent);
-                if (!newParentRel)
-                    newParentRel = &AddComponent<Components::RelationshipComponent>(newParent);
                 newParentRel->children.push_back(child);
             } else {
                 childRel->parent = INVALID_ENTITY_ID;
@@ -280,29 +326,50 @@ namespace ECS {
         }
     };
 
-    template <typename T, typename... Args> T &Entity::AddComponent(Args &&...args) { return m_Registry->AddComponent<T>(m_EntityHandle, std::forward<Args>(args)...); }
+    template <typename T, typename... Args> T &Entity::AddComponent(Args &&...args) {
+        assert(m_Registry && "entity has no registry");
+        return m_Registry->AddComponent<T>(m_EntityHandle, std::forward<Args>(args)...);
+    }
 
-    template <typename T> T *Entity::GetComponent() const { return m_Registry->GetComponent<T>(m_EntityHandle); }
+    template <typename T> T *Entity::GetComponent() const { return m_Registry ? m_Registry->GetComponent<T>(m_EntityHandle) : nullptr; }
 
-    template <typename T> bool Entity::HasComponent() const { return m_Registry->HasComponent<T>(m_EntityHandle); }
 
-    template <typename T> void Entity::RemoveComponent() const { m_Registry->RemoveComponent<T>(m_EntityHandle); }
+    template <typename T> bool Entity::HasComponent() const { return m_Registry ? m_Registry->HasComponent<T>(m_EntityHandle) : false; }
 
-    inline void Entity::SetName(const std::string &name) const { m_Registry->SetEntityName(m_EntityHandle, name); }
+    template <typename T> void Entity::RemoveComponent() const {
+        if (m_Registry) {
+            m_Registry->RemoveComponent<T>(m_EntityHandle);
+        }
+    }
 
-    inline const std::string &Entity::GetName() const { return m_Registry->GetEntityName(m_EntityHandle); }
+    inline void Entity::SetName(const std::string &name) const {
+        if (m_Registry) {
+            m_Registry->SetEntityName(m_EntityHandle, name);
+        }
+    }
 
-    inline void Entity::SetParent(const EntityID parentId) const { m_Registry->Reparent(m_EntityHandle, parentId); }
+    inline const std::string &Entity::GetName() const {
+        // ReSharper disable once CppVariableCanBeMadeConstexpr
+        static const std::string empty{};
+        return m_Registry ? m_Registry->GetEntityName(m_EntityHandle) : empty;
+    }
+
+    inline void Entity::SetParent(const EntityID parentId) const {
+        if (m_Registry) {
+            m_Registry->Reparent(m_EntityHandle, parentId);
+        }
+    }
 
     inline Entity Entity::GetParent() const {
-        if (const auto *rel = m_Registry->GetComponent<Components::RelationshipComponent>(m_EntityHandle); rel && rel->parent != INVALID_ENTITY_ID && m_Registry->IsValid(rel->parent))
-            return Entity(rel->parent, m_Registry);
+        if (const auto *rel = m_Registry ? m_Registry->GetComponent<Components::RelationshipComponent>(m_EntityHandle) : nullptr; rel && rel->parent != INVALID_ENTITY_ID && m_Registry->IsValid(rel->parent))
+            return {rel->parent, m_Registry};
         return Entity{};
     }
 
     inline const std::vector<EntityID> &Entity::GetChildren() const {
-        static const std::vector<EntityID> empty;
-        auto *rel = m_Registry->GetComponent<Components::RelationshipComponent>(m_EntityHandle);
+        // ReSharper disable once CppVariableCanBeMadeConstexpr
+        static const std::vector<EntityID> empty{};
+        auto *rel = m_Registry ? m_Registry->GetComponent<Components::RelationshipComponent>(m_EntityHandle) : nullptr;
         return rel ? rel->children : empty;
     }
 } // namespace ECS
