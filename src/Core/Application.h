@@ -6,6 +6,7 @@
 #include <atomic>
 #include <deque>
 #include <memory>
+#include <imgui_threaded_rendering.h>
 #include "Config/ProjectConfig.h"
 #include "ResourceManager.h"
 #include "Platform/Window/Window.h"
@@ -21,13 +22,13 @@ struct ImDrawData;
 namespace Core {
     class Application {
     public:
-        explicit Application(Config::GraphicsConfig gconf, Config::ProjectConfig pconf, std::unique_ptr<ApplicationLayer> layer);
+        explicit Application(const Config::GraphicsConfig &gconf, Config::ProjectConfig pconf, std::unique_ptr<ApplicationLayer> layer);
 
         ~Application() { Shutdown(); }
 
         void Run();
 
-        void Shutdown() const;
+        void Shutdown();
 
     private:
         enum class FrameState : uint8_t { Free, Ready, Rendering };
@@ -63,7 +64,7 @@ namespace Core {
 
         std::atomic<bool> m_FontsDirty{false};
 
-        ImDrawData *m_FrameImGuiData[2] = {nullptr, nullptr};
+        std::unique_ptr<ImDrawDataSnapshot> m_FrameImGuiData[2] = {nullptr, nullptr};
         std::mutex m_ImGuiTextureMutex;
     };
 } // namespace Core

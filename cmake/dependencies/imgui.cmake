@@ -6,7 +6,13 @@ FetchContent_Declare(
         GIT_TAG fd13a1e8923a0a7077b404fc36fd063b25a0c0b5
 )
 
-FetchContent_MakeAvailable(imgui)
+FetchContent_Declare(
+        imgui_club
+        GIT_REPOSITORY https://github.com/ocornut/imgui_club.git
+        GIT_TAG a436e793fe44a2c8e827bfcbf138fcbe11940476
+)
+
+FetchContent_MakeAvailable(imgui imgui_club)
 
 add_library(imgui STATIC
         ${imgui_SOURCE_DIR}/imgui.cpp
@@ -21,6 +27,9 @@ add_library(imgui STATIC
 target_include_directories(imgui PUBLIC
         ${imgui_SOURCE_DIR}
         ${imgui_SOURCE_DIR}/backends
+
+        # extensions
+        ${imgui_club_SOURCE_DIR}/imgui_threaded_rendering
 )
 
 target_link_libraries(imgui PUBLIC glfw)

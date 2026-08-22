@@ -17,53 +17,12 @@
 #include "Applications/Editor/EditorLayer.h"
 
 
-Core::Application::Application(const Config::GraphicsConfig gconf, Config::ProjectConfig pconf, std::unique_ptr<ApplicationLayer> layer)
+Core::Application::Application(const Config::GraphicsConfig &gconf, Config::ProjectConfig pconf, std::unique_ptr<ApplicationLayer> layer)
     : m_Project(std::move(pconf)), m_GraphicsConfig(gconf), m_Window(m_GraphicsConfig.WindowWidth, m_GraphicsConfig.WindowHeight, m_Project.Title.c_str(), &gconf), m_Layer(std::move(layer)) {
     m_Window.SetInputManager(&m_InputManager);
     m_AudioEngine = Sound::AudioEngine::Create();
-}
-
-static void UpdateImDrawData(ImDrawData *&dst, const ImDrawData *src) {
-    if (!dst) {
-        dst = IM_NEW(ImDrawData)();
-    }
-
-    for (const auto &CmdList : dst->CmdLists) {
-        IM_DELETE(CmdList);
-    }
-    dst->CmdLists.clear();
-
-    if (!src || src->CmdLists.empty()) {
-        dst->Valid = false;
-        dst->CmdListsCount = 0;
-        dst->TotalIdxCount = 0;
-        dst->TotalVtxCount = 0;
-        return;
-    }
-
-    dst->Valid = src->Valid;
-    dst->CmdListsCount = src->CmdListsCount; // should Prefer using ImDrawData::CmdList.Size
-    dst->TotalIdxCount = src->TotalIdxCount;
-    dst->TotalVtxCount = src->TotalVtxCount;
-    dst->DisplayPos = src->DisplayPos;
-    dst->DisplaySize = src->DisplaySize;
-    dst->FramebufferScale = src->FramebufferScale;
-    dst->OwnerViewport = src->OwnerViewport;
-    dst->CmdLists.resize(src->CmdListsCount);
-    for (int i = 0; i < src->CmdListsCount; ++i) {
-        dst->CmdLists[i] = src->CmdLists[i]->CloneOutput();
-    }
-    dst->Textures = src->Textures;
-}
-
-static void FreeImDrawData(ImDrawData *data) {
-    if (!data)
-        return;
-    for (int i = 0; i < data->CmdListsCount; ++i) {
-        IM_DELETE(data->CmdLists[i]);
-    }
-    data->CmdLists.clear();
-    IM_DELETE(data);
+    m_FrameImGuiData[0] = std::make_unique<ImDrawDataSnapshot>();
+    m_FrameImGuiData[1] = std::make_unique<ImDrawDataSnapshot>();
 }
 
 void Core::Application::Run() {
@@ -92,8 +51,6 @@ void Core::Application::Run() {
         io.ConfigDpiScaleViewports = true;
         // features
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Docking
-        // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;    // Keyboard UI navigation
-        // io.ConfigFlags |= ImGuiConfigFlags_NavNoCaptureKeyboard; // Don't capture keyboard for navigation
         io.NavActive = true;
         io.ConfigNavCaptureKeyboard = false;
     }
@@ -202,7 +159,7 @@ void Core::Application::Run() {
         m_UIRenderer.SwapBuffers();
 
         const int writeIdx = m_MainFrameIndex;
-        UpdateImDrawData(m_FrameImGuiData[writeIdx], ImGui::GetDrawData());
+        m_FrameImGuiData[writeIdx]->SnapUsingSwap(ImGui::GetDrawData(), ImGui::GetTime());
 
         // hand off frame to render thread
         {
@@ -245,19 +202,13 @@ void Core::Application::Run() {
     if (m_RenderThread.joinable()) {
         m_RenderThread.join();
     }
-
-    // free ImGui draw data after render thread has exited
-    for (auto &i : m_FrameImGuiData) {
-        if (i) {
-            FreeImDrawData(i);
-            i = nullptr;
-        }
-    }
 }
 
-void Core::Application::Shutdown() const {
+void Core::Application::Shutdown() {
     m_Layer->Shutdown();
     ImGui_ImplGlfw_Shutdown();
+    m_FrameImGuiData[0].reset();
+    m_FrameImGuiData[1].reset();
     ImGui::DestroyContext();
 }
 
@@ -328,9 +279,9 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer, UI::UI
             renderer->Flush(static_cast<size_t>(frameIdx));
         }
 
-        if (m_FrameImGuiData[frameIdx] && m_FrameImGuiData[frameIdx]->CmdListsCount > 0) {
+        if (m_FrameImGuiData[frameIdx]->DrawData.CmdLists.Size > 0) {
             std::lock_guard imguiTextureLock(m_ImGuiTextureMutex);
-            ImGui_ImplOpenGL3_RenderDrawData(m_FrameImGuiData[frameIdx]);
+            ImGui_ImplOpenGL3_RenderDrawData(&m_FrameImGuiData[frameIdx]->DrawData);
         }
 
         if (!renderer->GetEditorFramebuffer()) {
