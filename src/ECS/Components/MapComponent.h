@@ -48,6 +48,9 @@ namespace ECS::Components {
         bool needsMeshUpdate = true;
         bool mapDirty = false;
 
+        std::unordered_set<uint8_t> warnedMissingTex;
+        std::unordered_set<uint8_t> warnedMissingType;
+
         // linear search on small collections
         [[nodiscard]] auto findTypeMat(uint8_t id) {
             return std::ranges::find_if(typeMats, [id](const auto &p) { return p.first == id; });
@@ -55,17 +58,6 @@ namespace ECS::Components {
 
         [[nodiscard]] auto findTypeMat(uint8_t id) const {
             return std::ranges::find_if(typeMats, [id](const auto &p) { return p.first == id; });
-        }
-
-        [[nodiscard]] std::vector<glm::mat4> &getVisibleTransforms(const uint8_t type) {
-            // register this type on the current write buffer the first time
-            // added a transform after a clear
-
-            // reused vectors are still registered on the next rebuild
-            if (visibles[activeBufferIndex][type].empty()) {
-                activeVisibleTypes[activeBufferIndex].push_back(type);
-            }
-            return visibles[activeBufferIndex][type];
         }
     };
 } // namespace ECS::Components
