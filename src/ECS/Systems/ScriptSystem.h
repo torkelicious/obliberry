@@ -199,10 +199,21 @@ namespace ECS::Systems::ScriptSystem {
         };
         std::vector<PendingScriptInit> pendingInits;
 
+        // it is captured once and reused
+        struct ScriptSlotRef {
+            EntityID entityId;
+            Components::ScriptComponent *script;
+            size_t slotIndex;
+        };
+        static std::vector<ScriptSlotRef> s_AllSlots;
+        s_AllSlots.clear();
+
         registry.ForEach<Components::ScriptComponent>([&](const Entity entity, Components::ScriptComponent *script) {
             const auto raw_id = static_cast<EntityID>(entity);
             for (size_t i = 0; i < script->slots.size(); i++) {
                 auto &slot = script->slots[i];
+                s_AllSlots.push_back({raw_id, script, i});
+
                 if (!slot.isInitialized) {
                     pendingInits.push_back({raw_id, script, i, false});
                 }
@@ -259,17 +270,16 @@ namespace ECS::Systems::ScriptSystem {
             b.clear();
         size_t totalWork = 0;
 
-        registry.ForEach<Components::ScriptComponent>([&](const Entity entity, const Components::ScriptComponent *script) {
-            const auto entity_id = static_cast<EntityID>(entity);
-            for (size_t i = 0; i < script->slots.size(); i++) {
-                auto &slot = script->slots[i];
-                if (slot.isInitialized && !slot.on_update_functions.empty() && slot.on_update_functions[0]) {
-                    const size_t w = (entity_id + i) % num_workers;
-                    s_Buckets[w].push_back({slot.on_update_functions[w], slot.instance_envs[w], slot.scriptPath, "on_update"});
-                    ++totalWork;
-                }
+        for (const auto &ref : s_AllSlots) {
+            if (!registry.IsValid(ref.entityId)) // do not assume even though i prolly can?
+                continue;
+            auto &slot = ref.script->slots[ref.slotIndex];
+            if (slot.isInitialized && !slot.on_update_functions.empty() && slot.on_update_functions[0]) {
+                const size_t w = (ref.entityId + ref.slotIndex) % num_workers;
+                s_Buckets[w].push_back({slot.on_update_functions[w], slot.instance_envs[w], slot.scriptPath, "on_update"});
+                ++totalWork;
             }
-        });
+        }
 
         registry.ForEach<Components::DestroyTagComponent>([&](const Entity entity, Components::DestroyTagComponent *) {
             const auto entity_id = static_cast<EntityID>(entity);
