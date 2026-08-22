@@ -8,37 +8,44 @@
 namespace ECS::Systems::HierarchySystem {
 
     inline void Propagate(Registry &registry) {
-        registry.ForEach<Components::TransformComponent>([&](Entity, Components::TransformComponent *tc) {
-            const auto &local = tc->transform;
-            tc->worldTransform.SetPosition(local.GetPosition());
-            tc->worldTransform.SetRotation(local.GetRotation());
-            tc->worldTransform.SetScale(local.GetScale());
-            tc->worldTransform.SetCustomMatrix(local.GetMatrix());
-        });
-
         std::queue<EntityID> queue;
 
-        registry.ForEach<Components::RelationshipComponent>([&](const Entity entity, const Components::RelationshipComponent *rel) {
-            if (rel->parent == INVALID_ENTITY_ID) {
-                queue.push(static_cast<EntityID>(entity));
+        // cache the pools
+        auto *tcPool = registry.GetPool<Components::TransformComponent>();
+        auto *relPool = registry.GetPool<Components::RelationshipComponent>();
+
+        for (const EntityID id : tcPool->GetDenseEntities()) {
+            auto *tc = tcPool->Get(id);
+
+            // if it has no relationship / no parent. it is a root node.
+            if (const auto *rel = relPool->Get(id); !rel || rel->parent == INVALID_ENTITY_ID) {
+                const auto &local = tc->transform;
+                tc->worldTransform.SetPosition(local.GetPosition());
+                tc->worldTransform.SetRotation(local.GetRotation());
+                tc->worldTransform.SetScale(local.GetScale());
+                tc->worldTransform.SetCustomMatrix(local.GetMatrix());
+
+                // queue if it has children
+                if (rel && !rel->children.empty()) {
+                    queue.push(id);
+                }
             }
-        });
+        }
 
         while (!queue.empty()) {
             const EntityID parentId = queue.front();
             queue.pop();
 
-            const auto *parentTc = registry.GetComponent<Components::TransformComponent>(parentId);
-            const auto *parentRel = registry.GetComponent<Components::RelationshipComponent>(parentId);
+            const auto *parentTc = tcPool->Get(parentId);
+            const auto *parentRel = relPool->Get(parentId);
+
             if (!parentTc || !parentRel)
                 continue;
 
             const glm::mat4 &parentWorldMatrix = parentTc->worldTransform.GetMatrix();
-            const glm::vec3 &parentScale = parentTc->worldTransform.GetScale();
-            const glm::vec3 &parentRot = parentTc->worldTransform.GetRotation();
 
             for (const EntityID childId : parentRel->children) {
-                auto *childTc = registry.GetComponent<Components::TransformComponent>(childId);
+                auto *childTc = tcPool->Get(childId);
                 if (!childTc)
                     continue;
 
@@ -55,7 +62,10 @@ namespace ECS::Systems::HierarchySystem {
                 childTc->worldTransform.SetScale(scale);
                 childTc->worldTransform.SetCustomMatrix(worldMatrix);
 
-                queue.push(childId);
+                // queue this child if it also has children of its own
+                if (const auto *childRel = relPool->Get(childId); childRel && !childRel->children.empty()) {
+                    queue.push(childId);
+                }
             }
         }
     }
