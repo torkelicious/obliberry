@@ -290,10 +290,14 @@ namespace ECS::Systems::ScriptSystem {
         static std::vector<ObSL::Value> args(1);
         args[0] = static_cast<double>(ctx.deltaTime);
 
+        Platform::Threading::TaskGroup scriptGroup;
+
         for (size_t w = 0; w < num_workers; ++w) {
             if (s_Buckets[w].empty())
                 continue;
-            ctx.threadPool->enqueue(static_cast<Platform::Threading::Task>([&ctx, w, &call_token] {
+
+            scriptGroup.Add();
+            ctx.threadPool->enqueue(static_cast<Platform::Threading::Task>([&ctx, w, &call_token, &scriptGroup] {
                 auto *worker = ctx.scriptPool->get_worker(w);
                 auto &interp = worker->GetInterpreter();
                 for (auto &[func, env, scriptPath, hookName] : s_Buckets[w]) {
@@ -312,11 +316,12 @@ namespace ECS::Systems::ScriptSystem {
                         }
                     }
                 }
+                scriptGroup.Done();
             }));
         }
 
         if (totalWork > 0)
-            ctx.threadPool->wait();
+            scriptGroup.Wait();
 
         // flush deferred registry writes
         cmd_buf.flush(registry);
@@ -370,8 +375,14 @@ namespace ECS::Systems::ScriptSystem {
         static std::vector<ObSL::Value> args(1);
         args[0] = static_cast<double>(dt);
 
+        Platform::Threading::TaskGroup exitGroup;
+
         for (size_t w = 0; w < exit_workers; ++w) {
-            ctx.threadPool->enqueue(static_cast<Platform::Threading::Task>([&buckets, &ctx, w, &call_token] {
+            if (buckets[w].empty())
+                continue;
+
+            exitGroup.Add();
+            ctx.threadPool->enqueue(static_cast<Platform::Threading::Task>([&buckets, &ctx, w, &call_token, &exitGroup] {
                 auto *worker = ctx.scriptPool->get_worker(w);
                 auto &interp = worker->GetInterpreter();
                 for (auto &[func, env, scriptPath] : buckets[w]) {
@@ -390,10 +401,13 @@ namespace ECS::Systems::ScriptSystem {
                         }
                     }
                 }
+                exitGroup.Done();
             }));
         }
 
-        ctx.threadPool->wait();
+        if (active_exits > 0)
+            exitGroup.Wait();
+
         cmd_buf.flush(registry);
         s_PackagedStringPools.clear();
         for (size_t w = 0; w < num_workers; ++w)
