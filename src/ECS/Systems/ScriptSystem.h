@@ -281,6 +281,7 @@ namespace ECS::Systems::ScriptSystem {
                         ++totalWork;
                     }
                 }
+                entity.RemoveComponent<Components::DestroyTagComponent>();
             }
         });
 
