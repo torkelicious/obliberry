@@ -380,13 +380,17 @@ namespace Scripting {
                     auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
                     if (cmd_buf) {
                         cmd_buf->push([id, rate](ECS::Registry &reg) {
-                            if (auto *comp = reg.GetComponent<ECS::Components::ParticleEmitterComponent>(id))
+                            if (auto *comp = reg.GetComponent<ECS::Components::ParticleEmitterComponent>(id)) {
                                 comp->emitRate = rate;
+                                comp->isDirty = true;
+                            }
                         });
                     } else if (reg_ptr) {
                         std::unique_lock lock(g_RegistryMutex);
-                        if (auto *comp = reg_ptr->GetComponent<ECS::Components::ParticleEmitterComponent>(id))
+                        if (auto *comp = reg_ptr->GetComponent<ECS::Components::ParticleEmitterComponent>(id)) {
                             comp->emitRate = rate;
+                            comp->isDirty = true;
+                        }
                     }
                 }
                 return std::monostate{};
@@ -404,13 +408,17 @@ namespace Scripting {
                     auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
                     if (cmd_buf) {
                         cmd_buf->push([id, active](ECS::Registry &reg) {
-                            if (auto *comp = reg.GetComponent<ECS::Components::ParticleEmitterComponent>(id))
+                            if (auto *comp = reg.GetComponent<ECS::Components::ParticleEmitterComponent>(id)) {
                                 comp->active = active;
+                                comp->isDirty = true;
+                            }
                         });
                     } else if (reg_ptr) {
                         std::unique_lock lock(g_RegistryMutex);
-                        if (auto *comp = reg_ptr->GetComponent<ECS::Components::ParticleEmitterComponent>(id))
+                        if (auto *comp = reg_ptr->GetComponent<ECS::Components::ParticleEmitterComponent>(id)) {
                             comp->active = active;
+                            comp->isDirty = true;
+                        }
                     }
                 }
                 return std::monostate{};

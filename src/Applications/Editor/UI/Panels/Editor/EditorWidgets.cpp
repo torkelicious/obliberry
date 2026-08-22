@@ -495,66 +495,85 @@ void Editor::UI::ParticleEmitterWidget::Draw(const ECS::Entity entity, Core::Eng
 
         ImGui::DragInt("Max Particles", &comp->maxParticles, 1.0f, 1, 16384);
         ImGui::DragFloat("Emit Rate", &comp->emitRate, 1.0f, 0.0f, 1000.0f, "%.1f/s");
-        if (ImGui::IsItemDeactivatedAfterEdit())
+        if (ImGui::IsItemDeactivatedAfterEdit()) {
+            comp->isDirty = true;
             MarkSceneChanged(engineContext);
+        }
 
         ImGui::SeparatorText("Lifetime");
         ImGui::DragFloat("Min", &comp->lifetimeMin, 0.05f, 0.01f, 60.0f, "%.2f s");
         ImGui::DragFloat("Max", &comp->lifetimeMax, 0.05f, 0.01f, 60.0f, "%.2f s");
-        if (ImGui::IsItemDeactivatedAfterEdit())
+        if (ImGui::IsItemDeactivatedAfterEdit()) {
+            comp->isDirty = true;
             MarkSceneChanged(engineContext);
+        }
 
         ImGui::SeparatorText("Velocity");
         ImGui::DragFloat3("Min", &comp->velocityMin.x, 0.1f);
         ImGui::DragFloat3("Max", &comp->velocityMax.x, 0.1f);
-        if (ImGui::IsItemDeactivatedAfterEdit())
+        if (ImGui::IsItemDeactivatedAfterEdit()) {
+            comp->isDirty = true;
             MarkSceneChanged(engineContext);
+        }
 
         ImGui::SeparatorText("Physics");
         ImGui::DragFloat3("Gravity", &comp->gravity.x, 0.1f);
-        if (ImGui::IsItemDeactivatedAfterEdit())
+        if (ImGui::IsItemDeactivatedAfterEdit()) {
+            comp->isDirty = true;
             MarkSceneChanged(engineContext);
+        }
 
         ImGui::SeparatorText("Size");
         ImGui::DragFloat("Start Min", &comp->sizeStartMin, 0.01f, 0.001f, 50.0f, "%.3f");
         ImGui::DragFloat("Start Max", &comp->sizeStartMax, 0.01f, 0.001f, 50.0f, "%.3f");
         ImGui::DragFloat("End Min", &comp->sizeEndMin, 0.01f, 0.0f, 50.0f, "%.3f");
         ImGui::DragFloat("End Max", &comp->sizeEndMax, 0.01f, 0.0f, 50.0f, "%.3f");
-        if (ImGui::IsItemDeactivatedAfterEdit())
+        if (ImGui::IsItemDeactivatedAfterEdit()) {
+            comp->isDirty = true;
             MarkSceneChanged(engineContext);
+        }
 
         ImGui::SeparatorText("Rotation");
         ImGui::DragFloat("Speed Min", &comp->rotationSpeedMin, 0.1f, -100.0f, 100.0f, "%.2f");
         ImGui::DragFloat("Speed Max", &comp->rotationSpeedMax, 0.1f, -100.0f, 100.0f, "%.2f");
-        if (ImGui::IsItemDeactivatedAfterEdit())
+        if (ImGui::IsItemDeactivatedAfterEdit()) {
+            comp->isDirty = true;
             MarkSceneChanged(engineContext);
+        }
 
         ImGui::SeparatorText("Color");
         ImGui::ColorEdit4("Start", &comp->colorStart.x, ImGuiColorEditFlags_AlphaBar);
-        if (ImGui::IsItemDeactivatedAfterEdit())
+        if (ImGui::IsItemDeactivatedAfterEdit()) {
+            comp->isDirty = true;
             MarkSceneChanged(engineContext);
+        }
         ImGui::ColorEdit4("End", &comp->colorEnd.x, ImGuiColorEditFlags_AlphaBar);
         if (ImGui::IsItemDeactivatedAfterEdit())
             MarkSceneChanged(engineContext);
 
         ImGui::SeparatorText("Options");
         ImGui::Checkbox("Billboard", &comp->isBillboard);
-        if (ImGui::IsItemDeactivatedAfterEdit())
+        if (ImGui::IsItemDeactivatedAfterEdit()) {
+            comp->isDirty = true;
             MarkSceneChanged(engineContext);
+        }
         {
             const char *blendModes[] = {"Alpha", "Additive"};
             int bm = static_cast<int>(comp->blendMode);
             if (ImGui::Combo("Blend Mode", &bm, blendModes, 2)) {
                 comp->blendMode = static_cast<ECS::Components::ParticleBlendMode>(bm);
+                comp->isDirty = true;
                 MarkSceneChanged(engineContext);
             }
         }
         ImGui::DragInt("Render Order", &comp->renderOrder, 0.1f, -10, 10);
         if (ImGui::IsItemDeactivatedAfterEdit())
-            MarkSceneChanged(engineContext);
+            comp->isDirty = true;
+        MarkSceneChanged(engineContext);
         {
             const char *shapes[] = {"Quad", "Circle", "Soft Circle"};
             if (ImGui::Combo("Shape", &comp->shape, shapes, 3)) {
+                comp->isDirty = true;
                 MarkSceneChanged(engineContext);
             }
         }
@@ -563,6 +582,7 @@ void Editor::UI::ParticleEmitterWidget::Draw(const ECS::Entity entity, Core::Eng
         if (engineContext && engineContext->resources) {
             ImGui::PushID("EmitterMatCombo");
             if (MaterialCombo("Material", *engineContext->resources, comp->material)) {
+                comp->isDirty = true;
                 MarkSceneChanged(engineContext);
             }
             ImGui::PopID();
@@ -582,6 +602,7 @@ void Editor::UI::ParticleEmitterWidget::Draw(const ECS::Entity entity, Core::Eng
                 if (!pendingPresetPath.empty()) {
                     if (const auto preset = IO::LoadEmitterPreset(pendingPresetPath)) {
                         *comp = *preset;
+                        comp->isDirty = true;
                         MarkSceneChanged(engineContext);
                     }
                 }

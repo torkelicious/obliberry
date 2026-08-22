@@ -89,25 +89,28 @@ namespace ECS::Systems::ParticleSystem {
             }
             auto &state = emitters[comp->emitterIndex];
 
-            Rendering::ParticleEmitterConfig config;
-            config.maxParticles = comp->maxParticles;
-            config.emitRate = comp->emitRate;
-            config.lifetimeMin = comp->lifetimeMin;
-            config.lifetimeMax = comp->lifetimeMax;
-            config.velocityMin = comp->velocityMin;
-            config.velocityMax = comp->velocityMax;
-            config.gravity = comp->gravity;
-            config.sizeStartMin = comp->sizeStartMin;
-            config.sizeStartMax = comp->sizeStartMax;
-            config.sizeEndMin = comp->sizeEndMin;
-            config.sizeEndMax = comp->sizeEndMax;
-            config.rotationSpeedMin = comp->rotationSpeedMin;
-            config.rotationSpeedMax = comp->rotationSpeedMax;
-            config.colorStart = comp->colorStart;
-            config.colorEnd = comp->colorEnd;
-            config.isBillboard = comp->isBillboard;
-            config.material = comp->material;
-            state.pool.SetConfig(config);
+            if (comp->isDirty) {
+                Rendering::ParticleEmitterConfig config;
+                config.maxParticles = comp->maxParticles;
+                config.emitRate = comp->emitRate;
+                config.lifetimeMin = comp->lifetimeMin;
+                config.lifetimeMax = comp->lifetimeMax;
+                config.velocityMin = comp->velocityMin;
+                config.velocityMax = comp->velocityMax;
+                config.gravity = comp->gravity;
+                config.sizeStartMin = comp->sizeStartMin;
+                config.sizeStartMax = comp->sizeStartMax;
+                config.sizeEndMin = comp->sizeEndMin;
+                config.sizeEndMax = comp->sizeEndMax;
+                config.rotationSpeedMin = comp->rotationSpeedMin;
+                config.rotationSpeedMax = comp->rotationSpeedMax;
+                config.colorStart = comp->colorStart;
+                config.colorEnd = comp->colorEnd;
+                config.isBillboard = comp->isBillboard;
+                config.material = comp->material;
+                state.pool.SetConfig(config);
+                comp->isDirty = false;
+            }
 
             if (comp->emitRate > 0.0f) {
                 comp->emitAccumulator += dt * comp->emitRate;
