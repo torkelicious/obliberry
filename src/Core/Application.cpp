@@ -205,6 +205,7 @@ void Core::Application::Run() {
     if (m_RenderThread.joinable()) {
         m_RenderThread.join();
     }
+    glfwMakeContextCurrent(m_Window.GetNativeWindow());
 }
 
 void Core::Application::Shutdown() {
