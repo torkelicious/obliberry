@@ -417,9 +417,9 @@ void Editor::UI::ScriptWidget::Draw(const ECS::Entity entity, Core::EngineContex
     if (ImGui::CollapsingHeader(GetName())) {
         auto *comp = entity.GetComponent<ECS::Components::ScriptComponent>();
 
-        for (size_t i = 0; i < comp->scriptPaths.size(); i++) {
+        for (size_t i = 0; i < comp->slots.size(); i++) {
             ImGui::PushID(static_cast<int>(i));
-            ImGui::BulletText("%s", comp->scriptPaths[i].c_str());
+            ImGui::BulletText("%s", comp->slots[i].scriptPath.c_str());
             // ImGui::SameLine();
             if (ImGui::SmallButton("Remove ##Script")) {
                 undoManager->Execute(std::make_unique<Commands::RemoveScriptCommand>(static_cast<ECS::EntityID>(entity), *comp, static_cast<int>(i)), *engineContext);
@@ -446,7 +446,7 @@ void Editor::UI::ScriptWidget::Draw(const ECS::Entity entity, Core::EngineContex
 
         // total count
         ImGui::SameLine();
-        ImGui::TextDisabled("Total: %zu script(s)", comp->scriptPaths.size());
+        ImGui::TextDisabled("Total: %zu script(s)", comp->slots.size());
     }
 }
 

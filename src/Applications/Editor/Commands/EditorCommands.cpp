@@ -81,24 +81,16 @@ namespace Editor::Commands {
     // Remove script
     RemoveScriptCommand::RemoveScriptCommand(const ECS::EntityID target, ECS::Components::ScriptComponent &component, const int index) : m_EntityID(target), m_scriptComp(&component), m_Index(index) {
         // save only copyable fields for the entry being removed
-        m_SavedPath = component.scriptPaths[index];
-        m_SavedInstanceEnvs = component.instance_envs[index];
-        m_IsInitialized = component.isInitialized[index];
-        m_SavedSourceCode = component.source_codes[index];
-        m_SavedLastModified = component.lastModified[index];
+        m_SavedPath = component.slots[index].scriptPath;
+        m_SavedInstanceEnvs = component.slots[index].instance_envs;
+        m_IsInitialized = component.slots[index].isInitialized;
+        m_SavedSourceCode = component.slots[index].source_code;
+        m_SavedLastModified = component.slots[index].lastModified;
     }
 
     void RemoveScriptCommand::Execute(Core::EngineContext &ctx) {
-        m_scriptComp->scriptPaths.erase(m_scriptComp->scriptPaths.begin() + m_Index);
-        m_scriptComp->instance_envs.erase(m_scriptComp->instance_envs.begin() + m_Index);
-        m_scriptComp->on_update_functions.erase(m_scriptComp->on_update_functions.begin() + m_Index);
-        m_scriptComp->on_destroy_functions.erase(m_scriptComp->on_destroy_functions.begin() + m_Index);
-        m_scriptComp->on_exit_functions.erase(m_scriptComp->on_exit_functions.begin() + m_Index);
-        m_scriptComp->isInitialized.erase(m_scriptComp->isInitialized.begin() + m_Index);
-        m_scriptComp->source_codes.erase(m_scriptComp->source_codes.begin() + m_Index);
-        m_scriptComp->ast_nodes.erase(m_scriptComp->ast_nodes.begin() + m_Index);
-        m_scriptComp->lastModified.erase(m_scriptComp->lastModified.begin() + m_Index);
-        if (m_scriptComp->scriptPaths.empty()) {
+        m_scriptComp->slots.erase(m_scriptComp->slots.begin() + m_Index);
+        if (m_scriptComp->slots.empty()) {
             ctx.sceneManager->GetCurrentScene()->GetRegistry().RemoveComponent<ECS::Components::ScriptComponent>(m_EntityID);
             m_scriptComp = nullptr;
             m_ComponentRemoved = true;
@@ -112,15 +104,13 @@ namespace Editor::Commands {
             m_ComponentRemoved = false;
         }
         // insert saved data back at the original index
-        m_scriptComp->scriptPaths.insert(m_scriptComp->scriptPaths.begin() + m_Index, m_SavedPath);
-        m_scriptComp->instance_envs.insert(m_scriptComp->instance_envs.begin() + m_Index, m_SavedInstanceEnvs);
-        m_scriptComp->on_update_functions.insert(m_scriptComp->on_update_functions.begin() + m_Index, {});
-        m_scriptComp->on_destroy_functions.insert(m_scriptComp->on_destroy_functions.begin() + m_Index, {});
-        m_scriptComp->on_exit_functions.insert(m_scriptComp->on_exit_functions.begin() + m_Index, {});
-        m_scriptComp->isInitialized.insert(m_scriptComp->isInitialized.begin() + m_Index, m_IsInitialized);
-        m_scriptComp->source_codes.insert(m_scriptComp->source_codes.begin() + m_Index, m_SavedSourceCode);
-        m_scriptComp->ast_nodes.emplace(m_scriptComp->ast_nodes.begin() + m_Index);
-        m_scriptComp->lastModified.insert(m_scriptComp->lastModified.begin() + m_Index, m_SavedLastModified);
+        ECS::Components::ScriptSlot slot;
+        slot.scriptPath = m_SavedPath;
+        slot.instance_envs = m_SavedInstanceEnvs;
+        slot.isInitialized = m_IsInitialized;
+        slot.source_code = m_SavedSourceCode;
+        slot.lastModified = m_SavedLastModified;
+        m_scriptComp->slots.insert(m_scriptComp->slots.begin() + m_Index, std::move(slot));
     }
 
     std::string_view RemoveScriptCommand::Name() const noexcept { return "Remove Script"; }
@@ -136,15 +126,9 @@ namespace Editor::Commands {
             }
             if (!m_Comp)
                 m_Comp = registry.GetComponent<ECS::Components::ScriptComponent>(m_EntityID);
-            m_Comp->scriptPaths.push_back(m_PendingPath);
-            m_Comp->instance_envs.emplace_back();
-            m_Comp->on_update_functions.emplace_back();
-            m_Comp->on_destroy_functions.emplace_back();
-            m_Comp->on_exit_functions.emplace_back();
-            m_Comp->isInitialized.push_back(false);
-            m_Comp->source_codes.emplace_back();
-            m_Comp->ast_nodes.emplace_back();
-            m_Comp->lastModified.push_back(std::filesystem::file_time_type::min());
+            ECS::Components::ScriptSlot slot;
+            slot.scriptPath = m_PendingPath;
+            m_Comp->slots.push_back(std::move(slot));
             UI::MarkSceneChanged(&ctx);
         }
     }
@@ -156,15 +140,7 @@ namespace Editor::Commands {
         m_Comp = registry.GetComponent<ECS::Components::ScriptComponent>(m_EntityID);
         if (!m_Comp)
             return;
-        m_Comp->scriptPaths.pop_back();
-        m_Comp->instance_envs.pop_back();
-        m_Comp->on_update_functions.pop_back();
-        m_Comp->on_destroy_functions.pop_back();
-        m_Comp->on_exit_functions.pop_back();
-        m_Comp->isInitialized.pop_back();
-        m_Comp->source_codes.pop_back();
-        m_Comp->ast_nodes.pop_back();
-        m_Comp->lastModified.pop_back();
+        m_Comp->slots.pop_back();
         UI::MarkSceneChanged(&ctx);
     }
 

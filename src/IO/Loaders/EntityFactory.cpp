@@ -117,31 +117,23 @@ void IO::EntityFactory::RegisterDeserializers() {
 
     // SCRIPT COMPONENT
     s_Deserializers["ScriptComponent"] = [](ECS::Entity &entity, const nlohmann::json &data, Core::ResourceManager & /*resources*/) {
-        auto &[isInitialized, scriptPaths, resolvedScriptPaths, instance_envs, on_update_functions, on_destroy_functions, on_exit_functions, source_codes, ast_nodes, lastModified] =
-                entity.AddComponent<ECS::Components::ScriptComponent>();
+        auto &scriptComp = entity.AddComponent<ECS::Components::ScriptComponent>();
 
+        std::vector<std::string> paths;
         if (data.contains("scriptPath")) {
             // Single script
-            scriptPaths.push_back(data["scriptPath"].get<std::string>());
+            paths.push_back(data["scriptPath"].get<std::string>());
         } else if (data.contains("scriptPaths") && data["scriptPaths"].is_array()) {
             // Multiple scripts
             for (const auto &scriptPath : data["scriptPaths"]) {
-                scriptPaths.push_back(scriptPath.get<std::string>());
+                paths.push_back(scriptPath.get<std::string>());
             }
         }
 
-        // Initialize vectors to match the number of scripts
-        const size_t scriptCount = scriptPaths.size();
-        // outer vectors: one inner vector per script (inner sized per-worker during InitializeScript)
-        instance_envs.resize(scriptCount);
-        on_update_functions.resize(scriptCount);
-        on_destroy_functions.resize(scriptCount);
-        on_exit_functions.resize(scriptCount);
-        isInitialized.resize(scriptCount, false);
-        resolvedScriptPaths.resize(scriptCount);
-        source_codes.resize(scriptCount);
-        ast_nodes.resize(scriptCount);
-        lastModified.resize(scriptCount);
+        scriptComp.slots.resize(paths.size());
+        for (size_t i = 0; i < paths.size(); ++i) {
+            scriptComp.slots[i].scriptPath = std::move(paths[i]);
+        }
     };
 
     // PARTICLE EMITTER COMPONENT
@@ -284,14 +276,14 @@ void IO::EntityFactory::RegisterSerializers() {
     // SCRIPT COMPONENT
     s_Serializers["ScriptComponent"] = [](const ECS::Entity &entity, nlohmann::json &data, Core::ResourceManager &) {
         if (entity.HasComponent<ECS::Components::ScriptComponent>()) {
-            if (const auto *scriptComp = entity.GetComponent<ECS::Components::ScriptComponent>(); scriptComp->scriptPaths.size() == 1) {
+            if (const auto *scriptComp = entity.GetComponent<ECS::Components::ScriptComponent>(); scriptComp->slots.size() == 1) {
                 // Single script
-                data["ScriptComponent"]["scriptPath"] = scriptComp->scriptPaths[0];
-            } else if (scriptComp->scriptPaths.size() > 1) {
+                data["ScriptComponent"]["scriptPath"] = scriptComp->slots[0].scriptPath;
+            } else if (scriptComp->slots.size() > 1) {
                 // Multiple scripts
                 nlohmann::json scriptPathsArray = nlohmann::json::array();
-                for (const auto &scriptPath : scriptComp->scriptPaths) {
-                    scriptPathsArray.push_back(scriptPath);
+                for (const auto &slot : scriptComp->slots) {
+                    scriptPathsArray.push_back(slot.scriptPath);
                 }
                 data["ScriptComponent"]["scriptPaths"] = scriptPathsArray;
             }

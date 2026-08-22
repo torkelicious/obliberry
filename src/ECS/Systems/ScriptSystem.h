@@ -18,18 +18,17 @@
 #include "Platform/Threading/ThreadPool.h"
 
 namespace ECS::Systems::ScriptSystem {
+
     inline void InitializeScript(Registry &registry, const EntityID entityId, Components::ScriptComponent *script, ObSL::ScriptRuntime &runtime, const size_t scriptIndex = 0) {
-        if (scriptIndex >= script->scriptPaths.size() || script->isInitialized[scriptIndex])
+        if (scriptIndex >= script->slots.size() || script->slots[scriptIndex].isInitialized)
             return;
 
-        if (script->resolvedScriptPaths.size() != script->scriptPaths.size()) {
-            script->resolvedScriptPaths.resize(script->scriptPaths.size());
-        }
+        auto &slot = script->slots[scriptIndex];
 
-        auto fileData = IO::VFS::ReadVirtual(script->scriptPaths[scriptIndex]);
+        auto fileData = IO::VFS::ReadVirtual(slot.scriptPath);
         if (!fileData.has_value()) {
             if (auto *logger = Logging::LoggerService::Get()) {
-                logger->log("ScriptSystem", "Failed to open script via VFS: " + script->scriptPaths[scriptIndex], Logging::LogSeverity::Error);
+                logger->log("ScriptSystem", "Failed to open script via VFS: " + slot.scriptPath, Logging::LogSeverity::Error);
             }
             return;
         }
@@ -62,6 +61,8 @@ namespace ECS::Systems::ScriptSystem {
                 });
             }
 
+            const size_t num_workers = runtime.worker_count();
+
             // Packaged AST
             if (IO::VFS::IsPackaged()) {
                 const std::vector<uint8_t> binary_blob(fileData->begin(), fileData->end());
@@ -73,68 +74,66 @@ namespace ECS::Systems::ScriptSystem {
                     auto &deserialized = s_PackagedStringPools.emplace_back(ObSL::ASTDeserializer::deserialize(binary_blob));
                     auto &[string_pool, statements] = deserialized;
 
-                    script->ast_nodes[scriptIndex] = std::move(statements);
-                    script->lastModified[scriptIndex] = std::filesystem::file_time_type::min();
+                    slot.ast_nodes = std::move(statements);
+                    slot.lastModified = std::filesystem::file_time_type::min();
                 } catch (const std::exception &e) {
                     if (auto *logger = Logging::LoggerService::Get()) {
-                        logger->log("ScriptSystem", "AST Deserialization failed for: " + script->scriptPaths[scriptIndex], Logging::LogSeverity::Error);
+                        logger->log("ScriptSystem", "AST Deserialization failed for: " + slot.scriptPath + " Err: " + e.what(), Logging::LogSeverity::Error);
                     }
                     return;
                 }
             } else {
                 // Loose file source code
-                script->source_codes[scriptIndex] = std::move(fileData.value());
+                slot.source_code = std::move(fileData.value());
 
-                script->resolvedScriptPaths[scriptIndex] = IO::VFS::Resolve(script->scriptPaths[scriptIndex]);
-                if (const std::filesystem::path &resolvedPath = script->resolvedScriptPaths[scriptIndex]; std::filesystem::exists(resolvedPath)) {
-                    script->lastModified[scriptIndex] = std::filesystem::last_write_time(resolvedPath);
+                slot.resolvedPath = IO::VFS::Resolve(slot.scriptPath);
+                if (const std::filesystem::path &resolvedPath = slot.resolvedPath; std::filesystem::exists(resolvedPath)) {
+                    slot.lastModified = std::filesystem::last_write_time(resolvedPath);
                 }
 
                 // Parse once & share
-                ObSL::Lexer lexer(script->source_codes[scriptIndex]);
+                ObSL::Lexer lexer(slot.source_code);
                 const std::vector<ObSL::Token> tokens = lexer.tokenize();
 
                 ObSL::Parser parser(tokens);
-                script->ast_nodes[scriptIndex] = std::move(parser.parse());
+                slot.ast_nodes = std::move(parser.parse());
             }
-
-            const size_t num_workers = runtime.worker_count();
 
             // Remove old GC roots before re init
-            const size_t old_count = script->on_update_functions[scriptIndex].size();
+            const size_t old_count = slot.on_update_functions.size();
             for (size_t w = 0; w < old_count; ++w) {
-                if (auto *func = script->on_update_functions[scriptIndex][w])
+                if (auto *func = slot.on_update_functions[w])
                     runtime.get_worker(w)->GetInterpreter().gc.remove_root(func);
-                if (auto *func = script->on_destroy_functions[scriptIndex][w])
+                if (auto *func = slot.on_destroy_functions[w])
                     runtime.get_worker(w)->GetInterpreter().gc.remove_root(func);
-                if (auto *func = script->on_exit_functions[scriptIndex][w])
+                if (auto *func = slot.on_exit_functions[w])
                     runtime.get_worker(w)->GetInterpreter().gc.remove_root(func);
             }
 
-            script->instance_envs[scriptIndex].resize(num_workers);
-            script->on_update_functions[scriptIndex].assign(num_workers, nullptr);
-            script->on_destroy_functions[scriptIndex].assign(num_workers, nullptr);
-            script->on_exit_functions[scriptIndex].assign(num_workers, nullptr);
+            slot.instance_envs.resize(num_workers);
+            slot.on_update_functions.assign(num_workers, nullptr);
+            slot.on_destroy_functions.assign(num_workers, nullptr);
+            slot.on_exit_functions.assign(num_workers, nullptr);
 
             // per worker env with entity wrappers
             for (size_t w = 0; w < num_workers; ++w) {
                 auto *worker = runtime.get_worker(w);
                 auto &interp = worker->GetInterpreter();
 
-                script->instance_envs[scriptIndex][w] = worker->copy_globals();
-                interp.register_environment(script->instance_envs[scriptIndex][w]);
+                slot.instance_envs[w] = worker->copy_globals();
+                interp.register_environment(slot.instance_envs[w]);
 
                 auto *entityWrapper = Scripting::CreateEntityObject(&interp, registry, entityId);
-                script->instance_envs[scriptIndex][w]->define("this", entityWrapper);
+                slot.instance_envs[w]->define("this", entityWrapper);
             }
 
             // run top level code once
-            runtime.get_worker(0)->execute(script->ast_nodes[scriptIndex], script->instance_envs[scriptIndex][0]);
+            runtime.get_worker(0)->execute(slot.ast_nodes, slot.instance_envs[0]);
 
             // Bind hook functions
             auto bind_hook = [&](const char *name, std::vector<ObSL::ObSLCallable *> &target) {
                 try {
-                    const auto val = script->instance_envs[scriptIndex][0]->get(name);
+                    const auto val = slot.instance_envs[0]->get(name);
                     if (!std::holds_alternative<ObSL::ObSLCallable *>(val))
                         return;
                     auto *base_func = std::get<ObSL::ObSLCallable *>(val);
@@ -143,7 +142,7 @@ namespace ECS::Systems::ScriptSystem {
                         for (size_t w = 0; w < num_workers; ++w) {
                             auto *worker_w = runtime.get_worker(w);
                             auto &interp_w = worker_w->GetInterpreter();
-                            auto this_val = script->instance_envs[scriptIndex][w]->get("this");
+                            auto this_val = slot.instance_envs[w]->get("this");
                             auto *entity_w = std::get<ObSL::ObSLObject *>(this_val);
                             auto *bound = obsl_func->bind(entity_w, &interp_w);
                             target[w] = bound;
@@ -159,17 +158,17 @@ namespace ECS::Systems::ScriptSystem {
                 }
             };
 
-            bind_hook("on_update", script->on_update_functions[scriptIndex]);
-            bind_hook("on_destroy", script->on_destroy_functions[scriptIndex]);
-            bind_hook("on_exit", script->on_exit_functions[scriptIndex]);
+            bind_hook("on_update", slot.on_update_functions);
+            bind_hook("on_destroy", slot.on_destroy_functions);
+            bind_hook("on_exit", slot.on_exit_functions);
 
-            script->isInitialized[scriptIndex] = true;
+            slot.isInitialized = true;
             if (auto *logger = Logging::LoggerService::Get()) {
-                logger->log("ScriptSystem", "Initialized '" + script->scriptPaths[scriptIndex] + "' across " + std::to_string(num_workers) + " worker(s)", Logging::LogSeverity::Info);
+                logger->log("ScriptSystem", "Initialized '" + slot.scriptPath + "' across " + std::to_string(num_workers) + " worker(s)", Logging::LogSeverity::Info);
             }
         } catch (const std::exception &e) {
             if (auto *logger = Logging::LoggerService::Get()) {
-                logger->log("ScriptSystem", "Error compiling/executing '" + script->scriptPaths[scriptIndex] + "':\n  " + e.what(), Logging::LogSeverity::Error);
+                logger->log("ScriptSystem", "Error compiling/executing '" + slot.scriptPath + "':\n  " + e.what(), Logging::LogSeverity::Error);
             }
         }
     }
@@ -198,24 +197,19 @@ namespace ECS::Systems::ScriptSystem {
 
         registry.ForEach<Components::ScriptComponent>([&](const Entity entity, Components::ScriptComponent *script) {
             const auto raw_id = static_cast<EntityID>(entity);
-            if (script->resolvedScriptPaths.size() != script->scriptPaths.size()) {
-                script->resolvedScriptPaths.resize(script->scriptPaths.size());
-            }
-
-            for (size_t i = 0; i < script->scriptPaths.size(); i++) {
-                if (!script->isInitialized[i]) {
+            for (size_t i = 0; i < script->slots.size(); i++) {
+                auto &slot = script->slots[i];
+                if (!slot.isInitialized) {
                     pendingInits.push_back({raw_id, script, i, false});
                 }
 
                 try {
                     if (shouldPollReload) {
-                        if (script->resolvedScriptPaths[i].empty()) {
-                            script->resolvedScriptPaths[i] = IO::VFS::Resolve(script->scriptPaths[i]);
+                        if (slot.resolvedPath.empty() && !slot.scriptPath.empty()) {
+                            slot.resolvedPath = IO::VFS::Resolve(slot.scriptPath);
                         }
-                        if (const std::filesystem::path &resolvedPath = script->resolvedScriptPaths[i]; std::filesystem::exists(resolvedPath)) {
-                            if (const auto current_time = std::filesystem::last_write_time(resolvedPath); current_time > script->lastModified[i] && script->isInitialized[i]) {
-                                // only treat as a hot reload for already-initialized scripts;
-                                // uninitialized scripts are freshly loaded below, so no reload needed
+                        if (const std::filesystem::path &resolvedPath = slot.resolvedPath; std::filesystem::exists(resolvedPath)) {
+                            if (const auto current_time = std::filesystem::last_write_time(resolvedPath); current_time > slot.lastModified && slot.isInitialized) {
                                 pendingInits.push_back({raw_id, script, i, true});
                             }
                         }
@@ -228,21 +222,22 @@ namespace ECS::Systems::ScriptSystem {
             }
         });
 
+        // initialize scripts outside the ForEach iteration
         for (const auto &entry : pendingInits) {
             if (!registry.IsValid(entry.entityId))
                 continue;
             auto *script = registry.GetComponent<Components::ScriptComponent>(entry.entityId);
             if (!script)
                 continue;
-            if (entry.scriptIndex >= script->scriptPaths.size())
+            if (entry.scriptIndex >= script->slots.size())
                 continue;
-            if (!script->isInitialized[entry.scriptIndex]) {
+            if (!script->slots[entry.scriptIndex].isInitialized) {
                 InitializeScript(registry, entry.entityId, script, *ctx.scriptPool, entry.scriptIndex);
             } else if (entry.isReload) {
-                script->isInitialized[entry.scriptIndex] = false;
+                script->slots[entry.scriptIndex].isInitialized = false;
                 InitializeScript(registry, entry.entityId, script, *ctx.scriptPool, entry.scriptIndex);
                 if (auto *logger = Logging::LoggerService::Get()) {
-                    logger->log("ScriptSystem", "Hot-reloaded script: " + script->scriptPaths[entry.scriptIndex], Logging::LogSeverity::Info);
+                    logger->log("ScriptSystem", "Hot-reloaded script: " + script->slots[entry.scriptIndex].scriptPath, Logging::LogSeverity::Info);
                 }
             }
         }
@@ -262,10 +257,11 @@ namespace ECS::Systems::ScriptSystem {
 
         registry.ForEach<Components::ScriptComponent>([&](const Entity entity, Components::ScriptComponent *script) {
             const auto entity_id = static_cast<EntityID>(entity);
-            for (size_t i = 0; i < script->scriptPaths.size(); i++) {
-                if (script->isInitialized[i] && script->on_update_functions[i][0]) {
+            for (size_t i = 0; i < script->slots.size(); i++) {
+                auto &slot = script->slots[i];
+                if (slot.isInitialized && !slot.on_update_functions.empty() && slot.on_update_functions[0]) {
                     const size_t w = (entity_id + i) % num_workers;
-                    s_Buckets[w].push_back({script->on_update_functions[i][w], script->instance_envs[i][w], script->scriptPaths[i], "on_update"});
+                    s_Buckets[w].push_back({slot.on_update_functions[w], slot.instance_envs[w], slot.scriptPath, "on_update"});
                     ++totalWork;
                 }
             }
@@ -274,14 +270,14 @@ namespace ECS::Systems::ScriptSystem {
         registry.ForEach<Components::DestroyTagComponent>([&](const Entity entity, Components::DestroyTagComponent *) {
             const auto entity_id = static_cast<EntityID>(entity);
             if (const auto script = registry.GetComponent<Components::ScriptComponent>(entity_id)) {
-                for (size_t i = 0; i < script->scriptPaths.size(); i++) {
-                    if (script->isInitialized[i] && script->on_destroy_functions[i][0]) {
+                for (size_t i = 0; i < script->slots.size(); i++) {
+                    auto &slot = script->slots[i];
+                    if (slot.isInitialized && !slot.on_destroy_functions.empty() && slot.on_destroy_functions[0]) {
                         const size_t w = (entity_id + i) % num_workers;
-                        s_Buckets[w].push_back({script->on_destroy_functions[i][w], script->instance_envs[i][w], script->scriptPaths[i], "on_destroy"});
+                        s_Buckets[w].push_back({slot.on_destroy_functions[w], slot.instance_envs[w], slot.scriptPath, "on_destroy"});
                         ++totalWork;
                     }
                 }
-                entity.RemoveComponent<Components::DestroyTagComponent>();
             }
         });
 
@@ -334,8 +330,8 @@ namespace ECS::Systems::ScriptSystem {
 
         size_t active_exits = 0;
         registry.ForEach<Components::ScriptComponent>([&](const Entity, const Components::ScriptComponent *script) {
-            for (size_t i = 0; i < script->scriptPaths.size(); i++) {
-                if (script->isInitialized[i] && script->on_exit_functions[i][0])
+            for (const auto &slot : script->slots) {
+                if (slot.isInitialized && !slot.on_exit_functions.empty() && slot.on_exit_functions[0])
                     ++active_exits;
             }
         });
@@ -351,10 +347,11 @@ namespace ECS::Systems::ScriptSystem {
 
         registry.ForEach<Components::ScriptComponent>([&](const Entity entity, const Components::ScriptComponent *script) {
             const auto entity_id = static_cast<EntityID>(entity);
-            for (size_t i = 0; i < script->scriptPaths.size(); i++) {
-                if (script->isInitialized[i] && script->on_exit_functions[i][0]) {
+            for (size_t i = 0; i < script->slots.size(); i++) {
+                auto &slot = script->slots[i];
+                if (slot.isInitialized && !slot.on_exit_functions.empty() && slot.on_exit_functions[0]) {
                     const size_t w = (entity_id + i) % exit_workers;
-                    buckets[w].push_back({script->on_exit_functions[i][w], script->instance_envs[i][w], script->scriptPaths[i]});
+                    buckets[w].push_back({slot.on_exit_functions[w], slot.instance_envs[w], slot.scriptPath});
                 }
             }
         });
@@ -390,4 +387,5 @@ namespace ECS::Systems::ScriptSystem {
         for (size_t w = 0; w < num_workers; ++w)
             ctx.scriptPool->get_worker(w)->clear_frame_context();
     }
+
 } // namespace ECS::Systems::ScriptSystem
