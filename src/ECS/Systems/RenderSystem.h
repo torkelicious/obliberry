@@ -34,15 +34,13 @@ namespace ECS::Systems::RenderSystem {
                     const Rendering::Texture *textureOverride = nullptr;
 
                     if (const auto *dir = dirPool->Get(static_cast<EntityID>(entity))) {
-                        if (!dir->textures.empty()) {
-                            if (const auto idx = dir->index % dir->textures.size(); dir->textures[idx]) {
-                                renderer.Pin(dir->textures[idx]);
-                                textureOverride = dir->textures[idx].get();
-                            }
+                        if (const auto idx = dir->index % dir->textures.size(); dir->textures[idx]) {
+                            renderer.Pin(dir->textures[idx]);
+                            textureOverride = dir->textures[idx].get();
                         }
                     }
 
-                    const int32_t entityInt = static_cast<int32_t>(static_cast<EntityID>(entity));
+                    const auto entityInt = static_cast<int32_t>(static_cast<EntityID>(entity));
                     renderer.Submit(meshComp->mesh, matComp->material, transComp->worldTransform, textureOverride, entityInt);
                 });
     }
