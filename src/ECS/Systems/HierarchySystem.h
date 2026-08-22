@@ -43,17 +43,17 @@ namespace ECS::Systems::HierarchySystem {
                     continue;
 
                 const glm::mat4 localMatrix = childTc->transform.GetMatrix();
+                const glm::mat4 worldMatrix = parentWorldMatrix * localMatrix;
 
-                const auto worldPos = glm::vec3(parentWorldMatrix * glm::vec4(childTc->transform.GetPosition(), 1.0f));
+                glm::vec3 position, scale, skew;
+                glm::quat rotation;
+                glm::vec4 perspective;
+                glm::decompose(worldMatrix, scale, rotation, position, skew, perspective);
 
-                const glm::vec3 worldScale = parentScale * childTc->transform.GetScale();
-
-                const glm::vec3 worldRot = parentRot + childTc->transform.GetRotation();
-
-                childTc->worldTransform.SetPosition(worldPos);
-                childTc->worldTransform.SetRotation(worldRot);
-                childTc->worldTransform.SetScale(worldScale);
-                childTc->worldTransform.SetCustomMatrix(parentWorldMatrix * localMatrix);
+                childTc->worldTransform.SetPosition(position);
+                childTc->worldTransform.SetRotation(glm::eulerAngles(rotation));
+                childTc->worldTransform.SetScale(scale);
+                childTc->worldTransform.SetCustomMatrix(worldMatrix);
 
                 queue.push(childId);
             }
