@@ -184,6 +184,18 @@ namespace ECS::Systems::ScriptSystem {
         Scripting::ScriptCommandBuffer cmd_buf;
         const size_t num_workers = ctx.scriptPool->worker_count();
 
+        // make sure command buffer / frame context before code runs
+        for (size_t w = 0; w < num_workers; ++w)
+            ctx.scriptPool->get_worker(w)->set_frame_context(&cmd_buf);
+
+        struct PendingScriptInit {
+            EntityID entityId;
+            Components::ScriptComponent *script;
+            size_t scriptIndex;
+            bool isReload;
+        };
+        std::vector<PendingScriptInit> pendingInits;
+
         registry.ForEach<Components::ScriptComponent>([&](const Entity entity, Components::ScriptComponent *script) {
             const auto raw_id = static_cast<EntityID>(entity);
             if (script->resolvedScriptPaths.size() != script->scriptPaths.size()) {
@@ -192,7 +204,7 @@ namespace ECS::Systems::ScriptSystem {
 
             for (size_t i = 0; i < script->scriptPaths.size(); i++) {
                 if (!script->isInitialized[i]) {
-                    InitializeScript(registry, raw_id, script, *ctx.scriptPool, i);
+                    pendingInits.push_back({raw_id, script, i, false});
                 }
 
                 try {
@@ -201,12 +213,10 @@ namespace ECS::Systems::ScriptSystem {
                             script->resolvedScriptPaths[i] = IO::VFS::Resolve(script->scriptPaths[i]);
                         }
                         if (const std::filesystem::path &resolvedPath = script->resolvedScriptPaths[i]; std::filesystem::exists(resolvedPath)) {
-                            if (const auto current_time = std::filesystem::last_write_time(resolvedPath); current_time > script->lastModified[i]) {
-                                script->isInitialized[i] = false;
-                                InitializeScript(registry, raw_id, script, *ctx.scriptPool, i);
-                                if (auto *logger = Logging::LoggerService::Get()) {
-                                    logger->log("ScriptSystem", "Hot-reloaded script: " + script->scriptPaths[i], Logging::LogSeverity::Info);
-                                }
+                            if (const auto current_time = std::filesystem::last_write_time(resolvedPath); current_time > script->lastModified[i] && script->isInitialized[i]) {
+                                // only treat as a hot reload for already-initialized scripts;
+                                // uninitialized scripts are freshly loaded below, so no reload needed
+                                pendingInits.push_back({raw_id, script, i, true});
                             }
                         }
                     }
@@ -218,8 +228,24 @@ namespace ECS::Systems::ScriptSystem {
             }
         });
 
-        for (size_t w = 0; w < num_workers; ++w)
-            ctx.scriptPool->get_worker(w)->set_frame_context(&cmd_buf);
+        for (const auto &entry : pendingInits) {
+            if (!registry.IsValid(entry.entityId))
+                continue;
+            auto *script = registry.GetComponent<Components::ScriptComponent>(entry.entityId);
+            if (!script)
+                continue;
+            if (entry.scriptIndex >= script->scriptPaths.size())
+                continue;
+            if (!script->isInitialized[entry.scriptIndex]) {
+                InitializeScript(registry, entry.entityId, script, *ctx.scriptPool, entry.scriptIndex);
+            } else if (entry.isReload) {
+                script->isInitialized[entry.scriptIndex] = false;
+                InitializeScript(registry, entry.entityId, script, *ctx.scriptPool, entry.scriptIndex);
+                if (auto *logger = Logging::LoggerService::Get()) {
+                    logger->log("ScriptSystem", "Hot-reloaded script: " + script->scriptPaths[entry.scriptIndex], Logging::LogSeverity::Info);
+                }
+            }
+        }
 
         struct UpdateWork {
             ObSL::ObSLCallable *func;
