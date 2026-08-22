@@ -14,6 +14,29 @@
 
 namespace Platform::Threading {
 
+    class TaskGroup {
+    public:
+        void Add() { m_Pending.fetch_add(1, std::memory_order_relaxed); }
+        void Done() {
+            if (m_Pending.fetch_sub(1, std::memory_order_acq_rel) == 1) {
+                std::unique_lock lock(m_Mutex);
+                m_CV.notify_all();
+            }
+        }
+        void Wait() {
+            std::unique_lock lock(m_Mutex);
+            m_CV.wait(lock, [this] { return m_Pending.load(std::memory_order_acquire) == 0; });
+        }
+
+    private:
+        std::atomic<int> m_Pending{0};
+        std::mutex m_Mutex;
+        std::condition_variable m_CV;
+    };
+
+    //
+    // - - -
+    //
 
     class ThreadPool {
     public:
