@@ -38,6 +38,8 @@ namespace ECS {
         std::vector<uint32_t> m_EntityVersions;
         // raw cache , mirrors m_ComponentPools but avoids unique_ptr dereferning
         std::array<IPool *, MAX_COMPONENT_TYPES> m_PoolCache{};
+        std::vector<uint32_t> m_LivingEntityIndices; // EntityIndex -> m_LivingEntities idx
+        std::vector<uint64_t> m_EntitySignatures;    // bitmask of owned components
 
     public:
         template <typename T> ComponentPool<T> *GetPool() {
@@ -54,6 +56,8 @@ namespace ECS {
             m_EntityStatus.resize(MAX_ENTITIES, false);
             m_EntityVersions.resize(MAX_ENTITIES, 0);
             m_EntityNames.resize(MAX_ENTITIES);
+            m_LivingEntityIndices.resize(MAX_ENTITIES, 0);
+            m_EntitySignatures.resize(MAX_ENTITIES, 0);
             // 0 is reserved as the invalid/null entity; real entities start at 1
             for (uint32_t i = 1; i < MAX_ENTITIES; ++i) {
                 m_AvailableEntities.push(i);
@@ -74,6 +78,7 @@ namespace ECS {
             const EntityID newId = index | version << ENTITY_VERSION_SHIFT;
 
             m_EntityStatus[index] = true;
+            m_LivingEntityIndices[index] = static_cast<uint32_t>(m_LivingEntities.size());
             m_LivingEntities.push_back(newId);
             return newId;
         }
@@ -100,21 +105,34 @@ namespace ECS {
 
             const uint32_t index = GetEntityIndex(id);
 
-            for (uint32_t i = 0; i < MAX_COMPONENT_TYPES; ++i) {
-                if (m_ComponentPools[i])
-                    m_ComponentPools[i]->EntityDestroyed(id);
+            // targeted pool destruction via bitmask
+            uint64_t signature = m_EntitySignatures[index];
+            uint32_t poolIndex = 0;
+            while (signature) {
+                if (signature & 1) {
+                    if (m_ComponentPools[poolIndex]) {
+                        m_ComponentPools[poolIndex]->EntityDestroyed(id);
+                    }
+                }
+                signature >>= 1;
+                poolIndex++;
             }
+            m_EntitySignatures[index] = 0;
 
-            // Increment generation to invalidate old handles
+            // increment gen & recycle
             m_EntityVersions[index] = (m_EntityVersions[index] + 1) & (ENTITY_VERSION_MASK >> ENTITY_VERSION_SHIFT);
             m_EntityStatus[index] = false;
             m_AvailableEntities.push(index);
 
-            if (const auto it = std::ranges::find(m_LivingEntities, id); it != m_LivingEntities.end()) {
-                *it = m_LivingEntities.back();
-                m_LivingEntities.pop_back();
-            }
+            // swap-and-pop
+            const uint32_t livingIdx = m_LivingEntityIndices[index];
+            const EntityID backId = m_LivingEntities.back();
+
+            m_LivingEntities[livingIdx] = backId;
+            m_LivingEntityIndices[GetEntityIndex(backId)] = livingIdx;
+            m_LivingEntities.pop_back();
         }
+
 
         [[nodiscard]] bool IsValid(const EntityID id) const {
             const uint32_t index = GetEntityIndex(id);
@@ -124,10 +142,14 @@ namespace ECS {
             return GetEntityVersion(id) == m_EntityVersions[index];
         }
 
-        template <typename T> void RemoveComponent(const EntityID entity) { GetPool<T>()->EntityDestroyed(entity); }
+        template <typename T> void RemoveComponent(const EntityID entity) {
+            GetPool<T>()->EntityDestroyed(entity);
+            m_EntitySignatures[GetEntityIndex(entity)] &= ~(1ULL << ComponentTypeID<T>::ID());
+        }
 
         template <typename T, typename... Args> T &AddComponent(EntityID entity, Args &&...args) {
             assert(IsValid(entity) && "Attempted to add component to an invalid entity");
+            m_EntitySignatures[GetEntityIndex(entity)] |= (1ULL << ComponentTypeID<T>::ID());
             return GetPool<T>()->Emplace(entity, std::forward<Args>(args)...);
         }
 
