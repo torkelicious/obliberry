@@ -133,6 +133,7 @@ void Scenes::Scene::OnExit() {
 
     ECS::Systems::ScriptSystem::OnSceneExit(m_Registry, *m_Context);
     IO::PrefabManager::ClearCache();
+    ECS::Systems::ParticleSystem::OnSceneExit(m_Registry);
     m_UISystem.Clear();
     m_Context->uiSystem = nullptr;
     m_Context->uiCmdBuf = nullptr;
