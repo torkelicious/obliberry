@@ -20,6 +20,11 @@ namespace ECS {
         T &Insert(const EntityID entity, T component) {
             const uint32_t index = GetEntityIndex(entity);
             assert(index < MAX_ENTITIES && "Entity ID exceeds maximum limit!");
+            if (Has(entity)) {
+                T &existing = m_Data[m_EntityToIndex[index]];
+                existing = std::move(component);
+                return existing;
+            }
 
             const auto newIndex = static_cast<uint32_t>(m_Data.size());
             m_EntityToIndex[index] = newIndex;
