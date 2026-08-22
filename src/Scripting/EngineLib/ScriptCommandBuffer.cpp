@@ -8,7 +8,6 @@ namespace Scripting {
     }
 
     void ScriptCommandBuffer::flush(ECS::Registry &registry) {
-        // Swap
         std::vector<std::function<void(ECS::Registry &)>> commands;
         {
             std::lock_guard lock(m_Mutex);
@@ -16,6 +15,13 @@ namespace Scripting {
         }
         for (auto &cmd : commands) {
             cmd(registry);
+        }
+        commands.clear();
+        {
+            std::lock_guard lock(m_Mutex);
+            if (m_Commands.capacity() < commands.capacity()) {
+                m_Commands.swap(commands);
+            }
         }
     }
 } // namespace Scripting

@@ -23,6 +23,34 @@ namespace ECS::Systems::ScriptSystem {
     // map tied to the AST instance :  ( EntityID , script slot index )
     inline std::map<std::pair<EntityID, size_t>, decltype(ObSL::ASTDeserializer::deserialize(std::vector<uint8_t>()))> s_PackagedStringPools;
 
+    inline void SetupScriptRuntime(ObSL::ScriptRuntime &runtime) {
+        for (size_t w = 0; w < runtime.worker_count(); ++w) {
+            runtime.get_worker(w)->GetInterpreter().set_module_loader([](const std::string &path) -> std::optional<ObSL::ModuleResult> {
+                std::string_view dataView;
+                std::string ownedData;
+                if (const auto view = IO::VFS::ReadVirtualView(path)) {
+                    dataView = *view;
+                } else if (auto owned = IO::VFS::ReadVirtual(path)) {
+                    ownedData = std::move(*owned);
+                    dataView = ownedData;
+                } else {
+                    return std::nullopt;
+                }
+
+                ObSL::ModuleResult result;
+                if (IO::VFS::IsPackaged()) {
+                    const std::vector<uint8_t> blob(dataView.begin(), dataView.end());
+                    result.kind = ObSL::ModuleResult::Kind::PrecompiledAst;
+                    result.ast_module = ObSL::ASTDeserializer::deserialize(blob);
+                } else {
+                    result.kind = ObSL::ModuleResult::Kind::Source;
+                    result.source = std::string(dataView);
+                }
+                return result;
+            });
+        }
+    }
+
     inline void InitializeScript(Registry &registry, const EntityID entityId, Components::ScriptComponent *script, ObSL::ScriptRuntime &runtime, const size_t scriptIndex = 0) {
         if (scriptIndex >= script->slots.size() || script->slots[scriptIndex].isInitialized)
             return;
@@ -38,33 +66,6 @@ namespace ECS::Systems::ScriptSystem {
         }
 
         try {
-            // configure module loader
-            for (size_t w = 0; w < runtime.worker_count(); ++w) {
-                runtime.get_worker(w)->GetInterpreter().set_module_loader([](const std::string &path) -> std::optional<ObSL::ModuleResult> {
-                    std::string_view dataView;
-                    std::string ownedData;
-                    if (const auto view = IO::VFS::ReadVirtualView(path)) {
-                        dataView = *view;
-                    } else if (auto owned = IO::VFS::ReadVirtual(path)) {
-                        ownedData = std::move(*owned);
-                        dataView = ownedData;
-                    } else {
-                        return std::nullopt;
-                    }
-
-                    ObSL::ModuleResult result;
-                    if (IO::VFS::IsPackaged()) {
-                        const std::vector<uint8_t> blob(dataView.begin(), dataView.end());
-                        result.kind = ObSL::ModuleResult::Kind::PrecompiledAst;
-                        result.ast_module = ObSL::ASTDeserializer::deserialize(blob);
-                    } else {
-                        result.kind = ObSL::ModuleResult::Kind::Source;
-                        result.source = std::string(dataView);
-                    }
-                    return result;
-                });
-            }
-
             const size_t num_workers = runtime.worker_count();
 
             // Packaged AST
@@ -183,7 +184,7 @@ namespace ECS::Systems::ScriptSystem {
         constexpr uint64_t kReloadPollIntervalFrames = 300;
         const bool shouldPollReload = !IO::VFS::IsPackaged() && ctx.frameCount % kReloadPollIntervalFrames == 0;
 
-        Scripting::ScriptCommandBuffer cmd_buf;
+        static Scripting::ScriptCommandBuffer cmd_buf;
         const size_t num_workers = ctx.scriptPool->worker_count();
 
         // make sure command buffer / frame context before code runs
@@ -258,7 +259,7 @@ namespace ECS::Systems::ScriptSystem {
             b.clear();
         size_t totalWork = 0;
 
-        registry.ForEach<Components::ScriptComponent>([&](const Entity entity, Components::ScriptComponent *script) {
+        registry.ForEach<Components::ScriptComponent>([&](const Entity entity, const Components::ScriptComponent *script) {
             const auto entity_id = static_cast<EntityID>(entity);
             for (size_t i = 0; i < script->slots.size(); i++) {
                 auto &slot = script->slots[i];
@@ -285,11 +286,14 @@ namespace ECS::Systems::ScriptSystem {
             }
         });
 
-        const std::vector<ObSL::Value> args = {static_cast<double>(ctx.deltaTime)};
+        // Static reuse of arguments
+        static std::vector<ObSL::Value> args(1);
+        args[0] = static_cast<double>(ctx.deltaTime);
+
         for (size_t w = 0; w < num_workers; ++w) {
             if (s_Buckets[w].empty())
                 continue;
-            ctx.threadPool->enqueue(static_cast<Platform::Threading::Task>([&ctx, w, &args, &call_token] {
+            ctx.threadPool->enqueue(static_cast<Platform::Threading::Task>([&ctx, w, &call_token] {
                 auto *worker = ctx.scriptPool->get_worker(w);
                 auto &interp = worker->GetInterpreter();
                 for (auto &[func, env, scriptPath, hookName] : s_Buckets[w]) {
@@ -326,7 +330,8 @@ namespace ECS::Systems::ScriptSystem {
             return;
         constexpr ObSL::Token call_token{ObSL::TokenType::LEFT_PAREN, "(", 0, 0, 0, 0};
 
-        Scripting::ScriptCommandBuffer cmd_buf;
+        // Static reuse
+        static Scripting::ScriptCommandBuffer cmd_buf;
         const size_t num_workers = ctx.scriptPool->worker_count();
 
         for (size_t w = 0; w < num_workers; ++w)
@@ -361,15 +366,18 @@ namespace ECS::Systems::ScriptSystem {
         });
 
         const double dt = ctx.deltaTime;
+
+        static std::vector<ObSL::Value> args(1);
+        args[0] = static_cast<double>(dt);
+
         for (size_t w = 0; w < exit_workers; ++w) {
-            ctx.threadPool->enqueue(static_cast<Platform::Threading::Task>([&buckets, &ctx, w, dt, &call_token] {
+            ctx.threadPool->enqueue(static_cast<Platform::Threading::Task>([&buckets, &ctx, w, &call_token] {
                 auto *worker = ctx.scriptPool->get_worker(w);
                 auto &interp = worker->GetInterpreter();
                 for (auto &[func, env, scriptPath] : buckets[w]) {
                     try {
                         if (func && env) {
                             interp.set_current_environment(env);
-                            const std::vector<ObSL::Value> args = {static_cast<double>(dt)};
                             func->call(&interp, args, call_token);
                         }
                     } catch (const std::exception &e) {
