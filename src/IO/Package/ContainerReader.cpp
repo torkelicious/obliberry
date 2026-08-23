@@ -121,6 +121,9 @@ namespace IO {
         f.close();
 
         for (size_t i = 0; i < m_toc.size(); ++i) {
+            if (m_toc[i].name_offset >= m_string_table.size() || m_toc[i].name_length > m_string_table.size() - m_toc[i].name_offset) {
+                return false; // out of bounds
+            }
             std::string_view name(m_string_table.data() + m_toc[i].name_offset, m_toc[i].name_length);
             m_path_to_index[name] = i;
         }
