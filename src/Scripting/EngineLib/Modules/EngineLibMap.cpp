@@ -9,6 +9,11 @@
 #include <ObSL/ScriptRuntime.h>
 #include "Scripting/EngineLib/ScriptCommandBuffer.h"
 
+
+//
+// note: mapcomponent is treated as a singleton
+//
+
 void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) {
     // HEX MATH
     interpreter.get_global_environment()->define("Math_WorldToHex", interpreter.gc.allocate<ObSL::NativeFunction>(
@@ -41,13 +46,13 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
                                                                                obj->fields["hasSelection"] = false;
                                                                                obj->fields["q"] = 0.0;
                                                                                obj->fields["r"] = 0.0;
-                                                                               reg->ForEach<ECS::Components::MapStateComponent>([&](ECS::Entity, const ECS::Components::MapStateComponent *state) {
+                                                                               if (const auto *state = reg->GetFirst<ECS::Components::MapStateComponent>()) {
                                                                                    if (state->hasSelection) {
                                                                                        obj->fields["hasSelection"] = true;
                                                                                        obj->fields["q"] = static_cast<double>(state->selectedHex.q);
                                                                                        obj->fields["r"] = static_cast<double>(state->selectedHex.r);
                                                                                    }
-                                                                               });
+                                                                               }
                                                                                return obj;
                                                                            },
                                                                            "GetSelectedHex"));
@@ -66,39 +71,34 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
                                                                                if (cmd_buf) {
                                                                                    cmd_buf->push([q, r](ECS::Registry &reg) {
                                                                                        const Map::HexCoords targetHex{q, r};
-                                                                                       bool isValid = false;
-                                                                                       reg.ForEach<ECS::Components::MapComponent>([&](ECS::Entity, ECS::Components::MapComponent *map) {
-                                                                                           if (const auto *tile = map->grid.Get(targetHex); tile && tile->walkable) {
-                                                                                               isValid = true;
-                                                                                           }
-                                                                                       });
-
-                                                                                       reg.ForEach<ECS::Components::MapStateComponent>([&](ECS::Entity, ECS::Components::MapStateComponent *stateComp) {
+                                                                                       const auto *map = reg.GetFirst<ECS::Components::MapComponent>();
+                                                                                       auto *state = reg.GetFirst<ECS::Components::MapStateComponent>();
+                                                                                       const Map::Tile *tile = map ? map->grid.Get(targetHex) : nullptr;
+                                                                                       const bool isValid = tile && tile->walkable;
+                                                                                       if (state) {
                                                                                            if (isValid) {
-                                                                                               stateComp->selectedHex = targetHex;
-                                                                                               stateComp->hasSelection = true;
+                                                                                               state->selectedHex = targetHex;
+                                                                                               state->hasSelection = true;
                                                                                            } else {
-                                                                                               stateComp->hasSelection = false;
+                                                                                               state->hasSelection = false;
                                                                                            }
-                                                                                       });
+                                                                                       }
                                                                                    });
                                                                                } else if (reg) {
                                                                                    std::unique_lock lock(g_RegistryMutex);
                                                                                    const Map::HexCoords targetHex{q, r};
-                                                                                   bool isValid = false;
-                                                                                   reg->ForEach<ECS::Components::MapComponent>([&](ECS::Entity, ECS::Components::MapComponent *map) {
-                                                                                       if (const auto *tile = map->grid.Get(targetHex); tile && tile->walkable) {
-                                                                                           isValid = true;
-                                                                                       }
-                                                                                   });
-                                                                                   reg->ForEach<ECS::Components::MapStateComponent>([&](ECS::Entity, ECS::Components::MapStateComponent *stateComp) {
+                                                                                   const auto *map = reg->GetFirst<ECS::Components::MapComponent>();
+                                                                                   auto *state = reg->GetFirst<ECS::Components::MapStateComponent>();
+                                                                                   const Map::Tile *tile = map ? map->grid.Get(targetHex) : nullptr;
+                                                                                   const bool isValid = tile && tile->walkable;
+                                                                                   if (state) {
                                                                                        if (isValid) {
-                                                                                           stateComp->selectedHex = targetHex;
-                                                                                           stateComp->hasSelection = true;
+                                                                                           state->selectedHex = targetHex;
+                                                                                           state->hasSelection = true;
                                                                                        } else {
-                                                                                           stateComp->hasSelection = false;
+                                                                                           state->hasSelection = false;
                                                                                        }
-                                                                                   });
+                                                                                   }
                                                                                }
                                                                                return std::monostate{};
                                                                            },
@@ -129,9 +129,7 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
                                                                      if (!move || !trans)
                                                                          return;
 
-                                                                     const ECS::Components::MapComponent *mapComp = nullptr;
-                                                                     reg.ForEach<ECS::Components::MapComponent>([&](ECS::Entity, const ECS::Components::MapComponent *map) { mapComp = map; });
-
+                                                                     const auto *mapComp = reg.GetFirst<ECS::Components::MapComponent>();
                                                                      if (!mapComp)
                                                                          return;
 
@@ -142,10 +140,10 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
                                                                      move->currentPathIndex = 0;
 
                                                                      if (!move->currentPath.empty()) {
-                                                                         reg.ForEach<ECS::Components::MapStateComponent>([&](ECS::Entity, ECS::Components::MapStateComponent *state) {
+                                                                         if (auto *state = reg.GetFirst<ECS::Components::MapStateComponent>()) {
                                                                              state->pathTo = targetHex;
                                                                              state->hasPathTo = true;
-                                                                         });
+                                                                         }
                                                                          const ECS::Entity entity(id, &reg);
                                                                          ECS::Systems::MovementSystem::StartPath(entity);
                                                                      }
@@ -159,9 +157,7 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
                                                                  if (!move || !trans)
                                                                      return true;
 
-                                                                 const ECS::Components::MapComponent *mapComp = nullptr;
-                                                                 reg->ForEach<ECS::Components::MapComponent>([&](ECS::Entity, const ECS::Components::MapComponent *map) { mapComp = map; });
-
+                                                                 const auto *mapComp = reg->GetFirst<ECS::Components::MapComponent>();
                                                                  if (!mapComp)
                                                                      return true;
 
@@ -172,10 +168,10 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
                                                                  move->currentPathIndex = 0;
 
                                                                  if (!move->currentPath.empty()) {
-                                                                     reg->ForEach<ECS::Components::MapStateComponent>([&](ECS::Entity, ECS::Components::MapStateComponent *state) {
+                                                                     if (auto *state = reg->GetFirst<ECS::Components::MapStateComponent>()) {
                                                                          state->pathTo = targetHex;
                                                                          state->hasPathTo = true;
-                                                                     });
+                                                                     }
                                                                      const ECS::Entity entity(id, reg);
                                                                      ECS::Systems::MovementSystem::StartPath(entity);
                                                                  }
@@ -184,40 +180,43 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
                                                          },
                                                          "SetPathToHex"));
 
-    interpreter.get_global_environment()->define("ClearSelectionOverlay",
-                                                 interpreter.gc.allocate<ObSL::NativeFunction>(
-                                                         0,
-                                                         [reg = m_registry](const ObSL::Interpreter *interpreter, const std::vector<ObSL::Value> &) -> ObSL::Value {
-                                                             auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
-                                                             auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
-                                                             if (cmd_buf) {
-                                                                 cmd_buf->push([](ECS::Registry &reg) {
-                                                                     reg.ForEach<ECS::Components::MapStateComponent>([&](ECS::Entity, ECS::Components::MapStateComponent *stateComp) { stateComp->hasSelection = false; });
-                                                                 });
-                                                             } else if (reg) {
-                                                                 std::unique_lock lock(g_RegistryMutex);
-                                                                 reg->ForEach<ECS::Components::MapStateComponent>([&](ECS::Entity, ECS::Components::MapStateComponent *stateComp) { stateComp->hasSelection = false; });
-                                                             }
-                                                             return std::monostate{};
-                                                         },
-                                                         "ClearSelectionOverlay"));
+    interpreter.get_global_environment()->define("ClearSelectionOverlay", interpreter.gc.allocate<ObSL::NativeFunction>(
+                                                                                  0,
+                                                                                  [reg = m_registry](const ObSL::Interpreter *interpreter, const std::vector<ObSL::Value> &) -> ObSL::Value {
+                                                                                      auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
+                                                                                      auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
+                                                                                      if (cmd_buf) {
+                                                                                          cmd_buf->push([](ECS::Registry &reg) {
+                                                                                              if (auto *stateComp = reg.GetFirst<ECS::Components::MapStateComponent>())
+                                                                                                  stateComp->hasSelection = false;
+                                                                                          });
+                                                                                      } else if (reg) {
+                                                                                          std::unique_lock lock(g_RegistryMutex);
+                                                                                          if (auto *stateComp = reg->GetFirst<ECS::Components::MapStateComponent>())
+                                                                                              stateComp->hasSelection = false;
+                                                                                      }
+                                                                                      return std::monostate{};
+                                                                                  },
+                                                                                  "ClearSelectionOverlay"));
 
-    interpreter.get_global_environment()->define(
-            "ClearPathTarget",
-            interpreter.gc.allocate<ObSL::NativeFunction>(
-                    0,
-                    [reg = m_registry](const ObSL::Interpreter *interpreter, const std::vector<ObSL::Value> &) -> ObSL::Value {
-                        auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
-                        auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
-                        if (cmd_buf) {
-                            cmd_buf->push([](ECS::Registry &reg) { reg.ForEach<ECS::Components::MapStateComponent>([&](ECS::Entity, ECS::Components::MapStateComponent *stateComp) { stateComp->hasPathTo = false; }); });
-                        } else if (reg) {
-                            std::unique_lock lock(g_RegistryMutex);
-                            reg->ForEach<ECS::Components::MapStateComponent>([&](ECS::Entity, ECS::Components::MapStateComponent *stateComp) { stateComp->hasPathTo = false; });
-                        }
-                        return std::monostate{};
-                    },
-                    "ClearPathTarget"));
+    interpreter.get_global_environment()->define("ClearPathTarget", interpreter.gc.allocate<ObSL::NativeFunction>(
+                                                                            0,
+                                                                            [reg = m_registry](const ObSL::Interpreter *interpreter, const std::vector<ObSL::Value> &) -> ObSL::Value {
+                                                                                auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
+                                                                                auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
+                                                                                if (cmd_buf) {
+                                                                                    cmd_buf->push([](ECS::Registry &reg) {
+                                                                                        if (auto *stateComp = reg.GetFirst<ECS::Components::MapStateComponent>())
+                                                                                            stateComp->hasPathTo = false;
+                                                                                    });
+                                                                                } else if (reg) {
+                                                                                    std::unique_lock lock(g_RegistryMutex);
+                                                                                    if (auto *stateComp = reg->GetFirst<ECS::Components::MapStateComponent>())
+                                                                                        stateComp->hasPathTo = false;
+                                                                                }
+                                                                                return std::monostate{};
+                                                                            },
+                                                                            "ClearPathTarget"));
 
     interpreter.get_global_environment()->define("Map_IsHexWalkable", interpreter.gc.allocate<ObSL::NativeFunction>(
                                                                               2,
@@ -227,34 +226,25 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
                                                                                   }
                                                                                   std::shared_lock lock(g_RegistryMutex);
                                                                                   const Map::HexCoords pos(static_cast<int32_t>(std::get<double>(args[0])), static_cast<int32_t>(std::get<double>(args[1])));
-                                                                                  bool isWalkable = false;
-                                                                                  reg->ForEach<ECS::Components::MapComponent>([&](ECS::Entity, ECS::Components::MapComponent *mapComp) {
-                                                                                      if (mapComp) {
-                                                                                          if (const Map::Tile *tile = mapComp->grid.Get(pos)) {
-                                                                                              isWalkable = tile->walkable;
-                                                                                          }
-                                                                                      }
-                                                                                  });
-
-                                                                                  return isWalkable;
+                                                                                  const auto *mapComp = reg->GetFirst<ECS::Components::MapComponent>();
+                                                                                  if (mapComp)
+                                                                                      if (const Map::Tile *tile = mapComp->grid.Get(pos))
+                                                                                          return tile->walkable;
+                                                                                  return false;
                                                                               },
                                                                               "Map_IsHexWalkable"));
 
-    interpreter.get_global_environment()->define("Map_GetMapEntity",
-                                                 interpreter.gc.allocate<ObSL::NativeFunction>(
-                                                         0,
-                                                         [reg = m_registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
-                                                             std::shared_lock lock(g_RegistryMutex);
-                                                             ECS::EntityID mapId = 0;
-
-                                                             reg->ForEach<ECS::Components::MapComponent>([&](const ECS::Entity entity, ECS::Components::MapComponent *) { mapId = static_cast<ECS::EntityID>(entity); });
-
-                                                             if (mapId != 0) {
-                                                                 return CreateEntityObject(interp, *reg, mapId);
-                                                             }
-                                                             return std::monostate{};
-                                                         },
-                                                         "Map_GetMapEntity"));
+    interpreter.get_global_environment()->define("Map_GetMapEntity", interpreter.gc.allocate<ObSL::NativeFunction>(
+                                                                             0,
+                                                                             [reg = m_registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
+                                                                                 std::shared_lock lock(g_RegistryMutex);
+                                                                                 const ECS::EntityID mapId = reg->FindFirstEntity<ECS::Components::MapComponent>();
+                                                                                 if (mapId != ECS::INVALID_ENTITY_ID) {
+                                                                                     return CreateEntityObject(interp, *reg, mapId);
+                                                                                 }
+                                                                                 return std::monostate{};
+                                                                             },
+                                                                             "Map_GetMapEntity"));
 
     // Hex helpers
     interpreter.get_global_environment()->define("Hex_Distance", interpreter.gc.allocate<ObSL::NativeFunction>(
@@ -334,21 +324,21 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
                                                                                    auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
                                                                                    if (cmd_buf) {
                                                                                        cmd_buf->push([coords, walkable](ECS::Registry &reg) {
-                                                                                           reg.ForEach<ECS::Components::MapComponent>([&](ECS::Entity, ECS::Components::MapComponent *mapComp) {
+                                                                                           if (auto *mapComp = reg.GetFirst<ECS::Components::MapComponent>()) {
                                                                                                if (auto *tile = mapComp->grid.Get(coords)) {
                                                                                                    tile->walkable = walkable;
                                                                                                    mapComp->grid.SyncTileWalkableCache(coords);
                                                                                                }
-                                                                                           });
+                                                                                           }
                                                                                        });
                                                                                    } else if (reg) {
                                                                                        std::unique_lock lock(g_RegistryMutex);
-                                                                                       reg->ForEach<ECS::Components::MapComponent>([&](ECS::Entity, ECS::Components::MapComponent *mapComp) {
+                                                                                       if (auto *mapComp = reg->GetFirst<ECS::Components::MapComponent>()) {
                                                                                            if (auto *tile = mapComp->grid.Get(coords)) {
                                                                                                tile->walkable = walkable;
                                                                                                mapComp->grid.SyncTileWalkableCache(coords);
                                                                                            }
-                                                                                       });
+                                                                                       }
                                                                                    }
 
                                                                                    return std::monostate{};
@@ -385,19 +375,19 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
                                                                                 auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
                                                                                 if (cmd_buf) {
                                                                                     cmd_buf->push([coords, type](ECS::Registry &reg) {
-                                                                                        reg.ForEach<ECS::Components::MapComponent>([&](ECS::Entity, ECS::Components::MapComponent *mapComp) {
+                                                                                        if (auto *mapComp = reg.GetFirst<ECS::Components::MapComponent>()) {
                                                                                             if (auto *tile = mapComp->grid.Get(coords)) {
                                                                                                 tile->type = static_cast<uint8_t>(type);
                                                                                             }
-                                                                                        });
+                                                                                        }
                                                                                     });
                                                                                 } else if (reg) {
                                                                                     std::unique_lock lock(g_RegistryMutex);
-                                                                                    reg->ForEach<ECS::Components::MapComponent>([&](ECS::Entity, ECS::Components::MapComponent *mapComp) {
+                                                                                    if (auto *mapComp = reg->GetFirst<ECS::Components::MapComponent>()) {
                                                                                         if (auto *tile = mapComp->grid.Get(coords)) {
                                                                                             tile->type = static_cast<uint8_t>(type);
                                                                                         }
-                                                                                    });
+                                                                                    }
                                                                                 }
 
                                                                                 return std::monostate{};
