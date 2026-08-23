@@ -1,5 +1,6 @@
 #include "Scripting/EngineLib/EngineLib.h"
 #include "Scripting/EngineLib/ScriptCommandBuffer.h"
+#include "Scripting/EngineLib/EntityWrapperCache.h"
 #include <ObSL/ScriptWorker.h>
 #include <string>
 #include "ECS/Components/BillboardTagComponent.h"
@@ -32,6 +33,18 @@ namespace Scripting {
     }
 
     ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, ECS::Registry &registry, ECS::EntityID id) {
+        // cache hit reuses a previously built wrapper
+        // when the entity is still live and belongs to the same registry.
+        // names will be updated if such functions are called
+        if (auto *cache = EntityWrapperCache::Get(interpreter)) {
+            std::shared_lock lk(g_RegistryMutex);
+            if (auto *hit = cache->Find(registry, id, EntityWrapperCache::Kind::Entity, [&] { return registry.IsValid(id); })) {
+                hit->fields["id"] = static_cast<double>(id);
+                hit->fields["name"] = registry.GetEntityName(id);
+                return hit;
+            }
+        }
+
         auto *obj = interpreter->gc.allocate<ObSL::ObSLObject>();
         EngineLibFactories::GCProtectGuard guard(interpreter, obj);
 
@@ -423,6 +436,9 @@ namespace Scripting {
         obj->fields["SetParent"] = interpreter->gc.allocate<ObSL::NativeFunction>(1, std::move(set_parent_body), "SetParent");
         obj->fields["GetChildCount"] = interpreter->gc.allocate<ObSL::NativeFunction>(0, std::move(get_child_count_body), "GetChildCount");
         obj->fields["Find"] = interpreter->gc.allocate<ObSL::NativeFunction>(1, std::move(find_child_body), "Find");
+
+        if (auto *cache = EntityWrapperCache::Get(interpreter))
+            cache->Store(registry, id, EntityWrapperCache::Kind::Entity, obj);
 
         return obj;
     }

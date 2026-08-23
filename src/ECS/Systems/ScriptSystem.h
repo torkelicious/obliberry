@@ -15,6 +15,7 @@
 #include <ObSL/Parser.h>
 #include <ObSL/ASTDeserializer.h>
 #include "Scripting/EngineLib/ScriptCommandBuffer.h"
+#include "Scripting/EngineLib/EntityWrapperCache.h"
 #include "Scripting/EngineLib/EngineLibFactories.h"
 #include "Platform/Threading/ThreadPool.h"
 
@@ -420,6 +421,7 @@ namespace ECS::Systems::ScriptSystem {
 
         cmd_buf.flush(registry);
         s_PackagedStringPools.clear();
+        Scripting::EntityWrapperCache::ClearAll();
         for (size_t w = 0; w < num_workers; ++w)
             ctx.scriptPool->get_worker(w)->clear_frame_context();
     }

@@ -7,6 +7,7 @@
 #include <ObSL/Interpreter.h>
 #include <ObSL/ScriptWorker.h>
 #include "Scripting/EngineLib/ScriptCommandBuffer.h"
+#include "Scripting/EngineLib/EntityWrapperCache.h"
 
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Components/PointLightComponent.h"
@@ -14,6 +15,8 @@
 #include "ECS/Components/MapStateComponent.h"
 #include "ECS/Components/DirectionalTextureComponent.h"
 #include "ECS/Components/ParticleEmitterComponent.h"
+#include "ECS/Components/BillboardTagComponent.h"
+#include "ECS/Components/DestroyTagComponent.h"
 
 
 namespace Scripting {
@@ -37,8 +40,23 @@ namespace Scripting {
             GCProtectGuard &operator=(const GCProtectGuard &) = delete;
         };
 
+        // returns cached component wrapper if the entity still has the component
+        template <typename Component> ObSL::ObSLObject *LookupCachedComponent(ObSL::Interpreter *interpreter, ECS::Registry &registry, ECS::EntityID id, EntityWrapperCache::Kind kind) {
+            if (auto *cache = EntityWrapperCache::Get(interpreter))
+                return cache->Find(registry, id, kind, [&] { return registry.IsValid(id) && registry.HasComponent<Component>(id); });
+            return nullptr;
+        }
+
+        inline void StoreCachedComponent(ObSL::Interpreter *interpreter, const ECS::Registry &registry, const ECS::EntityID id, const EntityWrapperCache::Kind kind, ObSL::ObSLObject *wrapper) {
+            if (auto *cache = EntityWrapperCache::Get(interpreter))
+                cache->Store(registry, id, kind, wrapper);
+        }
+
         // TRANSFORM COMPONENT
         inline ObSL::ObSLObject *CreateTransformObject(ObSL::Interpreter *interpreter, ECS::Registry &registry, ECS::EntityID id) {
+            if (auto *hit = LookupCachedComponent<ECS::Components::TransformComponent>(interpreter, registry, id, EntityWrapperCache::Kind::Transform))
+                return hit;
+
             auto *obj = interpreter->gc.allocate<ObSL::ObSLObject>();
             GCProtectGuard guard(interpreter, obj);
 
@@ -166,11 +184,16 @@ namespace Scripting {
             obj->fields["GetScale"] = interpreter->gc.allocate<ObSL::NativeFunction>(0, std::move(get_scale), "GetScale");
             obj->fields["IsMoving"] = interpreter->gc.allocate<ObSL::NativeFunction>(0, std::move(is_moving_body), "IsMoving");
 
+            StoreCachedComponent(interpreter, registry, id, EntityWrapperCache::Kind::Transform, obj);
+
             return obj;
         }
 
         // POINT LIGHT COMPONENT
         inline ObSL::ObSLObject *CreatePointLightObject(ObSL::Interpreter *interpreter, ECS::Registry &registry, ECS::EntityID id) {
+            if (auto *hit = LookupCachedComponent<ECS::Components::PointLightComponent>(interpreter, registry, id, EntityWrapperCache::Kind::PointLight))
+                return hit;
+
             auto *obj = interpreter->gc.allocate<ObSL::ObSLObject>();
             GCProtectGuard guard(interpreter, obj);
 
@@ -237,11 +260,16 @@ namespace Scripting {
             obj->fields["SetIntensity"] = interpreter->gc.allocate<ObSL::NativeFunction>(1, std::move(set_intensity), "SetIntensity");
             obj->fields["SetRadius"] = interpreter->gc.allocate<ObSL::NativeFunction>(1, std::move(set_radius), "SetRadius");
 
+            StoreCachedComponent(interpreter, registry, id, EntityWrapperCache::Kind::PointLight, obj);
+
             return obj;
         }
 
         // MOVEMENT COMPONENT
         inline ObSL::ObSLObject *CreateMovementObject(ObSL::Interpreter *interpreter, ECS::Registry &registry, ECS::EntityID id) {
+            if (auto *hit = LookupCachedComponent<ECS::Components::MovementComponent>(interpreter, registry, id, EntityWrapperCache::Kind::Movement))
+                return hit;
+
             auto *obj = interpreter->gc.allocate<ObSL::ObSLObject>();
             GCProtectGuard guard(interpreter, obj);
 
@@ -294,11 +322,16 @@ namespace Scripting {
             obj->fields["SetIsMoving"] = interpreter->gc.allocate<ObSL::NativeFunction>(1, std::move(set_is_moving), "SetIsMoving");
             obj->fields["SetTimePerStep"] = interpreter->gc.allocate<ObSL::NativeFunction>(1, std::move(set_time_per_step), "SetTimePerStep");
 
+            StoreCachedComponent(interpreter, registry, id, EntityWrapperCache::Kind::Movement, obj);
+
             return obj;
         }
 
         // MAP STATE COMPONENT
         inline ObSL::ObSLObject *CreateMapStateObject(ObSL::Interpreter *interpreter, ECS::Registry &registry, ECS::EntityID id) {
+            if (auto *hit = LookupCachedComponent<ECS::Components::MapStateComponent>(interpreter, registry, id, EntityWrapperCache::Kind::MapState))
+                return hit;
+
             auto *obj = interpreter->gc.allocate<ObSL::ObSLObject>();
             GCProtectGuard guard(interpreter, obj);
 
@@ -332,11 +365,16 @@ namespace Scripting {
             obj->fields["GetSelectedHex"] = interpreter->gc.allocate<ObSL::NativeFunction>(0, std::move(get_selected_hex), "GetSelectedHex");
             obj->fields["GetPathToHex"] = interpreter->gc.allocate<ObSL::NativeFunction>(0, std::move(get_path_to_hex), "GetPathToHex");
 
+            StoreCachedComponent(interpreter, registry, id, EntityWrapperCache::Kind::MapState, obj);
+
             return obj;
         }
 
         // DIRECTIONAL TEXTURE COMPONENT
         inline ObSL::ObSLObject *CreateDirectionalTextureObject(ObSL::Interpreter *interpreter, ECS::Registry &registry, ECS::EntityID id) {
+            if (auto *hit = LookupCachedComponent<ECS::Components::DirectionalTextureComponent>(interpreter, registry, id, EntityWrapperCache::Kind::DirectionalTexture))
+                return hit;
+
             auto *obj = interpreter->gc.allocate<ObSL::ObSLObject>();
             GCProtectGuard guard(interpreter, obj);
 
@@ -360,16 +398,34 @@ namespace Scripting {
             };
 
             obj->fields["SetIndex"] = interpreter->gc.allocate<ObSL::NativeFunction>(1, std::move(set_index), "SetIndex");
+
+            StoreCachedComponent(interpreter, registry, id, EntityWrapperCache::Kind::DirectionalTexture, obj);
+
             return obj;
         }
 
         // TAG COMPONENTS
-        inline ObSL::ObSLObject *CreateBillboardTagObject(ObSL::Interpreter *interpreter, ECS::Registry &, ECS::EntityID) { return interpreter->gc.allocate<ObSL::ObSLObject>(); }
+        inline ObSL::ObSLObject *CreateBillboardTagObject(ObSL::Interpreter *interpreter, ECS::Registry &registry, const ECS::EntityID id) {
+            if (auto *hit = LookupCachedComponent<ECS::Components::BillboardTagComponent>(interpreter, registry, id, EntityWrapperCache::Kind::BillboardTag))
+                return hit;
+            auto *obj = interpreter->gc.allocate<ObSL::ObSLObject>();
+            StoreCachedComponent(interpreter, registry, id, EntityWrapperCache::Kind::BillboardTag, obj);
+            return obj;
+        }
 
-        inline ObSL::ObSLObject *CreateDestroyTagObject(ObSL::Interpreter *interpreter, ECS::Registry &, ECS::EntityID) { return interpreter->gc.allocate<ObSL::ObSLObject>(); }
+        inline ObSL::ObSLObject *CreateDestroyTagObject(ObSL::Interpreter *interpreter, ECS::Registry &registry, const ECS::EntityID id) {
+            if (auto *hit = LookupCachedComponent<ECS::Components::DestroyTagComponent>(interpreter, registry, id, EntityWrapperCache::Kind::DestroyTag))
+                return hit;
+            auto *obj = interpreter->gc.allocate<ObSL::ObSLObject>();
+            StoreCachedComponent(interpreter, registry, id, EntityWrapperCache::Kind::DestroyTag, obj);
+            return obj;
+        }
 
         // PARTICLE EMITTER COMPONENT
         inline ObSL::ObSLObject *CreateParticleEmitterObject(ObSL::Interpreter *interpreter, ECS::Registry &registry, ECS::EntityID id) {
+            if (auto *hit = LookupCachedComponent<ECS::Components::ParticleEmitterComponent>(interpreter, registry, id, EntityWrapperCache::Kind::ParticleEmitter))
+                return hit;
+
             auto *obj = interpreter->gc.allocate<ObSL::ObSLObject>();
             GCProtectGuard guard(interpreter, obj);
 
@@ -442,6 +498,8 @@ namespace Scripting {
             obj->fields["SetActive"] = interpreter->gc.allocate<ObSL::NativeFunction>(1, std::move(set_active), "SetActive");
             obj->fields["GetActive"] = interpreter->gc.allocate<ObSL::NativeFunction>(0, std::move(get_active), "GetActive");
             obj->fields["GetAliveCount"] = interpreter->gc.allocate<ObSL::NativeFunction>(0, std::move(get_alive_count), "GetAliveCount");
+
+            StoreCachedComponent(interpreter, registry, id, EntityWrapperCache::Kind::ParticleEmitter, obj);
 
             return obj;
         }
