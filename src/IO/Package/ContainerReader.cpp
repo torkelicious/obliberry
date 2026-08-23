@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include "Container.h"
+#include "Core/Utils/BitUtils.h"
 #include <lz4.h>
 #include <ranges>
 #ifdef _WIN32
@@ -18,6 +19,7 @@
 #endif
 
 namespace IO {
+    using namespace Core::Utils::Bits;
     ContainerReader::~ContainerReader() {
         if (m_mapped_region && m_mapped_region != MAP_FAILED) {
 #ifdef _WIN32
@@ -107,12 +109,29 @@ namespace IO {
         f.read(reinterpret_cast<char *>(&header), sizeof(header));
         if (!f || std::string_view(header.magic, 4) != "OBPK")
             return false;
+
+        header.version = ToLittleEndian(header.version);
+        header.flags = ToLittleEndian(header.flags);
+        header.entry_count = ToLittleEndian(header.entry_count);
+        header.toc_offset = ToLittleEndian(header.toc_offset);
+        header.string_table_offset = ToLittleEndian(header.string_table_offset);
+        header.string_table_size = ToLittleEndian(header.string_table_size);
+        header.blob_data_offset = ToLittleEndian(header.blob_data_offset);
+
         if (header.version != 1)
             return false;
 
         m_toc.resize(header.entry_count);
         f.seekg(header.toc_offset);
         f.read(reinterpret_cast<char *>(m_toc.data()), header.entry_count * sizeof(Package::TocEntry));
+
+        for (auto &entry : m_toc) {
+            entry.name_offset = ToLittleEndian(entry.name_offset);
+            entry.name_length = ToLittleEndian(entry.name_length);
+            entry.data_offset = ToLittleEndian(entry.data_offset);
+            entry.compressed_size = ToLittleEndian(entry.compressed_size);
+            entry.uncompressed_size = ToLittleEndian(entry.uncompressed_size);
+        }
 
         m_string_table.resize(header.string_table_size);
         f.seekg(header.string_table_offset);

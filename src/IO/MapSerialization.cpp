@@ -1,4 +1,6 @@
 #include "MapSerialization.h"
+#include "Core/Utils/BitUtils.h"
+#include "Core/Utils/Utils.h"
 #include <fstream>
 #include <ios>
 #include <sstream>
@@ -9,6 +11,8 @@
 #define LOG_WHO "MapIO"
 
 namespace IO::MapIO {
+
+    using namespace Core::Utils::Bits;
     bool Serialize(const std::string &path, const Map::HexGrid &grid) {
         std::filesystem::path resolvedPath = VFS::Resolve(path);
         std::ofstream file(resolvedPath, std::ios::binary);
@@ -17,17 +21,18 @@ namespace IO::MapIO {
             return false;
         }
         MapFileHeader header;
-        header.tileCount = static_cast<uint32_t>(grid.tiles.size());
+        header.version = ToLittleEndian(header.version);
+        header.tileCount = ToLittleEndian(static_cast<uint32_t>(grid.tiles.size()));
         file.write(reinterpret_cast<const char *>(&header), sizeof(MapFileHeader));
 
         for (const auto &[coords, tile] : grid.tiles) {
-            SerializedTile sTile{(coords.q), (coords.r), tile.type, tile.walkable};
+            SerializedTile sTile{.q = ToLittleEndian(coords.q), .r = ToLittleEndian(coords.r), .type = ToLittleEndian(tile.type), .walkable = tile.walkable};
             // reinterpret_cast to force compiler to treat struct as flat array of chars so fstream can write byte by
             // byte
             file.write(reinterpret_cast<const char *>(&sTile), sizeof(SerializedTile));
         }
         file.close();
-        LOG_INFO(LOG_WHO, "Saved " + std::to_string(header.tileCount) + " tiles to " + path);
+        LOG_INFO(LOG_WHO, "Saved " + std::to_string(grid.tiles.size()) + " tiles to " + path);
         return true;
     }
 
@@ -52,25 +57,35 @@ namespace IO::MapIO {
             return false;
         }
 
-        if (const size_t expectedSize = CalculateExpectedFileSize(header.tileCount); expectedSize > fileSize) {
+        const uint16_t nativeVersion = ToLittleEndian(header.version);
+        if (nativeVersion != Core::MAP_FILE_VERSION) {
+            LOG_ERROR(LOG_WHO, "Unsupported map version: " + std::to_string(nativeVersion));
+            return false;
+        }
+
+        const uint32_t nativeTileCount = ToLittleEndian(header.tileCount);
+
+        if (const size_t expectedSize = CalculateExpectedFileSize(nativeTileCount); expectedSize > fileSize) {
             LOG_ERROR(LOG_WHO, "Map file truncated or corrupt");
             return false;
         }
 
         grid.Clear();
-        for (uint32_t i = 0; i < header.tileCount; i++) {
+        for (uint32_t i = 0; i < nativeTileCount; i++) {
             SerializedTile sTile{};
             if (!file.read(reinterpret_cast<char *>(&sTile), sizeof(SerializedTile))) {
                 LOG_ERROR(LOG_WHO, "Stream read error at tile " + std::to_string(i));
                 break;
             }
-            Map::HexCoords coords{sTile.q, sTile.r};
-            grid.EmplaceTile(coords, sTile.type, sTile.walkable);
+
+            Map::HexCoords coords{ToLittleEndian(sTile.q), ToLittleEndian(sTile.r)};
+            grid.EmplaceTile(coords, ToLittleEndian(sTile.type), sTile.walkable);
         }
 
-        LOG_INFO(LOG_WHO, "Successfully loaded " + std::to_string(header.tileCount) + " tiles via VFS");
+        LOG_INFO(LOG_WHO, "Successfully loaded " + std::to_string(nativeTileCount) + " tiles via VFS");
         return true;
     }
+
 
     static bool CheckHeader(const MapFileHeader &header, const std::string_view &expected) { return std::string_view(header.magic, 8) == expected; }
 } // namespace IO::MapIO
