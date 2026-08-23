@@ -34,6 +34,7 @@ namespace Core {
     constexpr std::string_view PACKAGE_FILE_EXTENSION = ".obpak";
     // misc file stuff
     constexpr std::string_view MAP_FILE_MAGIC_STR = "OBLIHEXM";
+    constexpr uint16_t MAP_FILE_VERSION = 2;
     // window config
     constexpr int WINDOW_WIDTH = 1280;
     constexpr int WINDOW_HEIGHT = 720;
