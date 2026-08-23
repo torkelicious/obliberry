@@ -105,6 +105,8 @@ namespace IO {
         if (!f.is_open())
             return false;
 
+        const auto file_size = std::filesystem::file_size(file);
+
         Package::FileHeader header;
         f.read(reinterpret_cast<char *>(&header), sizeof(header));
         if (!f || std::string_view(header.magic, 4) != "OBPK")
@@ -121,9 +123,26 @@ namespace IO {
         if (header.version != 1)
             return false;
 
+        // guard header offset/count fields real file size before trusting it
+        if (header.toc_offset > file_size)
+            return false;
+        const uint64_t toc_remaining = file_size - header.toc_offset;
+        if (header.entry_count > toc_remaining / sizeof(Package::TocEntry))
+            return false;
+        if (header.string_table_offset > file_size)
+            return false;
+        const uint64_t st_remaining = file_size - header.string_table_offset;
+        if (header.string_table_size > st_remaining)
+            return false;
+        if (header.blob_data_offset > file_size)
+            return false;
+
         m_toc.resize(header.entry_count);
         f.seekg(header.toc_offset);
         f.read(reinterpret_cast<char *>(m_toc.data()), header.entry_count * sizeof(Package::TocEntry));
+        if (!f) {
+            return false;
+        }
 
         for (auto &entry : m_toc) {
             entry.name_offset = ToLittleEndian(entry.name_offset);
@@ -136,6 +155,8 @@ namespace IO {
         m_string_table.resize(header.string_table_size);
         f.seekg(header.string_table_offset);
         f.read(m_string_table.data(), header.string_table_size);
+        if (!f)
+            return false;
 
         f.close();
 
@@ -148,8 +169,6 @@ namespace IO {
         }
 
         // mmap the blob region
-        const auto file_size = std::filesystem::file_size(file);
-
 #ifdef _WIN32
         m_mapped_fd = _wopen(file.c_str(), _O_RDONLY | _O_BINARY);
 #else
@@ -229,6 +248,12 @@ namespace IO {
         if (entry.flags == Package::EntryFlags::None) {
             // Uncompressed
             return std::string(src, entry.compressed_size);
+        }
+
+        // lz4 can not  beat ~255:1 ratio
+        constexpr uint64_t MAX_RATIO = 1024;
+        if (entry.compressed_size > 0 && entry.uncompressed_size > entry.compressed_size * MAX_RATIO) {
+            return std::nullopt;
         }
 
         // Compressed
