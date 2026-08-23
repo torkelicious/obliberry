@@ -72,11 +72,26 @@ namespace IO::VFS {
     }
 
     std::filesystem::path Resolve(const std::filesystem::path &virtualPath) {
-        if (!s_State.isLoaded) {
-            // fallback to the binary folder if no project context is provided yet
-            return std::filesystem::current_path() / virtualPath;
+        const std::filesystem::path basePath = s_State.isLoaded ? s_State.rootDir : std::filesystem::current_path();
+
+        if (virtualPath.is_absolute()) {
+            LOG_ERROR(LOG_WHO, "path was absolute, it will not resolve.");
+            return {};
         }
-        return s_State.rootDir / virtualPath;
+
+        // normalize paths
+        std::filesystem::path combinedPath = basePath / virtualPath;
+        std::filesystem::path resolvedPath = std::filesystem::weakly_canonical(combinedPath);
+        std::filesystem::path canonicalBase = std::filesystem::weakly_canonical(basePath);
+
+        // verify
+        auto [baseIt, resIt] = std::mismatch(canonicalBase.begin(), canonicalBase.end(), resolvedPath.begin());
+        if (baseIt != canonicalBase.end()) {
+            // path escapes base dir
+            LOG_ERROR(LOG_WHO, "path traversal blocked for: " + virtualPath.string() + " (escapes base dir)");
+            return {};
+        }
+        return resolvedPath;
     }
 
     std::filesystem::path GetProjectRoot() { return s_State.rootDir; }
