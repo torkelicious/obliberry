@@ -187,12 +187,21 @@ namespace IO {
     }
 
     std::optional<std::string> ContainerReader::read(const std::string &canonical_path) const {
+
         const auto it = m_path_to_index.find(canonical_path);
         if (it == m_path_to_index.end())
             return std::nullopt;
         const auto &entry = m_toc[it->second];
 
-        if (entry.data_offset + entry.compressed_size > m_blob_size) {
+        // bounds check
+        if (entry.data_offset > m_blob_size || entry.compressed_size > m_blob_size - entry.data_offset) {
+            return std::nullopt;
+        }
+
+        // cap allocation size
+        // 512 MB
+        constexpr uint64_t MAX_UNCOMPRESSED_SIZE = 512 * 1024 * 1024;
+        if (entry.uncompressed_size > MAX_UNCOMPRESSED_SIZE) {
             return std::nullopt;
         }
 
@@ -220,7 +229,7 @@ namespace IO {
             return std::nullopt;
         const auto &entry = m_toc[it->second];
 
-        if (entry.data_offset + entry.compressed_size > m_blob_size) {
+        if (entry.data_offset > m_blob_size || entry.compressed_size > m_blob_size - entry.data_offset) {
             return std::nullopt;
         }
 
