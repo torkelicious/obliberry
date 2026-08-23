@@ -269,8 +269,6 @@ namespace UI {
             std::vector<unsigned char> pixels;
             int width;
             int rows;
-            int bearingX;
-            int bearingY;
             unsigned int advance;
         };
         std::map<char, BitmapData> bitmaps;
@@ -315,8 +313,6 @@ namespace UI {
             BitmapData bmp;
             bmp.width = w;
             bmp.rows = h;
-            bmp.bearingX = glyph->bitmap_left;
-            bmp.bearingY = glyph->bitmap_top;
             bmp.advance = static_cast<unsigned int>(glyph->advance.x >> 6);
             bmp.pixels.resize(static_cast<size_t>(w * h));
             if (glyph->bitmap.buffer) {
@@ -427,7 +423,11 @@ namespace UI {
         if (const auto it = m_Glyphs.find(' '); it != m_Glyphs.end()) {
             return it->second;
         }
-        return m_Glyphs.begin()->second;
+        if (!m_Glyphs.empty()) {
+            return m_Glyphs.begin()->second;
+        }
+        static constexpr Glyph fallback{};
+        return fallback;
     }
 
 } // namespace UI

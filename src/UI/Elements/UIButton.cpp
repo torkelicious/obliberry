@@ -75,8 +75,10 @@ namespace UI {
                 const auto &UVSize = glyph.UVSize;
 
                 if (Size.x > 0 && Size.y > 0) {
-                    const float x = textX + cursorX * scale + static_cast<float>(Bearing.x) * scale;
-                    const float y = textY - static_cast<float>(Bearing.y) * scale;
+                    const float padX = (static_cast<float>(Size.x) - static_cast<float>(glyph.LayoutSize.x)) * 0.5f;
+                    const float padY = (static_cast<float>(Size.y) - static_cast<float>(glyph.LayoutSize.y)) * 0.5f;
+                    const float x = textX + cursorX * scale + (static_cast<float>(Bearing.x) - padX) * scale;
+                    const float y = textY - (static_cast<float>(Bearing.y) + padY) * scale;
                     const auto w = static_cast<float>(Size.x) * scale;
                     const auto h = static_cast<float>(Size.y) * scale;
 

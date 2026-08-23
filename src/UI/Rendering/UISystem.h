@@ -27,6 +27,7 @@ namespace UI {
 
         void SetRoot(std::unique_ptr<UIElement> el) {
             m_Root = std::move(el);
+            SetInputMgrRecursive(m_Root.get(), m_Input);
             RebuildNameIndex();
         }
         [[nodiscard]] UIElement *GetRoot() { return m_Root.get(); }
@@ -56,6 +57,14 @@ namespace UI {
 
         void RebuildNameIndex();
         void IndexSubtreeRecursive(UIElement *element);
+        static void SetInputMgrRecursive(UIElement *element, Platform::Input::InputManager *mgr) {
+            if (!element)
+                return;
+            element->SetInputMgr(mgr);
+            for (auto *child : element->Children) {
+                SetInputMgrRecursive(child, mgr);
+            }
+        }
 
         std::unique_ptr<UIElement> m_Root;
         std::vector<std::unique_ptr<UIElement>> m_OwnedElements;

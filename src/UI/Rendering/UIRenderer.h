@@ -78,6 +78,8 @@ namespace UI {
     private:
         static constexpr uint32_t MAX_QUADS = 10000;
 
+        bool HasQuadCapacity();
+
         size_t m_SubmitIndex = 0;
         size_t m_RenderIndex = 1;
 
@@ -100,6 +102,7 @@ namespace UI {
         std::shared_ptr<Rendering::Shader> m_SDFShader;
 
         bool m_GLInitialized = false;
+        bool m_OverflowLogged = false;
     };
 
 } // namespace UI

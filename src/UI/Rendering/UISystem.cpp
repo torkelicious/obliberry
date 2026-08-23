@@ -6,7 +6,7 @@
 namespace UI {
 
     static void UpdateRecursive(UIElement *element, const float dt, const glm::vec2 &gameMousePos) {
-        if (!element || !element->HasFlag(VISIBLE))
+        if (!element || !element->HasFlag(VISIBLE) || !element->HasFlag(ENABLED))
             return;
 
         element->SetGameMousePos(gameMousePos);
