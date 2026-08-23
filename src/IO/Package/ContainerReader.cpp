@@ -173,6 +173,10 @@ namespace IO {
         madvise(m_mapped_region, m_mapped_size, MADV_SEQUENTIAL);
 #endif
 
+        if (header.blob_data_offset > file_size) {
+            return false;
+        }
+
         m_blob_data = static_cast<const char *>(m_mapped_region) + header.blob_data_offset;
         m_blob_size = file_size - header.blob_data_offset;
 
