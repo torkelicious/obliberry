@@ -2,7 +2,6 @@
 #include "Logger/LoggerService.h"
 #include "IO/VFS/VFS.h"
 #include <fstream>
-#include <vector>
 #include <nlohmann/json.hpp>
 
 #pragma push_macro("LOG_WHO")
@@ -28,8 +27,7 @@ namespace Config {
             nlohmann::json j;
 
             if (IO::VFS::IsPackaged()) {
-                std::vector<uint8_t> bytes(dataView.begin(), dataView.end());
-                j = nlohmann::json::from_msgpack(bytes);
+                j = nlohmann::json::from_msgpack(dataView.begin(), dataView.end());
             } else {
                 j = nlohmann::json::parse(dataView);
             }

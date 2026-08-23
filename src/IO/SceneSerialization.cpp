@@ -42,8 +42,7 @@ namespace IO::SceneIO {
         json j;
         try {
             if (VFS::IsPackaged()) {
-                std::vector<uint8_t> bytes(dataView.begin(), dataView.end());
-                j = json::from_msgpack(bytes);
+                j = json::from_msgpack(dataView.begin(), dataView.end());
             } else {
                 j = json::parse(dataView);
             }
@@ -235,16 +234,11 @@ namespace IO::SceneIO {
             if (!mapComp->typeMats.empty()) {
                 j["grid"]["types"] = json::array();
 
-                std::vector<uint8_t> keys;
-                for (const auto &key : mapComp->typeMats | std::views::keys)
-                    keys.push_back(key);
-                std::ranges::sort(keys);
+                // sort so avoid re scan
+                auto sortedMats = mapComp->typeMats;
+                std::ranges::sort(sortedMats, {}, [](const auto &p) { return p.first; });
 
-                for (uint8_t id : keys) {
-                    auto it = std::ranges::find_if(mapComp->typeMats, [id](const auto &p) { return p.first == id; });
-                    if (it == mapComp->typeMats.end())
-                        continue;
-                    const auto &material = it->second;
+                for (const auto &[id, material] : sortedMats) {
                     json typeJson;
                     typeJson["id"] = id;
 

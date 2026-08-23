@@ -1,9 +1,9 @@
 #include "MapSerialization.h"
 #include "Core/Utils/BitUtils.h"
 #include "Core/Utils/Utils.h"
+#include <cstring>
 #include <fstream>
 #include <ios>
-#include <sstream>
 #include "Logger/LoggerService.h"
 #include "VFS/VFS.h"
 
@@ -47,14 +47,18 @@ namespace IO::MapIO {
             return false;
         }
 
-        std::istringstream file(fileData.value(), std::ios::binary);
-        const size_t fileSize = fileData.value().size();
+        // parse directly from the loaded buffer
+        // the .obmap format is fixed size structs
+        const std::string_view data(fileData.value());
+        const size_t fileSize = data.size();
 
-        MapFileHeader header;
-        if (!file.read(reinterpret_cast<char *>(&header), sizeof(MapFileHeader))) {
-            LOG_ERROR(LOG_WHO, "Failed to read header from: " + path);
+        if (fileSize < sizeof(MapFileHeader)) {
+            LOG_ERROR(LOG_WHO, "Map file truncated or corrupt (too small for header)");
             return false;
         }
+
+        MapFileHeader header;
+        std::memcpy(&header, data.data(), sizeof(MapFileHeader));
 
         if (!CheckHeader(header, Core::MAP_FILE_MAGIC_STR)) {
             LOG_ERROR(LOG_WHO, "Invalid map file format (header mismatch)");
@@ -75,21 +79,15 @@ namespace IO::MapIO {
         }
 
         grid.Clear();
-        uint32_t readCount = 0;
+        const char *tileData = data.data() + sizeof(MapFileHeader);
         for (uint32_t i = 0; i < nativeTileCount; i++) {
             SerializedTile sTile{};
-            if (!file.read(reinterpret_cast<char *>(&sTile), sizeof(SerializedTile))) {
-                LOG_ERROR(LOG_WHO, "Stream read error at tile " + std::to_string(i) + " (expected " + std::to_string(nativeTileCount) + ")");
-                grid.Clear();
-                return false;
-            }
-
+            std::memcpy(&sTile, tileData + i * sizeof(SerializedTile), sizeof(SerializedTile));
             Map::HexCoords coords{ToLittleEndian(sTile.q), ToLittleEndian(sTile.r)};
             grid.EmplaceTile(coords, ToLittleEndian(sTile.type), sTile.walkable);
-            ++readCount;
         }
 
-        LOG_INFO(LOG_WHO, "Successfully loaded " + std::to_string(readCount) + " tiles via VFS");
+        LOG_INFO(LOG_WHO, "Successfully loaded " + std::to_string(nativeTileCount) + " tiles via VFS");
         return true;
     }
 

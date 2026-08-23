@@ -1,6 +1,5 @@
 #include "VFS.h"
 #include <fstream>
-#include <sstream>
 #include "Logger/LoggerService.h"
 #include "IO/Package/Container.h"
 
@@ -59,11 +58,20 @@ namespace IO::VFS {
         std::ifstream file(Resolve(virtualPath), std::ios::binary);
         if (!file.is_open())
             return std::nullopt;
-        std::stringstream ss;
-        ss << file.rdbuf();
-        if (file.bad())
+
+        // size up front so read once
+        file.seekg(0, std::ios::end);
+        const auto size = static_cast<std::streamoff>(file.tellg());
+        if (size < 0)
             return std::nullopt;
-        return ss.str();
+        file.seekg(0, std::ios::beg);
+
+        std::string content(static_cast<size_t>(size), '\0');
+        if (size > 0)
+            file.read(content.data(), size);
+        if (!file && !file.eof())
+            return std::nullopt;
+        return content;
     }
 
     std::optional<std::string_view> ReadVirtualView(const std::filesystem::path &virtualPath) {

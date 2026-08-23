@@ -126,8 +126,7 @@ namespace IO {
         nlohmann::json json;
         try {
             if (VFS::IsPackaged()) {
-                std::vector<uint8_t> bytes(dataView.begin(), dataView.end());
-                json = nlohmann::json::from_msgpack(bytes);
+                json = nlohmann::json::from_msgpack(dataView.begin(), dataView.end());
             } else {
                 json = nlohmann::json::parse(dataView);
             }
