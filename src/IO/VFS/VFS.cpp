@@ -10,8 +10,8 @@
 namespace IO::VFS {
 
     struct VFSStorage {
-        std::filesystem::path rootDir;
-        std::filesystem::path assetsDir;
+        std::filesystem::path rootDir = {};
+        std::filesystem::path assetsDir = {};
         bool isLoaded = false;
         bool isPackaged = false;
         ContainerReader packReader;
