@@ -363,12 +363,19 @@ void Editor::States::MapEditState::ApplyToolAt(const Map::HexCoords &hex) {
             const uint8_t brushType = m_TileEditorPanel.GetSourceType();
             const bool brushWalkable = m_TileEditorPanel.GetBrushWalkable();
             CapturePreDragState(hex);
+            bool changed = false;
             ForEachHexInRing(hex, m_BrushRadius - 1, [&](const Map::HexCoords &h) {
+                if (const Map::Tile *existing = m_CurrentGrid->Get(h); existing && existing->type == brushType && existing->walkable == brushWalkable) {
+                    m_AccumulatedNew[h] = TileState{brushType, brushWalkable};
+                    return;
+                }
                 m_CurrentGrid->RemoveTileAt(h);
                 m_CurrentGrid->EmplaceTile(h, brushType, brushWalkable);
                 m_AccumulatedNew[h] = TileState{brushType, brushWalkable};
+                changed = true;
             });
-            m_MapComp->needsMeshUpdate = true;
+            if (changed)
+                m_MapComp->needsMeshUpdate = true;
             break;
         }
 

@@ -143,14 +143,21 @@ namespace Map {
 
                 // reached goal
                 if (current == goal) {
+                    outPath.push_back(goal);
                     HexCoords trace = goal;
-
-                    while (trace != start) {
+                    const size_t maxSteps = records.size();
+                    for (size_t step = 0; step < maxSteps && trace != start; ++step) {
+                        auto it = records.find(trace);
+                        if (it == records.end())
+                            break;
+                        trace = it->second.parent;
                         outPath.push_back(trace);
-                        trace = records[trace].parent;
                     }
-
-                    outPath.push_back(start);
+                    if (trace != start) {
+                        // broken or cyclic parent chain
+                        outPath.clear();
+                        return;
+                    }
                     std::ranges::reverse(outPath);
                     return;
                 }
