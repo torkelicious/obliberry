@@ -34,13 +34,16 @@ namespace Config {
                 j = nlohmann::json::parse(dataView);
             }
 
+            ProjectConfig parsed;
             if (j.contains("window")) {
                 if (auto &w = j["window"]; w.contains("title"))
-                    config.Title = w["title"];
+                    parsed.Title = w["title"];
             }
             if (j.contains("start_scene")) {
-                config.startScenePath = j["start_scene"];
+                parsed.startScenePath = j["start_scene"];
             }
+
+            config = std::move(parsed);
         } catch (const std::exception &e) {
             LOG_ERROR(LOG_WHO, "Failed to parse project file: " + std::string(e.what()));
         }
@@ -62,6 +65,10 @@ namespace Config {
                 return false;
             }
             file << j.dump(2);
+            if (!file) {
+                LOG_ERROR(LOG_WHO, "Failed to write project file: " + resolvedPath.string());
+                return false;
+            }
             return true;
         } catch (const std::exception &e) {
             LOG_ERROR(LOG_WHO, "Failed to serialize project file: " + std::string(e.what()));

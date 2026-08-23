@@ -54,27 +54,30 @@ namespace IO::SceneIO {
 
         if (j.contains("properties")) {
             auto &properties = j["properties"];
-            if (properties.contains("name")) {
-                Name = properties["name"].get<std::string>();
-            }
-            if (properties.contains("clear_color")) {
-                if (auto &c = properties["clear_color"]; c.is_array() && c.size() >= 4) {
-                    BackgroundClearColor = {c[0].get<float>(), c[1].get<float>(), c[2].get<float>(), c[3].get<float>()};
-                } else {
-                    LOG_WARN(LOG_WHO, "'clear_color' is malformed. Defaulting to black");
+            try {
+                if (properties.contains("name"))
+                    Name = properties["name"].get<std::string>();
+                if (properties.contains("clear_color")) {
+                    if (auto &c = properties["clear_color"]; c.is_array() && c.size() >= 4) {
+                        BackgroundClearColor = {c[0].get<float>(), c[1].get<float>(), c[2].get<float>(), c[3].get<float>()};
+                    } else {
+                        LOG_WARN(LOG_WHO, "'clear_color' is malformed. Defaulting to black");
+                    }
                 }
-            }
 
-            if (properties.contains("background_music")) {
-                BackgroundMusicPath = VFS::ToRelative(properties["background_music"].get<std::string>());
-            }
+                if (properties.contains("background_music")) {
+                    BackgroundMusicPath = VFS::ToRelative(properties["background_music"].get<std::string>());
+                }
 
-            if (properties.contains("lighting")) {
-                EnableLighting = properties["lighting"].get<bool>();
-            }
+                if (properties.contains("lighting")) {
+                    EnableLighting = properties["lighting"].get<bool>();
+                }
 
-            if (properties.contains("ambient_light")) {
-                AmbientLight = properties["ambient_light"].get<float>();
+                if (properties.contains("ambient_light")) {
+                    AmbientLight = properties["ambient_light"].get<float>();
+                }
+            } catch (const std::exception &e) {
+                LOG_ERROR(LOG_WHO, std::string("Failed to read scene properties: ") + e.what());
             }
         }
 
@@ -114,9 +117,9 @@ namespace IO::SceneIO {
                     auto typeTexture = resources.Get<Rendering::Texture>(textureId);
 
                     glm::vec4 color(1.0f);
-                    if (typeElement.contains("color")) {
+                    if (typeElement.contains("color") && typeElement["color"].is_array() && typeElement["color"].size() >= 4) {
                         auto &c = typeElement["color"];
-                        color = {c[0], c[1], c[2], c[3]};
+                        color = {c[0].get<float>(), c[1].get<float>(), c[2].get<float>(), c[3].get<float>()};
                     }
 
                     mapComp.typeMats.emplace_back(id, std::make_shared<Rendering::Material>(Rendering::Material{shader, typeTexture, color}));
@@ -157,13 +160,27 @@ namespace IO::SceneIO {
 
             for (const auto &entityData : j["entities"]) {
                 ECS::Entity entity(scene.GetRegistry().CreateEntity(), &scene.GetRegistry());
-                EntityFactory::DeserializeEntity(entity, entityData, resources);
-                deserializedIds.push_back(static_cast<ECS::EntityID>(entity));
+                try {
+                    EntityFactory::DeserializeEntity(entity, entityData, resources);
+                    deserializedIds.push_back(static_cast<ECS::EntityID>(entity));
+                } catch (const std::exception &e) {
+                    LOG_ERROR(LOG_WHO, std::string("Failed to deserialize entity: ") + e.what());
+                    // destroy the partially-built entity; keep a placeholder so parent indices stay aligned
+                    scene.GetRegistry().DestroyEntity(static_cast<ECS::EntityID>(entity));
+                    deserializedIds.push_back(ECS::INVALID_ENTITY_ID);
+                }
             }
 
             for (size_t i = 0; i < deserializedIds.size(); ++i) {
                 if (const auto &entityData = j["entities"][i]; entityData.contains("parent")) {
-                    if (const size_t parentIndex = entityData["parent"].get<size_t>(); parentIndex < deserializedIds.size() && parentIndex != i) {
+                    size_t parentIndex = 0;
+                    try {
+                        parentIndex = entityData["parent"].get<size_t>();
+                    } catch (const std::exception &e) {
+                        LOG_WARN(LOG_WHO, std::string("Invalid 'parent' field for entity ") + std::to_string(i) + ": " + e.what());
+                        continue;
+                    }
+                    if (parentIndex < deserializedIds.size() && parentIndex != i && deserializedIds[i] != ECS::INVALID_ENTITY_ID && deserializedIds[parentIndex] != ECS::INVALID_ENTITY_ID) {
                         scene.GetRegistry().SetParentDirect(deserializedIds[i], deserializedIds[parentIndex]);
                     }
                 }
@@ -317,6 +334,10 @@ namespace IO::SceneIO {
         if (!file.is_open())
             return false;
         file << j.dump(4);
+        if (!file) {
+            LOG_ERROR(LOG_WHO, "Failed to write scene file: " + path);
+            return false;
+        }
         scene.OnSaved();
         return true;
     }

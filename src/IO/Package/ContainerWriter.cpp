@@ -2,6 +2,7 @@
 #include "Core/Utils/BitUtils.h"
 #include <fstream>
 #include <lz4.h>
+#include <stdexcept>
 
 namespace IO {
     using namespace Core::Utils::Bits;
@@ -115,11 +116,15 @@ namespace IO {
         header.blob_data_offset = ToLittleEndian(header.blob_data_offset);
 
         std::ofstream out(out_file, std::ios::binary);
+        if (!out.is_open())
+            throw std::runtime_error("ContainerWriter: failed to open output file: " + out_file.string());
         out.write(reinterpret_cast<const char *>(&header), sizeof(header));
         out.write(reinterpret_cast<const char *>(toc.data()), toc.size() * sizeof(Package::TocEntry));
         out.write(string_table.data(), string_table.size());
         for (const auto &e : m_entries) {
             out.write(reinterpret_cast<const char *>(e.data.data()), e.data.size());
         }
+        if (!out)
+            throw std::runtime_error("ContainerWriter: write failure to " + out_file.string());
     }
 } // namespace IO

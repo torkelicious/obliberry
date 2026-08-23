@@ -49,10 +49,16 @@ namespace Map {
         }
 
         Tile &EmplaceTile(const HexCoords &pos, const TileType type, const bool walkable = true) {
-            auto &tile = tiles.emplace(pos, Tile{.position = pos, .type = type, .walkable = walkable}).first->second;
-            if (walkable) {
-                walkableTiles.push_back(pos);
+            auto [it, inserted] = tiles.emplace(pos, Tile{.position = pos, .type = type, .walkable = walkable});
+            if (inserted) {
+                if (walkable)
+                    walkableTiles.push_back(pos);
+            } else {
+                it->second.type = type;
+                it->second.walkable = walkable;
+                SyncTileWalkableCache(pos);
             }
+            auto &tile = it->second;
             tile.worldPos = GetWorldPos(pos);
             tile.worldMatrix[3] = glm::vec4(tile.worldPos, 0.0f, 1.0f);
             return tile;
@@ -82,8 +88,12 @@ namespace Map {
 
         // Performs A* Pathfinding from a start tile to a goal tile
         // Populates an ordered sequence of HexCoords from start to finish
-        void FindPath(const HexCoords start, const HexCoords goal, std::vector<HexCoords> &outPath) const noexcept {
+        void FindPath(const HexCoords start, const HexCoords goal, std::vector<HexCoords> &outPath) const {
             outPath.clear();
+
+            const Tile *startTile = Get(start);
+            if (!startTile || !startTile->walkable)
+                return;
 
             if (const Tile *targetTile = Get(goal); !targetTile || !targetTile->walkable)
                 return;

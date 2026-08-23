@@ -31,6 +31,10 @@ namespace IO::MapIO {
             // byte
             file.write(reinterpret_cast<const char *>(&sTile), sizeof(SerializedTile));
         }
+        if (!file) {
+            LOG_ERROR(LOG_WHO, "Write failure while saving map to " + path);
+            return false;
+        }
         file.close();
         LOG_INFO(LOG_WHO, "Saved " + std::to_string(grid.tiles.size()) + " tiles to " + path);
         return true;
@@ -71,18 +75,21 @@ namespace IO::MapIO {
         }
 
         grid.Clear();
+        uint32_t readCount = 0;
         for (uint32_t i = 0; i < nativeTileCount; i++) {
             SerializedTile sTile{};
             if (!file.read(reinterpret_cast<char *>(&sTile), sizeof(SerializedTile))) {
-                LOG_ERROR(LOG_WHO, "Stream read error at tile " + std::to_string(i));
-                break;
+                LOG_ERROR(LOG_WHO, "Stream read error at tile " + std::to_string(i) + " (expected " + std::to_string(nativeTileCount) + ")");
+                grid.Clear();
+                return false;
             }
 
             Map::HexCoords coords{ToLittleEndian(sTile.q), ToLittleEndian(sTile.r)};
             grid.EmplaceTile(coords, ToLittleEndian(sTile.type), sTile.walkable);
+            ++readCount;
         }
 
-        LOG_INFO(LOG_WHO, "Successfully loaded " + std::to_string(nativeTileCount) + " tiles via VFS");
+        LOG_INFO(LOG_WHO, "Successfully loaded " + std::to_string(readCount) + " tiles via VFS");
         return true;
     }
 

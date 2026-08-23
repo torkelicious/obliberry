@@ -61,6 +61,8 @@ namespace IO::VFS {
             return std::nullopt;
         std::stringstream ss;
         ss << file.rdbuf();
+        if (file.bad())
+            return std::nullopt;
         return ss.str();
     }
 

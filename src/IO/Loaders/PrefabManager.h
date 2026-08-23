@@ -82,6 +82,12 @@ namespace IO {
             }
             out << prefabJson.dump(4);
             out.close();
+            if (!out) {
+                if (auto *logger = Logging::LoggerService::Get()) {
+                    logger->log("PrefabManager", "Failed to write prefab to: " + filepath, Logging::LogSeverity::Error);
+                }
+                return false;
+            }
 
             s_prefab_cache[filepath] = std::move(prefabJson);
             return true;

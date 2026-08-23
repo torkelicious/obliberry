@@ -15,7 +15,7 @@
 #define LOG_WHO "ObpakTools"
 
 namespace IO::Package::Tools {
-    std::string SanitizeExecutableName(const std::string &input) {
+    static std::string SanitizeExecutableName(const std::string &input) {
         std::string out;
         bool lastWasUnderscore = false;
         for (const unsigned char c : input) {
@@ -110,7 +110,7 @@ namespace IO::Package::Tools {
         const std::string export_name = clean_project_name + ".exe";
 #else
         const std::string runtime_name = "obliberry_runtime";
-        const std::string export_name = clean_project_name;
+        const std::string &export_name = clean_project_name;
 #endif
         // Locate the runtime
         const std::filesystem::path runtime_src = GetInternalsDirectory() / runtime_name;
@@ -128,8 +128,13 @@ namespace IO::Package::Tools {
             LOG_ERROR(LOG_WHO, "Exception while copying runtime: " + std::string(e.what()));
         }
         const std::filesystem::path outPath(output_dir);
-        if (std::filesystem::exists(project_dir / "graphics.json")) {
-            std::filesystem::copy_file(project_dir / "graphics.json", outPath / "graphics.json", std::filesystem::copy_options::overwrite_existing);
+        try {
+            if (std::filesystem::exists(project_dir / "graphics.json")) {
+                std::filesystem::copy_file(project_dir / "graphics.json", outPath / "graphics.json", std::filesystem::copy_options::overwrite_existing);
+                LOG_INFO(LOG_WHO, "Copied graphics.json to export directory");
+            }
+        } catch (const std::exception &e) {
+            LOG_ERROR(LOG_WHO, "Failed to copy graphics.json: " + std::string(e.what()));
         }
     }
 } // namespace IO::Package::Tools
