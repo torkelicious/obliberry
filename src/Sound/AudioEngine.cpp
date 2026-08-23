@@ -39,16 +39,19 @@ bool Sound::AudioEngine::Init() {
 Sound::AudioEngine::~AudioEngine() {
     StopMusic();
 
-    for (ma_sound *sound : m_ActiveSounds) {
-        ma_sound_uninit(sound);
-        if (const auto it = m_SoundContexts.find(sound); it != m_SoundContexts.end()) {
-            ma_decoder_uninit(it->second.decoder);
-            delete it->second.decoder;
+    {
+        std::lock_guard lock(m_Mutex);
+        for (ma_sound *sound : m_ActiveSounds) {
+            ma_sound_uninit(sound);
+            if (const auto it = m_SoundContexts.find(sound); it != m_SoundContexts.end()) {
+                ma_decoder_uninit(it->second.decoder);
+                delete it->second.decoder;
+            }
+            delete sound;
         }
-        delete sound;
+        m_ActiveSounds.clear();
+        m_SoundContexts.clear();
     }
-    m_ActiveSounds.clear();
-    m_SoundContexts.clear();
 
     if (m_Engine) {
         ma_engine_uninit(m_Engine);
