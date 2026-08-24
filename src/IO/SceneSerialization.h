@@ -1,6 +1,9 @@
 #pragma once
 
+#include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include <nlohmann/json.hpp>
 #include "Core/Utils/JsonUtils.h"
@@ -22,8 +25,9 @@ namespace IO::SceneIO {
 
     inline bool IsUserAsset(const std::string &id) { return !id.starts_with("[Engine]"); }
 
+    // vector<pair<...>> returned by ResourceManager::GetAll
     template <typename T, typename Func, typename Pred = decltype([](const std::string &) { return true; })>
-    void SerializeAssets(nlohmann::json &arr, const std::unordered_map<std::string, std::shared_ptr<T>> &assets, Func serializer, Pred pred = {}) {
+    void SerializeAssets(nlohmann::json &arr, const std::vector<std::pair<std::string, std::shared_ptr<T>>> &assets, Func serializer, Pred pred = {}) {
         for (const auto &[id, asset] : assets) {
             if (!pred(id))
                 continue;

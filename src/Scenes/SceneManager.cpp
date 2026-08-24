@@ -238,10 +238,7 @@ namespace Scenes {
     }
 
     void SceneManager::ProcessPendingSceneChange(Core::EngineContext &context) {
-        if (!context.pendingScenePath.empty()) {
-            const std::string scenePath = std::move(context.pendingScenePath);
-            context.pendingScenePath.clear();
-
+        if (const std::string scenePath = context.TakePendingScenePath(); !scenePath.empty()) {
             LOG_INFO(LOG_WHO, "Processing pending scene change to: " + scenePath);
             LoadSceneByPath(scenePath);
         }

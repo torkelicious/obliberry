@@ -98,9 +98,8 @@ void Editor::EditorLayer::Update(const float dt) {
         m_PendingSceneToLoad.clear();
     }
 
-    if (!m_Context.pendingScenePath.empty()) {
-        LoadScene(m_Context.pendingScenePath);
-        m_Context.pendingScenePath.clear();
+    if (const std::string pendingScene = m_Context.TakePendingScenePath(); !pendingScene.empty()) {
+        LoadScene(pendingScene);
     }
 
     ExecutePendingStateTransfer();

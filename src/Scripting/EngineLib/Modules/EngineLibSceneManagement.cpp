@@ -17,8 +17,7 @@ void Scripting::EngineLib::register_scene_management_modules(ObSL::Interpreter &
                                                          [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
                                                              if (ctx && !args.empty()) {
                                                                  if (std::holds_alternative<std::string>(args[0])) {
-                                                                     std::lock_guard lock(s_SceneMgmtMutex);
-                                                                     ctx->pendingScenePath = std::get<std::string>(args[0]);
+                                                                     ctx->SetPendingScenePath(std::get<std::string>(args[0]));
                                                                  }
                                                              }
                                                              return std::monostate{};
