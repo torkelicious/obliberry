@@ -366,7 +366,8 @@ namespace Editor::Commands {
     }
 
     // RemoveUIElementCommand
-    RemoveUIElementCommand::RemoveUIElementCommand(::UI::UISystem *sys, ::UI::UIElement *parent, const ::UI::UIElement *child) : m_UISystem(sys), m_Parent(parent), m_Snapshot(SnapshotUIElement(child)) {}
+    RemoveUIElementCommand::RemoveUIElementCommand(::UI::UISystem *sys, ::UI::UIElement *parent, const ::UI::UIElement *child)
+        : m_UISystem(sys), m_Parent(parent), m_Snapshot(SnapshotUIElement(child)), m_RemovedChild(const_cast<::UI::UIElement *>(child)) {}
 
     void RemoveUIElementCommand::Execute(Core::EngineContext &ctx) {
         if (m_Restored && m_UISystem && m_Parent) {
@@ -374,9 +375,14 @@ namespace Editor::Commands {
             m_UISystem->RemoveChild(m_Parent, m_Restored);
             m_Restored = nullptr;
         } else if (!m_Snapshot.name.empty() && m_UISystem && m_Parent) {
-            // First time: find the child by matching snapshot data
             for (auto *child : m_Parent->Children) {
-                if (child->Name == m_Snapshot.name && child->Rect.Position == m_Snapshot.position) {
+                if (child == m_RemovedChild) {
+                    m_UISystem->RemoveChild(m_Parent, child);
+                    return;
+                }
+            }
+            for (auto *child : m_Parent->Children) {
+                if (child->Name == m_Snapshot.name && child->Rect.Position == m_Snapshot.position && child->Rect.Scale == m_Snapshot.scale) {
                     m_UISystem->RemoveChild(m_Parent, child);
                     break;
                 }
