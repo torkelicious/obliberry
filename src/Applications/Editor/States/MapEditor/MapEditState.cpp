@@ -320,10 +320,15 @@ void Editor::States::MapEditState::OnExit() {
     m_MapComp = nullptr;
     m_CurrentGrid = nullptr;
 
+    m_selectedTile = nullptr;
+    m_TileEditorPanel.SetSelectedTile(nullptr);
+
     m_EditorLayer->m_Registry->ForEach<ECS::Components::MapStateComponent>([&](ECS::Entity, ECS::Components::MapStateComponent *state) { state->hasSelection = false; });
 }
 
 void Editor::States::MapEditState::CapturePreDragState(const Map::HexCoords &hex) {
+    if (!m_CurrentGrid)
+        return;
     ForEachHexInRing(hex, m_BrushRadius - 1, [&](const Map::HexCoords &h) {
         if (!m_PreDragState.contains(h)) {
             if (const auto *tile = m_CurrentGrid->Get(h)) {
@@ -336,6 +341,8 @@ void Editor::States::MapEditState::CapturePreDragState(const Map::HexCoords &hex
 }
 
 void Editor::States::MapEditState::CommitMapChanges() {
+    if (!m_CurrentGrid || !m_MapComp)
+        return;
     if (m_PreDragState.empty())
         return;
     m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::MapChangeTileCommand>(m_PreDragState, m_AccumulatedNew, m_CurrentGrid, &m_MapComp->needsMeshUpdate), m_EditorLayer->m_Context);
@@ -346,6 +353,8 @@ void Editor::States::MapEditState::CommitMapChanges() {
 }
 
 void Editor::States::MapEditState::ApplyToolAt(const Map::HexCoords &hex) {
+    if (!m_CurrentGrid || !m_MapComp || !m_MapState)
+        return;
     m_MapState->hasPathTo = false;
     switch (m_CurrentTool) {
         case MapTool::Select:
@@ -369,6 +378,10 @@ void Editor::States::MapEditState::ApplyToolAt(const Map::HexCoords &hex) {
                     m_AccumulatedNew[h] = TileState{brushType, brushWalkable};
                     return;
                 }
+                if (m_selectedTile && m_selectedHex == h) {
+                    m_selectedTile = nullptr;
+                    m_TileEditorPanel.SetSelectedTile(nullptr);
+                }
                 m_CurrentGrid->RemoveTileAt(h);
                 m_CurrentGrid->EmplaceTile(h, brushType, brushWalkable);
                 m_AccumulatedNew[h] = TileState{brushType, brushWalkable};
@@ -383,6 +396,10 @@ void Editor::States::MapEditState::ApplyToolAt(const Map::HexCoords &hex) {
             CapturePreDragState(hex);
             ForEachHexInRing(hex, m_BrushRadius - 1, [&](const Map::HexCoords &h) {
                 if (m_CurrentGrid->HasTile(h)) {
+                    if (m_selectedTile && m_selectedHex == h) {
+                        m_selectedTile = nullptr;
+                        m_TileEditorPanel.SetSelectedTile(nullptr);
+                    }
                     m_CurrentGrid->RemoveTileAt(h);
                     m_AccumulatedNew[h] = std::nullopt; // erased
                 }
