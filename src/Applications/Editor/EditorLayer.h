@@ -128,6 +128,7 @@ namespace Editor {
         Commands::UndoManager m_UndoManager;
 
         // Logging
+        static constexpr size_t MAX_CONSOLE_LINES = 2000;
         std::vector<std::string> m_ConsoleLogs;
         size_t m_PreviousLogCount = 0;
         std::stringstream m_InterpreterOutput;
@@ -135,7 +136,9 @@ namespace Editor {
         void FlushInterpreterOutput() {
             std::string line;
             while (std::getline(m_InterpreterOutput, line)) {
-                m_ConsoleLogs.push_back(line);
+                m_ConsoleLogs.push_back(std::move(line));
+                if (m_ConsoleLogs.size() > MAX_CONSOLE_LINES)
+                    m_ConsoleLogs.erase(m_ConsoleLogs.begin(), m_ConsoleLogs.end() - MAX_CONSOLE_LINES);
             }
             m_InterpreterOutput.clear();
         }

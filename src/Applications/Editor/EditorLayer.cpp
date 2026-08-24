@@ -237,6 +237,8 @@ void Editor::EditorLayer::LoadScene(std::string path) {
     if (m_Context.audioEngine)
         m_Context.audioEngine->StopMusic();
 
+    m_UndoManager.Clear();
+
     if (m_Context.isEditorMode)
         ClearCurrentProject();
 
@@ -488,8 +490,14 @@ void Editor::EditorLayer::DrawUtilityWindows() {
 
     ImGui::PushFont(m_EditorContext.fontset.FindFont(UI::Theme::FontRole::Monospace));
     ImGui::BeginChild("##console_scroll", ImVec2(-1, -1), ImGuiChildFlags_None, ImGuiWindowFlags_HorizontalScrollbar);
-    for (const auto &line : m_ConsoleLogs) {
-        ImGui::TextUnformatted(line.c_str());
+    {
+        ImGuiListClipper clipper;
+        clipper.Begin(static_cast<int>(m_ConsoleLogs.size()));
+        while (clipper.Step()) {
+            for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; ++i) {
+                ImGui::TextUnformatted(m_ConsoleLogs[static_cast<size_t>(i)].c_str());
+            }
+        }
     }
     if (m_ConsoleLogs.size() != m_PreviousLogCount) {
         ImGui::SetScrollHereY(1.0f);
