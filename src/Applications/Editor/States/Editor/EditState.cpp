@@ -30,10 +30,12 @@ void Editor::States::EditState::OnUpdate(const float dt) {
     if (EditorLayer::s_RenderParticlesInEditor) {
         ECS::Systems::ParticleSystem::Update(*m_EditorLayer->m_Registry, dt);
     }
-    m_EditorLayer->m_Context->uiSystem->Update(dt);
-    m_EditorLayer->m_Context->uiSystem->SnapshotButtonStates();
-    if (m_EditorLayer->m_Context->uiCmdBuf) {
-        m_EditorLayer->m_Context->uiCmdBuf->flush(*m_EditorLayer->m_Context->uiSystem);
+    if (m_EditorLayer->m_Context->uiSystem) {
+        m_EditorLayer->m_Context->uiSystem->Update(dt);
+        m_EditorLayer->m_Context->uiSystem->SnapshotButtonStates();
+        if (m_EditorLayer->m_Context->uiCmdBuf) {
+            m_EditorLayer->m_Context->uiCmdBuf->flush(*m_EditorLayer->m_Context->uiSystem);
+        }
     }
 
     // Entity picking
