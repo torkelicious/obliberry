@@ -14,10 +14,10 @@ namespace Editor::States {
 } // namespace Editor::States
 
 void Editor::States::EditState::OnEnter() {
-    if (!m_EditorLayer || !m_EditorLayer->m_Context.projectConfig)
+    if (!m_EditorLayer || !m_EditorLayer->m_Context->projectConfig)
         return;
 
-    std::string title = "Obliberry: " + m_EditorLayer->m_Context.projectConfig->Title;
+    std::string title = "Obliberry: " + m_EditorLayer->m_Context->projectConfig->Title;
     if (m_EditorLayer->m_Scene)
         title += " - Scene - " + m_EditorLayer->m_CurrentScenePath;
     SetWindowTitle(title);
@@ -30,10 +30,10 @@ void Editor::States::EditState::OnUpdate(const float dt) {
     if (EditorLayer::s_RenderParticlesInEditor) {
         ECS::Systems::ParticleSystem::Update(*m_EditorLayer->m_Registry, dt);
     }
-    m_EditorLayer->m_Context.uiSystem->Update(dt);
-    m_EditorLayer->m_Context.uiSystem->SnapshotButtonStates();
-    if (m_EditorLayer->m_Context.uiCmdBuf) {
-        m_EditorLayer->m_Context.uiCmdBuf->flush(*m_EditorLayer->m_Context.uiSystem);
+    m_EditorLayer->m_Context->uiSystem->Update(dt);
+    m_EditorLayer->m_Context->uiSystem->SnapshotButtonStates();
+    if (m_EditorLayer->m_Context->uiCmdBuf) {
+        m_EditorLayer->m_Context->uiCmdBuf->flush(*m_EditorLayer->m_Context->uiSystem);
     }
 
     // Entity picking
@@ -122,7 +122,7 @@ void Editor::States::EditState::OnRender() {
     ImGuizmo::BeginFrame();
     m_EditorLayer->DrawEditorLayout();
     if (EditorLayer::s_RenderParticlesInEditor) {
-        ECS::Systems::ParticleSystem::Render(*m_EditorLayer->m_Registry, *m_EditorLayer->m_Context.renderer, &m_EditorLayer->m_Camera);
+        ECS::Systems::ParticleSystem::Render(*m_EditorLayer->m_Registry, *m_EditorLayer->m_Context->renderer, &m_EditorLayer->m_Camera);
     }
 }
 
@@ -270,15 +270,15 @@ void Editor::States::EditState::EditTransform(Rendering::Transform &localTransfo
                 const auto entId = static_cast<ECS::EntityID>(selectedEntity);
                 if (mCurrentGizmoOperation == ImGuizmo::TRANSLATE) {
                     if (m_GizmoStartPos != localTransform.GetPosition()) {
-                        m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::TranslateEntityCommand>(entId, m_GizmoStartPos, localTransform.GetPosition()), m_EditorLayer->m_Context);
+                        m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::TranslateEntityCommand>(entId, m_GizmoStartPos, localTransform.GetPosition()), (*m_EditorLayer->m_Context));
                     }
                 } else if (mCurrentGizmoOperation == ImGuizmo::ROTATE) {
                     if (m_GizmoStartRot != localTransform.GetRotation()) {
-                        m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::RotateEntityCommand>(entId, m_GizmoStartRot, localTransform.GetRotation()), m_EditorLayer->m_Context);
+                        m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::RotateEntityCommand>(entId, m_GizmoStartRot, localTransform.GetRotation()), (*m_EditorLayer->m_Context));
                     }
                 } else if (mCurrentGizmoOperation == ImGuizmo::SCALE) {
                     if (m_GizmoStartScale != localTransform.GetScale()) {
-                        m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::ScaleEntityCommand>(entId, m_GizmoStartScale, localTransform.GetScale()), m_EditorLayer->m_Context);
+                        m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::ScaleEntityCommand>(entId, m_GizmoStartScale, localTransform.GetScale()), (*m_EditorLayer->m_Context));
                     }
                 }
             }

@@ -39,19 +39,17 @@ bool Sound::AudioEngine::Init() {
 Sound::AudioEngine::~AudioEngine() {
     StopMusic();
 
-    {
-        std::lock_guard lock(m_Mutex);
-        for (ma_sound *sound : m_ActiveSounds) {
-            ma_sound_uninit(sound);
-            if (const auto it = m_SoundContexts.find(sound); it != m_SoundContexts.end()) {
-                ma_decoder_uninit(it->second.decoder);
-                delete it->second.decoder;
-            }
-            delete sound;
+    std::lock_guard lock(m_Mutex);
+    for (ma_sound *sound : m_ActiveSounds) {
+        ma_sound_uninit(sound);
+        if (const auto it = m_SoundContexts.find(sound); it != m_SoundContexts.end()) {
+            ma_decoder_uninit(it->second.decoder);
+            delete it->second.decoder;
         }
-        m_ActiveSounds.clear();
-        m_SoundContexts.clear();
+        delete sound;
     }
+    m_ActiveSounds.clear();
+    m_SoundContexts.clear();
 
     if (m_Engine) {
         ma_engine_uninit(m_Engine);
@@ -202,27 +200,20 @@ void Sound::AudioEngine::PlayMusic(const std::string &filepath, const float volu
 }
 
 void Sound::AudioEngine::StopMusic() {
-    ma_sound *musicToStop = nullptr;
-    ma_decoder *decoderToDestroy = nullptr;
+    std::lock_guard lock(m_Mutex);
 
-    {
-        std::lock_guard lock(m_Mutex);
-        musicToStop = m_CurrentMusic;
-        decoderToDestroy = m_CurrentMusicContext.decoder;
-        m_CurrentMusic = nullptr;
-        m_CurrentMusicContext.decoder = nullptr;
-        m_CurrentMusicContext.buffer.clear();
+    if (m_CurrentMusic) {
+        ma_sound_stop(m_CurrentMusic);
+        ma_sound_uninit(m_CurrentMusic);
+        delete m_CurrentMusic;
     }
-
-    if (musicToStop) {
-        ma_sound_stop(musicToStop);
-        ma_sound_uninit(musicToStop);
-        delete musicToStop;
+    if (m_CurrentMusicContext.decoder) {
+        ma_decoder_uninit(m_CurrentMusicContext.decoder);
+        delete m_CurrentMusicContext.decoder;
     }
-    if (decoderToDestroy) {
-        ma_decoder_uninit(decoderToDestroy);
-        delete decoderToDestroy;
-    }
+    m_CurrentMusic = nullptr;
+    m_CurrentMusicContext.decoder = nullptr;
+    m_CurrentMusicContext.buffer.clear();
 }
 
 void Sound::AudioEngine::SetMasterVolume(const float volume) const {

@@ -43,7 +43,7 @@ namespace Scripting {
                 const auto it = m_Entries.find({id, kind});
                 if (it == m_Entries.end())
                     return nullptr;
-                if (it->second.registry != &registry || !valid()) {
+                if (it->second.registry != &registry || it->second.generation != s_Generation || !valid()) {
                     if (it->second.wrapper)
                         m_Interp->gc.remove_root(it->second.wrapper);
                     m_Entries.erase(it);
@@ -57,7 +57,7 @@ namespace Scripting {
                 if (it != m_Entries.end() && it->second.wrapper && it->second.wrapper != wrapper)
                     m_Interp->gc.remove_root(it->second.wrapper);
                 m_Interp->gc.add_root(wrapper);
-                m_Entries[{id, kind}] = Entry{wrapper, &registry};
+                m_Entries[{id, kind}] = Entry{wrapper, &registry, s_Generation};
             }
 
             void Clear() {
@@ -72,6 +72,7 @@ namespace Scripting {
             struct Entry {
                 ObSL::ObSLObject *wrapper = nullptr;
                 const ECS::Registry *registry = nullptr;
+                uint64_t generation = 0;
             };
 
             ObSL::Interpreter *m_Interp;
@@ -90,13 +91,15 @@ namespace Scripting {
         }
 
         static void ClearAll() {
-            std::shared_lock lock(g_MapMutex);
+            std::unique_lock lock(g_MapMutex);
+            ++s_Generation;
             for (auto &cache : g_Caches | std::views::values)
                 cache.Clear();
         }
 
     private:
         inline static std::shared_mutex g_MapMutex;
+        inline static uint64_t s_Generation = 0;
         inline static std::unordered_map<ObSL::Interpreter *, Cache> g_Caches;
     };
 } // namespace Scripting
