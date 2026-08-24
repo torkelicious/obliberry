@@ -156,6 +156,7 @@ namespace UI {
 
         // Build batches
         m_Batches.clear();
+        m_Batches.reserve(texs.size());
         const Rendering::Texture *currentTex = texs[0];
         BatchShader currentShader = m_QuadShader[m_RenderIndex][0];
         float currentSDFScale = m_QuadSDFScale[m_RenderIndex][0];
@@ -181,24 +182,21 @@ namespace UI {
         m_VAO->Bind();
         m_Shader->Bind();
         m_Shader->SetUniformMat4("u_Projection", m_Projection[m_RenderIndex]);
+        m_SDFShader->Bind();
+        m_SDFShader->SetUniformMat4("u_Projection", m_Projection[m_RenderIndex]);
 
         for (const auto &batch : m_Batches) {
             if (batch.shader == BatchShader::SDF) {
                 m_SDFShader->Bind();
-                m_SDFShader->SetUniformMat4("u_Projection", m_Projection[m_RenderIndex]);
                 m_SDFShader->SetUniform1f("u_Spread", batch.sdfSpread);
                 m_SDFShader->SetUniform1f("u_Scale", batch.sdfScale);
             } else {
                 m_Shader->Bind();
-                m_Shader->SetUniformMat4("u_Projection", m_Projection[m_RenderIndex]);
             }
             if (batch.texture) {
                 batch.texture->Bind(0);
             }
             glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(batch.indexCount), GL_UNSIGNED_INT, reinterpret_cast<const void *>(batch.indexOffset * sizeof(unsigned int)));
-            if (batch.shader == BatchShader::SDF) {
-                m_SDFShader->Unbind();
-            }
         }
 
         m_Shader->Unbind();

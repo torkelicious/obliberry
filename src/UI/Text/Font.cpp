@@ -255,6 +255,8 @@ namespace UI {
         // free FreeType resources
         FT_Done_Face(m_Face);
         m_Face = nullptr;
+        m_FontData.clear();
+        m_FontData.shrink_to_fit();
         m_Valid = true;
         LOG_INFO(LOG_WHO, "Font loaded: " + filepath + " (" + std::to_string(m_Glyphs.size()) + " glyphs, " + std::to_string(atlasWidth) + "x" + std::to_string(atlasHeight) + " atlas)");
     }
@@ -394,6 +396,8 @@ namespace UI {
 
         FT_Done_Face(m_Face);
         m_Face = nullptr;
+        m_FontData.clear();
+        m_FontData.shrink_to_fit();
 
         m_Valid = true;
         LOG_INFO(LOG_WHO, "Font loaded (SDF): " + filepath + " (" + std::to_string(m_Glyphs.size()) + " glyphs, spread=" + std::to_string(spread) + ", " + std::to_string(atlasWidth) + "x" + std::to_string(atlasHeight) +
