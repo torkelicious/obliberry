@@ -103,6 +103,8 @@ namespace UI {
         if (m_Valid)
             return;
 
+        std::lock_guard ftLock(FreeType::mutex());
+
         bool faceLoaded = false;
         if (auto data = IO::VFS::ReadVirtual(m_FilePath)) {
             m_FontData.assign(data->begin(), data->end());
@@ -407,6 +409,7 @@ namespace UI {
     Font::~Font() {
         // catches failed or partial construction.
         if (m_Face) {
+            std::lock_guard ftLock(FreeType::mutex());
             FT_Done_Face(m_Face);
             m_Face = nullptr;
         }
