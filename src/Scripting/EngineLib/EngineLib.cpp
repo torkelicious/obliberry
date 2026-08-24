@@ -1,11 +1,5 @@
 #include "EngineLib.h"
 
-/*
- *todo:
- * gui stuff? -- wip
- * wait corutine type thingy (wait for specific time without pausing entire thread type thingy)
- */
-
 void Scripting::EngineLib::register_modules(ObSL::Interpreter &interpreter) {
     register_core_modules(interpreter);
     register_registry_modules(interpreter);
