@@ -387,6 +387,7 @@
           "mesh_id": "p_mesh"
         },
         "MovementComponent": {
+          "autoMove": true,
           "timePerStep": 0.15000000596046448
         },
         "ParticleEmitterComponent": {
@@ -472,6 +473,7 @@
           "mesh_id": "ellipse"
         },
         "MovementComponent": {
+          "autoMove": true,
           "timePerStep": 0.05000000074505806
         },
         "TransformComponent": {
@@ -504,6 +506,7 @@
           "mesh_id": "tri_mesh"
         },
         "MovementComponent": {
+          "autoMove": true,
           "timePerStep": 0.05000000074505806
         },
         "TransformComponent": {
@@ -536,6 +539,7 @@
           "mesh_id": "circle_mesh"
         },
         "MovementComponent": {
+          "autoMove": true,
           "timePerStep": 0.05000000074505806
         },
         "TransformComponent": {
@@ -568,6 +572,7 @@
           "mesh_id": "pent_mesh"
         },
         "MovementComponent": {
+          "autoMove": true,
           "timePerStep": 0.05000000074505806
         },
         "TransformComponent": {
@@ -600,6 +605,7 @@
           "mesh_id": "hexagon_mesh"
         },
         "MovementComponent": {
+          "autoMove": true,
           "timePerStep": 0.05000000074505806
         },
         "TransformComponent": {
@@ -632,6 +638,7 @@
           "mesh_id": "oct_mesh"
         },
         "MovementComponent": {
+          "autoMove": true,
           "timePerStep": 0.05000000074505806
         },
         "TransformComponent": {
@@ -664,6 +671,7 @@
           "mesh_id": "ring_mesh"
         },
         "MovementComponent": {
+          "autoMove": true,
           "timePerStep": 0.05000000074505806
         },
         "TransformComponent": {
@@ -696,6 +704,7 @@
           "mesh_id": "sector_mesh"
         },
         "MovementComponent": {
+          "autoMove": true,
           "timePerStep": 0.05000000074505806
         },
         "TransformComponent": {
@@ -728,6 +737,7 @@
           "mesh_id": "diamond_mesh"
         },
         "MovementComponent": {
+          "autoMove": true,
           "timePerStep": 0.05000000074505806
         },
         "TransformComponent": {
