@@ -89,10 +89,10 @@ namespace UI {
 
         auto &verts = m_Vertices[m_SubmitIndex];
         // V is flipped
-        verts.push_back({pos, glm::vec2(uvMin.x, uvMax.y), color});
-        verts.push_back({pos + glm::vec2(size.x, 0.0f), glm::vec2(uvMax.x, uvMax.y), color});
-        verts.push_back({pos + size, glm::vec2(uvMax.x, uvMin.y), color});
-        verts.push_back({pos + glm::vec2(0.0f, size.y), glm::vec2(uvMin.x, uvMin.y), color});
+        verts.push_back({.Position = pos, .UV = glm::vec2(uvMin.x, uvMax.y), .Color = color});
+        verts.push_back({.Position = pos + glm::vec2(size.x, 0.0f), .UV = glm::vec2(uvMax.x, uvMax.y), .Color = color});
+        verts.push_back({.Position = pos + size, .UV = glm::vec2(uvMax.x, uvMin.y), .Color = color});
+        verts.push_back({.Position = pos + glm::vec2(0.0f, size.y), .UV = glm::vec2(uvMin.x, uvMin.y), .Color = color});
 
         m_QuadTextures[m_SubmitIndex].push_back(texture);
         m_QuadShader[m_SubmitIndex].push_back(BatchShader::REGULAR);
@@ -108,10 +108,10 @@ namespace UI {
             return;
 
         auto &verts = m_Vertices[m_SubmitIndex];
-        verts.push_back({pos, glm::vec2(uvMin.x, uvMax.y), color});
-        verts.push_back({pos + glm::vec2(size.x, 0.0f), glm::vec2(uvMax.x, uvMax.y), color});
-        verts.push_back({pos + size, glm::vec2(uvMax.x, uvMin.y), color});
-        verts.push_back({pos + glm::vec2(0.0f, size.y), glm::vec2(uvMin.x, uvMin.y), color});
+        verts.push_back({.Position = pos, .UV = glm::vec2(uvMin.x, uvMax.y), .Color = color});
+        verts.push_back({.Position = pos + glm::vec2(size.x, 0.0f), .UV = glm::vec2(uvMax.x, uvMax.y), .Color = color});
+        verts.push_back({.Position = pos + size, .UV = glm::vec2(uvMax.x, uvMin.y), .Color = color});
+        verts.push_back({.Position = pos + glm::vec2(0.0f, size.y), .UV = glm::vec2(uvMin.x, uvMin.y), .Color = color});
 
         m_QuadTextures[m_SubmitIndex].push_back(texture);
         m_QuadShader[m_SubmitIndex].push_back(BatchShader::SDF);
@@ -165,7 +165,7 @@ namespace UI {
 
         for (uint32_t i = 1; i < static_cast<uint32_t>(texs.size()); i++) {
             if (texs[i] != currentTex || m_QuadShader[m_RenderIndex][i] != currentShader || m_QuadSDFScale[m_RenderIndex][i] != currentSDFScale || m_QuadSDFSpread[m_RenderIndex][i] != currentSDFSpread) {
-                m_Batches.push_back({currentTex, batchStart * 6, (i - batchStart) * 6, currentShader, currentSDFScale, currentSDFSpread});
+                m_Batches.push_back({.texture = currentTex, .indexOffset = batchStart * 6, .indexCount = (i - batchStart) * 6, .shader = currentShader, .sdfScale = currentSDFScale, .sdfSpread = currentSDFSpread});
                 currentTex = texs[i];
                 currentShader = m_QuadShader[m_RenderIndex][i];
                 currentSDFScale = m_QuadSDFScale[m_RenderIndex][i];
@@ -173,7 +173,12 @@ namespace UI {
                 batchStart = i;
             }
         }
-        m_Batches.push_back({currentTex, batchStart * 6, (static_cast<uint32_t>(texs.size()) - batchStart) * 6, currentShader, currentSDFScale, currentSDFSpread});
+        m_Batches.push_back({.texture = currentTex,
+                             .indexOffset = batchStart * 6,
+                             .indexCount = (static_cast<uint32_t>(texs.size()) - batchStart) * 6,
+                             .shader = currentShader,
+                             .sdfScale = currentSDFScale,
+                             .sdfSpread = currentSDFSpread});
 
         // Upload to GPU
         m_VBO->SetDataOrphaned(verts.data(), static_cast<unsigned int>(verts.size() * sizeof(UIVertex)));

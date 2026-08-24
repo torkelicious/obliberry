@@ -16,7 +16,9 @@ namespace Platform::Time {
 
     inline std::vector<Timer> timers;
 
-    inline void setTimeout(const std::chrono::milliseconds delay, Threading::SmallTask callback) { timers.push_back({std::chrono::steady_clock::now() + delay, std::move(callback), currentGeneration}); }
+    inline void setTimeout(const std::chrono::milliseconds delay, Threading::SmallTask callback) {
+        timers.push_back({.endTime = std::chrono::steady_clock::now() + delay, .callback = std::move(callback), .generation = currentGeneration});
+    }
 
     inline void invalidateGeneration() { ++currentGeneration; }
 

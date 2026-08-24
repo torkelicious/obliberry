@@ -88,7 +88,7 @@ namespace IO {
             t.name_offset = ToLittleEndian(name_offsets[i]);
             t.name_length = ToLittleEndian(name_lengths[i]);
             t.data_offset = ToLittleEndian(data_offsets[i]);
-            t.compressed_size = ToLittleEndian(static_cast<uint64_t>(m_entries[i].data.size()));
+            t.compressed_size = ToLittleEndian(m_entries[i].data.size());
             t.uncompressed_size = ToLittleEndian(m_entries[i].uncompressed_size);
             t.type = m_entries[i].type;
             t.flags = m_entries[i].flags;

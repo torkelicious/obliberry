@@ -62,7 +62,7 @@ namespace IO::Package::Tools {
         ContainerWriter writer;
         DependencyGraph dep_graph;
         IgnoreRules ignore_rules = IgnoreRules::ForProject(project_dir);
-        PackOptions opts{true, true, false, BINARY_NAME};
+        PackOptions opts{.global_compress = true, .verbose = true, .quiet = false, .binary_name = BINARY_NAME};
         opts.ignore = &ignore_rules;
 
         int success_count = 0, fail_count = 0;

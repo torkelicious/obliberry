@@ -63,9 +63,8 @@ namespace Config {
             dataView = ownedData;
         } else if (IO::VFS::IsProjectLoaded()) {
             if (auto loosePath = IO::VFS::GetProjectRoot() / filepath; std::filesystem::exists(loosePath)) {
-                std::ifstream file(loosePath);
-                if (file.is_open()) {
-                    ownedData.assign(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
+                if (std::ifstream file(loosePath); file.is_open()) {
+                    ownedData.assign(std::istreambuf_iterator(file), std::istreambuf_iterator<char>());
                     dataView = ownedData;
                 }
             }

@@ -19,8 +19,7 @@ namespace IO::Package::Tools {
             std::string rx;
             rx.reserve(seg.size() * 2);
             for (size_t i = 0; i < seg.size(); ++i) {
-                const char c = seg[i];
-                if (c == '*') {
+                if (const char c = seg[i]; c == '*') {
                     rx += "[^/]*";
                 } else if (c == '?') {
                     rx += "[^/]";

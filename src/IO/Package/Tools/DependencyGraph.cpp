@@ -11,7 +11,7 @@ namespace IO::Package::Tools {
         m_edges[canonical_path] = std::move(deps);
     }
 
-    bool DependencyGraph::validate(const std::string &binary_name) const {
+    bool DependencyGraph::validate(const std::string & /*binary_name*/) const {
         bool ok = true;
 
         // missing-module check

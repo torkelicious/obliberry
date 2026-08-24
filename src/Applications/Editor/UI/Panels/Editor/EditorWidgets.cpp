@@ -23,9 +23,9 @@
 //  PointLightWidget
 
 Editor::UI::PointLightWidget::PointLightWidget() : AutoComponentWidget("Point Light") {
-    m_Fields.push_back({"Color", FieldType::Color3, offsetof(ECS::Components::PointLightComponent, color)});
-    m_Fields.push_back({"Radius", FieldType::Float, offsetof(ECS::Components::PointLightComponent, radius)});
-    m_Fields.push_back({"Intensity", FieldType::Float, offsetof(ECS::Components::PointLightComponent, intensity)});
+    m_Fields.push_back({.Name = "Color", .Type = FieldType::Color3, .Offset = offsetof(ECS::Components::PointLightComponent, color)});
+    m_Fields.push_back({.Name = "Radius", .Type = FieldType::Float, .Offset = offsetof(ECS::Components::PointLightComponent, radius)});
+    m_Fields.push_back({.Name = "Intensity", .Type = FieldType::Float, .Offset = offsetof(ECS::Components::PointLightComponent, intensity)});
     m_DirtyOffset = offsetof(ECS::Components::PointLightComponent, dirty);
 }
 
@@ -100,11 +100,11 @@ void Editor::UI::TransformWidget::DrawExtras(const ECS::Entity entity, ECS::Comp
 //  MovementWidget
 
 Editor::UI::MovementWidget::MovementWidget() : AutoComponentWidget("Movement") {
-    m_Fields.push_back({"Time Per Step", FieldType::Float, offsetof(ECS::Components::MovementComponent, timePerStep)});
-    m_Fields.push_back({"Step Timer", FieldType::Float, offsetof(ECS::Components::MovementComponent, stepTimer)});
-    m_Fields.push_back({"Idle Timer", FieldType::Float, offsetof(ECS::Components::MovementComponent, idleTimer)});
-    m_Fields.push_back({"Is Moving", FieldType::Bool, offsetof(ECS::Components::MovementComponent, isMoving)});
-    m_Fields.push_back({"Auto-move (use 'ai' system)", FieldType::Bool, offsetof(ECS::Components::MovementComponent, autoMove)});
+    m_Fields.push_back({.Name = "Time Per Step", .Type = FieldType::Float, .Offset = offsetof(ECS::Components::MovementComponent, timePerStep)});
+    m_Fields.push_back({.Name = "Step Timer", .Type = FieldType::Float, .Offset = offsetof(ECS::Components::MovementComponent, stepTimer)});
+    m_Fields.push_back({.Name = "Idle Timer", .Type = FieldType::Float, .Offset = offsetof(ECS::Components::MovementComponent, idleTimer)});
+    m_Fields.push_back({.Name = "Is Moving", .Type = FieldType::Bool, .Offset = offsetof(ECS::Components::MovementComponent, isMoving)});
+    m_Fields.push_back({.Name = "Auto-move (use 'ai' system)", .Type = FieldType::Bool, .Offset = offsetof(ECS::Components::MovementComponent, autoMove)});
 }
 
 void Editor::UI::MovementWidget::DrawExtras(ECS::Entity entity, ECS::Components::MovementComponent *component, Core::EngineContext *engineContext, UndoManager *undoManager) {

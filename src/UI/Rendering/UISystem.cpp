@@ -57,7 +57,7 @@ namespace UI {
         }
 
         // check self
-        if (IsPointInsideRect(point, {finalPos, element->Rect.Scale}))
+        if (IsPointInsideRect(point, {.Position = finalPos, .Scale = element->Rect.Scale}))
             return element;
 
         return nullptr;

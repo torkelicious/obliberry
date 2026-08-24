@@ -65,8 +65,7 @@ namespace IO::MapIO {
             return false;
         }
 
-        const uint16_t nativeVersion = ToLittleEndian(header.version);
-        if (nativeVersion != Core::MAP_FILE_VERSION) {
+        if (const uint16_t nativeVersion = ToLittleEndian(header.version); nativeVersion != Core::MAP_FILE_VERSION) {
             LOG_ERROR(LOG_WHO, "Unsupported map version: " + std::to_string(nativeVersion));
             return false;
         }

@@ -40,7 +40,7 @@ namespace Scripting {
             explicit Cache(ObSL::Interpreter *interp) : m_Interp(interp) {}
 
             template <typename Validate> ObSL::ObSLObject *Find(const ECS::Registry &registry, const ECS::EntityID id, const Kind kind, Validate &&valid) {
-                const auto it = m_Entries.find({id, kind});
+                const auto it = m_Entries.find({.id = id, .kind = kind});
                 if (it == m_Entries.end())
                     return nullptr;
                 if (it->second.registry != &registry || it->second.generation != s_Generation || !valid()) {
@@ -53,11 +53,10 @@ namespace Scripting {
             }
 
             void Store(const ECS::Registry &registry, const ECS::EntityID id, const Kind kind, ObSL::ObSLObject *wrapper) {
-                const auto it = m_Entries.find({id, kind});
-                if (it != m_Entries.end() && it->second.wrapper && it->second.wrapper != wrapper)
+                if (const auto it = m_Entries.find({.id = id, .kind = kind}); it != m_Entries.end() && it->second.wrapper && it->second.wrapper != wrapper)
                     m_Interp->gc.remove_root(it->second.wrapper);
                 m_Interp->gc.add_root(wrapper);
-                m_Entries[{id, kind}] = Entry{wrapper, &registry, s_Generation};
+                m_Entries[{.id = id, .kind = kind}] = Entry{.wrapper = wrapper, .registry = &registry, .generation = s_Generation};
             }
 
             void Clear() {

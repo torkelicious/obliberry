@@ -54,7 +54,7 @@ namespace Logging {
         void log(std::string who, std::string what, const LogSeverity severity = LogSeverity::Info) override {
             const auto now = std::chrono::system_clock::now();
             std::lock_guard lock(mutex_);
-            buffer_.push(Log{std::move(who), std::move(what), now, severity});
+            buffer_.push(Log{.who = std::move(who), .what = std::move(what), .timestamp = now, .severity = severity});
             cv_.notify_one();
         }
 

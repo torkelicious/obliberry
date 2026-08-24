@@ -172,7 +172,7 @@ void IO::AssetLoader::LoadMaterials(const json &materials, Core::ResourceManager
                 color = {c[0].get<float>(), c[1].get<float>(), c[2].get<float>(), c[3].get<float>()};
             }
 
-            resources.LoadFromFactory<Rendering::Material>(id, [shader, texture, color] { return std::make_shared<Rendering::Material>(Rendering::Material{shader, texture, color}); });
+            resources.LoadFromFactory<Rendering::Material>(id, [shader, texture, color] { return std::make_shared<Rendering::Material>(Rendering::Material{.shader = shader, .texture = texture, .color = color}); });
         } catch (const std::exception &e) {
             LOG_ERROR(LOG_WHO, std::string("Skipping material asset: ") + e.what());
         }

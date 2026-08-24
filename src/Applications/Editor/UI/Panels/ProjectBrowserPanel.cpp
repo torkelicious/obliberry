@@ -48,9 +48,8 @@ namespace Editor::UI {
             dirReadable = !ec;
         }
 
-        auto it = m_ScanCaches.find(subDir);
-        const bool haveCache = it != m_ScanCaches.end();
-        if (haveCache && it->second.valid == dirReadable && it->second.lastWrite == dirWrite) {
+        const auto it = m_ScanCaches.find(subDir);
+        if (const bool haveCache = it != m_ScanCaches.end(); haveCache && it->second.valid == dirReadable && it->second.lastWrite == dirWrite) {
             return it->second.entries;
         }
 
@@ -77,7 +76,7 @@ namespace Editor::UI {
                 for (auto &c : relStr)
                     if (c == '\\')
                         c = '/';
-                entries.push_back({entry.path().stem().string(), relStr});
+                entries.push_back({.name = entry.path().stem().string(), .virtualPath = relStr});
             }
         }
         return entries;
@@ -435,8 +434,8 @@ namespace Editor::UI {
                         texture = resources.Get<Rendering::Texture>(texKeys[m_SelectedMaterialTextureIdx]);
                     }
 
-                    const auto mat =
-                            resources.LoadFromFactory<Rendering::Material>(id, [shader, texture, color = m_MaterialColor] { return std::make_shared<Rendering::Material>(Rendering::Material{shader, texture, color}); });
+                    const auto mat = resources.LoadFromFactory<Rendering::Material>(
+                            id, [shader, texture, color = m_MaterialColor] { return std::make_shared<Rendering::Material>(Rendering::Material{.shader = shader, .texture = texture, .color = color}); });
                 }
                 // (void)mat; // mat is inside lambda, no need to suppress unused warning
                 LOG_INFO(LOG_WHO, "Created material '" + id + "'");

@@ -61,7 +61,7 @@ bool Platform::Input::InputManager::IsKeyComboPressed(const std::vector<std::str
 
 bool Platform::Input::InputManager::IsValidMouseButton(const int button) { return button >= 0 && button <= GLFW_MOUSE_BUTTON_LAST; }
 
-void Platform::Input::InputManager::HandleClickEvent(const int button, const int action, int mods) {
+void Platform::Input::InputManager::HandleClickEvent(const int button, const int action, [[maybe_unused]] int mods) {
     if (!IsValidMouseButton(button))
         return;
     mouseButtons[button] = action != GLFW_RELEASE;

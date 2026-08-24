@@ -17,7 +17,7 @@ namespace UI {
         std::string Name;
         UIElement *Parent = nullptr;
         std::vector<UIElement *> Children;
-        RectTransform Rect{{0.0f, 0.0f}, {0.0f, 0.0f}};
+        RectTransform Rect{.Position = {0.0f, 0.0f}, .Scale = {0.0f, 0.0f}};
 
         virtual void Update() {}
 

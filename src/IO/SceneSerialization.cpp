@@ -121,13 +121,13 @@ namespace IO::SceneIO {
                         color = {c[0].get<float>(), c[1].get<float>(), c[2].get<float>(), c[3].get<float>()};
                     }
 
-                    mapComp.typeMats.emplace_back(id, std::make_shared<Rendering::Material>(Rendering::Material{shader, typeTexture, color}));
+                    mapComp.typeMats.emplace_back(id, std::make_shared<Rendering::Material>(Rendering::Material{.shader = shader, .texture = typeTexture, .color = color}));
                 }
             }
 
             if (shader) {
-                mapComp.outlineMat = std::make_shared<Rendering::Material>(Rendering::Material{shader, nullptr, {1, 0, 0, 0.5f}});
-                mapComp.pathToMat = std::make_shared<Rendering::Material>(Rendering::Material{shader, nullptr, {1, 1, 1, 0.5f}});
+                mapComp.outlineMat = std::make_shared<Rendering::Material>(Rendering::Material{.shader = shader, .texture = nullptr, .color = {1, 0, 0, 0.5f}});
+                mapComp.pathToMat = std::make_shared<Rendering::Material>(Rendering::Material{.shader = shader, .texture = nullptr, .color = {1, 1, 1, 0.5f}});
             } else {
                 LOG_ERROR(LOG_WHO, "Missing map visual assets!");
             }
@@ -137,7 +137,7 @@ namespace IO::SceneIO {
             {
                 std::vector<uint8_t> definedTypeIds;
                 definedTypeIds.reserve(mapComp.typeMats.size());
-                for (const auto &[id, _] : mapComp.typeMats)
+                for (const auto &id : mapComp.typeMats | std::views::keys)
                     definedTypeIds.push_back(id);
 
                 for (const auto &[coords, tile] : mapComp.grid.tiles) {

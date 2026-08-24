@@ -387,7 +387,7 @@ namespace UI {
         // Normalize UVs
         constexpr float invAtlasW = 1.0f / static_cast<float>(atlasWidth);
         const float invAtlasH = 1.0f / static_cast<float>(atlasHeight);
-        for (auto &[c, g] : m_Glyphs) {
+        for (auto &g : m_Glyphs | std::views::values) {
             g.UVOffset.x *= invAtlasW;
             g.UVOffset.y *= invAtlasH;
             g.UVSize.x *= invAtlasW;

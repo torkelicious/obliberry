@@ -91,8 +91,7 @@ namespace Map {
         void FindPath(const HexCoords start, const HexCoords goal, std::vector<HexCoords> &outPath) const {
             outPath.clear();
 
-            const Tile *startTile = Get(start);
-            if (!startTile || !startTile->walkable)
+            if (const Tile *startTile = Get(start); !startTile || !startTile->walkable)
                 return;
 
             if (const Tile *targetTile = Get(goal); !targetTile || !targetTile->walkable)
@@ -120,7 +119,7 @@ namespace Map {
             records.clear();
 
             // init start node
-            auto [startIt, startInserted] = records.try_emplace(start, NodeRecord{start, 0, Math::HexMath::Distance(start, goal), false});
+            auto [startIt, startInserted] = records.try_emplace(start, NodeRecord{.parent = start, .gScore = 0, .fScore = Math::HexMath::Distance(start, goal), .isClosed = false});
             openSet.emplace(startIt->second.fScore, start);
 
             while (!openSet.empty()) {
@@ -167,7 +166,7 @@ namespace Map {
                     if (const Tile *tile = Get(neighbor); !tile || !tile->walkable)
                         continue;
 
-                    auto [nbIt, inserted] = records.try_emplace(neighbor, NodeRecord{current, Core::P_INFINITY, Core::P_INFINITY, false});
+                    auto [nbIt, inserted] = records.try_emplace(neighbor, NodeRecord{.parent = current, .gScore = Core::P_INFINITY, .fScore = Core::P_INFINITY, .isClosed = false});
 
                     auto &[parent, gScore, fScore, isClosed] = nbIt->second;
                     if (isClosed)

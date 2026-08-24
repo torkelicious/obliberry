@@ -49,7 +49,7 @@ void Editor::States::EditState::OnUpdate(const float dt) {
     m_EditorLayer->m_ViewportPanel.ClearSelectedEntityID();
 }
 
-void Editor::States::EditState::OnHandleInput(const float dt) {
+void Editor::States::EditState::OnHandleInput(const float /*dt*/) {
     if (ImGui::GetIO().WantCaptureKeyboard)
         return;
 
@@ -270,15 +270,15 @@ void Editor::States::EditState::EditTransform(Rendering::Transform &localTransfo
                 const auto entId = static_cast<ECS::EntityID>(selectedEntity);
                 if (mCurrentGizmoOperation == ImGuizmo::TRANSLATE) {
                     if (m_GizmoStartPos != localTransform.GetPosition()) {
-                        m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::TranslateEntityCommand>(entId, m_GizmoStartPos, localTransform.GetPosition()), (*m_EditorLayer->m_Context));
+                        m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::TranslateEntityCommand>(entId, m_GizmoStartPos, localTransform.GetPosition()), *m_EditorLayer->m_Context);
                     }
                 } else if (mCurrentGizmoOperation == ImGuizmo::ROTATE) {
                     if (m_GizmoStartRot != localTransform.GetRotation()) {
-                        m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::RotateEntityCommand>(entId, m_GizmoStartRot, localTransform.GetRotation()), (*m_EditorLayer->m_Context));
+                        m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::RotateEntityCommand>(entId, m_GizmoStartRot, localTransform.GetRotation()), *m_EditorLayer->m_Context);
                     }
                 } else if (mCurrentGizmoOperation == ImGuizmo::SCALE) {
                     if (m_GizmoStartScale != localTransform.GetScale()) {
-                        m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::ScaleEntityCommand>(entId, m_GizmoStartScale, localTransform.GetScale()), (*m_EditorLayer->m_Context));
+                        m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::ScaleEntityCommand>(entId, m_GizmoStartScale, localTransform.GetScale()), *m_EditorLayer->m_Context);
                     }
                 }
             }
