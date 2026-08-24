@@ -4,6 +4,7 @@
 #include <array>
 #include <limits>
 #include "Rendering/Camera.h"
+#include "Math.h"
 
 namespace Math::Frustum {
     struct FrustumPlanes {
@@ -81,22 +82,7 @@ namespace Math::Frustum {
 
         const glm::mat4 invVP = glm::inverse(camera->GetVP(aspect));
 
-        auto projectToGround = [&](const float ndcX, const float ndcY) -> glm::vec2 {
-            glm::vec4 nearW = invVP * glm::vec4(ndcX, ndcY, -1.0f, 1.0f);
-            glm::vec4 farW = invVP * glm::vec4(ndcX, ndcY, 1.0f, 1.0f);
-            nearW /= nearW.w;
-            farW /= farW.w;
-
-            const glm::vec3 dir = glm::vec3(farW) - glm::vec3(nearW);
-            if (std::abs(dir.z) < 1e-4f)
-                return {nearW.x, nearW.y};
-
-            const float t = -nearW.z / dir.z;
-            if (t < 0.0f)
-                return {nearW.x, nearW.y};
-            glm::vec3 hit = glm::vec3(nearW) + t * dir;
-            return {hit.x, hit.y};
-        };
+        auto projectToGround = [&](const float ndcX, const float ndcY) { return Projection::UnprojectToGround(invVP, ndcX, ndcY); };
 
         auto expand = [&](const float nx, const float ny) {
             const glm::vec2 p = projectToGround(nx, ny);
@@ -115,26 +101,11 @@ namespace Math::Frustum {
         return frustum;
     }
 
-    inline ViewFrustum FromCameraVP(const glm::mat4 &vp, const float padding = 0.0f) noexcept {
+    inline ViewFrustum FromCameraVP(const glm::mat4 &vp, const float padding = 0.0f) {
         ViewFrustum frustum;
         const glm::mat4 invVP = glm::inverse(vp);
 
-        auto projectToGround = [&](const float ndcX, const float ndcY) -> glm::vec2 {
-            glm::vec4 nearW = invVP * glm::vec4(ndcX, ndcY, -1.0f, 1.0f);
-            glm::vec4 farW = invVP * glm::vec4(ndcX, ndcY, 1.0f, 1.0f);
-            nearW /= nearW.w;
-            farW /= farW.w;
-
-            const glm::vec3 dir = glm::vec3(farW) - glm::vec3(nearW);
-            if (std::abs(dir.z) < 1e-4f)
-                return {nearW.x, nearW.y};
-
-            const float t = -nearW.z / dir.z;
-            if (t < 0.0f)
-                return {nearW.x, nearW.y};
-            glm::vec3 hit = glm::vec3(nearW) + t * dir;
-            return {hit.x, hit.y};
-        };
+        auto projectToGround = [&](const float ndcX, const float ndcY) { return Projection::UnprojectToGround(invVP, ndcX, ndcY); };
 
         auto expand = [&](const float nx, const float ny) {
             const glm::vec2 p = projectToGround(nx, ny);
