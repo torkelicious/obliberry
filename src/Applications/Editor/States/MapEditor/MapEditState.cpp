@@ -41,7 +41,7 @@ void Editor::States::MapEditState::OnEnter() {
     m_MapComp->pathToMat->color = {0.0, 0.8, 1.0, 0.50};   // cyan
     m_MapComp->outlineMat->color = {1.0, 0.85, 0.0, 0.55}; // gold / yellowish
     m_selectedTile = m_CurrentGrid->Get(m_selectedHex);
-    m_TileEditorPanel.SetContext(m_EditorLayer->m_Scene, m_EditorLayer->m_Context);
+    m_TileEditorPanel.SetContext(m_EditorLayer->m_Scene, (*m_EditorLayer->m_Context));
     m_TileEditorPanel.SetMapComponent(m_MapComp);
     m_TileEditorPanel.SetCreateTypeFn([this](const std::shared_ptr<Rendering::Texture> &tex, const glm::vec4 &color) { return GetOrCreateTypeForMaterial(tex, color); });
     if (!m_MapComp->typeMats.empty()) {
@@ -148,13 +148,13 @@ void Editor::States::MapEditState::OnRender() {
     m_EditorLayer->DrawEditorUI();
     m_TileEditorPanel.OnImGuiRender();
 
-    auto *renderer = m_EditorLayer->m_Context.renderer;
+    auto *renderer = m_EditorLayer->m_Context->renderer;
     renderer->BeginFrame();
 
     const glm::mat4 &vp = renderer->GetCurrentVP();
     const Math::Frustum::ViewFrustum frustum = Math::Frustum::FromCameraVP(vp, Core::HEX_SIZE * 2.0f);
 
-    ECS::Systems::MapRenderSystem::RenderAll(*m_EditorLayer->m_Registry, m_EditorLayer->m_Context, frustum);
+    ECS::Systems::MapRenderSystem::RenderAll(*m_EditorLayer->m_Registry, (*m_EditorLayer->m_Context), frustum);
 
     if (m_MapComp && m_CurrentTool != MapTool::Select && m_BrushRadius > 1 && m_MapComp->hexMesh && m_MapComp->outlineMat) {
         ForEachHexInRing(m_hoveredHex, m_BrushRadius - 1, [&](const Map::HexCoords &hex) {
@@ -210,7 +210,7 @@ void Editor::States::MapEditState::OnDrawModeToolbar() {
             if (ImGui::MenuItem("Save Map As", nullptr, false, m_MapComp != nullptr)) {
                 LOG_INFO(LOG_WHO, "Save as requested");
                 const std::string mapsDir = GetMapsDirectory();
-                if (const auto path = Platform::FileDialogs::SaveFile(m_EditorLayer->m_Context, {.filterName = "Map File", .filterExt = "obmap", .defaultPath = mapsDir.c_str(), .defaultName = "map.obmap"})) {
+                if (const auto path = Platform::FileDialogs::SaveFile((*m_EditorLayer->m_Context), {.filterName = "Map File", .filterExt = "obmap", .defaultPath = mapsDir.c_str(), .defaultName = "map.obmap"})) {
                     m_MapComp->mapFilePath = IO::VFS::ToRelative(*path);
                     m_EditorLayer->SaveScene();
                     m_MapComp->mapDirty = false;
@@ -219,7 +219,7 @@ void Editor::States::MapEditState::OnDrawModeToolbar() {
             if (ImGui::MenuItem("Load Map from file", nullptr, false, m_MapComp != nullptr)) {
                 LOG_INFO(LOG_WHO, "Load requested");
                 const std::string mapsDir = GetMapsDirectory();
-                if (const auto path = Platform::FileDialogs::OpenFile(m_EditorLayer->m_Context, {.filterName = "Map File", .filterExt = "obmap", .defaultPath = mapsDir.c_str()})) {
+                if (const auto path = Platform::FileDialogs::OpenFile((*m_EditorLayer->m_Context), {.filterName = "Map File", .filterExt = "obmap", .defaultPath = mapsDir.c_str()})) {
                     if (IO::MapIO::Deserialize(*path, *m_CurrentGrid)) {
                         m_MapComp->mapFilePath = IO::VFS::ToRelative(*path);
                         m_MapComp->needsMeshUpdate = true;
@@ -300,7 +300,7 @@ void Editor::States::MapEditState::SaveMap() {
     if (m_MapComp->mapFilePath.empty()) {
         // no file yet
         const std::string mapsDir = GetMapsDirectory();
-        if (const auto path = Platform::FileDialogs::SaveFile(m_EditorLayer->m_Context, {.filterName = "Map File", .filterExt = "obmap", .defaultPath = mapsDir.c_str(), .defaultName = "map.obmap"})) {
+        if (const auto path = Platform::FileDialogs::SaveFile((*m_EditorLayer->m_Context), {.filterName = "Map File", .filterExt = "obmap", .defaultPath = mapsDir.c_str(), .defaultName = "map.obmap"})) {
             m_MapComp->mapFilePath = IO::VFS::ToRelative(*path);
             m_EditorLayer->SaveScene();
             m_MapComp->mapDirty = false;
@@ -345,7 +345,7 @@ void Editor::States::MapEditState::CommitMapChanges() {
         return;
     if (m_PreDragState.empty())
         return;
-    m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::MapChangeTileCommand>(m_PreDragState, m_AccumulatedNew, m_CurrentGrid, &m_MapComp->needsMeshUpdate), m_EditorLayer->m_Context);
+    m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::MapChangeTileCommand>(m_PreDragState, m_AccumulatedNew, m_CurrentGrid, &m_MapComp->needsMeshUpdate), (*m_EditorLayer->m_Context));
     m_MapComp->needsMeshUpdate = true;
     m_MapComp->mapDirty = true;
     if (m_EditorLayer->m_Scene)
@@ -438,7 +438,7 @@ uint8_t Editor::States::MapEditState::GetOrCreateTypeForMaterial(const std::shar
         newId++;
     }
 
-    const auto shader = !typeMats.empty() ? typeMats.begin()->second->shader : m_EditorLayer->m_Context.resources->Get<Rendering::Shader>("[Engine] Base");
+    const auto shader = !typeMats.empty() ? typeMats.begin()->second->shader : m_EditorLayer->m_Context->resources->Get<Rendering::Shader>("[Engine] Base");
 
     typeMats.emplace_back(newId, std::make_shared<Rendering::Material>(Rendering::Material{shader, tex, color}));
     m_MapComp->needsMeshUpdate = true;

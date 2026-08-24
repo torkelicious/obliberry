@@ -35,23 +35,20 @@
 #define LOG_WHO "EditorLayer"
 
 void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
-    m_Context = ctx;
-    m_Context.isEditorMode = true;
+    m_Context = &ctx;
+    m_Context->isEditorMode = true;
 
-    m_Context.camera = &m_Camera;
-    m_Context.sceneManager = &m_SceneManager;
+    m_Context->camera = &m_Camera;
+    m_Context->sceneManager = &m_SceneManager;
 
-    ctx.camera = &m_Camera;
-    ctx.sceneManager = &m_SceneManager;
+    m_SceneConfigEditor.SetContext(*m_Context);
+    m_ProjectConfigEditor.SetContext(*m_Context);
+    m_GraphicsConfigEditor.SetContext(*m_Context);
+    m_ThemeConfigEditor.SetContext(*m_Context);
 
-    m_SceneConfigEditor.SetContext(m_Context);
-    m_ProjectConfigEditor.SetContext(m_Context);
-    m_GraphicsConfigEditor.SetContext(m_Context);
-    m_ThemeConfigEditor.SetContext(m_Context);
+    m_SceneManager.SetContext(*m_Context);
 
-    m_SceneManager.SetContext(m_Context);
-
-    m_Input = m_Context.input;
+    m_Input = m_Context->input;
 
     // theme / fonts
     UI::Theme::IO::Deserialize(m_EditorContext);
@@ -98,7 +95,7 @@ void Editor::EditorLayer::Update(const float dt) {
         m_PendingSceneToLoad.clear();
     }
 
-    if (const std::string pendingScene = m_Context.TakePendingScenePath(); !pendingScene.empty()) {
+    if (const std::string pendingScene = m_Context->TakePendingScenePath(); !pendingScene.empty()) {
         LoadScene(pendingScene);
     }
 
@@ -109,7 +106,7 @@ void Editor::EditorLayer::Update(const float dt) {
 
     m_CurrentState->OnUpdate(dt);
     if (m_CurrentState->GetWindowTitleDirty()) {
-        m_Context.window->SetWindowTitle(m_CurrentState->GetWindowTitle());
+        m_Context->window->SetWindowTitle(m_CurrentState->GetWindowTitle());
         m_CurrentState->SetWindowTitleDirty(false);
     }
 
@@ -167,12 +164,12 @@ void Editor::EditorLayer::HandleInput(const float dt) {
                 if (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges()) {
                     m_ProjectConfigEditor.SaveConfig();
                 }
-                m_Context.window->Close();
+                m_Context->window->Close();
             });
-            m_SaveChangesDialog.SetOnDiscard([this] { m_Context.window->Close(); });
+            m_SaveChangesDialog.SetOnDiscard([this] { m_Context->window->Close(); });
             m_SaveChangesDialog.Open();
         } else {
-            m_Context.window->Close();
+            m_Context->window->Close();
         }
         return;
     }
@@ -186,12 +183,12 @@ void Editor::EditorLayer::HandleInput(const float dt) {
 
     if (m_Input->IsKeyComboPressed({"LeftCtrl", "Z"})) {
         if (m_UndoManager.CanUndo()) {
-            m_UndoManager.Undo(m_Context);
+            m_UndoManager.Undo(*m_Context);
         }
     }
     if (m_Input->IsKeyComboPressed({"LeftCtrl", "Y"})) {
         if (m_UndoManager.CanRedo()) {
-            m_UndoManager.Redo(m_Context);
+            m_UndoManager.Redo(*m_Context);
         }
     }
 
@@ -234,16 +231,16 @@ void Editor::EditorLayer::HandleInput(const float dt) {
 void Editor::EditorLayer::LoadScene(std::string path) {
     LOG_INFO("LoadScene", "Loading scene: " + path);
 
-    if (m_Context.audioEngine)
-        m_Context.audioEngine->StopMusic();
+    if (m_Context->audioEngine)
+        m_Context->audioEngine->StopMusic();
 
     m_UndoManager.Clear();
 
-    if (m_Context.isEditorMode)
+    if (m_Context->isEditorMode)
         ClearCurrentProject();
 
-    if (m_Context.renderer) {
-        m_Context.renderer->InvalidateGLCache();
+    if (m_Context->renderer) {
+        m_Context->renderer->InvalidateGLCache();
     }
 
     try {
@@ -256,26 +253,26 @@ void Editor::EditorLayer::LoadScene(std::string path) {
             m_Scene->GetContext().camera = &m_Camera;
             m_SceneConfigEditor.ReloadFromScene();
 
-            if (m_Context.renderer) {
+            if (m_Context->renderer) {
                 Rendering::Renderer::SetClearColor(m_Scene->GetProperties().BackgroundClearColor);
             }
 
             if (Core::Project::GetActive()) {
-                m_Context.scriptPool->set_stdout(m_InterpreterOutput);
+                m_Context->scriptPool->set_stdout(m_InterpreterOutput);
             }
 
             m_UIPanel.Reset();
             m_InspectorPanel.Reset();
             m_RegistryPanel.Reset();
 
-            m_RegistryPanel.SetContext(m_Scene, m_Context);
-            m_InspectorPanel.SetContext(m_Scene, m_Context, &m_UndoManager);
-            m_UIPanel.SetContext(m_Scene, m_Context, &m_UndoManager);
-            m_ViewportPanel.SetContext(m_Scene, m_Context);
-            m_ProjectBrowserPanel.SetContext(m_Scene, m_Context);
+            m_RegistryPanel.SetContext(m_Scene, *m_Context);
+            m_InspectorPanel.SetContext(m_Scene, *m_Context, &m_UndoManager);
+            m_UIPanel.SetContext(m_Scene, *m_Context, &m_UndoManager);
+            m_ViewportPanel.SetContext(m_Scene, *m_Context);
+            m_ProjectBrowserPanel.SetContext(m_Scene, *m_Context);
 
             LOG_INFO("LoadScene", "Successfully loaded scene with " + std::to_string(m_Scene->GetRegistry().GetLivingEntities().size()) + " entities");
-            Commands::RefreshWindowTitle(m_Context);
+            Commands::RefreshWindowTitle(*m_Context);
 
             if (m_CurrentState)
                 m_CurrentState->OnSceneLoaded();
@@ -319,8 +316,8 @@ void Editor::EditorLayer::LoadProject(const std::string &projectFilePath) {
     Core::Project::Load(projectFilePath);
 
     // sync loaded config into EngineContext
-    *m_Context.projectConfig = Core::Project::GetActive()->GetConfig();
-    *m_Context.graphicsConfig = Config::GraphicsConfig::Deserialize("graphics.json");
+    *m_Context->projectConfig = Core::Project::GetActive()->GetConfig();
+    *m_Context->graphicsConfig = Config::GraphicsConfig::Deserialize("graphics.json");
 
     LoadStartScene();
 
@@ -406,9 +403,9 @@ void Editor::EditorLayer::DrawEditorUI() {
     DrawEditorPanels();
     DrawUtilityWindows();
 
-    if (m_Context.camera) {
+    if (m_Context->camera) {
         const float aspect = m_ViewportPanel.GetWidth() / m_ViewportPanel.GetHeight();
-        m_Context.renderer->SetCamera(*m_Context.camera, aspect);
+        m_Context->renderer->SetCamera(*m_Context->camera, aspect);
     }
 }
 
@@ -452,11 +449,11 @@ void Editor::EditorLayer::DrawDockSpace() {
 }
 
 void Editor::EditorLayer::DrawEditorPanels() {
-    m_RegistryPanel.SetContext(m_Scene, m_Context);
-    m_InspectorPanel.SetContext(m_Scene, m_Context, &m_UndoManager);
-    m_ProjectBrowserPanel.SetContext(m_Scene, m_Context);
-    m_ViewportPanel.SetContext(m_Scene, m_Context);
-    m_UIPanel.SetContext(m_Scene, m_Context, &m_UndoManager);
+    m_RegistryPanel.SetContext(m_Scene, *m_Context);
+    m_InspectorPanel.SetContext(m_Scene, *m_Context, &m_UndoManager);
+    m_ProjectBrowserPanel.SetContext(m_Scene, *m_Context);
+    m_ViewportPanel.SetContext(m_Scene, *m_Context);
+    m_UIPanel.SetContext(m_Scene, *m_Context, &m_UndoManager);
     m_InspectorPanel.SetSelectedEntity(m_RegistryPanel.GetSelectedEntity());
 
     // viewport must be rendered first so ImGuizmo::SetDrawlist/SetRect are called
@@ -521,11 +518,11 @@ void Editor::EditorLayer::DrawToolbar() {
         // undomgr btns
 
         if (ImGui::MenuItem("Undo", "Ctrl+Z", false, m_UndoManager.CanUndo())) {
-            m_UndoManager.Undo(m_Context);
+            m_UndoManager.Undo(*m_Context);
         }
 
         if (ImGui::MenuItem("Redo", "Ctrl+Y", false, m_UndoManager.CanRedo())) {
-            m_UndoManager.Redo(m_Context);
+            m_UndoManager.Redo(*m_Context);
         }
 
         ImGui::Separator();
@@ -544,7 +541,7 @@ void Editor::EditorLayer::DrawToolbar() {
 
         if (ImGui::BeginMenu("File")) {
             if (ImGui::MenuItem("New Project")) {
-                if (const auto dir = Platform::FileDialogs::PickFolder(m_Context)) {
+                if (const auto dir = Platform::FileDialogs::PickFolder(*m_Context)) {
                     const std::filesystem::path pickedDir(*dir);
 
                     auto onProceed = [this, pickedDir] {
@@ -579,7 +576,7 @@ void Editor::EditorLayer::DrawToolbar() {
             }
 
             if (ImGui::MenuItem("Open Project")) {
-                if (const auto dir = Platform::FileDialogs::PickFolder(m_Context)) {
+                if (const auto dir = Platform::FileDialogs::PickFolder(*m_Context)) {
                     if (const std::filesystem::path projectFile = std::filesystem::path(*dir) / "project.json"; !std::filesystem::exists(projectFile)) {
                         LOG_ERROR("Editor", "No project.json found in: " + *dir);
                     } else if ((m_Scene && m_Scene->HasUnsavedChanges()) || (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges())) {
@@ -680,7 +677,7 @@ void Editor::EditorLayer::DrawToolbar() {
             ImGui::Separator();
 
             if (ImGui::MenuItem("Export Project")) {
-                if (auto path = Platform::FileDialogs::PickFolder(m_Context, nullptr, "Pick export directory")) {
+                if (auto path = Platform::FileDialogs::PickFolder(*m_Context, nullptr, "Pick export directory")) {
                     IO::Package::Tools::ExportGame(path.value());
                 }
             }
@@ -696,12 +693,12 @@ void Editor::EditorLayer::DrawToolbar() {
                         if (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges()) {
                             m_ProjectConfigEditor.SaveConfig();
                         }
-                        m_Context.window->Close();
+                        m_Context->window->Close();
                     });
-                    m_SaveChangesDialog.SetOnDiscard([this] { m_Context.window->Close(); });
+                    m_SaveChangesDialog.SetOnDiscard([this] { m_Context->window->Close(); });
                     m_SaveChangesDialog.Open();
                 } else {
-                    m_Context.window->Close();
+                    m_Context->window->Close();
                 }
             }
             ImGui::EndMenu();
@@ -793,8 +790,8 @@ void Editor::EditorLayer::DrawToolbar() {
                                 mapEntity.SetName("MAP");
 
                                 ECS::Components::MapComponent mapComp;
-                                mapComp.hexMesh = m_Context.resources->Get<Rendering::Mesh>("[Engine] Hex");
-                                const auto shader = m_Context.resources->Get<Rendering::Shader>("[Engine] Base");
+                                mapComp.hexMesh = m_Context->resources->Get<Rendering::Mesh>("[Engine] Hex");
+                                const auto shader = m_Context->resources->Get<Rendering::Shader>("[Engine] Base");
                                 mapComp.outlineMat = std::make_shared<Rendering::Material>(Rendering::Material{shader, nullptr, {1, 0, 0, 0.5f}});
                                 mapComp.pathToMat = std::make_shared<Rendering::Material>(Rendering::Material{shader, nullptr, {1, 1, 1, 0.5f}});
                                 mapComp.mapFilePath.clear();

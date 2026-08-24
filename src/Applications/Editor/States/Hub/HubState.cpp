@@ -32,7 +32,7 @@ namespace Editor::States {
         ImGui::Separator();
 
         if (ImGui::Button("Create New Project", ImVec2(250, 50))) {
-            if (const auto dir = Platform::FileDialogs::PickFolder(m_EditorLayer->m_Context)) {
+            if (const auto dir = Platform::FileDialogs::PickFolder((*m_EditorLayer->m_Context))) {
                 m_EditorLayer->m_NewProjectDialog.SetDirectory(std::filesystem::path(*dir));
                 m_EditorLayer->m_NewProjectDialog.SetTemplates(Core::Project::GetAvailableTemplates());
                 m_EditorLayer->m_NewProjectDialog.SetOnConfirm([this](const std::filesystem::path &pDir, const std::string &name, const std::string &templateId) {
@@ -48,7 +48,7 @@ namespace Editor::States {
         ImGui::Spacing();
 
         if (ImGui::Button("Open Existing Project", ImVec2(250, 50))) {
-            if (const auto dir = Platform::FileDialogs::PickFolder(m_EditorLayer->m_Context)) {
+            if (const auto dir = Platform::FileDialogs::PickFolder((*m_EditorLayer->m_Context))) {
                 if (const std::filesystem::path projectFile = std::filesystem::path(*dir) / "project.json"; std::filesystem::exists(projectFile)) {
                     m_EditorLayer->LoadProject(projectFile.string());
                 } else {

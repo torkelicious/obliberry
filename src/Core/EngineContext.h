@@ -71,33 +71,9 @@ namespace Core {
             return !m_PendingScenePath.empty();
         }
 
-        EngineContext &operator=(const EngineContext &other) {
-            if (this != &other) {
-                std::lock_guard lockThis(m_PendingSceneMutex);
-                ProjectRootPath = other.ProjectRootPath;
-                projectConfig = other.projectConfig;
-                graphicsConfig = other.graphicsConfig;
-                window = other.window;
-                input = other.input;
-                resources = other.resources;
-                sceneManager = other.sceneManager;
-                renderer = other.renderer;
-                camera = other.camera;
-                uiRenderer = other.uiRenderer;
-                uiSystem = other.uiSystem;
-                uiCmdBuf = other.uiCmdBuf;
-                scriptPool = other.scriptPool;
-                threadPool = other.threadPool;
-                audioEngine = other.audioEngine;
-                deltaTime = other.deltaTime;
-                timeScale = other.timeScale;
-                frameCount = other.frameCount;
-                activeProject = other.activeProject;
-                isEditorMode = other.isEditorMode;
-                logger = other.logger;
-            }
-            return *this;
-        }
+        EngineContext() = default;
+        EngineContext(const EngineContext &) = delete;
+        EngineContext &operator=(const EngineContext &) = delete;
 
         Config::ProjectConfig *projectConfig = nullptr;
         Config::GraphicsConfig *graphicsConfig = nullptr;
