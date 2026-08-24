@@ -6,16 +6,20 @@
 #include <memory>
 
 namespace ECS::Components {
+    struct ScriptSlot {
+        bool isInitialized = false;
+        std::string scriptPath;
+        std::filesystem::path resolvedPath;
+        std::vector<std::shared_ptr<ObSL::Environment>> instance_envs;
+        std::vector<ObSL::ObSLCallable *> on_update_functions;
+        std::vector<ObSL::ObSLCallable *> on_destroy_functions;
+        std::vector<ObSL::ObSLCallable *> on_exit_functions;
+        std::string source_code;
+        std::vector<std::unique_ptr<ObSL::Stmt>> ast_nodes;
+        std::filesystem::file_time_type lastModified;
+    };
+
     struct ScriptComponent {
-        std::vector<bool> isInitialized;
-        std::vector<std::string> scriptPaths;
-        std::vector<std::filesystem::path> resolvedScriptPaths;
-        std::vector<std::vector<std::shared_ptr<ObSL::Environment>>> instance_envs;
-        std::vector<std::vector<ObSL::ObSLCallable *>> on_update_functions;
-        std::vector<std::vector<ObSL::ObSLCallable *>> on_destroy_functions;
-        std::vector<std::vector<ObSL::ObSLCallable *>> on_exit_functions;
-        std::vector<std::string> source_codes;
-        std::vector<std::vector<std::unique_ptr<ObSL::Stmt>>> ast_nodes;
-        std::vector<std::filesystem::file_time_type> lastModified;
+        std::vector<ScriptSlot> slots;
     };
 } // namespace ECS::Components

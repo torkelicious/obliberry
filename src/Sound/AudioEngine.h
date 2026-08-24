@@ -2,6 +2,7 @@
 
 #include <string>
 #include <memory>
+#include <mutex>
 #include <vector>
 #include <unordered_map>
 
@@ -36,6 +37,9 @@ namespace Sound {
         bool Init();
 
         ma_engine *m_Engine = nullptr;
+
+        mutable std::mutex m_Mutex;
+
         ma_sound *m_CurrentMusic = nullptr;
         std::vector<ma_sound *> m_ActiveSounds;
 

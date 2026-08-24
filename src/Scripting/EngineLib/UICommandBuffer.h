@@ -1,8 +1,9 @@
 #pragma once
 
-#include <functional>
 #include <mutex>
 #include <vector>
+
+#include "Scripting/SmallFunction.h"
 
 namespace UI {
     class UISystem;
@@ -11,13 +12,13 @@ namespace UI {
 namespace Scripting {
     class UICommandBuffer {
     public:
-        void push(std::function<void(UI::UISystem &)> command) {
+        void push(SmallFunction<void(UI::UISystem &)> command) {
             std::lock_guard lock(m_Mutex);
             m_Commands.push_back(std::move(command));
         }
 
         void flush(UI::UISystem &uiSystem) {
-            std::vector<std::function<void(UI::UISystem &)>> commands;
+            std::vector<SmallFunction<void(UI::UISystem &)>> commands;
             {
                 std::lock_guard lock(m_Mutex);
                 commands.swap(m_Commands);
@@ -28,7 +29,7 @@ namespace Scripting {
         }
 
     private:
-        std::vector<std::function<void(UI::UISystem &)>> m_Commands;
+        std::vector<SmallFunction<void(UI::UISystem &)>> m_Commands;
         std::mutex m_Mutex;
     };
 } // namespace Scripting

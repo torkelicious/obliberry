@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include "Container.h"
+#include "Core/Utils/BitUtils.h"
 #include <lz4.h>
 #include <ranges>
 #ifdef _WIN32
@@ -18,6 +19,7 @@
 #endif
 
 namespace IO {
+    using namespace Core::Utils::Bits;
     ContainerReader::~ContainerReader() {
         if (m_mapped_region && m_mapped_region != MAP_FAILED) {
 #ifdef _WIN32
@@ -103,31 +105,70 @@ namespace IO {
         if (!f.is_open())
             return false;
 
+        const auto file_size = std::filesystem::file_size(file);
+
         Package::FileHeader header;
         f.read(reinterpret_cast<char *>(&header), sizeof(header));
         if (!f || std::string_view(header.magic, 4) != "OBPK")
             return false;
+
+        header.version = ToLittleEndian(header.version);
+        header.flags = ToLittleEndian(header.flags);
+        header.entry_count = ToLittleEndian(header.entry_count);
+        header.toc_offset = ToLittleEndian(header.toc_offset);
+        header.string_table_offset = ToLittleEndian(header.string_table_offset);
+        header.string_table_size = ToLittleEndian(header.string_table_size);
+        header.blob_data_offset = ToLittleEndian(header.blob_data_offset);
+
         if (header.version != 1)
+            return false;
+
+        // guard header offset/count fields real file size before trusting it
+        if (header.toc_offset > file_size)
+            return false;
+        const uint64_t toc_remaining = file_size - header.toc_offset;
+        if (header.entry_count > toc_remaining / sizeof(Package::TocEntry))
+            return false;
+        if (header.string_table_offset > file_size)
+            return false;
+        const uint64_t st_remaining = file_size - header.string_table_offset;
+        if (header.string_table_size > st_remaining)
+            return false;
+        if (header.blob_data_offset > file_size)
             return false;
 
         m_toc.resize(header.entry_count);
         f.seekg(header.toc_offset);
         f.read(reinterpret_cast<char *>(m_toc.data()), header.entry_count * sizeof(Package::TocEntry));
+        if (!f) {
+            return false;
+        }
+
+        for (auto &entry : m_toc) {
+            entry.name_offset = ToLittleEndian(entry.name_offset);
+            entry.name_length = ToLittleEndian(entry.name_length);
+            entry.data_offset = ToLittleEndian(entry.data_offset);
+            entry.compressed_size = ToLittleEndian(entry.compressed_size);
+            entry.uncompressed_size = ToLittleEndian(entry.uncompressed_size);
+        }
 
         m_string_table.resize(header.string_table_size);
         f.seekg(header.string_table_offset);
         f.read(m_string_table.data(), header.string_table_size);
+        if (!f)
+            return false;
 
         f.close();
 
         for (size_t i = 0; i < m_toc.size(); ++i) {
+            if (m_toc[i].name_offset >= m_string_table.size() || m_toc[i].name_length > m_string_table.size() - m_toc[i].name_offset) {
+                return false; // out of bounds
+            }
             std::string_view name(m_string_table.data() + m_toc[i].name_offset, m_toc[i].name_length);
             m_path_to_index[name] = i;
         }
 
         // mmap the blob region
-        const auto file_size = std::filesystem::file_size(file);
-
 #ifdef _WIN32
         m_mapped_fd = _wopen(file.c_str(), _O_RDONLY | _O_BINARY);
 #else
@@ -173,6 +214,10 @@ namespace IO {
         madvise(m_mapped_region, m_mapped_size, MADV_SEQUENTIAL);
 #endif
 
+        if (header.blob_data_offset > file_size) {
+            return false;
+        }
+
         m_blob_data = static_cast<const char *>(m_mapped_region) + header.blob_data_offset;
         m_blob_size = file_size - header.blob_data_offset;
 
@@ -180,12 +225,21 @@ namespace IO {
     }
 
     std::optional<std::string> ContainerReader::read(const std::string &canonical_path) const {
+
         const auto it = m_path_to_index.find(canonical_path);
         if (it == m_path_to_index.end())
             return std::nullopt;
         const auto &entry = m_toc[it->second];
 
-        if (entry.data_offset + entry.compressed_size > m_blob_size) {
+        // bounds check
+        if (entry.data_offset > m_blob_size || entry.compressed_size > m_blob_size - entry.data_offset) {
+            return std::nullopt;
+        }
+
+        // cap allocation size
+        // 512 MB
+        constexpr uint64_t MAX_UNCOMPRESSED_SIZE = 512 * 1024 * 1024;
+        if (entry.uncompressed_size > MAX_UNCOMPRESSED_SIZE) {
             return std::nullopt;
         }
 
@@ -194,6 +248,12 @@ namespace IO {
         if (entry.flags == Package::EntryFlags::None) {
             // Uncompressed
             return std::string(src, entry.compressed_size);
+        }
+
+        // lz4 can not  beat ~255:1 ratio
+        constexpr uint64_t MAX_RATIO = 1024;
+        if (entry.compressed_size > 0 && entry.uncompressed_size > entry.compressed_size * MAX_RATIO) {
+            return std::nullopt;
         }
 
         // Compressed
@@ -213,7 +273,7 @@ namespace IO {
             return std::nullopt;
         const auto &entry = m_toc[it->second];
 
-        if (entry.data_offset + entry.compressed_size > m_blob_size) {
+        if (entry.data_offset > m_blob_size || entry.compressed_size > m_blob_size - entry.data_offset) {
             return std::nullopt;
         }
 

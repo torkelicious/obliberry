@@ -1,6 +1,5 @@
 #include "VFS.h"
 #include <fstream>
-#include <sstream>
 #include "Logger/LoggerService.h"
 #include "IO/Package/Container.h"
 
@@ -10,8 +9,8 @@
 namespace IO::VFS {
 
     struct VFSStorage {
-        std::filesystem::path rootDir;
-        std::filesystem::path assetsDir;
+        std::filesystem::path rootDir = {};
+        std::filesystem::path assetsDir = {};
         bool isLoaded = false;
         bool isPackaged = false;
         ContainerReader packReader;
@@ -59,9 +58,20 @@ namespace IO::VFS {
         std::ifstream file(Resolve(virtualPath), std::ios::binary);
         if (!file.is_open())
             return std::nullopt;
-        std::stringstream ss;
-        ss << file.rdbuf();
-        return ss.str();
+
+        // size up front so read once
+        file.seekg(0, std::ios::end);
+        const auto size = static_cast<std::streamoff>(file.tellg());
+        if (size < 0)
+            return std::nullopt;
+        file.seekg(0, std::ios::beg);
+
+        std::string content(static_cast<size_t>(size), '\0');
+        if (size > 0)
+            file.read(content.data(), size);
+        if (!file && !file.eof())
+            return std::nullopt;
+        return content;
     }
 
     std::optional<std::string_view> ReadVirtualView(const std::filesystem::path &virtualPath) {
@@ -72,11 +82,26 @@ namespace IO::VFS {
     }
 
     std::filesystem::path Resolve(const std::filesystem::path &virtualPath) {
-        if (!s_State.isLoaded) {
-            // fallback to the binary folder if no project context is provided yet
-            return std::filesystem::current_path() / virtualPath;
+        const std::filesystem::path basePath = s_State.isLoaded ? s_State.rootDir : std::filesystem::current_path();
+
+        if (virtualPath.is_absolute()) {
+            LOG_ERROR(LOG_WHO, "path was absolute, it will not resolve.");
+            return {};
         }
-        return s_State.rootDir / virtualPath;
+
+        // normalize paths
+        std::filesystem::path combinedPath = basePath / virtualPath;
+        std::filesystem::path resolvedPath = std::filesystem::weakly_canonical(combinedPath);
+        std::filesystem::path canonicalBase = std::filesystem::weakly_canonical(basePath);
+
+        // verify
+        auto [baseIt, resIt] = std::mismatch(canonicalBase.begin(), canonicalBase.end(), resolvedPath.begin());
+        if (baseIt != canonicalBase.end()) {
+            // path escapes base dir
+            LOG_ERROR(LOG_WHO, "path traversal blocked for: " + virtualPath.string() + " (escapes base dir)");
+            return {};
+        }
+        return resolvedPath;
     }
 
     std::filesystem::path GetProjectRoot() { return s_State.rootDir; }

@@ -41,8 +41,7 @@ namespace IO {
             nlohmann::json prefabJson;
             try {
                 if (VFS::IsPackaged()) {
-                    std::vector<uint8_t> bytes(dataView.begin(), dataView.end());
-                    prefabJson = nlohmann::json::from_msgpack(bytes);
+                    prefabJson = nlohmann::json::from_msgpack(dataView.begin(), dataView.end());
                 } else {
                     prefabJson = nlohmann::json::parse(dataView);
                 }
@@ -82,6 +81,12 @@ namespace IO {
             }
             out << prefabJson.dump(4);
             out.close();
+            if (!out) {
+                if (auto *logger = Logging::LoggerService::Get()) {
+                    logger->log("PrefabManager", "Failed to write prefab to: " + filepath, Logging::LogSeverity::Error);
+                }
+                return false;
+            }
 
             s_prefab_cache[filepath] = std::move(prefabJson);
             return true;

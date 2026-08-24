@@ -23,8 +23,15 @@ namespace Logging {
         };
 
     private:
+        static ILogger *s_globalLogger;
         static thread_local ILogger *s_currentLogger;
     };
+
+#if DEBUG_BUILD
+#define LOG_DEBUG_IF_ENABLED(stmt) stmt
+#else
+#define LOG_DEBUG_IF_ENABLED(stmt)
+#endif
 
 #define LOG_INFO(who, msg)                                                                                                                                                                                                 \
     do {                                                                                                                                                                                                                   \
@@ -49,8 +56,6 @@ namespace Logging {
 
 #define LOG_DEBUG(who, msg)                                                                                                                                                                                                \
     do {                                                                                                                                                                                                                   \
-        if (auto *logger = Logging::LoggerService::Get()) {                                                                                                                                                                \
-            logger->log(who, msg, Logging::LogSeverity::Debug);                                                                                                                                                            \
-        }                                                                                                                                                                                                                  \
+        LOG_DEBUG_IF_ENABLED(if (auto *logger = Logging::LoggerService::Get()) { logger->log(who, msg, Logging::LogSeverity::Debug); })                                                                                    \
     } while (0)
 } // namespace Logging

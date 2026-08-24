@@ -37,6 +37,33 @@ namespace Editor::UI {
 
     std::string ProjectBrowserPanel::KeyFromPath(const std::filesystem::path &path) { return path.stem().string(); }
 
+    std::vector<AssetEntry> ProjectBrowserPanel::ScanDirectoryCached(const std::string &subDir, const std::string &extension) {
+        const auto resolved = IO::VFS::Resolve(subDir);
+
+        std::filesystem::file_time_type dirWrite{};
+        bool dirReadable = false;
+        std::error_code ec;
+        if (!resolved.empty()) {
+            dirWrite = std::filesystem::last_write_time(resolved, ec);
+            dirReadable = !ec;
+        }
+
+        auto it = m_ScanCaches.find(subDir);
+        const bool haveCache = it != m_ScanCaches.end();
+        if (haveCache && it->second.valid == dirReadable && it->second.lastWrite == dirWrite) {
+            return it->second.entries;
+        }
+
+        DirScanCache cache;
+        cache.dirKey = subDir;
+        cache.lastWrite = dirWrite;
+        cache.valid = dirReadable;
+        if (dirReadable)
+            cache.entries = ScanDirectory(subDir, extension);
+        m_ScanCaches[subDir] = std::move(cache);
+        return m_ScanCaches[subDir].entries;
+    }
+
     std::vector<AssetEntry> ProjectBrowserPanel::ScanDirectory(const std::string &subDir, const std::string &extension) {
         std::vector<AssetEntry> entries;
         const auto resolved = IO::VFS::Resolve(subDir);
@@ -111,7 +138,7 @@ namespace Editor::UI {
 
 
     template <typename T>
-    void ProjectBrowserPanel::DrawResourceSection(Core::ResourceManager &resources, const std::unordered_map<std::string, std::shared_ptr<T>> &allItems, const AssetType assetType, const char *childId,
+    void ProjectBrowserPanel::DrawResourceSection(Core::ResourceManager &resources, const std::vector<std::pair<std::string, std::shared_ptr<T>>> &allItems, const AssetType assetType, const char *childId,
                                                   const float childHeight, const char *emptyText, const char *typeName, std::type_identity_t<std::function<void(const std::shared_ptr<T> &)>> renderThumbnail,
                                                   const std::type_identity_t<std::function<void(const std::string &, Core::ResourceManager &)>> &renderExtraButtons,
                                                   std::type_identity_t<std::function<void(const std::string &, const std::shared_ptr<T> &, Core::ResourceManager &)>> renderTooltip) {
@@ -517,7 +544,7 @@ void Editor::UI::ProjectBrowserPanel::DrawFileSection(const char *label, const s
 
     char *newScriptBuf = m_NewScriptBuffer;
 
-    auto entries = ScanDirectory(directory, extension);
+    auto entries = ScanDirectoryCached(directory, extension);
 
     ImGui::PushID(label);
     if (ImGui::BeginChild("list", ImVec2(0, 120), true)) {

@@ -52,11 +52,14 @@ namespace Rendering::MeshFactory {
     MeshData CreateEquiTriangle(const float height = 0.5) {
         MeshData data;
 
-        data.vertices.push_back({{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f}});
+        const float halfBase = height / std::sqrt(3.0f);
+        const float centroidOffset = height / 3.0f; // centroid is h/3 above base
 
-        data.vertices.push_back({{0.5f, -height, 0.0f}, {1.0f, 0.0f}});
+        data.vertices.push_back({{-halfBase, -centroidOffset, 0.0f}, {0.0f, 0.0f}});
 
-        data.vertices.push_back({{0.0f, 0.5f, 0.0f}, {0.5f, 1.0f}});
+        data.vertices.push_back({{halfBase, -centroidOffset, 0.0f}, {1.0f, 0.0f}});
+
+        data.vertices.push_back({{0.0f, height - centroidOffset, 0.0f}, {0.5f, 1.0f}});
         data.indices.push_back(0);
         data.indices.push_back(1);
         data.indices.push_back(2);

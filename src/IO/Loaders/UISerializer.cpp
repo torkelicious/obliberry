@@ -75,10 +75,10 @@ namespace IO::UISerializer {
     static void DeserializeRect(const json &j, UI::UIElement *element) {
         if (j.contains("rect")) {
             auto &r = j["rect"];
-            if (r.contains("position")) {
+            if (r.contains("position") && r["position"].is_array() && r["position"].size() >= 2) {
                 element->Rect.Position = {r["position"][0].get<float>(), r["position"][1].get<float>()};
             }
-            if (r.contains("scale")) {
+            if (r.contains("scale") && r["scale"].is_array() && r["scale"].size() >= 2) {
                 element->Rect.Scale = {r["scale"][0].get<float>(), r["scale"][1].get<float>()};
             }
         }
@@ -109,7 +109,8 @@ namespace IO::UISerializer {
         std::unique_ptr<UI::UIElement> element;
 
         if (type == "Text") {
-            auto *text = new UI::UIText();
+            element = std::make_unique<UI::UIText>();
+            auto *text = static_cast<UI::UIText *>(element.get());
             glm::vec4 color = text->GetColor();
             DeserializeColor(j, "color", color);
             text->SetColor(color);
@@ -123,9 +124,9 @@ namespace IO::UISerializer {
                     LOG_WARN(LOG_WHO, "Font '" + fontKey + "' not found in resources. Text will use default font.");
                 }
             }
-            element.reset(text);
         } else if (type == "Button") {
-            auto *btn = new UI::UIButton();
+            element = std::make_unique<UI::UIButton>();
+            auto *btn = static_cast<UI::UIButton *>(element.get());
             glm::vec4 color = btn->GetColor();
             glm::vec4 bgColor = btn->GetBackgroundColor();
             glm::vec4 hoverBgColor = btn->GetHoveredBackgroundColor();
@@ -154,9 +155,9 @@ namespace IO::UISerializer {
                     LOG_WARN(LOG_WHO, "Font '" + fontKey + "' not found in resources. Button will use default font.");
                 }
             }
-            element.reset(btn);
         } else if (type == "Image") {
-            auto *img = new UI::UIImage();
+            element = std::make_unique<UI::UIImage>();
+            auto *img = static_cast<UI::UIImage *>(element.get());
             glm::vec4 color = img->GetColor();
             DeserializeColor(j, "color", color);
             img->SetColor(color);
@@ -169,13 +170,12 @@ namespace IO::UISerializer {
                     LOG_WARN(LOG_WHO, "Texture '" + texKey + "' not found in resources.");
                 }
             }
-            element.reset(img);
         } else if (type == "Rect") {
-            auto *rect = new UI::UIRect();
+            element = std::make_unique<UI::UIRect>();
+            auto *rect = static_cast<UI::UIRect *>(element.get());
             glm::vec4 color = rect->GetColor();
             DeserializeColor(j, "color", color);
             rect->SetColor(color);
-            element.reset(rect);
         } else {
             element = std::make_unique<UI::UIElement>();
         }
@@ -192,7 +192,13 @@ namespace IO::UISerializer {
             return;
 
         for (const auto &childJson : j["children"]) {
-            auto element = DeserializeElement(childJson, resources);
+            std::unique_ptr<UI::UIElement> element;
+            try {
+                element = DeserializeElement(childJson, resources);
+            } catch (const std::exception &e) {
+                LOG_ERROR(LOG_WHO, std::string("Failed to deserialize UI child element: ") + e.what());
+                continue;
+            }
             if (!element)
                 continue;
 
@@ -230,7 +236,13 @@ namespace IO::UISerializer {
         uiSystem.Clear();
 
         for (const auto &elementJson : uiJson["elements"]) {
-            auto element = DeserializeElement(elementJson, resources);
+            std::unique_ptr<UI::UIElement> element;
+            try {
+                element = DeserializeElement(elementJson, resources);
+            } catch (const std::exception &e) {
+                LOG_ERROR(LOG_WHO, std::string("Failed to deserialize UI element: ") + e.what());
+                continue;
+            }
             if (!element)
                 continue;
 

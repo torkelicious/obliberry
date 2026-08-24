@@ -45,9 +45,9 @@ namespace ECS::Systems::ParticleSystem {
         return -1;
     }
 
-    inline int CreateEmitter(EntityID entity, const Components::ParticleEmitterComponent &comp) {
+    inline int CreateEmitter(const EntityID entity, const Components::ParticleEmitterComponent &comp) {
         auto &emitters = GetEmitters();
-        int index = static_cast<int>(emitters.size());
+        const int index = static_cast<int>(emitters.size());
 
         Rendering::ParticleEmitterConfig config;
         config.maxParticles = comp.maxParticles;
@@ -68,7 +68,7 @@ namespace ECS::Systems::ParticleSystem {
         config.isBillboard = comp.isBillboard;
         config.material = comp.material;
 
-        emitters.push_back({Rendering::ParticlePool(std::move(config)), entity});
+        emitters.push_back({.pool = Rendering::ParticlePool(std::move(config)), .sourceEntity = entity});
         return index;
     }
 
@@ -81,34 +81,36 @@ namespace ECS::Systems::ParticleSystem {
             if (!comp || !comp->active)
                 return;
 
-            if (comp->emitterIndex < 0) {
+            if (const int idx = comp->emitterIndex; idx < 0 || static_cast<size_t>(idx) >= emitters.size() || emitters[idx].sourceEntity != static_cast<EntityID>(entity)) {
                 comp->emitterIndex = FindEmitter(static_cast<EntityID>(entity));
                 if (comp->emitterIndex < 0) {
                     comp->emitterIndex = CreateEmitter(static_cast<EntityID>(entity), *comp);
                 }
             }
-
             auto &state = emitters[comp->emitterIndex];
 
-            Rendering::ParticleEmitterConfig config;
-            config.maxParticles = comp->maxParticles;
-            config.emitRate = comp->emitRate;
-            config.lifetimeMin = comp->lifetimeMin;
-            config.lifetimeMax = comp->lifetimeMax;
-            config.velocityMin = comp->velocityMin;
-            config.velocityMax = comp->velocityMax;
-            config.gravity = comp->gravity;
-            config.sizeStartMin = comp->sizeStartMin;
-            config.sizeStartMax = comp->sizeStartMax;
-            config.sizeEndMin = comp->sizeEndMin;
-            config.sizeEndMax = comp->sizeEndMax;
-            config.rotationSpeedMin = comp->rotationSpeedMin;
-            config.rotationSpeedMax = comp->rotationSpeedMax;
-            config.colorStart = comp->colorStart;
-            config.colorEnd = comp->colorEnd;
-            config.isBillboard = comp->isBillboard;
-            config.material = comp->material;
-            state.pool.SetConfig(config);
+            if (comp->isDirty) {
+                Rendering::ParticleEmitterConfig config;
+                config.maxParticles = comp->maxParticles;
+                config.emitRate = comp->emitRate;
+                config.lifetimeMin = comp->lifetimeMin;
+                config.lifetimeMax = comp->lifetimeMax;
+                config.velocityMin = comp->velocityMin;
+                config.velocityMax = comp->velocityMax;
+                config.gravity = comp->gravity;
+                config.sizeStartMin = comp->sizeStartMin;
+                config.sizeStartMax = comp->sizeStartMax;
+                config.sizeEndMin = comp->sizeEndMin;
+                config.sizeEndMax = comp->sizeEndMax;
+                config.rotationSpeedMin = comp->rotationSpeedMin;
+                config.rotationSpeedMax = comp->rotationSpeedMax;
+                config.colorStart = comp->colorStart;
+                config.colorEnd = comp->colorEnd;
+                config.isBillboard = comp->isBillboard;
+                config.material = comp->material;
+                state.pool.SetConfig(config);
+                comp->isDirty = false;
+            }
 
             if (comp->emitRate > 0.0f) {
                 comp->emitAccumulator += dt * comp->emitRate;
@@ -160,7 +162,7 @@ namespace ECS::Systems::ParticleSystem {
         const glm::vec3 camUp = camera ? camera->GetUpVector() : glm::vec3(0.0f, 1.0f, 0.0f);
 
         registry.ForEach<Components::ParticleEmitterComponent>([&](Entity entity, const Components::ParticleEmitterComponent *comp) {
-            if (!comp || comp->emitterIndex < 0 || comp->emitterIndex >= static_cast<int>(emitters.size()))
+            if (!comp || comp->emitterIndex < 0 || comp->emitterIndex >= static_cast<int>(emitters.size()) || emitters[comp->emitterIndex].sourceEntity != static_cast<EntityID>(entity))
                 return;
 
             const auto &state = emitters[comp->emitterIndex];
@@ -174,5 +176,7 @@ namespace ECS::Systems::ParticleSystem {
             renderer.Submit(quad, comp->material, transforms, colors, blendMode, comp->renderOrder, comp->shape);
         });
     }
+
+    inline void OnSceneExit(Registry &reg) { GetEmitters().clear(); }
 
 } // namespace ECS::Systems::ParticleSystem

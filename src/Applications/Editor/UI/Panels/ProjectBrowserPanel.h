@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <glm/glm.hpp>
 #include <string>
+#include <unordered_map>
 #include <vector>
 #include <functional>
 #include <type_traits>
@@ -25,8 +26,8 @@ namespace Editor::UI {
         enum class AssetType : uint8_t { Texture, Shader, Mesh, Material, Font };
 
         template <typename T>
-        void DrawResourceSection(Core::ResourceManager &resources, const std::unordered_map<std::string, std::shared_ptr<T>> &allItems, AssetType assetType, const char *childId, float childHeight, const char *emptyText,
-                                 const char *typeName, std::type_identity_t<std::function<void(const std::shared_ptr<T> &)>> renderThumbnail,
+        void DrawResourceSection(Core::ResourceManager &resources, const std::vector<std::pair<std::string, std::shared_ptr<T>>> &allItems, AssetType assetType, const char *childId, float childHeight,
+                                 const char *emptyText, const char *typeName, std::type_identity_t<std::function<void(const std::shared_ptr<T> &)>> renderThumbnail,
                                  const std::type_identity_t<std::function<void(const std::string &, Core::ResourceManager &)>> &renderExtraButtons,
                                  std::type_identity_t<std::function<void(const std::string &, const std::shared_ptr<T> &, Core::ResourceManager &)>> renderTooltip = nullptr);
 
@@ -78,6 +79,15 @@ namespace Editor::UI {
         ViewMode m_ViewMode = ViewMode::Grid;
         char m_SearchBuffer[128] = {};
 
+        struct DirScanCache {
+            std::string dirKey;
+            std::filesystem::file_time_type lastWrite{};
+            bool valid = false;
+            std::vector<AssetEntry> entries;
+        };
+        std::unordered_map<std::string, DirScanCache> m_ScanCaches;
+
+        [[nodiscard]] std::vector<AssetEntry> ScanDirectoryCached(const std::string &subDir, const std::string &extension);
         [[nodiscard]] static std::vector<AssetEntry> ScanDirectory(const std::string &subDir, const std::string &extension);
 
         [[nodiscard]] static std::string KeyFromPath(const std::filesystem::path &path);

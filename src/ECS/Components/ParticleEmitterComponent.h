@@ -32,6 +32,7 @@ namespace ECS::Components {
         std::shared_ptr<Rendering::Material> material = nullptr;
         float emitAccumulator = 0.0f;
         bool active = true;
+        bool isDirty = true;
     };
 
 } // namespace ECS::Components

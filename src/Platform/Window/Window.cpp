@@ -62,7 +62,7 @@ bool Platform::Window::Window::Init(const unsigned int width, const unsigned int
 #endif
 
     GLFWmonitor *monitor = conf->Fullscreen ? glfwGetPrimaryMonitor() : nullptr;
-    m_Window = glfwCreateWindow(m_Width, m_Height, title, monitor, nullptr);
+    m_Window = glfwCreateWindow(m_Width.load(), m_Height.load(), title, monitor, nullptr);
 
     if (!m_Window) {
         LOG_ERROR(LOG_WHO, "Failed to create native Window");
@@ -73,7 +73,10 @@ bool Platform::Window::Window::Init(const unsigned int width, const unsigned int
     glfwSetWindowUserPointer(m_Window, this);
     glfwSetFramebufferSizeCallback(m_Window, WindowResizeCallback);
 
-    glfwGetWindowSize(m_Window, &m_Width, &m_Height);
+    int windowWidth = 0, windowHeight = 0;
+    glfwGetWindowSize(m_Window, &windowWidth, &windowHeight);
+    m_Width = windowWidth;
+    m_Height = windowHeight;
 
 
     if (s_ShouldInitNFD) {
@@ -175,7 +178,7 @@ void Platform::Window::Window::SetFullscreen(const bool fullscreen) const {
         const GLFWvidmode *mode = glfwGetVideoMode(monitor);
         glfwSetWindowMonitor(m_Window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
     } else {
-        glfwSetWindowMonitor(m_Window, nullptr, 100, 100, m_Width, m_Height, 0);
+        glfwSetWindowMonitor(m_Window, nullptr, 100, 100, m_Width.load(), m_Height.load(), 0);
     }
 }
 #pragma pop_macro("LOG_WHO")

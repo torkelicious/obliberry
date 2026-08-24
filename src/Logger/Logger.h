@@ -13,6 +13,7 @@
 #include <format>
 #include <chrono>
 #include <ctime>
+#include <vector>
 
 namespace Logging {
 
@@ -64,42 +65,55 @@ namespace Logging {
 
         void LoggerLoop(std::stop_token stop_token) {
             while (true) {
-                std::unique_lock lock(mutex_);
-                cv_.wait(lock, stop_token, [this] { return !buffer_.empty(); });
-                while (!buffer_.empty()) {
-                    if (auto log_item = buffer_.pop()) {
-                        std::string prefix;
-
-                        switch (log_item->severity) {
-                            case LogSeverity::Debug:
-#if !DEBUG_BUILD
-                                continue;
-#endif
-                                prefix = "DEBUG: ";
-                                break;
-                            case LogSeverity::Info:
-                                prefix = "INFO:  ";
-                                break;
-                            case LogSeverity::Warn:
-                                prefix = "WARN:  ";
-                                break;
-                            case LogSeverity::Error:
-                                prefix = "ERROR: ";
-                                break;
-                        }
-                        std::string ts = getTimestamp(log_item->timestamp);
-                        std::string logfmt = std::format("[{}] {}[{}] {}\n", ts, prefix, log_item->who, log_item->what);
-                        if (logfile_.is_open()) {
-                            logfile_ << logfmt;
-                            logfile_.flush();
-                        }
-                        if (log_item->severity == LogSeverity::Error) {
-                            std::cerr << logfmt;
-                        } else {
-                            std::cout << logfmt;
-                        }
+                // swap entries out under the lock
+                // format/write without holding lock
+                std::vector<Log> batch;
+                {
+                    std::unique_lock lock(mutex_);
+                    cv_.wait(lock, stop_token, [this] { return !buffer_.empty(); });
+                    while (auto log_item = buffer_.pop()) {
+                        batch.push_back(std::move(*log_item));
                     }
                 }
+
+                for (auto &log_item : batch) {
+                    std::string prefix;
+
+                    switch (log_item.severity) {
+                        case LogSeverity::Debug:
+#if !DEBUG_BUILD
+                            continue;
+#endif
+                            prefix = "DEBUG: ";
+                            break;
+                        case LogSeverity::Info:
+                            prefix = "INFO:  ";
+                            break;
+                        case LogSeverity::Warn:
+                            prefix = "WARN:  ";
+                            break;
+                        case LogSeverity::Error:
+                            prefix = "ERROR: ";
+                            break;
+                    }
+                    std::string ts = getTimestamp(log_item.timestamp);
+                    std::string logfmt = std::format("[{}] {}[{}] {}\n", ts, prefix, log_item.who, log_item.what);
+                    if (logfile_.is_open()) {
+                        logfile_ << logfmt;
+                    }
+                    if (log_item.severity == LogSeverity::Error) {
+                        std::cerr << logfmt;
+                    } else {
+                        std::cout << logfmt;
+                    }
+                }
+
+                if (!batch.empty() && logfile_.is_open()) {
+                    logfile_.flush();
+                }
+
+                // stop only once the queue is fully done so shutdown does not drop logs
+                std::unique_lock lock(mutex_);
                 if (stop_token.stop_requested() && buffer_.empty()) {
                     break;
                 }

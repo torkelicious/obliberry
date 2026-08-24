@@ -15,6 +15,7 @@
 #include <thread>
 #include <utility>
 #include "Applications/Editor/EditorLayer.h"
+#include "ECS/Systems/ScriptSystem.h"
 
 
 Core::Application::Application(const Config::GraphicsConfig &gconf, Config::ProjectConfig pconf, std::unique_ptr<ApplicationLayer> layer)
@@ -77,6 +78,8 @@ void Core::Application::Run() {
     context.audioEngine = m_AudioEngine.get();
     context.logger = Logging::LoggerService::Get();
 
+    ECS::Systems::ScriptSystem::SetupScriptRuntime(m_ScriptPool);
+
     m_Layer->SetupFontSync(&m_FontsDirty);
 
     // MSAA supported samples, must be called before gl context handover!!!
@@ -116,24 +119,32 @@ void Core::Application::Run() {
         m_InputManager.BeginFrame();
         Platform::Window::Window::PollEvents();
 
-        // imgui lock
-        std::unique_lock imguiTextureLock(m_ImGuiTextureMutex);
+        // The only shared ImGui state between threads is the font atlas / backend texture
+        // handles
+        // the render thread reads them in RenderDrawData, this thread rebuilds them
+        // in SyncFonts.
+        // everything else operates per-thread or
+        // "snapshotted" data and runs outside the lock.
 
-        // synchronize font updates with render thread
-        if (m_FontsDirty.load()) {
-            // unlock so the render thread can finish rendering the old frame
-            imguiTextureLock.unlock();
+        {
+            std::unique_lock imguiTextureLock(m_ImGuiTextureMutex);
 
-            // wait for render thread
-            for (auto &[mutex, cv, state] : m_Frames) {
-                std::unique_lock frameLock(mutex);
-                cv.wait(frameLock, [&] { return state == FrameState::Free || !m_Running.load(); });
+            const bool fontsWereDirty = m_FontsDirty.load();
+            if (fontsWereDirty) {
+                imguiTextureLock.unlock();
+                for (auto &[mutex, cv, state] : m_Frames) {
+                    std::unique_lock frameLock(mutex);
+                    cv.wait(frameLock, [&] { return state == FrameState::Free || !m_Running.load(); });
+                }
+                imguiTextureLock.lock();
             }
-            imguiTextureLock.lock();
-        }
 
-        // handle font updates via layer
-        m_Layer->SyncFonts(context, m_ImGuiTextureMutex);
+            // rebuilds and consume
+            m_Layer->SyncFonts(context, m_ImGuiTextureMutex);
+
+            if (fontsWereDirty)
+                m_FontAtlasRevision.fetch_add(1, std::memory_order_release);
+        }
 
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -151,9 +162,6 @@ void Core::Application::Run() {
         m_UIRenderer.BeginFrame(m_Window.GetWidth(), m_Window.GetHeight());
         m_Layer->Render();
         ImGui::Render();
-
-        // prolly safe to unlock
-        imguiTextureLock.unlock();
 
         renderer.SwapBuffers();
         m_UIRenderer.SwapBuffers();
@@ -202,6 +210,7 @@ void Core::Application::Run() {
     if (m_RenderThread.joinable()) {
         m_RenderThread.join();
     }
+    glfwMakeContextCurrent(m_Window.GetNativeWindow());
 }
 
 void Core::Application::Shutdown() {
@@ -281,6 +290,11 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer, UI::UI
 
         if (m_FrameImGuiData[frameIdx]->DrawData.CmdLists.Size > 0) {
             std::lock_guard imguiTextureLock(m_ImGuiTextureMutex);
+            if (const uint64_t revision = m_FontAtlasRevision.load(std::memory_order_acquire); revision != m_RenderedFontAtlasRevision) {
+                ImGui_ImplOpenGL3_DestroyDeviceObjects();
+                ImGui_ImplOpenGL3_CreateDeviceObjects();
+                m_RenderedFontAtlasRevision = revision;
+            }
             ImGui_ImplOpenGL3_RenderDrawData(&m_FrameImGuiData[frameIdx]->DrawData);
         }
 

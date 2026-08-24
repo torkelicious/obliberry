@@ -64,8 +64,10 @@ namespace Config {
         } else if (IO::VFS::IsProjectLoaded()) {
             if (auto loosePath = IO::VFS::GetProjectRoot() / filepath; std::filesystem::exists(loosePath)) {
                 std::ifstream file(loosePath);
-                ownedData.assign(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
-                dataView = ownedData;
+                if (file.is_open()) {
+                    ownedData.assign(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
+                    dataView = ownedData;
+                }
             }
         }
 
@@ -76,41 +78,46 @@ namespace Config {
 
         try {
             nlohmann::json j = nlohmann::json::parse(dataView);
+
+            GraphicsConfig parsed;
+
             if (j.contains("window")) {
                 auto &w = j["window"];
                 if (w.contains("width"))
-                    config.WindowWidth = w["width"];
+                    parsed.WindowWidth = w["width"];
                 if (w.contains("height"))
-                    config.WindowHeight = w["height"];
+                    parsed.WindowHeight = w["height"];
                 if (w.contains("fullscreen"))
-                    config.Fullscreen = w["fullscreen"];
+                    parsed.Fullscreen = w["fullscreen"];
             }
             if (j.contains("antialiasing")) {
                 auto &aa = j["antialiasing"];
                 if (aa.contains("MSAA"))
-                    config.MSAAEnabled = aa["MSAA"];
+                    parsed.MSAAEnabled = aa["MSAA"];
                 if (aa.contains("samples"))
-                    config.AASamples = aa["samples"];
+                    parsed.AASamples = aa["samples"];
             }
             if (j.contains("targetfps"))
-                config.TargetFPS = j["targetfps"];
+                parsed.TargetFPS = j["targetfps"];
             if (j.contains("vsync")) {
                 if (j["vsync"].is_string())
-                    config.VSync = StringToVSync(j["vsync"].get<std::string>());
+                    parsed.VSync = StringToVSync(j["vsync"].get<std::string>());
                 else if (j["vsync"].is_boolean())
-                    config.VSync = j["vsync"].get<bool>() ? VSyncType::STANDARD : VSyncType::NONE;
+                    parsed.VSync = j["vsync"].get<bool>() ? VSyncType::STANDARD : VSyncType::NONE;
             }
 
             if (j.contains("overlay")) {
-                config.ShowPerformanceOverlay = j["overlay"].get<bool>();
+                parsed.ShowPerformanceOverlay = j["overlay"].get<bool>();
             }
 
             LOG_INFO(LOG_WHO, "Loaded graphics config:");
-            LOG_INFO(LOG_WHO, "  Window:        " + std::to_string(config.WindowWidth) + "x" + std::to_string(config.WindowHeight) + (config.Fullscreen ? " (fullscreen)" : ""));
-            LOG_INFO(LOG_WHO, "  VSync:         " + std::string(VSyncToString(config.VSync)));
-            LOG_INFO(LOG_WHO, "  Target FPS:    " + std::to_string(config.TargetFPS));
-            LOG_INFO(LOG_WHO, "  MSAA:          " + std::string(config.MSAAEnabled ? "on (" + std::to_string(config.AASamples) + "x)" : "off"));
-            LOG_INFO(LOG_WHO, "  FPS Overlay:   " + std::string(config.ShowPerformanceOverlay ? "on" : "off"));
+            LOG_INFO(LOG_WHO, "  Window:        " + std::to_string(parsed.WindowWidth) + "x" + std::to_string(parsed.WindowHeight) + (parsed.Fullscreen ? " (fullscreen)" : ""));
+            LOG_INFO(LOG_WHO, "  VSync:         " + std::string(VSyncToString(parsed.VSync)));
+            LOG_INFO(LOG_WHO, "  Target FPS:    " + std::to_string(parsed.TargetFPS));
+            LOG_INFO(LOG_WHO, "  MSAA:          " + std::string(parsed.MSAAEnabled ? "on (" + std::to_string(parsed.AASamples) + "x)" : "off"));
+            LOG_INFO(LOG_WHO, "  FPS Overlay:   " + std::string(parsed.ShowPerformanceOverlay ? "on" : "off"));
+
+            config = std::move(parsed);
         } catch (const std::exception &e) {
             LOG_ERROR(LOG_WHO, "Failed to parse graphics config: " + std::string(e.what()));
         }
@@ -137,6 +144,10 @@ namespace Config {
                 return;
             }
             file << j.dump(2);
+            if (!file) {
+                LOG_ERROR(LOG_WHO, "Failed to write graphics config: " + resolvedPath.string());
+                return;
+            }
             LOG_INFO(LOG_WHO, "Saved graphics config to " + resolvedPath.string());
         } catch (const std::exception &e) {
             LOG_ERROR(LOG_WHO, "Failed to serialize graphics config: " + std::string(e.what()));

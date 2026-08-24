@@ -2,8 +2,12 @@
 #include "InternalUIShaders.h"
 #include "Rendering/Shader.h"
 #include "Rendering/Texture.h"
+#include "Logger/LoggerService.h"
 #include <glm/glm.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
+
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "UIRenderer"
 
 namespace UI {
 
@@ -65,9 +69,23 @@ namespace UI {
         m_QuadShader[m_SubmitIndex].clear();
         m_QuadSDFScale[m_SubmitIndex].clear();
         m_QuadSDFSpread[m_SubmitIndex].clear();
+        m_OverflowLogged = false;
+    }
+
+    // returns true if there is capacity for one more quad
+    inline bool UIRenderer::HasQuadCapacity() {
+        if (m_Vertices[m_SubmitIndex].size() / 4 < MAX_QUADS)
+            return true;
+        if (!m_OverflowLogged) {
+            LOG_WARN(LOG_WHO, "UI quad capacity reached (" + std::to_string(MAX_QUADS) + "); dropping further submissions this frame");
+            m_OverflowLogged = true;
+        }
+        return false;
     }
 
     void UIRenderer::SubmitQuad(const glm::vec2 pos, const glm::vec2 size, const glm::vec2 uvMin, const glm::vec2 uvMax, const Rendering::Texture *texture, const glm::vec4 color) {
+        if (!HasQuadCapacity())
+            return;
 
         auto &verts = m_Vertices[m_SubmitIndex];
         // V is flipped
@@ -86,6 +104,9 @@ namespace UI {
 
     void UIRenderer::SubmitSDFQuad(const glm::vec2 pos, const glm::vec2 size, const glm::vec2 uvMin, const glm::vec2 uvMax, const Rendering::Texture *texture, const glm::vec4 color, const float sdfScale,
                                    const float sdfSpread) {
+        if (!HasQuadCapacity())
+            return;
+
         auto &verts = m_Vertices[m_SubmitIndex];
         verts.push_back({pos, glm::vec2(uvMin.x, uvMax.y), color});
         verts.push_back({pos + glm::vec2(size.x, 0.0f), glm::vec2(uvMax.x, uvMax.y), color});
@@ -135,6 +156,7 @@ namespace UI {
 
         // Build batches
         m_Batches.clear();
+        m_Batches.reserve(texs.size());
         const Rendering::Texture *currentTex = texs[0];
         BatchShader currentShader = m_QuadShader[m_RenderIndex][0];
         float currentSDFScale = m_QuadSDFScale[m_RenderIndex][0];
@@ -142,7 +164,7 @@ namespace UI {
         uint32_t batchStart = 0;
 
         for (uint32_t i = 1; i < static_cast<uint32_t>(texs.size()); i++) {
-            if (texs[i] != currentTex || m_QuadShader[m_RenderIndex][i] != currentShader) {
+            if (texs[i] != currentTex || m_QuadShader[m_RenderIndex][i] != currentShader || m_QuadSDFScale[m_RenderIndex][i] != currentSDFScale || m_QuadSDFSpread[m_RenderIndex][i] != currentSDFSpread) {
                 m_Batches.push_back({currentTex, batchStart * 6, (i - batchStart) * 6, currentShader, currentSDFScale, currentSDFSpread});
                 currentTex = texs[i];
                 currentShader = m_QuadShader[m_RenderIndex][i];
@@ -160,24 +182,21 @@ namespace UI {
         m_VAO->Bind();
         m_Shader->Bind();
         m_Shader->SetUniformMat4("u_Projection", m_Projection[m_RenderIndex]);
+        m_SDFShader->Bind();
+        m_SDFShader->SetUniformMat4("u_Projection", m_Projection[m_RenderIndex]);
 
         for (const auto &batch : m_Batches) {
             if (batch.shader == BatchShader::SDF) {
                 m_SDFShader->Bind();
-                m_SDFShader->SetUniformMat4("u_Projection", m_Projection[m_RenderIndex]);
                 m_SDFShader->SetUniform1f("u_Spread", batch.sdfSpread);
                 m_SDFShader->SetUniform1f("u_Scale", batch.sdfScale);
             } else {
                 m_Shader->Bind();
-                m_Shader->SetUniformMat4("u_Projection", m_Projection[m_RenderIndex]);
             }
             if (batch.texture) {
                 batch.texture->Bind(0);
             }
             glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(batch.indexCount), GL_UNSIGNED_INT, reinterpret_cast<const void *>(batch.indexOffset * sizeof(unsigned int)));
-            if (batch.shader == BatchShader::SDF) {
-                m_SDFShader->Unbind();
-            }
         }
 
         m_Shader->Unbind();
@@ -218,3 +237,4 @@ namespace UI {
     }
 
 } // namespace UI
+#pragma pop_macro("LOG_WHO")

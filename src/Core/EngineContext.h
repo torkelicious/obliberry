@@ -5,6 +5,7 @@
 #include "UI/Rendering/UISystem.h"
 
 #include <filesystem>
+#include <mutex>
 #include <string>
 
 namespace Config {
@@ -52,7 +53,52 @@ namespace Scripting {
 namespace Core {
     struct EngineContext {
         std::filesystem::path ProjectRootPath;
-        std::string pendingScenePath; // for deferred scene loading (GameLayer, Scripting)
+
+        void SetPendingScenePath(std::string path) {
+            std::lock_guard lock(m_PendingSceneMutex);
+            m_PendingScenePath = std::move(path);
+        }
+
+        [[nodiscard]] std::string TakePendingScenePath() {
+            std::lock_guard lock(m_PendingSceneMutex);
+            std::string out = std::move(m_PendingScenePath);
+            m_PendingScenePath.clear();
+            return out;
+        }
+
+        [[nodiscard]] bool HasPendingScenePath() {
+            std::lock_guard lock(m_PendingSceneMutex);
+            return !m_PendingScenePath.empty();
+        }
+
+        EngineContext &operator=(const EngineContext &other) {
+            if (this != &other) {
+                std::lock_guard lockThis(m_PendingSceneMutex);
+                ProjectRootPath = other.ProjectRootPath;
+                projectConfig = other.projectConfig;
+                graphicsConfig = other.graphicsConfig;
+                window = other.window;
+                input = other.input;
+                resources = other.resources;
+                sceneManager = other.sceneManager;
+                renderer = other.renderer;
+                camera = other.camera;
+                uiRenderer = other.uiRenderer;
+                uiSystem = other.uiSystem;
+                uiCmdBuf = other.uiCmdBuf;
+                scriptPool = other.scriptPool;
+                threadPool = other.threadPool;
+                audioEngine = other.audioEngine;
+                deltaTime = other.deltaTime;
+                timeScale = other.timeScale;
+                frameCount = other.frameCount;
+                activeProject = other.activeProject;
+                isEditorMode = other.isEditorMode;
+                logger = other.logger;
+            }
+            return *this;
+        }
+
         Config::ProjectConfig *projectConfig = nullptr;
         Config::GraphicsConfig *graphicsConfig = nullptr;
         Platform::Window::Window *window = nullptr;
@@ -74,5 +120,9 @@ namespace Core {
         bool isEditorMode = false;
         // Logging
         Logging::ILogger *logger = nullptr;
+
+    private:
+        std::mutex m_PendingSceneMutex;
+        std::string m_PendingScenePath;
     };
 } // namespace Core

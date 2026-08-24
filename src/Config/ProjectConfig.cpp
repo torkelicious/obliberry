@@ -2,7 +2,6 @@
 #include "Logger/LoggerService.h"
 #include "IO/VFS/VFS.h"
 #include <fstream>
-#include <vector>
 #include <nlohmann/json.hpp>
 
 #pragma push_macro("LOG_WHO")
@@ -28,19 +27,21 @@ namespace Config {
             nlohmann::json j;
 
             if (IO::VFS::IsPackaged()) {
-                std::vector<uint8_t> bytes(dataView.begin(), dataView.end());
-                j = nlohmann::json::from_msgpack(bytes);
+                j = nlohmann::json::from_msgpack(dataView.begin(), dataView.end());
             } else {
                 j = nlohmann::json::parse(dataView);
             }
 
+            ProjectConfig parsed;
             if (j.contains("window")) {
                 if (auto &w = j["window"]; w.contains("title"))
-                    config.Title = w["title"];
+                    parsed.Title = w["title"];
             }
             if (j.contains("start_scene")) {
-                config.startScenePath = j["start_scene"];
+                parsed.startScenePath = j["start_scene"];
             }
+
+            config = std::move(parsed);
         } catch (const std::exception &e) {
             LOG_ERROR(LOG_WHO, "Failed to parse project file: " + std::string(e.what()));
         }
@@ -62,6 +63,10 @@ namespace Config {
                 return false;
             }
             file << j.dump(2);
+            if (!file) {
+                LOG_ERROR(LOG_WHO, "Failed to write project file: " + resolvedPath.string());
+                return false;
+            }
             return true;
         } catch (const std::exception &e) {
             LOG_ERROR(LOG_WHO, "Failed to serialize project file: " + std::string(e.what()));

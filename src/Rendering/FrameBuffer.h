@@ -9,6 +9,43 @@ namespace Rendering {
         FrameBuffer() = default;
         FrameBuffer(const uint32_t width, const uint32_t height) { Invalidate(width, height); }
 
+        // disable copying
+        FrameBuffer(const FrameBuffer &) = delete;
+        FrameBuffer &operator=(const FrameBuffer &) = delete;
+
+        // allow moving
+        FrameBuffer(FrameBuffer &&other) noexcept : m_RendererID(other.m_RendererID), m_ColorAtt(other.m_ColorAtt), m_EntityIDAtt(other.m_EntityIDAtt), m_Width(other.m_Width), m_Height(other.m_Height) {
+
+            other.m_RendererID = 0;
+            other.m_ColorAtt = 0;
+            other.m_EntityIDAtt = 0;
+            other.m_Width = 0;
+            other.m_Height = 0;
+        }
+
+        FrameBuffer &operator=(FrameBuffer &&other) noexcept {
+            if (this != &other) {
+                if (m_RendererID) {
+                    glDeleteFramebuffers(1, &m_RendererID);
+                    glDeleteTextures(1, &m_ColorAtt);
+                    glDeleteTextures(1, &m_EntityIDAtt);
+                }
+
+                m_RendererID = other.m_RendererID;
+                m_ColorAtt = other.m_ColorAtt;
+                m_EntityIDAtt = other.m_EntityIDAtt;
+                m_Width = other.m_Width;
+                m_Height = other.m_Height;
+
+                other.m_RendererID = 0;
+                other.m_ColorAtt = 0;
+                other.m_EntityIDAtt = 0;
+                other.m_Width = 0;
+                other.m_Height = 0;
+            }
+            return *this;
+        }
+
         ~FrameBuffer() {
             if (m_RendererID) {
                 glDeleteFramebuffers(1, &m_RendererID);

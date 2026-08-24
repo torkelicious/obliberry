@@ -2,6 +2,7 @@
 
 #include "Core/EngineContext.h"
 #include "ECS/Registry.h"
+#include "Scripting/EngineLib/EntityWrapperCache.h"
 #include <ObSL/StdLib.h>
 
 namespace Scripting {
@@ -10,6 +11,7 @@ namespace Scripting {
         void register_enginelib(ObSL::Interpreter &interpreter, ECS::Registry &registry, Core::EngineContext &ctx) {
             m_ctx = &ctx;
             m_registry = &registry;
+            Scripting::EntityWrapperCache::RegisterInterpreter(&interpreter);
             register_modules(interpreter);
         }
 

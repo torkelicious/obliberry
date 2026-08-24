@@ -310,6 +310,7 @@ namespace Editor::Commands {
         ::UI::UIElement *m_Parent;
         UIElementSnapshot m_Snapshot;
         ::UI::UIElement *m_Restored = nullptr;
+        ::UI::UIElement *m_RemovedChild = nullptr;
     };
 
     class SetUIElementNameCommand final : public ICommand {

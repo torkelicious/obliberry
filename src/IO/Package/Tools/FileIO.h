@@ -11,11 +11,37 @@ namespace IO::Package::Tools {
         std::ifstream file(filepath, std::ios::in | std::ios::binary);
         if (!file)
             throw std::runtime_error("Could not open file: " + filepath.string());
-        return std::vector<uint8_t>(std::istreambuf_iterator(file), std::istreambuf_iterator<char>());
+
+        file.seekg(0, std::ios::end);
+        const auto size = static_cast<std::streamoff>(file.tellg());
+        if (size < 0)
+            throw std::runtime_error("Could not determine size of file: " + filepath.string());
+        file.seekg(0, std::ios::beg);
+
+        std::vector<uint8_t> data(static_cast<size_t>(size));
+        if (size > 0)
+            file.read(reinterpret_cast<char *>(data.data()), size);
+        if (!file && !file.eof())
+            throw std::runtime_error("Read error in file: " + filepath.string());
+        return data;
     }
 
     inline std::string read_file_string(const std::filesystem::path &filepath) {
-        auto data = read_file_binary(filepath);
-        return std::string(data.begin(), data.end());
+        std::ifstream file(filepath, std::ios::in | std::ios::binary);
+        if (!file)
+            throw std::runtime_error("Could not open file: " + filepath.string());
+
+        file.seekg(0, std::ios::end);
+        const auto size = static_cast<std::streamoff>(file.tellg());
+        if (size < 0)
+            throw std::runtime_error("Could not determine size of file: " + filepath.string());
+        file.seekg(0, std::ios::beg);
+
+        std::string str(static_cast<size_t>(size), '\0');
+        if (size > 0)
+            file.read(str.data(), size);
+        if (!file && !file.eof())
+            throw std::runtime_error("Read error in file: " + filepath.string());
+        return str;
     }
 } // namespace IO::Package::Tools

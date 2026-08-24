@@ -29,8 +29,6 @@ namespace IO::VFS {
 
     [[nodiscard]] bool IsProjectLoaded();
 
-    [[nodiscard]] std::filesystem::path GetHomeDirectory();
-
     [[nodiscard]] inline std::string ToRelative(const std::filesystem::path &inputPath) {
         // already relative
         if (!inputPath.is_absolute()) {

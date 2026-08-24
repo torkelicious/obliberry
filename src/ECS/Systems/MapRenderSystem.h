@@ -105,14 +105,12 @@ namespace ECS::Systems::MapRenderSystem {
 
                 if (auto matIt = mapComp->findTypeMat(typeId); matIt != mapComp->typeMats.end()) {
                     if (!matIt->second->texture) {
-                        static std::unordered_set<uint8_t> warnedMissingTex;
-                        if (warnedMissingTex.insert(typeId).second)
+                        if (mapComp->warnedMissingTex.insert(typeId).second)
                             LOG_WARN("MapRender", "Tile type " + std::to_string(typeId) + " has no texture, tiles will render blank");
                     }
                     renderer.SubmitPersistent(mapComp->hexMesh, matIt->second, &transforms);
                 } else {
-                    static std::unordered_set<uint8_t> warnedMissingType;
-                    if (warnedMissingType.insert(typeId).second)
+                    if (mapComp->warnedMissingType.insert(typeId).second)
                         LOG_WARN("MapRender", "Tile type " + std::to_string(typeId) + " has no material definition, tiles will not render");
                 }
             }

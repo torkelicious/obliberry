@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <cassert>
 
 namespace Map {
     // hex coordinates (odd-r offset, pointy-top hexes)
@@ -10,7 +11,9 @@ namespace Map {
         // constructor casting
         HexCoords() : q(0), r(0) {}
 
-        HexCoords(const int32_t q_, const int32_t r_) : q(static_cast<int16_t>(q_)), r(static_cast<int16_t>(r_)) {}
+        HexCoords(const int32_t q_, const int32_t r_) : q(static_cast<int16_t>(q_)), r(static_cast<int16_t>(r_)) {
+            assert(q_ >= INT16_MIN && q_ <= INT16_MAX && r_ >= INT16_MIN && r_ <= INT16_MAX && "HexCoords out of int16_t range");
+        }
 
         bool operator==(const HexCoords &other) const { return q == other.q && r == other.r; }
 

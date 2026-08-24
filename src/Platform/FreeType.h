@@ -1,6 +1,7 @@
 #pragma once
 #include "Logger/LoggerService.h"
 #include <freetype/freetype.h>
+#include <mutex>
 
 //
 // wrapper for shared freetype lib
@@ -11,6 +12,11 @@ public:
     static FT_Library library() {
         static FreeType instance;
         return instance.library_;
+    }
+
+    static std::mutex &mutex() {
+        static std::mutex m;
+        return m;
     }
 
     FreeType(const FreeType &) = delete;

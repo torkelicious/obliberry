@@ -9,7 +9,6 @@
 #include "Rendering/InternalShaders.h"
 #include "Rendering/MeshFactory.h"
 #include <algorithm>
-#include <cmath>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <memory>
@@ -53,7 +52,7 @@ namespace ECS::Systems::LightingSystem {
         auto vao = std::make_shared<Rendering::VertexArray>();
         auto fbo = std::make_shared<Rendering::FrameBuffer>();
         lm.lightQuad = lightQuad;
-        lm.lightShader = lightShader;
+        lm.lightShader = std::move(lightShader);
         lm.lightQuadVAO = vao;
         lm.framebuffer = fbo;
         lm.lastLightCount = std::numeric_limits<size_t>::max();
@@ -87,12 +86,14 @@ namespace ECS::Systems::LightingSystem {
         const float ambient = lm.ambient;
         const glm::vec2 mapOffset = lm.mapOffset;
         const glm::vec2 mapSize = lm.mapSize;
-        const int texW = fbo->GetWidth();
-        const int texH = fbo->GetHeight();
 
         // pack lights; re-render only if the state changed
-        std::vector<Rendering::GPULight> packedLights;
-        packedLights.reserve(lightCount);
+        auto &packedLights = lm.scratchPackedLights;
+        packedLights.clear();
+
+        if (packedLights.capacity() < lightCount) {
+            packedLights.reserve(lightCount);
+        }
 
         auto *transformPool = reg.GetPool<Components::TransformComponent>();
         for (const EntityID id : lightPool->GetDenseEntities()) {
@@ -114,8 +115,9 @@ namespace ECS::Systems::LightingSystem {
         }
 
         // skip when unchanged
-        if (lightCount == lm.lastLightCount && packedLights == lm.lastPackedLights)
+        if (lightCount == lm.lastLightCount && packedLights == lm.lastPackedLights) {
             return;
+        }
 
         if (packedLights.empty()) {
             lm.lastLightCount = lightCount;
@@ -137,7 +139,7 @@ namespace ECS::Systems::LightingSystem {
         }
 
         // submit to renderer
-        Rendering::Renderer::SubmitInitTask([fbo, shader, quad, quadVAO, lights = packedLights, ambient, mapOffset, mapSize, texW, texH] {
+        Rendering::Renderer::SubmitInitTask([fbo, shader, quad, quadVAO, lights = packedLights, ambient, mapOffset, mapSize] {
             // Save only the GL state this pass modifies
             GLint prevFbo, prevProgram, prevVao, prevBlendSrc, prevBlendDst, prevBlendEq;
             GLenum prevDrawBuf;
@@ -192,7 +194,8 @@ namespace ECS::Systems::LightingSystem {
             glBlendFuncSeparate(prevBlendSrc, prevBlendDst, prevBlendSrc, prevBlendDst);
             glBlendEquationSeparate(prevBlendEq, prevBlendEq);
         });
+
         lm.lastLightCount = lightCount;
-        lm.lastPackedLights = std::move(packedLights);
+        std::swap(lm.lastPackedLights, packedLights);
     }
 } // namespace ECS::Systems::LightingSystem

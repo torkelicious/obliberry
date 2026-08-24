@@ -22,11 +22,11 @@ namespace IO {
             ec.lifetimeMin = data["lifetimeMin"].get<float>();
         if (data.contains("lifetimeMax"))
             ec.lifetimeMax = data["lifetimeMax"].get<float>();
-        if (data.contains("velocityMin"))
+        if (data.contains("velocityMin") && data["velocityMin"].is_array() && data["velocityMin"].size() >= 3)
             ec.velocityMin = {data["velocityMin"][0], data["velocityMin"][1], data["velocityMin"][2]};
-        if (data.contains("velocityMax"))
+        if (data.contains("velocityMax") && data["velocityMax"].is_array() && data["velocityMax"].size() >= 3)
             ec.velocityMax = {data["velocityMax"][0], data["velocityMax"][1], data["velocityMax"][2]};
-        if (data.contains("gravity"))
+        if (data.contains("gravity") && data["gravity"].is_array() && data["gravity"].size() >= 3)
             ec.gravity = {data["gravity"][0], data["gravity"][1], data["gravity"][2]};
         if (data.contains("sizeStartMin"))
             ec.sizeStartMin = data["sizeStartMin"].get<float>();
@@ -44,9 +44,9 @@ namespace IO {
             ec.rotationSpeedMin = data["rotationSpeedMin"].get<float>();
         if (data.contains("rotationSpeedMax"))
             ec.rotationSpeedMax = data["rotationSpeedMax"].get<float>();
-        if (data.contains("colorStart"))
+        if (data.contains("colorStart") && data["colorStart"].is_array() && data["colorStart"].size() >= 4)
             ec.colorStart = {data["colorStart"][0], data["colorStart"][1], data["colorStart"][2], data["colorStart"][3]};
-        if (data.contains("colorEnd"))
+        if (data.contains("colorEnd") && data["colorEnd"].is_array() && data["colorEnd"].size() >= 4)
             ec.colorEnd = {data["colorEnd"][0], data["colorEnd"][1], data["colorEnd"][2], data["colorEnd"][3]};
         if (data.contains("isBillboard"))
             ec.isBillboard = data["isBillboard"].get<bool>();
@@ -102,6 +102,11 @@ namespace IO {
             return false;
         }
         file << data.dump(4);
+        if (!file) {
+            if (auto *logger = Logging::LoggerService::Get())
+                logger->log("ParticleEmitterPrefabManager", "Failed to write emitter preset to: " + filepath, Logging::LogSeverity::Error);
+            return false;
+        }
         return true;
     }
 
@@ -121,8 +126,7 @@ namespace IO {
         nlohmann::json json;
         try {
             if (VFS::IsPackaged()) {
-                std::vector<uint8_t> bytes(dataView.begin(), dataView.end());
-                json = nlohmann::json::from_msgpack(bytes);
+                json = nlohmann::json::from_msgpack(dataView.begin(), dataView.end());
             } else {
                 json = nlohmann::json::parse(dataView);
             }

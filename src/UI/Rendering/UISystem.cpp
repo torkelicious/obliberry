@@ -6,7 +6,7 @@
 namespace UI {
 
     static void UpdateRecursive(UIElement *element, const float dt, const glm::vec2 &gameMousePos) {
-        if (!element || !element->HasFlag(VISIBLE))
+        if (!element || !element->HasFlag(VISIBLE) || !element->HasFlag(ENABLED))
             return;
 
         element->SetGameMousePos(gameMousePos);
@@ -70,6 +70,7 @@ namespace UI {
         raw->Parent = parent;
         raw->SetInputMgr(m_Input);
         parent->Children.push_back(raw);
+        IndexSubtreeRecursive(raw);
         m_OwnedElements.push_back(std::move(element));
         return raw;
     }
@@ -81,6 +82,12 @@ namespace UI {
         // copy children list before modifying
         for (const auto childCopy = child->Children; auto *grandchild : childCopy) {
             RemoveChild(child, grandchild);
+        }
+
+        if (!child->Name.empty()) {
+            if (const auto it = m_NameIndex.find(child->Name); it != m_NameIndex.end() && it->second == child) {
+                m_NameIndex.erase(it);
+            }
         }
 
         // Remove from parent
@@ -99,24 +106,52 @@ namespace UI {
         }
         m_Root->Children.clear();
         m_OwnedElements.clear();
+
+        m_NameIndex.clear();
+        if (m_Root && !m_Root->Name.empty()) {
+            m_NameIndex[m_Root->Name] = m_Root.get();
+        }
+    }
+
+    void UISystem::IndexSubtreeRecursive(UIElement *element) {
+        if (!element)
+            return;
+        if (!element->Name.empty()) {
+            m_NameIndex[element->Name] = element;
+        }
+        for (auto *child : element->Children) {
+            IndexSubtreeRecursive(child);
+        }
+    }
+
+    void UISystem::RebuildNameIndex() {
+        m_NameIndex.clear();
+        IndexSubtreeRecursive(m_Root.get());
+    }
+
+    void UISystem::OnElementRenamed(UIElement *element, const std::string &oldName) {
+        if (!element)
+            return;
+        if (!oldName.empty()) {
+            if (const auto it = m_NameIndex.find(oldName); it != m_NameIndex.end() && it->second == element) {
+                m_NameIndex.erase(it);
+            }
+        }
+        if (!element->Name.empty()) {
+            m_NameIndex[element->Name] = element;
+        }
     }
 
     // Scripting
-    static UIElement *FindByNameRecursive(UIElement *element, const std::string &name) {
-        if (!element)
-            return nullptr;
-        if (element->Name == name)
-            return element;
-        for (auto *child : element->Children) {
-            if (auto *found = FindByNameRecursive(child, name))
-                return found;
-        }
-        return nullptr;
+    UIElement *UISystem::FindByName(const std::string &name) {
+        const auto it = m_NameIndex.find(name);
+        return it != m_NameIndex.end() ? it->second : nullptr;
     }
 
-    UIElement *UISystem::FindByName(const std::string &name) { return FindByNameRecursive(m_Root.get(), name); }
-
-    const UIElement *UISystem::FindByName(const std::string &name) const { return FindByNameRecursive(m_Root.get(), name); }
+    const UIElement *UISystem::FindByName(const std::string &name) const {
+        const auto it = m_NameIndex.find(name);
+        return it != m_NameIndex.end() ? it->second : nullptr;
+    }
 
     static void SnapshotButtonsRecursive(UIElement *element, std::unordered_map<std::string, ButtonState> &out) {
         if (!element)

@@ -1,8 +1,11 @@
 #include "Container.h"
+#include "Core/Utils/BitUtils.h"
 #include <fstream>
 #include <lz4.h>
+#include <stdexcept>
 
 namespace IO {
+    using namespace Core::Utils::Bits;
     void ContainerWriter::add_script(const std::string &canonical_path, const std::string &source) {
         Pending p;
         p.path = canonical_path;
@@ -82,11 +85,11 @@ namespace IO {
         std::vector<Package::TocEntry> toc;
         for (size_t i = 0; i < m_entries.size(); ++i) {
             Package::TocEntry t{};
-            t.name_offset = name_offsets[i];
-            t.name_length = name_lengths[i];
-            t.data_offset = data_offsets[i];
-            t.compressed_size = m_entries[i].data.size();
-            t.uncompressed_size = m_entries[i].uncompressed_size;
+            t.name_offset = ToLittleEndian(name_offsets[i]);
+            t.name_length = ToLittleEndian(name_lengths[i]);
+            t.data_offset = ToLittleEndian(data_offsets[i]);
+            t.compressed_size = ToLittleEndian(static_cast<uint64_t>(m_entries[i].data.size()));
+            t.uncompressed_size = ToLittleEndian(m_entries[i].uncompressed_size);
             t.type = m_entries[i].type;
             t.flags = m_entries[i].flags;
             toc.push_back(t);
@@ -104,12 +107,24 @@ namespace IO {
         header.blob_data_offset = offset;
 
         // write it all out in order
+        header.version = ToLittleEndian(header.version);
+        header.flags = ToLittleEndian(header.flags);
+        header.entry_count = ToLittleEndian(header.entry_count);
+        header.toc_offset = ToLittleEndian(header.toc_offset);
+        header.string_table_offset = ToLittleEndian(header.string_table_offset);
+        header.string_table_size = ToLittleEndian(header.string_table_size);
+        header.blob_data_offset = ToLittleEndian(header.blob_data_offset);
+
         std::ofstream out(out_file, std::ios::binary);
+        if (!out.is_open())
+            throw std::runtime_error("ContainerWriter: failed to open output file: " + out_file.string());
         out.write(reinterpret_cast<const char *>(&header), sizeof(header));
         out.write(reinterpret_cast<const char *>(toc.data()), toc.size() * sizeof(Package::TocEntry));
         out.write(string_table.data(), string_table.size());
         for (const auto &e : m_entries) {
             out.write(reinterpret_cast<const char *>(e.data.data()), e.data.size());
         }
+        if (!out)
+            throw std::runtime_error("ContainerWriter: write failure to " + out_file.string());
     }
 } // namespace IO

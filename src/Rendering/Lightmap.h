@@ -30,6 +30,7 @@ namespace Rendering {
         size_t lastLightCount = std::numeric_limits<size_t>::max();
         // last rendered light state, used to detect changes
         std::vector<GPULight> lastPackedLights;
+        std::vector<GPULight> scratchPackedLights;
     };
 
 } // namespace Rendering

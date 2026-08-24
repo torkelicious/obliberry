@@ -13,13 +13,29 @@ namespace Rendering {
     public:
         // disable copying
         Shader(const Shader &) = delete;
-
         Shader &operator=(const Shader &) = delete;
 
         // allow moving
-        Shader(Shader &&) = default;
-
-        Shader &operator=(Shader &&) = default;
+        Shader(Shader &&other) noexcept
+            : m_vertPath(std::move(other.m_vertPath)), m_fragPath(std::move(other.m_fragPath)), m_VertexSrc(std::move(other.m_VertexSrc)), m_FragmentSrc(std::move(other.m_FragmentSrc)), m_ID(other.m_ID),
+              m_UniformCache(std::move(other.m_UniformCache)) {
+            other.m_ID = 0;
+        }
+        Shader &operator=(Shader &&other) noexcept {
+            if (this != &other) {
+                if (m_ID != 0) {
+                    glDeleteProgram(m_ID);
+                }
+                m_ID = other.m_ID;
+                other.m_ID = 0;
+                m_vertPath = std::move(other.m_vertPath);
+                m_fragPath = std::move(other.m_fragPath);
+                m_VertexSrc = std::move(other.m_VertexSrc);
+                m_FragmentSrc = std::move(other.m_FragmentSrc);
+                m_UniformCache = std::move(other.m_UniformCache);
+            }
+            return *this;
+        }
 
         Shader(const std::string &vertPath, const std::string &fragPath);
 

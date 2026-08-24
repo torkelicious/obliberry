@@ -37,7 +37,12 @@ std::optional<std::string> IO::AssetLoader::ImportAsset(const std::string &Absou
     }
 
     // ensure exists
-    std::filesystem::create_directories(destinationdir);
+    try {
+        std::filesystem::create_directories(destinationdir);
+    } catch (const std::exception &e) {
+        LOG_ERROR(LOG_WHO, "Failed to create asset directory: " + std::string(e.what()));
+        return std::nullopt;
+    }
 
     // absolute path
     const std::filesystem::path destinationPath = destinationdir / srcpath.filename();
@@ -85,100 +90,120 @@ void IO::AssetLoader::RegisterMeshFactory(const std::string &name, MeshFactory f
 
 void IO::AssetLoader::LoadTextures(const json &textures, Core::ResourceManager &resources) {
     for (const auto &tex : textures) {
-        const std::string id = tex.at("id").get<std::string>();
+        try {
+            const std::string id = tex.at("id").get<std::string>();
 
-        if (resources.Get<Rendering::Texture>(id) != nullptr) {
-            continue;
+            if (resources.Get<Rendering::Texture>(id) != nullptr) {
+                continue;
+            }
+
+            auto texture = resources.Load<Rendering::Texture>(id, VFS::ToRelative(tex.at("path").get<std::string>()));
+            Rendering::Renderer::SubmitInitTask(Platform::Threading::SmallTask([texture] { texture->InitGL(); }));
+        } catch (const std::exception &e) {
+            LOG_ERROR(LOG_WHO, std::string("Skipping texture asset: ") + e.what());
         }
-
-        auto texture = resources.Load<Rendering::Texture>(id, VFS::ToRelative(tex.at("path").get<std::string>()));
-        Rendering::Renderer::SubmitInitTask(Platform::Threading::SmallTask([texture] { texture->InitGL(); }));
     }
 }
 
 
 void IO::AssetLoader::LoadShaders(const json &shaders, Core::ResourceManager &resources) {
     for (const auto &shader : shaders) {
-        const std::string id = shader.at("id").get<std::string>();
+        try {
+            const std::string id = shader.at("id").get<std::string>();
 
-        if (resources.Get<Rendering::Shader>(id) != nullptr) {
-            continue;
+            if (resources.Get<Rendering::Shader>(id) != nullptr) {
+                continue;
+            }
+
+            auto s = resources.Load<Rendering::Shader>(id, VFS::ToRelative(shader.at("vertex").get<std::string>()), VFS::ToRelative(shader.at("fragment").get<std::string>()));
+            Rendering::Renderer::SubmitInitTask(Platform::Threading::SmallTask([s] { s->InitGL(); }));
+        } catch (const std::exception &e) {
+            LOG_ERROR(LOG_WHO, std::string("Skipping shader asset: ") + e.what());
         }
-
-        auto s = resources.Load<Rendering::Shader>(id, VFS::ToRelative(shader.at("vertex").get<std::string>()), VFS::ToRelative(shader.at("fragment").get<std::string>()));
-        Rendering::Renderer::SubmitInitTask(Platform::Threading::SmallTask([s] { s->InitGL(); }));
     }
 }
 
 
 void IO::AssetLoader::LoadFonts(const json &fonts, Core::ResourceManager &resources) {
     for (const auto &font : fonts) {
-        const std::string id = font.at("id").get<std::string>();
+        try {
+            const std::string id = font.at("id").get<std::string>();
 
-        if (resources.Get<UI::Font>(id) != nullptr) {
-            continue;
+            if (resources.Get<UI::Font>(id) != nullptr) {
+                continue;
+            }
+
+            const std::string path = VFS::ToRelative(font.at("path").get<std::string>());
+            const unsigned int size = font.value("size", 12);
+            const bool useSDF = font.value("sdf", false);
+            const unsigned int spread = font.value("spread", 8);
+
+            auto f = resources.Load<UI::Font>(id, path, size, useSDF, spread);
+            // defer font atlas generation to a background thread to avoid blocking the main thread
+            std::thread([f] {
+                f->LoadCPU();
+                Rendering::Renderer::SubmitInitTask(Platform::Threading::SmallTask([f] { f->InitGL(); }));
+            }).detach();
+        } catch (const std::exception &e) {
+            LOG_ERROR(LOG_WHO, std::string("Skipping font asset: ") + e.what());
         }
-
-        const std::string path = VFS::ToRelative(font.at("path").get<std::string>());
-        const unsigned int size = font.value("size", 12);
-        const bool useSDF = font.value("sdf", false);
-        const unsigned int spread = font.value("spread", 8);
-
-        auto f = resources.Load<UI::Font>(id, path, size, useSDF, spread);
-        // defer font atlas generation to a background thread to avoid blocking the main thread
-        std::thread([f] {
-            f->LoadCPU();
-            Rendering::Renderer::SubmitInitTask(Platform::Threading::SmallTask([f] { f->InitGL(); }));
-        }).detach();
     }
 }
 
 void IO::AssetLoader::LoadMaterials(const json &materials, Core::ResourceManager &resources) {
     for (const auto &mat : materials) {
-        const std::string id = mat.at("id").get<std::string>();
-        auto shaderId = mat.at("shader").get<std::string>();
-        const std::string textureId = mat.at("texture").get<std::string>();
+        try {
+            const std::string id = mat.at("id").get<std::string>();
+            auto shaderId = mat.at("shader").get<std::string>();
+            const std::string textureId = mat.at("texture").get<std::string>();
 
-        auto shader = resources.Get<Rendering::Shader>(shaderId);
-        if (!shader)
-            shader = resources.Get<Rendering::Shader>("[Engine] Base");
+            auto shader = resources.Get<Rendering::Shader>(shaderId);
+            if (!shader)
+                shader = resources.Get<Rendering::Shader>("[Engine] Base");
 
-        auto texture = resources.Get<Rendering::Texture>(textureId);
+            auto texture = resources.Get<Rendering::Texture>(textureId);
 
-        if (!texture)
-            texture = nullptr;
+            if (!texture)
+                texture = nullptr;
 
-        glm::vec4 color(1.f);
-        if (mat.contains("color")) {
-            auto &c = mat["color"];
-            color = {c[0], c[1], c[2], c[3]};
+            glm::vec4 color(1.f);
+            if (mat.contains("color") && mat["color"].is_array() && mat["color"].size() >= 4) {
+                auto &c = mat["color"];
+                color = {c[0].get<float>(), c[1].get<float>(), c[2].get<float>(), c[3].get<float>()};
+            }
+
+            resources.LoadFromFactory<Rendering::Material>(id, [shader, texture, color] { return std::make_shared<Rendering::Material>(Rendering::Material{shader, texture, color}); });
+        } catch (const std::exception &e) {
+            LOG_ERROR(LOG_WHO, std::string("Skipping material asset: ") + e.what());
         }
-
-        resources.LoadFromFactory<Rendering::Material>(id, [shader, texture, color] { return std::make_shared<Rendering::Material>(Rendering::Material{shader, texture, color}); });
     }
 }
 
 void IO::AssetLoader::LoadMeshes(const json &meshes, Core::ResourceManager &resources) {
     for (const auto &mesh : meshes) {
-        const std::string id = mesh.at("id").get<std::string>();
+        try {
+            const std::string id = mesh.at("id").get<std::string>();
 
-        if (resources.Get<Rendering::Mesh>(id) != nullptr) {
-            continue;
+            if (resources.Get<Rendering::Mesh>(id) != nullptr) {
+                continue;
+            }
+
+            const std::string factoryName = mesh.at("factory").get<std::string>();
+            auto it = s_MeshFactories.find(factoryName);
+            if (it == s_MeshFactories.end()) {
+                throw std::runtime_error("AssetLoader: Unknown mesh factory '" + factoryName + "'");
+            }
+
+            auto m = resources.LoadFromFactory<Rendering::Mesh>(id, [factory = it->second, factoryName] {
+                auto fac_mesh = factory();
+                fac_mesh->SetFactoryId(factoryName);
+                return fac_mesh;
+            });
+
+            Rendering::Renderer::SubmitInitTask(Platform::Threading::SmallTask([m] { m->InitGL(); }));
+        } catch (const std::exception &e) {
+            LOG_ERROR(LOG_WHO, std::string("Skipping mesh asset: ") + e.what());
         }
-
-        const std::string factoryName = mesh.at("factory").get<std::string>();
-        auto it = s_MeshFactories.find(factoryName);
-        if (it == s_MeshFactories.end()) {
-            throw std::runtime_error("AssetLoader: Unknown mesh factory '" + factoryName + "'");
-        }
-
-        auto m = resources.LoadFromFactory<Rendering::Mesh>(id, [factory = it->second, factoryName] {
-            auto fac_mesh = factory();
-            fac_mesh->SetFactoryId(factoryName);
-            return fac_mesh;
-        });
-
-        Rendering::Renderer::SubmitInitTask(Platform::Threading::SmallTask([m] { m->InitGL(); }));
     }
 }
 #pragma pop_macro("LOG_WHO")

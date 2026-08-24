@@ -3,6 +3,7 @@
 #define GLFW_INCLUDE_NONE
 #include "Config/GraphicsConfig.h"
 #include <GLFW/glfw3.h>
+#include <atomic>
 #include <string>
 #include "Platform/Input/InputManager.h"
 
@@ -24,8 +25,8 @@ namespace Platform::Window {
         [[nodiscard]] bool ShouldClose() const { return glfwWindowShouldClose(m_Window); }
         void Close() const { glfwSetWindowShouldClose(m_Window, true); }
 
-        [[nodiscard]] int GetWidth() const { return m_Width; }
-        [[nodiscard]] int GetHeight() const { return m_Height; }
+        [[nodiscard]] int GetWidth() const { return m_Width.load(std::memory_order_relaxed); }
+        [[nodiscard]] int GetHeight() const { return m_Height.load(std::memory_order_relaxed); }
 
         [[nodiscard]] GLFWwindow *GetNativeWindow() const { return m_Window; }
 
@@ -40,8 +41,8 @@ namespace Platform::Window {
     private:
         GLFWwindow *m_Window = nullptr;
         Input::InputManager *m_InputManager = nullptr;
-        int m_Width = 0;
-        int m_Height = 0;
+        std::atomic<int> m_Width = 0;
+        std::atomic<int> m_Height = 0;
 
         bool Init(unsigned int width, unsigned int height, const char *title, const Config::GraphicsConfig *conf);
 

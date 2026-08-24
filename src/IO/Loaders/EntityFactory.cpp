@@ -17,8 +17,20 @@
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "EntityFactory"
 
-
 // note: Prefabs not serialized / deserialized (here)
+
+namespace {
+    // size checked array reads
+    // return default if missing or too short instead of throw
+    template <typename T, size_t N> std::array<T, N> readArray(const nlohmann::json &j, const char *key, const std::array<T, N> &fallback) {
+        if (!j.contains(key) || !j[key].is_array() || j[key].size() < N)
+            return fallback;
+        std::array<T, N> out{};
+        for (size_t i = 0; i < N; ++i)
+            out[i] = j[key][i].get<T>();
+        return out;
+    }
+} // namespace
 
 std::unordered_map<std::string, ComponentDeserializer> IO::EntityFactory::s_Deserializers;
 std::unordered_map<std::string, ComponentSerializer> IO::EntityFactory::s_Serializers;
@@ -35,13 +47,16 @@ void IO::EntityFactory::RegisterDeserializers() {
     s_Deserializers["TransformComponent"] = [](ECS::Entity &entity, const nlohmann::json &data, Core::ResourceManager & /*resources*/) {
         ECS::Components::TransformComponent tc;
         if (data.contains("position")) {
-            tc.transform.SetPosition({data["position"][0], data["position"][1], data["position"][2]});
+            auto p = readArray<float, 3>(data, "position", {0.f, 0.f, 0.f});
+            tc.transform.SetPosition({p[0], p[1], p[2]});
         }
         if (data.contains("rotation")) {
-            tc.transform.SetRotation({data["rotation"][0], data["rotation"][1], data["rotation"][2]});
+            auto r = readArray<float, 3>(data, "rotation", {0.f, 0.f, 0.f});
+            tc.transform.SetRotation({r[0], r[1], r[2]});
         }
         if (data.contains("scale")) {
-            tc.transform.SetScale({data["scale"][0], data["scale"][1], data["scale"][2]});
+            auto s = readArray<float, 3>(data, "scale", {1.f, 1.f, 1.f});
+            tc.transform.SetScale({s[0], s[1], s[2]});
         }
         entity.AddComponent<ECS::Components::TransformComponent>(tc);
     };
@@ -104,7 +119,8 @@ void IO::EntityFactory::RegisterDeserializers() {
     s_Deserializers["PointLightComponent"] = [](ECS::Entity &entity, const nlohmann::json &data, Core::ResourceManager &) {
         ECS::Components::PointLightComponent plc;
         if (data.contains("color")) {
-            plc.SetColor({data["color"][0], data["color"][1], data["color"][2]});
+            auto c = readArray<float, 3>(data, "color", {1.f, 1.f, 1.f});
+            plc.SetColor({c[0], c[1], c[2]});
         }
         if (data.contains("radius")) {
             plc.SetRadius(data["radius"].get<float>());
@@ -117,31 +133,23 @@ void IO::EntityFactory::RegisterDeserializers() {
 
     // SCRIPT COMPONENT
     s_Deserializers["ScriptComponent"] = [](ECS::Entity &entity, const nlohmann::json &data, Core::ResourceManager & /*resources*/) {
-        auto &[isInitialized, scriptPaths, resolvedScriptPaths, instance_envs, on_update_functions, on_destroy_functions, on_exit_functions, source_codes, ast_nodes, lastModified] =
-                entity.AddComponent<ECS::Components::ScriptComponent>();
+        auto &scriptComp = entity.AddComponent<ECS::Components::ScriptComponent>();
 
+        std::vector<std::string> paths;
         if (data.contains("scriptPath")) {
             // Single script
-            scriptPaths.push_back(data["scriptPath"].get<std::string>());
+            paths.push_back(data["scriptPath"].get<std::string>());
         } else if (data.contains("scriptPaths") && data["scriptPaths"].is_array()) {
             // Multiple scripts
             for (const auto &scriptPath : data["scriptPaths"]) {
-                scriptPaths.push_back(scriptPath.get<std::string>());
+                paths.push_back(scriptPath.get<std::string>());
             }
         }
 
-        // Initialize vectors to match the number of scripts
-        const size_t scriptCount = scriptPaths.size();
-        // outer vectors: one inner vector per script (inner sized per-worker during InitializeScript)
-        instance_envs.resize(scriptCount);
-        on_update_functions.resize(scriptCount);
-        on_destroy_functions.resize(scriptCount);
-        on_exit_functions.resize(scriptCount);
-        isInitialized.resize(scriptCount, false);
-        resolvedScriptPaths.resize(scriptCount);
-        source_codes.resize(scriptCount);
-        ast_nodes.resize(scriptCount);
-        lastModified.resize(scriptCount);
+        scriptComp.slots.resize(paths.size());
+        for (size_t i = 0; i < paths.size(); ++i) {
+            scriptComp.slots[i].scriptPath = std::move(paths[i]);
+        }
     };
 
     // PARTICLE EMITTER COMPONENT
@@ -155,12 +163,18 @@ void IO::EntityFactory::RegisterDeserializers() {
             ec.lifetimeMin = data["lifetimeMin"].get<float>();
         if (data.contains("lifetimeMax"))
             ec.lifetimeMax = data["lifetimeMax"].get<float>();
-        if (data.contains("velocityMin"))
-            ec.velocityMin = {data["velocityMin"][0], data["velocityMin"][1], data["velocityMin"][2]};
-        if (data.contains("velocityMax"))
-            ec.velocityMax = {data["velocityMax"][0], data["velocityMax"][1], data["velocityMax"][2]};
-        if (data.contains("gravity"))
-            ec.gravity = {data["gravity"][0], data["gravity"][1], data["gravity"][2]};
+        if (data.contains("velocityMin")) {
+            auto v = readArray<float, 3>(data, "velocityMin", {0.f, 0.f, 0.f});
+            ec.velocityMin = {v[0], v[1], v[2]};
+        }
+        if (data.contains("velocityMax")) {
+            auto v = readArray<float, 3>(data, "velocityMax", {0.f, 0.f, 0.f});
+            ec.velocityMax = {v[0], v[1], v[2]};
+        }
+        if (data.contains("gravity")) {
+            auto v = readArray<float, 3>(data, "gravity", {0.f, 0.f, 0.f});
+            ec.gravity = {v[0], v[1], v[2]};
+        }
         if (data.contains("sizeStartMin"))
             ec.sizeStartMin = data["sizeStartMin"].get<float>();
         else if (data.contains("sizeStart"))
@@ -177,10 +191,14 @@ void IO::EntityFactory::RegisterDeserializers() {
             ec.rotationSpeedMin = data["rotationSpeedMin"].get<float>();
         if (data.contains("rotationSpeedMax"))
             ec.rotationSpeedMax = data["rotationSpeedMax"].get<float>();
-        if (data.contains("colorStart"))
-            ec.colorStart = {data["colorStart"][0], data["colorStart"][1], data["colorStart"][2], data["colorStart"][3]};
-        if (data.contains("colorEnd"))
-            ec.colorEnd = {data["colorEnd"][0], data["colorEnd"][1], data["colorEnd"][2], data["colorEnd"][3]};
+        if (data.contains("colorStart")) {
+            auto c = readArray<float, 4>(data, "colorStart", {1.f, 1.f, 1.f, 1.f});
+            ec.colorStart = {c[0], c[1], c[2], c[3]};
+        }
+        if (data.contains("colorEnd")) {
+            auto c = readArray<float, 4>(data, "colorEnd", {1.f, 1.f, 1.f, 1.f});
+            ec.colorEnd = {c[0], c[1], c[2], c[3]};
+        }
         if (data.contains("isBillboard"))
             ec.isBillboard = data["isBillboard"].get<bool>();
         if (data.contains("blendMode")) {
@@ -284,14 +302,14 @@ void IO::EntityFactory::RegisterSerializers() {
     // SCRIPT COMPONENT
     s_Serializers["ScriptComponent"] = [](const ECS::Entity &entity, nlohmann::json &data, Core::ResourceManager &) {
         if (entity.HasComponent<ECS::Components::ScriptComponent>()) {
-            if (const auto *scriptComp = entity.GetComponent<ECS::Components::ScriptComponent>(); scriptComp->scriptPaths.size() == 1) {
+            if (const auto *scriptComp = entity.GetComponent<ECS::Components::ScriptComponent>(); scriptComp->slots.size() == 1) {
                 // Single script
-                data["ScriptComponent"]["scriptPath"] = scriptComp->scriptPaths[0];
-            } else if (scriptComp->scriptPaths.size() > 1) {
+                data["ScriptComponent"]["scriptPath"] = scriptComp->slots[0].scriptPath;
+            } else if (scriptComp->slots.size() > 1) {
                 // Multiple scripts
                 nlohmann::json scriptPathsArray = nlohmann::json::array();
-                for (const auto &scriptPath : scriptComp->scriptPaths) {
-                    scriptPathsArray.push_back(scriptPath);
+                for (const auto &slot : scriptComp->slots) {
+                    scriptPathsArray.push_back(slot.scriptPath);
                 }
                 data["ScriptComponent"]["scriptPaths"] = scriptPathsArray;
             }
@@ -339,7 +357,11 @@ void IO::EntityFactory::DeserializeEntity(ECS::Entity &entity, const nlohmann::j
     }
     for (const auto &[compName, compData] : entityData["components"].items()) {
         if (auto it = s_Deserializers.find(compName); it != s_Deserializers.end()) {
-            it->second(entity, compData, resources);
+            try {
+                it->second(entity, compData, resources);
+            } catch (const std::exception &e) {
+                LOG_ERROR(LOG_WHO, "Failed to deserialize component '" + compName + "': " + std::string(e.what()));
+            }
         } else {
             LOG_ERROR(LOG_WHO, "No deserializer found for component '" + compName + "'");
         }

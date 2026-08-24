@@ -83,8 +83,10 @@ namespace UI {
             const auto &glyph = m_Font->GetGlyph(c);
 
             if (glyph.Size.x > 0 && glyph.Size.y > 0) {
-                const float x = finalPos.x + cursorX * scale + static_cast<float>(glyph.Bearing.x) * scale;
-                const float y = baselineAnchor - static_cast<float>(glyph.Bearing.y) * scale;
+                const float padX = (static_cast<float>(glyph.Size.x) - static_cast<float>(glyph.LayoutSize.x)) * 0.5f;
+                const float padY = (static_cast<float>(glyph.Size.y) - static_cast<float>(glyph.LayoutSize.y)) * 0.5f;
+                const float x = finalPos.x + cursorX * scale + (static_cast<float>(glyph.Bearing.x) - padX) * scale;
+                const float y = baselineAnchor - (static_cast<float>(glyph.Bearing.y) + padY) * scale;
                 const auto w = static_cast<float>(glyph.Size.x) * scale;
                 const auto h = static_cast<float>(glyph.Size.y) * scale;
 

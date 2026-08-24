@@ -63,6 +63,8 @@ namespace Core {
         int m_MainFrameIndex = 0;
 
         std::atomic<bool> m_FontsDirty{false};
+        std::atomic<uint64_t> m_FontAtlasRevision{0};
+        uint64_t m_RenderedFontAtlasRevision = 0;
 
         std::unique_ptr<ImDrawDataSnapshot> m_FrameImGuiData[2] = {nullptr, nullptr};
         std::mutex m_ImGuiTextureMutex;

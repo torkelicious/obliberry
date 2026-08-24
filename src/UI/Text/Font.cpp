@@ -103,6 +103,8 @@ namespace UI {
         if (m_Valid)
             return;
 
+        std::lock_guard ftLock(FreeType::mutex());
+
         bool faceLoaded = false;
         if (auto data = IO::VFS::ReadVirtual(m_FilePath)) {
             m_FontData.assign(data->begin(), data->end());
@@ -255,6 +257,8 @@ namespace UI {
         // free FreeType resources
         FT_Done_Face(m_Face);
         m_Face = nullptr;
+        m_FontData.clear();
+        m_FontData.shrink_to_fit();
         m_Valid = true;
         LOG_INFO(LOG_WHO, "Font loaded: " + filepath + " (" + std::to_string(m_Glyphs.size()) + " glyphs, " + std::to_string(atlasWidth) + "x" + std::to_string(atlasHeight) + " atlas)");
     }
@@ -269,8 +273,6 @@ namespace UI {
             std::vector<unsigned char> pixels;
             int width;
             int rows;
-            int bearingX;
-            int bearingY;
             unsigned int advance;
         };
         std::map<char, BitmapData> bitmaps;
@@ -315,8 +317,6 @@ namespace UI {
             BitmapData bmp;
             bmp.width = w;
             bmp.rows = h;
-            bmp.bearingX = glyph->bitmap_left;
-            bmp.bearingY = glyph->bitmap_top;
             bmp.advance = static_cast<unsigned int>(glyph->advance.x >> 6);
             bmp.pixels.resize(static_cast<size_t>(w * h));
             if (glyph->bitmap.buffer) {
@@ -398,6 +398,8 @@ namespace UI {
 
         FT_Done_Face(m_Face);
         m_Face = nullptr;
+        m_FontData.clear();
+        m_FontData.shrink_to_fit();
 
         m_Valid = true;
         LOG_INFO(LOG_WHO, "Font loaded (SDF): " + filepath + " (" + std::to_string(m_Glyphs.size()) + " glyphs, spread=" + std::to_string(spread) + ", " + std::to_string(atlasWidth) + "x" + std::to_string(atlasHeight) +
@@ -407,6 +409,7 @@ namespace UI {
     Font::~Font() {
         // catches failed or partial construction.
         if (m_Face) {
+            std::lock_guard ftLock(FreeType::mutex());
             FT_Done_Face(m_Face);
             m_Face = nullptr;
         }
@@ -427,7 +430,11 @@ namespace UI {
         if (const auto it = m_Glyphs.find(' '); it != m_Glyphs.end()) {
             return it->second;
         }
-        return m_Glyphs.begin()->second;
+        if (!m_Glyphs.empty()) {
+            return m_Glyphs.begin()->second;
+        }
+        static constexpr Glyph fallback{};
+        return fallback;
     }
 
 } // namespace UI
