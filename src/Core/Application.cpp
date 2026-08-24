@@ -123,7 +123,9 @@ void Core::Application::Run() {
         std::unique_lock imguiTextureLock(m_ImGuiTextureMutex);
 
         // synchronize font updates with render thread
-        if (m_FontsDirty.load()) {
+        // applies the new font set below
+        const bool fontsWereDirty = m_FontsDirty.load();
+        if (fontsWereDirty) {
             // unlock so the render thread can finish rendering the old frame
             imguiTextureLock.unlock();
 
@@ -137,6 +139,9 @@ void Core::Application::Run() {
 
         // handle font updates via layer
         m_Layer->SyncFonts(context, m_ImGuiTextureMutex);
+
+        if (fontsWereDirty)
+            m_FontAtlasRevision.fetch_add(1, std::memory_order_release);
 
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -285,6 +290,11 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer, UI::UI
 
         if (m_FrameImGuiData[frameIdx]->DrawData.CmdLists.Size > 0) {
             std::lock_guard imguiTextureLock(m_ImGuiTextureMutex);
+            if (const uint64_t revision = m_FontAtlasRevision.load(std::memory_order_acquire); revision != m_RenderedFontAtlasRevision) {
+                ImGui_ImplOpenGL3_DestroyDeviceObjects();
+                ImGui_ImplOpenGL3_CreateDeviceObjects();
+                m_RenderedFontAtlasRevision = revision;
+            }
             ImGui_ImplOpenGL3_RenderDrawData(&m_FrameImGuiData[frameIdx]->DrawData);
         }
 
