@@ -2,13 +2,17 @@
 
 namespace Logging {
 
+    ILogger *LoggerService::s_globalLogger = nullptr;
     thread_local ILogger *LoggerService::s_currentLogger = nullptr;
 
-    void LoggerService::Initialize(ILogger *logger) { s_currentLogger = logger; }
+    void LoggerService::Initialize(ILogger *logger) {
+        s_globalLogger = logger;
+        s_currentLogger = logger;
+    }
 
-    ILogger *LoggerService::Get() { return s_currentLogger; }
+    ILogger *LoggerService::Get() { return s_currentLogger ? s_currentLogger : s_globalLogger; }
 
-    bool LoggerService::IsAvailable() { return s_currentLogger != nullptr; }
+    bool LoggerService::IsAvailable() { return Get() != nullptr; }
 
     LoggerService::ScopedOverride::ScopedOverride(ILogger *newLogger) : oldLogger(s_currentLogger) { s_currentLogger = newLogger; }
 
