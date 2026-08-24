@@ -119,29 +119,32 @@ void Core::Application::Run() {
         m_InputManager.BeginFrame();
         Platform::Window::Window::PollEvents();
 
-        // imgui lock
-        std::unique_lock imguiTextureLock(m_ImGuiTextureMutex);
+        // The only shared ImGui state between threads is the font atlas / backend texture
+        // handles
+        // the render thread reads them in RenderDrawData, this thread rebuilds them
+        // in SyncFonts.
+        // everything else operates per-thread or
+        // "snapshotted" data and runs outside the lock.
 
-        // synchronize font updates with render thread
-        // applies the new font set below
-        const bool fontsWereDirty = m_FontsDirty.load();
-        if (fontsWereDirty) {
-            // unlock so the render thread can finish rendering the old frame
-            imguiTextureLock.unlock();
+        {
+            std::unique_lock imguiTextureLock(m_ImGuiTextureMutex);
 
-            // wait for render thread
-            for (auto &[mutex, cv, state] : m_Frames) {
-                std::unique_lock frameLock(mutex);
-                cv.wait(frameLock, [&] { return state == FrameState::Free || !m_Running.load(); });
+            const bool fontsWereDirty = m_FontsDirty.load();
+            if (fontsWereDirty) {
+                imguiTextureLock.unlock();
+                for (auto &[mutex, cv, state] : m_Frames) {
+                    std::unique_lock frameLock(mutex);
+                    cv.wait(frameLock, [&] { return state == FrameState::Free || !m_Running.load(); });
+                }
+                imguiTextureLock.lock();
             }
-            imguiTextureLock.lock();
+
+            // rebuilds and consume
+            m_Layer->SyncFonts(context, m_ImGuiTextureMutex);
+
+            if (fontsWereDirty)
+                m_FontAtlasRevision.fetch_add(1, std::memory_order_release);
         }
-
-        // handle font updates via layer
-        m_Layer->SyncFonts(context, m_ImGuiTextureMutex);
-
-        if (fontsWereDirty)
-            m_FontAtlasRevision.fetch_add(1, std::memory_order_release);
 
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -159,9 +162,6 @@ void Core::Application::Run() {
         m_UIRenderer.BeginFrame(m_Window.GetWidth(), m_Window.GetHeight());
         m_Layer->Render();
         ImGui::Render();
-
-        // prolly safe to unlock
-        imguiTextureLock.unlock();
 
         renderer.SwapBuffers();
         m_UIRenderer.SwapBuffers();
