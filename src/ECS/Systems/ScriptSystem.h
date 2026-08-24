@@ -282,6 +282,7 @@ namespace ECS::Systems::ScriptSystem {
             }
         }
 
+        std::vector<EntityID> destroyTagged;
         registry.ForEach<Components::DestroyTagComponent>([&](const Entity entity, Components::DestroyTagComponent *) {
             const auto entity_id = static_cast<EntityID>(entity);
             if (const auto script = registry.GetComponent<Components::ScriptComponent>(entity_id)) {
@@ -295,7 +296,11 @@ namespace ECS::Systems::ScriptSystem {
                     }
                 }
             }
+            destroyTagged.push_back(entity_id);
         });
+
+        for (const EntityID id : destroyTagged)
+            registry.RemoveComponent<Components::DestroyTagComponent>(id);
 
         // Static reuse of arguments
         static std::vector<ObSL::Value> args(1);
