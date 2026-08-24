@@ -24,10 +24,12 @@ namespace Math::Projection {
         farWorld /= farWorld.w;
 
         const glm::vec3 rayDir = glm::vec3(farWorld) - glm::vec3(nearWorld);
-        if (std::abs(rayDir.z) < 0.0001f)
+        if (std::abs(rayDir.z) < 1e-4f)
             return {nearWorld.x, nearWorld.y};
 
         const float t = -nearWorld.z / rayDir.z;
+        if (t < 0.0f)
+            return {nearWorld.x, nearWorld.y};
         glm::vec3 hit = glm::vec3(nearWorld) + t * rayDir;
         return {hit.x, hit.y};
     }
