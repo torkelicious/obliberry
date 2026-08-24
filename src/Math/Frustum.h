@@ -46,9 +46,9 @@ namespace Math::Frustum {
         [[nodiscard]] bool IntersectsAABB(const glm::vec3 &min, const glm::vec3 &max) const noexcept {
             for (const auto &plane : planes) {
                 const glm::vec3 p = {
-                        plane.x >= 0.0f ? min.x : max.x,
-                        plane.y >= 0.0f ? min.y : max.y,
-                        plane.z >= 0.0f ? min.z : max.z,
+                        plane.x >= 0.0f ? max.x : min.x,
+                        plane.y >= 0.0f ? max.y : min.y,
+                        plane.z >= 0.0f ? max.z : min.z,
                 };
                 if (DistanceTo(plane, p) < 0.0f)
                     return false;
@@ -92,6 +92,8 @@ namespace Math::Frustum {
                 return {nearW.x, nearW.y};
 
             const float t = -nearW.z / dir.z;
+            if (t < 0.0f)
+                return {nearW.x, nearW.y};
             glm::vec3 hit = glm::vec3(nearW) + t * dir;
             return {hit.x, hit.y};
         };
@@ -128,6 +130,8 @@ namespace Math::Frustum {
                 return {nearW.x, nearW.y};
 
             const float t = -nearW.z / dir.z;
+            if (t < 0.0f)
+                return {nearW.x, nearW.y};
             glm::vec3 hit = glm::vec3(nearW) + t * dir;
             return {hit.x, hit.y};
         };
