@@ -8,6 +8,8 @@ namespace Editor::UI {
 
         void Reset() { m_SelectedElement = nullptr; }
 
+        void SetSelectedElement(::UI::UIElement *element) { m_SelectedElement = element; }
+
         ::UI::UIElement *GetSelectedElement() const { return m_SelectedElement; };
 
     private:
