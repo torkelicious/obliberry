@@ -311,13 +311,13 @@ glm::vec2 Editor::States::EditState::GetUIGizmoMousePos() const {
 
 void Editor::States::EditState::UI_HandleGizmoInput() {
     auto *element = m_EditorLayer->m_UIPanel.GetSelectedElement();
-    if (!element || !m_EditorLayer->m_Context->uiRenderer)
+    if (!m_EditorLayer->m_Context->uiRenderer)
         return;
 
     const bool viewportHovered = m_EditorLayer->m_ViewportPanel.IsHovered();
 
     m_UIHoveredHandle = ::UI::HandleType::None;
-    if (viewportHovered && m_UIDragHandle == ::UI::HandleType::None) {
+    if (element && viewportHovered && m_UIDragHandle == ::UI::HandleType::None) {
         const glm::vec2 hoverPos = GetUIGizmoMousePos();
         m_UIHoveredHandle = ::UI::HitTest(hoverPos, element);
         if (m_UIHoveredHandle != ::UI::HandleType::None && m_UIHoveredHandle != ::UI::HandleType::Translate)
@@ -332,24 +332,29 @@ void Editor::States::EditState::UI_HandleGizmoInput() {
     const glm::vec2 mousePos = GetUIGizmoMousePos();
 
     if (viewportHovered && m_EditorLayer->m_Input->IsMousePressed("MouseLeft")) {
-        m_UIDragHandle = ::UI::HitTest(mousePos, element);
+        const bool grabbedOwnHandle = element && [&] {
+            const ::UI::HandleType h = ::UI::HitTest(mousePos, element);
+            return h != ::UI::HandleType::None && h != ::UI::HandleType::Translate;
+        }();
+
+        if (!grabbedOwnHandle) {
+            if (auto *uiSys = m_EditorLayer->m_Context->uiSystem) {
+                if (auto *hit = uiSys->HitTest(mousePos); hit && hit != uiSys->GetRoot()) {
+                    m_EditorLayer->m_UIPanel.SetSelectedElement(hit);
+                    element = hit;
+                } else {
+                    m_EditorLayer->m_UIPanel.SetSelectedElement(nullptr);
+                    element = nullptr;
+                }
+            }
+        }
+
+        m_UIDragHandle = element ? ::UI::HitTest(mousePos, element) : ::UI::HandleType::None;
         if (m_UIDragHandle != ::UI::HandleType::None) {
             m_UIDragStartMouse = mousePos;
             m_UIDragStartWorldPos = ::UI::GetWorldPosition(element);
             m_UIDragStartScale = element->Rect.Scale;
             m_UIDragStarted = false;
-        }
-        return;
-    }
-
-    // empty click
-    if (viewportHovered && m_EditorLayer->m_Input->IsMouseReleased("MouseLeft") && m_UIDragHandle == ::UI::HandleType::None) {
-        if (auto *uiSys = m_EditorLayer->m_Context->uiSystem) {
-            if (auto *hit = uiSys->HitTest(mousePos); hit && hit != uiSys->GetRoot()) {
-                m_EditorLayer->m_UIPanel.SetSelectedElement(hit);
-            } else {
-                m_EditorLayer->m_UIPanel.SetSelectedElement(nullptr);
-            }
         }
         return;
     }

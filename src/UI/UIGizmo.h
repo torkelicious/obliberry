@@ -11,6 +11,7 @@ namespace UI {
     constexpr glm::vec4 elBorder = {0.1f, 0.1f, 0.1f, 1.0f};
     constexpr float lineThickness = 2.0f;
     constexpr float handleSize = 12.0f;
+    constexpr float handleHitPad = 4.0f;
 
     enum class HandleType : uint8_t { None, Translate, TL, TC, TR, RC, BR, BC, BL, LC };
 
@@ -27,18 +28,19 @@ namespace UI {
     inline HandleType HitTest(const glm::vec2 &mPos, const UIElement *element) {
         const glm::vec2 worldPos = GetWorldPosition(element);
         const glm::vec2 size = element->Rect.Scale;
-        constexpr float half = handleSize * 0.5f;
+        constexpr float half = (handleSize + handleHitPad) * 0.5f;
+        constexpr float hitSize = handleSize + handleHitPad;
 
         const std::pair<HandleType, RectTransform> handles[8] = {
 
-                {HandleType::TL, {{worldPos.x - half, worldPos.y - half}, {handleSize, handleSize}}},
-                {HandleType::TC, {{worldPos.x + size.x * 0.5f - half, worldPos.y - half}, {handleSize, handleSize}}},
-                {HandleType::TR, {{worldPos.x + size.x - half, worldPos.y - half}, {handleSize, handleSize}}},
-                {HandleType::RC, {{worldPos.x + size.x - half, worldPos.y + size.y * 0.5f - half}, {handleSize, handleSize}}},
-                {HandleType::BR, {{worldPos.x + size.x - half, worldPos.y + size.y - half}, {handleSize, handleSize}}},
-                {HandleType::BC, {{worldPos.x + size.x * 0.5f - half, worldPos.y + size.y - half}, {handleSize, handleSize}}},
-                {HandleType::BL, {{worldPos.x - half, worldPos.y + size.y - half}, {handleSize, handleSize}}},
-                {HandleType::LC, {{worldPos.x - half, worldPos.y + size.y * 0.5f - half}, {handleSize, handleSize}}}};
+                {HandleType::TL, {{worldPos.x - half, worldPos.y - half}, {hitSize, hitSize}}},
+                {HandleType::TC, {{worldPos.x + size.x * 0.5f - half, worldPos.y - half}, {hitSize, hitSize}}},
+                {HandleType::TR, {{worldPos.x + size.x - half, worldPos.y - half}, {hitSize, hitSize}}},
+                {HandleType::RC, {{worldPos.x + size.x - half, worldPos.y + size.y * 0.5f - half}, {hitSize, hitSize}}},
+                {HandleType::BR, {{worldPos.x + size.x - half, worldPos.y + size.y - half}, {hitSize, hitSize}}},
+                {HandleType::BC, {{worldPos.x + size.x * 0.5f - half, worldPos.y + size.y - half}, {hitSize, hitSize}}},
+                {HandleType::BL, {{worldPos.x - half, worldPos.y + size.y - half}, {hitSize, hitSize}}},
+                {HandleType::LC, {{worldPos.x - half, worldPos.y + size.y * 0.5f - half}, {hitSize, hitSize}}}};
 
         for (const auto &[type, rect] : handles) {
             if (IsPointInsideRect(mPos, rect))
