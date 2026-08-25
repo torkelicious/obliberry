@@ -26,8 +26,10 @@ namespace Editor::States {
         void OnSaveKey() override;
 
     private:
-        void DrawGizmoForSelected() const;
-        void EditTransform(Rendering::Transform &localTransform, Rendering::Transform &worldTransform, bool isBillboard);
+        void Entity_DrawGizmoForSelected() const; // entities
+        void EntityGizmoTranslate(Rendering::Transform &localTransform, Rendering::Transform &worldTransform, bool isBillboard);
+
+        void UI_DrawGizmoForSelected() const; // UI system
 
         bool m_HideGameUI = false;
 

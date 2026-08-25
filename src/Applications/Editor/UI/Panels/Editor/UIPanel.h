@@ -8,6 +8,8 @@ namespace Editor::UI {
 
         void Reset() { m_SelectedElement = nullptr; }
 
+        ::UI::UIElement *GetSelectedElement() const { return m_SelectedElement; };
+
     private:
         void DrawElementNode(::UI::UIElement *element);
 

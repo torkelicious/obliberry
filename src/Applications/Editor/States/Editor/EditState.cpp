@@ -117,7 +117,7 @@ void Editor::States::EditState::OnDrawPanels() {
     m_EditorLayer->m_RegistryPanel.OnImGuiRender();
     m_EditorLayer->m_InspectorPanel.OnImGuiRender();
     m_EditorLayer->m_UIPanel.OnImGuiRender();
-    DrawGizmoForSelected();
+    Entity_DrawGizmoForSelected();
 }
 
 void Editor::States::EditState::OnRender() {
@@ -126,6 +126,7 @@ void Editor::States::EditState::OnRender() {
     if (EditorLayer::s_RenderParticlesInEditor) {
         ECS::Systems::ParticleSystem::Render(*m_EditorLayer->m_Registry, *m_EditorLayer->m_Context->renderer, &m_EditorLayer->m_Camera);
     }
+    UI_DrawGizmoForSelected();
 }
 
 void Editor::States::EditState::OnDrawModeToolbar() {
@@ -157,7 +158,10 @@ void Editor::States::EditState::OnSaveKey() {
     }
 }
 
-void Editor::States::EditState::DrawGizmoForSelected() const {
+//
+// Entity transofmation
+//
+void Editor::States::EditState::Entity_DrawGizmoForSelected() const {
     const ECS::Entity selectedEntity = m_EditorLayer->m_RegistryPanel.GetSelectedEntity();
     if (!selectedEntity)
         return;
@@ -185,10 +189,10 @@ void Editor::States::EditState::DrawGizmoForSelected() const {
         drawList->AddText(ImVec2(badgeMin.x + padding, badgeMin.y + padding), IM_COL32(255, 255, 255, 255), warningText);
         ImGui::End();
     }
-    const_cast<EditState *>(this)->EditTransform(t, worldT, isBillboard);
+    const_cast<EditState *>(this)->EntityGizmoTranslate(t, worldT, isBillboard);
 }
 
-void Editor::States::EditState::EditTransform(Rendering::Transform &localTransform, Rendering::Transform &worldTransform, bool isBillboard) {
+void Editor::States::EditState::EntityGizmoTranslate(Rendering::Transform &localTransform, Rendering::Transform &worldTransform, bool isBillboard) {
     const auto &camera = m_EditorLayer->m_Camera;
     const float aspect = m_EditorLayer->m_ViewportPanel.GetWidth() / m_EditorLayer->m_ViewportPanel.GetHeight();
 
@@ -284,6 +288,57 @@ void Editor::States::EditState::EditTransform(Rendering::Transform &localTransfo
                     }
                 }
             }
+        }
+    }
+}
+
+
+//
+// UI Transformation
+//
+
+void Editor::States::EditState::UI_DrawGizmoForSelected() const {
+    auto ctx = m_EditorLayer->m_Context;
+    auto renderer = m_EditorLayer->m_Context->uiRenderer;
+    if (!ctx->uiRenderer || !m_EditorLayer->m_UIPanel.GetSelectedElement()) {
+        return;
+    }
+
+    if (auto el = m_EditorLayer->m_UIPanel.GetSelectedElement()) {
+        const glm::vec2 worldPos = ::UI::UISystem::GetWorldPosition(el);
+        const glm::vec2 size = el->Rect.Scale;
+        // "gizmo"s
+        const glm::vec4 elOutline = {0.0f, 0.8f, 1.0f, 1.0f};
+        const glm::vec4 elHandle = {1.0f, 1.0f, 1.0f, 1.0f};
+        const glm::vec4 elBorder = {0.1f, 0.1f, 0.1f, 1.0f};
+
+        constexpr float lineThickness = 2.0f;
+        constexpr float handleSize = 8.0f;
+
+        // selection bounding box
+        renderer->SubmitRect(worldPos, {size.x, lineThickness}, elOutline);
+        renderer->SubmitRect({worldPos.x, worldPos.y + size.y - lineThickness}, {size.x, lineThickness}, elOutline);
+        renderer->SubmitRect(worldPos, {lineThickness, size.y}, elOutline);
+        renderer->SubmitRect({worldPos.x + size.x - lineThickness, worldPos.y}, {lineThickness, size.y}, elOutline);
+
+        // handle anchor thingys
+        const glm::vec2 handles[8] = {
+                worldPos,                                    // Top-Left
+                worldPos + glm::vec2(size.x * 0.5f, 0.0f),   // Top-Center
+                worldPos + glm::vec2(size.x, 0.0f),          // Top-Right
+                worldPos + glm::vec2(size.x, size.y * 0.5f), // Right-Center
+                worldPos + size,                             // Bottom-Right
+                worldPos + glm::vec2(size.x * 0.5f, size.y), // Bottom-Center
+                worldPos + glm::vec2(0.0f, size.y),          // Bottom-Left
+                worldPos + glm::vec2(0.0f, size.y * 0.5f)    // Left-Center
+        };
+
+        for (const auto &center : handles) {
+            // border
+            const glm::vec2 handlePos = center - glm::vec2(handleSize * 0.5f);
+            renderer->SubmitRect(handlePos - glm::vec2(1.0f), {handleSize + 2.0f, handleSize + 2.0f}, elBorder);
+            // fill
+            renderer->SubmitRect(handlePos, {handleSize, handleSize}, elHandle);
         }
     }
 }

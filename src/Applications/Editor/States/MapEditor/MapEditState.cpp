@@ -349,7 +349,7 @@ void Editor::States::MapEditState::CommitMapChanges() {
     m_MapComp->needsMeshUpdate = true;
     m_MapComp->mapDirty = true;
     if (m_EditorLayer->m_Scene)
-        m_EditorLayer->m_Scene->MarkAsChanged();
+        m_EditorLayer->m_Scene->MarkAsChanged(); // may be causing duplicate dialogs to pop up
 }
 
 void Editor::States::MapEditState::ApplyToolAt(const Map::HexCoords &hex) {
