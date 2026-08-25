@@ -75,6 +75,9 @@ namespace UI {
 
         [[nodiscard]] glm::vec2 WindowToGameCoords(float winX, float winY) const;
 
+        // explicit
+        [[nodiscard]] glm::vec2 WindowToGameCoords(float winX, float winY, float viewWidth, float viewHeight) const;
+
     private:
         static constexpr uint32_t MAX_QUADS = 10000;
 

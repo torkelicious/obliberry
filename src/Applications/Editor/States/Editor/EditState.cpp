@@ -7,6 +7,7 @@
 #include "ECS/Components/BillboardTagComponent.h"
 #include "Applications/Editor/Commands/EditorCommands.h"
 #include "ECS/Systems/ParticleSystem.h"
+#include "UI/UIGizmo.h"
 
 namespace Editor::States {
     ImGuizmo::OPERATION EditState::mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
@@ -31,10 +32,14 @@ void Editor::States::EditState::OnUpdate(const float dt) {
         ECS::Systems::ParticleSystem::Update(*m_EditorLayer->m_Registry, dt);
     }
     if (m_EditorLayer->m_Context->uiSystem) {
-        m_EditorLayer->m_Context->uiSystem->Update(dt);
-        m_EditorLayer->m_Context->uiSystem->SnapshotButtonStates();
+        m_EditorLayer->m_Context->uiSystem->Update(dt, /*interactive=*/false);
+        if (m_EditorLayer->m_CurrentState && m_EditorLayer->m_CurrentState->IsPlayMode()) {
+            m_EditorLayer->m_Context->uiSystem->SnapshotButtonStates();
+        }
         if (m_EditorLayer->m_Context->uiCmdBuf) {
-            m_EditorLayer->m_Context->uiCmdBuf->flush(*m_EditorLayer->m_Context->uiSystem);
+            if (m_UIDragHandle == ::UI::HandleType::None) {
+                m_EditorLayer->m_Context->uiCmdBuf->flush(*m_EditorLayer->m_Context->uiSystem);
+            }
         }
     }
 
@@ -51,7 +56,10 @@ void Editor::States::EditState::OnUpdate(const float dt) {
     m_EditorLayer->m_ViewportPanel.ClearSelectedEntityID();
 }
 
-void Editor::States::EditState::OnHandleInput(const float /*dt*/) {
+void Editor::States::EditState::OnHandleInput(const float dt) {
+    // must run before the WantCaptureKeyboard earlyout below
+    UI_HandleGizmoInput();
+
     if (ImGui::GetIO().WantCaptureKeyboard)
         return;
 
@@ -87,7 +95,7 @@ void Editor::States::EditState::OnHandleInput(const float /*dt*/) {
     const auto mouseDeltaX = static_cast<float>(m_EditorLayer->m_Input->GetMouseDeltaX());
     const auto mouseDeltaY = static_cast<float>(m_EditorLayer->m_Input->GetMouseDeltaY());
 
-    if (m_EditorLayer->m_Input->IsMouseDown("MouseMiddle") || m_EditorLayer->m_Input->IsMouseDown("MouseRight")) {
+    if ((m_EditorLayer->m_Input->IsMouseDown("MouseMiddle") || m_EditorLayer->m_Input->IsMouseDown("MouseRight")) && m_UIDragHandle == ::UI::HandleType::None) {
         m_EditorLayer->m_Camera.Pan(-mouseDeltaX, mouseDeltaY, 0.025f);
     }
 
@@ -296,49 +304,91 @@ void Editor::States::EditState::EntityGizmoTranslate(Rendering::Transform &local
 //
 // UI Transformation
 //
+glm::vec2 Editor::States::EditState::GetUIGizmoMousePos() const {
+    const ImVec2 local = m_EditorLayer->m_ViewportPanel.GetLocalMousePos();
+    return m_EditorLayer->m_Context->uiRenderer->WindowToGameCoords(local.x, local.y, m_EditorLayer->m_ViewportPanel.GetWidth(), m_EditorLayer->m_ViewportPanel.GetHeight());
+}
 
-void Editor::States::EditState::UI_DrawGizmoForSelected() const {
-    auto ctx = m_EditorLayer->m_Context;
-    auto renderer = m_EditorLayer->m_Context->uiRenderer;
-    if (!ctx->uiRenderer || !m_EditorLayer->m_UIPanel.GetSelectedElement()) {
+void Editor::States::EditState::UI_HandleGizmoInput() {
+    auto *element = m_EditorLayer->m_UIPanel.GetSelectedElement();
+    if (!element || !m_EditorLayer->m_Context->uiRenderer)
+        return;
+
+    const bool viewportHovered = m_EditorLayer->m_ViewportPanel.IsHovered();
+
+    m_UIHoveredHandle = ::UI::HandleType::None;
+    if (viewportHovered && m_UIDragHandle == ::UI::HandleType::None) {
+        const glm::vec2 hoverPos = GetUIGizmoMousePos();
+        m_UIHoveredHandle = ::UI::HitTest(hoverPos, element);
+        if (m_UIHoveredHandle != ::UI::HandleType::None && m_UIHoveredHandle != ::UI::HandleType::Translate)
+            ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+    }
+
+    m_EditorLayer->m_ViewportPanel.SetUIHandleHover(m_UIHoveredHandle != ::UI::HandleType::None || m_UIDragHandle != ::UI::HandleType::None);
+
+    if (!viewportHovered && m_UIDragHandle == ::UI::HandleType::None)
+        return;
+
+    const glm::vec2 mousePos = GetUIGizmoMousePos();
+
+    if (viewportHovered && m_EditorLayer->m_Input->IsMousePressed("MouseLeft")) {
+        m_UIDragHandle = ::UI::HitTest(mousePos, element);
+        if (m_UIDragHandle != ::UI::HandleType::None) {
+            m_UIDragStartMouse = mousePos;
+            m_UIDragStartWorldPos = ::UI::GetWorldPosition(element);
+            m_UIDragStartScale = element->Rect.Scale;
+            m_UIDragStarted = false;
+        }
         return;
     }
 
-    if (auto el = m_EditorLayer->m_UIPanel.GetSelectedElement()) {
-        const glm::vec2 worldPos = ::UI::UISystem::GetWorldPosition(el);
-        const glm::vec2 size = el->Rect.Scale;
-        // "gizmo"s
-        const glm::vec4 elOutline = {0.0f, 0.8f, 1.0f, 1.0f};
-        const glm::vec4 elHandle = {1.0f, 1.0f, 1.0f, 1.0f};
-        const glm::vec4 elBorder = {0.1f, 0.1f, 0.1f, 1.0f};
-
-        constexpr float lineThickness = 2.0f;
-        constexpr float handleSize = 8.0f;
-
-        // selection bounding box
-        renderer->SubmitRect(worldPos, {size.x, lineThickness}, elOutline);
-        renderer->SubmitRect({worldPos.x, worldPos.y + size.y - lineThickness}, {size.x, lineThickness}, elOutline);
-        renderer->SubmitRect(worldPos, {lineThickness, size.y}, elOutline);
-        renderer->SubmitRect({worldPos.x + size.x - lineThickness, worldPos.y}, {lineThickness, size.y}, elOutline);
-
-        // handle anchor thingys
-        const glm::vec2 handles[8] = {
-                worldPos,                                    // Top-Left
-                worldPos + glm::vec2(size.x * 0.5f, 0.0f),   // Top-Center
-                worldPos + glm::vec2(size.x, 0.0f),          // Top-Right
-                worldPos + glm::vec2(size.x, size.y * 0.5f), // Right-Center
-                worldPos + size,                             // Bottom-Right
-                worldPos + glm::vec2(size.x * 0.5f, size.y), // Bottom-Center
-                worldPos + glm::vec2(0.0f, size.y),          // Bottom-Left
-                worldPos + glm::vec2(0.0f, size.y * 0.5f)    // Left-Center
-        };
-
-        for (const auto &center : handles) {
-            // border
-            const glm::vec2 handlePos = center - glm::vec2(handleSize * 0.5f);
-            renderer->SubmitRect(handlePos - glm::vec2(1.0f), {handleSize + 2.0f, handleSize + 2.0f}, elBorder);
-            // fill
-            renderer->SubmitRect(handlePos, {handleSize, handleSize}, elHandle);
+    // empty click
+    if (viewportHovered && m_EditorLayer->m_Input->IsMouseReleased("MouseLeft") && m_UIDragHandle == ::UI::HandleType::None) {
+        if (auto *uiSys = m_EditorLayer->m_Context->uiSystem) {
+            if (auto *hit = uiSys->HitTest(mousePos); hit && hit != uiSys->GetRoot()) {
+                m_EditorLayer->m_UIPanel.SetSelectedElement(hit);
+            } else {
+                m_EditorLayer->m_UIPanel.SetSelectedElement(nullptr);
+            }
         }
+        return;
+    }
+
+    if (m_UIDragHandle != ::UI::HandleType::None && m_EditorLayer->m_Input->IsMouseDown("MouseLeft")) {
+        glm::vec2 delta = mousePos - m_UIDragStartMouse;
+
+        // drag
+        constexpr float UI_TRANSLATE_DEADZONE = 2.0f;
+        if (m_UIDragHandle == ::UI::HandleType::Translate && !m_UIDragStarted && glm::length(delta) < UI_TRANSLATE_DEADZONE)
+            return;
+        m_UIDragStarted = true;
+
+        ::UI::TransformElement(element, m_UIDragHandle, delta, m_UIDragStartWorldPos, m_UIDragStartScale);
+
+        if (auto *scene = m_EditorLayer->m_Scene)
+            scene->MarkAsChanged();
+        return;
+    }
+
+    // release
+    if (m_UIDragHandle != ::UI::HandleType::None && m_EditorLayer->m_Input->IsMouseReleased("MouseLeft")) {
+        const glm::vec2 parentWorld = element->Parent ? ::UI::GetWorldPosition(element->Parent) : glm::vec2(0.0f);
+        const glm::vec2 startPosLocal = m_UIDragStartWorldPos - parentWorld;
+
+        if ((startPosLocal != element->Rect.Position || m_UIDragStartScale != element->Rect.Scale) && m_EditorLayer->m_Scene) {
+            m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::TransformUIElementCommand>(element, startPosLocal, element->Rect.Position, m_UIDragStartScale, element->Rect.Scale), *m_EditorLayer->m_Context);
+        }
+
+        m_UIDragHandle = ::UI::HandleType::None;
+        m_UIDragStarted = false;
+    }
+}
+
+void Editor::States::EditState::UI_DrawGizmoForSelected() const {
+    if (!m_EditorLayer->m_Context->uiRenderer || !m_EditorLayer->m_UIPanel.GetSelectedElement()) {
+        return;
+    }
+    if (m_EditorLayer->m_UIPanel.GetSelectedElement()) {
+        ::UI::DrawGizmo(m_EditorLayer->m_UIPanel.GetSelectedElement(), m_EditorLayer->m_Context->uiRenderer, m_UIHoveredHandle);
     }
 }

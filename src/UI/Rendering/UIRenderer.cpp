@@ -218,21 +218,27 @@ namespace UI {
     void UIRenderer::SetGameResolution(const uint32_t width, const uint32_t height) { m_GameResolution = {static_cast<float>(width), static_cast<float>(height)}; }
 
     glm::vec2 UIRenderer::WindowToGameCoords(const float winX, const float winY) const {
-        if (m_GameResolution.x <= 0 || m_GameResolution.y <= 0 || m_LastRenderTargetSize.x == 0 || m_LastRenderTargetSize.y == 0)
+        // legacy
+        // prefer the explicit overload when possible.
+        return WindowToGameCoords(winX, winY, static_cast<float>(m_LastRenderTargetSize.x), static_cast<float>(m_LastRenderTargetSize.y));
+    }
+
+    glm::vec2 UIRenderer::WindowToGameCoords(const float winX, const float winY, const float viewWidth, const float viewHeight) const {
+        if (m_GameResolution.x <= 0 || m_GameResolution.y <= 0 || viewWidth <= 0.0f || viewHeight <= 0.0f)
             return {winX, winY};
 
         const float gameAspect = m_GameResolution.x / m_GameResolution.y;
-        const float targetAspect = static_cast<float>(m_LastRenderTargetSize.x) / static_cast<float>(m_LastRenderTargetSize.y);
+        const float targetAspect = viewWidth / viewHeight;
 
         float vpX = 0.0f, vpY = 0.0f, vpW, vpH;
         if (targetAspect > gameAspect) {
-            vpH = static_cast<float>(m_LastRenderTargetSize.y);
+            vpH = viewHeight;
             vpW = vpH * gameAspect;
-            vpX = (static_cast<float>(m_LastRenderTargetSize.x) - vpW) * 0.5f;
+            vpX = (viewWidth - vpW) * 0.5f;
         } else {
-            vpW = static_cast<float>(m_LastRenderTargetSize.x);
+            vpW = viewWidth;
             vpH = vpW / gameAspect;
-            vpY = (static_cast<float>(m_LastRenderTargetSize.y) - vpH) * 0.5f;
+            vpY = (viewHeight - vpH) * 0.5f;
         }
 
         const float gameX = (winX - vpX) * (m_GameResolution.x / vpW);

@@ -81,7 +81,7 @@ void Editor::UI::ViewportPanel::OnImGuiRender() {
                     drawList->AddText(ImVec2(badgeMin.x + padding, badgeMin.y + padding), IM_COL32(255, 255, 255, 220), label);
                 }
 
-                if (m_IsHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGuizmo::IsOver() && !ImGuizmo::IsUsing()) {
+                if (m_IsHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGuizmo::IsOver() && !ImGuizmo::IsUsing() && !m_UIHandleHover) {
                     const ImVec2 mousePos = ImGui::GetMousePos();
 
                     const int mouseX = static_cast<int>(mousePos.x - boundsMin.x);
@@ -96,6 +96,11 @@ void Editor::UI::ViewportPanel::OnImGuiRender() {
         }
     }
     ImGui::End();
+}
+
+ImVec2 Editor::UI::ViewportPanel::GetLocalMousePos() const {
+    const ImVec2 mousePos = ImGui::GetMousePos();
+    return {mousePos.x - m_ViewportBoundsMin.x, mousePos.y - m_ViewportBoundsMin.y};
 }
 
 glm::vec2 Editor::UI::ViewportPanel::MousePosToWorld(const Rendering::Camera &camera) const {

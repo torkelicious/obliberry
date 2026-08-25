@@ -352,6 +352,28 @@ namespace Editor::Commands {
         glm::vec2 m_NewScale;
     };
 
+    class TransformUIElementCommand final : public ICommand {
+    public:
+        TransformUIElementCommand(::UI::UIElement *target, const glm::vec2 oldPos, const glm::vec2 newPos, const glm::vec2 oldScale, const glm::vec2 newScale)
+            : m_Target(target), m_OldPos(oldPos), m_NewPos(newPos), m_OldScale(oldScale), m_NewScale(newScale) {}
+        void Execute(Core::EngineContext &ctx) override {
+            m_Target->Rect.Position = m_NewPos;
+            m_Target->Rect.Scale = m_NewScale;
+        }
+        void Undo(Core::EngineContext &ctx) override {
+            m_Target->Rect.Position = m_OldPos;
+            m_Target->Rect.Scale = m_OldScale;
+        }
+        [[nodiscard]] std::string_view Name() const noexcept override { return "Transform UI Element"; }
+
+    private:
+        ::UI::UIElement *m_Target;
+        glm::vec2 m_OldPos;
+        glm::vec2 m_NewPos;
+        glm::vec2 m_OldScale;
+        glm::vec2 m_NewScale;
+    };
+
     // = = = = = = = = = = = = = = //
     // Generic Component Field Edit //
     // = = = = = = = = = = = = = = //

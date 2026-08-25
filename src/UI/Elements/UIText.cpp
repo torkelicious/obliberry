@@ -7,9 +7,19 @@
 namespace UI {
 
 
-    void UIText::SetText(const std::string &text) { m_Text = text; }
+    void UIText::SetText(const std::string &text) {
+        if (m_Text != text) {
+            m_Text = text;
+            m_LayoutDirty = true;
+        }
+    }
 
-    void UIText::SetFont(std::shared_ptr<Font> font) { m_Font = std::move(font); }
+    void UIText::SetFont(std::shared_ptr<Font> font) {
+        if (m_Font != font) {
+            m_Font = std::move(font);
+            m_LayoutDirty = true;
+        }
+    }
 
     void UIText::SetColor(const glm::vec4 color) { m_Color = color; }
 
@@ -52,15 +62,22 @@ namespace UI {
         if (!atlas)
             return;
 
-        float naturalWidth = 0.0f;
-        float maxHeight = 0.0f;
-        float maxBearingY = 0.0f;
-        for (const char c : m_Text) {
-            const auto &glyph = m_Font->GetGlyph(c);
-            naturalWidth += static_cast<float>(glyph.Advance);
-            maxHeight = std::max(maxHeight, static_cast<float>(glyph.LayoutSize.y));
-            maxBearingY = std::max(maxBearingY, static_cast<float>(glyph.Bearing.y));
+        // text metrics
+        if (m_LayoutDirty) {
+            m_NaturalWidth = 0.0f;
+            m_MaxHeight = 0.0f;
+            m_MaxBearingY = 0.0f;
+            for (const char c : m_Text) {
+                const auto &glyph = m_Font->GetGlyph(c);
+                m_NaturalWidth += static_cast<float>(glyph.Advance);
+                m_MaxHeight = std::max(m_MaxHeight, static_cast<float>(glyph.LayoutSize.y));
+                m_MaxBearingY = std::max(m_MaxBearingY, static_cast<float>(glyph.Bearing.y));
+            }
+            m_LayoutDirty = false;
         }
+        const float naturalWidth = m_NaturalWidth;
+        const float maxHeight = m_MaxHeight;
+        const float maxBearingY = m_MaxBearingY;
 
         float scale = 1.0f;
         if (naturalWidth > 0.0f && maxHeight > 0.0f && Rect.Scale.x > 0.0f && Rect.Scale.y > 0.0f) {
@@ -72,6 +89,7 @@ namespace UI {
         const bool isSDF = m_Font->IsSDF();
         const unsigned int spread = m_Font->GetSDFSpread();
         const float sdfRenderScale = isSDF ? scale : 1.0f;
+        const glm::vec2 halfTexel = {0.5f / static_cast<float>(atlas->GetWidth()), 0.5f / static_cast<float>(atlas->GetHeight())};
 
         const bool centerVertically = Rect.Scale.y > 0.0f;
         const float textTop = finalPos.y + (centerVertically ? (Rect.Scale.y - maxHeight * scale) * 0.5f : 0.0f);
@@ -91,9 +109,6 @@ namespace UI {
                 const auto h = static_cast<float>(glyph.Size.y) * scale;
 
                 // prevent linear filter bleeding from adjacent atlas glyphs
-                const auto atlasW = static_cast<float>(atlas->GetWidth());
-                const auto atlasH = static_cast<float>(atlas->GetHeight());
-                const glm::vec2 halfTexel = {0.5f / atlasW, 0.5f / atlasH};
                 const glm::vec2 uvMin = glyph.UVOffset + halfTexel;
                 const glm::vec2 uvMax = glyph.UVOffset + glyph.UVSize - halfTexel;
 

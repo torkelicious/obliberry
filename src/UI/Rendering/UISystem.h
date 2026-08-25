@@ -39,7 +39,7 @@ namespace UI {
 
         void Clear();
 
-        void Update(float dt) const;
+        void Update(float dt, bool interactive = true) const;
         void Render();
         [[nodiscard]] UIElement *HitTest(glm::vec2 point) const;
 
@@ -50,16 +50,6 @@ namespace UI {
 
         void SnapshotButtonStates();
         [[nodiscard]] ButtonState GetButtonState(const std::string &name) const;
-
-        static glm::vec2 GetWorldPosition(const UIElement *element) {
-            glm::vec2 worldPos = element->Rect.Position;
-            const UI::UIElement *current = element->Parent;
-            while (current != nullptr) {
-                worldPos += current->Rect.Position;
-                current = current->Parent;
-            }
-            return worldPos;
-        }
 
     private:
         void RenderRecursive(UIElement *element, glm::vec2 accumulatedPos);

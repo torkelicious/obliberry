@@ -31,6 +31,12 @@ namespace UI {
         std::string m_Text;
         std::shared_ptr<Font> m_Font;
         glm::vec4 m_Color = {1.0f, 1.0f, 1.0f, 1.0f};
+
+        // cached text metric
+        mutable bool m_LayoutDirty = true;
+        mutable float m_NaturalWidth = 0.0f;
+        mutable float m_MaxHeight = 0.0f;
+        mutable float m_MaxBearingY = 0.0f;
     };
 
 } // namespace UI

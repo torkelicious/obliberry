@@ -7,6 +7,11 @@
 namespace UI {
 
     void UIButton::Update() {
+        if (!m_Input) {
+            m_ButtonState = ButtonState::NONE;
+            return;
+        }
+
         if (IsPointInsideRect(m_GameMousePos, Rect)) {
             if (m_Input->IsMousePressed(0)) {
                 m_ButtonState = ButtonState::CLICKED;
@@ -40,15 +45,22 @@ namespace UI {
             if (!atlas)
                 return;
 
-            float naturalWidth = 0.0f;
-            float maxHeight = 0.0f;
-            float maxBearingY = 0.0f;
-            for (const char c : m_Text) {
-                const auto &glyph = m_Font->GetGlyph(c);
-                naturalWidth += static_cast<float>(glyph.Advance);
-                maxHeight = std::max(maxHeight, static_cast<float>(glyph.LayoutSize.y));
-                maxBearingY = std::max(maxBearingY, static_cast<float>(glyph.Bearing.y));
+            // text metrics only change when text or font changes
+            if (m_LayoutDirty) {
+                m_NaturalWidth = 0.0f;
+                m_MaxHeight = 0.0f;
+                m_MaxBearingY = 0.0f;
+                for (const char c : m_Text) {
+                    const auto &glyph = m_Font->GetGlyph(c);
+                    m_NaturalWidth += static_cast<float>(glyph.Advance);
+                    m_MaxHeight = std::max(m_MaxHeight, static_cast<float>(glyph.LayoutSize.y));
+                    m_MaxBearingY = std::max(m_MaxBearingY, static_cast<float>(glyph.Bearing.y));
+                }
+                m_LayoutDirty = false;
             }
+            const float naturalWidth = m_NaturalWidth;
+            const float maxHeight = m_MaxHeight;
+            const float maxBearingY = m_MaxBearingY;
 
             float scale = 1.0f;
             if (naturalWidth > 0.0f && maxHeight > 0.0f && Rect.Scale.x > 0.0f && Rect.Scale.y > 0.0f) {
@@ -64,6 +76,7 @@ namespace UI {
             const bool isSDF = m_Font->IsSDF();
             const unsigned int spread = m_Font->GetSDFSpread();
             const float sdfRenderScale = isSDF ? scale : 1.0f;
+            const glm::vec2 halfTexel = {0.5f / static_cast<float>(atlas->GetWidth()), 0.5f / static_cast<float>(atlas->GetHeight())};
 
             float cursorX = 0.0f;
             for (const char c : m_Text) {
@@ -83,9 +96,6 @@ namespace UI {
                     const auto h = static_cast<float>(Size.y) * scale;
 
                     // prevent linear filter bleeding from adjacent atlas glyphs
-                    const auto atlasW = static_cast<float>(atlas->GetWidth());
-                    const auto atlasH = static_cast<float>(atlas->GetHeight());
-                    const glm::vec2 halfTexel = {0.5f / atlasW, 0.5f / atlasH};
                     const glm::vec2 uvMin = UVOffset + halfTexel;
                     const glm::vec2 uvMax = UVOffset + UVSize - halfTexel;
 

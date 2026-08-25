@@ -21,8 +21,13 @@ namespace Editor::UI {
         void ClearSelectedEntityID() { m_SelectedEntityID = -1; }
         [[nodiscard]] bool HadEmptyClick() const { return m_HadEmptyClick; }
         void ClearEmptyClick() { m_HadEmptyClick = false; }
+        void SetUIHandleHover(const bool v) { m_UIHandleHover = v; }
 
         [[nodiscard]] glm::vec2 MousePosToWorld(const Rendering::Camera &camera) const;
+
+        // position relative to the viewport top left
+        [[nodiscard]] ImVec2 GetLocalMousePos() const;
+        [[nodiscard]] ImVec2 GetBoundsMin() const { return m_ViewportBoundsMin; }
 
     private:
         float m_ViewportWidth = 1280.0f;
@@ -31,6 +36,7 @@ namespace Editor::UI {
         bool m_ShowPlayIndicator = false;
         bool m_ExpectingPick = false;
         bool m_HadEmptyClick = false;
+        bool m_UIHandleHover = false;
 
         ImVec2 m_ViewportBoundsMin{0, 0};
     };

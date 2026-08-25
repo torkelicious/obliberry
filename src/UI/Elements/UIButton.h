@@ -16,8 +16,18 @@ namespace UI {
 
     class UIButton : public UIElement {
     public:
-        void SetText(const std::string &text) { m_Text = text; }
-        void SetFont(std::shared_ptr<Font> font) { m_Font = std::move(font); }
+        void SetText(const std::string &text) {
+            if (m_Text != text) {
+                m_Text = text;
+                m_LayoutDirty = true;
+            }
+        }
+        void SetFont(std::shared_ptr<Font> font) {
+            if (m_Font != font) {
+                m_Font = std::move(font);
+                m_LayoutDirty = true;
+            }
+        }
         void SetColor(const glm::vec4 color) { m_Color = color; }
         void SetBackgroundColor(const glm::vec4 color) { m_BackgroundColor = color; }
         void SetBackgroundTexture(const std::shared_ptr<Rendering::Texture> &tex) { m_BackgroundTexture = tex; }
@@ -43,5 +53,11 @@ namespace UI {
 
         std::string m_Text;
         std::shared_ptr<Font> m_Font;
+
+        // cached text metrics
+        mutable bool m_LayoutDirty = true;
+        mutable float m_NaturalWidth = 0.0f;
+        mutable float m_MaxHeight = 0.0f;
+        mutable float m_MaxBearingY = 0.0f;
     };
 } // namespace UI
