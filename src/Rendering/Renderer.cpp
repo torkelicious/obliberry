@@ -55,7 +55,7 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::s
     const Texture *effectiveTex = textureOverride ? textureOverride : material && material->texture ? material->texture.get() : nullptr;
     const glm::vec4 col = material ? material->color : glm::vec4(1.0f);
 
-    m_Commands[m_SubmitIndex].push_back({mesh.get(), material.get(), effectiveTex, col, transform.GetMatrix(), packKey(pos.x, pos.y, pos.z), entityID});
+    m_Commands[m_SubmitIndex].push_back({.mesh = mesh.get(), .material = material.get(), .effectiveTexture = effectiveTex, .color = col, .model = transform.GetMatrix(), .sortKey = packKey(pos.x, pos.y, pos.z), .entityID = entityID});
 }
 
 void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> &transforms, const std::vector<int32_t> &entityIDs) {
@@ -249,7 +249,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
                     }
                 }
 
-                BatchKey key{instCmd.mesh, instCmd.material, instCmd.effectiveTexture, instCmd.color, instCmd.shape};
+                BatchKey key{.mesh = instCmd.mesh, .material = instCmd.material, .texture = instCmd.effectiveTexture, .color = instCmd.color, .shape = instCmd.shape};
                 const glm::mat4 *transformsPtr = instCmd.transformPtr ? instCmd.transformPtr : m_InstancedTransformsStaging[renderIndex].data() + instCmd.transformOffset;
                 const glm::vec4 *colorsPtr = instCmd.colorPtr ? instCmd.colorPtr : instCmd.colorCount > 0 ? m_InstancedColorsStaging[renderIndex].data() + instCmd.colorOffset : nullptr;
 
@@ -292,9 +292,9 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
             if (!cmd.mesh || !cmd.material)
                 continue;
 
-            if (BatchKey key{cmd.mesh, cmd.material, cmd.effectiveTexture, cmd.color, 0}; !hasCurrent || currentKey != key) {
+            if (BatchKey key{.mesh = cmd.mesh, .material = cmd.material, .texture = cmd.effectiveTexture, .color = cmd.color, .shape = 0}; !hasCurrent || currentKey != key) {
                 if (hasCurrent)
-                    m_BatchRanges.push_back({currentKey, batchStart, m_MergedTransforms.size() - batchStart});
+                    m_BatchRanges.push_back({.key = currentKey, .offset = batchStart, .count = m_MergedTransforms.size() - batchStart});
                 currentKey = key;
                 hasCurrent = true;
                 batchStart = m_MergedTransforms.size();
@@ -303,7 +303,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
             m_MergedEntityIDs.push_back(cmd.entityID);
         }
         if (hasCurrent)
-            m_BatchRanges.push_back({currentKey, batchStart, m_MergedTransforms.size() - batchStart});
+            m_BatchRanges.push_back({.key = currentKey, .offset = batchStart, .count = m_MergedTransforms.size() - batchStart});
 
         for (const auto &[key, offset, count] : m_BatchRanges)
             RenderBatch(key, m_MergedTransforms.data() + offset, m_MergedEntityIDs.data() + offset, count, renderIndex);
@@ -341,7 +341,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
                     }
                 }
 
-                BatchKey key{instCmd.mesh, instCmd.material, instCmd.effectiveTexture, instCmd.color, instCmd.shape};
+                BatchKey key{.mesh = instCmd.mesh, .material = instCmd.material, .texture = instCmd.effectiveTexture, .color = instCmd.color, .shape = instCmd.shape};
                 const glm::mat4 *transformsPtr = instCmd.transformPtr ? instCmd.transformPtr : m_InstancedTransformsStaging[renderIndex].data() + instCmd.transformOffset;
                 const glm::vec4 *colorsPtr = instCmd.colorPtr ? instCmd.colorPtr : instCmd.colorCount > 0 ? m_InstancedColorsStaging[renderIndex].data() + instCmd.colorOffset : nullptr;
 
@@ -437,7 +437,7 @@ void Rendering::Renderer::RenderBatch(const BatchKey &key, const glm::mat4 *tran
             vao->AddBuffer(key.mesh->GetVBO(), VertexTraits<Vertex>::GetLayout());
             vao->SetIndexBuffer(key.mesh->GetIBO());
             glBindVertexArray(0);
-            m_MeshVAOs.emplace_back(key.mesh, MeshVAO{std::move(vao), false});
+            m_MeshVAOs.emplace_back(key.mesh, MeshVAO{.vao = std::move(vao), .instanceAttribReady = false});
             meshVAOEntry = &m_MeshVAOs.back().second;
         }
         const VertexArray *vao = meshVAOEntry->vao.get();
