@@ -19,6 +19,8 @@ namespace Rendering::MeshFactory {
 
     MeshData CreateDiamond(float width = 0.5, float height = 0.5);
 
+    MeshData CreateCustomMesh2D(const std::vector<glm::vec2> &points);
+
     void AppendMesh(MeshData &dst, const MeshData &src);
 
     void RegisterAllMeshFactories();

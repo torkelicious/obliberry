@@ -1,4 +1,6 @@
 #include "MeshFactory.h"
+
+#include "MeshUtils.h"
 #include "Core/Constants.h"
 #include <cmath>
 
@@ -194,6 +196,27 @@ namespace Rendering::MeshFactory {
                          {.Position = {-hw, 0.0f, 0.0f}, .UV = {0.0f, 0.5f}}};
 
         data.indices = {0, 1, 2, 2, 3, 0};
+
+        return data;
+    }
+
+    MeshData CreateCustomMesh2D(const std::vector<glm::vec2> &points) {
+        MeshData data;
+        if (points.size() < 3) {
+            return data;
+        }
+        glm::vec2 min = points[0];
+        glm::vec2 max = points[0];
+
+        for (const auto &point : points) {
+            min = glm::min(min, point);
+            max = glm::max(max, point);
+        }
+        data.vertices.reserve(points.size());
+        for (const auto &point : points) {
+            data.vertices.push_back({.Position = glm::vec3(point, 0.0f), .UV = MeshUtils::GenerateUV(point, min, max)});
+        }
+        data.indices = MeshUtils::Triangulate(points);
 
         return data;
     }
