@@ -7,7 +7,7 @@
 #include <numeric>
 #include <glm/glm.hpp>
 
-namespace RenderingMeshUtils {
+namespace Rendering::MeshUtils {
     //
     // I failed trigonometry so this may be a lil fucked
     //
@@ -129,4 +129,4 @@ namespace RenderingMeshUtils {
         return indices;
     }
 
-} // namespace RenderingMeshUtils
+} // namespace Rendering::MeshUtils
