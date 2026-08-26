@@ -55,7 +55,8 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::s
     const Texture *effectiveTex = textureOverride ? textureOverride : material && material->texture ? material->texture.get() : nullptr;
     const glm::vec4 col = material ? material->color : glm::vec4(1.0f);
 
-    m_Commands[m_SubmitIndex].push_back({.mesh = mesh.get(), .material = material.get(), .effectiveTexture = effectiveTex, .color = col, .model = transform.GetMatrix(), .sortKey = packKey(pos.x, pos.y, pos.z), .entityID = entityID});
+    m_Commands[m_SubmitIndex].push_back(
+            {.mesh = mesh.get(), .material = material.get(), .effectiveTexture = effectiveTex, .color = col, .model = transform.GetMatrix(), .sortKey = packKey(pos.x, pos.y, pos.z), .entityID = entityID});
 }
 
 void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> &transforms, const std::vector<int32_t> &entityIDs) {

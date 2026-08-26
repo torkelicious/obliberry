@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 #include "imgui.h"
 #include "ImGuizmo.h"
+#include "Applications/Editor/UI/Panels/Editor/MeshCreatorPanel.h"
 
 namespace Editor::States {
     class EditState : public EditorStateBase {
@@ -51,5 +52,8 @@ namespace Editor::States {
         glm::vec2 m_UIDragStartScale{0.0f};
         bool m_UIDragStarted = false; // dead-zone check
         ::UI::HandleType m_UIHoveredHandle = ::UI::HandleType::None;
+
+        // mesh panel
+        UI::MeshCreatorPanel m_MeshCreatorPanel;
     };
 } // namespace Editor::States

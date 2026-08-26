@@ -113,6 +113,7 @@ add_executable(obliberry_editor
         Applications/Editor/UI/ConfigWindows/ThemeConfigEditor.cpp
         Applications/Editor/UI/ConfigWindows/ConfigWindow.cpp
         Applications/Editor/UI/Panels/Editor/UIPanel.cpp
+        Applications/Editor/UI/Panels/Editor/MeshCreatorPanel.cpp
 )
 target_link_libraries(obliberry_editor PRIVATE obliberry_engine)
 
