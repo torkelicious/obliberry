@@ -1,4 +1,10 @@
 #include "MeshCreatorPanel.h"
+
+#include "Applications/Editor/EditorLayer.h"
+#include "Rendering/MeshFactory.h"
+#include "Rendering/Renderer.h"
+#include "Platform/Threading/SmallTask.h"
+#include "Logger/LoggerService.h"
 #include <algorithm>
 #include <cmath>
 
@@ -272,8 +278,9 @@ void Editor::UI::MeshCreatorPanel::DrawMeshSection() {
     }
 
     ImGui::BeginDisabled(!canGenerate);
-    if (ImGui::Button("Generate Mesh", ImVec2(140, 0)))
+    if (ImGui::Button("Generate Mesh", ImVec2(140, 0))) {
         GenerateMesh();
+    }
     ImGui::EndDisabled();
 
     if (!canGenerate) {
@@ -286,6 +293,30 @@ void Editor::UI::MeshCreatorPanel::DrawMeshSection() {
             ImGui::TextColored(ImVec4(0.9f, 0.6f, 0.3f, 1.0f), "-> %d verts, %d tris (stale)", m_GeneratedVertexCount, m_GeneratedTriangleCount);
         else
             ImGui::Text("-> %d verts, %d tris", m_GeneratedVertexCount, m_GeneratedTriangleCount);
+
+        if (!m_GeneratedMeshData.vertices.empty()) {
+            ImGui::Spacing();
+            ImGui::SeparatorText("Register Asset");
+            ImGui::InputText("ID##creator", m_MeshNameBuffer, sizeof(m_MeshNameBuffer));
+            ImGui::SameLine();
+            if (ImGui::Button("Save Mesh")) {
+                auto &resources = Core::ResourceManager::GetInstance();
+                const std::string id(m_MeshNameBuffer);
+                if (id.empty()) {
+                    LOG_ERROR("MeshCreator", "Mesh name cannot be empty");
+                } else {
+                    auto mesh = resources.LoadFromFactory<Rendering::Mesh>(id, [data = m_GeneratedMeshData] {
+                        auto m = std::make_shared<Rendering::Mesh>(data);
+                        m->SetFactoryId("Custom");
+                        return m;
+                    });
+                    Rendering::Renderer::SubmitInitTask(::Platform::Threading::SmallTask([mesh] { mesh->InitGL(); }));
+                    LOG_INFO("MeshCreator", "Created mesh '" + id + "'");
+                    States::EditState::HideMeshCreator();
+                    Reset();
+                }
+            }
+        }
     }
 }
 
@@ -295,10 +326,9 @@ void Editor::UI::MeshCreatorPanel::GenerateMesh() {
 
     const std::vector<glm::vec2> outline = FlattenPath(m_Path, m_FlattenTolerance);
 
-    // TRIANGUILATOPR DO THING!!! JARVIS TRIANGLATE
-
-    m_GeneratedVertexCount = static_cast<int>(outline.size());
-    m_GeneratedTriangleCount = 0;
+    m_GeneratedMeshData = Rendering::MeshFactory::CreateCustomMesh2D(outline);
+    m_GeneratedVertexCount = static_cast<int>(m_GeneratedMeshData.vertices.size());
+    m_GeneratedTriangleCount = static_cast<int>(m_GeneratedMeshData.indices.size() / 3);
     m_MeshGenerated = true;
     m_MeshStale = false;
 }

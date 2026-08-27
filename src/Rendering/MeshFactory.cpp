@@ -200,6 +200,7 @@ namespace Rendering::MeshFactory {
         return data;
     }
 
+    // still gotta be fixed a lil but mostly works
     MeshData CreateCustomMesh2D(const std::vector<glm::vec2> &points) {
         MeshData data;
         if (points.size() < 3) {
@@ -217,7 +218,7 @@ namespace Rendering::MeshFactory {
             data.vertices.push_back({.Position = glm::vec3(point, 0.0f), .UV = MeshUtils::GenerateUV(point, min, max)});
         }
         data.indices = MeshUtils::Triangulate(points);
-
+        MeshUtils::NormalizeMesh(data);
         return data;
     }
 

@@ -129,4 +129,31 @@ namespace Rendering::MeshUtils {
         return indices;
     }
 
+    inline void NormalizeMesh(MeshData &mesh, const float targetSize = 1.0f) {
+        if (mesh.vertices.empty()) {
+            return;
+        }
+
+        glm::vec3 min = mesh.vertices[0].Position;
+        glm::vec3 max = mesh.vertices[0].Position;
+
+        for (const auto &vertex : mesh.vertices) {
+            min = glm::min(min, vertex.Position);
+            max = glm::max(max, vertex.Position);
+        }
+
+        const glm::vec3 center = (min + max) * 0.5f;
+        const glm::vec3 size = max - min;
+        const float largestDimension = std::max({size.x, size.y, size.z});
+
+        if (largestDimension <= 0.0f) {
+            return;
+        }
+
+        const float scale = targetSize / largestDimension;
+        for (auto &vertex : mesh.vertices) {
+            vertex.Position = (vertex.Position - center) * scale;
+        }
+    }
+
 } // namespace Rendering::MeshUtils

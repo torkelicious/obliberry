@@ -128,8 +128,9 @@ void Editor::States::EditState::OnDrawPanels() {
     m_EditorLayer->m_InspectorPanel.OnImGuiRender();
     m_EditorLayer->m_UIPanel.OnImGuiRender();
 
-    // TEST
-    //m_MeshCreatorPanel.OnImGuiRender();
+    if (s_ShowMeshCreator) {
+        m_MeshCreatorPanel.OnImGuiRender();
+    }
 
     Entity_DrawGizmoForSelected();
 }

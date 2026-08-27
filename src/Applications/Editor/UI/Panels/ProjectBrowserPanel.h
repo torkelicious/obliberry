@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Applications/Editor/States/Editor/EditState.h"
 #include "Applications/Editor/UI/Panels/EditorPanel.h"
 #include "Core/ResourceManager.h"
 #include "IO/VFS/VFS.h"

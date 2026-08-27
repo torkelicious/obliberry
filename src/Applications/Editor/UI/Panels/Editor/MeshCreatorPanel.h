@@ -1,5 +1,7 @@
 #pragma once
 #include "Applications/Editor/UI/Panels/EditorPanel.h"
+#include "Core/ResourceManager.h"
+#include "Rendering/Mesh.h"
 #include <ImVectorEditor.h>
 #include <glm/glm.hpp>
 #include <vector>
@@ -39,6 +41,8 @@ namespace Editor::UI {
         bool m_MeshStale = false;
         int m_GeneratedVertexCount = 0;
         int m_GeneratedTriangleCount = 0;
+        Rendering::MeshData m_GeneratedMeshData;
+        char m_MeshNameBuffer[128] = "custom_mesh";
 
         static constexpr float kMinZoom = 0.1f;
         static constexpr float kMaxZoom = 10.0f;

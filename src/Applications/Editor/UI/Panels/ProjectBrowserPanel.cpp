@@ -339,7 +339,7 @@ namespace Editor::UI {
         ImGui::Spacing();
         ImGui::SeparatorText("Create Mesh");
 
-        constexpr const char *meshTypes[] = {"Quad", "PointTopHex", "ETriang", "Ellipse", "Circle", "Pentagon", "Hexagon", "Octagon", "Ring", "Sector", "Diamond"};
+        constexpr const char *meshTypes[] = {"Quad", "PointTopHex", "ETriang", "Ellipse", "Circle", "Pentagon", "Hexagon", "Octagon", "Ring", "Sector", "Diamond", "Custom"};
         ImGui::Combo("Type", &m_SelectedMeshFactory, meshTypes, IM_ARRAYSIZE(meshTypes));
         ImGui::InputText("ID##mesh", m_MeshNameBuffer, sizeof(m_MeshNameBuffer));
 
@@ -810,7 +810,7 @@ void Editor::UI::ProjectBrowserPanel::CreateMesh(Core::ResourceManager &resource
         return;
 
     Rendering::MeshData data;
-    constexpr const char *meshTypes[] = {"Quad", "PointTopHex", "ETriang", "Ellipse", "Circle", "Pentagon", "Hexagon", "Octagon", "Ring", "Sector", "Diamond"};
+    constexpr const char *meshTypes[] = {"Quad", "PointTopHex", "ETriang", "Ellipse", "Circle", "Pentagon", "Hexagon", "Octagon", "Ring", "Sector", "Diamond", "Custom"};
     switch (m_SelectedMeshFactory) {
         case 0:
             data = Rendering::MeshFactory::CreateQuad();
@@ -845,6 +845,9 @@ void Editor::UI::ProjectBrowserPanel::CreateMesh(Core::ResourceManager &resource
         case 10:
             data = Rendering::MeshFactory::CreateDiamond();
             break;
+        case 11:
+            States::EditState::ShowMeshCreator();
+            return;
     }
 
     auto mesh = resources.LoadFromFactory<Rendering::Mesh>(id, [data = std::move(data), meshTypes, factoryIdx = m_SelectedMeshFactory] {

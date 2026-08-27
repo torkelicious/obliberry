@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 #include "imgui.h"
 #include "ImGuizmo.h"
+#include "Applications/Editor/UI/Panels/ProjectBrowserPanel.h"
 #include "Applications/Editor/UI/Panels/Editor/MeshCreatorPanel.h"
 
 namespace Editor::States {
@@ -26,6 +27,10 @@ namespace Editor::States {
         void OnDrawModeToolbar() override;
 
         void OnSaveKey() override;
+
+        static void ShowMeshCreator() { s_ShowMeshCreator = true; }
+        static void HideMeshCreator() { s_ShowMeshCreator = false; }
+        static bool IsMeshCreatorOpen() { return s_ShowMeshCreator; }
 
     private:
         void Entity_DrawGizmoForSelected() const; // entities
@@ -55,5 +60,6 @@ namespace Editor::States {
 
         // mesh panel
         UI::MeshCreatorPanel m_MeshCreatorPanel;
+        inline static bool s_ShowMeshCreator = false;
     };
 } // namespace Editor::States
