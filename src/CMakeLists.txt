@@ -90,31 +90,45 @@ target_link_libraries(obliberry_runtime PRIVATE obliberry_engine)
 
 # Editor Executable
 add_executable(obliberry_editor
+        # application
         Applications/Editor/EditorMain.cpp
         Applications/Editor/EditorLayer.cpp
+
+        # states
+        Applications/Editor/States/Hub/HubState.cpp
         Applications/Editor/States/Editor/EditState.cpp
         Applications/Editor/States/Play/PlayState.cpp
         Applications/Editor/States/MapEditor/MapEditState.cpp
-        Applications/Editor/States/Hub/HubState.cpp
+
+        # ui
         Applications/Editor/UI/Panels/Editor/EditorWidgetsCombo.cpp
         Applications/Editor/UI/Panels/Editor/EditorWidgets.cpp
+
+        # panels
         Applications/Editor/UI/Panels/Editor/InspectorPanel.cpp
-        Applications/Editor/UI/Panels/ProjectBrowserPanel.cpp
-        Applications/Editor/UI/Panels/Editor/RegistryPanel.cpp
         Applications/Editor/UI/Panels/ViewportPanel.cpp
-        Applications/Editor/UI/ConfigWindows/ProjectConfigEditor.cpp
-        Applications/Editor/UI/ConfigWindows/SceneConfigEditor.cpp
-        Applications/Editor/Platform/FileDialogs.cpp
-        IO/Package/Tools/ObpakTools.cpp
+        Applications/Editor/UI/Panels/Editor/RegistryPanel.cpp
+        Applications/Editor/UI/Panels/ProjectBrowserPanel.cpp
         Applications/Editor/UI/Panels/MapEditor/TileEditorPanel.cpp
-        Applications/Editor/Commands/UndoManager.cpp
-        Applications/Editor/Commands/EditorCommands.cpp
-        Applications/Editor/UI/ConfigWindows/GraphicsConfigEditor.cpp
-        Applications/Editor/UI/ConfigWindows/ThemeConfigEditor.cpp
-        Applications/Editor/UI/ConfigWindows/ConfigWindow.cpp
         Applications/Editor/UI/Panels/Editor/UIPanel.cpp
         Applications/Editor/UI/Panels/Editor/MeshCreatorPanel.cpp
+
+        # config windows
+        Applications/Editor/UI/ConfigWindows/ConfigWindow.cpp
+        Applications/Editor/UI/ConfigWindows/ThemeConfigEditor.cpp
+        Applications/Editor/UI/ConfigWindows/ProjectConfigEditor.cpp
+        Applications/Editor/UI/ConfigWindows/SceneConfigEditor.cpp
+        Applications/Editor/UI/ConfigWindows/GraphicsConfigEditor.cpp
+
+        # platform
+        Applications/Editor/Platform/FileDialogs.cpp
+        IO/Package/Tools/ObpakTools.cpp
+
+        # undo-redo stack
+        Applications/Editor/Commands/UndoManager.cpp
+        Applications/Editor/Commands/EditorCommands.cpp
 )
+
 target_link_libraries(obliberry_editor PRIVATE obliberry_engine)
 
 # Unity Build Handling

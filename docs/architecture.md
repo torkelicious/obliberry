@@ -44,8 +44,8 @@ flowchart TD
 
 ### Main loop (`src/Core/Application.cpp`)
 
-* The **main thread** polls input, updates the active layer (game logic, ECS systems, scripts), renders the layer (
-  submitting render commands and ImGui), then hands the finished frame to the render thread.
+* The **main thread** polls input, updates the active layer (game logic, ECS systems, scripts), renders the layer
+  (submitting render commands and ImGui), then hands the finished frame to the render thread.
 * Rendering is **double-buffered at the frame level**: `m_Frames[2]` alternate between
   `Free → Ready → Rendering → Free`. The main thread writes into one buffer while the render thread draws the other;
   when both are busy, the main thread blocks until a buffer frees up.
@@ -141,8 +141,8 @@ and [Scripting : API Reference](scripting/api-reference.md) for notes per module
   `FOCUSED`).
 * Hit testing walks the tree; button states (hovered/held/clicked) are snapshotted per frame for script queries.
 * `UI::UIRenderer` draws the UI with its own shaders; text is rendered via FreeType (`UI::Text::Font`). The whole scene
-  UI can be authored in the editor's UI panel and is serialized into the scene file (
-  see [scene format](formats/scene-json.md)).
+  UI can be authored in the editor's UI panel and is serialized into the scene file
+  (see [scene format](formats/scene-json.md)).
 
 ## Sound (`src/Sound`)
 

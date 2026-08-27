@@ -238,9 +238,8 @@ SOFTWARE.
 
 ### nativefiledialog-extended (zlib)
 
-Upstream's `LICENSE` file does not include a copyright line. Authors are credited in the library's
-source headers as Bernard Teo (nativefiledialog-extended) and Michael Labbe (original nativefiledialog,
-on which this is based).
+Upstream's `LICENSE` file does not include a copyright line. Authors are credited in the library's source headers as
+Bernard Teo (nativefiledialog-extended) and Michael Labbe (original nativefiledialog, on which this is based).
 
 ```
 This software is provided 'as-is', without any express or implied

@@ -18,8 +18,8 @@ An **entity** is just a unique ID. It has no data, no behavior, just an entry in
 
 ## Components
 
-A **component** is a plain data structure. Examples: `TransformComponent` (position/rotation/scale), `MeshComponent` (
-mesh ID), `ScriptComponent` (list of script paths).
+A **component** is a plain data structure. Examples: `TransformComponent` (position/rotation/scale), `MeshComponent`
+(mesh ID), `ScriptComponent` (list of script paths).
 
 * **One per entity per type** - You can't have two `TransformComponent`s on one entity
 * **But components can hold arrays** - One `ScriptComponent` holds *many* script paths
