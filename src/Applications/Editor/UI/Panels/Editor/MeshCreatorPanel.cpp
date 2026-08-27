@@ -308,6 +308,7 @@ void Editor::UI::MeshCreatorPanel::DrawMeshSection() {
                     auto mesh = resources.LoadFromFactory<Rendering::Mesh>(id, [data = m_GeneratedMeshData] {
                         auto m = std::make_shared<Rendering::Mesh>(data);
                         m->SetFactoryId("Custom");
+                        m->CustomDataStore(data); // preserve for serialization
                         return m;
                     });
                     Rendering::Renderer::SubmitInitTask(::Platform::Threading::SmallTask([mesh] { mesh->InitGL(); }));

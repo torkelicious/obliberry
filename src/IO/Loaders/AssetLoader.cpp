@@ -189,18 +189,37 @@ void IO::AssetLoader::LoadMeshes(const json &meshes, Core::ResourceManager &reso
             }
 
             const std::string factoryName = mesh.at("factory").get<std::string>();
-            auto it = s_MeshFactories.find(factoryName);
-            if (it == s_MeshFactories.end()) {
-                throw std::runtime_error("AssetLoader: Unknown mesh factory '" + factoryName + "'");
+            std::shared_ptr<Rendering::Mesh> meshObj;
+
+            if (factoryName == "Custom") {
+                Rendering::MeshData data;
+                if (mesh.contains("vertices") && mesh.contains("indices")) {
+                    for (const auto &v : mesh.at("vertices")) {
+                        data.vertices.push_back(
+                                {.Position = {v.at("position")[0].get<float>(), v.at("position")[1].get<float>(), v.at("position")[2].get<float>()}, .UV = {v.at("uv")[0].get<float>(), v.at("uv")[1].get<float>()}});
+                    }
+                    for (const auto &idx : mesh.at("indices")) {
+                        data.indices.push_back(idx.get<uint32_t>());
+                    }
+                }
+                meshObj = std::make_shared<Rendering::Mesh>(data);
+                meshObj->SetFactoryId("Custom");
+            } else {
+                auto it = s_MeshFactories.find(factoryName);
+                if (it == s_MeshFactories.end()) {
+                    throw std::runtime_error("AssetLoader: Unknown mesh factory '" + factoryName + "'");
+                }
+                meshObj = resources.LoadFromFactory<Rendering::Mesh>(id, [factory = it->second, factoryName] {
+                    auto fac_mesh = factory();
+                    fac_mesh->SetFactoryId(factoryName);
+                    return fac_mesh;
+                });
             }
 
-            auto m = resources.LoadFromFactory<Rendering::Mesh>(id, [factory = it->second, factoryName] {
-                auto fac_mesh = factory();
-                fac_mesh->SetFactoryId(factoryName);
-                return fac_mesh;
-            });
-
-            Rendering::Renderer::SubmitInitTask(Platform::Threading::SmallTask([m] { m->InitGL(); }));
+            if (meshObj) {
+                resources.Register<Rendering::Mesh>(id, meshObj);
+                Rendering::Renderer::SubmitInitTask(Platform::Threading::SmallTask([meshObj] { meshObj->InitGL(); }));
+            }
         } catch (const std::exception &e) {
             LOG_ERROR(LOG_WHO, std::string("Skipping mesh asset: ") + e.what());
         }

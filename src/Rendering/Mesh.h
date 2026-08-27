@@ -80,6 +80,19 @@ namespace Rendering {
 
         void Bind() const { m_VAO.Bind(); }
 
+        // store data untill save-time
+        void CustomDataStore(const MeshData &data) {
+            m_CustomDataBin = data;
+            isCustom = true;
+        }
+
+        [[nodiscard]] MeshData GetCustomData() const { return m_CustomDataBin; }
+        void ClearCustomDataStore() {
+            m_CustomDataBin = {};
+            isCustom = false;
+        }
+
+        [[nodiscard]] bool IsCustom() const { return isCustom; }
 
         [[nodiscard]] const VertexArray &GetVertexArray() const { return m_VAO; }
         [[nodiscard]] const VertexBuffer &GetVBO() const { return m_VBO; }
@@ -95,7 +108,9 @@ namespace Rendering {
         VertexArray m_VAO;
         VertexBuffer m_VBO;
         IndexBuffer m_IBO;
-        MeshData m_TempData;
+        MeshData m_TempData;      // during upload
+        MeshData m_CustomDataBin; // temporary store untill serialization
+        bool isCustom = false;
         float m_BoundingRadius = 0.0f;
     };
 } // namespace Rendering

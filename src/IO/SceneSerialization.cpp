@@ -267,8 +267,21 @@ namespace IO::SceneIO {
                 j["assets"]["shaders"], resources.GetAll<Rendering::Shader>(),
                 [](const std::string &id, const std::shared_ptr<Rendering::Shader> &shad) { return json{{"id", id}, {"vertex", shad->GetVertexPath()}, {"fragment", shad->GetFragmentPath()}}; }, IsUserAsset);
 
-        SerializeAssets(j["assets"]["meshes"], resources.GetAll<Rendering::Mesh>(),
-                        [](const std::string &id, const std::shared_ptr<Rendering::Mesh> &mesh) { return json{{"id", id}, {"factory", mesh->GetFactoryId()}}; });
+        SerializeAssets(
+                j["assets"]["meshes"], resources.GetAll<Rendering::Mesh>(),
+                [](const std::string &id, const std::shared_ptr<Rendering::Mesh> &mesh) {
+                    json entry = {{"id", id}, {"factory", mesh->GetFactoryId()}};
+                    if (mesh->IsCustom()) {
+                        const auto data = mesh->GetCustomData();
+                        entry["vertices"] = json::array();
+                        for (const auto &v : data.vertices) {
+                            entry["vertices"].push_back({{"position", {v.Position.x, v.Position.y, v.Position.z}}, {"uv", {v.UV.x, v.UV.y}}});
+                        }
+                        entry["indices"] = data.indices;
+                    }
+                    return entry;
+                },
+                IsUserAsset);
 
         SerializeAssets(j["assets"]["materials"], resources.GetAll<Rendering::Material>(), [&](const std::string &id, const std::shared_ptr<Rendering::Material> &mat) {
             return json{{"id", id},
