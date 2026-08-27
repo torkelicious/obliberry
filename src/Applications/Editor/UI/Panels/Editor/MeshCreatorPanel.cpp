@@ -319,6 +319,10 @@ void Editor::UI::MeshCreatorPanel::DrawMeshSection() {
             }
         }
     }
+    if (ImGui::Button("Cancel")) {
+        States::EditState::HideMeshCreator();
+        Reset();
+    }
 }
 
 void Editor::UI::MeshCreatorPanel::GenerateMesh() {
