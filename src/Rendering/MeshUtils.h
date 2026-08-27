@@ -87,10 +87,16 @@ namespace Rendering::MeshUtils {
             return indices;
         }
 
+        // track the original index of each point through the reversal
+        std::vector<uint32_t> original_index(num_points);
+        std::iota(original_index.begin(), original_index.end(), 0);
+
         // counter clockwise winding order
         if (SignedArea(points) < 0.0f) {
             std::ranges::reverse(points);
+            std::ranges::reverse(original_index);
         }
+
         std::vector<uint32_t> polygon_indices(num_points);
         std::iota(polygon_indices.begin(), polygon_indices.end(), 0);
         int current_vertex_index = 0;
@@ -103,14 +109,13 @@ namespace Rendering::MeshUtils {
             current_vertex_index %= current_polygon_size;
 
             if (IsEar(current_vertex_index, polygon_indices, points)) {
-                // if found an ear add the triangle and remove the vertex
                 const uint32_t prev_idx = polygon_indices[(current_vertex_index + current_polygon_size - 1) % current_polygon_size];
                 const uint32_t curr_idx = polygon_indices[current_vertex_index];
                 const uint32_t next_idx = polygon_indices[(current_vertex_index + 1) % current_polygon_size];
 
-                indices.push_back(prev_idx);
-                indices.push_back(curr_idx);
-                indices.push_back(next_idx);
+                indices.push_back(original_index[prev_idx]);
+                indices.push_back(original_index[curr_idx]);
+                indices.push_back(original_index[next_idx]);
                 polygon_indices.erase(polygon_indices.begin() + current_vertex_index);
             } else {
                 current_vertex_index++;
@@ -118,9 +123,9 @@ namespace Rendering::MeshUtils {
         }
 
         if (polygon_indices.size() == 3) {
-            indices.push_back(polygon_indices[0]);
-            indices.push_back(polygon_indices[1]);
-            indices.push_back(polygon_indices[2]);
+            indices.push_back(original_index[polygon_indices[0]]);
+            indices.push_back(original_index[polygon_indices[1]]);
+            indices.push_back(original_index[polygon_indices[2]]);
         } else if (iterations >= max_iterations) {
             // failed (such as self-intersecting polygon etc)
             indices.clear();
