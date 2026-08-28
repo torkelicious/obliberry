@@ -51,7 +51,7 @@ namespace Rendering::MeshFactory {
         return data;
     }
 
-    MeshData CreateEquiTriangle(const float height = 0.5) {
+    MeshData CreateEquiTriangle(const float height) {
         MeshData data;
 
         const float halfBase = height / std::sqrt(3.0f);
