@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Rendering/Transform.h"
+#include "Rendering/Types/Transform.h"
 
 namespace ECS::Components {
     struct TransformComponent {

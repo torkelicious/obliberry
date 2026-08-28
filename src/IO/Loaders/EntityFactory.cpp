@@ -8,7 +8,7 @@
 #include "ECS/Components/MaterialComponent.h"
 #include "ECS/Components/DirectionalTextureComponent.h"
 #include "ECS/Components/BillboardTagComponent.h"
-#include "Rendering/Mesh.h"
+#include "Rendering/Types/Mesh/Mesh.h"
 #include "ECS/Components/PointLightComponent.h"
 #include "ECS/Components/ScriptComponent.h"
 #include "ECS/Components/PrefabSourceComponent.h"

@@ -9,12 +9,12 @@
 #include "Core/Utils/UiUtils.h"
 #include "IO/VFS/VFS.h"
 #include "IO/Loaders/AssetLoader.h"
-#include "Rendering/Material.h"
-#include "Rendering/Mesh.h"
-#include "Rendering/MeshFactory.h"
+#include "Rendering/Types/Material.h"
+#include "Rendering/Types/Mesh/Mesh.h"
+#include "Rendering/Types/Mesh/MeshFactory.h"
 #include "Rendering/Renderer.h"
-#include "Rendering/Texture.h"
-#include "Rendering/Shader.h"
+#include "Rendering/Types/Texture/Texture.h"
+#include "Rendering/Types/Shader/Shader.h"
 #include "UI/Text/Font.h"
 #include <imgui.h>
 #include <iostream>

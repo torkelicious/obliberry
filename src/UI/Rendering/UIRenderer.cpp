@@ -1,7 +1,7 @@
 #include "UIRenderer.h"
 #include "InternalUIShaders.h"
-#include "Rendering/Shader.h"
-#include "Rendering/Texture.h"
+#include "Rendering/Types/Shader/Shader.h"
+#include "Rendering/Types/Texture/Texture.h"
 #include "Logger/LoggerService.h"
 #include <glm/glm.hpp>
 #include <glm/ext/matrix_clip_space.hpp>

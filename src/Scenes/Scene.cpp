@@ -17,7 +17,7 @@
 #include "ECS/Systems/HierarchySystem.h"
 #include "IO/Loaders/PrefabManager.h"
 #include "Math/Frustum.h"
-#include "../Platform/Timeout.h"
+#include "Platform/Timeout.h"
 #include "Scripting/EngineLib/EngineLib.h"
 #include "Sound/AudioEngine.h"
 

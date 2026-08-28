@@ -11,10 +11,10 @@
 
 #include <memory>
 #include "Core/ResourceManager.h"
-#include "Rendering/Material.h"
-#include "Rendering/Mesh.h"
-#include "Rendering/MeshFactory.h"
-#include "Rendering/Shader.h"
+#include "Rendering/Types/Material.h"
+#include "Rendering/Types/Mesh/Mesh.h"
+#include "Rendering/Types/Mesh/MeshFactory.h"
+#include "Shader.h"
 
 namespace Rendering::BuiltinShaders {
 

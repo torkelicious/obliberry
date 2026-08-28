@@ -15,8 +15,8 @@
 #include "ECS/Components/ScriptComponent.h"
 #include "IO/VFS/VFS.h"
 #include "Rendering/Renderer.h"
-#include "Rendering/Shader.h"
-#include "Rendering/Texture.h"
+#include "Rendering/Types/Shader/Shader.h"
+#include "Rendering/Types/Texture/Texture.h"
 #include <filesystem>
 
 

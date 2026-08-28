@@ -19,7 +19,7 @@
 #include "UI/Elements/UIText.h"
 #include "UI/Elements/UIButton.h"
 #include "UI/Elements/UIRect.h"
-#include "Rendering/Texture.h"
+#include "Rendering/Types/Texture/Texture.h"
 #include "UI/Text/Font.h"
 
 namespace Editor::Commands {

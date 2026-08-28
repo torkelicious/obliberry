@@ -1,6 +1,6 @@
 #include "Scripting/EngineLib/EngineLib.h"
 #include <mutex>
-#include "Rendering/Camera.h"
+#include "Rendering/Types/Camera.h"
 #include <ObSL/Interpreter.h>
 #include <ObSL/Natives.h>
 

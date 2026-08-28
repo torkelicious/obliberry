@@ -2,7 +2,7 @@
 #include "Scripting/EngineLib/EngineLib.h"
 #include <mutex>
 #include "Platform/Input/InputManager.h"
-#include "Rendering/Camera.h"
+#include "Rendering/Types/Camera.h"
 #include "Platform/Window/Window.h"
 #include "Rendering/Renderer.h"
 #include <ObSL/Interpreter.h>

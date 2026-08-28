@@ -7,8 +7,8 @@
 #include <string>
 #include <unordered_map>
 
-#include "Rendering/Material.h"
-#include "Rendering/Mesh.h"
+#include "Rendering/Types/Material.h"
+#include "Rendering/Types/Mesh/Mesh.h"
 
 namespace IO {
     class AssetLoader {

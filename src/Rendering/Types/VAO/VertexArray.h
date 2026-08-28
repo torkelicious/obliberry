@@ -1,8 +1,8 @@
 #pragma once
 
-#include "IndexBuffer.h"
-#include "VertexBuffer.h"
-#include "VertexBufferLayout.h"
+#include "Rendering/Types/IBO/IndexBuffer.h"
+#include "Rendering/Types/VBO/VertexBuffer.h"
+#include "Rendering/Types/VBO/VertexBufferLayout.h"
 #include "glad/glad.h"
 
 namespace Rendering {

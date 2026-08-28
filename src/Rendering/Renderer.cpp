@@ -1,7 +1,7 @@
 #include "Renderer.h"
 
-#include "Lightmap.h"
-#include "Transform.h"
+#include "Rendering/Types/Lightmap.h"
+#include "Rendering/Types/Transform.h"
 #include <algorithm>
 #include <glm/gtc/type_ptr.hpp>
 #include <memory>

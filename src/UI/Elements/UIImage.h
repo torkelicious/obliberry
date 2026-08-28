@@ -1,5 +1,5 @@
 #pragma once
-#include "Rendering/Texture.h"
+#include "Rendering/Types/Texture/Texture.h"
 #include "UI/UIElement.h"
 #include <memory>
 

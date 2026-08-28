@@ -8,7 +8,7 @@
 #include "Math/Frustum.h"
 #include "Math/Math.h"
 #include "Rendering/Renderer.h"
-#include "Rendering/Transform.h"
+#include "Rendering/Types/Transform.h"
 #include <algorithm>
 #include <array>
 #include <unordered_set>

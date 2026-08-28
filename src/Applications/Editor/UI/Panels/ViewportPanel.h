@@ -5,7 +5,7 @@
 #include <imgui.h>
 #include <ImGuizmo.h>
 
-#include "Rendering/Camera.h"
+#include "Rendering/Types/Camera.h"
 
 namespace Editor::UI {
     class ViewportPanel : public EditorPanel {

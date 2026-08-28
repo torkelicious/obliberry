@@ -12,14 +12,14 @@ add_library(obliberry_engine STATIC
         Logger/LoggerService.cpp
 
         # Rendering
-        Rendering/VertexBuffer.cpp
-        Rendering/VertexArray.cpp
-        Rendering/IndexBuffer.cpp
+        Rendering/Types/VBO/VertexBuffer.cpp
+        Rendering/Types/VAO/VertexArray.cpp
+        Rendering/Types/IBO/IndexBuffer.cpp
         Rendering/Renderer.cpp
-        Rendering/Texture.cpp
-        Rendering/Shader.cpp
+        Rendering/Types/Texture/Texture.cpp
+        Rendering/Types/Shader/Shader.cpp
         Rendering/GLDebug.cpp
-        Rendering/MeshFactory.cpp
+        Rendering/Types/Mesh/MeshFactory.cpp
 
         # Scenes / gameplay
         Scenes/Scene.cpp

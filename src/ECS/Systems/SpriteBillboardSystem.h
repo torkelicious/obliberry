@@ -3,7 +3,7 @@
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Components/BillboardTagComponent.h"
 #include "ECS/Registry.h"
-#include "Rendering/Camera.h"
+#include "Rendering/Types/Camera.h"
 
 namespace ECS::Systems::SpriteBillboardSystem {
     [[nodiscard]] inline glm::mat4 MakeBillboardMatrix(const glm::vec3 &position, const float width, const float height, const glm::vec3 &right, const glm::vec3 &up) noexcept {

@@ -7,7 +7,7 @@
 
 #include <nlohmann/json.hpp>
 #include "Core/Utils/JsonUtils.h"
-#include "Rendering/Mesh.h"
+#include "Rendering/Types/Mesh/Mesh.h"
 
 namespace Scenes {
     class Scene;

@@ -5,7 +5,7 @@
 #include "Logger/LoggerService.h"
 #include "IO/VFS/VFS.h"
 
-#include "Rendering/InternalShaders.h"
+#include "Rendering/Types/Shader/InternalShaders.h"
 
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "Shader"

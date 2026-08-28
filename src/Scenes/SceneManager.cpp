@@ -7,7 +7,7 @@
 #include "IO/SceneSerialization.h"
 #include "IO/VFS/VFS.h"
 #include "Scenes/Scene.h"
-#include "../Platform/Timeout.h"
+#include "Platform/Timeout.h"
 #include "ECS/Components/PersistentTagComponent.h"
 #include "IO/Loaders/EntityFactory.h"
 #include <ObSL/ScriptRuntime.h>

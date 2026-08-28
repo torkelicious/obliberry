@@ -14,9 +14,9 @@
 #include <glm/gtx/hash.hpp>
 
 #include "Core/Utils/PathUtils.h"
-#include "Rendering/Mesh.h"
-#include "Rendering/Material.h"
-#include "Rendering/Lightmap.h"
+#include "Rendering/Types/Mesh/Mesh.h"
+#include "Rendering/Types/Material.h"
+#include "Rendering/Types/Lightmap.h"
 #include "Math/Math.h"
 
 namespace ECS::Components {

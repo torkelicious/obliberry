@@ -1,9 +1,9 @@
 #pragma once
-#include "Camera.h"
-#include "Material.h"
-#include "Mesh.h"
-#include "FrameBuffer.h"
-#include "Transform.h"
+#include "Rendering/Types/Camera.h"
+#include "Rendering/Types/Material.h"
+#include "Rendering/Types/Mesh/Mesh.h"
+#include "Rendering/Types/FBO/FrameBuffer.h"
+#include "Rendering/Types/Transform.h"
 #include "Platform/Threading/SmallTask.h"
 #include <atomic>
 #include <functional>
