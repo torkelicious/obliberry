@@ -17,7 +17,7 @@ namespace {
 
         const glm::vec2 d = p3 - p0;
 
-        const float dDot = glm::dot(d,d);
+        const float dDot = glm::dot(d, d);
 
         // avoid loop thing
         if (dDot < 1e-12f) {
@@ -298,20 +298,23 @@ void Editor::UI::MeshCreatorPanel::DrawMeshSection() {
     }
 
     if (m_MeshGenerated) {
-        if (m_MeshStale)
+        if (m_MeshStale) {
             ImGui::TextColored(ImVec4(0.9f, 0.6f, 0.3f, 1.0f), "-> %d verts, %d tris (stale)", m_GeneratedVertexCount, m_GeneratedTriangleCount);
-        else
+        } else {
             ImGui::Text("-> %d verts, %d tris", m_GeneratedVertexCount, m_GeneratedTriangleCount);
+        }
+        if (m_MeshTriangFailure) {
+            ImGui::TextColored(ImVec4(0.9f, 0.3f, 0.3f, 1.0f), "Could not triangulate this shape!");
+        }
 
-        if (!m_GeneratedMeshData.vertices.empty()) {
+        if (!m_GeneratedMeshData.vertices.empty() && !m_MeshTriangFailure) {
             ImGui::Spacing();
             ImGui::SeparatorText("Register Asset");
             ImGui::InputText("ID##creator", m_MeshNameBuffer, sizeof(m_MeshNameBuffer));
             ImGui::SameLine();
             if (ImGui::Button("Save Mesh")) {
                 auto &resources = Core::ResourceManager::GetInstance();
-                const std::string id(m_MeshNameBuffer);
-                if (id.empty()) {
+                if (const std::string id(m_MeshNameBuffer); id.empty()) {
                     LOG_ERROR("MeshCreator", "Mesh name cannot be empty");
                 } else {
                     auto mesh = resources.LoadFromFactory<Rendering::Mesh>(id, [data = m_GeneratedMeshData] {
@@ -343,6 +346,7 @@ void Editor::UI::MeshCreatorPanel::GenerateMesh() {
     m_GeneratedMeshData = Rendering::MeshFactory::CreateCustomMesh2D(outline);
     m_GeneratedVertexCount = static_cast<int>(m_GeneratedMeshData.vertices.size());
     m_GeneratedTriangleCount = static_cast<int>(m_GeneratedMeshData.indices.size() / 3);
+    m_MeshTriangFailure = (m_GeneratedVertexCount > 0 && m_GeneratedMeshData.indices.empty());
     m_MeshGenerated = true;
     m_MeshStale = false;
 }
@@ -379,6 +383,7 @@ void Editor::UI::MeshCreatorPanel::Reset() {
     m_PathEditor.ClearSelection();
     m_MeshGenerated = false;
     m_MeshStale = false;
+    m_MeshTriangFailure = false;
     m_GeneratedVertexCount = 0;
     m_GeneratedTriangleCount = 0;
 }

@@ -39,6 +39,7 @@ namespace Editor::UI {
         float m_FlattenTolerance = 1.0f;
         bool m_MeshGenerated = false;
         bool m_MeshStale = false;
+        bool m_MeshTriangFailure = false;
         int m_GeneratedVertexCount = 0;
         int m_GeneratedTriangleCount = 0;
         Rendering::MeshData m_GeneratedMeshData;
