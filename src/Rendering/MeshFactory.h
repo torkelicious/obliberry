@@ -7,7 +7,7 @@ namespace Rendering::MeshFactory {
 
     MeshData CreatePointTopHex(float size = 0.5f);
 
-    MeshData CreateEquiTriangle(float height);
+    MeshData CreateEquiTriangle(float height = 0.5f);
 
     MeshData CreateEllipse(float radX = 0.5, float radY = 0.5, unsigned int segments = 50);
 
