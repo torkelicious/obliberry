@@ -100,8 +100,8 @@ namespace Rendering::MeshUtils {
         std::vector<uint32_t> polygon_indices(num_points);
         std::iota(polygon_indices.begin(), polygon_indices.end(), 0);
         int current_vertex_index = 0;
-        int iterations = 0; // no infinite loops!!!!
-        const int max_iterations = num_points * num_points;
+        size_t iterations = 0; // no infinite loops!!!!
+        const size_t max_iterations = num_points * num_points;
 
         while (polygon_indices.size() > 3 && iterations < max_iterations) {
             iterations++;
