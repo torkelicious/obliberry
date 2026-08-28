@@ -1,9 +1,8 @@
 # Scripting with ObSL : Getting Started
 
 Obliberry games are scripted with **ObSL**, a small, interpreted, dynamically typed language that ships as a submodule
-at `external/obsl`. Created for this engine.
-This guide covers how the engine runs scripts; the language itself is documented in
-the [ObSL README](https://github.com/torkelicious/ObSL) (`external/obsl/README.md`), with
+at `external/obsl`. Created for this engine. This guide covers how the engine runs scripts; the language itself is
+documented in the [ObSL README](https://github.com/torkelicious/ObSL) (`external/obsl/README.md`), with
 an [architecture overview](https://github.com/torkelicious/ObSL/blob/master/docs/ARCHITECTURE.md) and
 a [standard library reference](https://github.com/torkelicious/ObSL/blob/master/docs/STANDARD_LIBRARY.md).
 

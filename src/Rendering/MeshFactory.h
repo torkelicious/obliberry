@@ -7,7 +7,7 @@ namespace Rendering::MeshFactory {
 
     MeshData CreatePointTopHex(float size = 0.5f);
 
-    MeshData CreateEquiTriangle(float height);
+    MeshData CreateEquiTriangle(float height = 0.5f);
 
     MeshData CreateEllipse(float radX = 0.5, float radY = 0.5, unsigned int segments = 50);
 
@@ -18,6 +18,8 @@ namespace Rendering::MeshFactory {
     MeshData CreateSector(float radius = 0.5, float startAngle = 0, float endAngle = 90, unsigned int segments = 50);
 
     MeshData CreateDiamond(float width = 0.5, float height = 0.5);
+
+    MeshData CreateCustomMesh2D(const std::vector<glm::vec2> &points);
 
     void AppendMesh(MeshData &dst, const MeshData &src);
 

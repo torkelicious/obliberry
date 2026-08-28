@@ -22,6 +22,8 @@ void Editor::States::EditState::OnEnter() {
     if (m_EditorLayer->m_Scene)
         title += " - Scene - " + m_EditorLayer->m_CurrentScenePath;
     SetWindowTitle(title);
+
+    m_MeshCreatorPanel.SetContext(m_EditorLayer->m_SceneManager.GetCurrentScene(), *m_EditorLayer->m_Context, &m_EditorLayer->m_UndoManager);
 }
 
 void Editor::States::EditState::OnUpdate(const float dt) {
@@ -125,6 +127,11 @@ void Editor::States::EditState::OnDrawPanels() {
     m_EditorLayer->m_RegistryPanel.OnImGuiRender();
     m_EditorLayer->m_InspectorPanel.OnImGuiRender();
     m_EditorLayer->m_UIPanel.OnImGuiRender();
+
+    if (s_ShowMeshCreator) {
+        m_MeshCreatorPanel.OnImGuiRender();
+    }
+
     Entity_DrawGizmoForSelected();
 }
 
@@ -360,7 +367,7 @@ void Editor::States::EditState::UI_HandleGizmoInput() {
     }
 
     if (m_UIDragHandle != ::UI::HandleType::None && m_EditorLayer->m_Input->IsMouseDown("MouseLeft")) {
-        glm::vec2 delta = mousePos - m_UIDragStartMouse;
+        const glm::vec2 delta = mousePos - m_UIDragStartMouse;
 
         // drag
         constexpr float UI_TRANSLATE_DEADZONE = 2.0f;
@@ -378,9 +385,8 @@ void Editor::States::EditState::UI_HandleGizmoInput() {
     // release
     if (m_UIDragHandle != ::UI::HandleType::None && m_EditorLayer->m_Input->IsMouseReleased("MouseLeft")) {
         const glm::vec2 parentWorld = element->Parent ? ::UI::GetWorldPosition(element->Parent) : glm::vec2(0.0f);
-        const glm::vec2 startPosLocal = m_UIDragStartWorldPos - parentWorld;
 
-        if ((startPosLocal != element->Rect.Position || m_UIDragStartScale != element->Rect.Scale) && m_EditorLayer->m_Scene) {
+        if (const glm::vec2 startPosLocal = m_UIDragStartWorldPos - parentWorld; (startPosLocal != element->Rect.Position || m_UIDragStartScale != element->Rect.Scale) && m_EditorLayer->m_Scene) {
             m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::TransformUIElementCommand>(element, startPosLocal, element->Rect.Position, m_UIDragStartScale, element->Rect.Scale), *m_EditorLayer->m_Context);
         }
 

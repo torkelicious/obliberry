@@ -5,6 +5,8 @@
 #include <glm/glm.hpp>
 #include "imgui.h"
 #include "ImGuizmo.h"
+#include "Applications/Editor/UI/Panels/ProjectBrowserPanel.h"
+#include "Applications/Editor/UI/Panels/Editor/MeshCreatorPanel.h"
 
 namespace Editor::States {
     class EditState : public EditorStateBase {
@@ -25,6 +27,10 @@ namespace Editor::States {
         void OnDrawModeToolbar() override;
 
         void OnSaveKey() override;
+
+        static void ShowMeshCreator() { s_ShowMeshCreator = true; }
+        static void HideMeshCreator() { s_ShowMeshCreator = false; }
+        static bool IsMeshCreatorOpen() { return s_ShowMeshCreator; }
 
     private:
         void Entity_DrawGizmoForSelected() const; // entities
@@ -51,5 +57,9 @@ namespace Editor::States {
         glm::vec2 m_UIDragStartScale{0.0f};
         bool m_UIDragStarted = false; // dead-zone check
         ::UI::HandleType m_UIHoveredHandle = ::UI::HandleType::None;
+
+        // mesh panel
+        UI::MeshCreatorPanel m_MeshCreatorPanel;
+        inline static bool s_ShowMeshCreator = false;
     };
 } // namespace Editor::States

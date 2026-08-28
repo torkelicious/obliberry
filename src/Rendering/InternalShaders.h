@@ -234,7 +234,7 @@ void main() {
         resources.LoadFromFactory<Mesh>("[Engine] Hex", [hex] { return hex; });
 
         const auto shader = resources.Get<Shader>("[Engine] Base");
-        auto mat = std::make_shared<Material>(Material{shader, nullptr, {1.0f, 1.0f, 1.0f, 1.0f}});
+        auto mat = std::make_shared<Material>(Material{.shader = shader, .texture = nullptr, .color = {1.0f, 1.0f, 1.0f, 1.0f}});
         resources.LoadFromFactory<Material>("[Engine] DefaultMaterial", [mat] { return mat; });
     }
 

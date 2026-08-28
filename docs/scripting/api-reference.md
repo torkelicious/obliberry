@@ -156,13 +156,11 @@ Entity objects are returned by `GetEntity`, `Find`, `CreateEntity`, `Instantiate
 
 ### persistence
 
-Entities can be marked as **persistent**,
-these survive scene transitions.
+Entities can be marked as **persistent**, these survive scene transitions.
 > (though scripts are reinitalized!)
 
-The `PersistentTagComponent` is not serialized to scene files
-and has no editor Inspector UI. It is intended to be set from scripts during gameplay (typically
-in top-level code).
+The `PersistentTagComponent` is not serialized to scene files and has no editor Inspector UI. It is intended to be set
+from scripts during gameplay (typically in top-level code).
 
 ```obsl
 // runs once when the script is loaded

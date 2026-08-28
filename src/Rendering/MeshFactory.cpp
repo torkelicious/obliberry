@@ -1,4 +1,6 @@
 #include "MeshFactory.h"
+
+#include "MeshUtils.h"
 #include "Core/Constants.h"
 #include <cmath>
 
@@ -8,10 +10,10 @@ namespace Rendering::MeshFactory {
     MeshData CreateQuad() {
         MeshData data;
 
-        data.vertices.push_back({{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f}});
-        data.vertices.push_back({{0.5f, -0.5f, 0.0f}, {1.0f, 0.0f}});
-        data.vertices.push_back({{0.5f, 0.5f, 0.0f}, {1.0f, 1.0f}});
-        data.vertices.push_back({{-0.5f, 0.5f, 0.0f}, {0.0f, 1.0f}});
+        data.vertices.push_back({.Position = {-0.5f, -0.5f, 0.0f}, .UV = {0.0f, 0.0f}});
+        data.vertices.push_back({.Position = {0.5f, -0.5f, 0.0f}, .UV = {1.0f, 0.0f}});
+        data.vertices.push_back({.Position = {0.5f, 0.5f, 0.0f}, .UV = {1.0f, 1.0f}});
+        data.vertices.push_back({.Position = {-0.5f, 0.5f, 0.0f}, .UV = {0.0f, 1.0f}});
         data.indices.push_back(0);
         data.indices.push_back(1);
         data.indices.push_back(2);
@@ -25,7 +27,7 @@ namespace Rendering::MeshFactory {
     MeshData CreatePointTopHex(const float size) {
         MeshData data;
 
-        data.vertices.push_back({{0.0f, 0.0f, 0.0f}, {0.5f, 0.5f}});
+        data.vertices.push_back({.Position = {0.0f, 0.0f, 0.0f}, .UV = {0.5f, 0.5f}});
 
         for (int i = 0; i < 6; i++) {
             const float angle = (i * 60.0f - 90.0f) * Core::PI / 180.0f;
@@ -35,7 +37,7 @@ namespace Rendering::MeshFactory {
 
             const glm::vec2 uv = glm::vec2(x, y) * 0.5f + 0.5f;
 
-            data.vertices.push_back({{x, y, 0.0f}, uv});
+            data.vertices.push_back({.Position = {x, y, 0.0f}, .UV = uv});
         }
 
         for (uint32_t i = 1; i <= 6; i++) {
@@ -49,17 +51,17 @@ namespace Rendering::MeshFactory {
         return data;
     }
 
-    MeshData CreateEquiTriangle(const float height = 0.5) {
+    MeshData CreateEquiTriangle(const float height) {
         MeshData data;
 
         const float halfBase = height / std::sqrt(3.0f);
         const float centroidOffset = height / 3.0f; // centroid is h/3 above base
 
-        data.vertices.push_back({{-halfBase, -centroidOffset, 0.0f}, {0.0f, 0.0f}});
+        data.vertices.push_back({.Position = {-halfBase, -centroidOffset, 0.0f}, .UV = {0.0f, 0.0f}});
 
-        data.vertices.push_back({{halfBase, -centroidOffset, 0.0f}, {1.0f, 0.0f}});
+        data.vertices.push_back({.Position = {halfBase, -centroidOffset, 0.0f}, .UV = {1.0f, 0.0f}});
 
-        data.vertices.push_back({{0.0f, height - centroidOffset, 0.0f}, {0.5f, 1.0f}});
+        data.vertices.push_back({.Position = {0.0f, height - centroidOffset, 0.0f}, .UV = {0.5f, 1.0f}});
         data.indices.push_back(0);
         data.indices.push_back(1);
         data.indices.push_back(2);
@@ -78,7 +80,7 @@ namespace Rendering::MeshFactory {
             radY = 1;
         }
 
-        data.vertices.push_back({{0.0f, 0.0f, 0.0f}, {0.5f, 0.5f}});
+        data.vertices.push_back({.Position = {0.0f, 0.0f, 0.0f}, .UV = {0.5f, 0.5f}});
 
         for (unsigned int i = 0; i < segments; i++) {
             const float theta = 2.0f * Core::PI * i / segments;
@@ -86,7 +88,7 @@ namespace Rendering::MeshFactory {
             float x = radX * cosf(theta);
             float y = radY * sinf(theta);
 
-            data.vertices.push_back({{x, y, 0.0f}, {x / (2.0f * radX) + 0.5f, y / (2.0f * radY) + 0.5f}});
+            data.vertices.push_back({.Position = {x, y, 0.0f}, .UV = {x / (2.0f * radX) + 0.5f, y / (2.0f * radY) + 0.5f}});
         }
 
         for (unsigned int i = 0; i < segments; i++) {
@@ -107,7 +109,7 @@ namespace Rendering::MeshFactory {
         if (sides < 3)
             return data;
 
-        data.vertices.push_back({{0.0f, 0.0f, 0.0f}, {0.5f, 0.5f}});
+        data.vertices.push_back({.Position = {0.0f, 0.0f, 0.0f}, .UV = {0.5f, 0.5f}});
 
         for (unsigned int i = 0; i < sides; i++) {
             const float theta = 2.0f * Core::PI * i / sides;
@@ -115,7 +117,7 @@ namespace Rendering::MeshFactory {
             float x = radius * cosf(theta);
             float y = radius * sinf(theta);
 
-            data.vertices.push_back({{x, y, 0.0f}, {x / (2.0f * radius) + 0.5f, y / (2.0f * radius) + 0.5f}});
+            data.vertices.push_back({.Position = {x, y, 0.0f}, .UV = {x / (2.0f * radius) + 0.5f, y / (2.0f * radius) + 0.5f}});
         }
 
         for (unsigned int i = 0; i < sides; i++) {
@@ -139,9 +141,9 @@ namespace Rendering::MeshFactory {
             const float c = cosf(theta);
             const float s = sinf(theta);
 
-            data.vertices.push_back({{c * innerRadius, s * innerRadius, 0.0f}, {0.0f, 0.0f}});
+            data.vertices.push_back({.Position = {c * innerRadius, s * innerRadius, 0.0f}, .UV = {0.0f, 0.0f}});
 
-            data.vertices.push_back({{c * outerRadius, s * outerRadius, 0.0f}, {1.0f, 1.0f}});
+            data.vertices.push_back({.Position = {c * outerRadius, s * outerRadius, 0.0f}, .UV = {1.0f, 1.0f}});
         }
 
         for (unsigned int i = 0; i < segments; i++) {
@@ -161,7 +163,7 @@ namespace Rendering::MeshFactory {
     MeshData CreateSector(const float radius, const float startAngle, const float endAngle, const unsigned int segments) {
         MeshData data;
 
-        data.vertices.push_back({{0.0f, 0.0f, 0.0f}, {0.5f, 0.5f}});
+        data.vertices.push_back({.Position = {0.0f, 0.0f, 0.0f}, .UV = {0.5f, 0.5f}});
 
         for (unsigned int i = 0; i <= segments; i++) {
             const float t = static_cast<float>(i) / segments;
@@ -170,7 +172,7 @@ namespace Rendering::MeshFactory {
             float x = radius * cosf(theta);
             float y = radius * sinf(theta);
 
-            data.vertices.push_back({{x, y, 0.0f}, {x / (2.0f * radius) + 0.5f, y / (2.0f * radius) + 0.5f}});
+            data.vertices.push_back({.Position = {x, y, 0.0f}, .UV = {x / (2.0f * radius) + 0.5f, y / (2.0f * radius) + 0.5f}});
         }
 
         for (unsigned int i = 1; i <= segments; i++) {
@@ -188,10 +190,35 @@ namespace Rendering::MeshFactory {
         float hw = width * 0.5f;
         float hh = height * 0.5f;
 
-        data.vertices = {{{0.0f, hh, 0.0f}, {0.5f, 1.0f}}, {{hw, 0.0f, 0.0f}, {1.0f, 0.5f}}, {{0.0f, -hh, 0.0f}, {0.5f, 0.0f}}, {{-hw, 0.0f, 0.0f}, {0.0f, 0.5f}}};
+        data.vertices = {{.Position = {0.0f, hh, 0.0f}, .UV = {0.5f, 1.0f}},
+                         {.Position = {hw, 0.0f, 0.0f}, .UV = {1.0f, 0.5f}},
+                         {.Position = {0.0f, -hh, 0.0f}, .UV = {0.5f, 0.0f}},
+                         {.Position = {-hw, 0.0f, 0.0f}, .UV = {0.0f, 0.5f}}};
 
         data.indices = {0, 1, 2, 2, 3, 0};
 
+        return data;
+    }
+
+    // still gotta be fixed a lil but mostly works
+    MeshData CreateCustomMesh2D(const std::vector<glm::vec2> &points) {
+        MeshData data;
+        if (points.size() < 3) {
+            return data;
+        }
+        glm::vec2 min = points[0];
+        glm::vec2 max = points[0];
+
+        for (const auto &point : points) {
+            min = glm::min(min, point);
+            max = glm::max(max, point);
+        }
+        data.vertices.reserve(points.size());
+        for (const auto &point : points) {
+            data.vertices.push_back({.Position = glm::vec3(point, 0.0f), .UV = MeshUtils::GenerateUV(point, min, max)});
+        }
+        data.indices = MeshUtils::Triangulate(points);
+        MeshUtils::NormalizeMesh(data);
         return data;
     }
 

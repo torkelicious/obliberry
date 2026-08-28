@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <mutex>
+#include <ranges>
 #include <string>
 #include <typeindex>
 #include <unordered_map>
@@ -112,7 +113,7 @@ namespace Core {
 
         void ClearProjectResources() {
             std::lock_guard lock(m_Mutex);
-            for (auto &[typeIdx, cache] : m_Caches)
+            for (const auto &cache : m_Caches | std::views::values)
                 cache->ClearProjectResources();
         }
 

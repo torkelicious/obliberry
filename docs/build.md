@@ -16,7 +16,8 @@ git clone --recurse-submodules https://github.com/torkelicious/obliberry
 cd obliberry
 ```
 
-> **Note:** Most dependencies are *not* submodules, they are fetched automatically via CMake's `FetchContent` the first time you configure the
+> **Note:** Most dependencies are *not* submodules, they are fetched automatically via CMake's `FetchContent` the first
+> time you configure the
 > project. This means an internet connection is required at configure time, and the initial `cmake --preset` step may
 > take a while as these are downloaded into `_deps/`.
 
