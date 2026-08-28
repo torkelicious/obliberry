@@ -16,6 +16,15 @@ namespace {
         }
 
         const glm::vec2 d = p3 - p0;
+
+        const float dDot = glm::dot(d,d);
+
+        // avoid loop thing
+        if (dDot < 1e-12f) {
+            out.push_back(p3);
+            return;
+        }
+
         const float d2 = std::abs((p1.x - p3.x) * d.y - (p1.y - p3.y) * d.x);
         const float d3 = std::abs((p2.x - p3.x) * d.y - (p2.y - p3.y) * d.x);
 
