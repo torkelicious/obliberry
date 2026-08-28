@@ -7,20 +7,22 @@ namespace Rendering {
     class FrameBuffer {
     public:
         FrameBuffer() = default;
-        FrameBuffer(const uint32_t width, const uint32_t height) { Invalidate(width, height); }
+        FrameBuffer(const uint32_t width, const uint32_t height, const bool withEntityID = true) : m_WithEntityID(withEntityID) { Invalidate(width, height); }
 
         // disable copying
         FrameBuffer(const FrameBuffer &) = delete;
         FrameBuffer &operator=(const FrameBuffer &) = delete;
 
         // allow moving
-        FrameBuffer(FrameBuffer &&other) noexcept : m_RendererID(other.m_RendererID), m_ColorAtt(other.m_ColorAtt), m_EntityIDAtt(other.m_EntityIDAtt), m_Width(other.m_Width), m_Height(other.m_Height) {
+        FrameBuffer(FrameBuffer &&other) noexcept
+            : m_RendererID(other.m_RendererID), m_ColorAtt(other.m_ColorAtt), m_EntityIDAtt(other.m_EntityIDAtt), m_Width(other.m_Width), m_Height(other.m_Height), m_WithEntityID(other.m_WithEntityID) {
 
             other.m_RendererID = 0;
             other.m_ColorAtt = 0;
             other.m_EntityIDAtt = 0;
             other.m_Width = 0;
             other.m_Height = 0;
+            other.m_WithEntityID = true;
         }
 
         FrameBuffer &operator=(FrameBuffer &&other) noexcept {
@@ -28,7 +30,8 @@ namespace Rendering {
                 if (m_RendererID) {
                     glDeleteFramebuffers(1, &m_RendererID);
                     glDeleteTextures(1, &m_ColorAtt);
-                    glDeleteTextures(1, &m_EntityIDAtt);
+                    if (m_EntityIDAtt)
+                        glDeleteTextures(1, &m_EntityIDAtt);
                 }
 
                 m_RendererID = other.m_RendererID;
@@ -36,12 +39,14 @@ namespace Rendering {
                 m_EntityIDAtt = other.m_EntityIDAtt;
                 m_Width = other.m_Width;
                 m_Height = other.m_Height;
+                m_WithEntityID = other.m_WithEntityID;
 
                 other.m_RendererID = 0;
                 other.m_ColorAtt = 0;
                 other.m_EntityIDAtt = 0;
                 other.m_Width = 0;
                 other.m_Height = 0;
+                other.m_WithEntityID = true;
             }
             return *this;
         }
@@ -50,7 +55,8 @@ namespace Rendering {
             if (m_RendererID) {
                 glDeleteFramebuffers(1, &m_RendererID);
                 glDeleteTextures(1, &m_ColorAtt);
-                glDeleteTextures(1, &m_EntityIDAtt);
+                if (m_EntityIDAtt)
+                    glDeleteTextures(1, &m_EntityIDAtt);
             }
         }
 
@@ -61,7 +67,8 @@ namespace Rendering {
             if (m_RendererID) {
                 glDeleteFramebuffers(1, &m_RendererID);
                 glDeleteTextures(1, &m_ColorAtt);
-                glDeleteTextures(1, &m_EntityIDAtt);
+                if (m_EntityIDAtt)
+                    glDeleteTextures(1, &m_EntityIDAtt);
             }
             m_Width = width;
             m_Height = height;
@@ -78,15 +85,21 @@ namespace Rendering {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_ColorAtt, 0);
 
             // Entity ID
-            glGenTextures(1, &m_EntityIDAtt);
-            glBindTexture(GL_TEXTURE_2D, m_EntityIDAtt);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_R32I, m_Width, m_Height, 0, GL_RED_INTEGER, GL_INT, nullptr);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, m_EntityIDAtt, 0);
+            if (m_WithEntityID) {
+                glGenTextures(1, &m_EntityIDAtt);
+                glBindTexture(GL_TEXTURE_2D, m_EntityIDAtt);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_R32I, m_Width, m_Height, 0, GL_RED_INTEGER, GL_INT, nullptr);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, m_EntityIDAtt, 0);
 
-            constexpr GLenum buffers[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
-            glDrawBuffers(2, buffers);
+                constexpr GLenum buffers[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+                glDrawBuffers(2, buffers);
+            } else {
+                m_EntityIDAtt = 0;
+                constexpr GLenum buffers[1] = {GL_COLOR_ATTACHMENT0};
+                glDrawBuffers(1, buffers);
+            }
 
             if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
                 if (auto *logger = Logging::LoggerService::Get()) {
@@ -116,8 +129,13 @@ namespace Rendering {
 
         void BindDrawBuffers() const {
             glBindFramebuffer(GL_FRAMEBUFFER, m_RendererID);
-            constexpr GLenum buffers[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
-            glDrawBuffers(2, buffers);
+            if (m_WithEntityID) {
+                constexpr GLenum buffers[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+                glDrawBuffers(2, buffers);
+            } else {
+                constexpr GLenum buffers[1] = {GL_COLOR_ATTACHMENT0};
+                glDrawBuffers(1, buffers);
+            }
         }
 
         // on click
@@ -137,6 +155,8 @@ namespace Rendering {
             return pixelData;
         }
 
+        [[nodiscard]] bool HasEntityIDAttachment() const { return m_WithEntityID; }
+
         uint32_t GetColorAttID() const { return m_ColorAtt; }
         uint32_t GetEntityIDAttID() const { return m_EntityIDAtt; }
 
@@ -146,5 +166,6 @@ namespace Rendering {
         uint32_t m_EntityIDAtt = 0;
         uint32_t m_Width = 0;
         uint32_t m_Height = 0;
+        bool m_WithEntityID = true;
     };
 } // namespace Rendering

@@ -5,6 +5,8 @@
 #include "Rendering/Types/FBO/FrameBuffer.h"
 #include "Rendering/Types/Transform.h"
 #include "Platform/Threading/SmallTask.h"
+#include "PostProcessing/PostProcessing.h"
+
 #include <atomic>
 #include <functional>
 #include <memory>
@@ -112,6 +114,13 @@ namespace Rendering {
         [[nodiscard]] bool IsPixelReadRequested() const { return m_PixelReadRequested.load(); }
         void ClearPixelReadResult() { m_PixelReadResult.store(-1); }
 
+        void EnsurePostProcSize(uint32_t w, uint32_t h);
+        [[nodiscard]] std::shared_ptr<FrameBuffer> GetSceneFrameBuffer() const { return m_SceneFrameBuffer; }
+        [[nodiscard]] PostProcessing::PostProcessor &GetPostProcessor() { return m_PostProcessor; }
+        void SetPassthroughShader(Shader *s) { m_PassthroughShader = s; }
+        uint32_t RunPostProc();
+        void Present(FrameBuffer *target, uint32_t width, uint32_t height, uint32_t coltex) const;
+
     private:
         void BindLightmap(Shader *shader, size_t renderIndex) const;
         void RenderBatch(const BatchKey &key, const glm::mat4 *transforms, const int32_t *entityIDs, size_t count, size_t renderIndex, const glm::vec4 *perInstanceColors = nullptr);
@@ -175,5 +184,13 @@ namespace Rendering {
         std::atomic<int> m_PixelReadX{0};
         std::atomic<int> m_PixelReadY{0};
         std::atomic<int32_t> m_PixelReadResult{-1};
+
+        // post-proc
+        std::shared_ptr<FrameBuffer> m_SceneFrameBuffer;
+        std::shared_ptr<FrameBuffer> m_PingPong[2]; // multi pass fx tyype shi
+        PostProcessing::PostProcessor m_PostProcessor;
+        Shader *m_PassthroughShader = nullptr;
+        uint32_t m_PPWidth = 0;
+        uint32_t m_PPHeight = 0;
     };
 } // namespace Rendering

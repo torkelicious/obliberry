@@ -538,6 +538,49 @@ void Rendering::Renderer::SetLightmap(const Lightmap *lightmap) {
     }
 }
 
+void Rendering::Renderer::EnsurePostProcSize(uint32_t w, uint32_t h) {
+    if (m_PPWidth == w && m_PPHeight == h)
+        return;
+    m_PPWidth = w;
+    m_PPHeight = h;
+
+    if (!m_SceneFrameBuffer) {
+        m_SceneFrameBuffer = std::make_shared<FrameBuffer>(w, h, false);
+        m_PingPong[0] = std::make_shared<FrameBuffer>(w, h, false);
+        m_PingPong[1] = std::make_shared<FrameBuffer>(w, h, false);
+    } else {
+        m_SceneFrameBuffer->Invalidate(w, h);
+        m_PingPong[0]->Invalidate(w, h);
+        m_PingPong[1]->Invalidate(w, h);
+    }
+}
+
+uint32_t Rendering::Renderer::RunPostProc() {
+    const FrameBuffer *result = m_PostProcessor.Execute(m_SceneFrameBuffer->GetColorAttID(), m_PingPong[0].get(), m_PingPong[1].get());
+    return result ? result->GetColorAttID() : m_SceneFrameBuffer->GetColorAttID();
+}
+
+void Rendering::Renderer::Present(FrameBuffer *target, uint32_t width, uint32_t height, uint32_t coltex) const {
+    if (target) {
+        target->Bind();
+        glDrawBuffer(GL_COLOR_ATTACHMENT0);
+    } else {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glViewport(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height));
+    }
+    glDisable(GL_BLEND);
+    m_PassthroughShader->Bind();
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, coltex);
+    m_PassthroughShader->SetUniform1i("u_Texture", 0);
+    PostProcessing::PostProcessEffect::DrawFullscreenTriangle();
+    if (target) {
+        target->BindDrawBuffers();
+        target->Unbind();
+    }
+    glEnable(GL_BLEND);
+}
+
 void Rendering::Renderer::BindLightmap(Shader *shader, const size_t renderIndex) const {
     const auto &lm = m_Lightmap[renderIndex];
     if (lm.framebuffer) {

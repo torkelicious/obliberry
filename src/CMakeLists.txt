@@ -20,6 +20,7 @@ add_library(obliberry_engine STATIC
         Rendering/Types/Shader/Shader.cpp
         Rendering/GLDebug.cpp
         Rendering/Types/Mesh/MeshFactory.cpp
+        Rendering/PostProcessing/PostProcessing.cpp
 
         # Scenes / gameplay
         Scenes/Scene.cpp
