@@ -24,7 +24,7 @@ namespace Core {
 
         // dont clear builting shaders etc
         void ClearProjectResources() override {
-            std::erase_if(storage, [](const auto &kv) { return kv.first.rfind("[Engine]", 0) != 0; });
+            std::erase_if(storage, [](const auto &kv) { return kv.first.rfind("[Engine", 0) != 0; });
         }
     };
 

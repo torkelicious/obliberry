@@ -1,9 +1,10 @@
 #include "PostProcessing.h"
+#include "Rendering/Types/Shader/Shader.h"
 #include <glad/glad.h>
 
 namespace Rendering::PostProcessing {
 
-    void PostProcessEffect::DrawFullscreenTriangle() {
+    void DrawFullscreenTriangle() {
         static GLuint s_EmptyVAO = 0;
         if (s_EmptyVAO == 0) {
             glGenVertexArrays(1, &s_EmptyVAO);
@@ -13,23 +14,55 @@ namespace Rendering::PostProcessing {
         glBindVertexArray(0);
     }
 
-    FrameBuffer *PostProcessor::Execute(const uint32_t sceneColTex, FrameBuffer *pingA, FrameBuffer *pingB) const {
+    Shader *PostProcessor::FindShader(const PostEffectType type) const {
+        const auto it = m_Shaders.find(type);
+        return it != m_Shaders.end() ? it->second.get() : nullptr;
+    }
+
+    void PostProcessor::BindUniforms(const PostEffect &fx, Shader &shader) const {
+        switch (fx.type) {
+            case PostEffectType::Grayscale:
+                shader.SetUniform1f("u_Strength", fx.strength);
+                break;
+        }
+    }
+
+    FrameBuffer *PostProcessor::Execute(FrameBuffer *scene, FrameBuffer *pingA, FrameBuffer *pingB) const {
         FrameBuffer *ping[2] = {pingA, pingB};
-        uint32_t currentInput = sceneColTex;
+        FrameBuffer *currentInput = scene;
         FrameBuffer *lastOutput = nullptr;
         int writeIdx = 0;
         bool ran = false;
 
-        for (auto &fx : m_Effects) {
-            if (!fx->enabled)
+        glDisable(GL_BLEND);
+
+        for (const auto &fx : m_Effects) {
+            if (!fx.enabled)
                 continue;
+
+            Shader *shader = FindShader(fx.type);
+            if (!shader || !shader->IsValid())
+                continue;
+
             FrameBuffer *target = ping[writeIdx];
-            fx->Apply(currentInput, target);
-            currentInput = target->GetColorAttID();
+            target->Bind();
+            glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+            shader->Bind();
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, currentInput->GetColorAttID());
+            shader->SetUniform1i("u_Texture", 0);
+
+            BindUniforms(fx, *shader);
+            DrawFullscreenTriangle();
+
+            currentInput = target;
             lastOutput = target;
             writeIdx ^= 1;
             ran = true;
         }
+
+        glEnable(GL_BLEND);
         return ran ? lastOutput : nullptr;
     }
 

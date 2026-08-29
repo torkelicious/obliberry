@@ -27,11 +27,30 @@ void main() {
 )";
 
 
+    inline constexpr char kPP_GrayscaleShaderFrag[] = R"(
+#version 330 core
+in vec2 v_UV;
+out vec4 FragColor;
+uniform sampler2D u_Texture;
+uniform float u_Strength;
+void main() {
+    vec4 c = texture(u_Texture, v_UV);
+    float gray = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722));
+    FragColor = vec4(mix(c.rgb, vec3(gray), u_Strength), c.a);
+}
+)";
+
+
     inline void RegisterBuiltinPostProcShaders(Core::ResourceManager &resources) {
         resources.LoadFromFactory<Shader>("[Engine_PP] Passthrough", [] {
             auto passthroughShader = std::make_shared<Shader>(kPP_PassthroughShaderVert, kPP_PassthroughShaderFrag, "<PP_Passthrough>");
             passthroughShader->InitGL();
             return passthroughShader;
+        });
+        resources.LoadFromFactory<Shader>("[Engine_PP] Grayscale", [] {
+            auto grayscaleShader = std::make_shared<Shader>(kPP_PassthroughShaderVert, kPP_GrayscaleShaderFrag, "<PP_Grayscale>");
+            grayscaleShader->InitGL();
+            return grayscaleShader;
         });
     }
 

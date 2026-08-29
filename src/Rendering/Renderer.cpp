@@ -169,7 +169,7 @@ void Rendering::Renderer::SubmitPersistent(const std::shared_ptr<Mesh> &mesh, co
 }
 
 void Rendering::Renderer::Flush(const size_t renderIndex) {
-    if (m_EditorFramebuffer) {
+    if (m_SceneFrameBuffer) {
         constexpr int32_t kEmptyEntityID = -1;
         glClearBufferiv(GL_COLOR, 1, &kEmptyEntityID);
     }
@@ -535,29 +535,38 @@ void Rendering::Renderer::SetLightmap(const Lightmap *lightmap) {
     }
 }
 
-void Rendering::Renderer::EnsurePostProcSize(uint32_t w, uint32_t h) {
+void Rendering::Renderer::EnsureSceneFramebufferSize(uint32_t w, uint32_t h) {
     if (m_PPWidth == w && m_PPHeight == h)
         return;
     m_PPWidth = w;
     m_PPHeight = h;
+    SubmitInitTask(Platform::Threading::SmallTask([this, w, h] {
+        if (!m_SceneFrameBuffer) {
+            m_SceneFrameBuffer = std::make_shared<FrameBuffer>(w, h, true);
+            m_PingPong[0] = std::make_shared<FrameBuffer>(w, h, false);
+            m_PingPong[1] = std::make_shared<FrameBuffer>(w, h, false);
+        } else {
+            m_SceneFrameBuffer->Invalidate(w, h);
+            m_PingPong[0]->Invalidate(w, h);
+            m_PingPong[1]->Invalidate(w, h);
+        }
+    }));
+}
 
-    if (!m_SceneFrameBuffer) {
-        m_SceneFrameBuffer = std::make_shared<FrameBuffer>(w, h, true);
-        m_PingPong[0] = std::make_shared<FrameBuffer>(w, h, false);
-        m_PingPong[1] = std::make_shared<FrameBuffer>(w, h, false);
-    } else {
-        m_SceneFrameBuffer->Invalidate(w, h);
-        m_PingPong[0]->Invalidate(w, h);
-        m_PingPong[1]->Invalidate(w, h);
+void Rendering::Renderer::RunPostProc() {
+    if (!m_SceneFrameBuffer || !m_PingPong[0] || !m_PingPong[1])
+        return;
+    FrameBuffer *result = m_PostProcessor.Execute(m_SceneFrameBuffer.get(), m_PingPong[0].get(), m_PingPong[1].get());
+    if (result) {
+        DrawFullscreenPassthrough(result->GetColorAttID(), m_SceneFrameBuffer->GetWidth(), m_SceneFrameBuffer->GetHeight(), m_SceneFrameBuffer.get());
     }
 }
 
-Rendering::FrameBuffer *Rendering::Renderer::RunPostProc() {
-    FrameBuffer *result = m_PostProcessor.Execute(m_SceneFrameBuffer->GetColorAttID(), m_PingPong[0].get(), m_PingPong[1].get());
-    return result ? result : m_SceneFrameBuffer.get();
-}
+void Rendering::Renderer::PresentToScreen(uint32_t width, uint32_t height) { DrawFullscreenPassthrough(m_SceneFrameBuffer->GetColorAttID(), width, height, nullptr); }
 
-void Rendering::Renderer::Present(FrameBuffer *target, uint32_t width, uint32_t height, uint32_t coltex) const {
+void Rendering::Renderer::DrawFullscreenPassthrough(uint32_t coltex, uint32_t width, uint32_t height, FrameBuffer *target) const {
+    if (!m_PassthroughShader || !m_PassthroughShader->IsValid())
+        return;
     if (target) {
         target->Bind();
         glDrawBuffer(GL_COLOR_ATTACHMENT0);
@@ -570,10 +579,9 @@ void Rendering::Renderer::Present(FrameBuffer *target, uint32_t width, uint32_t 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, coltex);
     m_PassthroughShader->SetUniform1i("u_Texture", 0);
-    PostProcessing::PostProcessEffect::DrawFullscreenTriangle();
+    PostProcessing::DrawFullscreenTriangle();
     if (target) {
         target->BindDrawBuffers();
-        target->Unbind();
     }
     glEnable(GL_BLEND);
 }
@@ -636,18 +644,4 @@ void Rendering::Renderer::ProcessInitQ() {
     for (auto &task : queueCopy) {
         std::visit([](auto &t) { t(); }, task);
     }
-}
-
-void Rendering::Renderer::EnsureFramebufferSize(uint32_t width, uint32_t height) {
-    if (m_FboWidth == width && m_FboHeight == height)
-        return;
-    m_FboWidth = width;
-    m_FboHeight = height;
-    SubmitInitTask(Platform::Threading::SmallTask([this, width, height] {
-        if (!m_EditorFramebuffer) {
-            m_EditorFramebuffer = std::make_shared<FrameBuffer>(width, height);
-        } else {
-            m_EditorFramebuffer->Invalidate(width, height);
-        }
-    }));
 }

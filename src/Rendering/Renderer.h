@@ -100,8 +100,6 @@ namespace Rendering {
         static void SubmitInitTask(std::function<void()> task);
         static void ProcessInitQ();
 
-        [[nodiscard]] std::shared_ptr<FrameBuffer> GetEditorFramebuffer() const { return m_EditorFramebuffer; }
-        void EnsureFramebufferSize(uint32_t width, uint32_t height);
         void SetFallbackShader(Shader *shader) { m_FallbackShader = shader; }
 
         void RequestPixelRead(const int x, const int y) {
@@ -114,15 +112,20 @@ namespace Rendering {
         [[nodiscard]] bool IsPixelReadRequested() const { return m_PixelReadRequested.load(); }
         void ClearPixelReadResult() { m_PixelReadResult.store(-1); }
 
-        void EnsurePostProcSize(uint32_t w, uint32_t h);
+        void SetEditorMode(const bool editor) { m_EditorMode = editor; }
+        [[nodiscard]] bool IsEditorMode() const { return m_EditorMode; }
+
+        void EnsureSceneFramebufferSize(uint32_t width, uint32_t height);
         [[nodiscard]] std::shared_ptr<FrameBuffer> GetSceneFrameBuffer() const { return m_SceneFrameBuffer; }
         [[nodiscard]] PostProcessing::PostProcessor &GetPostProcessor() { return m_PostProcessor; }
-        void SetPassthroughShader(Shader *s) { m_PassthroughShader = s; }
-        FrameBuffer *RunPostProc();
-        void Present(FrameBuffer *target, uint32_t width, uint32_t height, uint32_t coltex) const;
+        void SetPassthroughShader(std::shared_ptr<Shader> s) { m_PassthroughShader = std::move(s); }
+
+        void RunPostProc();
+        void PresentToScreen(uint32_t width, uint32_t height);
 
     private:
         void BindLightmap(Shader *shader, size_t renderIndex) const;
+        void DrawFullscreenPassthrough(uint32_t coltex, uint32_t width, uint32_t height, FrameBuffer *target) const;
         void RenderBatch(const BatchKey &key, const glm::mat4 *transforms, const int32_t *entityIDs, size_t count, size_t renderIndex, const glm::vec4 *perInstanceColors = nullptr);
 
         std::vector<std::shared_ptr<void>> m_ResourcePins[2];
@@ -174,10 +177,6 @@ namespace Rendering {
         std::vector<int32_t> m_MergedEntityIDs;
         std::vector<int32_t> m_DummyEntityIDs;
 
-        std::shared_ptr<FrameBuffer> m_EditorFramebuffer = nullptr;
-        uint32_t m_FboWidth = 0;
-        uint32_t m_FboHeight = 0;
-
         Shader *m_FallbackShader = nullptr;
 
         std::atomic<bool> m_PixelReadRequested{false};
@@ -187,10 +186,11 @@ namespace Rendering {
 
         // post-proc
         std::shared_ptr<FrameBuffer> m_SceneFrameBuffer;
-        std::shared_ptr<FrameBuffer> m_PingPong[2]; // multi pass fx tyype shi
+        std::shared_ptr<FrameBuffer> m_PingPong[2]; // multi pass effects
         PostProcessing::PostProcessor m_PostProcessor;
-        Shader *m_PassthroughShader = nullptr;
+        std::shared_ptr<Shader> m_PassthroughShader;
         uint32_t m_PPWidth = 0;
         uint32_t m_PPHeight = 0;
+        bool m_EditorMode = false;
     };
 } // namespace Rendering
