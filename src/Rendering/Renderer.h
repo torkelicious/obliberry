@@ -118,7 +118,7 @@ namespace Rendering {
         [[nodiscard]] std::shared_ptr<FrameBuffer> GetSceneFrameBuffer() const { return m_SceneFrameBuffer; }
         [[nodiscard]] PostProcessing::PostProcessor &GetPostProcessor() { return m_PostProcessor; }
         void SetPassthroughShader(Shader *s) { m_PassthroughShader = s; }
-        uint32_t RunPostProc();
+        FrameBuffer *RunPostProc();
         void Present(FrameBuffer *target, uint32_t width, uint32_t height, uint32_t coltex) const;
 
     private:

@@ -156,6 +156,7 @@ namespace Rendering {
         }
 
         [[nodiscard]] bool HasEntityIDAttachment() const { return m_WithEntityID; }
+        [[nodiscard]] uint32_t GetID() const { return m_RendererID; }
 
         uint32_t GetColorAttID() const { return m_ColorAtt; }
         uint32_t GetEntityIDAttID() const { return m_EntityIDAtt; }

@@ -16,6 +16,7 @@
 #include <utility>
 #include "Applications/Editor/EditorLayer.h"
 #include "ECS/Systems/ScriptSystem.h"
+#include "Rendering/PostProcessing/InternalPostProcShaders.h"
 
 
 Core::Application::Application(const Config::GraphicsConfig &gconf, Config::ProjectConfig pconf, std::unique_ptr<ApplicationLayer> layer)
@@ -90,7 +91,9 @@ void Core::Application::Run() {
 
     // engine builtin shaders (light pass, etc)
     Rendering::BuiltinShaders::RegisterBuiltinShaders(ResourceManager::GetInstance());
+    Rendering::PostProcessing::BuiltinShaders::RegisterBuiltinPostProcShaders(ResourceManager::GetInstance());
     renderer.SetFallbackShader(ResourceManager::GetInstance().Get<Rendering::Shader>("[Engine] Base").get());
+    renderer.SetPassthroughShader(ResourceManager::GetInstance().Get<Rendering::Shader>("[Engine_PP] Passthrough").get());
 
     // engine builtin meshes + default material
     Rendering::BuiltinShaders::RegisterBuiltinAssets(ResourceManager::GetInstance());

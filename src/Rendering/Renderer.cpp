@@ -367,16 +367,13 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
     m_LastBoundColor = glm::vec4(0.0f);
 
     if (m_PixelReadRequested.load()) {
-        if (m_EditorFramebuffer) {
-            m_EditorFramebuffer->Bind();
-            glReadBuffer(GL_COLOR_ATTACHMENT1);
+        glReadBuffer(GL_COLOR_ATTACHMENT1);
 
-            int32_t pixelData = -1;
-            glReadPixels(m_PixelReadX.load(), m_PixelReadY.load(), 1, 1, GL_RED_INTEGER, GL_INT, &pixelData);
+        int32_t pixelData = -1;
+        glReadPixels(m_PixelReadX.load(), m_PixelReadY.load(), 1, 1, GL_RED_INTEGER, GL_INT, &pixelData);
 
-            m_PixelReadResult.store(pixelData);
-            m_EditorFramebuffer->Unbind();
-        }
+        m_PixelReadResult.store(pixelData);
+        glReadBuffer(GL_NONE);
         m_PixelReadRequested.store(false);
     }
 
@@ -545,7 +542,7 @@ void Rendering::Renderer::EnsurePostProcSize(uint32_t w, uint32_t h) {
     m_PPHeight = h;
 
     if (!m_SceneFrameBuffer) {
-        m_SceneFrameBuffer = std::make_shared<FrameBuffer>(w, h, false);
+        m_SceneFrameBuffer = std::make_shared<FrameBuffer>(w, h, true);
         m_PingPong[0] = std::make_shared<FrameBuffer>(w, h, false);
         m_PingPong[1] = std::make_shared<FrameBuffer>(w, h, false);
     } else {
@@ -555,9 +552,9 @@ void Rendering::Renderer::EnsurePostProcSize(uint32_t w, uint32_t h) {
     }
 }
 
-uint32_t Rendering::Renderer::RunPostProc() {
-    const FrameBuffer *result = m_PostProcessor.Execute(m_SceneFrameBuffer->GetColorAttID(), m_PingPong[0].get(), m_PingPong[1].get());
-    return result ? result->GetColorAttID() : m_SceneFrameBuffer->GetColorAttID();
+Rendering::FrameBuffer *Rendering::Renderer::RunPostProc() {
+    FrameBuffer *result = m_PostProcessor.Execute(m_SceneFrameBuffer->GetColorAttID(), m_PingPong[0].get(), m_PingPong[1].get());
+    return result ? result : m_SceneFrameBuffer.get();
 }
 
 void Rendering::Renderer::Present(FrameBuffer *target, uint32_t width, uint32_t height, uint32_t coltex) const {
