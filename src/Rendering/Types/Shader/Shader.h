@@ -8,6 +8,13 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 
+// for resourcemanager reg
+struct ShaderRegistration {
+    std::string name; // appended to "[Engine_PP] " and "<PP_...>" etc
+    std::string_view vertex;
+    std::string_view fragment;
+};
+
 namespace Rendering {
     class Shader {
     public:

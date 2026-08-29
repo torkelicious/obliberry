@@ -1,6 +1,6 @@
 #pragma once
+#include "Core/ResourceManager.h"
 #include "Rendering/Types/FBO/FrameBuffer.h"
-#include <cstdint>
 #include <memory>
 #include <unordered_map>
 #include <vector>

@@ -16,7 +16,7 @@
 #include <utility>
 #include "Applications/Editor/EditorLayer.h"
 #include "ECS/Systems/ScriptSystem.h"
-#include "Rendering/PostProcessing/InternalPostProcShaders.h"
+#include "Rendering/PostProcessing/InternalPostProcFx.h"
 
 
 Core::Application::Application(const Config::GraphicsConfig &gconf, Config::ProjectConfig pconf, std::unique_ptr<ApplicationLayer> layer)
@@ -91,15 +91,13 @@ void Core::Application::Run() {
 
     // engine builtin shaders (light pass, etc)
     Rendering::BuiltinShaders::RegisterBuiltinShaders(ResourceManager::GetInstance());
-    Rendering::PostProcessing::BuiltinShaders::RegisterBuiltinPostProcShaders(ResourceManager::GetInstance());
+
+    Rendering::PostProcessing::Builtins::RegisterBuiltinPostProcShaders(renderer);
+
     renderer.SetFallbackShader(ResourceManager::GetInstance().Get<Rendering::Shader>("[Engine] Base").get());
+
     renderer.SetPassthroughShader(ResourceManager::GetInstance().Get<Rendering::Shader>("[Engine_PP] Passthrough"));
 
-    {
-        auto &postProc = renderer.GetPostProcessor();
-        postProc.RegisterShader(Rendering::PostProcessing::PostEffectType::Grayscale, ResourceManager::GetInstance().Get<Rendering::Shader>("[Engine_PP] Grayscale"));
-        postProc.AddEffect({.type = Rendering::PostProcessing::PostEffectType::Grayscale, .enabled = true, .strength = 1.0f});
-    }
 
     // engine builtin meshes + default material
     Rendering::BuiltinShaders::RegisterBuiltinAssets(ResourceManager::GetInstance());
