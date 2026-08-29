@@ -51,6 +51,8 @@ namespace Editor {
 
         void Shutdown() override;
 
+        [[nodiscard]] bool UsesEditorViewport() const override { return true; }
+
         EditorContext *GetEditorContext() { return &m_EditorContext; }
 
         inline static bool s_ShouldBuildDock = true;
