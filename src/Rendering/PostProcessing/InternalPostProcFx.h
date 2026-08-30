@@ -51,7 +51,7 @@ void main() {
     struct FxRegistrationKey {
         std::string shaderName; // key is deduced from name
         PostEffect fx;
-        std::string shaderKey() const { return "[Engine_PP] " + shaderName; }
+        [[nodiscard]] std::string shaderKey() const { return "[Engine_PP] " + shaderName; }
     };
 
     inline std::vector<FxRegistrationKey> fxRegistrations = {
