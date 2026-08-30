@@ -43,6 +43,9 @@ void main() {
 }
 )";
 
+    //
+    // reg
+    //
 
     struct FxRegistration {
         std::string name; // resource key becomes "[Engine_PP] <name>"
@@ -53,7 +56,7 @@ void main() {
     };
 
     inline std::vector<FxRegistration> fxRegistrations = {
-            {.name = "Grayscale", .vertex = kPP_PassthroughShaderVert, .fragment = kPP_GrayscaleShaderFrag, .enabled = true, .strength = 1.0f},
+            {.name = "Grayscale", .vertex = kPP_PassthroughShaderVert, .fragment = kPP_GrayscaleShaderFrag, .enabled = false, .strength = 1.0f},
     };
 
     inline std::shared_ptr<Shader> LoadPPShader(Core::ResourceManager &resources, const std::string &name, const char *vert, const char *frag) {
