@@ -96,9 +96,6 @@ void Core::Application::Run() {
 
     renderer.SetFallbackShader(ResourceManager::GetInstance().Get<Rendering::Shader>("[Engine] Base").get());
 
-    renderer.SetPassthroughShader(ResourceManager::GetInstance().Get<Rendering::Shader>("[Engine_PP] Passthrough"));
-
-
     // engine builtin meshes + default material
     Rendering::BuiltinShaders::RegisterBuiltinAssets(ResourceManager::GetInstance());
 

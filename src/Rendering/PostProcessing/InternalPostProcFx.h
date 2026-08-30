@@ -75,6 +75,8 @@ void main() {
             });
         }
 
+        renderer.SetPassthroughShader(resources.Get<Shader>("[Engine_PP] Passthrough"));
+
         for (const auto &registration : fxRegistrations) {
             postproc.RegisterShader(registration.fx.type, resources.Get<Shader>(registration.shaderKey()));
             postproc.AddEffect(registration.fx);
