@@ -44,6 +44,11 @@ namespace Rendering::PostProcessing {
                 value);
     }
 
+    static void ApplyUniformBag(Shader &shader, const std::unordered_map<std::string, UniformValue> &bag) {
+        for (const auto &[name, value] : bag)
+            ApplyUniformValue(shader, name.c_str(), value);
+    }
+
     void PostEffect::ResolveShader() {
         shader = Core::ResourceManager::GetInstance().Get<Shader>(shaderKey);
         if (!shader)
@@ -69,40 +74,58 @@ namespace Rendering::PostProcessing {
             if (!fx.enabled || !fx.shader || !fx.shader->IsValid())
                 continue;
 
-            FrameBuffer *target = ping[writeIdx];
-            target->Bind();
-            glDrawBuffer(GL_COLOR_ATTACHMENT0);
-
             Shader &shader = *fx.shader;
             shader.Bind();
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, currentInput->GetColorAttID());
 
-            // engine uniforms
-            shader.SetUniform1i("u_Texture", 0);
-            shader.SetUniformVec2(kUniformResolution, {static_cast<float>(target->GetWidth()), static_cast<float>(target->GetHeight())});
-            shader.SetUniform1f(kUniformTime, GetEngineTime());
+            // composite passes sample the original scene on 1
+            if (fx.wantsSceneTexture) {
+                glActiveTexture(GL_TEXTURE1);
+                glBindTexture(GL_TEXTURE_2D, scene->GetColorAttID());
+                shader.SetUniform1i(kUniformScene, 1);
+            }
 
-            // serialized uniform bag
-            for (const auto &[name, value] : fx.uniforms)
-                ApplyUniformValue(shader, name.c_str(), value);
+            const int passCount = std::max(fx.passes, 1);
 
-            DrawFullscreenTriangle();
+            for (int pass = 0; pass < passCount; ++pass) {
+                FrameBuffer *target = ping[writeIdx];
+                target->Bind();
+                glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
-            currentInput = target;
-            lastOutput = target;
-            writeIdx ^= 1;
-            ran = true;
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, currentInput->GetColorAttID());
+
+                // engine uniforms
+                // these will be skipped when the shader doesnt declare them
+                const float w = static_cast<float>(target->GetWidth());
+                const float h = static_cast<float>(target->GetHeight());
+                shader.SetUniform1i("u_Texture", 0);
+                shader.SetUniformVec2(kUniformResolution, {w, h});
+                shader.SetUniformVec2(kUniformTexelSize, {1.0f / w, 1.0f / h});
+                shader.SetUniform1f(kUniformTime, GetEngineTime());
+
+                ApplyUniformBag(shader, fx.uniforms);
+                if (pass < static_cast<int>(fx.passUniforms.size()))
+                    ApplyUniformBag(shader, fx.passUniforms[pass]);
+
+                DrawFullscreenTriangle();
+
+                currentInput = target;
+                lastOutput = target;
+                writeIdx ^= 1;
+                ran = true;
+            }
         }
 
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glActiveTexture(GL_TEXTURE0);
         glEnable(GL_BLEND);
         return ran ? lastOutput : nullptr;
     }
 
-
     // serialization is not really wired in yet, im just drafting the architechture
-
     // serialization
+
     static nlohmann::json UniformValueToJson(const UniformValue &v) {
         return std::visit(
                 []<typename T0>(const T0 &val) -> nlohmann::json {
@@ -122,6 +145,8 @@ namespace Rendering::PostProcessing {
     }
 
     static std::optional<UniformValue> UniformValueFromJson(const nlohmann::json &j) {
+        if (j.is_boolean())
+            return j.get<bool>() ? 1 : 0;
         if (j.is_number_integer())
             return j.get<int>();
         if (j.is_number())
@@ -141,14 +166,45 @@ namespace Rendering::PostProcessing {
         return std::nullopt;
     }
 
+    static nlohmann::json UniformBagToJson(const std::unordered_map<std::string, UniformValue> &bag) {
+        nlohmann::json obj = nlohmann::json::object();
+        for (const auto &[name, value] : bag)
+            obj[name] = UniformValueToJson(value);
+        return obj;
+    }
+
+    static void UniformBagFromJson(const nlohmann::json &j, const std::string &shaderKey, std::unordered_map<std::string, UniformValue> &out) {
+        if (!j.is_object())
+            return;
+        for (const auto &[name, value] : j.items()) {
+            if (auto parsed = UniformValueFromJson(value)) {
+                out[name] = std::move(*parsed);
+            } else {
+                LOG_WARN(LOG_WHO, "Skipping uniform '" + name + "' on '" + shaderKey + "': unsupported value type");
+            }
+        }
+    }
+
     nlohmann::json PostProcessor::Serialize() const {
         nlohmann::json arr = nlohmann::json::array();
         for (const auto &fx : m_Effects) {
-            nlohmann::json uniforms = nlohmann::json::object();
-            for (const auto &[name, value] : fx.uniforms)
-                uniforms[name] = UniformValueToJson(value);
+            nlohmann::json entry = {{"shader", fx.shaderKey}, {"enabled", fx.enabled}};
 
-            arr.push_back({{"shader", fx.shaderKey}, {"enabled", fx.enabled}, {"uniforms", std::move(uniforms)}});
+            if (!fx.uniforms.empty())
+                entry["uniforms"] = UniformBagToJson(fx.uniforms);
+            if (fx.passes > 1)
+                entry["passes"] = fx.passes;
+            if (fx.wantsSceneTexture)
+                entry["wantsSceneTexture"] = true;
+
+            if (!fx.passUniforms.empty()) {
+                nlohmann::json passArr = nlohmann::json::array();
+                for (const auto &bag : fx.passUniforms)
+                    passArr.push_back(UniformBagToJson(bag));
+                entry["passUniforms"] = std::move(passArr);
+            }
+
+            arr.push_back(std::move(entry));
         }
         return arr;
     }
@@ -169,24 +225,31 @@ namespace Rendering::PostProcessing {
                     fx.shaderKey = entry["shader"].get<std::string>();
                 if (entry.contains("enabled"))
                     fx.enabled = entry["enabled"].get<bool>();
+                if (entry.contains("passes"))
+                    fx.passes = std::max(entry["passes"].get<int>(), 1);
+                if (entry.contains("wantsSceneTexture"))
+                    fx.wantsSceneTexture = entry["wantsSceneTexture"].get<bool>();
 
-                if (entry.contains("uniforms") && entry["uniforms"].is_object()) {
-                    for (const auto &[name, value] : entry["uniforms"].items()) {
-                        if (auto parsed = UniformValueFromJson(value)) {
-                            fx.uniforms[name] = std::move(*parsed);
-                        } else {
-                            LOG_WARN(LOG_WHO, "Skipping uniform '" + name + "' on '" + fx.shaderKey + "': unsupported value type");
-                        }
+                if (entry.contains("uniforms"))
+                    UniformBagFromJson(entry["uniforms"], fx.shaderKey, fx.uniforms);
+
+                if (entry.contains("passUniforms") && entry["passUniforms"].is_array()) {
+                    for (const auto &passBag : entry["passUniforms"]) {
+                        std::unordered_map<std::string, UniformValue> bag;
+                        UniformBagFromJson(passBag, fx.shaderKey, bag);
+                        fx.passUniforms.push_back(std::move(bag));
                     }
                 }
             } catch (const std::exception &e) {
                 LOG_ERROR(LOG_WHO, "Skipping malformed post effect entry: " + std::string(e.what()));
                 continue;
             }
+
             if (fx.shaderKey.empty()) {
                 LOG_WARN(LOG_WHO, "Skipping post effect without a shader key");
                 continue;
             }
+
             fx.ResolveShader();
             m_Effects.push_back(std::move(fx));
         }
