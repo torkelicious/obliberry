@@ -1,8 +1,7 @@
 #pragma once
-#include "Core/ResourceManager.h"
 #include "Rendering/Types/FBO/FrameBuffer.h"
+#include "Scripting/SmallFunction.h"
 #include <memory>
-#include <unordered_map>
 #include <vector>
 
 namespace Rendering {
@@ -13,30 +12,21 @@ namespace Rendering::PostProcessing {
 
     void DrawFullscreenTriangle();
 
-    enum class PostEffectType : uint8_t {
-        Grayscale,
-    };
-
     struct PostEffect {
-        PostEffectType type = PostEffectType::Grayscale;
+        std::shared_ptr<Shader> shader;
         bool enabled = true;
-        float strength = 1.0f; // grayscale: 0 = full color, 1 = grayscale
+        float strength = 1.0f;
+        // optionally set effect specific uniforms
+        Scripting::SmallFunction<void(Shader &)> bindUniforms;
     };
 
     class PostProcessor {
     public:
-        void RegisterShader(PostEffectType type, std::shared_ptr<Shader> shader) { m_Shaders[type] = std::move(shader); }
-
-        void AddEffect(const PostEffect &fx) { m_Effects.push_back(fx); }
-
-        FrameBuffer *Execute(FrameBuffer *scene, FrameBuffer *pingA, FrameBuffer *pingB) const;
+        void AddEffect(PostEffect fx) { m_Effects.push_back(std::move(fx)); }
+        FrameBuffer *Execute(FrameBuffer *scene, FrameBuffer *pingA, FrameBuffer *pingB);
 
     private:
-        void BindUniforms(const PostEffect &fx, Shader &shader) const;
-        [[nodiscard]] Shader *FindShader(PostEffectType type) const;
-
         std::vector<PostEffect> m_Effects;
-        std::unordered_map<PostEffectType, std::shared_ptr<Shader>> m_Shaders;
     };
 
 } // namespace Rendering::PostProcessing

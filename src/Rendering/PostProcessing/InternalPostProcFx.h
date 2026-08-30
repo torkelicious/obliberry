@@ -1,9 +1,10 @@
 #pragma once
 #include "Core/ResourceManager.h"
+#include "PostProcessing.h"
+#include "Rendering/Renderer.h"
 #include "Rendering/Types/Shader/Shader.h"
 
 // same idea as src/Rendering/Types/Shader/InternalShaders.h
-
 
 namespace Rendering::PostProcessing::Builtins {
 
@@ -43,43 +44,37 @@ void main() {
 )";
 
 
-    inline std::vector<ShaderRegistration> shaderRegistrations = {
-            {.name = "Passthrough", .vertex = kPP_PassthroughShaderVert, .fragment = kPP_PassthroughShaderFrag},
-            {.name = "Greyscale", .vertex = kPP_PassthroughShaderVert, .fragment = kPP_GrayscaleShaderFrag},
+    struct FxRegistration {
+        std::string name; // resource key becomes "[Engine_PP] <name>"
+        const char *vertex;
+        const char *fragment;
+        bool enabled = true;
+        float strength = 1.0f;
     };
 
-    struct FxRegistrationKey {
-        std::string shaderName; // key is deduced from name
-        PostEffect fx;
-        [[nodiscard]] std::string shaderKey() const { return "[Engine_PP] " + shaderName; }
+    inline std::vector<FxRegistration> fxRegistrations = {
+            {.name = "Grayscale", .vertex = kPP_PassthroughShaderVert, .fragment = kPP_GrayscaleShaderFrag, .enabled = true, .strength = 1.0f},
     };
 
-    inline std::vector<FxRegistrationKey> fxRegistrations = {
-
-            {.shaderName = "Greyscale", .fx = {.type = PostEffectType::Grayscale, .enabled = true, .strength = 1.0f}}
-
-    };
-
+    inline std::shared_ptr<Shader> LoadPPShader(Core::ResourceManager &resources, const std::string &name, const char *vert, const char *frag) {
+        const std::string resourceKey = "[Engine_PP] " + name;
+        const std::string debugName = "<PP_" + name + ">";
+        return resources.LoadFromFactory<Shader>(resourceKey, [vert, frag, debugName] {
+            auto shader = std::make_shared<Shader>(std::string(vert), std::string(frag), debugName);
+            shader->InitGL();
+            return shader;
+        });
+    }
 
     inline void RegisterBuiltinPostProcShaders(Rendering::Renderer &renderer) {
         auto &resources = Core::ResourceManager::GetInstance();
         auto &postproc = renderer.GetPostProcessor();
 
-        for (const auto &shad : shaderRegistrations) {
-            const std::string resourceKey = "[Engine_PP] " + shad.name;
-            const std::string debugName = "<PP_" + shad.name + ">";
-            resources.LoadFromFactory<Shader>(resourceKey, [shad, debugName] {
-                auto shader = std::make_shared<Shader>(std::string(shad.vertex), std::string(shad.fragment), debugName);
-                shader->InitGL();
-                return shader;
-            });
-        }
+        renderer.SetPassthroughShader(LoadPPShader(resources, "Passthrough", kPP_PassthroughShaderVert, kPP_PassthroughShaderFrag));
 
-        renderer.SetPassthroughShader(resources.Get<Shader>("[Engine_PP] Passthrough"));
-
-        for (const auto &registration : fxRegistrations) {
-            postproc.RegisterShader(registration.fx.type, resources.Get<Shader>(registration.shaderKey()));
-            postproc.AddEffect(registration.fx);
+        for (const auto &reg : fxRegistrations) {
+            postproc.AddEffect({.shader = LoadPPShader(resources, reg.name, reg.vertex, reg.fragment), .enabled = reg.enabled, .strength = reg.strength});
         }
     }
+
 } // namespace Rendering::PostProcessing::Builtins
