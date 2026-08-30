@@ -43,6 +43,48 @@ void main() {
 }
 )";
 
+    // this shit sucks but it works
+    inline constexpr char kkPP_CRTShaderFrag[] = R"(
+#version 330 core
+
+in vec2 v_UV;
+out vec4 FragColor;
+
+uniform sampler2D u_Texture;
+uniform float u_Strength;
+
+void main()
+{
+    vec2 uv = v_UV - 0.5;
+    vec2 aspect = vec2(4.0 / 3.0, 1.0);
+    vec2 distorted = uv * aspect;
+
+    float r2 = dot(distorted, distorted);
+    distorted *= 1.0 + u_Strength * r2;
+
+    distorted /= aspect;
+
+    vec2 uvnew = distorted + 0.5;
+
+    if (uvnew.x < 0.0 || uvnew.x > 1.0 ||
+        uvnew.y < 0.0 || uvnew.y > 1.0)
+    {
+        FragColor = vec4(0.0);
+        return;
+    }
+
+    vec3 color = texture(u_Texture, uvnew).rgb;
+    float line = floor(uvnew.y * 1920.0);
+
+    float brightness = mod(line, 2.0) == 0.0 ? 1.0 : 0.5;
+    color *= brightness;
+    FragColor = vec4(color, 1.0);
+}
+
+
+)";
+
+
     //
     // reg
     //
@@ -56,8 +98,13 @@ void main() {
     };
 
     inline std::vector<FxRegistration> fxRegistrations = {
+
             {.name = "Grayscale", .vertex = kPP_PassthroughShaderVert, .fragment = kPP_GrayscaleShaderFrag, .enabled = false, .strength = 1.0f},
+
+            {.name = "CRT", .vertex = kPP_PassthroughShaderVert, .fragment = kkPP_CRTShaderFrag, .enabled = true, .strength = 0.2f}
+
     };
+
 
     inline std::shared_ptr<Shader> LoadPPShader(Core::ResourceManager &resources, const std::string &name, const char *vert, const char *frag) {
         const std::string resourceKey = "[Engine_PP] " + name;
