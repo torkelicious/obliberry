@@ -113,6 +113,7 @@ add_executable(obliberry_editor
         Applications/Editor/UI/Panels/MapEditor/TileEditorPanel.cpp
         Applications/Editor/UI/Panels/Editor/UIPanel.cpp
         Applications/Editor/UI/Panels/Editor/MeshCreatorPanel.cpp
+        Applications/Editor/UI/ConfigWindows/PostProcEditor.cpp
 
         # config windows
         Applications/Editor/UI/ConfigWindows/ConfigWindow.cpp

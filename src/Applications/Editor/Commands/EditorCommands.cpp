@@ -429,4 +429,18 @@ namespace Editor::Commands {
     }
     std::string_view ThemeUpdateCommand::Name() const noexcept { return "Theme change"; }
 
+    //
+    // post proc
+    //
+    PostProcUpdateCommand::PostProcUpdateCommand(const std::vector<Rendering::PostProcessing::PostEffect> &oldFx, const std::vector<Rendering::PostProcessing::PostEffect> &newFx)
+        : m_OldData(oldFx), m_NewData(newFx) {}
+
+    void PostProcUpdateCommand::Execute(Core::EngineContext &ctx) {
+        ctx.renderer->GetPostProcessor().Effects() = m_NewData;
+    }
+
+    void PostProcUpdateCommand::Undo(Core::EngineContext &ctx) {
+        ctx.renderer->GetPostProcessor().Effects() = m_OldData;
+    }
+
 } // namespace Editor::Commands
