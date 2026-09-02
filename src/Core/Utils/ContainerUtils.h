@@ -7,7 +7,7 @@ namespace Core::Utils {
 
     namespace vector {
         // move item from one index to another inside an std::vector
-        template <typename T> void moveItem(std::vector<T> &vec, std::size_t from, size_t to) {
+        template <typename T> void moveIndex(std::vector<T> &vec, std::size_t from, size_t to) {
             if (from >= vec.size() || to >= vec.size() || from == to)
                 return;
 

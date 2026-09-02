@@ -87,7 +87,7 @@ namespace Editor::UI {
                     IM_ASSERT(payload->DataSize == sizeof(std::size_t));
                     // commit immediately
                     if (const std::size_t from = *static_cast<const std::size_t *>(payload->Data); from != i) {
-                        Core::Utils::vector::moveItem(m_StagingVec, from, i);
+                        Core::Utils::vector::moveIndex(m_StagingVec, from, i);
                         m_SelectedFx = static_cast<int>(i);
                         NotifyInstantEdit();
                     }
