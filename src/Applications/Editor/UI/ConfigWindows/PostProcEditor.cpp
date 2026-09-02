@@ -9,6 +9,7 @@
 #include "Logger/LoggerService.h"
 #include "Rendering/PostProcessing/InternalPostProcFx.h"
 #include "Rendering/Renderer.h"
+#include "Rendering/PostProcessing/ShaderParsing.h"
 #include "Rendering/Types/Shader/Shader.h"
 #include <algorithm>
 #include <filesystem>
@@ -18,6 +19,7 @@
 #define LOG_WHO "PostProcEditor"
 
 namespace Editor::UI {
+    using namespace Rendering::PostProcessing;
 
     namespace {
 
@@ -82,11 +84,14 @@ namespace Editor::UI {
             auto &fx = m_StagingVec[i];
             ImGui::PushID(static_cast<int>(i));
 
-            // row overlay
-            ImGui::SetNextItemAllowOverlap();
-            if (ImGui::Selectable("##fx", m_SelectedFx == static_cast<int>(i), 0, ImVec2(0.0f, 0.0f)))
+            if (ImGui::Checkbox("##enabled", &fx.enabled))
+                NotifyInstantEdit();
+
+            ImGui::SameLine();
+            if (ImGui::Selectable(ShortShaderName(fx.shaderKey), m_SelectedFx == static_cast<int>(i), 0, ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
                 m_SelectedFx = static_cast<int>(i);
 
+            // drag to reorder
             if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
                 ImGui::SetDragDropPayload("POST_PROC_FX", &i, sizeof(std::size_t));
                 ImGui::Text("%s", ShortShaderName(fx.shaderKey));
@@ -107,19 +112,13 @@ namespace Editor::UI {
                 ImGui::EndDragDropTarget();
             }
 
-            // draw the entry
-            ImGui::SameLine(0.0f, 0.0f);
-            if (ImGui::Checkbox("##enabled", &fx.enabled)) // this looks fucked up, no clue why ):
-                NotifyInstantEdit();
-            ImGui::SameLine();
-            ImGui::TextUnformatted(ShortShaderName(fx.shaderKey));
             ImGui::PopID();
         }
 
         ImGui::EndChild();
     }
 
-    void PostProcEditor::DrawEffectDetails(Rendering::PostProcessing::PostEffect &fx) {
+    void PostProcEditor::DrawEffectDetails(PostEffect &fx) {
         ImGui::BeginChild("EffectDetails", ImVec2(0, 0), ImGuiChildFlags_Borders);
 
         ImGui::Text("%s", fx.shaderKey.c_str());
@@ -173,11 +172,11 @@ namespace Editor::UI {
         ImGui::EndChild();
     }
 
-    void PostProcEditor::UniformMapToImGui(std::unordered_map<std::string, Rendering::PostProcessing::UniformValue> &uniforms) {
+    void PostProcEditor::UniformMapToImGui(std::unordered_map<std::string, UniformValue> &uniforms) {
         if (uniforms.empty())
             return;
 
-        std::vector<std::pair<const std::string, Rendering::PostProcessing::UniformValue> *> entries;
+        std::vector<std::pair<const std::string, UniformValue> *> entries;
         entries.reserve(uniforms.size());
         for (auto &entry : uniforms)
             entries.push_back(&entry);
@@ -244,11 +243,10 @@ namespace Editor::UI {
         const float delW = ImGui::CalcTextSize("Delete").x + ImGui::GetStyle().FramePadding.x * 2.0f;
         ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - delW - ImGui::GetStyle().ItemSpacing.x);
         if (ImGui::BeginCombo("##addfx", "Add effect...")) {
-            namespace Builtins = Rendering::PostProcessing::Builtins;
             for (const auto &reg : Builtins::ppEffectRegistrations) {
                 const std::string key = "[Engine_PP] " + std::string(reg.shaderName);
                 if (ImGui::Selectable(reg.shaderName, false)) {
-                    Rendering::PostProcessing::PostEffect fx;
+                    PostEffect fx;
                     fx.shaderKey = key;
                     fx.enabled = reg.enabled;
                     fx.passes = reg.passes;
@@ -256,7 +254,7 @@ namespace Editor::UI {
                     for (const auto &[name, value] : reg.uniforms)
                         fx.uniforms[name] = value;
                     for (const auto &passBag : reg.passUniforms) {
-                        std::unordered_map<std::string, Rendering::PostProcessing::UniformValue> bag;
+                        std::unordered_map<std::string, UniformValue> bag;
                         for (const auto &[name, value] : passBag)
                             bag[name] = value;
                         fx.passUniforms.push_back(std::move(bag));
@@ -380,14 +378,23 @@ namespace Editor::UI {
             return;
         }
 
+        const auto uniforms = Parser::ParseUniforms(fragSrc.value());
+
         auto shader = resources.LoadFromFactory<Rendering::Shader>(
-                key, [fragSrc = *fragSrc, name] { return std::make_shared<Rendering::Shader>(std::string(Rendering::PostProcessing::Builtins::kPP_PassthroughShaderVert), fragSrc, "<PP_" + name + ">"); });
+                key, [fragSrc = *fragSrc, name] { return std::make_shared<Rendering::Shader>(std::string(Builtins::kPP_PassthroughShaderVert), fragSrc, "<PP_" + name + ">"); });
         Rendering::Renderer::SubmitInitTask(::Platform::Threading::SmallTask([shader] { shader->InitGL(); }));
 
-        Rendering::PostProcessing::PostEffect fx;
+
+        PostEffect fx;
         fx.shaderKey = key;
         fx.enabled = false;
         fx.shader = shader;
+
+        if (!uniforms.empty()) {
+            for (const auto &uniform : uniforms) {
+                fx.uniforms.insert({uniform.name, Rendering::PostProcessing::Parser::UniformTypeEnumToValue(uniform.type)});
+            }
+        }
 
         m_StagingVec.push_back(std::move(fx));
         m_SelectedFx = static_cast<int>(m_StagingVec.size()) - 1;
