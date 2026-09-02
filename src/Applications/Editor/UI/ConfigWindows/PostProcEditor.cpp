@@ -1,11 +1,21 @@
 #include "PostProcEditor.h"
 
 #include "Applications/Editor/Commands/EditorCommands.h"
+#include "Applications/Editor/Platform/FileDialogs.h"
 #include "Core/Utils/ContainerUtils.h"
+#include "IO/Loaders/AssetLoader.h"
+#include "Platform/Threading/SmallTask.h"
+#include "IO/VFS/VFS.h"
+#include "Logger/LoggerService.h"
 #include "Rendering/PostProcessing/InternalPostProcFx.h"
 #include "Rendering/Renderer.h"
+#include "Rendering/Types/Shader/Shader.h"
 #include <algorithm>
+#include <filesystem>
 #include <imgui.h>
+
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "PostProcEditor"
 
 namespace Editor::UI {
 
@@ -13,9 +23,11 @@ namespace Editor::UI {
 
         // strip the "[Engine_PP] " prefix for display
         const char *ShortShaderName(const std::string &key) {
-            static constexpr std::string_view kPrefix = "[Engine_PP] ";
-            if (key.starts_with(kPrefix))
-                return key.c_str() + kPrefix.size();
+            static constexpr std::string_view kPrefixes[] = {"[Engine_PP] ", "[PP] "};
+            for (const auto prefix : kPrefixes) {
+                if (key.starts_with(prefix))
+                    return key.c_str() + prefix.size();
+            }
             return key.c_str();
         }
 
@@ -97,17 +109,10 @@ namespace Editor::UI {
 
             // draw the entry
             ImGui::SameLine(0.0f, 0.0f);
-            ImGui::BeginGroup();
-            ImGui::Text("%zu.", i + 1);
+            if (ImGui::Checkbox("##enabled", &fx.enabled)) // this looks fucked up, no clue why ):
+                NotifyInstantEdit();
             ImGui::SameLine();
             ImGui::TextUnformatted(ShortShaderName(fx.shaderKey));
-            ImGui::EndGroup();
-
-            // checkbox
-            ImGui::SameLine(ImGui::GetContentRegionMax().x - ImGui::GetFrameHeight());
-            if (ImGui::Checkbox("##enabled", &fx.enabled))
-                NotifyInstantEdit();
-
             ImGui::PopID();
         }
 
@@ -263,6 +268,9 @@ namespace Editor::UI {
                     NotifyInstantEdit();
                 }
             }
+            if (ImGui::Selectable("Import shader..."))
+                ImportEffectShader();
+
             ImGui::EndCombo();
         }
         ImGui::SameLine();
@@ -347,4 +355,46 @@ namespace Editor::UI {
         m_CommitPending = false;
     }
 
+    // import a standalone fragment shader as a pp effect
+    void PostProcEditor::ImportEffectShader() {
+        const auto picked = Platform::FileDialogs::OpenFile(*m_Context, {.filterName = "Fragment Shader", .filterExt = "frag,glsl"});
+        if (!picked.has_value())
+            return;
+
+        const auto finalPath = IO::AssetLoader::ImportAsset(picked.value(), "shaders");
+        if (!finalPath.has_value())
+            return;
+
+        const auto fragSrc = IO::VFS::ReadVirtual(finalPath.value());
+        if (!fragSrc.has_value() || fragSrc->empty()) {
+            LOG_ERROR(LOG_WHO, "could not read imported shader file");
+            return;
+        }
+
+        const std::string name = std::filesystem::path(finalPath.value()).stem().string();
+        const std::string key = "[PP] " + name;
+
+        auto &resources = Core::ResourceManager::GetInstance();
+        if (resources.Get<Rendering::Shader>(key)) {
+            LOG_WARN(LOG_WHO, "shader '" + key + "' already exists, skipping");
+            return;
+        }
+
+        auto shader = resources.LoadFromFactory<Rendering::Shader>(
+                key, [fragSrc = *fragSrc, name] { return std::make_shared<Rendering::Shader>(std::string(Rendering::PostProcessing::Builtins::kPP_PassthroughShaderVert), fragSrc, "<PP_" + name + ">"); });
+        Rendering::Renderer::SubmitInitTask(::Platform::Threading::SmallTask([shader] { shader->InitGL(); }));
+
+        Rendering::PostProcessing::PostEffect fx;
+        fx.shaderKey = key;
+        fx.enabled = false;
+        fx.shader = shader;
+
+        m_StagingVec.push_back(std::move(fx));
+        m_SelectedFx = static_cast<int>(m_StagingVec.size()) - 1;
+        NotifyInstantEdit();
+        LOG_INFO(LOG_WHO, "imported post effect '" + name + "'");
+    }
+
 } // namespace Editor::UI
+
+#pragma pop_macro("LOG_WHO")

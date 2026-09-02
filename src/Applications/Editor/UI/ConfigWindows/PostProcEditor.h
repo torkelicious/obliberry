@@ -14,6 +14,7 @@ namespace Editor::UI {
         void DrawEffectList();
         void DrawEffectDetails(Rendering::PostProcessing::PostEffect &fx);
         void UniformMapToImGui(std::unordered_map<std::string, Rendering::PostProcessing::UniformValue> &uniforms);
+        void ImportEffectShader();
 
         // live edits
         void Apply();
