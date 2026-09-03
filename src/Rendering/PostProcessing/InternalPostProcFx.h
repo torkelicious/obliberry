@@ -230,7 +230,7 @@ void main() {
 
     struct PPEffectRegistration {
         const char *shaderName; // resource key becomes "[Engine_PP] <name>"
-        bool enabled = true;
+        bool enabled = false;
         std::vector<UniformEntry> uniforms = {};
         int passes = 1;
         std::vector<std::vector<UniformEntry>> passUniforms = {};
