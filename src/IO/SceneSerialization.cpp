@@ -152,6 +152,11 @@ namespace IO::SceneIO {
             mapEntity.AddComponent<ECS::Components::MapStateComponent>();
         }
 
+        // Post Processor
+        if (j.contains("PostProcessing")) {
+            scene.GetContext().renderer->GetPostProcessor().Deserialize(j["PostProcessing"]);
+        }
+
         // ENTITIES
         if (j.contains("entities")) {
             std::vector<ECS::EntityID> deserializedIds;
@@ -295,6 +300,10 @@ namespace IO::SceneIO {
         SerializeAssets(j["assets"]["fonts"], resources.GetAll<UI::Font>(), [&](const std::string &id, const std::shared_ptr<UI::Font> &font) {
             return json{{"id", id}, {"path", font->GetPath()}, {"size", font->GetFontSize()}, {"sdf", font->IsSDF()}, {"spread", font->GetSDFSpread()}};
         });
+
+
+        // Post Processor FX
+        j["PostProcessing"] = scene.GetContext().renderer->GetPostProcessor().Serialize();
 
         // ENTITIES
         j["entities"] = json::array();

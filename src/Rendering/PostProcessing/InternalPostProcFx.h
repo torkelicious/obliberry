@@ -250,19 +250,19 @@ void main() {
     inline std::vector<PPEffectRegistration> ppEffectRegistrations = {
             {.shaderName = "Grayscale", .enabled = false, .uniforms = {{"u_Strength", 1.0f}}},
 
-            {.shaderName = "BrightPass", .enabled = true, .uniforms = {{"u_Threshold", 0.8f}, {"u_SoftKnee", 0.5f}}},
+            {.shaderName = "BrightPass", .enabled = false, .uniforms = {{"u_Threshold", 0.8f}, {"u_SoftKnee", 0.5f}}},
             {.shaderName = "GaussianBlur",
-             .enabled = true,
+             .enabled = false,
              .passes = 2,
              .passUniforms =
                      {
                              {{"u_Horizontal", 1}},
                              {{"u_Horizontal", 0}},
                      }},
-            {.shaderName = "BloomComposite", .enabled = true, .uniforms = {{"u_Strength", 1.0f}}, .wantsSceneTexture = true},
+            {.shaderName = "BloomComposite", .enabled = false, .uniforms = {{"u_Strength", 1.0f}}, .wantsSceneTexture = true},
 
             {.shaderName = "CRT",
-             .enabled = true,
+             .enabled = false,
              .uniforms =
                      {
                              {"u_Curvature", 0.05f},
