@@ -1,20 +1,27 @@
 #include "ShaderPreprocessor.h"
+#include "Logger/LoggerService.h"
 #include <fstream>
-#include <unordered_set>
+#include <sstream>
 
-namespace Rendering::Shader {
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "ShaderPreprocessor"
 
-    namespace {
-        struct BuiltinPPState : public PPState {
-            std::unordered_set<std::filesystem::path> pragmaOnce;
-            std::unordered_set<std::filesystem::path> activeStack;
+namespace Rendering {
+
+    ShaderPreprocessor::ShaderPreprocessor() {
+        // default standalone thingamabob since watever i may wanna use ts decoupled type shi later
+        m_FileLoader = [](const std::filesystem::path &p) {
+            std::ifstream file(p);
+            if (!file.is_open()) {
+                LOG_ERROR(LOG_WHO, "Failed to open file: " + p.string());
+                return std::string("");
+            }
+            std::stringstream buffer;
+            buffer << file.rdbuf();
+            return buffer.str();
         };
-    } // namespace
 
-
-    // register #include and #pragma once
-    Preprocessor::Preprocessor() {
-        registerDirective("include", [](const std::string &args, const std::filesystem::path &path, const uint32_t lineNum, PPState &baseState, Preprocessor &proc, std::string &output) {
+        registerDirective("include", [](const std::string &args, const std::filesystem::path &path, const uint32_t lineNum, PPState &baseState, ShaderPreprocessor &proc, std::string &output) {
             auto *extState = dynamic_cast<BuiltinPPState *>(&baseState);
             std::filesystem::path includePath;
 
@@ -25,45 +32,60 @@ namespace Rendering::Shader {
             }
 
             const std::filesystem::path resolved = proc.resolvePath(includePath, path);
+            if (resolved.empty()) {
+                return; // abort mission !!!
+            }
 
             if (extState) {
                 if (extState->activeStack.contains(resolved)) {
-                    throw std::runtime_error("Circular include detected: " + resolved.string());
+                    LOG_ERROR(LOG_WHO, "Circular include detected: " + resolved.string());
+                    return;
                 }
-                // if in pragmaOnce do nothing
                 if (!extState->pragmaOnce.contains(resolved)) {
                     extState->activeStack.insert(resolved);
                     extState->dependencies.push_back(resolved);
-                    output += proc.processFile(resolved, baseState);
+
+                    std::string includeSource = proc.loadFile(resolved);
+                    output += proc.processSource(includeSource, resolved, baseState);
+
                     extState->activeStack.erase(resolved);
                 }
             } else {
-                // for minimal state
                 baseState.dependencies.push_back(resolved);
-                output += proc.processFile(resolved, baseState);
+
+                std::string includeSource = proc.loadFile(resolved);
+                output += proc.processSource(includeSource, resolved, baseState);
             }
 
             output += "\n#line " + std::to_string(lineNum + 1) + " " + std::to_string(baseState.getFileId(path)) + "\n";
         });
 
-        registerDirective("pragma", [](const std::string &args, const std::filesystem::path &path, uint32_t /*lineNum*/, PPState &baseState, Preprocessor & /*proc*/, std::string &output) {
+        registerDirective("pragma", [](const std::string &args, const std::filesystem::path &path, uint32_t /*lineNum*/, PPState &baseState, ShaderPreprocessor & /*proc*/, std::string &output) {
             auto *extState = dynamic_cast<BuiltinPPState *>(&baseState);
 
             if (extState && args == "once") {
                 extState->pragmaOnce.insert(std::filesystem::weakly_canonical(path));
             } else {
-                // passthrough
                 output += "#pragma " + args + "\n";
             }
         });
     }
 
+    void ShaderPreprocessor::setFileLoader(FileLoaderFunc loader) { m_FileLoader = std::move(loader); }
 
-    void Preprocessor::addIncludeDirectory(const std::filesystem::path &dir) { m_IncludeDirs.push_back(dir); }
+    std::string ShaderPreprocessor::loadFile(const std::filesystem::path &path) const {
+        if (m_FileLoader) {
+            return m_FileLoader(path);
+        }
+        LOG_ERROR(LOG_WHO, "No file loader configured for ShaderPreprocessor.");
+        return "";
+    }
 
-    void Preprocessor::registerDirective(const std::string &directive, DirectiveFunc func) { m_Directives[directive] = std::move(func); }
+    void ShaderPreprocessor::addIncludeDirectory(const std::filesystem::path &dir) { m_IncludeDirs.push_back(dir); }
 
-    std::filesystem::path Preprocessor::resolvePath(const std::filesystem::path &includePath, const std::filesystem::path &currPath) const {
+    void ShaderPreprocessor::registerDirective(const std::string &directive, DirectiveFunc func) { m_Directives[directive] = std::move(func); }
+
+    std::filesystem::path ShaderPreprocessor::resolvePath(const std::filesystem::path &includePath, const std::filesystem::path &currPath) const {
         if (const std::filesystem::path local = currPath.parent_path() / includePath; std::filesystem::exists(local)) {
             return std::filesystem::weakly_canonical(local);
         }
@@ -72,21 +94,68 @@ namespace Rendering::Shader {
                 return std::filesystem::weakly_canonical(global);
             }
         }
-        throw std::runtime_error("Could not resolve include path: " + includePath.string());
+
+        // fallback
+        return currPath.parent_path() / includePath;
     }
 
-    std::string Preprocessor::processFile(const std::filesystem::path &path, PPState &state) {
-        std::ifstream file(path);
-        if (!file.is_open()) {
-            throw std::runtime_error("failed to open file: " + path.string());
+    std::string ShaderPreprocessor::processSource(const std::string &source, const std::filesystem::path &path, PPState &state) {
+        if (source.empty()) {
+            return "";
         }
 
         int fileId = state.getFileId(path);
-        std::string output = "#line 1 " + std::to_string(fileId) + "\n";
+        std::string output;
+
+        std::istringstream stream(source);
         std::string line;
         uint32_t lineNum = 1;
-        while (std::getline(file, line)) {
+
+        bool foundFirstToken = false;
+        bool inBlockComment = false;
+
+        while (std::getline(stream, line)) {
+            // strip UTF-8 BOM
+            if (lineNum == 1 && line.size() >= 3 && static_cast<unsigned char>(line[0]) == 0xEF && static_cast<unsigned char>(line[1]) == 0xBB && static_cast<unsigned char>(line[2]) == 0xBF) {
+                line = line.substr(3);
+            }
+
             std::string trimmed = stripWhitespace(line);
+
+            // skip comments and blank lines to actaul start of the file
+            if (inBlockComment) {
+                if (trimmed.find("*/") != std::string::npos) {
+                    inBlockComment = false;
+                }
+            } else {
+                if (!foundFirstToken && !trimmed.empty()) {
+                    if (trimmed.find("//") == 0) {
+                    } else if (trimmed.find("/*") == 0) {
+                        if (trimmed.find("*/") == std::string::npos) {
+                            inBlockComment = true;
+                        }
+                    } else {
+                        // first real line
+                        foundFirstToken = true;
+                        if (trimmed[0] == '#') {
+                            std::string dir;
+                            std::string args;
+                            extractDirectiveAndArgs(trimmed, dir, args);
+
+                            if (dir == "version") {
+                                output += line + "\n";
+                                // start tracking
+                                output += "#line " + std::to_string(lineNum + 1) + " " + std::to_string(fileId) + "\n";
+                                lineNum++;
+                                continue;
+                            }
+                        }
+                        output += "#line " + std::to_string(lineNum) + " " + std::to_string(fileId) + "\n";
+                    }
+                }
+            }
+
+            // processing
             if (!trimmed.empty() && trimmed[0] == '#') {
                 std::string directive;
                 std::string args;
@@ -95,17 +164,23 @@ namespace Rendering::Shader {
                 if (auto it = m_Directives.find(directive); it != m_Directives.end()) {
                     it->second(args, path, lineNum, state, *this, output);
                 } else {
-                    output += line + "\n"; // passtrough
+                    output += line + "\n";
                 }
             } else {
-                output += line + "\n"; // passthrough
+                output += line + "\n";
             }
             lineNum++;
         }
+
+        if (!foundFirstToken) {
+            output = "#line 1 " + std::to_string(fileId) + "\n" + output;
+        }
+
         return output;
     }
 
-    std::string Preprocessor::stripWhitespace(const std::string &src) {
+
+    std::string ShaderPreprocessor::stripWhitespace(const std::string &src) {
         const size_t start = src.find_first_not_of(" \t\r\n");
         if (start == std::string::npos) {
             return "";
@@ -114,7 +189,7 @@ namespace Rendering::Shader {
         return src.substr(start, end - start + 1);
     }
 
-    void Preprocessor::extractDirectiveAndArgs(const std::string &ln, std::string &outDir, std::string &outArgs) {
+    void ShaderPreprocessor::extractDirectiveAndArgs(const std::string &ln, std::string &outDir, std::string &outArgs) {
         if (const size_t spacePos = ln.find_first_of(" \t"); spacePos == std::string::npos) {
             outDir = ln.substr(1);
             outArgs = "";
@@ -124,4 +199,5 @@ namespace Rendering::Shader {
         }
     }
 
-} // namespace Rendering::Shader
+} // namespace Rendering
+#pragma pop_macro("LOG_WHO")

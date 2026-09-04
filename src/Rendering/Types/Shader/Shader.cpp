@@ -4,6 +4,7 @@
 #include <sstream>
 #include "Logger/LoggerService.h"
 #include "IO/VFS/VFS.h"
+#include "Preprocessor/ShaderPreprocessor.h"
 
 #include "Rendering/Types/Shader/InternalShaders.h"
 
@@ -131,14 +132,35 @@ namespace Rendering {
     }
 
 
-    GLuint Shader::Compile(const GLenum type, const std::string &src) {
+    GLuint Shader::Compile(const GLenum type, const std::string &src) const {
         if (src.empty()) {
-            // Prevent confusing GLSL errors if file load failed.
             return 0;
         }
 
+        static bool s_LoaderConfigured = false;
+        if (!s_LoaderConfigured) {
+            ShaderPreprocessor::Get().setFileLoader([](const std::filesystem::path &p) -> std::string {
+                std::optional<std::string> vfsData = IO::VFS::ReadVirtual(p.generic_string());
+                if (!vfsData.has_value()) {
+                    LOG_ERROR(LOG_WHO, "Failed to open include file through VFS: " + p.string());
+                    return "";
+                }
+                return vfsData.value();
+            });
+            s_LoaderConfigured = true;
+        }
+
+        BuiltinPPState state;
+
+        std::string processedSrc = src;
+        if (type == GL_VERTEX_SHADER) {
+            processedSrc = ShaderPreprocessor::Get().processSource(src, std::filesystem::path(m_vertPath), state);
+        } else if (type == GL_FRAGMENT_SHADER) {
+            processedSrc = ShaderPreprocessor::Get().processSource(src, std::filesystem::path(m_fragPath), state);
+        }
+
         const GLuint shader = glCreateShader(type);
-        const char *cstr = src.c_str();
+        const char *cstr = processedSrc.c_str();
         glShaderSource(shader, 1, &cstr, nullptr);
         glCompileShader(shader);
 
@@ -154,6 +176,7 @@ namespace Rendering {
 
         return shader;
     }
+
 
     GLuint Shader::Link(const GLuint vert, const GLuint frag) {
         if (vert == 0 || frag == 0) {

@@ -93,7 +93,7 @@ namespace Rendering {
 
         static std::string LoadFile(const std::string &virtualPath);
 
-        static GLuint Compile(GLenum type, const std::string &src);
+        GLuint Compile(GLenum type, const std::string &src) const;
 
         static GLuint Link(GLuint vert, GLuint frag);
 

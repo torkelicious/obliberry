@@ -17,6 +17,7 @@
 #include "Applications/Editor/EditorLayer.h"
 #include "ECS/Systems/ScriptSystem.h"
 #include "Rendering/PostProcessing/InternalPostProcFx.h"
+#include "Rendering/Types/Shader/Preprocessor/ShaderPreprocessor.h"
 
 
 Core::Application::Application(const Config::GraphicsConfig &gconf, Config::ProjectConfig pconf, std::unique_ptr<ApplicationLayer> layer)
@@ -78,6 +79,8 @@ void Core::Application::Run() {
     context.threadPool = &m_ThreadPool;
     context.audioEngine = m_AudioEngine.get();
     context.logger = Logging::LoggerService::Get();
+
+    Rendering::ShaderPreprocessor::Get().addIncludeDirectory(IO::VFS::GetAssetsDirectory() / "shaders");
 
     ECS::Systems::ScriptSystem::SetupScriptRuntime(m_ScriptPool);
 
