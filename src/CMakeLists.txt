@@ -18,9 +18,10 @@ add_library(obliberry_engine STATIC
         Rendering/Renderer.cpp
         Rendering/Types/Texture/Texture.cpp
         Rendering/Types/Shader/Shader.cpp
-        Rendering/GLDebug.cpp
+        Rendering/Types/Shader/Preprocessor/ShaderPreprocessor.cpp
         Rendering/Types/Mesh/MeshFactory.cpp
         Rendering/PostProcessing/PostProcessing.cpp
+        Rendering/GLDebug.cpp
 
         # Scenes / gameplay
         Scenes/Scene.cpp
