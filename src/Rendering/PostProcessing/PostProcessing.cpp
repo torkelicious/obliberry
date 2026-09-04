@@ -185,9 +185,11 @@ namespace Rendering::PostProcessing {
         }
     }
 
-    nlohmann::json PostProcessor::Serialize() const {
+    nlohmann::json PostProcessor::Serialize() const { return SerializeEffects(m_Effects); }
+
+    nlohmann::json SerializeEffects(const std::vector<PostEffect> &effects) {
         nlohmann::json arr = nlohmann::json::array();
-        for (const auto &fx : m_Effects) {
+        for (const auto &fx : effects) {
             nlohmann::json entry = {{"shader", fx.shaderKey}, {"enabled", fx.enabled}};
 
             if (!fx.uniforms.empty())

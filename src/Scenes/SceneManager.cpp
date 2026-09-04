@@ -7,6 +7,7 @@
 #include "IO/SceneSerialization.h"
 #include "IO/VFS/VFS.h"
 #include "Scenes/Scene.h"
+#include "Rendering/Renderer.h"
 #include "Platform/Timeout.h"
 #include "ECS/Components/PersistentTagComponent.h"
 #include "IO/Loaders/EntityFactory.h"
@@ -210,6 +211,9 @@ namespace Scenes {
                 LOG_ERROR(LOG_WHO, "Current scene has no path!");
                 return false;
             }
+
+            if (auto *renderer = m_Context->renderer)
+                m_CurrentScene->PostFx() = renderer->GetPostProcessor().Effects();
 
             const bool success = IO::SceneIO::Serialize(scenePath, *m_CurrentScene);
             if (success) {

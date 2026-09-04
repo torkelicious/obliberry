@@ -7,6 +7,7 @@
 #include "Core/EngineContext.h"
 #include "ECS/ECS.h"
 #include "ECS/Components/MapComponent.h"
+#include "Rendering/PostProcessing/PostProcessing.h"
 #include "Scripting/EngineLib/UICommandBuffer.h"
 
 namespace Scenes {
@@ -54,6 +55,9 @@ namespace Scenes {
 
         ECS::Components::MapComponent *GetMapComp();
 
+        [[nodiscard]] std::vector<Rendering::PostProcessing::PostEffect> &PostFx() { return m_PostFx; }
+        [[nodiscard]] const std::vector<Rendering::PostProcessing::PostEffect> &PostFx() const { return m_PostFx; }
+
     private:
         SceneProperties m_Properties;
         Core::EngineContext *m_Context;
@@ -61,5 +65,6 @@ namespace Scenes {
         bool m_HasUnsavedChanges = false;
         UI::UISystem m_UISystem;
         Scripting::UICommandBuffer m_UICmdBuf;
+        std::vector<Rendering::PostProcessing::PostEffect> m_PostFx;
     };
 } // namespace Scenes

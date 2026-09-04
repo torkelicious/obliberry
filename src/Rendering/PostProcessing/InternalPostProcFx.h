@@ -289,32 +289,11 @@ void main() {
 
     inline void RegisterBuiltinPostProcShaders(Rendering::Renderer &renderer) {
         auto &resources = Core::ResourceManager::GetInstance();
-        auto &postproc = renderer.GetPostProcessor();
 
-        for (const auto &reg : ppShaderRegistrations)
-            LoadPPShader(resources, reg.name, reg.vertex, reg.fragment);
+        for (const auto &[name, vertex, fragment] : ppShaderRegistrations)
+            LoadPPShader(resources, name, vertex, fragment);
 
         renderer.SetPassthroughShader(resources.Get<Shader>("[Engine_PP] Passthrough"));
-
-        for (const auto &reg : ppEffectRegistrations) {
-            PostEffect fx;
-            fx.shaderKey = "[Engine_PP] " + std::string(reg.shaderName);
-            fx.enabled = reg.enabled;
-            fx.passes = reg.passes;
-            fx.wantsSceneTexture = reg.wantsSceneTexture;
-
-            for (const auto &[name, value] : reg.uniforms)
-                fx.uniforms[name] = value;
-
-            for (const auto &passBag : reg.passUniforms) {
-                std::unordered_map<std::string, UniformValue> bag;
-                for (const auto &[name, value] : passBag)
-                    bag[name] = value;
-                fx.passUniforms.push_back(std::move(bag));
-            }
-
-            postproc.AddEffect(std::move(fx));
-        }
     }
 
 } // namespace Rendering::PostProcessing::Builtins

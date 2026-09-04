@@ -70,4 +70,6 @@ namespace Rendering::PostProcessing {
         std::vector<PostEffect> m_Effects;
     };
 
+    [[nodiscard]] nlohmann::json SerializeEffects(const std::vector<PostEffect> &effects);
+
 } // namespace Rendering::PostProcessing

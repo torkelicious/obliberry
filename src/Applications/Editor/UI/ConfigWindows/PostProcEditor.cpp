@@ -382,6 +382,7 @@ namespace Editor::UI {
 
         auto shader = resources.LoadFromFactory<Rendering::Shader>(
                 key, [fragSrc = *fragSrc, name] { return std::make_shared<Rendering::Shader>(std::string(Builtins::kPP_PassthroughShaderVert), fragSrc, "<PP_" + name + ">"); });
+        shader->GetFragmentPath() = finalPath.value();
         Rendering::Renderer::SubmitInitTask(::Platform::Threading::SmallTask([shader] { shader->InitGL(); }));
 
 

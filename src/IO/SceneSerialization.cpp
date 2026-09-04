@@ -153,8 +153,10 @@ namespace IO::SceneIO {
         }
 
         // Post Processor
-        if (j.contains("PostProcessing")) {
-            scene.GetContext().renderer->GetPostProcessor().Deserialize(j["PostProcessing"]);
+        {
+            Rendering::PostProcessing::PostProcessor pp;
+            pp.Deserialize(j.value("PostProcessing", json::array()));
+            scene.PostFx() = std::move(pp.Effects());
         }
 
         // ENTITIES
@@ -303,7 +305,7 @@ namespace IO::SceneIO {
 
 
         // Post Processor FX
-        j["PostProcessing"] = scene.GetContext().renderer->GetPostProcessor().Serialize();
+        j["PostProcessing"] = Rendering::PostProcessing::SerializeEffects(scene.PostFx());
 
         // ENTITIES
         j["entities"] = json::array();

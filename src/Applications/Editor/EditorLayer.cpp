@@ -617,6 +617,8 @@ void Editor::EditorLayer::DrawToolbar() {
                 m_SaveSceneAsDialog.SetOnConfirm([this](const std::string &newName) {
                     std::string safeName = newName;
                     std::ranges::replace(safeName, ' ', '_');
+                    // sync post processing  first
+                    m_Scene->PostFx() = m_Context->renderer->GetPostProcessor().Effects();
                     if (const std::string scenePath = Core::PathUtils::Join(Core::SCENE_PATH, safeName, ".json"); IO::SceneIO::Serialize(scenePath, *m_Scene)) {
                         m_Scene->GetProperties().ScenePath = scenePath;
                         m_Scene->GetProperties().Name = newName;

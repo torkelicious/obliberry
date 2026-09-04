@@ -59,6 +59,7 @@ void Scenes::Scene::OnEnter() {
 
     if (m_Context->renderer) {
         Rendering::Renderer::SetClearColor(m_Properties.BackgroundClearColor);
+        m_Context->renderer->GetPostProcessor().Effects() = m_PostFx;
     }
 
     if (!m_Properties.EnableLightingSystem) {
