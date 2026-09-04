@@ -14,6 +14,7 @@
 #include "ECS/Components/RelationshipComponent.h"
 #include "ECS/Systems/MapRuntimeSystem.h"
 #include "IO/Loaders/UISerializer.h"
+#include "Rendering/PostProcessing/InternalPostProcFx.h"
 #include "UI/Rendering/UISystem.h"
 #include "UI/Text/Font.h"
 
@@ -153,10 +154,12 @@ namespace IO::SceneIO {
         }
 
         // Post Processor
-        {
+        if (j.contains("PostProcessing")) {
             Rendering::PostProcessing::PostProcessor pp;
-            pp.Deserialize(j.value("PostProcessing", json::array()));
+            pp.Deserialize(j["PostProcessing"]);
             scene.PostFx() = std::move(pp.Effects());
+        } else {
+            scene.PostFx() = Rendering::PostProcessing::Builtins::DefaultEffectChain();
         }
 
         // ENTITIES

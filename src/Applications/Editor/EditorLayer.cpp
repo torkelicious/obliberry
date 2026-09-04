@@ -254,6 +254,7 @@ void Editor::EditorLayer::LoadScene(std::string path) {
             m_CurrentScenePath = path;
             m_Scene->GetContext().camera = &m_Camera;
             m_SceneConfigEditor.ReloadFromScene();
+            m_PostProcConfigEditor.Reload();
 
             if (m_Context->renderer) {
                 Rendering::Renderer::SetClearColor(m_Scene->GetProperties().BackgroundClearColor);

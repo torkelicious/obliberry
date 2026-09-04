@@ -244,22 +244,8 @@ namespace Editor::UI {
         ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - delW - ImGui::GetStyle().ItemSpacing.x);
         if (ImGui::BeginCombo("##addfx", "Add effect...")) {
             for (const auto &reg : Builtins::ppEffectRegistrations) {
-                const std::string key = "[Engine_PP] " + std::string(reg.shaderName);
                 if (ImGui::Selectable(reg.shaderName, false)) {
-                    PostEffect fx;
-                    fx.shaderKey = key;
-                    fx.enabled = reg.enabled;
-                    fx.passes = reg.passes;
-                    fx.wantsSceneTexture = reg.wantsSceneTexture;
-                    for (const auto &[name, value] : reg.uniforms)
-                        fx.uniforms[name] = value;
-                    for (const auto &passBag : reg.passUniforms) {
-                        std::unordered_map<std::string, UniformValue> bag;
-                        for (const auto &[name, value] : passBag)
-                            bag[name] = value;
-                        fx.passUniforms.push_back(std::move(bag));
-                    }
-                    fx.ResolveShader();
+                    PostEffect fx = Builtins::EffectFromRegistration(reg);
 
                     m_StagingVec.push_back(std::move(fx));
                     m_SelectedFx = static_cast<int>(m_StagingVec.size()) - 1;

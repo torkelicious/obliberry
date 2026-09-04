@@ -296,4 +296,33 @@ void main() {
         renderer.SetPassthroughShader(resources.Get<Shader>("[Engine_PP] Passthrough"));
     }
 
+    inline PostEffect EffectFromRegistration(const PPEffectRegistration &reg) {
+        PostEffect fx;
+        fx.shaderKey = std::string("[Engine_PP] ") + reg.shaderName;
+        fx.enabled = reg.enabled;
+        fx.passes = reg.passes;
+        fx.wantsSceneTexture = reg.wantsSceneTexture;
+
+        for (const auto &[name, value] : reg.uniforms)
+            fx.uniforms[name] = value;
+
+        for (const auto &passBag : reg.passUniforms) {
+            std::unordered_map<std::string, UniformValue> bag;
+            for (const auto &[name, value] : passBag)
+                bag[name] = value;
+            fx.passUniforms.push_back(std::move(bag));
+        }
+
+        fx.ResolveShader();
+        return fx;
+    }
+
+    inline std::vector<PostEffect> DefaultEffectChain() {
+        std::vector<PostEffect> chain;
+        chain.reserve(ppEffectRegistrations.size());
+        for (const auto &reg : ppEffectRegistrations)
+            chain.push_back(EffectFromRegistration(reg));
+        return chain;
+    }
+
 } // namespace Rendering::PostProcessing::Builtins

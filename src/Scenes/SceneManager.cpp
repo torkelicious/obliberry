@@ -8,6 +8,7 @@
 #include "IO/VFS/VFS.h"
 #include "Scenes/Scene.h"
 #include "Rendering/Renderer.h"
+#include "Rendering/PostProcessing/InternalPostProcFx.h"
 #include "Platform/Timeout.h"
 #include "ECS/Components/PersistentTagComponent.h"
 #include "IO/Loaders/EntityFactory.h"
@@ -15,7 +16,6 @@
 #include <algorithm>
 #include <exception>
 #include <filesystem>
-#include <iostream>
 #include <string>
 #include <vector>
 #include <optional>
@@ -154,6 +154,7 @@ namespace Scenes {
 
             // create
             Scene tempScene(m_Context, SceneProperties{.ScenePath = scenepath, .Name = sceneName, .BackgroundClearColor = {0.1f, 0.1f, 0.1f, 1.0f}});
+            tempScene.PostFx() = Rendering::PostProcessing::Builtins::DefaultEffectChain();
 
             return IO::SceneIO::Serialize(scenepath, tempScene);
         } catch (const std::exception &e) {
