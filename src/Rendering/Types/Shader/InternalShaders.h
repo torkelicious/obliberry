@@ -5,20 +5,20 @@
 // do not need to interact with the
 // filesystem / VFS and cannot be accidentally deleted by users
 //
-// Base shaders      default shader used for all meshses, map, entities, etc
+// Base shaders      default shader used for all meshes, map, entities, etc.
 // Particle shaders  per-instance color for particle emitters
 // Light shaders     additive point light accumulation into a lightmap FBO
 
 #include <memory>
 #include "Core/ResourceManager.h"
-#include "Rendering/Material.h"
-#include "Rendering/Mesh.h"
-#include "Rendering/MeshFactory.h"
-#include "Rendering/Shader.h"
+#include "Rendering/Types/Material.h"
+#include "Rendering/Types/Mesh/Mesh.h"
+#include "Rendering/Types/Mesh/MeshFactory.h"
+#include "Shader.h"
 
 namespace Rendering::BuiltinShaders {
 
-    // Base shaders
+    // Base shader
 
     inline constexpr char kBaseVert[] = R"(
 #version 330 core
@@ -77,6 +77,7 @@ void main()
 
     // RGB lightmap
     vec3 light = texture(u_LightTexture, v_LightUV).rgb;
+
     // Prevent total darkness
     light = max(light, vec3(u_Ambient));
 
@@ -89,7 +90,8 @@ void main()
 }
 )";
 
-    // Particle shaders , per-instance color
+
+    // Particle shader
 
     inline constexpr char kParticleVert[] = R"(
 #version 330 core
@@ -113,8 +115,11 @@ void main()
 {
     v_UV = a_UV;
     v_InstanceColor = a_InstanceColor;
+
     vec4 worldPos = a_InstanceMatrix * vec4(a_Pos, 1.0);
+
     v_LightUV = (worldPos.xy - u_MapOffset) / u_MapSize;
+
     gl_Position = u_VP * worldPos;
     v_EntityID = a_EntityID;
 }
@@ -131,6 +136,7 @@ uniform sampler2D u_Texture;
 uniform sampler2D u_LightTexture;
 uniform float u_Ambient;
 uniform int u_Shape; // 0=quad, 1=circle, 2=soft circle
+
 flat in int v_EntityID;
 layout(location = 0) out vec4 FragColor;
 layout(location = 1) out int OutEntityID;
@@ -142,9 +148,11 @@ void main()
     if (u_Shape == 1 || u_Shape == 2) {
         vec2 center = v_UV - 0.5;
         float dist = length(center) * 2.0; // 0..1 from center to edge
+
         if (u_Shape == 1) {
             // hard circle
-            if (dist > 1.0) discard;
+            if (dist > 1.0)
+                discard;
         } else {
             // soft circle
             float alpha = 1.0 - smoothstep(0.6, 1.0, dist);
@@ -153,18 +161,26 @@ void main()
     }
 
     float finalAlpha = tex.a * v_InstanceColor.a;
-    if (finalAlpha < 0.01) discard;
+
+    if (finalAlpha < 0.01)
+        discard;
+
     vec3 light = texture(u_LightTexture, v_LightUV).rgb;
     light = max(light, vec3(u_Ambient));
+
     vec3 finalColor = tex.rgb * v_InstanceColor.rgb * light;
+
     FragColor = vec4(finalColor, finalAlpha);
     OutEntityID = v_EntityID;
 }
 )";
 
-    // Lighting shaders
+
+    // Lighting shader
+
     inline constexpr char kLightVert[] = R"(
 #version 330 core
+
 layout (location = 0) in vec2 a_pos;
 
 uniform mat4 u_projection;
@@ -180,6 +196,7 @@ void main() {
 
     inline constexpr char kLightFrag[] = R"(
 #version 330 core
+
 in vec2 v_uv;
 out vec4 FragColor;
 
@@ -199,43 +216,48 @@ void main() {
 }
 )";
 
-    //
-    // Registration
-    //
+
+    // Shader registration
+
+    inline std::vector<ShaderRegistration> shaderRegistrations = {
+            {.name = "Base", .vertex = kBaseVert, .fragment = kBaseFrag}, {.name = "Particle", .vertex = kParticleVert, .fragment = kParticleFrag}, {.name = "Light", .vertex = kLightVert, .fragment = kLightFrag}};
+
 
     // Call once after GL context is current.
     inline void RegisterBuiltinShaders(Core::ResourceManager &resources) {
-        // Base shader , default shader used for all meshes, map, entities, etc.
-        auto baseShader = std::make_shared<Shader>(kBaseVert, kBaseFrag, "<base>");
-        baseShader->InitGL();
-        resources.LoadFromFactory<Shader>("[Engine] Base", [baseShader] { return baseShader; });
+        for (const auto &shad : shaderRegistrations) {
+            const std::string resourceKey = "[Engine] " + shad.name;
+            const std::string debugName = "<" + shad.name + ">";
 
-        // Particle shader , per-instance color for particle emitters
-        auto particleShader = std::make_shared<Shader>(kParticleVert, kParticleFrag, "<particle>");
-        particleShader->InitGL();
-        resources.LoadFromFactory<Shader>("[Engine] Particle", [particleShader] { return particleShader; });
+            resources.LoadFromFactory<Shader>(resourceKey, [shad, debugName] {
+                auto shader = std::make_shared<Shader>(std::string(shad.vertex), std::string(shad.fragment), debugName);
 
-        // Light shader , additive point-light accumulation into a lightmap FBO
-        auto lightShader = std::make_shared<Shader>(kLightVert, kLightFrag, "<light>");
-        lightShader->InitGL();
-        resources.LoadFromFactory<Shader>("[Engine] Light", [lightShader] { return lightShader; });
+                shader->InitGL();
+                return shader;
+            });
+        }
     }
 
+
+    // Builtin assets
+
     inline void RegisterBuiltinAssets(Core::ResourceManager &resources) {
-        // Default quad mesh — shared by all new entities
         auto quad = std::make_shared<Mesh>(MeshFactory::CreateQuad());
         quad->SetFactoryId("Quad");
         quad->InitGL();
+
         resources.LoadFromFactory<Mesh>("[Engine] Quad", [quad] { return quad; });
 
         auto hex = std::make_shared<Mesh>(MeshFactory::CreatePointTopHex(0.5f));
         hex->SetFactoryId("PointTopHex");
         hex->InitGL();
+
         resources.LoadFromFactory<Mesh>("[Engine] Hex", [hex] { return hex; });
 
         const auto shader = resources.Get<Shader>("[Engine] Base");
+
         auto mat = std::make_shared<Material>(Material{.shader = shader, .texture = nullptr, .color = {1.0f, 1.0f, 1.0f, 1.0f}});
+
         resources.LoadFromFactory<Material>("[Engine] DefaultMaterial", [mat] { return mat; });
     }
-
 } // namespace Rendering::BuiltinShaders

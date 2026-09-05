@@ -1,6 +1,6 @@
 #include "Font.h"
 #include "Logger/LoggerService.h"
-#include "Rendering/Texture.h"
+#include "Rendering/Types/Texture/Texture.h"
 #include "IO/VFS/VFS.h"
 #include <algorithm>
 #include <cmath>

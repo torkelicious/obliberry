@@ -5,10 +5,11 @@
 #include <thread>
 #include "Logger/LoggerService.h"
 #include "IO/VFS/VFS.h"
-#include "Rendering/Mesh.h"
+#include "Rendering/Types/Mesh/Mesh.h"
+#include "Rendering/PostProcessing/InternalPostProcFx.h"
 #include "Rendering/Renderer.h"
-#include "Rendering/Shader.h"
-#include "Rendering/Texture.h"
+#include "Rendering/Types/Shader/Shader.h"
+#include "Rendering/Types/Texture/Texture.h"
 #include "UI/Text/Font.h"
 
 #pragma push_macro("LOG_WHO")
@@ -115,7 +116,26 @@ void IO::AssetLoader::LoadShaders(const json &shaders, Core::ResourceManager &re
                 continue;
             }
 
-            auto s = resources.Load<Rendering::Shader>(id, VFS::ToRelative(shader.at("vertex").get<std::string>()), VFS::ToRelative(shader.at("fragment").get<std::string>()));
+            const std::string vertPath = shader.value("vertex", "");
+            const std::string fragPath = VFS::ToRelative(shader.value("fragment", ""));
+
+            if (!vertPath.empty()) {
+                auto s = resources.Load<Rendering::Shader>(id, VFS::ToRelative(vertPath), fragPath);
+                Rendering::Renderer::SubmitInitTask(Platform::Threading::SmallTask([s] { s->InitGL(); }));
+                continue;
+            }
+
+            // post processing shaders only have a fragment
+            if (fragPath.empty())
+                throw std::runtime_error("shader asset has no fragment path");
+
+            const auto fragSrc = VFS::ReadVirtual(fragPath);
+            if (!fragSrc.has_value() || fragSrc->empty())
+                throw std::runtime_error("could not read fragment shader: " + fragPath);
+
+            auto s = resources.LoadFromFactory<Rendering::Shader>(
+                    id, [fragSrc = *fragSrc, id] { return std::make_shared<Rendering::Shader>(std::string(Rendering::PostProcessing::Builtins::kPP_PassthroughShaderVert), fragSrc, "<PP_" + id + ">"); });
+            s->GetFragmentPath() = fragPath;
             Rendering::Renderer::SubmitInitTask(Platform::Threading::SmallTask([s] { s->InitGL(); }));
         } catch (const std::exception &e) {
             LOG_ERROR(LOG_WHO, std::string("Skipping shader asset: ") + e.what());

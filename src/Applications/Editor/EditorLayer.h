@@ -18,6 +18,7 @@
 #include "Applications/Editor/UI/ConfigWindows/ProjectConfigEditor.h"
 #include "Applications/Editor/UI/ConfigWindows/SceneConfigEditor.h"
 #include "UI/ConfigWindows/GraphicsConfigEditor.h"
+#include "UI/ConfigWindows/PostProcEditor.h"
 #include "UI/Panels/Editor/UIPanel.h"
 #include "UI/ConfigWindows/ThemeConfigEditor.h"
 
@@ -50,6 +51,8 @@ namespace Editor {
         void Render() override;
 
         void Shutdown() override;
+
+        [[nodiscard]] bool UsesEditorViewport() const override { return true; }
 
         EditorContext *GetEditorContext() { return &m_EditorContext; }
 
@@ -119,6 +122,8 @@ namespace Editor {
         UI::ProjectConfigEditor m_ProjectConfigEditor;
         UI::GraphicsConfigEditor m_GraphicsConfigEditor;
         UI::ThemeConfigEditor m_ThemeConfigEditor;
+        UI::PostProcEditor m_PostProcConfigEditor;
+        bool m_ShowPostProcConfig = false;
         bool m_ShowSceneConfig = false;
         bool m_ShowProjectConfig = false;
         bool m_ShowGraphicsConfig = false;

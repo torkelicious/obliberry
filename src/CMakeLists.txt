@@ -12,14 +12,16 @@ add_library(obliberry_engine STATIC
         Logger/LoggerService.cpp
 
         # Rendering
-        Rendering/VertexBuffer.cpp
-        Rendering/VertexArray.cpp
-        Rendering/IndexBuffer.cpp
+        Rendering/Types/VBO/VertexBuffer.cpp
+        Rendering/Types/VAO/VertexArray.cpp
+        Rendering/Types/IBO/IndexBuffer.cpp
         Rendering/Renderer.cpp
-        Rendering/Texture.cpp
-        Rendering/Shader.cpp
+        Rendering/Types/Texture/Texture.cpp
+        Rendering/Types/Shader/Shader.cpp
+        Rendering/Types/Shader/Preprocessor/ShaderPreprocessor.cpp
+        Rendering/Types/Mesh/MeshFactory.cpp
+        Rendering/PostProcessing/PostProcessing.cpp
         Rendering/GLDebug.cpp
-        Rendering/MeshFactory.cpp
 
         # Scenes / gameplay
         Scenes/Scene.cpp
@@ -112,6 +114,7 @@ add_executable(obliberry_editor
         Applications/Editor/UI/Panels/MapEditor/TileEditorPanel.cpp
         Applications/Editor/UI/Panels/Editor/UIPanel.cpp
         Applications/Editor/UI/Panels/Editor/MeshCreatorPanel.cpp
+        Applications/Editor/UI/ConfigWindows/PostProcEditor.cpp
 
         # config windows
         Applications/Editor/UI/ConfigWindows/ConfigWindow.cpp

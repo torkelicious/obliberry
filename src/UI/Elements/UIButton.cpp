@@ -1,6 +1,6 @@
 #include "UIButton.h"
 #include "UI/Rendering/UIRenderer.h"
-#include "Rendering/Texture.h"
+#include "Rendering/Types/Texture/Texture.h"
 #include "UI/Rendering/UISystem.h"
 #include <algorithm>
 

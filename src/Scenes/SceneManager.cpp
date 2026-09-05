@@ -7,14 +7,15 @@
 #include "IO/SceneSerialization.h"
 #include "IO/VFS/VFS.h"
 #include "Scenes/Scene.h"
-#include "../Platform/Timeout.h"
+#include "Rendering/Renderer.h"
+#include "Rendering/PostProcessing/InternalPostProcFx.h"
+#include "Platform/Timeout.h"
 #include "ECS/Components/PersistentTagComponent.h"
 #include "IO/Loaders/EntityFactory.h"
 #include <ObSL/ScriptRuntime.h>
 #include <algorithm>
 #include <exception>
 #include <filesystem>
-#include <iostream>
 #include <string>
 #include <vector>
 #include <optional>
@@ -153,6 +154,7 @@ namespace Scenes {
 
             // create
             Scene tempScene(m_Context, SceneProperties{.ScenePath = scenepath, .Name = sceneName, .BackgroundClearColor = {0.1f, 0.1f, 0.1f, 1.0f}});
+            tempScene.PostFx() = Rendering::PostProcessing::Builtins::DefaultEffectChain();
 
             return IO::SceneIO::Serialize(scenepath, tempScene);
         } catch (const std::exception &e) {
@@ -210,6 +212,9 @@ namespace Scenes {
                 LOG_ERROR(LOG_WHO, "Current scene has no path!");
                 return false;
             }
+
+            if (auto *renderer = m_Context->renderer)
+                m_CurrentScene->PostFx() = renderer->GetPostProcessor().Effects();
 
             const bool success = IO::SceneIO::Serialize(scenePath, *m_CurrentScene);
             if (success) {

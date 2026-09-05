@@ -1,7 +1,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
-#include "Rendering/Camera.h"
+#include "Rendering/Types/Camera.h"
 #include "Core/Constants.h"
 
 namespace Math::Projection {

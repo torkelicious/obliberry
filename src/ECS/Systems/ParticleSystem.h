@@ -8,8 +8,8 @@
 #include "ECS/Components/ParticleEmitterComponent.h"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/ECS.h"
-#include "Rendering/MeshFactory.h"
-#include "Rendering/ParticlePool.h"
+#include "Rendering/Types/Mesh/MeshFactory.h"
+#include "Rendering/Types/ParticlePool.h"
 #include "Rendering/Renderer.h"
 
 namespace ECS::Systems::ParticleSystem {

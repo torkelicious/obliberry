@@ -1,5 +1,5 @@
 #pragma once
-#include "Rendering/Camera.h"
+#include "Rendering/Types/Camera.h"
 #include <algorithm>
 
 namespace Editor {

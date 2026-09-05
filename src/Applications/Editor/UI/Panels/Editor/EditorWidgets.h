@@ -11,7 +11,6 @@
 
 #include "ECS/Components/MapComponent.h"
 #include "ECS/Components/MovementComponent.h"
-#include "ECS/Components/ParticleEmitterComponent.h"
 #include "ECS/Components/PointLightComponent.h"
 #include "ECS/Components/ScriptComponent.h"
 #include "ECS/Components/TransformComponent.h"
@@ -19,16 +18,16 @@
 #include "Applications/Editor/Commands/UndoManager.h"
 #include "Applications/Editor/Commands/EditorCommands.h"
 
-namespace Editor::UI {
-    using Commands::UndoManager;
-
-    inline void MarkSceneChanged(const Core::EngineContext *ctx) {
-        if (ctx && ctx->sceneManager) {
-            if (auto *scene = ctx->sceneManager->GetCurrentScene()) {
-                scene->MarkAsChanged();
-            }
+inline void MarkSceneChanged(const Core::EngineContext *ctx) {
+    if (ctx && ctx->sceneManager) {
+        if (auto *scene = ctx->sceneManager->GetCurrentScene()) {
+            scene->MarkAsChanged();
         }
     }
+}
+
+namespace Editor::UI {
+    using Commands::UndoManager;
 
     enum class FieldType : uint8_t { Float, Int, Bool, Vec3, Color3 };
 

@@ -129,7 +129,7 @@ namespace Editor::Commands {
             ECS::Components::ScriptSlot slot;
             slot.scriptPath = m_PendingPath;
             m_Comp->slots.push_back(std::move(slot));
-            UI::MarkSceneChanged(&ctx);
+            MarkSceneChanged(&ctx);
         }
     }
 
@@ -141,7 +141,7 @@ namespace Editor::Commands {
         if (!m_Comp)
             return;
         m_Comp->slots.pop_back();
-        UI::MarkSceneChanged(&ctx);
+        MarkSceneChanged(&ctx);
     }
 
     std::string_view AddScriptCommand::Name() const noexcept { return "Add script"; }
@@ -428,5 +428,20 @@ namespace Editor::Commands {
         UI::Theme::IO::Serialize(*m_EditorCtx);
     }
     std::string_view ThemeUpdateCommand::Name() const noexcept { return "Theme change"; }
+
+    //
+    // post proc
+    //
+    PostProcUpdateCommand::PostProcUpdateCommand(const std::vector<Rendering::PostProcessing::PostEffect> &oldFx, const std::vector<Rendering::PostProcessing::PostEffect> &newFx) : m_OldData(oldFx), m_NewData(newFx) {}
+
+    void PostProcUpdateCommand::Execute(Core::EngineContext &ctx) {
+        ctx.renderer->GetPostProcessor().Effects() = m_NewData;
+        MarkSceneChanged(&ctx);
+    }
+
+    void PostProcUpdateCommand::Undo(Core::EngineContext &ctx) {
+        ctx.renderer->GetPostProcessor().Effects() = m_OldData;
+        MarkSceneChanged(&ctx);
+    }
 
 } // namespace Editor::Commands

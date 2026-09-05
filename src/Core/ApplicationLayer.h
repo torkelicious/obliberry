@@ -19,5 +19,7 @@ namespace Core {
         virtual void Render() {}
 
         virtual void Shutdown() {}
+
+        virtual bool UsesEditorViewport() const { return false; }
     };
 } // namespace Core

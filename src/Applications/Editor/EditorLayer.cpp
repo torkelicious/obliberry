@@ -45,8 +45,8 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
     m_ProjectConfigEditor.SetContext(*m_Context);
     m_GraphicsConfigEditor.SetContext(*m_Context);
     m_ThemeConfigEditor.SetContext(*m_Context);
-
     m_SceneManager.SetContext(*m_Context);
+    m_PostProcConfigEditor.SetContext(*m_Context);
 
     m_Input = m_Context->input;
 
@@ -76,6 +76,7 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
     m_GraphicsConfigEditor.SetUndoMgr(&m_UndoManager);
     m_ThemeConfigEditor.Init(m_EditorContext);
     m_ThemeConfigEditor.SetUndoMgr(&m_UndoManager);
+    m_PostProcConfigEditor.SetUndoMgr(&m_UndoManager);
 }
 
 void Editor::EditorLayer::SetupFontSync(std::atomic<bool> *fontsDirty) { m_EditorContext.fontsDirty = fontsDirty; }
@@ -124,6 +125,7 @@ void Editor::EditorLayer::Render() {
     m_ProjectConfigEditor.OnImGuiRender(m_ShowProjectConfig);
     m_GraphicsConfigEditor.OnImGuiRender(m_ShowGraphicsConfig);
     m_ThemeConfigEditor.OnImGuiRender(m_ShowThemeConfig);
+    m_PostProcConfigEditor.OnImGuiRender(m_ShowPostProcConfig);
 
     m_NewProjectDialog.Update();
     if (Core::Project::GetActive()) {
@@ -252,6 +254,7 @@ void Editor::EditorLayer::LoadScene(std::string path) {
             m_CurrentScenePath = path;
             m_Scene->GetContext().camera = &m_Camera;
             m_SceneConfigEditor.ReloadFromScene();
+            m_PostProcConfigEditor.Reload();
 
             if (m_Context->renderer) {
                 Rendering::Renderer::SetClearColor(m_Scene->GetProperties().BackgroundClearColor);
@@ -615,6 +618,8 @@ void Editor::EditorLayer::DrawToolbar() {
                 m_SaveSceneAsDialog.SetOnConfirm([this](const std::string &newName) {
                     std::string safeName = newName;
                     std::ranges::replace(safeName, ' ', '_');
+                    // sync post processing  first
+                    m_Scene->PostFx() = m_Context->renderer->GetPostProcessor().Effects();
                     if (const std::string scenePath = Core::PathUtils::Join(Core::SCENE_PATH, safeName, ".json"); IO::SceneIO::Serialize(scenePath, *m_Scene)) {
                         m_Scene->GetProperties().ScenePath = scenePath;
                         m_Scene->GetProperties().Name = newName;
@@ -752,6 +757,10 @@ void Editor::EditorLayer::DrawToolbar() {
             if (ImGui::MenuItem("Theme Editor")) {
                 m_ThemeConfigEditor.Reload();
                 m_ShowThemeConfig = true;
+            }
+            if (ImGui::MenuItem("Post Processing", nullptr, nullptr)) {
+                m_PostProcConfigEditor.Reload();
+                m_ShowPostProcConfig = true;
             }
 
             ImGui::EndMenu();

@@ -2,7 +2,7 @@
 #include "Scripting/EngineLib/EngineLib.h"
 #include <mutex>
 #include "Platform/Input/InputManager.h"
-#include "Rendering/Camera.h"
+#include "Rendering/Types/Camera.h"
 #include "Platform/Window/Window.h"
 #include "Rendering/Renderer.h"
 #include <ObSL/Interpreter.h>
@@ -95,7 +95,7 @@ void Scripting::EngineLib::register_input_modules(ObSL::Interpreter &interpreter
                                                                                            float w = static_cast<float>(ctx->window->GetWidth());
                                                                                            float h = static_cast<float>(ctx->window->GetHeight());
                                                                                            if (ctx->renderer) {
-                                                                                               if (const auto fbo = ctx->renderer->GetEditorFramebuffer()) {
+                                                                                               if (const auto fbo = ctx->renderer->GetSceneFrameBuffer()) {
                                                                                                    w = static_cast<float>(fbo->GetWidth());
                                                                                                    h = static_cast<float>(fbo->GetHeight());
                                                                                                }

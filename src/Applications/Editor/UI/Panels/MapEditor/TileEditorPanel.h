@@ -3,7 +3,7 @@
 #include "Applications/Editor/UI/Panels/EditorPanel.h"
 #include "Applications/Editor/States/MapEditor/MapTools.h"
 #include <Map/Hex.h>
-#include <Rendering/Texture.h>
+#include "Rendering/Types/Texture/Texture.h"
 #include <functional>
 #include <memory>
 

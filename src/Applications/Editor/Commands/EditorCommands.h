@@ -12,6 +12,7 @@
 #include "ECS/Components/ScriptComponent.h"
 #include "Map/Hex.h"
 #include "Map/HexCoords.h"
+#include "Rendering/PostProcessing/PostProcessing.h"
 #include "Scenes/SceneManager.h"
 #include "UI/UIElement.h"
 #include "UI/Rendering/UISystem.h"
@@ -19,7 +20,7 @@
 #include "UI/Elements/UIText.h"
 #include "UI/Elements/UIButton.h"
 #include "UI/Elements/UIRect.h"
-#include "Rendering/Texture.h"
+#include "Rendering/Types/Texture/Texture.h"
 #include "UI/Text/Font.h"
 
 namespace Editor::Commands {
@@ -431,6 +432,22 @@ namespace Editor::Commands {
 
         UI::Theme::FontSet m_OldSet;
         UI::Theme::FontSet m_NewSet;
+    };
+
+    // = = = = = = = = = = = //
+    // Post Processor editor //
+    // = = = = = = = = = = = //
+    class PostProcUpdateCommand : public ICommand {
+    public:
+        PostProcUpdateCommand(const std::vector<Rendering::PostProcessing::PostEffect> &oldFx, const std::vector<Rendering::PostProcessing::PostEffect> &newFx);
+
+        void Execute(Core::EngineContext &ctx) override;
+        void Undo(Core::EngineContext &ctx) override;
+        std::string_view Name() const noexcept override { return "Update post processing"; }
+
+    private:
+        std::vector<Rendering::PostProcessing::PostEffect> m_OldData;
+        std::vector<Rendering::PostProcessing::PostEffect> m_NewData;
     };
 
 } // namespace Editor::Commands

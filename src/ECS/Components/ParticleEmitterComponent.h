@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Rendering/ParticlePool.h"
+#include "Rendering/Types/ParticlePool.h"
 #include <memory>
 
 namespace ECS::Components {

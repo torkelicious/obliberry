@@ -4,10 +4,10 @@
 #include <memory>
 #include <limits>
 #include <vector>
-#include "FrameBuffer.h"
-#include "Mesh.h"
-#include "Shader.h"
-#include "VertexArray.h"
+#include "FBO/FrameBuffer.h"
+#include "Mesh/Mesh.h"
+#include "Shader/Shader.h"
+#include "VAO/VertexArray.h"
 
 namespace Rendering {
     // one packed light as uploaded to the lightmap

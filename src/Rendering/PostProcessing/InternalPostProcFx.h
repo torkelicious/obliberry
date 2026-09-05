@@ -1,0 +1,328 @@
+#pragma once
+#include "Core/ResourceManager.h"
+#include "PostProcessing.h"
+#include "Rendering/Renderer.h"
+#include "Rendering/Types/Shader/Shader.h"
+#include <glm/glm.hpp>
+
+// same idea as src/Rendering/Types/Shader/InternalShaders.h:
+// embedded shader sources & registration tables
+
+namespace Rendering::PostProcessing::Builtins {
+
+    // shaders
+
+    inline constexpr char kPP_PassthroughShaderVert[] = R"(
+#version 330 core
+out vec2 v_UV;
+void main() {
+    vec2 pos = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2);
+    v_UV = pos;
+    gl_Position = vec4(pos * 2.0 - 1.0, 0.0, 1.0);
+}
+)";
+
+
+    inline constexpr char kPP_PassthroughShaderFrag[] = R"(
+#version 330 core
+in vec2 v_UV;
+out vec4 FragColor;
+uniform sampler2D u_Texture;
+void main() {
+    FragColor = texture(u_Texture, v_UV);
+}
+)";
+
+
+    inline constexpr char kPP_GrayscaleShaderFrag[] = R"(
+#version 330 core
+in vec2 v_UV;
+out vec4 FragColor;
+uniform sampler2D u_Texture;
+uniform float u_Strength;
+void main() {
+    vec4 c = texture(u_Texture, v_UV);
+    float gray = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722));
+    FragColor = vec4(mix(c.rgb, vec3(gray), u_Strength), c.a);
+}
+)";
+
+    // heavily inspired by various posts on shadertoy and some of retroarch's shader sources
+    inline constexpr char kPP_CRTShaderFrag[] = R"(
+#version 330 core
+in vec2 v_UV;
+out vec4 FragColor;
+
+uniform sampler2D u_Texture;
+uniform vec2  u_Resolution; // engine
+uniform float u_Time;       // engine
+
+// (0 => feature off)
+uniform float u_Curvature;   // barrel distortion strength
+uniform float u_Aberration;  // chromatic aberration at edges
+uniform float u_Scanline;    // scanline intensity 0..1
+uniform float u_Mask;        // slot/aperture mask intensity 0..1
+uniform float u_Glow;        // phosphor glow bleed
+uniform float u_Noise;       // static noise
+uniform float u_Flicker;     // frame brightness flicker 0..1
+uniform float u_Vignette;    // corner darkening
+
+float hash(vec2 p) {
+    p = fract(p * vec2(123.34, 456.21));
+    p += dot(p, p + 45.32);
+    return fract(p.x * p.y);
+}
+
+vec2 curveUV(vec2 uv) {
+    vec2 p = uv * 2.0 - 1.0;
+    p *= 1.0 + u_Curvature * dot(p, p);
+    return p * 0.5 + 0.5;
+}
+
+void main() {
+    vec2 uv = curveUV(v_UV);
+
+    // outside the curved tube
+    if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
+        FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+        return;
+    }
+
+    vec2 px = uv * u_Resolution; // pixel coordinates
+
+    // slight horizontal wobble per scanline
+    float row = floor(px.y);
+    float jitter = (hash(vec2(row, floor(u_Time * 24.0))) - 0.5) * 0.0015;
+    uv.x += jitter;
+
+    // chromatic aberration, stronger toward edges
+    vec2 centered = uv * 2.0 - 1.0;
+    vec2 ab = centered * (u_Aberration * dot(centered, centered));
+
+    // slot mask: 3 physical pixels per cell = R | G | B with dark gaps
+    float cellU = fract(px.x / 3.0);
+    float band = smoothstep(0.18, 0.38, cellU) * (1.0 - smoothstep(0.72, 0.92, cellU));
+    float col = mod(floor(px.x), 3.0);
+    vec3 mask = vec3(0.0);
+    if      (col < 1.0) mask.r = band;
+    else if (col < 2.0) mask.g = band;
+    else                mask.b = band;
+
+    // vertical aperture per pixel cell
+    float apV = smoothstep(0.12, 0.45, fract(px.y)) * (1.0 - smoothstep(0.65, 0.98, fract(px.y)));
+    mask *= 0.55 + 0.45 * apV;
+
+    vec3 color;
+    color.r = texture(u_Texture, uv + ab).r;
+    color.g = texture(u_Texture, uv).g;
+    color.b = texture(u_Texture, uv - ab).b;
+
+    // phosphor bleed , slight vertical smear
+    float texel = 1.0 / u_Resolution.y;
+    color += 0.22 * texture(u_Texture, uv + vec2(0.0,  texel)).rgb;
+    color += 0.22 * texture(u_Texture, uv - vec2(0.0,  texel)).rgb;
+    color /= 1.44;
+
+    // scanlines
+    float scan = fract(px.y * 0.5) < 0.5 ? 0.62 : 1.0;
+    color *= mix(1.0, scan, u_Scanline);
+
+    // faint brightline sweeping down the tube
+    float sweep = fract(u_Time * 0.9);
+    color += smoothstep(0.0, 0.02, uv.y - (sweep - 0.03)) * (1.0 - smoothstep(0.0, 0.02, uv.y - sweep)) * 0.08;
+
+    color *= mix(vec3(1.0), mask * 2.6, u_Mask);
+    float lum = dot(color, vec3(0.299, 0.587, 0.114));
+    color += color * smoothstep(0.35, 0.95, lum) * u_Glow;
+
+    // grain and rolling noise band w. flicker
+    float grain = (hash(px + floor(u_Time * 60.0)) - 0.5) * u_Noise;
+    float bandPos = fract(u_Time * 0.35);
+    float rolling = smoothstep(0.0, 0.06, uv.y - bandPos) * (1.0 - smoothstep(0.0, 0.06, uv.y - bandPos));
+    color += grain + rolling * 0.05 * u_Noise;
+    color *= 1.0 + (hash(vec2(floor(u_Time * 120.0), 3.7)) - 0.5) * 0.015 * u_Flicker;
+
+    color *= clamp(1.0 - dot(centered, centered) * u_Vignette, 0.0, 1.0);
+
+    FragColor = vec4(color, 1.0);
+}
+)";
+
+
+    // bloom
+
+    inline constexpr char kPP_BrightPassFrag[] = R"(
+#version 330 core
+in vec2 v_UV;
+out vec4 FragColor;
+
+uniform sampler2D u_Texture;
+uniform float u_Threshold;
+uniform float u_SoftKnee; // 0 = hard cutoff
+// try 0.5
+
+void main() {
+    vec3 color = texture(u_Texture, v_UV).rgb;
+    float brightness = max(color.r, max(color.g, color.b));
+
+    float knee = u_Threshold * u_SoftKnee + 0.0001;
+    float soft = clamp(brightness - u_Threshold + knee, 0.0, 2.0 * knee);
+    soft = soft * soft / (4.0 * knee);
+    float contribution = max(soft, brightness - u_Threshold) / max(brightness, 0.0001);
+
+    FragColor = vec4(color * contribution, 1.0);
+}
+)";
+
+    // separable 9-tap gaussian
+    // run once with u_Horizontal=1 after that u_Horizontal=0
+    inline constexpr char kPP_GaussianBlurFrag[] = R"(
+#version 330 core
+in vec2 v_UV;
+out vec4 FragColor;
+
+uniform sampler2D u_Texture;
+uniform vec2 u_TexelSize; // engine / u_Resolution
+uniform bool u_Horizontal;
+
+void main() {
+    float weights[5] = float[](0.227027, 0.194595, 0.121622, 0.054054, 0.016216);
+
+    vec2 step = u_Horizontal ? vec2(u_TexelSize.x, 0.0) : vec2(0.0, u_TexelSize.y);
+    vec3 result = texture(u_Texture, v_UV).rgb * weights[0];
+
+    for (int i = 1; i < 5; ++i) {
+        vec2 offset = step * float(i);
+        result += texture(u_Texture, v_UV + offset).rgb * weights[i];
+        result += texture(u_Texture, v_UV - offset).rgb * weights[i];
+    }
+    FragColor = vec4(result, 1.0);
+}
+)";
+
+    // final bloom composite
+    inline constexpr char kPP_BloomCompositeFrag[] = R"(
+#version 330 core
+in vec2 v_UV;
+out vec4 FragColor;
+
+uniform sampler2D u_Texture; // blurred bloom
+uniform sampler2D u_Scene;   // original scene
+uniform float u_Strength;
+
+void main() {
+    vec3 scene = texture(u_Scene, v_UV).rgb;
+    vec3 bloom = texture(u_Texture, v_UV).rgb;
+    FragColor = vec4(scene + bloom * u_Strength, 1.0);
+}
+)";
+
+
+    // registration
+
+    struct PPShaderRegistration {
+        const char *name;
+        const char *vertex;
+        const char *fragment;
+    };
+
+    using UniformEntry = std::pair<const char *, UniformValue>;
+
+    struct PPEffectRegistration {
+        const char *shaderName; // resource key becomes "[Engine_PP] <name>"
+        bool enabled = false;
+        std::vector<UniformEntry> uniforms = {};
+        int passes = 1;
+        std::vector<std::vector<UniformEntry>> passUniforms = {};
+        bool wantsSceneTexture = false;
+    };
+
+    inline std::vector<PPShaderRegistration> ppShaderRegistrations = {
+            {.name = "Passthrough", .vertex = kPP_PassthroughShaderVert, .fragment = kPP_PassthroughShaderFrag},
+            {.name = "Grayscale", .vertex = kPP_PassthroughShaderVert, .fragment = kPP_GrayscaleShaderFrag},
+            {.name = "CRT", .vertex = kPP_PassthroughShaderVert, .fragment = kPP_CRTShaderFrag},
+            {.name = "BrightPass", .vertex = kPP_PassthroughShaderVert, .fragment = kPP_BrightPassFrag},
+            {.name = "GaussianBlur", .vertex = kPP_PassthroughShaderVert, .fragment = kPP_GaussianBlurFrag},
+            {.name = "BloomComposite", .vertex = kPP_PassthroughShaderVert, .fragment = kPP_BloomCompositeFrag},
+    };
+
+    // default effect chain
+    inline std::vector<PPEffectRegistration> ppEffectRegistrations = {
+            {.shaderName = "Grayscale", .enabled = false, .uniforms = {{"u_Strength", 1.0f}}},
+
+            {.shaderName = "BrightPass", .enabled = false, .uniforms = {{"u_Threshold", 0.8f}, {"u_SoftKnee", 0.5f}}},
+            {.shaderName = "GaussianBlur",
+             .enabled = false,
+             .passes = 2,
+             .passUniforms =
+                     {
+                             {{"u_Horizontal", 1}},
+                             {{"u_Horizontal", 0}},
+                     }},
+            {.shaderName = "BloomComposite", .enabled = false, .uniforms = {{"u_Strength", 1.0f}}, .wantsSceneTexture = true},
+
+            {.shaderName = "CRT",
+             .enabled = false,
+             .uniforms =
+                     {
+                             {"u_Curvature", 0.05f},
+                             {"u_Aberration", 0.0015f},
+                             {"u_Scanline", 0.7f},
+                             {"u_Mask", 0.25f},
+                             {"u_Glow", 0.25f},
+                             {"u_Noise", 0.03f},
+                             {"u_Flicker", 0.5f},
+                             {"u_Vignette", 0.15f},
+                     }},
+
+    };
+
+    inline std::shared_ptr<Shader> LoadPPShader(Core::ResourceManager &resources, const std::string &name, const char *vert, const char *frag) {
+        const std::string resourceKey = "[Engine_PP] " + name;
+        const std::string debugName = "<PP_" + name + ">";
+        return resources.LoadFromFactory<Shader>(resourceKey, [vert, frag, debugName] {
+            auto shader = std::make_shared<Shader>(std::string(vert), std::string(frag), debugName);
+            shader->InitGL();
+            return shader;
+        });
+    }
+
+    inline void RegisterBuiltinPostProcShaders(Rendering::Renderer &renderer) {
+        auto &resources = Core::ResourceManager::GetInstance();
+
+        for (const auto &[name, vertex, fragment] : ppShaderRegistrations)
+            LoadPPShader(resources, name, vertex, fragment);
+
+        renderer.SetPassthroughShader(resources.Get<Shader>("[Engine_PP] Passthrough"));
+    }
+
+    inline PostEffect EffectFromRegistration(const PPEffectRegistration &reg) {
+        PostEffect fx;
+        fx.shaderKey = std::string("[Engine_PP] ") + reg.shaderName;
+        fx.enabled = reg.enabled;
+        fx.passes = reg.passes;
+        fx.wantsSceneTexture = reg.wantsSceneTexture;
+
+        for (const auto &[name, value] : reg.uniforms)
+            fx.uniforms[name] = value;
+
+        for (const auto &passBag : reg.passUniforms) {
+            std::unordered_map<std::string, UniformValue> bag;
+            for (const auto &[name, value] : passBag)
+                bag[name] = value;
+            fx.passUniforms.push_back(std::move(bag));
+        }
+
+        fx.ResolveShader();
+        return fx;
+    }
+
+    inline std::vector<PostEffect> DefaultEffectChain() {
+        std::vector<PostEffect> chain;
+        chain.reserve(ppEffectRegistrations.size());
+        for (const auto &reg : ppEffectRegistrations)
+            chain.push_back(EffectFromRegistration(reg));
+        return chain;
+    }
+
+} // namespace Rendering::PostProcessing::Builtins

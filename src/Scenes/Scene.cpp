@@ -17,7 +17,7 @@
 #include "ECS/Systems/HierarchySystem.h"
 #include "IO/Loaders/PrefabManager.h"
 #include "Math/Frustum.h"
-#include "../Platform/Timeout.h"
+#include "Platform/Timeout.h"
 #include "Scripting/EngineLib/EngineLib.h"
 #include "Sound/AudioEngine.h"
 
@@ -59,6 +59,7 @@ void Scenes::Scene::OnEnter() {
 
     if (m_Context->renderer) {
         Rendering::Renderer::SetClearColor(m_Properties.BackgroundClearColor);
+        m_Context->renderer->GetPostProcessor().Effects() = m_PostFx;
     }
 
     if (!m_Properties.EnableLightingSystem) {

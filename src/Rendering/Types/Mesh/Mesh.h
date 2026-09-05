@@ -7,10 +7,10 @@
 
 #include <glm/glm.hpp>
 
-#include "VertexArray.h"
-#include "VertexBuffer.h"
-#include "VertexBufferLayout.h"
-#include "IndexBuffer.h"
+#include "Rendering/Types/VAO/VertexArray.h"
+#include "Rendering/Types/VBO/VertexBuffer.h"
+#include "Rendering/Types/VBO/VertexBufferLayout.h"
+#include "Rendering/Types/IBO/IndexBuffer.h"
 
 namespace Rendering {
     struct Vertex {

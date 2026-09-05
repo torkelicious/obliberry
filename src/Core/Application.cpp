@@ -1,8 +1,8 @@
 #include "Application.h"
 #include "Core/EngineContext.h"
 #include "Logger/LoggerService.h"
-#include "Rendering/MeshFactory.h"
-#include "Rendering/InternalShaders.h"
+#include "Rendering/Types/Mesh/MeshFactory.h"
+#include "Rendering/Types/Shader/InternalShaders.h"
 #include "Rendering/Renderer.h"
 #include "Sound/AudioEngine.h"
 #include "imgui.h"
@@ -16,6 +16,8 @@
 #include <utility>
 #include "Applications/Editor/EditorLayer.h"
 #include "ECS/Systems/ScriptSystem.h"
+#include "Rendering/PostProcessing/InternalPostProcFx.h"
+#include "Rendering/Types/Shader/Preprocessor/ShaderPreprocessor.h"
 
 
 Core::Application::Application(const Config::GraphicsConfig &gconf, Config::ProjectConfig pconf, std::unique_ptr<ApplicationLayer> layer)
@@ -78,6 +80,8 @@ void Core::Application::Run() {
     context.audioEngine = m_AudioEngine.get();
     context.logger = Logging::LoggerService::Get();
 
+    Rendering::ShaderPreprocessor::Get().addIncludeDirectory(IO::VFS::GetAssetsDirectory() / "shaders");
+
     ECS::Systems::ScriptSystem::SetupScriptRuntime(m_ScriptPool);
 
     m_Layer->SetupFontSync(&m_FontsDirty);
@@ -90,6 +94,9 @@ void Core::Application::Run() {
 
     // engine builtin shaders (light pass, etc)
     Rendering::BuiltinShaders::RegisterBuiltinShaders(ResourceManager::GetInstance());
+
+    Rendering::PostProcessing::Builtins::RegisterBuiltinPostProcShaders(renderer);
+
     renderer.SetFallbackShader(ResourceManager::GetInstance().Get<Rendering::Shader>("[Engine] Base").get());
 
     // engine builtin meshes + default material
@@ -104,6 +111,7 @@ void Core::Application::Run() {
 
     // Layer
     m_Layer->Init(context);
+    renderer.SetEditorMode(m_Layer->UsesEditorViewport());
 
     // ImGui setup.. again
     ImGui_ImplOpenGL3_CreateDeviceObjects();
@@ -263,29 +271,52 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer, UI::UI
         }
         Rendering::Renderer::ProcessInitQ();
 
-        if (const auto fbo = renderer->GetEditorFramebuffer()) {
-            // Render to FrameBuffer if editor mode
-            fbo->Bind();
-            Rendering::Renderer::ApplyClearColor();
-            glClear(GL_COLOR_BUFFER_BIT);
+        if (renderer->IsEditorMode()) {
+            // Editor
+            if (const auto sceneFbo = renderer->GetSceneFrameBuffer()) {
+                sceneFbo->Bind();
+                sceneFbo->BindDrawBuffers();
+                Rendering::Renderer::ApplyClearColor();
+                glClear(GL_COLOR_BUFFER_BIT);
 
-            renderer->Flush(static_cast<size_t>(frameIdx));
+                renderer->Flush(static_cast<size_t>(frameIdx));
+                renderer->RunPostProc();
 
-            fbo->BindDrawBuffers();
+                uiRenderer->Flush(sceneFbo->GetWidth(), sceneFbo->GetHeight());
+                sceneFbo->Unbind();
 
-            uiRenderer->Flush(fbo->GetWidth(), fbo->GetHeight());
+                glViewport(0, 0, m_Window.GetWidth(), m_Window.GetHeight());
+                glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+                glClear(GL_COLOR_BUFFER_BIT);
+            } else {
+                glViewport(0, 0, m_Window.GetWidth(), m_Window.GetHeight());
+                Rendering::Renderer::ApplyClearColor();
+                glClear(GL_COLOR_BUFFER_BIT);
 
-            fbo->ClearEntityIDAttachment();
-            fbo->Unbind();
-            glViewport(0, 0, m_Window.GetWidth(), m_Window.GetHeight());
-            glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT);
+                renderer->Flush(static_cast<size_t>(frameIdx));
+            }
         } else {
-            glViewport(0, 0, m_Window.GetWidth(), m_Window.GetHeight());
-            Rendering::Renderer::ApplyClearColor();
-            glClear(GL_COLOR_BUFFER_BIT);
+            // Runtime
+            renderer->EnsureSceneFramebufferSize(m_Window.GetWidth(), m_Window.GetHeight());
+            if (const auto sceneFbo = renderer->GetSceneFrameBuffer()) {
+                sceneFbo->Bind();
+                sceneFbo->BindDrawBuffers();
+                Rendering::Renderer::ApplyClearColor();
+                glClear(GL_COLOR_BUFFER_BIT);
 
-            renderer->Flush(static_cast<size_t>(frameIdx));
+                renderer->Flush(static_cast<size_t>(frameIdx));
+                renderer->RunPostProc();
+                sceneFbo->Unbind();
+
+                renderer->PresentToScreen(m_Window.GetWidth(), m_Window.GetHeight());
+            } else {
+                // first frame before the scene framebuffer is created
+                glViewport(0, 0, m_Window.GetWidth(), m_Window.GetHeight());
+                Rendering::Renderer::ApplyClearColor();
+                glClear(GL_COLOR_BUFFER_BIT);
+
+                renderer->Flush(static_cast<size_t>(frameIdx));
+            }
         }
 
         if (m_FrameImGuiData[frameIdx]->DrawData.CmdLists.Size > 0) {
@@ -298,7 +329,7 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer, UI::UI
             ImGui_ImplOpenGL3_RenderDrawData(&m_FrameImGuiData[frameIdx]->DrawData);
         }
 
-        if (!renderer->GetEditorFramebuffer()) {
+        if (!renderer->IsEditorMode()) {
             uiRenderer->Flush();
         }
 

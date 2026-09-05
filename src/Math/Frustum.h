@@ -3,7 +3,7 @@
 #include <glm/glm.hpp>
 #include <array>
 #include <limits>
-#include "Rendering/Camera.h"
+#include "Rendering/Types/Camera.h"
 #include "Math.h"
 
 namespace Math::Frustum {

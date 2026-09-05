@@ -9,7 +9,7 @@
 #include "Core/EngineContext.h"
 #include "Platform/Input/InputManager.h"
 #include "Platform/Window/Window.h"
-#include "Rendering/Camera.h"
+#include "Rendering/Types/Camera.h"
 
 namespace ECS::Systems::PlayerControlSystem {
     inline void Update(Registry &registry, const Core::EngineContext &ctx) noexcept {

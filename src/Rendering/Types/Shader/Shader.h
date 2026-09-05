@@ -8,6 +8,13 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 
+// for resourcemanager reg
+struct ShaderRegistration {
+    std::string name; // appended to "[Engine_PP] " and "<PP_...>" etc
+    std::string_view vertex;
+    std::string_view fragment;
+};
+
 namespace Rendering {
     class Shader {
     public:
@@ -18,7 +25,7 @@ namespace Rendering {
         // allow moving
         Shader(Shader &&other) noexcept
             : m_vertPath(std::move(other.m_vertPath)), m_fragPath(std::move(other.m_fragPath)), m_VertexSrc(std::move(other.m_VertexSrc)), m_FragmentSrc(std::move(other.m_FragmentSrc)), m_ID(other.m_ID),
-              m_UniformCache(std::move(other.m_UniformCache)) {
+              m_FromSource(other.m_FromSource), m_UniformCache(std::move(other.m_UniformCache)) {
             other.m_ID = 0;
         }
         Shader &operator=(Shader &&other) noexcept {
@@ -32,6 +39,7 @@ namespace Rendering {
                 m_fragPath = std::move(other.m_fragPath);
                 m_VertexSrc = std::move(other.m_VertexSrc);
                 m_FragmentSrc = std::move(other.m_FragmentSrc);
+                m_FromSource = other.m_FromSource;
                 m_UniformCache = std::move(other.m_UniformCache);
             }
             return *this;
@@ -82,11 +90,14 @@ namespace Rendering {
 
         GLuint m_ID = 0;
 
+        // if its not from a file
+        bool m_FromSource = false;
+
         std::vector<std::pair<std::string, GLint>> m_UniformCache;
 
         static std::string LoadFile(const std::string &virtualPath);
 
-        static GLuint Compile(GLenum type, const std::string &src);
+        GLuint Compile(GLenum type, const std::string &src) const;
 
         static GLuint Link(GLuint vert, GLuint frag);
 

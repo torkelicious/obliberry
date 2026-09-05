@@ -1,8 +1,8 @@
 #pragma once
 
 #include <memory>
-#include "Shader.h"
-#include "Texture.h"
+#include "Shader/Shader.h"
+#include "Texture/Texture.h"
 
 
 namespace Rendering {

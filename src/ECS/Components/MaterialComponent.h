@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Rendering/Material.h"
+#include "Rendering/Types/Material.h"
 
 namespace ECS::Components {
     struct MaterialComponent {

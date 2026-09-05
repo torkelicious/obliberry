@@ -3,7 +3,7 @@
 #include <array>
 #include <memory>
 
-#include "Rendering/Texture.h"
+#include "Rendering/Types/Texture/Texture.h"
 
 namespace ECS::Components {
     // for 6-way rotation sprite sheet stuff

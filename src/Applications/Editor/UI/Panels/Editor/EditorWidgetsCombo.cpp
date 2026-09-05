@@ -3,10 +3,10 @@
 #include <filesystem>
 
 #include "IO/VFS/VFS.h"
-#include "Rendering/Material.h"
-#include "Rendering/Mesh.h"
-#include "Rendering/Shader.h"
-#include "Rendering/Texture.h"
+#include "Rendering/Types/Material.h"
+#include "Rendering/Types/Mesh/Mesh.h"
+#include "Rendering/Types/Shader/Shader.h"
+#include "Rendering/Types/Texture/Texture.h"
 #include "UI/Text/Font.h"
 
 namespace Editor::UI {
