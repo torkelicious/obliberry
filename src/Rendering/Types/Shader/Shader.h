@@ -25,7 +25,7 @@ namespace Rendering {
         // allow moving
         Shader(Shader &&other) noexcept
             : m_vertPath(std::move(other.m_vertPath)), m_fragPath(std::move(other.m_fragPath)), m_VertexSrc(std::move(other.m_VertexSrc)), m_FragmentSrc(std::move(other.m_FragmentSrc)), m_ID(other.m_ID),
-              m_UniformCache(std::move(other.m_UniformCache)) {
+              m_FromSource(other.m_FromSource), m_UniformCache(std::move(other.m_UniformCache)) {
             other.m_ID = 0;
         }
         Shader &operator=(Shader &&other) noexcept {
@@ -39,6 +39,7 @@ namespace Rendering {
                 m_fragPath = std::move(other.m_fragPath);
                 m_VertexSrc = std::move(other.m_VertexSrc);
                 m_FragmentSrc = std::move(other.m_FragmentSrc);
+                m_FromSource = other.m_FromSource;
                 m_UniformCache = std::move(other.m_UniformCache);
             }
             return *this;
@@ -88,6 +89,9 @@ namespace Rendering {
         std::string m_FragmentSrc;
 
         GLuint m_ID = 0;
+
+        // if its not from a file
+        bool m_FromSource = false;
 
         std::vector<std::pair<std::string, GLint>> m_UniformCache;
 

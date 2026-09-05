@@ -12,13 +12,42 @@
 #define LOG_WHO "Shader"
 
 namespace Rendering {
+    static std::string RemapShaderLogIds(const std::string &log, const PPState &state) {
+        std::string out;
+        out.reserve(log.size() + 64);
+
+        size_t i = 0;
+        while (i < log.size()) {
+            if (log[i] >= '0' && log[i] <= '9') {
+                size_t j = i;
+                while (j < log.size() && log[j] >= '0' && log[j] <= '9') {
+                    j++;
+                }
+                if (j < log.size() && (log[j] == '(' || log[j] == ':')) {
+                    const int id = std::stoi(log.substr(i, j - i));
+                    if (id >= 0 && id < static_cast<int>(state.idToFile.size())) {
+                        out += state.idToFile[static_cast<size_t>(id)].generic_string();
+                    } else {
+                        out.append(log, i, j - i);
+                    }
+                    i = j;
+                    continue;
+                }
+                out.append(log, i, j - i);
+                i = j;
+                continue;
+            }
+            out += log[i++];
+        }
+        return out;
+    }
     Shader::Shader(const std::string &vertPath, const std::string &fragPath) : m_vertPath(vertPath), m_fragPath(fragPath) {
         m_VertexSrc = LoadFile(vertPath);
         m_FragmentSrc = LoadFile(fragPath);
     }
 
     Shader::Shader(std::string vertSrc, std::string fragSrc, std::string debugName)
-        : m_vertPath(std::move(debugName)), m_fragPath(std::move(debugName)), m_VertexSrc(std::move(vertSrc)), m_FragmentSrc(std::move(fragSrc)) {}
+        : m_vertPath(std::move(debugName)), m_fragPath(std::move(debugName)), m_VertexSrc(std::move(vertSrc)), m_FragmentSrc(std::move(fragSrc)), m_FromSource(true) {}
 
     Shader::~Shader() {
         if (m_ID != 0) {
@@ -51,8 +80,10 @@ namespace Rendering {
             m_ID = 0;
         }
         m_UniformCache.clear();
-        m_VertexSrc = LoadFile(m_vertPath);
-        m_FragmentSrc = LoadFile(m_fragPath);
+        if (!m_FromSource) {
+            m_VertexSrc = LoadFile(m_vertPath);
+            m_FragmentSrc = LoadFile(m_fragPath);
+        }
         InitGL();
     }
 
@@ -139,7 +170,9 @@ namespace Rendering {
 
         static bool s_LoaderConfigured = false;
         if (!s_LoaderConfigured) {
-            ShaderPreprocessor::Get().setFileLoader([](const std::filesystem::path &p) -> std::string {
+            auto &preproc = ShaderPreprocessor::Get();
+            preproc.setVirtualPathMode(true); // shader paths go through the VFS
+            preproc.setFileLoader([](const std::filesystem::path &p) -> std::string {
                 std::optional<std::string> vfsData = IO::VFS::ReadVirtual(p.generic_string());
                 if (!vfsData.has_value()) {
                     LOG_ERROR(LOG_WHO, "Failed to open include file through VFS: " + p.string());
@@ -152,12 +185,8 @@ namespace Rendering {
 
         BuiltinPPState state;
 
-        std::string processedSrc = src;
-        if (type == GL_VERTEX_SHADER) {
-            processedSrc = ShaderPreprocessor::Get().processSource(src, std::filesystem::path(m_vertPath), state);
-        } else if (type == GL_FRAGMENT_SHADER) {
-            processedSrc = ShaderPreprocessor::Get().processSource(src, std::filesystem::path(m_fragPath), state);
-        }
+        const std::string &filePath = (type == GL_VERTEX_SHADER) ? m_vertPath : m_fragPath;
+        const std::string processedSrc = ShaderPreprocessor::Get().processSource(src, std::filesystem::path(filePath), state);
 
         const GLuint shader = glCreateShader(type);
         const char *cstr = processedSrc.c_str();
@@ -169,7 +198,7 @@ namespace Rendering {
         if (!ok) {
             char log[2048];
             glGetShaderInfoLog(shader, 2048, nullptr, log);
-            LOG_ERROR(LOG_WHO, "Compile error:\n" + std::string(log));
+            LOG_ERROR(LOG_WHO, "Compile error (" + filePath + "):\n" + RemapShaderLogIds(log, state));
             glDeleteShader(shader);
             return 0;
         }
