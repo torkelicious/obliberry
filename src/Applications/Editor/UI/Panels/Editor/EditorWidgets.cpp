@@ -202,8 +202,9 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
             }
 
             if (comp->material->shader) {
-                ImGui::Text("Vert: %s", comp->material->shader->GetVertexPath().c_str());
-                ImGui::Text("Frag: %s", comp->material->shader->GetFragmentPath().c_str());
+                const auto &sh = *comp->material->shader;
+                ImGui::Text("Vert: %s", sh.GetVertexPath().empty() ? sh.GetDebugName().c_str() : sh.GetVertexPath().c_str());
+                ImGui::Text("Frag: %s", sh.GetFragmentPath().empty() ? sh.GetDebugName().c_str() : sh.GetFragmentPath().c_str());
             } else {
                 ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "No shader assigned. Material will not render.");
             }

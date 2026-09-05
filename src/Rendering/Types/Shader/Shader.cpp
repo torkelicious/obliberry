@@ -46,8 +46,7 @@ namespace Rendering {
         m_FragmentSrc = LoadFile(fragPath);
     }
 
-    Shader::Shader(std::string vertSrc, std::string fragSrc, std::string debugName)
-        : m_vertPath(std::move(debugName)), m_fragPath(std::move(debugName)), m_VertexSrc(std::move(vertSrc)), m_FragmentSrc(std::move(fragSrc)), m_FromSource(true) {}
+    Shader::Shader(std::string vertSrc, std::string fragSrc, std::string debugName) : m_VertexSrc(std::move(vertSrc)), m_FragmentSrc(std::move(fragSrc)), m_FromSource(true), m_DebugName(std::move(debugName)) {}
 
     Shader::~Shader() {
         if (m_ID != 0) {
@@ -65,7 +64,11 @@ namespace Rendering {
         m_ID = Link(vert, frag);
 
         if (m_ID == 0) {
-            LOG_ERROR(LOG_WHO, "Failed to create program from:\n  " + m_vertPath + "\n  " + m_fragPath);
+            if (m_FromSource) {
+                LOG_ERROR(LOG_WHO, "Failed to create shader program: " + m_DebugName);
+            } else {
+                LOG_ERROR(LOG_WHO, "Failed to create program from:\n  " + m_vertPath + "\n  " + m_fragPath);
+            }
         }
 
         m_VertexSrc.clear();
@@ -185,7 +188,7 @@ namespace Rendering {
 
         BuiltinPPState state;
 
-        const std::string &filePath = (type == GL_VERTEX_SHADER) ? m_vertPath : m_fragPath;
+        const std::string &filePath = m_FromSource ? m_DebugName : ((type == GL_VERTEX_SHADER) ? m_vertPath : m_fragPath);
         const std::string processedSrc = ShaderPreprocessor::Get().processSource(src, std::filesystem::path(filePath), state);
 
         const GLuint shader = glCreateShader(type);

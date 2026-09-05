@@ -24,7 +24,7 @@ namespace IO::SceneIO {
 
     bool Serialize(const std::string &path, Scenes::Scene &scene);
 
-    inline bool IsUserAsset(const std::string &id) { return !id.starts_with("[Engine]"); }
+    inline bool IsUserAsset(const std::string &id) { return !id.starts_with("[Engine]") && !id.starts_with("[Engine_PP]"); }
 
     // vector<pair<...>> returned by ResourceManager::GetAll
     template <typename T, typename Func, typename Pred = decltype([](const std::string &) { return true; })>

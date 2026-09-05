@@ -25,7 +25,7 @@ namespace Rendering {
         // allow moving
         Shader(Shader &&other) noexcept
             : m_vertPath(std::move(other.m_vertPath)), m_fragPath(std::move(other.m_fragPath)), m_VertexSrc(std::move(other.m_VertexSrc)), m_FragmentSrc(std::move(other.m_FragmentSrc)), m_ID(other.m_ID),
-              m_FromSource(other.m_FromSource), m_UniformCache(std::move(other.m_UniformCache)) {
+              m_FromSource(other.m_FromSource), m_DebugName(std::move(other.m_DebugName)), m_UniformCache(std::move(other.m_UniformCache)) {
             other.m_ID = 0;
         }
         Shader &operator=(Shader &&other) noexcept {
@@ -37,6 +37,7 @@ namespace Rendering {
                 other.m_ID = 0;
                 m_vertPath = std::move(other.m_vertPath);
                 m_fragPath = std::move(other.m_fragPath);
+                m_DebugName = std::move(other.m_DebugName);
                 m_VertexSrc = std::move(other.m_VertexSrc);
                 m_FragmentSrc = std::move(other.m_FragmentSrc);
                 m_FromSource = other.m_FromSource;
@@ -75,6 +76,8 @@ namespace Rendering {
 
         void SetUniformMat4(const char *name, const glm::mat4 &mat);
 
+        const std::string &GetDebugName() const { return m_DebugName; }
+
         std::string &GetVertexPath() { return m_vertPath; }
         const std::string &GetVertexPath() const { return m_vertPath; }
         std::string &GetFragmentPath() { return m_fragPath; }
@@ -92,6 +95,8 @@ namespace Rendering {
 
         // if its not from a file
         bool m_FromSource = false;
+
+        std::string m_DebugName;
 
         std::vector<std::pair<std::string, GLint>> m_UniformCache;
 

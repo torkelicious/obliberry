@@ -119,7 +119,9 @@ void IO::AssetLoader::LoadShaders(const json &shaders, Core::ResourceManager &re
             const std::string vertPath = shader.value("vertex", "");
             const std::string fragPath = VFS::ToRelative(shader.value("fragment", ""));
 
-            if (!vertPath.empty()) {
+            const bool isPostProcShader = id.starts_with("[PP]") || vertPath.empty();
+
+            if (!isPostProcShader) {
                 auto s = resources.Load<Rendering::Shader>(id, VFS::ToRelative(vertPath), fragPath);
                 Rendering::Renderer::SubmitInitTask(Platform::Threading::SmallTask([s] { s->InitGL(); }));
                 continue;

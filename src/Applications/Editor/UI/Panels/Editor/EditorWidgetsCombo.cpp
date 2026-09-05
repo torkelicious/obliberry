@@ -16,8 +16,10 @@ namespace Editor::UI {
     }
 
     bool ShaderCombo(const char *label, Core::ResourceManager &resources, std::shared_ptr<Rendering::Shader> &current) {
-        return AssetComboImpl(label, resources, current,
-                              [](const std::shared_ptr<Rendering::Shader> &shader) { ImGui::TextDisabled("Vert: %s  Frag: %s", shader->GetVertexPath().c_str(), shader->GetFragmentPath().c_str()); });
+        return AssetComboImpl(label, resources, current, [](const std::shared_ptr<Rendering::Shader> &shader) {
+            ImGui::TextDisabled("Vert: %s  Frag: %s", shader->GetVertexPath().empty() ? shader->GetDebugName().c_str() : shader->GetVertexPath().c_str(),
+                                shader->GetFragmentPath().empty() ? shader->GetDebugName().c_str() : shader->GetFragmentPath().c_str());
+        });
     }
 
     bool MeshCombo(const char *label, Core::ResourceManager &resources, std::shared_ptr<Rendering::Mesh> &current) {
