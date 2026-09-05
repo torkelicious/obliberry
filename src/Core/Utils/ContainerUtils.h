@@ -34,7 +34,18 @@ namespace Core::Utils {
                 moveItem(vec, *idx, to);
             }
         }
+
+        // swap and pop helpers
+        template <typename T> void swapAndPop(std::vector<T> &vec, const size_t index) {
+            std::swap(vec[index], vec.back());
+            vec.pop_back();
+        }
+
+        template <typename T> void swapAndPopItem(std::vector<T> &vec, const T &item) {
+            std::swap(vec[getIndex(item)], vec.back());
+            vec.pop_back();
+        }
+
+
     } // namespace vector
-
-
 } // namespace Core::Utils
