@@ -25,6 +25,7 @@ namespace Core {
     // editor executable-relative
     constexpr std::string_view E_RESOURCES_PATH = "internal/resources/";
     constexpr std::string_view E_EDITOR_FONTS_PATH = "internal/resources/fonts/";
+    constexpr std::string_view E_SHADER_RESOURCES_PATH = "internal/resources/shaders/";
 
     // fs extensions
     constexpr std::string_view MAP_FILE_EXTENSION = ".obmap";
