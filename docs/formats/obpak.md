@@ -66,6 +66,10 @@ enum class EntryFlags : uint8_t { None = 0, Compressed = 1 << 0 };  // bit 0
 | `.vert`, `.frag`, `.glsl`               | `ShaderSource` (raw)             | yes                          |
 | `.obmap` / anything else                | `RawBinary`                      | yes                          |
 
+Additionally, the engine's built-in shader helper files from `resources/shaders/` are packed into every archive as
+`ShaderSource` entries under the `engine/shaders/` prefix, so shader `#include`s of engine helpers keep working in
+packaged games.
+
 Script `using` imports are collected at pack time, rewritten to project-relative paths, and recorded in the dependency
 graph.
 

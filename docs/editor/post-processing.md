@@ -51,6 +51,7 @@ Committing marks the scene as changed remember to save the scene (Ctrl+S) afterw
 | **BrightPass**     | Extracts pixels brighter than a threshold                           | `u_Threshold`, `u_SoftKnee` (soft cutoff)                                                             |
 | **GaussianBlur**   | 9-tap separable blur; needs 2 passes, `u_Horizontal` 1 then 0       | `u_Horizontal` (per-pass, 1/0)                                                                        |
 | **BloomComposite** | Adds the blurred bright-pass back onto the scene                    | `u_Strength`                                                                                          |
+| **FilmGrain**      | per-pixel grain; `u_GrainSize` is the grain cell in pixels          | `u_GrainAmount`, `u_GrainSize`                                                                        |
 | **CRT**            | Retro CRT monitor: curvature, scanlines, mask, glow, noise, flicker | `u_Curvature`, `u_Aberration`, `u_Scanline`, `u_Mask`, `u_Glow`, `u_Noise`, `u_Flicker`, `u_Vignette` |
 
 A default chain containing all of these (disabled by default) is used for scenes that don't specify one.
@@ -101,7 +102,41 @@ effect config, they're automatically ser per-frame:
 * The parser is simple: no arrays, no layout qualifiers etc.
 
 Shader files go through the engine's preprocessor, so `#include "..."`, `#pragma once`, and accurate `#line` error
-reporting all work in effect shaders too.
+reporting work in effect shaders too. Includes resolve through the project VFS first,
+
+if not found there, the engine's helper directory `internal/resources/shaders/` is tried, so shared helpers shipped with
+the engine (e.g.
+`#include "rand.glsl"`) work from any shader without being part of the project.
+
+### Engine shader helpers (`resources/shaders/`)
+
+| File             | Provides                                                                                                                           |
+|------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| `rand.glsl`      | `hash(uint)` + `rand(vec2)` — deterministic, per-seed pseudo-random.                                                               |
+| `auto_rand.glsl` | `auto_rand(vec2)` — `rand` seeded per-frame from `u_Time`; includes `rand.glsl`.                                                   |
+| `commons.glsl`   | Declarations for the engine-provided uniforms (`u_Texture`, `u_Resolution`, `u_TexelSize`, `u_Time`, `u_Scene`). Includes nothing. |
+
+**Include guard convention** :
+any helper file that declares *uniforms* (or anything else that must be unique per shader) should wrap its declarations
+in `#pragma once` plus an `#ifndef` guard, so it can be included transitively from several files without redeclaration
+errors:
+
+```glsl
+#pragma once
+
+#ifndef TIME_UNIFORM_
+#define TIME_UNIFORM_
+uniform float u_Time;   // engine managed uniform
+#endif
+```
+
+The engine's own helpers follow this pattern, so `#include "auto_rand.glsl"` in a shader that also pulls in
+`rand.glsl` (or `commons.glsl`) works. the guards are simple
+`#ifndef`/`#define` blocks around the declarations
+
+> [!NOTE]
+> Exporting a game packs the contents of `resources/shaders/` into the `.obpak` (under `engine/shaders/`), so helper
+> includes keep working in packaged builds too.
 
 * Imported shaders get the resource ID `[PP] <name>` and are regenerated from the scene's `assets.shaders` section on
   load. A shader entry with **no vertex path** is automatically treated as a post-processing effect shader and gets the
