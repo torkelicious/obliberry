@@ -82,6 +82,8 @@ void Core::Application::Run() {
 
     Rendering::ShaderPreprocessor::Get().addIncludeDirectory(IO::VFS::GetAssetsDirectory() / "shaders");
 
+    Rendering::ShaderPreprocessor::Get().addIncludeDirectory(PathUtils::GetInternalRecourcesDir() / "shaders");
+
     ECS::Systems::ScriptSystem::SetupScriptRuntime(m_ScriptPool);
 
     m_Layer->SetupFontSync(&m_FontsDirty);

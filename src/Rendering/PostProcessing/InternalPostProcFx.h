@@ -11,6 +11,7 @@
 namespace Rendering::PostProcessing::Builtins {
 
     // shaders
+    // since these shaders do not live in files im not gonna gaurd the uniform declarations
 
     inline constexpr char kPP_PassthroughShaderVert[] = R"(
 #version 330 core
@@ -217,19 +218,40 @@ void main() {
 }
 )";
 
+    inline constexpr char kPP_FilmGrainFrag[] = R"(
+#version 330 core
+
+in vec2 v_UV;
+out vec4 FragColor;
+uniform sampler2D u_Texture;
+uniform float u_GrainAmount;
+uniform float u_GrainSize; // in pixels
+
+#include <auto_rand.glsl>
+
+void main() {
+    vec3 color = texture(u_Texture, v_UV).rgb;
+
+    //  chunky grain
+    vec2 cell = floor(v_UV * u_Resolution / max(u_GrainSize, 0.0001));
+    float noise = auto_rand(cell) - 0.5;
+
+    color += noise * u_GrainAmount;
+    FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
+}
+)";
+
 
     // registration
 
-    struct PPShaderRegistration {
+    using UniformEntry = std::pair<const char *, UniformValue>;
+
+    struct PPRegistration {
         const char *name;
         const char *vertex;
         const char *fragment;
-    };
 
-    using UniformEntry = std::pair<const char *, UniformValue>;
-
-    struct PPEffectRegistration {
-        const char *shaderName; // resource key becomes "[Engine_PP] <name>"
+        bool inDefaultChain = true;
         bool enabled = false;
         std::vector<UniformEntry> uniforms = {};
         int passes = 1;
@@ -237,32 +259,26 @@ void main() {
         bool wantsSceneTexture = false;
     };
 
-    inline std::vector<PPShaderRegistration> ppShaderRegistrations = {
-            {.name = "Passthrough", .vertex = kPP_PassthroughShaderVert, .fragment = kPP_PassthroughShaderFrag},
-            {.name = "Grayscale", .vertex = kPP_PassthroughShaderVert, .fragment = kPP_GrayscaleShaderFrag},
-            {.name = "CRT", .vertex = kPP_PassthroughShaderVert, .fragment = kPP_CRTShaderFrag},
-            {.name = "BrightPass", .vertex = kPP_PassthroughShaderVert, .fragment = kPP_BrightPassFrag},
-            {.name = "GaussianBlur", .vertex = kPP_PassthroughShaderVert, .fragment = kPP_GaussianBlurFrag},
-            {.name = "BloomComposite", .vertex = kPP_PassthroughShaderVert, .fragment = kPP_BloomCompositeFrag},
-    };
+    inline const std::vector<PPRegistration> ppRegistrations = {
+            {.name = "Passthrough", .vertex = kPP_PassthroughShaderVert, .fragment = kPP_PassthroughShaderFrag, .inDefaultChain = false},
 
-    // default effect chain
-    inline std::vector<PPEffectRegistration> ppEffectRegistrations = {
-            {.shaderName = "Grayscale", .enabled = false, .uniforms = {{"u_Strength", 1.0f}}},
+            {.name = "Grayscale", .vertex = kPP_PassthroughShaderVert, .fragment = kPP_GrayscaleShaderFrag, .uniforms = {{"u_Strength", 1.0f}}},
 
-            {.shaderName = "BrightPass", .enabled = false, .uniforms = {{"u_Threshold", 0.8f}, {"u_SoftKnee", 0.5f}}},
-            {.shaderName = "GaussianBlur",
-             .enabled = false,
+            {.name = "BrightPass", .vertex = kPP_PassthroughShaderVert, .fragment = kPP_BrightPassFrag, .uniforms = {{"u_Threshold", 0.8f}, {"u_SoftKnee", 0.5f}}},
+            {.name = "GaussianBlur",
+             .vertex = kPP_PassthroughShaderVert,
+             .fragment = kPP_GaussianBlurFrag,
              .passes = 2,
              .passUniforms =
                      {
                              {{"u_Horizontal", 1}},
                              {{"u_Horizontal", 0}},
                      }},
-            {.shaderName = "BloomComposite", .enabled = false, .uniforms = {{"u_Strength", 1.0f}}, .wantsSceneTexture = true},
+            {.name = "BloomComposite", .vertex = kPP_PassthroughShaderVert, .fragment = kPP_BloomCompositeFrag, .uniforms = {{"u_Strength", 1.0f}}, .wantsSceneTexture = true},
 
-            {.shaderName = "CRT",
-             .enabled = false,
+            {.name = "CRT",
+             .vertex = kPP_PassthroughShaderVert,
+             .fragment = kPP_CRTShaderFrag,
              .uniforms =
                      {
                              {"u_Curvature", 0.05f},
@@ -274,6 +290,17 @@ void main() {
                              {"u_Flicker", 0.5f},
                              {"u_Vignette", 0.15f},
                      }},
+
+            {.name = "FilmGrain",
+             .vertex = kPP_PassthroughShaderVert,
+             .fragment = kPP_FilmGrainFrag,
+             .uniforms =
+                     {
+                             {"u_GrainAmount", 0.1f},
+                             {"u_GrainSize", 1.0f},
+                     }
+
+            }
 
     };
 
@@ -290,15 +317,15 @@ void main() {
     inline void RegisterBuiltinPostProcShaders(Rendering::Renderer &renderer) {
         auto &resources = Core::ResourceManager::GetInstance();
 
-        for (const auto &[name, vertex, fragment] : ppShaderRegistrations)
-            LoadPPShader(resources, name, vertex, fragment);
+        for (const auto &reg : ppRegistrations)
+            LoadPPShader(resources, reg.name, reg.vertex, reg.fragment);
 
         renderer.SetPassthroughShader(resources.Get<Shader>("[Engine_PP] Passthrough"));
     }
 
-    inline PostEffect EffectFromRegistration(const PPEffectRegistration &reg) {
+    inline PostEffect EffectFromRegistration(const PPRegistration &reg) {
         PostEffect fx;
-        fx.shaderKey = std::string("[Engine_PP] ") + reg.shaderName;
+        fx.shaderKey = std::string("[Engine_PP] ") + reg.name;
         fx.enabled = reg.enabled;
         fx.passes = reg.passes;
         fx.wantsSceneTexture = reg.wantsSceneTexture;
@@ -319,9 +346,9 @@ void main() {
 
     inline std::vector<PostEffect> DefaultEffectChain() {
         std::vector<PostEffect> chain;
-        chain.reserve(ppEffectRegistrations.size());
-        for (const auto &reg : ppEffectRegistrations)
-            chain.push_back(EffectFromRegistration(reg));
+        for (const auto &reg : ppRegistrations)
+            if (reg.inDefaultChain)
+                chain.push_back(EffectFromRegistration(reg));
         return chain;
     }
 

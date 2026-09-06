@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <fstream>
 #include <sstream>
+#include "Core/Constants.h"
 #include "Logger/LoggerService.h"
 #include "IO/VFS/VFS.h"
 #include "Preprocessor/ShaderPreprocessor.h"
@@ -174,14 +175,23 @@ namespace Rendering {
         static bool s_LoaderConfigured = false;
         if (!s_LoaderConfigured) {
             auto &preproc = ShaderPreprocessor::Get();
-            preproc.setVirtualPathMode(true); // shader paths go through the VFS
+            preproc.setVirtualPathMode(true);
+            // shader go through the VFS
+            // includes resolve through the VFS first, then internals resource dir
             preproc.setFileLoader([](const std::filesystem::path &p) -> std::string {
-                std::optional<std::string> vfsData = IO::VFS::ReadVirtual(p.generic_string());
-                if (!vfsData.has_value()) {
-                    LOG_ERROR(LOG_WHO, "Failed to open include file through VFS: " + p.string());
+                if (std::optional<std::string> vfsData = IO::VFS::ReadVirtual(p.generic_string())) {
+                    return std::move(vfsData.value());
+                }
+
+                const std::filesystem::path enginePath = std::string(Core::E_SHADER_RESOURCES_PATH) + p.filename().generic_string();
+                std::ifstream file(enginePath);
+                if (!file.is_open()) {
+                    LOG_ERROR(LOG_WHO, "Failed to open include file (tried VFS + " + enginePath.string() + "): " + p.string());
                     return "";
                 }
-                return vfsData.value();
+                std::stringstream buffer;
+                buffer << file.rdbuf();
+                return buffer.str();
             });
             s_LoaderConfigured = true;
         }

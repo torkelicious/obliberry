@@ -243,8 +243,8 @@ namespace Editor::UI {
         const float delW = ImGui::CalcTextSize("Delete").x + ImGui::GetStyle().FramePadding.x * 2.0f;
         ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - delW - ImGui::GetStyle().ItemSpacing.x);
         if (ImGui::BeginCombo("##addfx", "Add effect...")) {
-            for (const auto &reg : Builtins::ppEffectRegistrations) {
-                if (ImGui::Selectable(reg.shaderName, false)) {
+            for (const auto &reg : Builtins::ppRegistrations) {
+                if (ImGui::Selectable(reg.name, false)) {
                     PostEffect fx = Builtins::EffectFromRegistration(reg);
 
                     m_StagingVec.push_back(std::move(fx));
