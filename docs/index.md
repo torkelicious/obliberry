@@ -13,6 +13,7 @@ If you want to get started with the Obliberry editor, please see: [Editor Docs](
 |-------------------------------------------------------------|-------------------------------------------------------------------------------------|
 | [Build](build.md)                                           | Prerequisites, CMake presets, build options, and targets.                           |
 | [Editor Guide](editor/usage.md)                             | Using the editor: modes, camera controls, panels, and keybinds.                     |
+| [Post-Processing](editor/post-processing.md)                | Fullscreen effect chains per scene: built-ins, custom shaders, editing uniforms.    |
 | [Architecture](architecture.md)                             | How the engine is organized: modules, the main loop, and the threading model.       |
 | [Scripting : Getting Started](scripting/getting-started.md) | Write game logic in ObSL: the script lifecycle, hooks, and walkthroughs.            |
 | [Scripting : API Reference](scripting/api-reference.md)     | Every EngineLib function exposed to scripts.                                        |

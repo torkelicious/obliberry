@@ -15,13 +15,14 @@ rounded to 3 decimals (`RoundJsonFloats`), and the file is written with 4-space 
 
 ## Top-level keys
 
-| Key          | Type   | Meaning                                                                                               |
-|--------------|--------|-------------------------------------------------------------------------------------------------------|
-| `properties` | object | Scene metadata (name, clear color, music, ambient light).                                             |
-| `assets`     | object | Asset registry: textures/shaders/meshes/materials/fonts referenced by id from entities, grid, and UI. |
-| `grid`       | object | Hex-grid map section; present iff the scene has a map entity with a non-empty `map_file`.             |
-| `entities`   | array  | The scene's entities.                                                                                 |
-| `ui`         | object | UI element tree (`ui.elements`).                                                                      |
+| Key              | Type   | Meaning                                                                                               |
+|------------------|--------|-------------------------------------------------------------------------------------------------------|
+| `properties`     | object | Scene metadata (name, clear color, music, ambient light).                                             |
+| `assets`         | object | Asset registry: textures/shaders/meshes/materials/fonts referenced by id from entities, grid, and UI. |
+| `grid`           | object | Hex-grid map section; present iff the scene has a map entity with a non-empty `map_file`.             |
+| `PostProcessing` | array  | Post-processing effect chain; absent means the default built-in chain (all effects disabled).         |
+| `entities`       | array  | The scene's entities.                                                                                 |
+| `ui`             | object | UI element tree (`ui.elements`).                                                                      |
 
 ## `properties`
 
@@ -37,13 +38,65 @@ rounded to 3 decimals (`RoundJsonFloats`), and the file is written with 4-space 
 Each array entry is an object keyed by `id` the resource id referenced everywhere else in the file. Engine-internal
 resources use ids prefixed `"[Engine]"` (e.g. `"[Engine] Base"`, `"[Engine] Hex"`); user assets use any other id.
 
-| Key                | Entry shape                               | Notes                                                                                                                     |
-|--------------------|-------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|
-| `assets.textures`  | `{"id", "path"}`                          | `path` is VFS-relative.                                                                                                   |
-| `assets.shaders`   | `{"id", "vertex", "fragment"}`            | `vertex`/`fragment` are shader source paths. Only non-`[Engine]` shaders are serialized.                                  |
-| `assets.meshes`    | `{"id", "factory"}`                       | `factory` names a registered procedural mesh factory (e.g. `"Quad"`, `"Hexagon"`, `"Circle"`, `"Ring"`, `"PointTopHex"`). |
-| `assets.materials` | `{"id", "shader", "texture", "color"}`    | `shader` defaults to `"[Engine] Base"`; `texture` may be `""`; `color` is `[r,g,b,a]` (defaults to white).                |
-| `assets.fonts`     | `{"id", "path", "size", "sdf", "spread"}` | Defaults: `size` 12, `sdf` false, `spread` 8.                                                                             |
+| Key                | Entry shape                               | Notes                                                                                                                                                                                                                                                                            |
+|--------------------|-------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `assets.textures`  | `{"id", "path"}`                          | `path` is VFS-relative.                                                                                                                                                                                                                                                          |
+| `assets.shaders`   | `{"id", "vertex", "fragment"}`            | `vertex`/`fragment` are shader source paths. `[Engine]` and `[Engine_PP]` shaders are engine-provided and never serialized. A shader with an empty `vertex` (or a `[PP]` id) is a **post-processing effect shader** (it automatically uses the engine's fullscreen vertex pass). |
+| `assets.meshes`    | `{"id", "factory"}`                       | `factory` names a registered procedural mesh factory (e.g. `"Quad"`, `"Hexagon"`, `"Circle"`, `"Ring"`, `"PointTopHex"`).                                                                                                                                                        |
+| `assets.materials` | `{"id", "shader", "texture", "color"}`    | `shader` defaults to `"[Engine] Base"`; `texture` may be `""`; `color` is `[r,g,b,a]` (defaults to white).                                                                                                                                                                       |
+| `assets.fonts`     | `{"id", "path", "size", "sdf", "spread"}` | Defaults: `size` 12, `sdf` false, `spread` 8.                                                                                                                                                                                                                                    |
+
+## `PostProcessing`
+
+The post-processing effect chain as an ordered JSON array (first entry runs first). Written back by the editor's **Post
+Processing** window; see [Post-Processing](../editor/post-processing.md).
+
+Each entry is an object:
+
+| Key                 | Type   | Default  | Meaning                                                                                   |
+|---------------------|--------|----------|-------------------------------------------------------------------------------------------|
+| `shader`            | string | required | Shader resource id. Built-ins are `[Engine_PP] <name>`; custom effects are `[PP] <name>`. |
+| `enabled`           | bool   | `true`   | Disabled effects are skipped.                                                             |
+| `uniforms`          | object | `{}`     | Tunable uniforms. Values: number (float/int), bool, or `[x,y(,z,w)]` arrays.              |
+| `passes`            | int    | `1`      | How many times the effect runs (ping-ponging). Only written when > 1.                     |
+| `passUniforms`      | array  | `[]`     | Per-pass uniform overrides, same shape as `uniforms`, one object per pass.                |
+| `wantsSceneTexture` | bool   | `false`  | Also bind the original scene on unit 1 as `u_Scene` (for compositing effects like bloom). |
+
+Example (bloom chain):
+
+```json
+"PostProcessing": [
+    {
+        "shader": "[Engine_PP] BrightPass",
+        "enabled": true,
+        "uniforms": {
+            "u_Threshold": 0.8,
+            "u_SoftKnee": 0.5
+        }
+    },
+    {
+        "shader": "[Engine_PP] GaussianBlur",
+        "enabled": true,
+        "passes": 2,
+        "passUniforms": [
+            {
+                "u_Horizontal": 1
+            },
+            {
+                "u_Horizontal": 0
+            }
+        ]
+    },
+    {
+        "shader": "[Engine_PP] BloomComposite",
+        "enabled": true,
+        "wantsSceneTexture": true,
+        "uniforms": {
+            "u_Strength": 1.0
+        }
+    }
+]
+```
 
 ## `grid`
 
@@ -111,59 +164,133 @@ A trimmed scene combining most sections:
 
 ```json
 {
-  "properties": {
-    "name": "level1",
-    "clear_color": [0.1, 0.1, 0.1, 1.0],
-    "background_music": "",
-    "ambient_light": 0.2
-  },
-  "assets": {
-    "textures": [
-      { "id": "dirt_tex", "path": "assets/textures/HexDirt.png" },
-      { "id": "grass_tex", "path": "assets/textures/HexGrass.png" }
+    "properties": {
+        "name": "level1",
+        "clear_color": [
+            0.1,
+            0.1,
+            0.1,
+            1.0
+        ],
+        "background_music": "",
+        "ambient_light": 0.2
+    },
+    "assets": {
+        "textures": [
+            {
+                "id": "dirt_tex",
+                "path": "assets/textures/HexDirt.png"
+            },
+            {
+                "id": "grass_tex",
+                "path": "assets/textures/HexGrass.png"
+            }
+        ],
+        "materials": [
+            {
+                "id": "[Engine] DefaultMaterial",
+                "shader": "[Engine] Base",
+                "texture": "",
+                "color": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        ],
+        "meshes": [
+            {
+                "id": "[Engine] Hex",
+                "factory": "PointTopHex"
+            },
+            {
+                "id": "player_mesh",
+                "factory": "Quad"
+            }
+        ],
+        "shaders": [],
+        "fonts": []
+    },
+    "grid": {
+        "map_file": "assets/maps/level1.obmap",
+        "mesh_id": "[Engine] Hex",
+        "types": [
+            {
+                "id": 0,
+                "texture": "sand_tex"
+            },
+            {
+                "id": 1,
+                "texture": "grass_tex"
+            }
+        ]
+    },
+    "entities": [
+        {
+            "name": "Player",
+            "components": {
+                "TransformComponent": {
+                    "position": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "MeshComponent": {
+                    "mesh_id": "player_mesh"
+                },
+                "MaterialComponent": {
+                    "material_id": "[Engine] DefaultMaterial"
+                },
+                "ScriptComponent": {
+                    "scriptPath": "assets/scripts/PlayerMovement.obsl"
+                }
+            }
+        }
     ],
-    "materials": [
-      { "id": "[Engine] DefaultMaterial", "shader": "[Engine] Base", "texture": "", "color": [1.0, 1.0, 1.0, 1.0] }
-    ],
-    "meshes": [
-      { "id": "[Engine] Hex", "factory": "PointTopHex" },
-      { "id": "player_mesh", "factory": "Quad" }
-    ],
-    "shaders": [],
-    "fonts": []
-  },
-  "grid": {
-    "map_file": "assets/maps/level1.obmap",
-    "mesh_id": "[Engine] Hex",
-    "types": [
-      { "id": 0, "texture": "sand_tex" },
-      { "id": 1, "texture": "grass_tex" }
-    ]
-  },
-  "entities": [
-    {
-      "name": "Player",
-      "components": {
-        "TransformComponent": { "position": [0.0, 0.0, 0.0], "rotation": [0.0, 0.0, 0.0], "scale": [1.0, 1.0, 1.0] },
-        "MeshComponent": { "mesh_id": "player_mesh" },
-        "MaterialComponent": { "material_id": "[Engine] DefaultMaterial" },
-        "ScriptComponent": { "scriptPath": "assets/scripts/PlayerMovement.obsl" }
-      }
+    "ui": {
+        "elements": [
+            {
+                "name": "btnStart",
+                "type": "Button",
+                "rect": {
+                    "position": [
+                        160.0,
+                        270.0
+                    ],
+                    "scale": [
+                        251.0,
+                        59.0
+                    ]
+                },
+                "flags": 3,
+                "text": "Start",
+                "color": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "bg_color": [
+                    0.5,
+                    0.54,
+                    0.8,
+                    1.0
+                ]
+            }
+        ]
     }
-  ],
-  "ui": {
-    "elements": [
-      {
-        "name": "btnStart",
-        "type": "Button",
-        "rect": { "position": [160.0, 270.0], "scale": [251.0, 59.0] },
-        "flags": 3,
-        "text": "Start",
-        "color": [1.0, 1.0, 1.0, 1.0],
-        "bg_color": [0.5, 0.54, 0.8, 1.0]
-      }
-    ]
-  }
 }
 ```
 

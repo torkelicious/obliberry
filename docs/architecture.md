@@ -99,8 +99,20 @@ and [Scripting : API Reference](scripting/api-reference.md) for notes per module
   mesh/material/texture/color/shape, and flushes them on the render thread. It supports instanced rendering,
   per-instance colors, blend modes, and `renderOrder`.
 * Resources: `Mesh` (with `MeshFactory` procedural factories such as `Quad`, `Hexagon`, `Circle`, `Ring`,
-  `PointTopHex`), `Material`, `Texture`, `Shader`, `Lightmap`, `FrameBuffer` (editor viewport + picking),
-  `ParticlePool`.
+  `PointTopHex`, and serialized custom 2D meshes), `Material`, `Texture`, `Shader`, `Lightmap`, `FrameBuffer`
+  (editor viewport + picking), `ParticlePool`.
+* **Shaders** go through `ShaderPreprocessor` (`src/Rendering/Types/Shader/Preprocessor/`): supports
+  `#include "..."` (resolved relative to the including file / through the VFS), `#pragma once`, circular-include
+  detection, and emits `#line` markers so driver error logs map back to real files.
+* **Post-processing** (`src/Rendering/PostProcessing/`): after the scene is drawn to its framebuffer,
+  `PostProcessor::Execute` runs a per-scene chain of fullscreen shader effects, ping-ponging between two framebuffers.
+  Each `PostEffect` carries its shader, tunable uniforms (float/int/vec2/3/4), optional per-pass overrides for
+  multi-pass effects, and a `wantsSceneTexture` flag that binds the original scene on unit 1 (`u_Scene`) for
+  compositing. Built-in effects (Grayscale, BrightPass, GaussianBlur, BloomComposite, CRT) are registered at startup
+  with keys `[Engine_PP] <name>` (`InternalPostProcFx.h`); user effects imported in the editor use `[PP] <name>`. The
+  chain is serialized into the scene file (`PostProcessing` key, see
+  [formats/scene-json.md](formats/scene-json.md#postprocessing)) and edited via the editor's Post Processing window,
+  which applies changes with a live preview + undoable commit (`PostProcEditor`, `PostProcUpdateCommand`).
 * Editor picking is done by reading the pixel from an entity-ID framebuffer attachment.
 
 ## Scripting (`src/Scripting`)

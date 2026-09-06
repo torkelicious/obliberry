@@ -13,6 +13,7 @@ the map, entities, UI, lighting, music, and asset references.
 | **Registry**         | All entities and their components (Transform, Mesh, Material, Script, etc.)  |
 | **Map**              | hex-grid map (stored as a `.obmap` file, referenced by the scene)            |
 | **UI**               | UI element tree (text, buttons, images) !! separate from the entity Registry |
+| **Post-Processing**  | Fullscreen effect chain (bloom, CRT, custom shaders)                         |
 | **Assets**           | List of textures, materials, meshes, shaders, fonts used by this scene       |
 
 > [!NOTE]
@@ -86,8 +87,9 @@ The engine loads in this order:
 1. **Properties** - Clear color, music, ambient light
 2. **Assets** - Registers textures, materials, meshes, shaders, fonts
 3. **Grid** - Loads the `.obmap` file, creates the MAP entity
-4. **Entities** - Creates all entities, adds components, then reparents children
-5. **UI** - Builds the UI element tree
+4. **Post-Processing** - Restores the effect chain (falls back to the default chain if the scene has none)
+5. **Entities** - Creates all entities, adds components, then reparents children
+6. **UI** - Builds the UI element tree
 
 This matters because entities can reference assets by ID, and children need their parents to exist first.
 
@@ -108,6 +110,7 @@ see: [api reference](../scripting/api-reference.md#persistence)
 
 ## See Also
 
+* [Post-Processing](post-processing.md) - Editing the scene's fullscreen effect chain
 * [Component Reference](components.md) - All components you can add to entities
 * [Map Editing](usage.md#map-edit-mode) - Painting and configuring the hex grid
 * [Prefabs](prefabs.md) - Creating reusable entity templates
