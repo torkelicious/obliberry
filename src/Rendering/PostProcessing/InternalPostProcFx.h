@@ -242,6 +242,63 @@ void main() {
 )";
 
 
+    inline constexpr char kPP_ColorGradingFrag[] = R"(
+#version 330 core
+#pragma once
+
+#include <color.glsl>
+
+uniform sampler2D u_Texture;
+
+uniform float u_Exposure;
+uniform float u_Contrast;
+uniform float u_Pivot;
+uniform float u_Saturation;
+
+// RGB adjustments
+uniform vec3 u_Lift;
+uniform vec3 u_Gamma;
+uniform vec3 u_Gain;
+
+// color wheels
+uniform vec3 u_ShadowWheel;
+uniform vec3 u_MidtoneWheel;
+uniform vec3 u_HighlightWheel;
+
+uniform vec3 u_ColorBalance;
+
+in vec2 v_UV;
+out vec4 FragColor;
+
+void main() {
+    vec4 src = texture(u_Texture, v_UV);
+    vec3 color = src.rgb;
+
+    // exposure
+    color *= exp2(u_Exposure);
+
+    // contrast
+    color = apply_contrast(color, u_Contrast, u_Pivot);
+
+    // lift gamma gain
+    color = apply_LGG(color, u_Lift, u_Gamma, u_Gain);
+
+    // color wheels
+    color = apply_color_wheels(color, u_ShadowWheel, u_MidtoneWheel, u_HighlightWheel);
+
+    // global color balance
+    color += u_ColorBalance;
+
+    // saturation
+    color = apply_saturation(color, u_Saturation);
+
+    // ion use hdr so no clamp aah
+    color = max(color, vec3(0.0));
+    FragColor = vec4(color, src.a);
+}
+)";
+
+
     // registration
 
     using UniformEntry = std::pair<const char *, UniformValue>;
@@ -275,7 +332,6 @@ void main() {
                              {{"u_Horizontal", 0}},
                      }},
             {.name = "BloomComposite", .vertex = kPP_PassthroughShaderVert, .fragment = kPP_BloomCompositeFrag, .uniforms = {{"u_Strength", 1.0f}}, .wantsSceneTexture = true},
-
             {.name = "CRT",
              .vertex = kPP_PassthroughShaderVert,
              .fragment = kPP_CRTShaderFrag,
@@ -298,9 +354,24 @@ void main() {
                      {
                              {"u_GrainAmount", 0.1f},
                              {"u_GrainSize", 1.0f},
-                     }
-
-            }
+                     }},
+            {.name = "ColorGrading",
+             .vertex = kPP_PassthroughShaderVert,
+             .fragment = kPP_ColorGradingFrag,
+             .uniforms =
+                     {
+                             {"u_Exposure", 0.0f},
+                             {"u_Contrast", 1.0f},
+                             {"u_Pivot", 0.5f},
+                             {"u_Saturation", 1.0f},
+                             {"u_Gamma", glm::vec3{1.0f, 1.0f, 1.0f}},
+                             {"u_Gain", glm::vec3{1.0f, 1.0f, 1.0f}},
+                             {"u_Lift", glm::vec3{0.0f, 0.0f, 0.0f}},
+                             {"u_ColorBalance", glm::vec3{0.0f, 0.0f, 0.0f}},
+                             {"u_ShadowWheel", glm::vec3{0.0f, 0.0f, 0.0f}},
+                             {"u_MidtoneWheel", glm::vec3{0.0f, 0.0f, 0.0f}},
+                             {"u_HighlightWheel", glm::vec3{0.0f, 0.0f, 0.0f}},
+                     }}
 
     };
 

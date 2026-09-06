@@ -198,16 +198,21 @@ namespace Editor::UI {
                         } else if constexpr (std::is_same_v<T, glm::vec2>) {
                             edited = DragFloatNClamped(key.c_str(), &val.x, 2);
                         } else if constexpr (std::is_same_v<T, glm::vec3>) {
-                            if (key.find("Color") != std::string::npos)
+                            if (key.find("Wheel") != std::string::npos)
+                                edited = ImGui::ColorEdit3(key.c_str(), &val.x, ImGuiColorEditFlags_PickerHueWheel);
+                            else if (key.find("Color") != std::string::npos)
                                 edited = ImGui::ColorEdit3(key.c_str(), &val.x);
                             else
                                 edited = DragFloatNClamped(key.c_str(), &val.x, 3);
                         } else if constexpr (std::is_same_v<T, glm::vec4>) {
-                            if (key.find("Color") != std::string::npos)
+                            if (key.find("Wheel") != std::string::npos)
+                                edited = ImGui::ColorEdit4(key.c_str(), &val.x, ImGuiColorEditFlags_PickerHueWheel);
+                            else if (key.find("Color") != std::string::npos)
                                 edited = ImGui::ColorEdit4(key.c_str(), &val.x);
                             else
                                 edited = DragFloatNClamped(key.c_str(), &val.x, 4);
                         }
+
 
                         if (edited)
                             m_Dirty = true;
