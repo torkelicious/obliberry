@@ -341,7 +341,7 @@ namespace Editor::UI {
 
     // import a standalone fragment shader as a pp effect
     void PostProcEditor::ImportEffectShader() {
-        const auto picked = Platform::FileDialogs::OpenFile(*m_Context, {.filterName = "Fragment Shader", .filterExt = "frag,glsl"});
+        const auto picked = Platform::FileDialogs::OpenFile(*m_Context, {.filterName = "Fragment Shader", .filterExt = "frag,glsl,shader"});
         if (!picked.has_value())
             return;
 
