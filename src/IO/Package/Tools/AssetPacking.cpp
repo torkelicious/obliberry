@@ -116,7 +116,7 @@ namespace IO::Package::Tools {
             writer.add_raw_data(canonical_path, std::move(raw_data), EntryType::Media, false);
             if (opts.verbose && !opts.quiet)
                 LOG_INFO(LOG_WHO, "[MEDIA]   " + canonical_path);
-        } else if (ext == ".vert" || ext == ".frag" || ext == ".glsl") {
+        } else if (ext == ".vert" || ext == ".frag" || ext == ".glsl" || ext == ".shader") {
             auto raw_data = read_file_binary(filepath);
             writer.add_raw_data(canonical_path, std::move(raw_data), EntryType::ShaderSource, opts.global_compress);
             if (opts.verbose && !opts.quiet)

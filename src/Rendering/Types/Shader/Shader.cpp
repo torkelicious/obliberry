@@ -178,9 +178,18 @@ namespace Rendering {
             preproc.setVirtualPathMode(true);
             // shader go through the VFS
             // includes resolve through the VFS first, then internals resource dir
+            // engine helpers are pkged into obpak in runtime
             preproc.setFileLoader([](const std::filesystem::path &p) -> std::string {
                 if (std::optional<std::string> vfsData = IO::VFS::ReadVirtual(p.generic_string())) {
                     return std::move(vfsData.value());
+                }
+
+                if (IO::VFS::IsPackaged()) {
+                    if (std::optional<std::string> helper = IO::VFS::ReadVirtual("engine/shaders/" + p.filename().generic_string())) {
+                        return std::move(helper.value());
+                    }
+                    LOG_ERROR(LOG_WHO, "Failed to open include file in package: " + p.string());
+                    return "";
                 }
 
                 const std::filesystem::path enginePath = std::string(Core::E_SHADER_RESOURCES_PATH) + p.filename().generic_string();

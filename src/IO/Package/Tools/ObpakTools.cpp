@@ -4,6 +4,7 @@
 #include <iostream>
 #include "AssetPacking.h"
 #include "DependencyGraph.h"
+#include "FileIO.h"
 #include "IgnoreRules.h"
 #include <string>
 #include <cctype>
@@ -80,6 +81,24 @@ namespace IO::Package::Tools {
             } catch (const std::exception &e) {
                 LOG_ERROR(LOG_WHO, it->path().string() + " - " + e.what());
                 ++fail_count;
+            }
+        }
+
+        // engine shader helpers inside the package so shader #includes work properly in exported games (VFS prefix engine/shaders/)
+        if (const std::filesystem::path engineShaderDir = GetInternalsDirectory() / "resources" / "shaders"; std::filesystem::exists(engineShaderDir)) {
+            for (const auto &entry : std::filesystem::directory_iterator(engineShaderDir)) {
+                if (!entry.is_regular_file())
+                    continue;
+                try {
+                    auto raw = read_file_binary(entry.path());
+                    const std::string virtPath = "engine/shaders/" + entry.path().filename().generic_string();
+                    writer.add_raw_data(virtPath, std::move(raw), Package::EntryType::ShaderSource, opts.global_compress);
+                    ++success_count;
+                    LOG_INFO(LOG_WHO, "[ENGINE_SHADER] " + virtPath);
+                } catch (const std::exception &e) {
+                    LOG_ERROR(LOG_WHO, entry.path().string() + " - " + e.what());
+                    ++fail_count;
+                }
             }
         }
 
