@@ -298,6 +298,46 @@ void main() {
 }
 )";
 
+    inline constexpr char kPP_VingetteFrag[] = R"(
+#version 330 core
+
+in vec2 v_UV;
+out vec4 FragColor;
+
+uniform sampler2D u_Texture;
+
+uniform float u_Alpha;
+uniform float u_InnerRadius;
+uniform float u_OuterRadius;
+uniform bool u_UseAspect;
+
+uniform vec2 u_Resolution;
+
+void main()
+{
+    vec4 color = texture(u_Texture, v_UV);
+
+    vec2 centered = v_UV - vec2(0.5);
+
+    if (u_UseAspect)
+    {
+        float aspect = u_Resolution.x / u_Resolution.y;
+        centered.x *= aspect;
+    }
+
+    float dist = length(centered);
+
+    float vignette = smoothstep(
+        u_InnerRadius,
+        u_OuterRadius,
+        dist
+    );
+
+    color.rgb *= 1.0 - vignette * u_Alpha;
+    FragColor = color;
+}
+)";
+
 
     // registration
 
@@ -371,7 +411,18 @@ void main() {
                              {"u_ShadowWheel", glm::vec3{0.0f, 0.0f, 0.0f}},
                              {"u_MidtoneWheel", glm::vec3{0.0f, 0.0f, 0.0f}},
                              {"u_HighlightWheel", glm::vec3{0.0f, 0.0f, 0.0f}},
-                     }}
+                     }},
+
+            {.name = "Vingette",
+             .vertex = kPP_PassthroughShaderVert,
+             .fragment = kPP_VingetteFrag,
+             .uniforms =
+                     {
+
+                             {"u_Alpha", 0.8f}, {"u_InnerRadius", 0.25f}, {"u_OuterRadius", 0.7f}, {"u_UseAspect", true}
+
+                     }},
+
 
     };
 

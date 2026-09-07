@@ -73,7 +73,7 @@ namespace Editor::UI {
 
     void PostProcEditor::DrawEffectList() {
         const float lineHeight = ImGui::GetFrameHeightWithSpacing();
-        const float listHeight = lineHeight * std::min<std::size_t>(m_StagingVec.size() + 1, 6) + ImGui::GetStyle().WindowPadding.y;
+        const float listHeight = lineHeight * std::min<std::size_t>(m_StagingVec.size() + 1, 10) + ImGui::GetStyle().WindowPadding.y;
 
         ImGui::BeginChild("EffectChain", ImVec2(0, listHeight), ImGuiChildFlags_Borders);
 
