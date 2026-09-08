@@ -97,6 +97,7 @@ add_executable(obliberry_editor
         Applications/Editor/EditorLayer.cpp
 
         # states
+        Applications/Editor/States/Hub/ProjectHistory.cpp
         Applications/Editor/States/Hub/HubState.cpp
         Applications/Editor/States/Editor/EditState.cpp
         Applications/Editor/States/Play/PlayState.cpp
