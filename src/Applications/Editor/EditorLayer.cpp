@@ -50,6 +50,11 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
 
     m_Input = m_Context->input;
 
+    // project history
+    if (m_ProjectHistory.Deserialize()) {
+        LOG_INFO(LOG_WHO, "Loaded project history");
+    }
+
     // theme / fonts
     UI::Theme::IO::Deserialize(m_EditorContext);
     Editor::UI::Theme::Apply(m_EditorContext.theme);
@@ -136,7 +141,7 @@ void Editor::EditorLayer::Render() {
     m_SaveMapDialog.Update();
 }
 
-void Editor::EditorLayer::Shutdown() {}
+void Editor::EditorLayer::Shutdown() { m_ProjectHistory.Serialize(); }
 
 void Editor::EditorLayer::HandleInput(const float dt) {
     // NOTE:
@@ -316,15 +321,24 @@ void Editor::EditorLayer::LoadProject(const std::string &projectFilePath) {
 
     Core::ResourceManager::GetInstance().ClearProjectResources();
 
-    Core::Project::Load(projectFilePath);
+    auto project = Core::Project::Load(projectFilePath);
+    if (!project) {
+        LOG_ERROR("LoadProject", "Failed to load project: " + projectFilePath);
+        return;
+    }
 
     // sync loaded config into EngineContext
-    *m_Context->projectConfig = Core::Project::GetActive()->GetConfig();
-    *m_Context->graphicsConfig = Config::GraphicsConfig::Deserialize("graphics.json");
+    if (m_Context->projectConfig) {
+        *m_Context->projectConfig = project->GetConfig();
+    }
+    if (m_Context->graphicsConfig) {
+        *m_Context->graphicsConfig = Config::GraphicsConfig::Deserialize("graphics.json");
+    }
 
     LoadStartScene();
 
     TransitionTo(std::make_unique<States::EditState>());
+    m_ProjectHistory.push(project->GetProjectPath());
 }
 
 void Editor::EditorLayer::LoadStartScene() {

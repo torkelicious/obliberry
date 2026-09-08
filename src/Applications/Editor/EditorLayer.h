@@ -1,4 +1,5 @@
 #pragma once
+#include "Applications/Editor/States/Hub/ProjectHistory.h"
 #include "EditorContext.h"
 #include <memory>
 #include <sstream>
@@ -38,6 +39,7 @@ namespace Editor {
         friend class States::HubState;
 
     public:
+        EditorLayer() = default;
         void Init(Core::EngineContext &ctx) override;
 
         void SetupFontSync(std::atomic<bool> *fontsDirty) override;
@@ -131,6 +133,9 @@ namespace Editor {
 
         // commands
         Commands::UndoManager m_UndoManager;
+
+        // Project History
+        ProjectHistory m_ProjectHistory;
 
         // Logging
         static constexpr size_t MAX_CONSOLE_LINES = 2000;
