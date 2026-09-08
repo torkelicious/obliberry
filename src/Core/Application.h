@@ -8,7 +8,6 @@
 #include <memory>
 #include <imgui_threaded_rendering.h>
 #include "Config/ProjectConfig.h"
-#include "ResourceManager.h"
 #include "Platform/Window/Window.h"
 #include "ApplicationLayer.h"
 #include "Config/GraphicsConfig.h"

@@ -92,7 +92,6 @@ namespace Core {
         float deltaTime = 0.0f;
         float timeScale = 1.0f;
         uint64_t frameCount = 0;
-        std::shared_ptr<Project> activeProject = nullptr;
         bool isEditorMode = false;
         // Logging
         Logging::ILogger *logger = nullptr;
