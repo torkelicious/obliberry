@@ -75,7 +75,7 @@ namespace Editor::States {
         }
 
         if (clicked) {
-            m_EditorLayer->LoadProject(entry.filePath);
+            m_EditorLayer->LoadProject(entry.filePath.string());
         }
 
         // card background
