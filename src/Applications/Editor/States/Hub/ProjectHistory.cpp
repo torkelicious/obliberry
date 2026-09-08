@@ -93,7 +93,7 @@ namespace Editor {
             ProjectHistoryEntry entry;
             entry.filePath = path;
             entry.timestamp = std::filesystem::last_write_time(path);
-            entry.ProjectConfig = Config::ProjectConfig::Deserialize(path);
+            entry.ProjectConfig = Config::ProjectConfig::Deserialize(path.string());
             return entry;
         } catch (const std::exception &e) {
             LOG_ERROR(LOG_WHO, e.what());
