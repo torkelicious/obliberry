@@ -17,7 +17,7 @@ namespace Editor::UI {
         void ImportEffectShader();
 
         // live edits
-        void Apply();
+        void Apply() const;
         void Restore();
         // push undo command
         void Commit();

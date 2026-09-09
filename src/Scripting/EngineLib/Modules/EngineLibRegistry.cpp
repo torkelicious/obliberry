@@ -21,7 +21,7 @@
 // Helper Object
 namespace Scripting {
 
-    ObSL::ObSLArray *ChildrenAsArray(ObSL::Interpreter *interp, ECS::Registry &reg, const ECS::EntityID id) {
+    static ObSL::ObSLArray *ChildrenAsArray(ObSL::Interpreter *interp, ECS::Registry &reg, const ECS::EntityID id) {
         auto *arr = interp->gc.allocate<ObSL::ObSLArray>();
         if (reg.IsValid(id)) {
             const ECS::Entity ent(id, &reg);
@@ -372,7 +372,7 @@ namespace Scripting {
             std::shared_lock lock(g_RegistryMutex);
             if (!registry.IsValid(id))
                 return std::monostate{};
-            auto *rel = registry.GetComponent<ECS::Components::RelationshipComponent>(id);
+            const auto *rel = registry.GetComponent<ECS::Components::RelationshipComponent>(id);
             if (!rel || rel->parent == ECS::INVALID_ENTITY_ID || !registry.IsValid(rel->parent))
                 return std::monostate{};
             return CreateEntityObject(interp, registry, rel->parent);
@@ -385,7 +385,7 @@ namespace Scripting {
                     parentId = static_cast<ECS::EntityID>(std::get<double>(args[0]));
                 } else if (std::holds_alternative<ObSL::ObSLObject *>(args[0])) {
                     auto *obj = std::get<ObSL::ObSLObject *>(args[0]);
-                    if (auto it = obj->fields.find("id"); it != obj->fields.end() && std::holds_alternative<double>(it->second))
+                    if (const auto it = obj->fields.find("id"); it != obj->fields.end() && std::holds_alternative<double>(it->second))
                         parentId = static_cast<ECS::EntityID>(std::get<double>(it->second));
                 }
             }
@@ -408,7 +408,7 @@ namespace Scripting {
             std::shared_lock lock(g_RegistryMutex);
             if (!registry.IsValid(id))
                 return 0.0;
-            auto *rel = registry.GetComponent<ECS::Components::RelationshipComponent>(id);
+            const auto *rel = registry.GetComponent<ECS::Components::RelationshipComponent>(id);
             if (!rel)
                 return 0.0;
             return static_cast<double>(rel->children.size());
@@ -421,7 +421,7 @@ namespace Scripting {
             std::shared_lock lock(g_RegistryMutex);
             if (!registry.IsValid(id))
                 return std::monostate{};
-            auto *rel = registry.GetComponent<ECS::Components::RelationshipComponent>(id);
+            const auto *rel = registry.GetComponent<ECS::Components::RelationshipComponent>(id);
             if (!rel)
                 return std::monostate{};
             for (const ECS::EntityID childId : rel->children) {
@@ -486,7 +486,7 @@ void Scripting::EngineLib::register_registry_modules(ObSL::Interpreter &interpre
                                                                                  name = std::get<std::string>(args[0]);
                                                                              }
                                                                              auto *worker = interp->user_data ? static_cast<ObSL::ScriptWorker *>(interp->user_data) : nullptr;
-                                                                             auto *cmd_buf = worker ? worker->frame_context<ScriptCommandBuffer>() : nullptr;
+                                                                             worker ? worker->frame_context<ScriptCommandBuffer>() : nullptr;
                                                                              std::unique_lock lock(g_RegistryMutex);
                                                                              const ECS::EntityID new_id = reg->CreateEntity();
                                                                              reg->SetEntityName(new_id, name);
@@ -501,7 +501,7 @@ void Scripting::EngineLib::register_registry_modules(ObSL::Interpreter &interpre
                                                                                 return std::monostate{};
                                                                             const std::string prefab_path = std::get<std::string>(args[0]);
                                                                             auto *worker = interp->user_data ? static_cast<ObSL::ScriptWorker *>(interp->user_data) : nullptr;
-                                                                            auto *cmd_buf = worker ? worker->frame_context<ScriptCommandBuffer>() : nullptr;
+                                                                            worker ? worker->frame_context<ScriptCommandBuffer>() : nullptr;
                                                                             std::unique_lock lock(g_RegistryMutex);
                                                                             const ECS::EntityID new_id = IO::PrefabManager::Instantiate(*reg, *ctx->resources, prefab_path);
                                                                             if (new_id == 0)

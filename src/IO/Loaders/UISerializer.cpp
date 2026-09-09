@@ -24,50 +24,50 @@ namespace IO::UISerializer {
 
     static void SerializeColor(json &j, const char *key, const glm::vec4 &color) { j[key] = {color.r, color.g, color.b, color.a}; }
 
-    void SerializeElement(nlohmann::json &j, const UI::UIElement *element, Core::ResourceManager &resources) {
-        j["name"] = element->Name;
-        SerializeRect(j, element);
-        SerializeFlags(j, element);
+    void SerializeElement(nlohmann::json &out, const UI::UIElement *element, Core::ResourceManager &resources) {
+        out["name"] = element->Name;
+        SerializeRect(out, element);
+        SerializeFlags(out, element);
 
         if (const auto *text = dynamic_cast<const UI::UIText *>(element)) {
-            j["type"] = "Text";
-            j["text"] = text->GetText();
-            SerializeColor(j, "color", text->GetColor());
+            out["type"] = "Text";
+            out["text"] = text->GetText();
+            SerializeColor(out, "color", text->GetColor());
             if (text->GetFont()) {
-                j["font"] = resources.GetKey(text->GetFont());
+                out["font"] = resources.GetKey(text->GetFont());
             }
         } else if (const auto *button = dynamic_cast<const UI::UIButton *>(element)) {
-            j["type"] = "Button";
-            j["text"] = button->GetText();
-            SerializeColor(j, "color", button->GetColor());
-            SerializeColor(j, "bg_color", button->GetBackgroundColor());
-            SerializeColor(j, "hovered_bg_color", button->GetHoveredBackgroundColor());
+            out["type"] = "Button";
+            out["text"] = button->GetText();
+            SerializeColor(out, "color", button->GetColor());
+            SerializeColor(out, "bg_color", button->GetBackgroundColor());
+            SerializeColor(out, "hovered_bg_color", button->GetHoveredBackgroundColor());
             if (button->GetBackgroundTexture()) {
-                j["bg_texture"] = resources.GetKey(button->GetBackgroundTexture());
+                out["bg_texture"] = resources.GetKey(button->GetBackgroundTexture());
             }
             if (button->GetFont()) {
-                j["font"] = resources.GetKey(button->GetFont());
+                out["font"] = resources.GetKey(button->GetFont());
             }
         } else if (const auto *image = dynamic_cast<const UI::UIImage *>(element)) {
-            j["type"] = "Image";
+            out["type"] = "Image";
             if (const auto &img = image->GetImage()) {
-                j["texture"] = resources.GetKey(img);
+                out["texture"] = resources.GetKey(img);
             }
-            SerializeColor(j, "color", image->GetColor());
+            SerializeColor(out, "color", image->GetColor());
         } else if (dynamic_cast<const UI::UIRect *>(element)) {
-            j["type"] = "Rect";
-            SerializeColor(j, "color", static_cast<const UI::UIRect *>(element)->GetColor());
+            out["type"] = "Rect";
+            SerializeColor(out, "color", static_cast<const UI::UIRect *>(element)->GetColor());
         } else {
-            j["type"] = "Element";
+            out["type"] = "Element";
         }
 
         // children
         if (!element->Children.empty()) {
-            j["children"] = json::array();
+            out["children"] = json::array();
             for (const auto *child : element->Children) {
                 json childJson;
                 SerializeElement(childJson, child, resources);
-                j["children"].push_back(std::move(childJson));
+                out["children"].push_back(std::move(childJson));
             }
         }
     }

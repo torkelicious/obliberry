@@ -13,7 +13,7 @@ namespace Editor::UI {
 
         void SetSelectedElement(::UI::UIElement *element) { m_SelectedElement = element; }
 
-        ::UI::UIElement *GetSelectedElement() const { return m_SelectedElement; };
+        ::UI::UIElement *GetSelectedElement() const { return m_SelectedElement; }
 
     private:
         void DrawElementNode(::UI::UIElement *element);

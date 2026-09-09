@@ -32,7 +32,7 @@ namespace Math::HexMath {
         const int32_t x = hex.q - (hex.r - (hex.r & 1)) / 2;
         const int32_t z = hex.r;
         const int32_t y = -x - z;
-        return {x, y, z};
+        return {.x = x, .y = y, .z = z};
     }
 
     // distance calculation on hex grids
@@ -105,7 +105,7 @@ namespace Math::HexMath {
             ry = -rx - rz;
         }
 
-        return {rx, ry, rz};
+        return {.x = rx, .y = ry, .z = rz};
     }
 
     inline Map::HexCoords CubeToOddR(const CubeCoords &cube) {

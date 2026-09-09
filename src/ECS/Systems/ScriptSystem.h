@@ -181,7 +181,7 @@ namespace ECS::Systems::ScriptSystem {
     inline void Update(Registry &registry, const Core::EngineContext &ctx) {
         if (!ctx.scriptPool || !ctx.threadPool)
             return;
-        constexpr ObSL::Token call_token{ObSL::TokenType::LEFT_PAREN, "(", 0, 0, 0, 0};
+        constexpr ObSL::Token call_token{.type = ObSL::TokenType::LEFT_PAREN, .lexeme = "(", .line = 0, .column = 0, .start_pos = 0, .end_pos = 0};
         constexpr uint64_t kReloadPollIntervalFrames = 300;
         const bool shouldPollReload = !IO::VFS::IsPackaged() && ctx.frameCount % kReloadPollIntervalFrames == 0;
 
@@ -213,10 +213,10 @@ namespace ECS::Systems::ScriptSystem {
             const auto raw_id = static_cast<EntityID>(entity);
             for (size_t i = 0; i < script->slots.size(); i++) {
                 auto &slot = script->slots[i];
-                s_AllSlots.push_back({raw_id, script, i});
+                s_AllSlots.push_back({.entityId = raw_id, .script = script, .slotIndex = i});
 
                 if (!slot.isInitialized) {
-                    pendingInits.push_back({raw_id, script, i, false});
+                    pendingInits.push_back({.entityId = raw_id, .script = script, .scriptIndex = i, .isReload = false});
                 }
 
                 try {
@@ -226,7 +226,7 @@ namespace ECS::Systems::ScriptSystem {
                         }
                         if (const std::filesystem::path &resolvedPath = slot.resolvedPath; std::filesystem::exists(resolvedPath)) {
                             if (const auto current_time = std::filesystem::last_write_time(resolvedPath); current_time > slot.lastModified && slot.isInitialized) {
-                                pendingInits.push_back({raw_id, script, i, true});
+                                pendingInits.push_back({.entityId = raw_id, .script = script, .scriptIndex = i, .isReload = true});
                             }
                         }
                     }
@@ -277,7 +277,7 @@ namespace ECS::Systems::ScriptSystem {
             auto &slot = ref.script->slots[ref.slotIndex];
             if (slot.isInitialized && !slot.on_update_functions.empty() && slot.on_update_functions[0]) {
                 const size_t w = (ref.entityId + ref.slotIndex) % num_workers;
-                s_Buckets[w].push_back({slot.on_update_functions[w], slot.instance_envs[w], slot.scriptPath, "on_update"});
+                s_Buckets[w].push_back({.func = slot.on_update_functions[w], .env = slot.instance_envs[w], .scriptPath = slot.scriptPath, .hookName = "on_update"});
                 ++totalWork;
             }
         }
@@ -291,7 +291,7 @@ namespace ECS::Systems::ScriptSystem {
                     s_PackagedStringPools.erase({entity_id, i});
                     if (slot.isInitialized && !slot.on_destroy_functions.empty() && slot.on_destroy_functions[0]) {
                         const size_t w = (entity_id + i) % num_workers;
-                        s_Buckets[w].push_back({slot.on_destroy_functions[w], slot.instance_envs[w], slot.scriptPath, "on_destroy"});
+                        s_Buckets[w].push_back({.func = slot.on_destroy_functions[w], .env = slot.instance_envs[w], .scriptPath = slot.scriptPath, .hookName = "on_destroy"});
                         ++totalWork;
                     }
                 }
@@ -349,7 +349,7 @@ namespace ECS::Systems::ScriptSystem {
     inline void OnSceneExit(Registry &registry, const Core::EngineContext &ctx) {
         if (!ctx.scriptPool || !ctx.threadPool)
             return;
-        constexpr ObSL::Token call_token{ObSL::TokenType::LEFT_PAREN, "(", 0, 0, 0, 0};
+        constexpr ObSL::Token call_token{.type = ObSL::TokenType::LEFT_PAREN, .lexeme = "(", .line = 0, .column = 0, .start_pos = 0, .end_pos = 0};
 
         // Static reuse
         static Scripting::ScriptCommandBuffer cmd_buf;
@@ -381,7 +381,7 @@ namespace ECS::Systems::ScriptSystem {
                 auto &slot = script->slots[i];
                 if (slot.isInitialized && !slot.on_exit_functions.empty() && slot.on_exit_functions[0]) {
                     const size_t w = (entity_id + i) % exit_workers;
-                    buckets[w].push_back({slot.on_exit_functions[w], slot.instance_envs[w], slot.scriptPath});
+                    buckets[w].push_back({.func = slot.on_exit_functions[w], .env = slot.instance_envs[w], .scriptPath = slot.scriptPath});
                 }
             }
         });

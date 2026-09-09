@@ -121,11 +121,11 @@ namespace Rendering {
         void SetPassthroughShader(std::shared_ptr<Shader> s) { m_PassthroughShader = std::move(s); }
 
         void RunPostProc();
-        void PresentToScreen(uint32_t width, uint32_t height);
+        void PresentToScreen(uint32_t width, uint32_t height) const;
 
     private:
         void BindLightmap(Shader *shader, size_t renderIndex) const;
-        void DrawFullscreenPassthrough(uint32_t coltex, uint32_t width, uint32_t height, FrameBuffer *target) const;
+        void DrawFullscreenPassthrough(uint32_t coltex, uint32_t width, uint32_t height, const FrameBuffer *target) const;
         void RenderBatch(const BatchKey &key, const glm::mat4 *transforms, const int32_t *entityIDs, size_t count, size_t renderIndex, const glm::vec4 *perInstanceColors = nullptr);
 
         std::vector<std::shared_ptr<void>> m_ResourcePins[2];

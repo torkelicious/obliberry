@@ -104,12 +104,12 @@ namespace ECS::Systems::LightingSystem {
 
             const glm::vec3 pos = transform->worldTransform.GetPosition();
             packedLights.push_back({
-                    pos.x,
-                    pos.y,
-                    light->radius,
-                    light->color.r * light->intensity,
-                    light->color.g * light->intensity,
-                    light->color.b * light->intensity,
+                    .x = pos.x,
+                    .y = pos.y,
+                    .radius = light->radius,
+                    .colorR = light->color.r * light->intensity,
+                    .colorG = light->color.g * light->intensity,
+                    .colorB = light->color.b * light->intensity,
             });
             light->dirty = false;
         }

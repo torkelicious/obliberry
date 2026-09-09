@@ -33,21 +33,21 @@ namespace UI {
 
         const std::pair<HandleType, RectTransform> handles[8] = {
 
-                {HandleType::TL, {{worldPos.x - half, worldPos.y - half}, {hitSize, hitSize}}},
-                {HandleType::TC, {{worldPos.x + size.x * 0.5f - half, worldPos.y - half}, {hitSize, hitSize}}},
-                {HandleType::TR, {{worldPos.x + size.x - half, worldPos.y - half}, {hitSize, hitSize}}},
-                {HandleType::RC, {{worldPos.x + size.x - half, worldPos.y + size.y * 0.5f - half}, {hitSize, hitSize}}},
-                {HandleType::BR, {{worldPos.x + size.x - half, worldPos.y + size.y - half}, {hitSize, hitSize}}},
-                {HandleType::BC, {{worldPos.x + size.x * 0.5f - half, worldPos.y + size.y - half}, {hitSize, hitSize}}},
-                {HandleType::BL, {{worldPos.x - half, worldPos.y + size.y - half}, {hitSize, hitSize}}},
-                {HandleType::LC, {{worldPos.x - half, worldPos.y + size.y * 0.5f - half}, {hitSize, hitSize}}}};
+                {HandleType::TL, {.Position = {worldPos.x - half, worldPos.y - half}, .Scale = {hitSize, hitSize}}},
+                {HandleType::TC, {.Position = {worldPos.x + size.x * 0.5f - half, worldPos.y - half}, .Scale = {hitSize, hitSize}}},
+                {HandleType::TR, {.Position = {worldPos.x + size.x - half, worldPos.y - half}, .Scale = {hitSize, hitSize}}},
+                {HandleType::RC, {.Position = {worldPos.x + size.x - half, worldPos.y + size.y * 0.5f - half}, .Scale = {hitSize, hitSize}}},
+                {HandleType::BR, {.Position = {worldPos.x + size.x - half, worldPos.y + size.y - half}, .Scale = {hitSize, hitSize}}},
+                {HandleType::BC, {.Position = {worldPos.x + size.x * 0.5f - half, worldPos.y + size.y - half}, .Scale = {hitSize, hitSize}}},
+                {HandleType::BL, {.Position = {worldPos.x - half, worldPos.y + size.y - half}, .Scale = {hitSize, hitSize}}},
+                {HandleType::LC, {.Position = {worldPos.x - half, worldPos.y + size.y * 0.5f - half}, .Scale = {hitSize, hitSize}}}};
 
         for (const auto &[type, rect] : handles) {
             if (IsPointInsideRect(mPos, rect))
                 return type;
         }
 
-        if (IsPointInsideRect(mPos, {worldPos, size}))
+        if (IsPointInsideRect(mPos, {.Position = worldPos, .Scale = size}))
             return HandleType::Translate;
 
         return HandleType::None;

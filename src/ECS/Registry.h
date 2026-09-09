@@ -120,7 +120,7 @@ namespace ECS {
             m_EntitySignatures[index] = 0;
 
             // increment gen & recycle
-            m_EntityVersions[index] = (m_EntityVersions[index] + 1) & (ENTITY_VERSION_MASK >> ENTITY_VERSION_SHIFT);
+            m_EntityVersions[index] = m_EntityVersions[index] + 1 & (ENTITY_VERSION_MASK >> ENTITY_VERSION_SHIFT);
             m_EntityStatus[index] = false;
             m_AvailableEntities.push(index);
 
@@ -149,7 +149,7 @@ namespace ECS {
 
         template <typename T, typename... Args> T &AddComponent(EntityID entity, Args &&...args) {
             assert(IsValid(entity) && "Attempted to add component to an invalid entity");
-            m_EntitySignatures[GetEntityIndex(entity)] |= (1ULL << ComponentTypeID<T>::ID());
+            m_EntitySignatures[GetEntityIndex(entity)] |= 1ULL << ComponentTypeID<T>::ID();
             return GetPool<T>()->Emplace(entity, std::forward<Args>(args)...);
         }
 
@@ -205,7 +205,7 @@ namespace ECS {
                         return;
                     }
                     const auto *rel = GetComponent<Components::RelationshipComponent>(ancestor);
-                    ancestor = (rel && IsValid(rel->parent)) ? rel->parent : INVALID_ENTITY_ID;
+                    ancestor = rel && IsValid(rel->parent) ? rel->parent : INVALID_ENTITY_ID;
                 }
             }
 

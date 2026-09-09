@@ -252,7 +252,7 @@ bool Editor::UI::RegistryPanel::OnCopy(Clipboard &clipboard) {
     if (!m_SelectedEntity || !m_SceneContext)
         return false;
 
-    nlohmann::json data = ECS::Utils::CopyEntityToJson(ECS::EntityID(m_SelectedEntity), &m_SceneContext->GetRegistry());
+    nlohmann::json data = ECS::Utils::CopyEntityToJson(static_cast<ECS::EntityID>(m_SelectedEntity), &m_SceneContext->GetRegistry());
     if (data.empty())
         return false;
     clipboard.Set(Clipboard::Type::Entity, std::move(data));
@@ -264,7 +264,7 @@ bool Editor::UI::RegistryPanel::OnPaste(const Clipboard &clipboard) {
         return false;
 
     auto cmd = std::make_unique<Commands::PasteEntityCommand>(clipboard.payload);
-    Commands::PasteEntityCommand *cmdPtr = cmd.get();
+    const Commands::PasteEntityCommand *cmdPtr = cmd.get();
     if (m_UndoManager) {
         m_UndoManager->Execute(std::move(cmd), *m_EngineContext);
     } else {

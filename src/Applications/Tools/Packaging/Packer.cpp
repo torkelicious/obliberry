@@ -100,7 +100,7 @@ int main(int argc, char *argv[]) {
     IO::ContainerWriter writer;
     IO::Package::Tools::DependencyGraph dep_graph;
     IO::Package::Tools::IgnoreRules ignore_rules = IO::Package::Tools::IgnoreRules::ForProject(project_dir);
-    IO::Package::Tools::PackOptions opts{global_compress, verbose, quiet, BINARY_NAME};
+    IO::Package::Tools::PackOptions opts{.global_compress = global_compress, .verbose = verbose, .quiet = quiet, .binary_name = BINARY_NAME};
     opts.ignore = &ignore_rules;
 
     int success_count = 0, fail_count = 0;

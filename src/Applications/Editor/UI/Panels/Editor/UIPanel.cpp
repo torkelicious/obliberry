@@ -413,7 +413,7 @@ namespace Editor::UI {
         if (!m_SelectedElement)
             return false;
 
-        nlohmann::json data; 
+        nlohmann::json data;
         IO::UISerializer::SerializeElement(data, m_SelectedElement, Core::ResourceManager::GetInstance());
         clipboard.Set(Clipboard::Type::UIElement, std::move(data));
         return true;
@@ -426,7 +426,7 @@ namespace Editor::UI {
         ::UI::UIElement *parent = m_SelectedElement && m_SelectedElement->Parent ? m_SelectedElement->Parent : nullptr;
 
         auto cmd = std::make_unique<Commands::PasteUIElementCommand>(parent, clipboard.payload);
-        Commands::PasteUIElementCommand *cmdPtr = cmd.get();
+        const Commands::PasteUIElementCommand *cmdPtr = cmd.get();
         if (m_UndoManager) {
             m_UndoManager->Execute(std::move(cmd), *m_EngineContext);
         } else {

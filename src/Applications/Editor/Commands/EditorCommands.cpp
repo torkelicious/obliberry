@@ -188,7 +188,7 @@ namespace Editor::Commands {
     void ProjectConfigUpdateCommand::Execute(Core::EngineContext &ctx) {
         if (ctx.projectConfig)
             *ctx.projectConfig = m_NewData;
-        if (auto project = Core::Project::GetActive())
+        if (const auto project = Core::Project::GetActive())
             project->MarkAsChanged();
         RefreshWindowTitle(ctx);
     }
@@ -196,7 +196,7 @@ namespace Editor::Commands {
     void ProjectConfigUpdateCommand::Undo(Core::EngineContext &ctx) {
         if (ctx.projectConfig)
             *ctx.projectConfig = m_OldData;
-        if (auto project = Core::Project::GetActive())
+        if (const auto project = Core::Project::GetActive())
             project->MarkAsChanged();
         RefreshWindowTitle(ctx);
     }

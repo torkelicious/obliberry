@@ -22,7 +22,7 @@ namespace Rendering {
         };
 
         registerDirective("include", [](const std::string &args, const std::filesystem::path &path, const uint32_t lineNum, PPState &baseState, ShaderPreprocessor &proc, std::string &output) {
-            auto *extState = dynamic_cast<BuiltinPPState *>(&baseState);
+            const auto *extState = dynamic_cast<BuiltinPPState *>(&baseState);
             std::filesystem::path includePath;
 
             if (args.size() > 2 && ((args.front() == '"' && args.back() == '"') || (args.front() == '<' && args.back() == '>'))) {

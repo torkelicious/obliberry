@@ -8,13 +8,15 @@
 
 namespace IO::VFS {
 
-    struct VFSStorage {
-        std::filesystem::path rootDir = {};
-        std::filesystem::path assetsDir = {};
-        bool isLoaded = false;
-        bool isPackaged = false;
-        ContainerReader packReader;
-    };
+    namespace {
+        struct VFSStorage {
+            std::filesystem::path rootDir = {};
+            std::filesystem::path assetsDir = {};
+            bool isLoaded = false;
+            bool isPackaged = false;
+            ContainerReader packReader;
+        };
+    } // namespace
 
     static VFSStorage s_State;
 
@@ -90,7 +92,7 @@ namespace IO::VFS {
         }
 
         // normalize paths
-        std::filesystem::path combinedPath = basePath / virtualPath;
+        const std::filesystem::path combinedPath = basePath / virtualPath;
         std::filesystem::path resolvedPath = std::filesystem::weakly_canonical(combinedPath);
         std::filesystem::path canonicalBase = std::filesystem::weakly_canonical(basePath);
 

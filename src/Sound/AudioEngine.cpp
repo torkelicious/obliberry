@@ -134,7 +134,7 @@ void Sound::AudioEngine::PlaySound2D(const std::string &filepath, const float vo
     {
         std::lock_guard lock(m_Mutex);
         if (decoder) {
-            m_SoundContexts[sfx] = MemoryAudioContext{std::move(localBuffer), decoder};
+            m_SoundContexts[sfx] = MemoryAudioContext{.buffer = std::move(localBuffer), .decoder = decoder};
         }
         m_ActiveSounds.push_back(sfx);
     }
@@ -195,7 +195,7 @@ void Sound::AudioEngine::PlayMusic(const std::string &filepath, const float volu
     {
         std::lock_guard lock(m_Mutex);
         m_CurrentMusic = music;
-        m_CurrentMusicContext = MemoryAudioContext{std::move(localBuffer), decoder};
+        m_CurrentMusicContext = MemoryAudioContext{.buffer = std::move(localBuffer), .decoder = decoder};
     }
 }
 

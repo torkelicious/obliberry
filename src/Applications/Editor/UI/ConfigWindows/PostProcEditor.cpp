@@ -314,7 +314,7 @@ namespace Editor::UI {
     }
 
     // apply inplace without going through undomgr
-    void PostProcEditor::Apply() { m_Context->renderer->GetPostProcessor().Effects() = m_StagingVec; }
+    void PostProcEditor::Apply() const { m_Context->renderer->GetPostProcessor().Effects() = m_StagingVec; }
 
     // restore without going through undomgr
     void PostProcEditor::Restore() {

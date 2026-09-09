@@ -535,20 +535,20 @@ void Rendering::Renderer::SetLightmap(const Lightmap *lightmap) {
     }
 }
 
-void Rendering::Renderer::EnsureSceneFramebufferSize(uint32_t w, uint32_t h) {
-    if (m_PPWidth == w && m_PPHeight == h)
+void Rendering::Renderer::EnsureSceneFramebufferSize(uint32_t width, uint32_t height) {
+    if (m_PPWidth == width && m_PPHeight == height)
         return;
-    m_PPWidth = w;
-    m_PPHeight = h;
-    SubmitInitTask(Platform::Threading::SmallTask([this, w, h] {
+    m_PPWidth = width;
+    m_PPHeight = height;
+    SubmitInitTask(Platform::Threading::SmallTask([this, width, height] {
         if (!m_SceneFrameBuffer) {
-            m_SceneFrameBuffer = std::make_shared<FrameBuffer>(w, h, true);
-            m_PingPong[0] = std::make_shared<FrameBuffer>(w, h, false);
-            m_PingPong[1] = std::make_shared<FrameBuffer>(w, h, false);
+            m_SceneFrameBuffer = std::make_shared<FrameBuffer>(width, height, true);
+            m_PingPong[0] = std::make_shared<FrameBuffer>(width, height, false);
+            m_PingPong[1] = std::make_shared<FrameBuffer>(width, height, false);
         } else {
-            m_SceneFrameBuffer->Invalidate(w, h);
-            m_PingPong[0]->Invalidate(w, h);
-            m_PingPong[1]->Invalidate(w, h);
+            m_SceneFrameBuffer->Invalidate(width, height);
+            m_PingPong[0]->Invalidate(width, height);
+            m_PingPong[1]->Invalidate(width, height);
         }
     }));
 }
@@ -562,9 +562,9 @@ void Rendering::Renderer::RunPostProc() {
     }
 }
 
-void Rendering::Renderer::PresentToScreen(uint32_t width, uint32_t height) { DrawFullscreenPassthrough(m_SceneFrameBuffer->GetColorAttID(), width, height, nullptr); }
+void Rendering::Renderer::PresentToScreen(const uint32_t width, const uint32_t height) const { DrawFullscreenPassthrough(m_SceneFrameBuffer->GetColorAttID(), width, height, nullptr); }
 
-void Rendering::Renderer::DrawFullscreenPassthrough(uint32_t coltex, uint32_t width, uint32_t height, FrameBuffer *target) const {
+void Rendering::Renderer::DrawFullscreenPassthrough(const uint32_t coltex, const uint32_t width, const uint32_t height, const FrameBuffer *target) const {
     if (!m_PassthroughShader || !m_PassthroughShader->IsValid())
         return;
     if (target) {

@@ -121,10 +121,10 @@ namespace Editor::UI {
                     ImGui::PushID(i);
                     ImGui::PushFont(fonts[i].fontPtr);
 
-                    std::string label = (fonts[i].role == Theme::FontRole::Body) ? "★ " : "  ";
+                    std::string label = fonts[i].role == Theme::FontRole::Body ? "★ " : "  ";
                     label += fonts[i].name;
 
-                    if (const bool selected = (m_SelectedFontIdx == i); ImGui::Selectable(label.c_str(), selected)) {
+                    if (const bool selected = m_SelectedFontIdx == i; ImGui::Selectable(label.c_str(), selected)) {
                         m_SelectedFontIdx = i;
                         std::snprintf(m_FontNameBuffer, sizeof(m_FontNameBuffer), "%s", fonts[i].name.c_str());
                         m_NameBufferFontIdx = i;
@@ -181,7 +181,7 @@ namespace Editor::UI {
                 if (const char *fontRoles[] = {"Body", "Bold", "Monospace", "Small", "Heading", "Icon"}; ImGui::BeginCombo("Role", fontRoles[currentRole])) {
                     for (int i = 0; i < IM_ARRAYSIZE(fontRoles); ++i) {
                         const auto role = static_cast<Theme::FontRole>(i);
-                        const bool selected = (selectedFont.role == role);
+                        const bool selected = selectedFont.role == role;
 
                         const bool taken = IsFontRoleTaken(fonts, role, m_SelectedFontIdx);
                         if (ImGui::Selectable(fontRoles[i], selected)) {

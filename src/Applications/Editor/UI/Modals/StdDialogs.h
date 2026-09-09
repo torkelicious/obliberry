@@ -45,7 +45,7 @@ namespace Editor::UI {
                 ImGui::Text("Template");
                 if (ImGui::BeginCombo("##template", m_Templates[m_SelectedTemplate].displayName.c_str())) {
                     for (size_t i = 0; i < m_Templates.size(); ++i) {
-                        const bool selected = (m_SelectedTemplate == i);
+                        const bool selected = m_SelectedTemplate == i;
                         if (ImGui::Selectable(m_Templates[i].displayName.c_str(), selected))
                             m_SelectedTemplate = i;
                         if (selected)

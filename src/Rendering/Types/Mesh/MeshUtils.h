@@ -30,8 +30,8 @@ namespace Rendering::MeshUtils {
     // UV coordinate for a point within a bounding box
     [[nodiscard]] inline glm::vec2 GenerateUV(const glm::vec2 &point, const glm::vec2 &min, const glm::vec2 &max) {
         const glm::vec2 size = max - min;
-        const float u = (size.x != 0.0f) ? (point.x - min.x) / size.x : 0.0f;
-        const float v = (size.y != 0.0f) ? (point.y - min.y) / size.y : 0.0f;
+        const float u = size.x != 0.0f ? (point.x - min.x) / size.x : 0.0f;
+        const float v = size.y != 0.0f ? (point.y - min.y) / size.y : 0.0f;
         return {u, v};
     }
 

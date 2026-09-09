@@ -16,7 +16,7 @@
 namespace Editor::States {
 
     namespace {
-        std::string TruncatePathToWidth(const std::string &path, float availWidth) {
+        std::string TruncatePathToWidth(const std::string &path, const float availWidth) {
             if (path.empty() || availWidth <= 0.0f)
                 return path;
             if (ImGui::CalcTextSize(path.c_str()).x <= availWidth)
@@ -31,9 +31,9 @@ namespace Editor::States {
             std::string bestFit = ellipsis;
 
             while (low <= high) {
-                size_t mid = low + (high - low) / 2;
-                size_t keepStart = mid / 2;
-                size_t keepEnd = mid - keepStart;
+                const size_t mid = low + (high - low) / 2;
+                const size_t keepStart = mid / 2;
+                const size_t keepEnd = mid - keepStart;
 
                 if (keepStart + keepEnd >= path.length())
                     break;
@@ -64,7 +64,7 @@ namespace Editor::States {
 
         const float padding = 10.0f;
         const float lineHeight = ImGui::GetTextLineHeightWithSpacing();
-        const float cardHeight = (lineHeight * 3) + (padding * 2);
+        const float cardHeight = lineHeight * 3 + padding * 2;
 
         const bool clicked = ImGui::InvisibleButton("##card_hitbox", ImVec2(cardWidth, cardHeight));
         const bool isHovered = ImGui::IsItemHovered();
@@ -87,7 +87,7 @@ namespace Editor::States {
 
         // close button
         const float removeBtnSize = ImGui::GetFrameHeight();
-        const float contentAvailWidth = cardWidth - (padding * 3) - removeBtnSize;
+        const float contentAvailWidth = cardWidth - padding * 3 - removeBtnSize;
 
         // card text overtop background
         ImGui::SetCursorScreenPos(ImVec2(startPos.x + padding, startPos.y + padding));
@@ -144,13 +144,13 @@ namespace Editor::States {
 
     void HubState::OnRender() {
         // invisible host window that covers the entire viewport to host the DockSpace
-        ImGuiViewport *viewport = ImGui::GetMainViewport();
+        const ImGuiViewport *viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos(viewport->WorkPos);
         ImGui::SetNextWindowSize(viewport->WorkSize);
         ImGui::SetNextWindowViewport(viewport->ID);
 
-        ImGuiWindowFlags hostFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus |
-                                     ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDocking;
+        const ImGuiWindowFlags hostFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus |
+                                           ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDocking;
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
@@ -160,8 +160,8 @@ namespace Editor::States {
         ImGui::PopStyleVar(3);
 
         // submit the DockSpace
-        ImGuiID dockspaceId = ImGui::GetID("HubDockSpace");
-        const ImGuiDockNodeFlags dockspaceFlags = ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_AutoHideTabBar;
+        const ImGuiID dockspaceId = ImGui::GetID("HubDockSpace");
+        constexpr ImGuiDockNodeFlags dockspaceFlags = ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_AutoHideTabBar;
         ImGui::DockSpace(dockspaceId, ImVec2(0.0f, 0.0f), dockspaceFlags);
 
         {
@@ -192,7 +192,7 @@ namespace Editor::States {
         ImGui::Spacing();
 
         if (ImGui::Button("Create New Project", ImVec2(-1.0f, 45.0f))) {
-            if (const auto dir = Platform::FileDialogs::PickFolder((*m_EditorLayer->m_Context))) {
+            if (const auto dir = Platform::FileDialogs::PickFolder(*m_EditorLayer->m_Context)) {
                 m_EditorLayer->m_NewProjectDialog.SetDirectory(std::filesystem::path(*dir));
                 m_EditorLayer->m_NewProjectDialog.SetTemplates(Core::Project::GetAvailableTemplates());
                 m_EditorLayer->m_NewProjectDialog.SetOnConfirm([this](const std::filesystem::path &pDir, const std::string &name, const std::string &templateId) {
@@ -207,7 +207,7 @@ namespace Editor::States {
         ImGui::Spacing();
 
         if (ImGui::Button("Open Existing Project", ImVec2(-1.0f, 45.0f))) {
-            if (const auto dir = Platform::FileDialogs::PickFolder((*m_EditorLayer->m_Context))) {
+            if (const auto dir = Platform::FileDialogs::PickFolder(*m_EditorLayer->m_Context)) {
                 if (const std::filesystem::path projectFile = std::filesystem::path(*dir) / "project.json"; std::filesystem::exists(projectFile)) {
                     m_EditorLayer->LoadProject(projectFile.string());
                 } else {

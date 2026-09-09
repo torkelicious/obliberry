@@ -80,7 +80,7 @@ namespace Rendering::PostProcessing::Parser {
 
         for (size_t i = 0; i < src.size(); ++i) {
             const char c = src[i];
-            const char next = (i + 1 < src.size()) ? src[i + 1] : '\0';
+            const char next = i + 1 < src.size() ? src[i + 1] : '\0';
 
             if (lineCmt) {
                 if (c == '\n') {
@@ -116,7 +116,7 @@ namespace Rendering::PostProcessing::Parser {
         return result;
     }
 
-    inline std::vector<std::string_view> Tokenize(std::string_view src) {
+    inline std::vector<std::string_view> Tokenize(const std::string_view src) {
         std::vector<std::string_view> tokens;
         size_t i = 0;
         while (i < src.size()) {

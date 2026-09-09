@@ -83,9 +83,9 @@ namespace Scripting {
             g_Caches.try_emplace(interp, Cache(interp));
         }
 
-        static Cache *Get(ObSL::Interpreter *interp) {
+        static Cache *Get(const ObSL::Interpreter *interp) {
             std::shared_lock lock(g_MapMutex);
-            const auto it = g_Caches.find(interp);
+            const auto it = g_Caches.find(const_cast<ObSL::Interpreter *>(interp));
             return it != g_Caches.end() ? &it->second : nullptr;
         }
 

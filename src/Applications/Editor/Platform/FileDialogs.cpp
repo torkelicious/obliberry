@@ -24,9 +24,9 @@ namespace Editor::Platform {
     }
 
     std::optional<std::string> FileDialogs::OpenFile(const Core::EngineContext &ctx, const FileDialogOptions &options) {
-        const nfdfilteritem_t filterItem[1] = {{options.filterName, options.filterExt}};
+        const nfdfilteritem_t filterItem[1] = {{.name = options.filterName, .spec = options.filterExt}};
 
-        nfdopendialogu8args_t args = {nullptr};
+        nfdopendialogu8args_t args = {.filterList = nullptr};
         args.filterList = options.filterName && options.filterExt ? filterItem : nullptr;
         args.filterCount = options.filterName && options.filterExt ? 1 : 0;
         args.defaultPath = options.defaultPath;
@@ -44,9 +44,9 @@ namespace Editor::Platform {
     }
 
     std::optional<std::string> FileDialogs::SaveFile(const Core::EngineContext &ctx, const FileDialogOptions &options) {
-        const nfdfilteritem_t filterItem[1] = {{options.filterName, options.filterExt}};
+        const nfdfilteritem_t filterItem[1] = {{.name = options.filterName, .spec = options.filterExt}};
 
-        nfdsavedialogu8args_t args = {nullptr};
+        nfdsavedialogu8args_t args = {.filterList = nullptr};
         args.filterList = options.filterName && options.filterExt ? filterItem : nullptr;
         args.filterCount = options.filterName && options.filterExt ? 1 : 0;
         args.defaultPath = options.defaultPath;
@@ -73,7 +73,7 @@ namespace Editor::Platform {
     }
 
     std::optional<std::string> FileDialogs::PickFolder(const Core::EngineContext &ctx, const char *defaultPath, const char *title, const char *acceptBtnLabel, const char *cancelBtnLabel) {
-        nfdpickfolderu8args_t args = {nullptr};
+        nfdpickfolderu8args_t args = {.defaultPath = nullptr};
         args.defaultPath = defaultPath;
         args.parentWindow = GetNativeHandle(ctx);
         args.title = title;

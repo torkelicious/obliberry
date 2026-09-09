@@ -77,7 +77,7 @@ namespace ECS::Systems::ParticleSystem {
 
         auto &emitters = GetEmitters();
 
-        registry.ForEach<Components::ParticleEmitterComponent, Components::TransformComponent>([&](Entity entity, Components::ParticleEmitterComponent *comp, Components::TransformComponent *tc) {
+        registry.ForEach<Components::ParticleEmitterComponent, Components::TransformComponent>([&](const Entity entity, Components::ParticleEmitterComponent *comp, const Components::TransformComponent *tc) {
             if (!comp || !comp->active)
                 return;
 
@@ -161,7 +161,7 @@ namespace ECS::Systems::ParticleSystem {
         const glm::vec3 camRight = camera ? camera->GetRightVector() : glm::vec3(1.0f, 0.0f, 0.0f);
         const glm::vec3 camUp = camera ? camera->GetUpVector() : glm::vec3(0.0f, 1.0f, 0.0f);
 
-        registry.ForEach<Components::ParticleEmitterComponent>([&](Entity entity, const Components::ParticleEmitterComponent *comp) {
+        registry.ForEach<Components::ParticleEmitterComponent>([&](const Entity entity, const Components::ParticleEmitterComponent *comp) {
             if (!comp || comp->emitterIndex < 0 || comp->emitterIndex >= static_cast<int>(emitters.size()) || emitters[comp->emitterIndex].sourceEntity != static_cast<EntityID>(entity))
                 return;
 

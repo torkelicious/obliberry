@@ -22,7 +22,7 @@ namespace Editor {
         m_Entries.push_back(std::move(*entry));
         prune();
         sortEntries(m_Entries);
-    };
+    }
 
     bool ProjectHistory::Serialize(const std::filesystem::path &path) const {
         std::vector<ProjectHistoryEntry> sortedEntries = m_Entries;

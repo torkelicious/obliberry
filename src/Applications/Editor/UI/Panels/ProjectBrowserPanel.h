@@ -70,7 +70,7 @@ namespace Editor::UI {
 
         // Delete confirmation state
         std::string m_DeleteConfirmKey;
-        AssetType m_DeleteConfirmType;
+        AssetType m_DeleteConfirmType{};
         std::string m_DeleteConfirmFilePath; // for file based assets
 
         char m_NewScriptBuffer[64] = {};

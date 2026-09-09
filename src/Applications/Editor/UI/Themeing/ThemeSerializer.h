@@ -40,8 +40,8 @@ namespace Editor::UI::Theme::IO {
 
         for (const auto &info : kStyleVarTable) {
             std::visit(
-                    [&](auto memberPtr) {
-                        using MemberT = std::decay_t<decltype(memberPtr)>;
+                    [&]<typename T0>(T0) {
+                        using MemberT = std::decay_t<T0>;
 
                         if constexpr (std::is_same_v<MemberT, FloatMember>) {
                             if (auto val = theme.GetFloat(info.id)) {
@@ -83,8 +83,8 @@ namespace Editor::UI::Theme::IO {
             for (const auto &[name, val] : j["vars"].items()) {
                 if (const auto *info = FindStyleVar(name)) {
                     std::visit(
-                            [&](auto memberPtr) {
-                                using MemberT = std::decay_t<decltype(memberPtr)>;
+                            [&]<typename T0>(T0) {
+                                using MemberT = std::decay_t<T0>;
 
                                 if constexpr (std::is_same_v<MemberT, FloatMember>) {
                                     if (val.is_number()) {

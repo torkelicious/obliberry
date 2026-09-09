@@ -162,7 +162,7 @@ void Editor::EditorLayer::HandleInput(const float dt) {
 
     // mode-independent hotkeys
     if (m_Input->IsKeyPressed("Esc")) {
-        if (const bool hasChanges = (m_Scene && m_Scene->HasUnsavedChanges()) || (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges())) {
+        if ((m_Scene && m_Scene->HasUnsavedChanges()) || (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges())) {
             m_SaveChangesDialog.SetMessage("Do you want to save before quitting?");
             m_SaveChangesDialog.SetOnSave([this] {
                 if (m_Scene && m_Scene->HasUnsavedChanges()) {
@@ -349,7 +349,7 @@ void Editor::EditorLayer::LoadProject(const std::string &projectFilePath) {
 
     Core::ResourceManager::GetInstance().ClearProjectResources();
 
-    auto project = Core::Project::Load(projectFilePath);
+    const auto project = Core::Project::Load(projectFilePath);
     if (!project) {
         LOG_ERROR("LoadProject", "Failed to load project: " + projectFilePath);
         return;
@@ -601,7 +601,7 @@ void Editor::EditorLayer::DrawToolbar() {
                         m_NewProjectDialog.Open();
                     };
 
-                    if (const bool hasChanges = (m_Scene && m_Scene->HasUnsavedChanges()) || (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges())) {
+                    if ((m_Scene && m_Scene->HasUnsavedChanges()) || (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges())) {
                         m_SaveChangesDialog.SetMessage("Do you want to save before creating a new project?");
                         m_SaveChangesDialog.SetOnSave([this, onProceed] {
                             if (m_Scene && m_Scene->HasUnsavedChanges()) {
@@ -612,7 +612,7 @@ void Editor::EditorLayer::DrawToolbar() {
                             }
                             onProceed();
                         });
-                        m_SaveChangesDialog.SetOnDiscard([this, onProceed] { onProceed(); });
+                        m_SaveChangesDialog.SetOnDiscard([onProceed] { onProceed(); });
                         m_SaveChangesDialog.Open();
                     } else {
                         onProceed();
@@ -678,7 +678,7 @@ void Editor::EditorLayer::DrawToolbar() {
             ImGui::Separator();
 
             if (ImGui::MenuItem("Close Project")) {
-                if (const bool hasChanges = (m_Scene && m_Scene->HasUnsavedChanges()) || (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges())) {
+                if ((m_Scene && m_Scene->HasUnsavedChanges()) || (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges())) {
                     m_SaveChangesDialog.SetMessage("Do you want to save before closing the project?");
                     m_SaveChangesDialog.SetOnSave([this] {
                         if (m_Scene && m_Scene->HasUnsavedChanges()) {
@@ -731,7 +731,7 @@ void Editor::EditorLayer::DrawToolbar() {
             ImGui::Separator();
 
             if (ImGui::MenuItem("Exit")) {
-                if (const bool hasChanges = (m_Scene && m_Scene->HasUnsavedChanges()) || (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges())) {
+                if ((m_Scene && m_Scene->HasUnsavedChanges()) || (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges())) {
                     m_SaveChangesDialog.SetMessage("Do you want to save before quitting?");
                     m_SaveChangesDialog.SetOnSave([this] {
                         if (m_Scene && m_Scene->HasUnsavedChanges()) {
@@ -843,8 +843,8 @@ void Editor::EditorLayer::DrawToolbar() {
                                 ECS::Components::MapComponent mapComp;
                                 mapComp.hexMesh = m_Context->resources->Get<Rendering::Mesh>("[Engine] Hex");
                                 const auto shader = m_Context->resources->Get<Rendering::Shader>("[Engine] Base");
-                                mapComp.outlineMat = std::make_shared<Rendering::Material>(Rendering::Material{shader, nullptr, {1, 0, 0, 0.5f}});
-                                mapComp.pathToMat = std::make_shared<Rendering::Material>(Rendering::Material{shader, nullptr, {1, 1, 1, 0.5f}});
+                                mapComp.outlineMat = std::make_shared<Rendering::Material>(Rendering::Material{.shader = shader, .texture = nullptr, .color = {1, 0, 0, 0.5f}});
+                                mapComp.pathToMat = std::make_shared<Rendering::Material>(Rendering::Material{.shader = shader, .texture = nullptr, .color = {1, 1, 1, 0.5f}});
                                 mapComp.mapFilePath.clear();
                                 mapComp.needsMeshUpdate = true;
 

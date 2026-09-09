@@ -61,7 +61,7 @@ namespace Rendering {
 
         void setFileLoader(FileLoaderFunc loader);
 
-        void setVirtualPathMode(bool enabled) { m_VirtualPaths = enabled; }
+        void setVirtualPathMode(const bool enabled) { m_VirtualPaths = enabled; }
 
         std::string loadFile(const std::filesystem::path &path) const;
 

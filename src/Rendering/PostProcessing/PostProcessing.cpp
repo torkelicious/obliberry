@@ -61,9 +61,9 @@ namespace Rendering::PostProcessing {
         m_Effects.push_back(std::move(fx));
     }
 
-    FrameBuffer *PostProcessor::Execute(FrameBuffer *scene, FrameBuffer *pingA, FrameBuffer *pingB) {
+    FrameBuffer *PostProcessor::Execute(FrameBuffer *scene, FrameBuffer *pingA, FrameBuffer *pingB) const {
         FrameBuffer *ping[2] = {pingA, pingB};
-        FrameBuffer *currentInput = scene;
+        const FrameBuffer *currentInput = scene;
         FrameBuffer *lastOutput = nullptr;
         int writeIdx = 0;
         bool ran = false;

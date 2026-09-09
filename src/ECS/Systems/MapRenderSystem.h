@@ -37,7 +37,7 @@ namespace ECS::Systems::MapRenderSystem {
         const int minR = std::min({tl.r, tr.r, bl.r, br.r});
         const int maxR = std::max({tl.r, tr.r, bl.r, br.r});
 
-        return {minQ - 1, maxQ + 1, minR - 1, maxR + 1};
+        return {.minQ = minQ - 1, .maxQ = maxQ + 1, .minR = minR - 1, .maxR = maxR + 1};
     }
 
     [[nodiscard]] inline bool Contains(const Math::Projection::AABB &outer, const Math::Projection::AABB &inner) noexcept {
@@ -49,9 +49,7 @@ namespace ECS::Systems::MapRenderSystem {
             if (!mapComp->hexMesh)
                 return;
 
-            const Math::Projection::AABB cameraBounds{.min = frustum.minBounds, .max = frustum.maxBounds};
-
-            if (const bool needsRebuild = mapComp->needsMeshUpdate || !Contains(mapComp->bufferedRenderAABB, cameraBounds)) {
+            if (const Math::Projection::AABB cameraBounds{.min = frustum.minBounds, .max = frustum.maxBounds}; mapComp->needsMeshUpdate || !Contains(mapComp->bufferedRenderAABB, cameraBounds)) {
                 mapComp->bufferedRenderAABB = CalculateBufferedAABB(cameraBounds);
                 const auto [minQ, maxQ, minR, maxR] = GetGridBoundsForAABB(mapComp->bufferedRenderAABB);
 

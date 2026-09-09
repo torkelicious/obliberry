@@ -7,7 +7,7 @@
 
 namespace Core::Utils::Fmt {
 
-    inline std::string formatFileTimestamp(std::filesystem::file_time_type time) {
+    inline std::string formatFileTimestamp(const std::filesystem::file_time_type time) {
         const auto fileNow = std::filesystem::file_time_type::clock::now();
         const auto sysNow = std::chrono::system_clock::now();
         const auto sysTime = sysNow + std::chrono::duration_cast<std::chrono::system_clock::duration>(time - fileNow);

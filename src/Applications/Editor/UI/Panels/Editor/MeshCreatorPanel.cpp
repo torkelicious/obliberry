@@ -50,7 +50,7 @@ namespace {
         const float toleranceSq = tolerance * tolerance;
         points.emplace_back(path.anchors[0].position.x, path.anchors[0].position.y);
 
-        const size_t segmentCount = path.closed ? n : (n - 1);
+        const size_t segmentCount = path.closed ? n : n - 1;
         for (size_t i = 0; i < segmentCount; ++i) {
             const ImVectorEditor::Anchor &a = path.anchors[i];
             const ImVectorEditor::Anchor &b = path.anchors[(i + 1) % n];
@@ -346,7 +346,7 @@ void Editor::UI::MeshCreatorPanel::GenerateMesh() {
     m_GeneratedMeshData = Rendering::MeshFactory::CreateCustomMesh2D(outline);
     m_GeneratedVertexCount = static_cast<int>(m_GeneratedMeshData.vertices.size());
     m_GeneratedTriangleCount = static_cast<int>(m_GeneratedMeshData.indices.size() / 3);
-    m_MeshTriangFailure = (m_GeneratedVertexCount > 0 && m_GeneratedMeshData.indices.empty());
+    m_MeshTriangFailure = m_GeneratedVertexCount > 0 && m_GeneratedMeshData.indices.empty();
     m_MeshGenerated = true;
     m_MeshStale = false;
 }

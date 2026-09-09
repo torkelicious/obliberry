@@ -12,7 +12,7 @@
 
 namespace Scripting {
 
-    void BuildBaseUIFields(ObSL::ObSLObject *obj, ObSL::Interpreter *interp, std::shared_ptr<const std::string> name, Core::EngineContext *ctx) {
+    static void BuildBaseUIFields(ObSL::ObSLObject *obj, ObSL::Interpreter *interp, std::shared_ptr<const std::string> name, Core::EngineContext *ctx) {
         obj->fields["GetName"] = interp->gc.allocate<ObSL::NativeFunction>(0, [name](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value { return *name; }, "GetName");
 
         obj->fields["GetPosition"] = interp->gc.allocate<ObSL::NativeFunction>(
@@ -135,7 +135,7 @@ namespace Scripting {
                 "SetVisible");
     }
 
-    ObSL::ObSLObject *CreateUIButtonObject(ObSL::Interpreter *interp, const std::string &name, Core::EngineContext *ctx) {
+    static ObSL::ObSLObject *CreateUIButtonObject(ObSL::Interpreter *interp, const std::string &name, Core::EngineContext *ctx) {
         auto *obj = interp->gc.allocate<ObSL::ObSLObject>();
         EngineLibFactories::GCProtectGuard guard(interp, obj);
         auto namePtr = std::make_shared<const std::string>(name);
@@ -310,7 +310,7 @@ namespace Scripting {
         return obj;
     }
 
-    ObSL::ObSLObject *CreateUITextObject(ObSL::Interpreter *interp, const std::string &name, Core::EngineContext *ctx) {
+    static ObSL::ObSLObject *CreateUITextObject(ObSL::Interpreter *interp, const std::string &name, Core::EngineContext *ctx) {
         auto *obj = interp->gc.allocate<ObSL::ObSLObject>();
         EngineLibFactories::GCProtectGuard guard(interp, obj);
         auto namePtr = std::make_shared<const std::string>(name);
@@ -406,7 +406,7 @@ namespace Scripting {
         return obj;
     }
 
-    ObSL::ObSLObject *CreateUIRectObject(ObSL::Interpreter *interp, const std::string &name, Core::EngineContext *ctx) {
+    static ObSL::ObSLObject *CreateUIRectObject(ObSL::Interpreter *interp, const std::string &name, Core::EngineContext *ctx) {
         auto *obj = interp->gc.allocate<ObSL::ObSLObject>();
         EngineLibFactories::GCProtectGuard guard(interp, obj);
         auto namePtr = std::make_shared<const std::string>(name);
@@ -453,7 +453,7 @@ namespace Scripting {
         return obj;
     }
 
-    ObSL::ObSLObject *CreateUIImageObject(ObSL::Interpreter *interp, const std::string &name, Core::EngineContext *ctx) {
+    static ObSL::ObSLObject *CreateUIImageObject(ObSL::Interpreter *interp, const std::string &name, Core::EngineContext *ctx) {
         auto *obj = interp->gc.allocate<ObSL::ObSLObject>();
         EngineLibFactories::GCProtectGuard guard(interp, obj);
         auto namePtr = std::make_shared<const std::string>(name);
@@ -500,7 +500,7 @@ namespace Scripting {
         return obj;
     }
 
-    ObSL::ObSLObject *WrapExistingElement(ObSL::Interpreter *interp, UI::UIElement *el, Core::EngineContext *ctx) {
+    static ObSL::ObSLObject *WrapExistingElement(ObSL::Interpreter *interp, UI::UIElement *el, Core::EngineContext *ctx) {
         const std::string &name = el->Name;
         if (dynamic_cast<UI::UIButton *>(el))
             return CreateUIButtonObject(interp, name, ctx);

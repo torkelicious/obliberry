@@ -54,7 +54,7 @@ namespace Core {
             templates.push_back(std::move(info));
         }
 
-        std::sort(templates.begin(), templates.end(), [](const TemplateInfo &a, const TemplateInfo &b) { return a.id < b.id; });
+        std::ranges::sort(templates, [](const TemplateInfo &a, const TemplateInfo &b) { return a.id < b.id; });
         return templates;
     }
 
