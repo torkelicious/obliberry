@@ -24,7 +24,7 @@ namespace IO::UISerializer {
 
     static void SerializeColor(json &j, const char *key, const glm::vec4 &color) { j[key] = {color.r, color.g, color.b, color.a}; }
 
-    static void SerializeElement(nlohmann::json &j, const UI::UIElement *element, Core::ResourceManager &resources) {
+    void SerializeElement(nlohmann::json &j, const UI::UIElement *element, Core::ResourceManager &resources) {
         j["name"] = element->Name;
         SerializeRect(j, element);
         SerializeFlags(j, element);
@@ -104,7 +104,7 @@ namespace IO::UISerializer {
         }
     }
 
-    static std::unique_ptr<UI::UIElement> DeserializeElement(const json &j, Core::ResourceManager &resources) {
+    std::unique_ptr<UI::UIElement> DeserializeElement(const json &j, Core::ResourceManager &resources) {
         const std::string type = j.value("type", "Element");
         std::unique_ptr<UI::UIElement> element;
 
@@ -207,6 +207,23 @@ namespace IO::UISerializer {
             // recurse for nested children
             DeserializeChildren(childJson, raw, uiSystem, resources);
         }
+    }
+
+    UI::UIElement *DeserializeElementTree(const json &j, UI::UIElement *parent, UI::UISystem &uiSystem, Core::ResourceManager &resources) {
+        std::unique_ptr<UI::UIElement> element = DeserializeElement(j, resources);
+        if (!element)
+            return nullptr;
+
+        UI::UIElement *resolvedParent = parent ? parent : uiSystem.GetRoot();
+        if (!resolvedParent)
+            return nullptr;
+
+        UI::UIElement *raw = uiSystem.AddChild(resolvedParent, std::move(element));
+        if (!raw)
+            return nullptr;
+
+        DeserializeChildren(j, raw, uiSystem, resources);
+        return raw;
     }
 
     void Serialize(json &out, UI::UISystem &uiSystem, Core::ResourceManager &resources) {
