@@ -10,6 +10,7 @@
 #include "IO/Loaders/PrefabManager.h"
 #include "Core/Constants.h"
 #include "Core/ResourceManager.h"
+#include "Core/Utils/ECSUtils.h"
 
 #include <imgui.h>
 #include <functional>
@@ -17,16 +18,6 @@
 #include <unordered_set>
 
 namespace {
-    bool IsAncestorOf(ECS::Registry &registry, const ECS::EntityID entity, const ECS::EntityID candidate) {
-        const auto *rel = registry.GetComponent<ECS::Components::RelationshipComponent>(entity);
-        while (rel && rel->parent != ECS::INVALID_ENTITY_ID) {
-            if (rel->parent == candidate)
-                return true;
-            rel = registry.GetComponent<ECS::Components::RelationshipComponent>(rel->parent);
-        }
-        return false;
-    }
-
     std::string GetLabel(const ECS::Entity &entity, const ECS::EntityID id) {
         std::string label = entity.GetName();
         if (label.empty())
@@ -157,7 +148,7 @@ void Editor::UI::RegistryPanel::OnImGuiRender() {
             if (ImGui::BeginDragDropTarget()) {
                 if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("ENTITY_DRAG")) {
                     // prevent self parenting and ancestor cycles
-                    if (const ECS::EntityID draggedId = *static_cast<const ECS::EntityID *>(payload->Data); draggedId != id && !IsAncestorOf(registry, id, draggedId)) {
+                    if (const ECS::EntityID draggedId = *static_cast<const ECS::EntityID *>(payload->Data); draggedId != id && !ECS::Utils::IsAncestorOf(registry, id, draggedId)) {
                         registry.Reparent(draggedId, id);
                         MarkSceneChanged(m_EngineContext);
                     }
@@ -198,7 +189,7 @@ void Editor::UI::RegistryPanel::OnImGuiRender() {
                     for (const ECS::EntityID otherId : visibleSet) {
                         if (otherId == id)
                             continue;
-                        if (IsAncestorOf(registry, otherId, id))
+                        if (ECS::Utils::IsAncestorOf(registry, otherId, id))
                             continue;
                         if (ECS::Entity other(otherId, &registry); ImGui::MenuItem(GetLabel(other, otherId).c_str())) {
                             registry.Reparent(id, otherId);
@@ -206,6 +197,11 @@ void Editor::UI::RegistryPanel::OnImGuiRender() {
                         }
                     }
                     ImGui::EndMenu();
+                }
+
+                if (ImGui::MenuItem("Duplicate")) {
+                    ECS::Utils::PasteEntity(id, &registry);
+                    MarkSceneChanged(m_EngineContext);
                 }
 
                 ImGui::EndPopup();
