@@ -1,4 +1,5 @@
 #include "UIPanel.h"
+#include "IO/Loaders/UISerializer.h"
 #include "imgui.h"
 #include "UI/Elements/UIText.h"
 #include "UI/Elements/UIButton.h"
@@ -8,7 +9,7 @@
 #include "Applications/Editor/UI/Panels/Editor/EditorWidgetsCombo.h"
 #include "Applications/Editor/UI/Panels/Editor/EditorWidgets.h"
 #include <cstring>
-#include <algorithm>
+#include <utility>
 
 namespace Editor::UI {
 
@@ -165,7 +166,8 @@ namespace Editor::UI {
 
     void UIPanel::OnImGuiRender() {
         ImGui::Begin("UI Hierarchy");
-        m_IsHovered = ImGui::IsWindowHovered();
+
+        m_IsHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows | ImGuiHoveredFlags_AllowWhenBlockedByPopup);
 
         auto *uiSys = m_EngineContext ? m_EngineContext->uiSystem : nullptr;
         if (!uiSys) {
@@ -405,6 +407,35 @@ namespace Editor::UI {
         }
 
         ImGui::End();
+    }
+
+    bool UIPanel::OnCopy(Clipboard &clipboard) {
+        if (!m_SelectedElement)
+            return false;
+
+        nlohmann::json data; 
+        IO::UISerializer::SerializeElement(data, m_SelectedElement, Core::ResourceManager::GetInstance());
+        clipboard.Set(Clipboard::Type::UIElement, std::move(data));
+        return true;
+    }
+
+    bool UIPanel::OnPaste(const Clipboard &clipboard) {
+        if (!clipboard.Has(Clipboard::Type::UIElement) || !m_EngineContext || !m_EngineContext->uiSystem)
+            return false;
+
+        ::UI::UIElement *parent = m_SelectedElement && m_SelectedElement->Parent ? m_SelectedElement->Parent : nullptr;
+
+        auto cmd = std::make_unique<Commands::PasteUIElementCommand>(parent, clipboard.payload);
+        Commands::PasteUIElementCommand *cmdPtr = cmd.get();
+        if (m_UndoManager) {
+            m_UndoManager->Execute(std::move(cmd), *m_EngineContext);
+        } else {
+            cmd->Execute(*m_EngineContext);
+        }
+
+        if (cmdPtr->GetCreated())
+            m_SelectedElement = cmdPtr->GetCreated();
+        return true;
     }
 
 } // namespace Editor::UI

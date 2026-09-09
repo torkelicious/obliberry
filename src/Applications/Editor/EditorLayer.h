@@ -12,6 +12,7 @@
 #include "Applications/Editor/EditorCamera.h"
 #include "Applications/Editor/States/EditorStateBase.h"
 #include "Applications/Editor/Commands/UndoManager.h"
+#include "Applications/Editor/Clipboard.h"
 #include "Map/HexCoords.h"
 #include "Scenes/Scene.h"
 #include "Scenes/SceneManager.h"
@@ -85,6 +86,8 @@ namespace Editor {
 
         void HandleInput(float dt);
 
+        void HandleClipboardInput();
+
         void LoadScene(std::string path);
 
         void SaveScene() const;
@@ -133,6 +136,8 @@ namespace Editor {
 
         // commands
         Commands::UndoManager m_UndoManager;
+
+        Clipboard m_Clipboard;
 
         // Project History
         ProjectHistory m_ProjectHistory;

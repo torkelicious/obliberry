@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/EngineContext.h"
+#include "Applications/Editor/Clipboard.h"
 #include "Applications/Editor/Commands/UndoManager.h"
 #include "Scenes/Scene.h"
 
@@ -19,6 +20,16 @@ namespace Editor::UI {
             m_SceneContext = context;
             m_EngineContext = &engineCtx;
             m_UndoManager = undoManager;
+        }
+
+        virtual bool OnCopy(Clipboard &clipboard) {
+            (void)clipboard;
+            return false;
+        }
+
+        virtual bool OnPaste(const Clipboard &clipboard) {
+            (void)clipboard;
+            return false;
         }
 
         [[nodiscard]] bool IsHovered() const { return m_IsHovered; }

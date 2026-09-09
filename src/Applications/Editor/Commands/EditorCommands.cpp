@@ -8,6 +8,8 @@
 #include "Rendering/Renderer.h"
 #include "Scenes/SceneManager.h"
 #include "Sound/AudioEngine.h"
+#include "Core/Utils/ECSUtils.h"
+#include "IO/Loaders/UISerializer.h"
 
 namespace Editor::Commands {
 
@@ -441,6 +443,67 @@ namespace Editor::Commands {
 
     void PostProcUpdateCommand::Undo(Core::EngineContext &ctx) {
         ctx.renderer->GetPostProcessor().Effects() = m_OldData;
+        MarkSceneChanged(&ctx);
+    }
+
+    //
+    // Clipboard
+    //
+
+    void PasteEntityCommand::Execute(Core::EngineContext &ctx) {
+        m_Created = ECS::INVALID_ENTITY_ID;
+
+        Scenes::Scene *scene = ctx.sceneManager ? ctx.sceneManager->GetCurrentScene() : nullptr;
+        if (!scene || m_Data.empty())
+            return;
+
+        if ((m_Created = ECS::Utils::InsertEntityJson(m_Data, &scene->GetRegistry())) != ECS::INVALID_ENTITY_ID)
+            MarkSceneChanged(&ctx);
+    }
+
+    void PasteEntityCommand::Undo(Core::EngineContext &ctx) {
+        Scenes::Scene *scene = ctx.sceneManager ? ctx.sceneManager->GetCurrentScene() : nullptr;
+        if (!scene || m_Created == ECS::INVALID_ENTITY_ID)
+            return;
+
+        scene->GetRegistry().DestroyEntity(m_Created);
+        m_Created = ECS::INVALID_ENTITY_ID;
+        MarkSceneChanged(&ctx);
+    }
+
+    void PasteUIElementCommand::Execute(Core::EngineContext &ctx) {
+        m_Created = nullptr;
+
+        ::UI::UISystem *ui = ctx.uiSystem;
+        if (!ui || m_Data.empty())
+            return;
+
+        nlohmann::json data = m_Data;
+
+        const std::string base = data.value("name", "Element");
+        std::string name = base;
+        for (int suffix = 1; ui->FindByName(name); ++suffix)
+            name = base + " (" + std::to_string(suffix) + ")";
+        data["name"] = name;
+
+        ::UI::UIElement *parent = m_Parent ? m_Parent : ui->GetRoot();
+        try {
+            m_Created = IO::UISerializer::DeserializeElementTree(data, parent, *ui, *ctx.resources);
+        } catch (const std::exception &) {
+            m_Created = nullptr;
+        }
+
+        if (m_Created)
+            MarkSceneChanged(&ctx);
+    }
+
+    void PasteUIElementCommand::Undo(Core::EngineContext &ctx) {
+        if (!ctx.uiSystem || !m_Created)
+            return;
+
+        if (::UI::UIElement *parent = m_Created->Parent)
+            ctx.uiSystem->RemoveChild(parent, m_Created);
+        m_Created = nullptr;
         MarkSceneChanged(&ctx);
     }
 

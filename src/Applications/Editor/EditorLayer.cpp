@@ -199,6 +199,9 @@ void Editor::EditorLayer::HandleInput(const float dt) {
         }
     }
 
+    // copy / paste / duplicate to the hovered target panel maybe change later to be not panel dependent idk
+    HandleClipboardInput();
+
     //
     // Function keys
     //
@@ -232,6 +235,31 @@ void Editor::EditorLayer::HandleInput(const float dt) {
     }
 
     m_CurrentState->OnHandleInput(dt);
+}
+
+void Editor::EditorLayer::HandleClipboardInput() {
+    const bool wantCopy = m_Input->IsKeyComboPressed({"LeftCtrl", "C"});
+    const bool wantPaste = m_Input->IsKeyComboPressed({"LeftCtrl", "V"});
+    const bool wantDuplicate = m_Input->IsKeyComboPressed({"LeftCtrl", "D"});
+    if (!wantCopy && !wantPaste && !wantDuplicate)
+        return;
+
+    UI::EditorPanel *targets[] = {&m_RegistryPanel, &m_UIPanel};
+    for (UI::EditorPanel *target : targets) {
+        if (!target->IsHovered())
+            continue;
+
+        if (wantCopy) {
+            target->OnCopy(m_Clipboard);
+        } else if (wantPaste) {
+            target->OnPaste(m_Clipboard);
+        } else { // duplicate
+            if (Clipboard tmp; target->OnCopy(tmp)) {
+                target->OnPaste(tmp);
+            }
+        }
+        return;
+    }
 }
 
 // ReSharper disable once CppPassValueParameterByConstReference

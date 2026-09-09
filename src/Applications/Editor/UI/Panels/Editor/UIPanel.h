@@ -6,6 +6,9 @@ namespace Editor::UI {
     public:
         void OnImGuiRender() override;
 
+        bool OnCopy(Clipboard &clipboard) override;
+        bool OnPaste(const Clipboard &clipboard) override;
+
         void Reset() { m_SelectedElement = nullptr; }
 
         void SetSelectedElement(::UI::UIElement *element) { m_SelectedElement = element; }

@@ -1,4 +1,5 @@
 #include "RegistryPanel.h"
+#include "ECS/Types.h"
 #include "EditorWidgets.h"
 #include "EditorWidgetsCombo.h"
 #include "ECS/Components/MaterialComponent.h"
@@ -11,6 +12,9 @@
 #include "Core/Constants.h"
 #include "Core/ResourceManager.h"
 #include "Core/Utils/ECSUtils.h"
+#include "Applications/Editor/Commands/EditorCommands.h"
+
+#include <memory>
 
 #include <imgui.h>
 #include <functional>
@@ -29,7 +33,7 @@ namespace {
 void Editor::UI::RegistryPanel::OnImGuiRender() {
     ImGui::Begin("Registry");
 
-    m_IsHovered = ImGui::IsWindowHovered();
+    m_IsHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows | ImGuiHoveredFlags_AllowWhenBlockedByPopup);
 
     if (m_SceneContext) {
         auto &registry = m_SceneContext->GetRegistry();
@@ -200,7 +204,12 @@ void Editor::UI::RegistryPanel::OnImGuiRender() {
                 }
 
                 if (ImGui::MenuItem("Duplicate")) {
-                    ECS::Utils::PasteEntity(id, &registry);
+                    auto cmd = std::make_unique<Commands::PasteEntityCommand>(ECS::Utils::CopyEntityToJson(id, &registry));
+                    if (m_UndoManager) {
+                        m_UndoManager->Execute(std::move(cmd), *m_EngineContext);
+                    } else {
+                        cmd->Execute(*m_EngineContext);
+                    }
                     MarkSceneChanged(m_EngineContext);
                 }
 
@@ -237,4 +246,32 @@ void Editor::UI::RegistryPanel::OnImGuiRender() {
         ImGui::TextDisabled("No scene loaded.");
     }
     ImGui::End();
+}
+
+bool Editor::UI::RegistryPanel::OnCopy(Clipboard &clipboard) {
+    if (!m_SelectedEntity || !m_SceneContext)
+        return false;
+
+    nlohmann::json data = ECS::Utils::CopyEntityToJson(ECS::EntityID(m_SelectedEntity), &m_SceneContext->GetRegistry());
+    if (data.empty())
+        return false;
+    clipboard.Set(Clipboard::Type::Entity, std::move(data));
+    return true;
+}
+
+bool Editor::UI::RegistryPanel::OnPaste(const Clipboard &clipboard) {
+    if (!clipboard.Has(Clipboard::Type::Entity) || !m_EngineContext)
+        return false;
+
+    auto cmd = std::make_unique<Commands::PasteEntityCommand>(clipboard.payload);
+    Commands::PasteEntityCommand *cmdPtr = cmd.get();
+    if (m_UndoManager) {
+        m_UndoManager->Execute(std::move(cmd), *m_EngineContext);
+    } else {
+        cmd->Execute(*m_EngineContext);
+    }
+
+    if (m_SceneContext && cmdPtr->GetCreated() != ECS::INVALID_ENTITY_ID)
+        m_SelectedEntity = ECS::Entity(cmdPtr->GetCreated(), &m_SceneContext->GetRegistry());
+    return true;
 }

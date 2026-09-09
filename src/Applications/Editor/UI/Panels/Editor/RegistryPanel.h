@@ -8,6 +8,9 @@ namespace Editor::UI {
     public:
         void OnImGuiRender() override;
 
+        bool OnCopy(Clipboard &clipboard) override;
+        bool OnPaste(const Clipboard &clipboard) override;
+
         void SetSelectedEntity(const ECS::Entity entity) { m_SelectedEntity = entity; }
         [[nodiscard]] ECS::Entity GetSelectedEntity() const { return m_SelectedEntity; }
         void Reset() { m_SelectedEntity = ECS::Entity{}; }

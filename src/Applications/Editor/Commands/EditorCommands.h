@@ -5,6 +5,7 @@
 #include "Config/ProjectConfig.h"
 #include "Platform/Window/Window.h"
 #include <glm/glm.hpp>
+#include <nlohmann/json.hpp>
 #include <optional>
 #include <cstring>
 #include <vector>
@@ -448,6 +449,41 @@ namespace Editor::Commands {
     private:
         std::vector<Rendering::PostProcessing::PostEffect> m_OldData;
         std::vector<Rendering::PostProcessing::PostEffect> m_NewData;
+    };
+
+    // = = = = = = //
+    //  Clipboard  //
+    // = = = = = = //
+
+    class PasteEntityCommand final : public ICommand {
+    public:
+        explicit PasteEntityCommand(nlohmann::json data) : m_Data(std::move(data)) {}
+
+        void Execute(Core::EngineContext &ctx) override;
+        void Undo(Core::EngineContext &ctx) override;
+        [[nodiscard]] std::string_view Name() const noexcept override { return "Paste entity"; }
+
+        [[nodiscard]] ECS::EntityID GetCreated() const { return m_Created; }
+
+    private:
+        nlohmann::json m_Data;
+        ECS::EntityID m_Created = ECS::INVALID_ENTITY_ID;
+    };
+
+    class PasteUIElementCommand final : public ICommand {
+    public:
+        PasteUIElementCommand(::UI::UIElement *parent, nlohmann::json data) : m_Parent(parent), m_Data(std::move(data)) {}
+
+        void Execute(Core::EngineContext &ctx) override;
+        void Undo(Core::EngineContext &ctx) override;
+        [[nodiscard]] std::string_view Name() const noexcept override { return "Paste UI element"; }
+
+        [[nodiscard]] ::UI::UIElement *GetCreated() const { return m_Created; }
+
+    private:
+        ::UI::UIElement *m_Parent;
+        nlohmann::json m_Data;
+        ::UI::UIElement *m_Created = nullptr;
     };
 
 } // namespace Editor::Commands
