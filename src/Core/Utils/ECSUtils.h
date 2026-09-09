@@ -1,20 +1,16 @@
+#pragma once
+
 #include "Core/ResourceManager.h"
-#include "ECS/Components/RelationshipComponent.h"
 #include "ECS/Entity.h"
 #include "ECS/Registry.h"
 #include "ECS/Types.h"
+#include "ECS/Components/RelationshipComponent.h"
 #include "IO/Loaders/EntityFactory.h"
-#include "nlohmann/json_fwd.hpp"
+#include "nlohmann/json.hpp"
 
 namespace ECS::Utils {
 
-    //
-    // I want to make a copy / paste functionallity
-    // type shi where you can select multiples evem idk
-    // coming soon????
-    //
-
-
+    // serializes a single entity  (comp only)
     inline nlohmann::json CopyEntityToJson(const EntityID &entity, Registry *reg) {
         nlohmann::json data;
         auto ent = Entity(entity, reg);
@@ -22,23 +18,26 @@ namespace ECS::Utils {
         return data;
     }
 
-    inline void InsertEntityJson(nlohmann::json &data, Registry *reg) {
+    // creates a new entity from serialized data
+    inline EntityID InsertEntityJson(nlohmann::json data, Registry *reg) {
+        if (!reg || data.empty())
+            return INVALID_ENTITY_ID;
+
         if (data.contains("name")) {
-            std::string name = data["name"];
+            const std::string name = data["name"];
             data["name"] = name + " (copy)";
         }
-        auto newId = reg->CreateEntity();
-        Entity newEnt = Entity(newId, reg);
+
+        const EntityID newId = reg->CreateEntity();
+        Entity newEnt(newId, reg);
         IO::EntityFactory::DeserializeEntity(newEnt, data, Core::ResourceManager::GetInstance());
+        return newId;
     }
 
-    inline void PasteEntity(const EntityID &entityId, Registry *reg) {
-        auto _Entity = Entity(entityId, reg);
-        nlohmann::json data;
-        IO::EntityFactory::SerializeEntity(_Entity, data, Core::ResourceManager::GetInstance());
-        InsertEntityJson(data, reg);
-    }
+    // duplicates an entity in place
+    inline EntityID PasteEntity(const EntityID &entityId, Registry *reg) { return InsertEntityJson(CopyEntityToJson(entityId, reg), reg); }
 
+    // True when candidate is an ancestor of entity
     inline bool IsAncestorOf(ECS::Registry &registry, const ECS::EntityID entity, const ECS::EntityID candidate) {
         const auto *rel = registry.GetComponent<ECS::Components::RelationshipComponent>(entity);
         while (rel && rel->parent != ECS::INVALID_ENTITY_ID) {
@@ -48,6 +47,5 @@ namespace ECS::Utils {
         }
         return false;
     }
-
 
 } // namespace ECS::Utils
