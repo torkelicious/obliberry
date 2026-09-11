@@ -1,4 +1,5 @@
 #include "EntityFactory.h"
+#include "ECS/Components/ColliderComponent.h"
 #include "Logger/LoggerService.h"
 
 #include "ECS/ECS.h"
@@ -215,6 +216,20 @@ void IO::EntityFactory::RegisterDeserializers() {
         }
         entity.AddComponent<ECS::Components::ParticleEmitterComponent>(ec);
     };
+
+    // COLLIDER
+    s_Deserializers["ColliderComponent"] = [](ECS::Entity &entity, const nlohmann::json &data, Core::ResourceManager &) {
+        ECS::Components::ColliderComponent collider;
+        const int shape = data.value("shape", 0);
+        collider.shape = shape == 1 ? ECS::Components::ColliderShape::Circle : ECS::Components::ColliderShape::Box;
+        const auto offset = readArray<float, 2>(data, "offset", {0.0f, 0.0f});
+        collider.offset = {offset[0], offset[1]};
+        const auto size = readArray<float, 2>(data, "size", {1.0f, 1.0f});
+        collider.size = {size[0], size[1]};
+        collider.radius = data.value("radius", 0.5f);
+        collider.isTrigger = data.value("isTrigger", false);
+        entity.AddComponent<ECS::Components::ColliderComponent>(collider);
+    };
 }
 
 void IO::EntityFactory::RegisterSerializers() {
@@ -345,6 +360,21 @@ void IO::EntityFactory::RegisterSerializers() {
                 }
             }
         }
+    };
+
+    // COLLIDER
+    s_Serializers["ColliderComponent"] = [](const ECS::Entity &entity, nlohmann::json &data, Core::ResourceManager &) {
+        if (!entity.HasComponent<ECS::Components::ColliderComponent>())
+            return;
+
+        const auto *collider = entity.GetComponent<ECS::Components::ColliderComponent>();
+        auto &output = data["ColliderComponent"];
+
+        output["shape"] = static_cast<int>(collider->shape);
+        output["offset"] = {collider->offset.x, collider->offset.y};
+        output["size"] = {collider->size.x, collider->size.y};
+        output["radius"] = collider->radius;
+        output["isTrigger"] = collider->isTrigger;
     };
 }
 

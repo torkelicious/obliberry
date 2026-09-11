@@ -3,6 +3,8 @@
 
 #include <string>
 #include <glm/glm.hpp>
+#include <vector>
+#include "ECS/Systems/CollisionSystem.h"
 #include "UI/Rendering/UISystem.h"
 #include "Core/EngineContext.h"
 #include "ECS/ECS.h"
@@ -57,6 +59,7 @@ namespace Scenes {
 
         [[nodiscard]] std::vector<Rendering::PostProcessing::PostEffect> &PostFx() { return m_PostFx; }
         [[nodiscard]] const std::vector<Rendering::PostProcessing::PostEffect> &PostFx() const { return m_PostFx; }
+        [[nodiscard]] const std::vector<ECS::Systems::CollisionSystem::Collision> &GetCollisions() const { return m_Collisions; }
 
     private:
         SceneProperties m_Properties;
@@ -66,5 +69,6 @@ namespace Scenes {
         UI::UISystem m_UISystem;
         Scripting::UICommandBuffer m_UICmdBuf;
         std::vector<Rendering::PostProcessing::PostEffect> m_PostFx;
+        std::vector<ECS::Systems::CollisionSystem::Collision> m_Collisions;
     };
 } // namespace Scenes

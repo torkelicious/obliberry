@@ -1,4 +1,5 @@
 #include "Scene.h"
+#include "ECS/Systems/CollisionSystem.h"
 #include "Logger/LoggerService.h"
 #include "ECS/Systems/AISystem.h"
 #include "ECS/Systems/MapRenderSystem.h"
@@ -86,6 +87,18 @@ void Scenes::Scene::Update(const float dt) {
     ECS::Systems::AISystem::Update(m_Registry, dt);
     ECS::Systems::MovementSystem::Update(m_Registry, dt);
     ECS::Systems::ScriptSystem::Update(m_Registry, *m_Context);
+
+    ECS::Systems::HierarchySystem::Propagate(m_Registry); // movement and scrips might change transforms!
+
+    ECS::Systems::CollisionSystem::Update(m_Registry, m_Collisions);
+
+    // test
+#ifdef DEBUG_BUILD
+    for (const auto &collision : m_Collisions) {
+        LOG_INFO("CollisionSystem", "Collision: " + std::to_string(collision.entityA) + " <-> " + std::to_string(collision.entityB));
+    }
+#endif
+
     m_UICmdBuf.flush(m_UISystem);
     if (m_Properties.EnableLightingSystem) {
         ECS::Systems::LightingSystem::Update(m_Registry);
