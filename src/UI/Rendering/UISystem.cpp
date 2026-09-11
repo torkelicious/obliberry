@@ -1,6 +1,7 @@
 #include "UISystem.h"
 
 #include <algorithm>
+#include <functional>
 #include <ranges>
 
 namespace UI {
@@ -97,6 +98,23 @@ namespace UI {
 
         // Remove from owned elements
         std::erase_if(m_OwnedElements, [child](const std::unique_ptr<UIElement> &ptr) { return ptr.get() == child; });
+    }
+
+    bool UISystem::Contains(const UIElement *element) const {
+        if (!element)
+            return false;
+        const std::function<bool(const UIElement *)> search = [&](const UIElement *e) {
+            if (!e)
+                return false;
+            if (e == element)
+                return true;
+            for (auto *child : e->Children) {
+                if (search(child))
+                    return true;
+            }
+            return false;
+        };
+        return search(m_Root.get());
     }
 
     void UISystem::Clear() {

@@ -1,4 +1,5 @@
 #include "UIPanel.h"
+#include "Applications/Editor/Clipboard.h"
 #include "IO/Loaders/UISerializer.h"
 #include "imgui.h"
 #include "UI/Elements/UIText.h"
@@ -103,6 +104,8 @@ namespace Editor::UI {
 
         // context menu
         if (ImGui::BeginPopupContextItem()) {
+            m_SelectedElement = element;
+
             ImGui::Text("Element: %s", element->Name.c_str());
             ImGui::Separator();
 
@@ -136,6 +139,16 @@ namespace Editor::UI {
                         root = root->Parent;
                     ReparentUIElement(element, root);
                     MarkSceneChanged(m_EngineContext);
+                }
+            }
+
+            if (m_EditorContext && m_EditorContext->clipboard) {
+                if (ImGui::MenuItem("Copy")) {
+                    OnCopy(*m_EditorContext->clipboard);
+                }
+                const bool canPaste = m_EditorContext->clipboard->Has(Clipboard::Type::UIElement);
+                if (ImGui::MenuItem("Paste", nullptr, false, canPaste)) {
+                    OnPaste(*m_EditorContext->clipboard);
                 }
             }
 
@@ -175,6 +188,9 @@ namespace Editor::UI {
             ImGui::End();
             return;
         }
+
+        if (m_SelectedElement && !uiSys->Contains(m_SelectedElement))
+            m_SelectedElement = nullptr;
 
         auto *root = uiSys->GetRoot();
         if (!root) {

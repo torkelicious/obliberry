@@ -457,7 +457,7 @@ namespace Editor::Commands {
 
     class PasteEntityCommand final : public ICommand {
     public:
-        explicit PasteEntityCommand(nlohmann::json data) : m_Data(std::move(data)) {}
+        explicit PasteEntityCommand(nlohmann::json data, ECS::EntityID parentOverride = ECS::INVALID_ENTITY_ID) : m_Data(std::move(data)), m_ParentOverride(parentOverride) {}
 
         void Execute(Core::EngineContext &ctx) override;
         void Undo(Core::EngineContext &ctx) override;
@@ -467,6 +467,7 @@ namespace Editor::Commands {
 
     private:
         nlohmann::json m_Data;
+        ECS::EntityID m_ParentOverride = ECS::INVALID_ENTITY_ID;
         ECS::EntityID m_Created = ECS::INVALID_ENTITY_ID;
     };
 

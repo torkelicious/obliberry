@@ -65,18 +65,21 @@ void Editor::States::EditState::OnHandleInput(const float dt) {
     if (ImGui::GetIO().WantCaptureKeyboard)
         return;
 
-    if (m_EditorLayer->m_Input->IsKeyPressed("V")) {
+    // single letter shortcuts must not fire while a modifier is held !!!
+    const bool noModifiers = !m_EditorLayer->m_Input->HasAnyModifierDown();
+
+    if (noModifiers && m_EditorLayer->m_Input->IsKeyPressed("V")) {
         m_EditorLayer->m_Camera.ToggleViewMode();
     }
 
     // Gizmo operation shortcuts
-    if (m_EditorLayer->m_Input->IsKeyPressed("T")) {
+    if (noModifiers && m_EditorLayer->m_Input->IsKeyPressed("T")) {
         mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
     }
-    if (m_EditorLayer->m_Input->IsKeyPressed("R")) {
+    if (noModifiers && m_EditorLayer->m_Input->IsKeyPressed("R")) {
         mCurrentGizmoOperation = ImGuizmo::ROTATE;
     }
-    if (m_EditorLayer->m_Input->IsKeyPressed("E")) {
+    if (noModifiers && m_EditorLayer->m_Input->IsKeyPressed("E")) {
         mCurrentGizmoOperation = ImGuizmo::SCALE;
     }
 
@@ -102,14 +105,16 @@ void Editor::States::EditState::OnHandleInput(const float dt) {
     }
 
     // Keyboard pan
-    if (m_EditorLayer->m_Input->IsKeyDown("W"))
-        kbPanY += 1.0f;
-    if (m_EditorLayer->m_Input->IsKeyDown("S"))
-        kbPanY -= 1.0f;
-    if (m_EditorLayer->m_Input->IsKeyDown("A"))
-        kbPanX -= 1.0f;
-    if (m_EditorLayer->m_Input->IsKeyDown("D"))
-        kbPanX += 1.0f;
+    if (!m_EditorLayer->m_Input->HasCtrlDown() && !m_EditorLayer->m_Input->HasAltDown()) {
+        if (m_EditorLayer->m_Input->IsKeyDown("W"))
+            kbPanY += 1.0f;
+        if (m_EditorLayer->m_Input->IsKeyDown("S"))
+            kbPanY -= 1.0f;
+        if (m_EditorLayer->m_Input->IsKeyDown("A"))
+            kbPanX -= 1.0f;
+        if (m_EditorLayer->m_Input->IsKeyDown("D"))
+            kbPanX += 1.0f;
+    }
 
     if (kbPanX != 0.0f || kbPanY != 0.0f) {
         const float length = std::sqrt(kbPanX * kbPanX + kbPanY * kbPanY);

@@ -457,13 +457,24 @@ namespace Editor::Commands {
         if (!scene || m_Data.empty())
             return;
 
-        if ((m_Created = ECS::Utils::InsertEntityJson(m_Data, &scene->GetRegistry())) != ECS::INVALID_ENTITY_ID)
+        if (m_Data.contains("entities")) {
+            m_Created = ECS::Utils::InsertEntityTreeJson(m_Data, &scene->GetRegistry(), m_ParentOverride);
+        } else {
+            nlohmann::json data = m_Data;
+            if (data.contains("name"))
+                data["name"] = data["name"].get<std::string>() + " (copy)";
+            m_Created = ECS::Utils::InsertEntityJson(std::move(data), &scene->GetRegistry());
+            if (m_Created != ECS::INVALID_ENTITY_ID && m_ParentOverride != ECS::INVALID_ENTITY_ID && scene->GetRegistry().IsValid(m_ParentOverride))
+                scene->GetRegistry().Reparent(m_Created, m_ParentOverride);
+        }
+
+        if (m_Created != ECS::INVALID_ENTITY_ID)
             MarkSceneChanged(&ctx);
     }
 
     void PasteEntityCommand::Undo(Core::EngineContext &ctx) {
         Scenes::Scene *scene = ctx.sceneManager ? ctx.sceneManager->GetCurrentScene() : nullptr;
-        if (!scene || m_Created == ECS::INVALID_ENTITY_ID)
+        if (!scene || m_Created == ECS::INVALID_ENTITY_ID || !scene->GetRegistry().IsValid(m_Created))
             return;
 
         scene->GetRegistry().DestroyEntity(m_Created);

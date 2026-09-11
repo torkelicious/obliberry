@@ -58,6 +58,14 @@ namespace Platform::Input {
 
         [[nodiscard]] bool IsKeyComboPressed(const std::vector<std::string> &keyAliases) const;
 
+        [[nodiscard]] bool HasCtrlDown() const { return IsKeyDown(GLFW_KEY_LEFT_CONTROL) || IsKeyDown(GLFW_KEY_RIGHT_CONTROL); }
+
+        [[nodiscard]] bool HasShiftDown() const { return IsKeyDown(GLFW_KEY_LEFT_SHIFT) || IsKeyDown(GLFW_KEY_RIGHT_SHIFT); }
+
+        [[nodiscard]] bool HasAltDown() const { return IsKeyDown(GLFW_KEY_LEFT_ALT) || IsKeyDown(GLFW_KEY_RIGHT_ALT); }
+
+        [[nodiscard]] bool HasAnyModifierDown() const { return HasCtrlDown() || HasShiftDown() || HasAltDown(); }
+
         //
         // Mouse
         //

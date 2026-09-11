@@ -2,6 +2,7 @@
 
 #include "Core/EngineContext.h"
 #include "Applications/Editor/Clipboard.h"
+#include "Applications/Editor/EditorContext.h"
 #include "Applications/Editor/Commands/UndoManager.h"
 #include "Scenes/Scene.h"
 
@@ -16,10 +17,11 @@ namespace Editor::UI {
 
         virtual void OnImGuiRender() = 0;
 
-        virtual void SetContext(Scenes::Scene *context, Core::EngineContext &engineCtx, Commands::UndoManager *undoManager = nullptr) {
+        virtual void SetContext(Scenes::Scene *context, Core::EngineContext &engineCtx, Commands::UndoManager *undoManager = nullptr, EditorContext *editorContext = nullptr) {
             m_SceneContext = context;
             m_EngineContext = &engineCtx;
             m_UndoManager = undoManager;
+            m_EditorContext = editorContext;
         }
 
         virtual bool OnCopy(Clipboard &clipboard) {
@@ -37,6 +39,7 @@ namespace Editor::UI {
     protected:
         Scenes::Scene *m_SceneContext = nullptr;
         Core::EngineContext *m_EngineContext = nullptr;
+        EditorContext *m_EditorContext = nullptr;
         Commands::UndoManager *m_UndoManager = nullptr;
         bool m_IsHovered = false;
     };

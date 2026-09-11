@@ -37,6 +37,8 @@ namespace UI {
 
         void RemoveChild(UIElement *parent, UIElement *child);
 
+        [[nodiscard]] bool Contains(const UIElement *element) const;
+
         void Clear();
 
         void Update(float dt, bool interactive = true) const;

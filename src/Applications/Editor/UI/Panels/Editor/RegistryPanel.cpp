@@ -1,4 +1,5 @@
 #include "RegistryPanel.h"
+#include "Applications/Editor/Clipboard.h"
 #include "ECS/Types.h"
 #include "EditorWidgets.h"
 #include "EditorWidgetsCombo.h"
@@ -37,6 +38,9 @@ void Editor::UI::RegistryPanel::OnImGuiRender() {
 
     if (m_SceneContext) {
         auto &registry = m_SceneContext->GetRegistry();
+
+        if (m_SelectedEntity && !registry.IsValid(static_cast<ECS::EntityID>(m_SelectedEntity)))
+            m_SelectedEntity = ECS::Entity{};
         const auto &livingEntities = registry.GetLivingEntities();
 
         int visibleEntities = 0;
@@ -168,6 +172,7 @@ void Editor::UI::RegistryPanel::OnImGuiRender() {
 
             // context menu
             if (ImGui::BeginPopupContextItem()) {
+                m_SelectedEntity = entity;
                 if (ImGui::MenuItem("Create Child")) {
                     const auto childId = registry.CreateEntity();
                     registry.Reparent(childId, id);
@@ -203,15 +208,16 @@ void Editor::UI::RegistryPanel::OnImGuiRender() {
                     ImGui::EndMenu();
                 }
 
-                if (ImGui::MenuItem("Duplicate")) {
-                    auto cmd = std::make_unique<Commands::PasteEntityCommand>(ECS::Utils::CopyEntityToJson(id, &registry));
-                    if (m_UndoManager) {
-                        m_UndoManager->Execute(std::move(cmd), *m_EngineContext);
-                    } else {
-                        cmd->Execute(*m_EngineContext);
+                if (m_EditorContext && m_EditorContext->clipboard) {
+                    if (ImGui::MenuItem("Copy")) {
+                        OnCopy(*m_EditorContext->clipboard);
                     }
-                    MarkSceneChanged(m_EngineContext);
+                    const bool canPaste = m_EditorContext->clipboard->Has(Clipboard::Type::Entity);
+                    if (ImGui::MenuItem("Paste", nullptr, false, canPaste)) {
+                        OnPaste(*m_EditorContext->clipboard);
+                    }
                 }
+
 
                 ImGui::EndPopup();
             }
@@ -252,7 +258,7 @@ bool Editor::UI::RegistryPanel::OnCopy(Clipboard &clipboard) {
     if (!m_SelectedEntity || !m_SceneContext)
         return false;
 
-    nlohmann::json data = ECS::Utils::CopyEntityToJson(static_cast<ECS::EntityID>(m_SelectedEntity), &m_SceneContext->GetRegistry());
+    nlohmann::json data = ECS::Utils::CopyEntityTreeToJson(static_cast<ECS::EntityID>(m_SelectedEntity), &m_SceneContext->GetRegistry());
     if (data.empty())
         return false;
     clipboard.Set(Clipboard::Type::Entity, std::move(data));
@@ -263,7 +269,13 @@ bool Editor::UI::RegistryPanel::OnPaste(const Clipboard &clipboard) {
     if (!clipboard.Has(Clipboard::Type::Entity) || !m_EngineContext)
         return false;
 
-    auto cmd = std::make_unique<Commands::PasteEntityCommand>(clipboard.payload);
+    ECS::EntityID parent = ECS::INVALID_ENTITY_ID;
+    if (m_SelectedEntity && m_SceneContext) {
+        if (const auto *rel = m_SceneContext->GetRegistry().GetComponent<ECS::Components::RelationshipComponent>(static_cast<ECS::EntityID>(m_SelectedEntity)))
+            parent = rel->parent;
+    }
+
+    auto cmd = std::make_unique<Commands::PasteEntityCommand>(clipboard.payload, parent);
     const Commands::PasteEntityCommand *cmdPtr = cmd.get();
     if (m_UndoManager) {
         m_UndoManager->Execute(std::move(cmd), *m_EngineContext);

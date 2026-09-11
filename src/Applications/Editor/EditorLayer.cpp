@@ -41,6 +41,8 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
     m_Context->camera = &m_Camera;
     m_Context->sceneManager = &m_SceneManager;
 
+    m_EditorContext.clipboard = &m_Clipboard;
+
     m_SceneConfigEditor.SetContext(*m_Context);
     m_ProjectConfigEditor.SetContext(*m_Context);
     m_GraphicsConfigEditor.SetContext(*m_Context);
@@ -301,9 +303,9 @@ void Editor::EditorLayer::LoadScene(std::string path) {
             m_InspectorPanel.Reset();
             m_RegistryPanel.Reset();
 
-            m_RegistryPanel.SetContext(m_Scene, *m_Context);
+            m_RegistryPanel.SetContext(m_Scene, *m_Context, &m_UndoManager, &m_EditorContext);
             m_InspectorPanel.SetContext(m_Scene, *m_Context, &m_UndoManager);
-            m_UIPanel.SetContext(m_Scene, *m_Context, &m_UndoManager);
+            m_UIPanel.SetContext(m_Scene, *m_Context, &m_UndoManager, &m_EditorContext);
             m_ViewportPanel.SetContext(m_Scene, *m_Context);
             m_ProjectBrowserPanel.SetContext(m_Scene, *m_Context);
 
@@ -494,11 +496,11 @@ void Editor::EditorLayer::DrawDockSpace() {
 }
 
 void Editor::EditorLayer::DrawEditorPanels() {
-    m_RegistryPanel.SetContext(m_Scene, *m_Context);
+    m_RegistryPanel.SetContext(m_Scene, *m_Context, &m_UndoManager, &m_EditorContext);
     m_InspectorPanel.SetContext(m_Scene, *m_Context, &m_UndoManager);
     m_ProjectBrowserPanel.SetContext(m_Scene, *m_Context);
     m_ViewportPanel.SetContext(m_Scene, *m_Context);
-    m_UIPanel.SetContext(m_Scene, *m_Context, &m_UndoManager);
+    m_UIPanel.SetContext(m_Scene, *m_Context, &m_UndoManager, &m_EditorContext);
     m_InspectorPanel.SetSelectedEntity(m_RegistryPanel.GetSelectedEntity());
 
     // viewport must be rendered first so ImGuizmo::SetDrawlist/SetRect are called
