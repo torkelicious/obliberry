@@ -13,7 +13,6 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
 
-#include "Core/Utils/PathUtils.h"
 #include "Rendering/Types/Mesh/Mesh.h"
 #include "Rendering/Types/Material.h"
 #include "Rendering/Types/Lightmap.h"

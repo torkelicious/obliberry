@@ -3,9 +3,8 @@
 #include "Rendering/Types/Transform.h"
 #include "UI/UIGizmo.h"
 #include <glm/glm.hpp>
-#include "imgui.h"
+#include <imgui.h>
 #include "ImGuizmo.h"
-#include "Applications/Editor/UI/Panels/ProjectBrowserPanel.h"
 #include "Applications/Editor/UI/Panels/Editor/MeshCreatorPanel.h"
 
 namespace Editor::States {
