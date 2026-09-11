@@ -6,27 +6,26 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
+#include <functional>
 #include <glm/glm.hpp>
 #include <vector>
 
 namespace ECS::Systems::CollisionSystem {
-
     struct Collision {
         EntityID entityA = INVALID_ENTITY_ID;
         EntityID entityB = INVALID_ENTITY_ID;
-
-        glm::vec2 normal{0.0f};
-
+        glm::vec2 normal{0.0f}; // A toward B
         float penetration = 0.0f;
         bool isTrigger = false;
     };
 
     struct WorldCollider {
-        ECS::EntityID entity;
-        Components::ColliderShape shape;
+        EntityID entity = INVALID_ENTITY_ID;
+        Components::ColliderShape shape = Components::ColliderShape::Box;
         glm::vec2 center{0.0f};
         glm::vec2 halfSize{0.5f};
-        float radius = 0.5f; // circles
+        float radius = 0.5f;
         bool isTrigger = false;
     };
 

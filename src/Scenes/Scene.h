@@ -4,7 +4,7 @@
 #include <string>
 #include <glm/glm.hpp>
 #include <vector>
-#include "ECS/Systems/CollisionSystem.h"
+#include "ECS/Systems/Collision/CollisionWorld.h"
 #include "UI/Rendering/UISystem.h"
 #include "Core/EngineContext.h"
 #include "ECS/ECS.h"
@@ -59,7 +59,10 @@ namespace Scenes {
 
         [[nodiscard]] std::vector<Rendering::PostProcessing::PostEffect> &PostFx() { return m_PostFx; }
         [[nodiscard]] const std::vector<Rendering::PostProcessing::PostEffect> &PostFx() const { return m_PostFx; }
-        [[nodiscard]] const std::vector<ECS::Systems::CollisionSystem::Collision> &GetCollisions() const { return m_Collisions; }
+        [[nodiscard]] const std::vector<ECS::Systems::CollisionSystem::Collision> &GetCollisions() const { return m_CollisionWorld.GetCollisions(); }
+
+        [[nodiscard]] const ECS::Systems::CollisionWorld &GetCollisionWorld() const { return m_CollisionWorld; }
+        [[nodiscard]] const std::vector<ECS::Systems::CollisionEvent> &GetCollisionEvents() const { return m_CollisionWorld.GetEvents(); }
 
     private:
         SceneProperties m_Properties;
@@ -69,6 +72,7 @@ namespace Scenes {
         UI::UISystem m_UISystem;
         Scripting::UICommandBuffer m_UICmdBuf;
         std::vector<Rendering::PostProcessing::PostEffect> m_PostFx;
-        std::vector<ECS::Systems::CollisionSystem::Collision> m_Collisions;
+
+        ECS::Systems::CollisionWorld m_CollisionWorld;
     };
 } // namespace Scenes

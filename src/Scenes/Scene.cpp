@@ -1,5 +1,5 @@
+
 #include "Scene.h"
-#include "ECS/Systems/CollisionSystem.h"
 #include "Logger/LoggerService.h"
 #include "ECS/Systems/AISystem.h"
 #include "ECS/Systems/MapRenderSystem.h"
@@ -15,7 +15,6 @@
 #include <utility>
 #include "ECS/Systems/ScriptSystem.h"
 #include "ECS/Systems/HierarchySystem.h"
-#include "ECS/Systems/HierarchySystem.h"
 #include "IO/Loaders/PrefabManager.h"
 #include "Math/Frustum.h"
 #include "Platform/Timeout.h"
@@ -28,6 +27,7 @@
 Scenes::Scene::Scene(Core::EngineContext *context, SceneProperties props) : m_Properties(std::move(props)), m_Context(context), m_UISystem(context->uiRenderer, context->input) {}
 
 void Scenes::Scene::OnEnter() {
+    m_CollisionWorld.Clear();
     LOG_INFO(LOG_WHO, "Entering scene: " + m_Properties.ScenePath);
 
     m_Context->uiSystem = &m_UISystem;
@@ -90,15 +90,9 @@ void Scenes::Scene::Update(const float dt) {
 
     ECS::Systems::HierarchySystem::Propagate(m_Registry); // movement and scrips might change transforms!
 
-    ECS::Systems::CollisionSystem::Update(m_Registry, m_Collisions);
+    m_CollisionWorld.Update(m_Registry);
 
-    // test
-#ifdef DEBUG_BUILD
-    for (const auto &collision : m_Collisions) {
-        LOG_INFO("CollisionSystem", "Collision: " + std::to_string(collision.entityA) + " <-> " + std::to_string(collision.entityB));
-    }
-#endif
-
+    // ui
     m_UICmdBuf.flush(m_UISystem);
     if (m_Properties.EnableLightingSystem) {
         ECS::Systems::LightingSystem::Update(m_Registry);
@@ -136,6 +130,7 @@ void Scenes::Scene::Render() {
 }
 
 void Scenes::Scene::OnExit() {
+    m_CollisionWorld.Clear();
     std::vector<ECS::EntityID> deadEntities;
     m_Registry.ForEach<ECS::Components::DestroyTagComponent>([&](const ECS::Entity entity, ECS::Components::DestroyTagComponent *) { deadEntities.push_back(static_cast<ECS::EntityID>(entity)); });
 
