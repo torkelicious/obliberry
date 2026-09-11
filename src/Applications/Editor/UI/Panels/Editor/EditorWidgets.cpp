@@ -1,6 +1,7 @@
 #include "EditorWidgets.h"
 #include "Applications/Editor/EditorLayer.h"
 #include <cstring>
+#include "ECS/Components/ColliderComponent.h"
 #include "EditorWidgetsCombo.h"
 #include "IO/Loaders/ParticleEmitterPrefabManager.h"
 #include "Core/Constants.h"
@@ -14,9 +15,8 @@
 #include "ECS/Components/MeshComponent.h"
 #include "ECS/Components/ScriptComponent.h"
 #include "IO/VFS/VFS.h"
-#include "Rendering/Renderer.h"
 #include "Rendering/Types/Shader/Shader.h"
-#include "Rendering/Types/Texture/Texture.h"
+#include "imgui.h"
 #include <filesystem>
 
 
@@ -647,5 +647,106 @@ void Editor::UI::ParticleEmitterWidget::Draw(const ECS::Entity entity, Core::Eng
             undoManager->Execute(std::make_unique<Commands::RemoveComponentCommand<ECS::Components::ParticleEmitterComponent>>(static_cast<ECS::EntityID>(entity), data), *engineContext);
             MarkSceneChanged(engineContext);
         }
+    }
+}
+
+const char *Editor::UI::ColliderWidget::GetName() const { return "Collider"; }
+
+void Editor::UI::ColliderWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext, UndoManager *undoManager) {
+    using Component = ECS::Components::ColliderComponent;
+    using Shape = ECS::Components::ColliderShape;
+
+    if (!entity.HasComponent<Component>())
+        return;
+
+    if (!ImGui::CollapsingHeader(GetName()))
+        return;
+
+    auto *component = entity.GetComponent<Component>();
+    const auto entityID = static_cast<ECS::EntityID>(entity);
+
+    auto commitField = [&]<typename T>(const size_t offset, const T &oldValue, const T &newValue, const char *name) {
+        if (undoManager && engineContext) {
+            undoManager->Execute(std::make_unique<Commands::ModifyComponentFieldCommand<Component>>(entityID, offset, sizeof(T), &oldValue, &newValue, name), *engineContext);
+        }
+
+        MarkSceneChanged(engineContext);
+    };
+
+    // shape
+
+    constexpr const char *shapeNames[] = {"Box", "Circle"};
+
+    int shapeIndex = static_cast<int>(component->shape);
+    const Shape oldShape = component->shape;
+
+    if (ImGui::Combo("Shape", &shapeIndex, shapeNames, static_cast<int>(std::size(shapeNames)))) {
+        component->shape = static_cast<Shape>(shapeIndex);
+
+        commitField(offsetof(Component, shape), oldShape, component->shape, "Change Collider Shape");
+    }
+
+    // offset
+
+    static glm::vec2 oldOffset;
+    const glm::vec2 offsetBeforeEdit = component->offset;
+
+    ImGui::DragFloat2("Offset", &component->offset.x, 0.05f);
+
+    if (ImGui::IsItemActivated()) {
+        oldOffset = offsetBeforeEdit;
+    }
+
+    if (ImGui::IsItemDeactivatedAfterEdit()) {
+        commitField(offsetof(Component, offset), oldOffset, component->offset, "Change Collider Offset");
+    }
+
+    // shape values
+
+    if (component->shape == Shape::Box) {
+        static glm::vec2 oldSize;
+        const glm::vec2 sizeBeforeEdit = component->size;
+
+        ImGui::DragFloat2("Size", &component->size.x, 0.05f, 0.001f, 10000.0f);
+
+        if (ImGui::IsItemActivated()) {
+            oldSize = sizeBeforeEdit;
+        }
+
+        if (ImGui::IsItemDeactivatedAfterEdit()) {
+            commitField(offsetof(Component, size), oldSize, component->size, "Change Collider Size");
+        }
+    } else {
+        static float oldRadius;
+        const float radiusBeforeEdit = component->radius;
+
+        ImGui::DragFloat("Radius", &component->radius, 0.05f, 0.001f, 10000.0f);
+
+        if (ImGui::IsItemActivated()) {
+            oldRadius = radiusBeforeEdit;
+        }
+
+        if (ImGui::IsItemDeactivatedAfterEdit()) {
+            commitField(offsetof(Component, radius), oldRadius, component->radius, "Change Collider Radius");
+        }
+    }
+
+    // trigger
+
+    const bool oldIsTrigger = component->isTrigger;
+
+    if (ImGui::Checkbox("Is Trigger", &component->isTrigger)) {
+        commitField(offsetof(Component, isTrigger), oldIsTrigger, component->isTrigger, "Toggle Collider Trigger");
+    }
+
+    // remove
+    ImGui::Separator();
+    const float buttonWidth = ImGui::CalcTextSize("Remove Collider").x + ImGui::GetStyle().FramePadding.x * 2.0f;
+    const float availableWidth = ImGui::GetContentRegionAvail().x;
+    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (availableWidth - buttonWidth) * 0.5f);
+    if (ImGui::Button("Remove ##Collider", ImVec2(buttonWidth, 0.0f))) {
+        const Component data = *component;
+        undoManager->Execute(std::make_unique<Commands::RemoveComponentCommand<Component>>(entityID, data), *engineContext);
+        MarkSceneChanged(engineContext);
     }
 }
