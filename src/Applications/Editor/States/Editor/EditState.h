@@ -1,5 +1,6 @@
 #pragma once
 #include "Applications/Editor/States/EditorStateBase.h"
+#include "ECS/Systems/Collision/ColliderGizmo.h"
 #include "Rendering/Types/Transform.h"
 #include "UI/UIGizmo.h"
 #include <glm/glm.hpp>
@@ -38,6 +39,18 @@ namespace Editor::States {
         void UI_DrawGizmoForSelected() const; // UI system
         void UI_HandleGizmoInput();
         [[nodiscard]] glm::vec2 GetUIGizmoMousePos() const;
+
+        // colliders
+        void Collider_DrawGizmoForSelected();
+        bool m_EditCollider = false;
+        ColliderGizmo::HandleType m_ColliderDragHandle = ColliderGizmo::HandleType::None;
+        ColliderGizmo::HandleType m_ColliderHoveredHandle = ColliderGizmo::HandleType::None;
+        ECS::EntityID m_ColliderDragEntity = ECS::INVALID_ENTITY_ID;
+        glm::vec2 m_ColliderDragStartMouse{0.0f};
+        glm::vec2 m_ColliderDragStartScale{1.0f};
+        ECS::Components::ColliderComponent m_ColliderDragStart;
+        ColliderGizmo::WorldCollider m_ColliderDragStartWorld;
+
 
         bool m_HideGameUI = false;
 
