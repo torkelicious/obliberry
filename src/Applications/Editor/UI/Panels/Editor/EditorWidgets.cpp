@@ -1,6 +1,8 @@
 #include "EditorWidgets.h"
 #include "Applications/Editor/EditorLayer.h"
+#include <cfloat>
 #include <cstring>
+#include <type_traits>
 #include "ECS/Components/ColliderComponent.h"
 #include "EditorWidgetsCombo.h"
 #include "IO/Loaders/ParticleEmitterPrefabManager.h"
@@ -654,7 +656,8 @@ const char *Editor::UI::ColliderWidget::GetName() const { return "Collider"; }
 
 void Editor::UI::ColliderWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext, UndoManager *undoManager) {
     using Component = ECS::Components::ColliderComponent;
-    using Shape = ECS::Components::ColliderShape;
+
+    static_assert(std::is_trivially_copyable_v<Component>);
 
     if (!entity.HasComponent<Component>())
         return;
@@ -662,91 +665,84 @@ void Editor::UI::ColliderWidget::Draw(const ECS::Entity entity, Core::EngineCont
     if (!ImGui::CollapsingHeader(GetName()))
         return;
 
-    auto *component = entity.GetComponent<Component>();
-    const auto entityID = static_cast<ECS::EntityID>(entity);
+    auto *c = entity.GetComponent<Component>();
+    const auto id = static_cast<ECS::EntityID>(entity);
 
-    auto commitField = [&]<typename T>(const size_t offset, const T &oldValue, const T &newValue, const char *name) {
+    auto commit = [&](const Component &before) {
         if (undoManager && engineContext) {
-            undoManager->Execute(std::make_unique<Commands::ModifyComponentFieldCommand<Component>>(entityID, offset, sizeof(T), &oldValue, &newValue, name), *engineContext);
+            undoManager->Execute(std::make_unique<Commands::ModifyComponentFieldCommand<Component>>(id, 0, sizeof(Component), &before, c, "Edit Collider"), *engineContext);
         }
 
         MarkSceneChanged(engineContext);
     };
 
-    // shape
+    // snapshot used while a field is being edited; captured when it becomes active
+    static Component s_BeforeEdit;
 
-    constexpr const char *shapeNames[] = {"Box", "Circle"};
+    auto field = [&](auto draw) {
+        const Component before = *c;
+        const bool changed = draw();
 
-    int shapeIndex = static_cast<int>(component->shape);
-    const Shape oldShape = component->shape;
+        if (ImGui::IsItemActivated())
+            s_BeforeEdit = before;
 
-    if (ImGui::Combo("Shape", &shapeIndex, shapeNames, static_cast<int>(std::size(shapeNames)))) {
-        component->shape = static_cast<Shape>(shapeIndex);
+        if (ImGui::IsItemDeactivatedAfterEdit())
+            commit(s_BeforeEdit);
+        else if (changed && !ImGui::IsItemActive())
+            commit(before);
 
-        commitField(offsetof(Component, shape), oldShape, component->shape, "Change Collider Shape");
-    }
+        if (changed)
+            MarkSceneChanged(engineContext);
+    };
 
-    // offset
+    field([&] {
+        int value = static_cast<int>(c->shape);
+        const bool changed = ImGui::Combo("Shape", &value, "Box\0Sphere\0Cylinder\0");
 
-    static glm::vec2 oldOffset;
-    const glm::vec2 offsetBeforeEdit = component->offset;
+        if (changed)
+            c->shape = static_cast<ECS::Components::ColliderShape>(value);
 
-    ImGui::DragFloat2("Offset", &component->offset.x, 0.05f);
+        return changed;
+    });
 
-    if (ImGui::IsItemActivated()) {
-        oldOffset = offsetBeforeEdit;
-    }
+    field([&] {
+        int value = static_cast<int>(c->orientation);
+        const bool changed = ImGui::Combo("Orientation", &value, "Entity\0Billboard\0");
 
-    if (ImGui::IsItemDeactivatedAfterEdit()) {
-        commitField(offsetof(Component, offset), oldOffset, component->offset, "Change Collider Offset");
-    }
+        if (changed)
+            c->orientation = static_cast<ECS::Components::ColliderOrientation>(value);
 
-    // shape values
+        return changed;
+    });
 
-    if (component->shape == Shape::Box) {
-        static glm::vec2 oldSize;
-        const glm::vec2 sizeBeforeEdit = component->size;
+    field([&] { return ImGui::DragFloat3("Offset", &c->offset.x, 0.01f); });
 
-        ImGui::DragFloat2("Size", &component->size.x, 0.05f, 0.001f, 10000.0f);
+    constexpr float minimum = 0.001f;
+    constexpr auto flags = ImGuiSliderFlags_AlwaysClamp;
 
-        if (ImGui::IsItemActivated()) {
-            oldSize = sizeBeforeEdit;
-        }
-
-        if (ImGui::IsItemDeactivatedAfterEdit()) {
-            commitField(offsetof(Component, size), oldSize, component->size, "Change Collider Size");
-        }
+    if (c->shape == ECS::Components::ColliderShape::Box) {
+        field([&] { return ImGui::DragFloat3("Size", &c->size.x, 0.01f, minimum, FLT_MAX, "%.3f", flags); });
     } else {
-        static float oldRadius;
-        const float radiusBeforeEdit = component->radius;
+        field([&] { return ImGui::DragFloat("Radius", &c->radius, 0.01f, minimum, FLT_MAX, "%.3f", flags); });
 
-        ImGui::DragFloat("Radius", &component->radius, 0.05f, 0.001f, 10000.0f);
-
-        if (ImGui::IsItemActivated()) {
-            oldRadius = radiusBeforeEdit;
-        }
-
-        if (ImGui::IsItemDeactivatedAfterEdit()) {
-            commitField(offsetof(Component, radius), oldRadius, component->radius, "Change Collider Radius");
+        if (c->shape == ECS::Components::ColliderShape::Cylinder) {
+            field([&] { return ImGui::DragFloat("Height", &c->height, 0.01f, minimum, FLT_MAX, "%.3f", flags); });
         }
     }
 
-    // trigger
+    field([&] { return ImGui::Checkbox("Trigger", &c->isTrigger); });
 
-    const bool oldIsTrigger = component->isTrigger;
-
-    if (ImGui::Checkbox("Is Trigger", &component->isTrigger)) {
-        commitField(offsetof(Component, isTrigger), oldIsTrigger, component->isTrigger, "Toggle Collider Trigger");
-    }
-
-    // remove
     ImGui::Separator();
     const float buttonWidth = ImGui::CalcTextSize("Remove Collider").x + ImGui::GetStyle().FramePadding.x * 2.0f;
     const float availableWidth = ImGui::GetContentRegionAvail().x;
     ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (availableWidth - buttonWidth) * 0.5f);
     if (ImGui::Button("Remove ##Collider", ImVec2(buttonWidth, 0.0f))) {
-        const Component data = *component;
-        undoManager->Execute(std::make_unique<Commands::RemoveComponentCommand<Component>>(entityID, data), *engineContext);
+        if (undoManager && engineContext) {
+            undoManager->Execute(std::make_unique<Commands::RemoveComponentCommand<Component>>(id, *c), *engineContext);
+        } else {
+            entity.RemoveComponent<Component>();
+        }
+
         MarkSceneChanged(engineContext);
     }
 }

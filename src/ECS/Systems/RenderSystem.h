@@ -1,15 +1,18 @@
 #pragma once
 
+#include "ECS/Components/BillboardTagComponent.h"
 #include "ECS/Components/DirectionalTextureComponent.h"
 #include "ECS/Components/MaterialComponent.h"
 #include "ECS/Components/MeshComponent.h"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/ECS.h"
+#include "Math/Billboard.h"
 #include "Math/Frustum.h"
 #include "Rendering/Renderer.h"
+#include "Rendering/Types/Camera.h"
 
 namespace ECS::Systems::RenderSystem {
-    inline void Render(Registry &registry, Rendering::Renderer &renderer, const Math::Frustum::FrustumPlanes &frustum3D) noexcept {
+    inline void Render(Registry &registry, Rendering::Renderer &renderer, const Math::Frustum::FrustumPlanes &frustum3D, const Rendering::Camera *camera) noexcept {
         auto *dirPool = registry.GetPool<Components::DirectionalTextureComponent>();
 
         registry.ForEach<Components::MeshComponent, Components::MaterialComponent, Components::TransformComponent>(
@@ -41,7 +44,14 @@ namespace ECS::Systems::RenderSystem {
                     }
 
                     const auto entityInt = static_cast<int32_t>(static_cast<EntityID>(entity));
-                    renderer.Submit(meshComp->mesh, matComp->material, transComp->worldTransform, textureOverride, entityInt);
+                    Rendering::Transform renderTransform = transComp->worldTransform;
+                    if (camera && entity.HasComponent<Components::BillboardTagComponent>()) {
+                        const auto scale = transComp->worldTransform.GetScale();
+                        glm::mat4 billboard = Math::MakeBillboardMatrix(transComp->worldTransform.GetPosition(), scale.x, scale.y, camera->GetRightVector(), camera->GetUpVector());
+                        billboard[2] *= scale.z;
+                        renderTransform.SetCustomMatrix(billboard);
+                    }
+                    renderer.Submit(meshComp->mesh, matComp->material, renderTransform, textureOverride, entityInt);
                 });
     }
 } // namespace ECS::Systems::RenderSystem

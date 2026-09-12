@@ -1,6 +1,7 @@
 #pragma once
 #include "Applications/Editor/States/EditorStateBase.h"
-#include "ECS/Systems/Collision/ColliderGizmo.h"
+#include "ECS/Components/ColliderComponent.h"
+#include "ECS/Systems/Collision/ColliderGeometry.h"
 #include "Rendering/Types/Transform.h"
 #include "UI/UIGizmo.h"
 #include <glm/glm.hpp>
@@ -43,13 +44,14 @@ namespace Editor::States {
         // colliders
         void Collider_DrawGizmoForSelected();
         bool m_EditCollider = false;
-        ColliderGizmo::HandleType m_ColliderDragHandle = ColliderGizmo::HandleType::None;
-        ColliderGizmo::HandleType m_ColliderHoveredHandle = ColliderGizmo::HandleType::None;
+        int m_ColliderHoveredHandle = -1;
+        int m_ColliderDragHandle = -1;
         ECS::EntityID m_ColliderDragEntity = ECS::INVALID_ENTITY_ID;
-        glm::vec2 m_ColliderDragStartMouse{0.0f};
-        glm::vec2 m_ColliderDragStartScale{1.0f};
+        glm::dvec3 m_ColliderDragStartHandle{0.0}; // world position 
+        glm::dvec3 m_ColliderDragPlanePoint{0.0};  // camera drag plane through handle
+        glm::dvec3 m_ColliderDragPlaneNormal{0.0};
         ECS::Components::ColliderComponent m_ColliderDragStart;
-        ColliderGizmo::WorldCollider m_ColliderDragStartWorld;
+        ECS::Collision::WorldCollider m_ColliderDragStartWorld;
 
 
         bool m_HideGameUI = false;

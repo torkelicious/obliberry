@@ -219,16 +219,44 @@ void IO::EntityFactory::RegisterDeserializers() {
 
     // COLLIDER
     s_Deserializers["ColliderComponent"] = [](ECS::Entity &entity, const nlohmann::json &data, Core::ResourceManager &) {
-        ECS::Components::ColliderComponent collider;
-        const int shape = data.value("shape", 0);
-        collider.shape = shape == 1 ? ECS::Components::ColliderShape::Circle : ECS::Components::ColliderShape::Box;
-        const auto offset = readArray<float, 2>(data, "offset", {0.0f, 0.0f});
-        collider.offset = {offset[0], offset[1]};
-        const auto size = readArray<float, 2>(data, "size", {1.0f, 1.0f});
-        collider.size = {size[0], size[1]};
-        collider.radius = data.value("radius", 0.5f);
-        collider.isTrigger = data.value("isTrigger", false);
-        entity.AddComponent<ECS::Components::ColliderComponent>(collider);
+        using namespace ECS::Components;
+        if (data.value("version", 0) != 2)
+            throw std::runtime_error("ColliderComponent requires the version 2 3D format.");
+
+        ColliderComponent c;
+        const std::string shape = data.value("shape", std::string("Box"));
+
+        if (shape == "Box")
+            c.shape = ColliderShape::Box;
+        else if (shape == "Sphere")
+            c.shape = ColliderShape::Sphere;
+        else if (shape == "Cylinder")
+            c.shape = ColliderShape::Cylinder;
+        else
+            throw std::runtime_error("Unknown collider shape: " + shape);
+
+        const std::string orientation = data.value("orientation", std::string("Entity"));
+
+        if (orientation == "Entity")
+            c.orientation = ColliderOrientation::Entity;
+        else if (orientation == "Billboard")
+            c.orientation = ColliderOrientation::Billboard;
+        else
+            throw std::runtime_error("Unknown collider orientation: " + orientation);
+
+        const auto offset = data.value("offset", std::array<float, 3>{0.0f, 0.0f, 0.0f});
+        const auto size = data.value("size", std::array<float, 3>{1.0f, 1.0f, 1.0f});
+
+        c.offset = {offset[0], offset[1], offset[2]};
+        c.size = {size[0], size[1], size[2]};
+        c.radius = data.value("radius", 0.5f);
+        c.height = data.value("height", 1.0f);
+        c.isTrigger = data.value("isTrigger", false);
+
+        if (!IsValidCollider(c))
+            throw std::runtime_error("Invalid collider dimensions.");
+
+        entity.AddComponent<ColliderComponent>(c);
     };
 }
 
@@ -364,17 +392,31 @@ void IO::EntityFactory::RegisterSerializers() {
 
     // COLLIDER
     s_Serializers["ColliderComponent"] = [](const ECS::Entity &entity, nlohmann::json &data, Core::ResourceManager &) {
-        if (!entity.HasComponent<ECS::Components::ColliderComponent>())
+        using Component = ECS::Components::ColliderComponent;
+        if (!entity.HasComponent<Component>())
             return;
 
-        const auto *collider = entity.GetComponent<ECS::Components::ColliderComponent>();
-        auto &output = data["ColliderComponent"];
-
-        output["shape"] = static_cast<int>(collider->shape);
-        output["offset"] = {collider->offset.x, collider->offset.y};
-        output["size"] = {collider->size.x, collider->size.y};
-        output["radius"] = collider->radius;
-        output["isTrigger"] = collider->isTrigger;
+        const auto &c = *entity.GetComponent<Component>();
+        const char *shape = "Box";
+        switch (c.shape) {
+            case ECS::Components::ColliderShape::Box:
+                shape = "Box";
+                break;
+            case ECS::Components::ColliderShape::Sphere:
+                shape = "Sphere";
+                break;
+            case ECS::Components::ColliderShape::Cylinder:
+                shape = "Cylinder";
+                break;
+        }
+        data["ColliderComponent"] = {{"version", 2},
+                                     {"shape", shape},
+                                     {"orientation", c.orientation == ECS::Components::ColliderOrientation::Billboard ? "Billboard" : "Entity"},
+                                     {"offset", {c.offset.x, c.offset.y, c.offset.z}},
+                                     {"size", {c.size.x, c.size.y, c.size.z}},
+                                     {"radius", c.radius},
+                                     {"height", c.height},
+                                     {"isTrigger", c.isTrigger}};
     };
 }
 

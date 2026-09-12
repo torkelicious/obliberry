@@ -1,17 +1,16 @@
 
 #include "Scene.h"
+#include "ECS/Systems/Collision/ColliderGeometry.h"
 #include "Logger/LoggerService.h"
 #include "ECS/Systems/AISystem.h"
 #include "ECS/Systems/MapRenderSystem.h"
 #include "ECS/Systems/MovementSystem.h"
 #include "ECS/Systems/PlayerControlSystem.h"
 #include "ECS/Systems/RenderSystem.h"
-#include "ECS/Systems/SpriteBillboardSystem.h"
 #include "ECS/Systems/LightingSystem.h"
 #include "ECS/Systems/ParticleSystem.h"
 #include "IO/Loaders/EntityFactory.h"
 #include "IO/SceneSerialization.h"
-#include <iostream>
 #include <utility>
 #include "ECS/Systems/ScriptSystem.h"
 #include "ECS/Systems/HierarchySystem.h"
@@ -90,7 +89,12 @@ void Scenes::Scene::Update(const float dt) {
 
     ECS::Systems::HierarchySystem::Propagate(m_Registry); // movement and scrips might change transforms!
 
-    m_CollisionWorld.Update(m_Registry);
+    ECS::Collision::BillboardBasis basis;
+    if (m_Context->camera) {
+        basis.right = m_Context->camera->GetRightVector();
+        basis.up = m_Context->camera->GetUpVector();
+    }
+    m_CollisionWorld.Update(m_Registry, basis);
 
     // ui
     m_UICmdBuf.flush(m_UISystem);
@@ -114,9 +118,7 @@ void Scenes::Scene::Render() {
 
         ECS::Systems::MapRenderSystem::RenderAll(m_Registry, *m_Context, frustum);
 
-        ECS::Systems::SpriteBillboardSystem::Update(m_Registry, m_Context->camera, frustum3D);
-
-        ECS::Systems::RenderSystem::Render(m_Registry, *m_Context->renderer, frustum3D);
+        ECS::Systems::RenderSystem::Render(m_Registry, *m_Context->renderer, frustum3D, m_Context->camera);
 
         ECS::Systems::ParticleSystem::Render(m_Registry, *m_Context->renderer, m_Context->camera);
     }
