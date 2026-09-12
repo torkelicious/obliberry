@@ -170,7 +170,7 @@ namespace Editor::States {
                 layoutInitialized = true;
                 if (ImGui::DockBuilderGetNode(dockspaceId) == nullptr) {
                     ImGui::DockBuilderRemoveNode(dockspaceId);
-                    ImGui::DockBuilderAddNode(dockspaceId, ImGuiDockNodeFlags_DockSpace | ImGuiDockNodeFlags_PassthruCentralNode);
+                    ImGui::DockBuilderAddNode(dockspaceId, ImGuiDockNodeFlags_PassthruCentralNode | static_cast<ImGuiDockNodeFlags>(ImGuiDockNodeFlags_DockSpace));
                     ImGui::DockBuilderSetNodeSize(dockspaceId, viewport->WorkSize);
 
                     ImGuiID leftId, rightId;
