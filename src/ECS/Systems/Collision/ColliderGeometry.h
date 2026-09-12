@@ -85,7 +85,7 @@ namespace ECS::Collision {
         glm::dvec3 max{0.0};
     };
 
-    // world space bounds 
+    // world space bounds
     inline ColliderAABB ComputeWorldAABB(const WorldCollider &collider) {
         ColliderAABB aabb;
 

@@ -559,7 +559,7 @@ void Editor::States::EditState::Collider_DrawGizmoForSelected() {
             m_ColliderDragEntity = ECS::INVALID_ENTITY_ID;
         }
 
-    // rebuild after drag
+        // rebuild after drag
         world = ECS::Collision::BuildWorldCollider(m_ColliderDragEntity, *collider, *transform, basis);
     }
 

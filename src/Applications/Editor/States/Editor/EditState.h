@@ -47,7 +47,7 @@ namespace Editor::States {
         int m_ColliderHoveredHandle = -1;
         int m_ColliderDragHandle = -1;
         ECS::EntityID m_ColliderDragEntity = ECS::INVALID_ENTITY_ID;
-        glm::dvec3 m_ColliderDragStartHandle{0.0}; // world position 
+        glm::dvec3 m_ColliderDragStartHandle{0.0}; // world position
         glm::dvec3 m_ColliderDragPlanePoint{0.0};  // camera drag plane through handle
         glm::dvec3 m_ColliderDragPlaneNormal{0.0};
         ECS::Components::ColliderComponent m_ColliderDragStart;
