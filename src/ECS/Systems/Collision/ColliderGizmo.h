@@ -4,6 +4,7 @@
 
 #include <imgui.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
@@ -28,7 +29,7 @@ namespace Editor::ColliderGizmo {
     inline bool ToScreen(const glm::dmat4 &matrix, const glm::dvec3 &local, ImVec2 viewportMin, ImVec2 viewportMax, glm::vec2 &outScreen) {
         const glm::dvec4 clip = matrix * glm::dvec4(local, 1.0);
 
-        if (clip.w <= 0.0)
+        if (!std::isfinite(clip.x) || !std::isfinite(clip.y) || !std::isfinite(clip.z) || !std::isfinite(clip.w) || clip.w <= 0.0 || clip.z < -clip.w || clip.z > clip.w)
             return false;
 
         const glm::dvec3 ndc = glm::dvec3(clip) / clip.w;
@@ -36,23 +37,22 @@ namespace Editor::ColliderGizmo {
         const double width = viewportMax.x - viewportMin.x;
         const double height = viewportMax.y - viewportMin.y;
 
+        if (width <= 0.0 || height <= 0.0)
+            return false;
+
         outScreen = {float(viewportMin.x + (ndc.x * 0.5 + 0.5) * width), float(viewportMin.y + (0.5 - ndc.y * 0.5) * height)};
         return true;
     }
 
     inline glm::dvec3 WorldDeltaToLocal(const WorldCollider &world, const glm::dvec3 &deltaWorld) {
-        glm::dvec3 result(0.0);
+        const glm::dmat3 linear(world.localToWorld);
+        const double scale = glm::length(linear[0]) * glm::length(linear[1]) * glm::length(linear[2]);
+        const double determinant = glm::determinant(linear);
 
-        for (int i = 0; i < 3; ++i) {
-            const glm::dvec3 axis = glm::dvec3(world.localToWorld[i]);
-            const double length = glm::length(axis);
+        if (!std::isfinite(scale) || !std::isfinite(determinant) || scale <= 0.0 || std::abs(determinant) <= 1e-12 * scale)
+            return glm::dvec3(0.0);
 
-            if (length > 1e-12) {
-                result[i] = glm::dot(axis / length, deltaWorld) / length;
-            }
-        }
-
-        return result;
+        return glm::inverse(linear) * deltaWorld;
     }
 
     inline double AxisFacing(const WorldCollider &world, const Handle &handle, const glm::dvec3 &viewDirection) {
@@ -152,29 +152,24 @@ namespace Editor::ColliderGizmo {
                 return;
             }
             case HandleType::Height: {
-                // move one cap while the opposite cap stays anchored
-                const double half = collider.height * 0.5;
-                const double anchor = -d.y * half;
-                const double cap = d.y * half + glm::dot(d, localDelta);
-                const double newHalf = std::max(minimum, (cap - anchor) * d.y);
-                const double newCap = anchor + d.y * newHalf;
+                // nove one cap but preserving the opposite cap and offset
+                const double sign = d.y;
+                const double oldHeight = collider.height;
+                const double newHeight = std::max(minimum, oldHeight + sign * localDelta.y);
 
-                collider.height = float(newHalf * 2.0);
-                collider.offset.y = float((anchor + newCap) * 0.5);
+                collider.height = float(newHeight);
+                collider.offset.y += float(sign * (newHeight - oldHeight) * 0.5);
                 return;
             }
             case HandleType::Face: {
                 // move one face while the opposite face stays anchored
                 const int axis = d.x != 0.0 ? 0 : (d.y != 0.0 ? 1 : 2);
-                const double s = d[axis];
-                const double size = collider.size[axis];
-                const double anchor = collider.offset[axis] - s * size * 0.5;
-                const double face = collider.offset[axis] + s * size * 0.5 + glm::dot(d, localDelta);
-                const double newSize = std::max(minimum, (face - anchor) * s);
-                const double newFace = anchor + s * newSize;
+                const double sign = d[axis];
+                const double oldSize = collider.size[axis];
+                const double newSize = std::max(minimum, oldSize + sign * localDelta[axis]);
 
                 collider.size[axis] = float(newSize);
-                collider.offset[axis] = float((anchor + newFace) * 0.5);
+                collider.offset[axis] += float(sign * (newSize - oldSize) * 0.5);
                 return;
             }
             case HandleType::None:

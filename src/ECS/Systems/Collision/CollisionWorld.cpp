@@ -23,11 +23,12 @@ namespace ECS::Collision {
         registry.ForEach<Components::ColliderComponent, Components::TransformComponent>([&](const Entity entity, const Components::ColliderComponent *collider, const Components::TransformComponent *transform) {
             const auto entityID = static_cast<EntityID>(entity);
 
-            if (!Components::IsValidCollider(*collider)) {
-                ReportInvalidCollider(entityID, true);
+            const bool valid = Components::IsValidCollider(*collider);
+            ReportInvalidCollider(entityID, valid);
+            if (!valid) {
                 return;
             }
-            ReportInvalidCollider(entityID, false);
+
 
             worldColliders.push_back(BuildWorldCollider(entityID, *collider, *transform, basis));
         });
@@ -52,6 +53,9 @@ namespace ECS::Collision {
                 const GJKResult result = IntersectsGJK(a, b);
 
                 ReportIndeterminate(a.entity, b.entity, result == GJKResult::Indeterminate);
+                if (result == GJKResult::Indeterminate) {
+                    return;
+                }
 
                 if (result == GJKResult::Separated) {
                     continue;

@@ -75,7 +75,7 @@ void Scenes::Scene::Update(const float dt) {
     m_Context->deltaTime = dt;
     m_Context->frameCount++;
 
-    ECS::Systems::HierarchySystem::Propagate(m_Registry);
+    ECS::Collision::BillboardBasis basis;
 
     if (m_Context->uiSystem) {
         m_Context->uiSystem->Update(dt);
@@ -84,16 +84,17 @@ void Scenes::Scene::Update(const float dt) {
 
     ECS::Systems::PlayerControlSystem::Update(m_Registry, *m_Context);
     ECS::Systems::AISystem::Update(m_Registry, dt);
-    ECS::Systems::MovementSystem::Update(m_Registry, dt);
+    ECS::Systems::MovementSystem::Update(m_Registry, dt, basis);
     ECS::Systems::ScriptSystem::Update(m_Registry, *m_Context);
 
     ECS::Systems::HierarchySystem::Propagate(m_Registry); // movement and scrips might change transforms!
 
-    ECS::Collision::BillboardBasis basis;
+
     if (m_Context->camera) {
         basis.right = m_Context->camera->GetRightVector();
         basis.up = m_Context->camera->GetUpVector();
     }
+
     m_CollisionWorld.Update(m_Registry, basis);
 
     // ui

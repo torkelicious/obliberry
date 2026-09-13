@@ -31,7 +31,7 @@ namespace ECS::Collision {
         // world space
         const glm::dvec3 displace = glm::dvec3(targetWorldPos) - glm::dvec3(transform->worldTransform.GetMatrix()[3]);
 
-        cand.localToWorld[3] = glm::dvec4(displace, 0.0);
+        cand.localToWorld[3] += glm::dvec4(displace, 0.0);
 
         const ColliderAABB candBounds = ComputeWorldAABB(cand);
 
@@ -46,6 +46,12 @@ namespace ECS::Collision {
             if (otherId == entity || othercCol->isTrigger) {
                 return;
             }
+
+            if (!Components::IsValidCollider(*othercCol)) {
+                blocked = true;
+                return;
+            }
+
 
             const WorldCollider other = BuildWorldCollider(otherId, *othercCol, *otherTrans, basis);
 
