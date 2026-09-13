@@ -54,7 +54,11 @@ namespace ECS::Collision {
 
                 ReportIndeterminate(a.entity, b.entity, result == GJKResult::Indeterminate);
                 if (result == GJKResult::Indeterminate) {
-                    return;
+                    const auto previous = m_Previous.find(MakeKey(a.entity, b.entity));
+                    if (previous != m_Previous.end()) {
+                        nextCollisions.push_back(previous->second);
+                    }
+                    continue;
                 }
 
                 if (result == GJKResult::Separated) {
@@ -125,7 +129,7 @@ namespace ECS::Collision {
         if (!indeterminate) {
             m_ReportedIndeterminate.erase(key);
         } else if (m_ReportedIndeterminate.insert(key).second) {
-            LOG_ERROR(LOG_WHO, "GJK was indeterminate for pair " + std::to_string(a) + " / " + std::to_string(b) + ", treating as intersecting");
+            LOG_ERROR(LOG_WHO, "GJK was indeterminate for pair " + std::to_string(a) + " / " + std::to_string(b) + ", preserving previous pair state");
         }
     }
 

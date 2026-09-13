@@ -13,6 +13,9 @@
 #include <cmath>
 
 namespace ECS::Collision {
+
+    inline constexpr double CollisionTolerance = 1e-6;
+
     struct BillboardBasis {
         glm::vec3 right{1.0f, 0.0f, 0.0f};
         glm::vec3 up{0.0f, 1.0f, 0.0f};
@@ -69,6 +72,16 @@ namespace ECS::Collision {
                 }
                 return point;
             }
+            case Shape::Rectangle: {
+                return {collider.size.x * (direction.x >= 0.0 ? 0.5 : -0.5), collider.size.y * (direction.y >= 0.0 ? 0.5 : -0.5), 0.0};
+            }
+            case Shape::Circle: {
+                const double radLen = std::hypot(direction.x, direction.y);
+                if (radLen == 0.0) {
+                    return {collider.radius, 0.0, 0.0};
+                }
+                return {collider.radius * direction.x / radLen, collider.radius * direction.y / radLen, 0.0};
+            }
         }
         return glm::dvec3(0.0);
     }
@@ -100,6 +113,13 @@ namespace ECS::Collision {
         return aabb;
     }
 
-    inline bool OverlapsAABB(const ColliderAABB &a, const ColliderAABB &b) { return a.min.x <= b.max.x && b.min.x <= a.max.x && a.min.y <= b.max.y && b.min.y <= a.max.y && a.min.z <= b.max.z && b.min.z <= a.max.z; }
+    inline bool OverlapsAABB(const ColliderAABB &a, const ColliderAABB &b, double tolerance = CollisionTolerance) {
+        for (int axis = 0; axis < 3; ++axis) {
+            if (a.min[axis] > b.max[axis] + tolerance || b.min[axis] > a.max[axis] + tolerance) {
+                return false;
+            }
+        }
+        return true;
+    }
 
 } // namespace ECS::Collision

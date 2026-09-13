@@ -43,7 +43,7 @@ namespace ECS::Collision {
         std::unordered_set<uint64_t> m_ReportedIndeterminate;
 
         static uint64_t MakeKey(EntityID a, EntityID b);
-        void Emit(CollisionEventType tpye, const Collision &collision);
+        void Emit(CollisionEventType type, const Collision &collision);
         void ReportInvalidCollider(EntityID entity, bool valid);
         void ReportIndeterminate(EntityID a, EntityID b, bool indeterminate);
     };

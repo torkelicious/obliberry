@@ -6,7 +6,7 @@
 
 namespace ECS::Components {
 
-    enum class ColliderShape : uint8_t { Box, Sphere, Cylinder };
+    enum class ColliderShape : uint8_t { Box, Sphere, Cylinder, Rectangle, Circle };
 
     enum class ColliderOrientation : uint8_t { Entity, Billboard };
 
@@ -26,9 +26,6 @@ namespace ECS::Components {
     };
 
     inline bool IsValidCollider(const ColliderComponent &c) {
-        if (c.shape != ColliderShape::Box && c.shape != ColliderShape::Sphere && c.shape != ColliderShape::Cylinder)
-            return false;
-
         if (c.orientation != ColliderOrientation::Entity && c.orientation != ColliderOrientation::Billboard)
             return false;
 
@@ -37,7 +34,22 @@ namespace ECS::Components {
                 return false;
         }
 
-        return std::isfinite(c.radius) && c.radius > 0.0f && std::isfinite(c.height) && c.height > 0.0f;
+        auto positive = [](float value) { return std::isfinite(value) && value > 0.0f; };
+
+        switch (c.shape) {
+            case ColliderShape::Box:
+                return positive(c.size.x) && positive(c.size.y) && positive(c.size.z);
+            case ColliderShape::Circle:
+            case ColliderShape::Sphere:
+                return positive(c.radius);
+            case ColliderShape::Cylinder:
+                return positive(c.radius) && positive(c.height);
+            case ColliderShape::Rectangle:
+                return positive(c.size.x) && positive(c.size.y);
+        }
+
+
+        return false;
     }
 
 } // namespace ECS::Components

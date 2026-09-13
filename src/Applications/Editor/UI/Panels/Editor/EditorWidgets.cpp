@@ -697,7 +697,7 @@ void Editor::UI::ColliderWidget::Draw(const ECS::Entity entity, Core::EngineCont
 
     field([&] {
         int value = static_cast<int>(c->shape);
-        const bool changed = ImGui::Combo("Shape", &value, "Box\0Sphere\0Cylinder\0");
+        const bool changed = ImGui::Combo("Shape", &value, "Box\0Sphere\0Cylinder\0Rectangle\0Circle\0");
 
         if (changed)
             c->shape = static_cast<ECS::Components::ColliderShape>(value);
@@ -722,9 +722,10 @@ void Editor::UI::ColliderWidget::Draw(const ECS::Entity entity, Core::EngineCont
 
     if (c->shape == ECS::Components::ColliderShape::Box) {
         field([&] { return ImGui::DragFloat3("Size", &c->size.x, 0.01f, minimum, FLT_MAX, "%.3f", flags); });
+    } else if (c->shape == ECS::Components::ColliderShape::Rectangle) {
+        field([&] { return ImGui::DragFloat2("Size", &c->size.x, 0.01f, minimum, FLT_MAX, "%.3f", flags); });
     } else {
         field([&] { return ImGui::DragFloat("Radius", &c->radius, 0.01f, minimum, FLT_MAX, "%.3f", flags); });
-
         if (c->shape == ECS::Components::ColliderShape::Cylinder) {
             field([&] { return ImGui::DragFloat("Height", &c->height, 0.01f, minimum, FLT_MAX, "%.3f", flags); });
         }

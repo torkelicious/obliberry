@@ -78,21 +78,25 @@ namespace Editor::ColliderGizmo {
 
         const auto &c = world.geometry;
 
-        if (c.shape == Shape::Box) {
+        if (c.shape == Shape::Box || c.shape == Shape::Rectangle) {
             push(HandleType::Face, {c.size.x * 0.5f, 0.0f, 0.0f}, {1.0, 0.0, 0.0});
             push(HandleType::Face, {-c.size.x * 0.5f, 0.0f, 0.0f}, {-1.0, 0.0, 0.0});
             push(HandleType::Face, {0.0f, c.size.y * 0.5f, 0.0f}, {0.0, 1.0, 0.0});
             push(HandleType::Face, {0.0f, -c.size.y * 0.5f, 0.0f}, {0.0, -1.0, 0.0});
-            push(HandleType::Face, {0.0f, 0.0f, c.size.z * 0.5f}, {0.0, 0.0, 1.0});
-            push(HandleType::Face, {0.0f, 0.0f, -c.size.z * 0.5f}, {0.0, 0.0, -1.0});
-        } else if (c.shape == Shape::Sphere) {
+            if (c.shape == Shape::Box) {
+                push(HandleType::Face, {0.0f, 0.0f, c.size.z * 0.5f}, {0.0, 0.0, 1.0});
+                push(HandleType::Face, {0.0f, 0.0f, -c.size.z * 0.5f}, {0.0, 0.0, -1.0});
+            }
+        } else if (c.shape == Shape::Sphere || c.shape == Shape::Circle) {
             push(HandleType::Radius, {c.radius, 0.0f, 0.0f}, {1.0, 0.0, 0.0});
             push(HandleType::Radius, {-c.radius, 0.0f, 0.0f}, {-1.0, 0.0, 0.0});
             push(HandleType::Radius, {0.0f, c.radius, 0.0f}, {0.0, 1.0, 0.0});
             push(HandleType::Radius, {0.0f, -c.radius, 0.0f}, {0.0, -1.0, 0.0});
-            push(HandleType::Radius, {0.0f, 0.0f, c.radius}, {0.0, 0.0, 1.0});
-            push(HandleType::Radius, {0.0f, 0.0f, -c.radius}, {0.0, 0.0, -1.0});
-        } else {
+            if (c.shape == Shape::Sphere) {
+                push(HandleType::Radius, {0.0f, 0.0f, c.radius}, {0.0, 0.0, 1.0});
+                push(HandleType::Radius, {0.0f, 0.0f, -c.radius}, {0.0, 0.0, -1.0});
+            }
+        } else if (c.shape == Shape::Cylinder) {
             const double radius = c.radius;
             const double half = c.height * 0.5f;
 
@@ -197,6 +201,11 @@ namespace Editor::ColliderGizmo {
             glm::dvec4 ca = matrix * glm::dvec4(a, 1.0);
             glm::dvec4 cb = matrix * glm::dvec4(b, 1.0);
 
+            for (int axis = 0; axis < 4; ++axis) {
+                if (!std::isfinite(ca[axis]) || !std::isfinite(cb[axis]))
+                    return;
+            }
+
             for (double sign : {-1.0, 1.0}) {
                 const double da = ca.w + sign * ca.z;
                 const double db = cb.w + sign * cb.z;
@@ -253,13 +262,23 @@ namespace Editor::ColliderGizmo {
                         line(corners[i], corners[i | bit]);
                 }
             }
+        } 
+        else if (c.shape == Shape::Rectangle) {
+            const double x = c.size.x * 0.5;
+            const double y = c.size.y * 0.5;
+            line({-x, -y, 0}, {x, -y, 0});
+            line({x, -y, 0}, {x, y, 0});
+            line({x, y, 0}, {-x, y, 0});
+            line({-x, y, 0}, {-x, -y, 0});
+        } else if (c.shape == Shape::Circle) {
+            circle({0, 0, 0}, {c.radius, 0, 0}, {0, c.radius, 0});
         } else if (c.shape == Shape::Sphere) {
             const double r = c.radius;
 
             circle({0, 0, 0}, {r, 0, 0}, {0, r, 0});
             circle({0, 0, 0}, {r, 0, 0}, {0, 0, r});
             circle({0, 0, 0}, {0, r, 0}, {0, 0, r});
-        } else {
+        } else if (c.shape == Shape::Cylinder) {
             const double r = c.radius;
             const double h = c.height * 0.5;
 

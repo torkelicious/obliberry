@@ -232,6 +232,10 @@ void IO::EntityFactory::RegisterDeserializers() {
             c.shape = ColliderShape::Sphere;
         else if (shape == "Cylinder")
             c.shape = ColliderShape::Cylinder;
+        else if (shape == "Rectangle")
+            c.shape = ColliderShape::Rectangle;
+        else if (shape == "Circle")
+            c.shape = ColliderShape::Circle;
         else
             throw std::runtime_error("Unknown collider shape: " + shape);
 
@@ -407,6 +411,12 @@ void IO::EntityFactory::RegisterSerializers() {
                 break;
             case ECS::Components::ColliderShape::Cylinder:
                 shape = "Cylinder";
+                break;
+            case ECS::Components::ColliderShape::Rectangle:
+                shape = "Rectangle";
+                break;
+            case ECS::Components::ColliderShape::Circle:
+                shape = "Circle";
                 break;
         }
         data["ColliderComponent"] = {{"version", 2},

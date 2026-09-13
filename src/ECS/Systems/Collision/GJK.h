@@ -114,7 +114,7 @@ namespace ECS::Collision {
         }
     } // namespace Detail
 
-    inline GJKResult IntersectsGJK(const WorldCollider &a, const WorldCollider &b, double tolerance = 1e-6) {
+    inline GJKResult IntersectsGJK(const WorldCollider &a, const WorldCollider &b, double tolerance = CollisionTolerance) {
         if (!std::isfinite(tolerance) || tolerance <= 0.0)
             return GJKResult::Indeterminate;
 
