@@ -96,6 +96,7 @@ void Scenes::Scene::Update(const float dt) {
     }
 
     m_CollisionWorld.Update(m_Registry, basis);
+    ECS::Systems::ScriptSystem::DispatchCollisionEvents(m_Registry, *m_Context, m_CollisionWorld.GetEvents());
 
     // ui
     m_UICmdBuf.flush(m_UISystem);

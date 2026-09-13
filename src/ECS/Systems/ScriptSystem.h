@@ -1,8 +1,12 @@
 #pragma once
 
+#include <cstddef>
 #include <filesystem>
+#include <variant>
 #include <vector>
 #include <map>
+#include "ECS/Systems/Collision/CollisionWorld.h"
+#include "ECS/Types.h"
 #include "Logger/LoggerService.h"
 #include "Core/EngineContext.h"
 #include "ECS/Registry.h"
@@ -14,6 +18,7 @@
 #include <ObSL/ScriptWorker.h>
 #include <ObSL/Parser.h>
 #include <ObSL/ASTDeserializer.h>
+#include "ObSL/Parser/ast.h"
 #include "Scripting/EngineLib/ScriptCommandBuffer.h"
 #include "Scripting/EngineLib/EntityWrapperCache.h"
 #include "Scripting/EngineLib/EngineLibFactories.h"
@@ -105,20 +110,40 @@ namespace ECS::Systems::ScriptSystem {
             }
 
             // Remove old GC roots before re init
-            const size_t old_count = slot.on_update_functions.size();
-            for (size_t w = 0; w < old_count; ++w) {
-                if (auto *func = slot.on_update_functions[w])
-                    runtime.get_worker(w)->GetInterpreter().gc.remove_root(func);
-                if (auto *func = slot.on_destroy_functions[w])
-                    runtime.get_worker(w)->GetInterpreter().gc.remove_root(func);
-                if (auto *func = slot.on_exit_functions[w])
-                    runtime.get_worker(w)->GetInterpreter().gc.remove_root(func);
+            auto remove_roots = [&](auto &functions) {
+                for (size_t w = 0; w < functions.size(); ++w) {
+                    if (functions[w]) {
+                        runtime.get_worker(w)->GetInterpreter().gc.remove_root(functions[w]);
+                    }
+                }
+            };
+
+            {
+                std::vector<std::vector<ObSL::ObSLCallable *>> hooks = {slot.on_update_functions,          slot.on_exit_functions,           slot.on_exit_functions,
+                                                                        slot.on_collision_enter_functions, slot.on_collision_stay_functions, slot.on_collision_exit_functions,
+                                                                        slot.on_trigger_enter_functions,   slot.on_trigger_stay_functions,   slot.on_trigger_exit_functions};
+
+                for (const auto &hook : hooks) {
+                    remove_roots(hook);
+                }
             }
 
+
             slot.instance_envs.resize(num_workers);
+            // hooks
+            // basic hooks
             slot.on_update_functions.assign(num_workers, nullptr);
             slot.on_destroy_functions.assign(num_workers, nullptr);
             slot.on_exit_functions.assign(num_workers, nullptr);
+            // collider hooks
+            slot.on_collision_enter_functions.assign(num_workers, nullptr);
+            slot.on_collision_stay_functions.assign(num_workers, nullptr);
+            slot.on_collision_exit_functions.assign(num_workers, nullptr);
+
+            slot.on_trigger_enter_functions.assign(num_workers, nullptr);
+            slot.on_trigger_stay_functions.assign(num_workers, nullptr);
+            slot.on_trigger_exit_functions.assign(num_workers, nullptr);
+
 
             // per worker env with entity wrappers
             for (size_t w = 0; w < num_workers; ++w) {
@@ -166,6 +191,15 @@ namespace ECS::Systems::ScriptSystem {
             bind_hook("on_update", slot.on_update_functions);
             bind_hook("on_destroy", slot.on_destroy_functions);
             bind_hook("on_exit", slot.on_exit_functions);
+
+            bind_hook("on_collision_enter", slot.on_collision_enter_functions);
+            bind_hook("on_collision_stay", slot.on_collision_stay_functions);
+            bind_hook("on_collision_exit", slot.on_collision_exit_functions);
+
+            bind_hook("on_trigger_enter", slot.on_trigger_enter_functions);
+            bind_hook("on_trigger_stay", slot.on_trigger_stay_functions);
+            bind_hook("on_trigger_exit", slot.on_trigger_exit_functions);
+
 
             slot.isInitialized = true;
             if (auto *logger = Logging::LoggerService::Get()) {
@@ -430,5 +464,161 @@ namespace ECS::Systems::ScriptSystem {
         for (size_t w = 0; w < num_workers; ++w)
             ctx.scriptPool->get_worker(w)->clear_frame_context();
     }
+
+    inline const std::vector<ObSL::ObSLCallable *> *GetCollisionHook(const Components::ScriptSlot &slot, Collision::CollisionEventType type, bool trigger) {
+        using Type = Collision::CollisionEventType;
+        switch (type) {
+            case Type::Enter:
+                return trigger ? &slot.on_trigger_enter_functions : &slot.on_collision_enter_functions;
+            case Type::Stay:
+                return trigger ? &slot.on_trigger_stay_functions : &slot.on_collision_enter_functions;
+            case Type::Exit:
+                return trigger ? &slot.on_trigger_exit_functions : &slot.on_collision_exit_functions;
+        }
+        return nullptr;
+    }
+
+
+    inline void DispatchCollisionEvents(Registry &registry, const Core::EngineContext &ctx, const std::vector<Collision::CollisionEvent> &events) {
+        if (!ctx.scriptPool || events.empty()) {
+            return;
+        }
+
+        const size_t workerCount = ctx.scriptPool->worker_count();
+
+        if (workerCount == 0) {
+            return;
+        }
+
+        struct CollisionWork {
+            EntityID receiver;
+            EntityID other;
+            size_t slotIdx;
+            Collision::CollisionEventType type;
+            bool trigger;
+        };
+
+        std::vector<CollisionWork> work;
+
+        auto qReceiver = [&](EntityID receiver, EntityID other, const Collision::CollisionEvent &event) {
+            if (!registry.IsValid(receiver)) {
+                return;
+            }
+
+            const auto *scripts = registry.GetComponent<Components::ScriptComponent>(receiver);
+            if (!scripts) {
+                return;
+            }
+
+            for (size_t slotIdx = 0; slotIdx < scripts->slots.size(); ++slotIdx) {
+                const auto &slot = scripts->slots[slotIdx];
+                if (!slot.isInitialized) {
+                    continue;
+                }
+
+                const size_t workerIdx = (receiver + slotIdx) % workerCount;
+                const auto *hooks = GetCollisionHook(slot, event.type, event.isTrigger);
+
+                if (!hooks || workerIdx >= hooks->size() || !(*hooks)[workerIdx]) {
+                    continue;
+                }
+
+                work.push_back({receiver, other, slotIdx, event.type, event.isTrigger});
+            }
+        };
+
+        for (const auto &event : events) {
+            qReceiver(event.entityA, event.entityB, event);
+            qReceiver(event.entityB, event.entityA, event);
+        }
+
+        if (work.empty()) {
+            return;
+        }
+
+        Scripting::ScriptCommandBuffer commands;
+
+        for (size_t w = 0; w < workerCount; ++w) {
+            ctx.scriptPool->get_worker(w)->set_frame_context(&commands);
+        }
+
+        struct ContextCleanup {
+            const Core::EngineContext &ctx;
+            size_t count;
+
+            ~ContextCleanup() {
+                for (size_t w = 0; w < count; ++w) {
+                    ctx.scriptPool->get_worker(w)->clear_frame_context();
+                }
+            }
+        };
+
+        ContextCleanup cleanup{ctx, workerCount};
+
+        constexpr ObSL::Token callToken{.type = ObSL::TokenType::LEFT_PAREN, .lexeme = "(", .line = 0, .column = 0, .start_pos = 0, .end_pos = 0};
+
+        // refetch comp
+        for (const CollisionWork &item : work) {
+            if (!registry.IsValid(item.receiver)) {
+                continue;
+            }
+
+            const auto *scripts = registry.GetComponent<Components::ScriptComponent>(item.receiver);
+
+            if (!scripts || item.slotIdx >= scripts->slots.size()) {
+                continue;
+            }
+
+            const auto &slot = scripts->slots[item.slotIdx];
+
+            if (!slot.isInitialized) {
+                continue;
+            }
+
+            const size_t workerIdx = (item.receiver + item.slotIdx) % workerCount;
+
+            const auto *hooks = GetCollisionHook(slot, item.type, item.trigger);
+
+            if (!hooks || workerIdx >= hooks->size() || workerIdx >= slot.instance_envs.size()) {
+                continue;
+            }
+
+            // copy b4 executions
+            auto *function = (*hooks)[workerIdx];
+            auto env = slot.instance_envs[workerIdx];
+            const std::string scriptPath = slot.scriptPath;
+
+            if (!function || !env) {
+                continue;
+            }
+
+            auto *worker = ctx.scriptPool->get_worker(workerIdx);
+            auto &interpreter = worker->GetInterpreter();
+
+            try {
+                interpreter.set_current_environment(env);
+                ObSL::Value otherArg = std::monostate{};
+
+                if (registry.IsValid(item.other)) {
+                    otherArg = Scripting::CreateEntityObject(&interpreter, registry, item.other);
+                }
+                Scripting::EngineLibFactories::GCProtectGuard protect(&interpreter, otherArg); // keep alive
+
+                const std::vector<ObSL::Value> args{otherArg};
+
+                function->call(&interpreter, args, callToken);
+            } catch (const std::exception &error) {
+                if (auto *logger = Logging::LoggerService::Get()) {
+                    logger->log("ScriptSystem", "Collision callback failed (" + scriptPath + "): " + error.what(), Logging::LogSeverity::Error);
+                }
+            } catch (...) {
+                if (auto *logger = Logging::LoggerService::Get()) {
+                    logger->log("ScriptSystem", "Unknown collision callback error (" + scriptPath + ")", Logging::LogSeverity::Error);
+                }
+            }
+        }
+        commands.flush(registry);
+    }
+
 
 } // namespace ECS::Systems::ScriptSystem
