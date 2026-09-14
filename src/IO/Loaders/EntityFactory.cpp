@@ -1,5 +1,6 @@
 #include "EntityFactory.h"
 #include "ECS/Components/ColliderComponent.h"
+#include "ECS/Components/SpriteSheetComponent.h"
 #include "Logger/LoggerService.h"
 
 #include "ECS/ECS.h"
@@ -115,6 +116,34 @@ void IO::EntityFactory::RegisterDeserializers() {
         }
         entity.AddComponent<ECS::Components::DirectionalTextureComponent>(dirTex);
     };
+
+    s_Deserializers["SpriteSheetComponent"] = [](ECS::Entity &entity, const nlohmann::json &data, Core::ResourceManager &resources) {
+        ECS::Components::SpriteSheetComponent anim;
+        if (data.contains("texture_id")) {
+            const std::string texID = data["texture_id"].get<std::string>();
+            anim.sheet->texture = resources.Get<Rendering::Texture>(texID);
+            if (!anim.sheet->texture)
+                LOG_ERROR(LOG_WHO, "Failed to find Texture ID '" + texID + "' for SpriteAnimationComponent");
+        }
+        if (data.contains("columns"))
+            anim.sheet->columns = data["columns"].get<int>();
+        if (data.contains("rows"))
+            anim.sheet->rows = data["rows"].get<int>();
+        if (data.contains("start_frame"))
+            anim.startFrame = data["start_frame"].get<int>();
+        if (data.contains("frame_count"))
+            anim.frameCount = data["frame_count"].get<int>();
+        if (data.contains("fps"))
+            anim.framesPerSecond = data["fps"].get<float>();
+        if (data.contains("looping"))
+            anim.loop = data["looping"].get<bool>();
+        if (data.contains("playing"))
+            anim.playing = data["playing"].get<bool>();
+        if (data.contains("current_frame"))
+            anim.currentFrame = data["current_frame"].get<int>();
+        entity.AddComponent<ECS::Components::SpriteSheetComponent>(anim);
+    };
+
 
     // POINT LIGHT COMPONENT
     s_Deserializers["PointLightComponent"] = [](ECS::Entity &entity, const nlohmann::json &data, Core::ResourceManager &) {
@@ -333,6 +362,22 @@ void IO::EntityFactory::RegisterSerializers() {
                     texArray.push_back("");
                 }
             }
+        }
+    };
+
+    // SPRITE SHEET COMPONENT
+    s_Serializers["SpriteSheetComponent"] = [](const ECS::Entity &entity, nlohmann::json &data, Core::ResourceManager &resources) {
+        if (entity.HasComponent<ECS::Components::SpriteSheetComponent>()) {
+            const auto *anim = entity.GetComponent<ECS::Components::SpriteSheetComponent>();
+            data["SpriteSheetComponent"]["texture_id"] = anim->sheet && anim->sheet->texture ? resources.GetKey<Rendering::Texture>(anim->sheet->texture) : "";
+            data["SpriteSheetComponent"]["columns"] = anim->sheet ? anim->sheet->columns : 1;
+            data["SpriteSheetComponent"]["rows"] = anim->sheet ? anim->sheet->rows : 1;
+            data["SpriteSheetComponent"]["start_frame"] = anim->startFrame;
+            data["SpriteSheetComponent"]["frame_count"] = anim->frameCount;
+            data["SpriteSheetComponent"]["fps"] = anim->framesPerSecond;
+            data["SpriteSheetComponent"]["looping"] = anim->loop;
+            data["SpriteSheetComponent"]["playing"] = anim->playing;
+            data["SpriteSheetComponent"]["current_frame"] = anim->currentFrame;
         }
     };
 

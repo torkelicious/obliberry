@@ -31,6 +31,7 @@ layout(location = 6) in int a_EntityID;
 uniform mat4 u_VP;
 uniform vec2 u_MapSize;
 uniform vec2 u_MapOffset;
+uniform vec4 u_UVRect;
 
 out vec2 v_UV;
 out vec2 v_LightUV;
@@ -38,7 +39,7 @@ flat out int v_EntityID;
 
 void main()
 {
-    v_UV = a_UV;
+    v_UV = a_UV * u_UVRect.zw + u_UVRect.xy;
 
     vec4 worldPos = a_InstanceMatrix * vec4(a_Pos, 1.0);
 

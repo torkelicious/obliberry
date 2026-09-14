@@ -11,6 +11,7 @@
 #include "ECS/Systems/ParticleSystem.h"
 #include "UI/UIGizmo.h"
 #include "imgui.h"
+#include "ECS/Systems/SpriteAnimationSystem.h"
 
 namespace Editor::States {
     ImGuizmo::OPERATION EditState::mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
@@ -36,6 +37,9 @@ void Editor::States::EditState::OnUpdate(const float dt) {
     if (EditorLayer::s_RenderParticlesInEditor) {
         ECS::Systems::ParticleSystem::Update(*m_EditorLayer->m_Registry, dt);
     }
+
+    ECS::Systems::SpriteAnimation::Update(*m_EditorLayer->m_Registry, dt);
+
     if (m_EditorLayer->m_Context->uiSystem) {
         m_EditorLayer->m_Context->uiSystem->Update(dt, /*interactive=*/false);
         if (m_EditorLayer->m_CurrentState && m_EditorLayer->m_CurrentState->IsPlayMode()) {

@@ -4,8 +4,10 @@
 #include "ECS/Components/DirectionalTextureComponent.h"
 #include "ECS/Components/MaterialComponent.h"
 #include "ECS/Components/MeshComponent.h"
+#include "ECS/Components/SpriteSheetComponent.h"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/ECS.h"
+#include "ECS/Types.h"
 #include "Math/Billboard.h"
 #include "Math/Frustum.h"
 #include "Rendering/Renderer.h"
@@ -14,6 +16,7 @@
 namespace ECS::Systems::RenderSystem {
     inline void Render(Registry &registry, Rendering::Renderer &renderer, const Math::Frustum::FrustumPlanes &frustum3D, const Rendering::Camera *camera) noexcept {
         auto *dirPool = registry.GetPool<Components::DirectionalTextureComponent>();
+        auto *animPool = registry.GetPool<Components::SpriteSheetComponent>();
 
         registry.ForEach<Components::MeshComponent, Components::MaterialComponent, Components::TransformComponent>(
                 [&](const Entity entity, const Components::MeshComponent *meshComp, const Components::MaterialComponent *matComp, const Components::TransformComponent *transComp) {
@@ -35,6 +38,7 @@ namespace ECS::Systems::RenderSystem {
                     }
 
                     const Rendering::Texture *textureOverride = nullptr;
+                    glm::vec4 uvRect{0.0f, 0.0f, 1.0f, 1.0f};
 
                     if (const auto *dir = dirPool->Get(static_cast<EntityID>(entity))) {
                         if (const auto idx = dir->index % dir->textures.size(); dir->textures[idx]) {
@@ -42,6 +46,13 @@ namespace ECS::Systems::RenderSystem {
                             textureOverride = dir->textures[idx].get();
                         }
                     }
+
+                    if (const auto *anim = animPool->Get(static_cast<EntityID>(entity)); anim && anim->sheet && anim->sheet->texture) {
+                        renderer.Pin(anim->sheet->texture);
+                        textureOverride = anim->sheet->texture.get();
+                        uvRect = anim->sheet->GetFrameUV(anim->startFrame + anim->currentFrame);
+                    }
+
 
                     const auto entityInt = static_cast<int32_t>(static_cast<EntityID>(entity));
                     Rendering::Transform renderTransform = transComp->worldTransform;
@@ -51,7 +62,7 @@ namespace ECS::Systems::RenderSystem {
                         billboard[2] *= scale.z;
                         renderTransform.SetCustomMatrix(billboard);
                     }
-                    renderer.Submit(meshComp->mesh, matComp->material, renderTransform, textureOverride, entityInt);
+                    renderer.Submit(meshComp->mesh, matComp->material, renderTransform, textureOverride, entityInt, uvRect);
                 });
     }
 } // namespace ECS::Systems::RenderSystem

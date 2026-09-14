@@ -37,7 +37,9 @@ void Rendering::Renderer::BeginFrame() {
     }
 }
 
-void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const Transform &transform, const Texture *textureOverride, const int32_t entityID) {
+void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const Transform &transform, const Texture *textureOverride, const int32_t entityID,
+                                 const glm::vec4 &uvRect) {
+
     m_ResourcePins[m_SubmitIndex].push_back(mesh);
     if (material)
         m_ResourcePins[m_SubmitIndex].push_back(material);
@@ -55,8 +57,14 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::s
     const Texture *effectiveTex = textureOverride ? textureOverride : material && material->texture ? material->texture.get() : nullptr;
     const glm::vec4 col = material ? material->color : glm::vec4(1.0f);
 
-    m_Commands[m_SubmitIndex].push_back(
-            {.mesh = mesh.get(), .material = material.get(), .effectiveTexture = effectiveTex, .color = col, .model = transform.GetMatrix(), .sortKey = packKey(pos.x, pos.y, pos.z), .entityID = entityID});
+    m_Commands[m_SubmitIndex].push_back({.mesh = mesh.get(),
+                                         .material = material.get(),
+                                         .effectiveTexture = effectiveTex,
+                                         .color = col,
+                                         .uvRect = uvRect,
+                                         .model = transform.GetMatrix(),
+                                         .sortKey = packKey(pos.x, pos.y, pos.z),
+                                         .entityID = entityID});
 }
 
 void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> &transforms, const std::vector<int32_t> &entityIDs) {
@@ -177,6 +185,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
     m_LastBoundShader = nullptr;
     m_LastBoundTexture = nullptr;
     m_LastBoundColor = glm::vec4(0.0f);
+    m_LastBoundUVRect = glm::vec4(-1.0f);
 
     // sort single commands by (z, depth, material, texture, mesh)
     if (m_Commands[renderIndex].size() > 1) {
@@ -250,7 +259,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
                     }
                 }
 
-                BatchKey key{.mesh = instCmd.mesh, .material = instCmd.material, .texture = instCmd.effectiveTexture, .color = instCmd.color, .shape = instCmd.shape};
+                BatchKey key{.mesh = instCmd.mesh, .material = instCmd.material, .texture = instCmd.effectiveTexture, .color = instCmd.color, .uvRect = instCmd.uvRect, .shape = instCmd.shape};
                 const glm::mat4 *transformsPtr = instCmd.transformPtr ? instCmd.transformPtr : m_InstancedTransformsStaging[renderIndex].data() + instCmd.transformOffset;
                 const glm::vec4 *colorsPtr = instCmd.colorPtr ? instCmd.colorPtr : instCmd.colorCount > 0 ? m_InstancedColorsStaging[renderIndex].data() + instCmd.colorOffset : nullptr;
 
@@ -293,7 +302,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
             if (!cmd.mesh || !cmd.material)
                 continue;
 
-            if (BatchKey key{.mesh = cmd.mesh, .material = cmd.material, .texture = cmd.effectiveTexture, .color = cmd.color, .shape = 0}; !hasCurrent || currentKey != key) {
+            if (BatchKey key{.mesh = cmd.mesh, .material = cmd.material, .texture = cmd.effectiveTexture, .color = cmd.color, .uvRect = cmd.uvRect, .shape = 0}; !hasCurrent || currentKey != key) {
                 if (hasCurrent)
                     m_BatchRanges.push_back({.key = currentKey, .offset = batchStart, .count = m_MergedTransforms.size() - batchStart});
                 currentKey = key;
@@ -342,7 +351,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
                     }
                 }
 
-                BatchKey key{.mesh = instCmd.mesh, .material = instCmd.material, .texture = instCmd.effectiveTexture, .color = instCmd.color, .shape = instCmd.shape};
+                BatchKey key{.mesh = instCmd.mesh, .material = instCmd.material, .texture = instCmd.effectiveTexture, .color = instCmd.color, .uvRect = instCmd.uvRect, .shape = instCmd.shape};
                 const glm::mat4 *transformsPtr = instCmd.transformPtr ? instCmd.transformPtr : m_InstancedTransformsStaging[renderIndex].data() + instCmd.transformOffset;
                 const glm::vec4 *colorsPtr = instCmd.colorPtr ? instCmd.colorPtr : instCmd.colorCount > 0 ? m_InstancedColorsStaging[renderIndex].data() + instCmd.colorOffset : nullptr;
 
@@ -365,6 +374,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
     m_LastBoundShader = nullptr;
     m_LastBoundTexture = nullptr;
     m_LastBoundColor = glm::vec4(0.0f);
+    m_LastBoundUVRect = glm::vec4(-1.0f);
 
     if (m_PixelReadRequested.load()) {
         glReadBuffer(GL_COLOR_ATTACHMENT1);
@@ -403,6 +413,7 @@ void Rendering::Renderer::RenderBatch(const BatchKey &key, const glm::mat4 *tran
             // new shader
             m_LastBoundTexture = nullptr;
             m_LastBoundColor = glm::vec4(0.0f);
+            m_LastBoundUVRect = glm::vec4(-1.0f);
         }
 
         // cache texture binding
@@ -416,6 +427,11 @@ void Rendering::Renderer::RenderBatch(const BatchKey &key, const glm::mat4 *tran
         if (m_LastBoundColor != key.color) {
             shader->SetUniformVec4("u_Color", key.color);
             m_LastBoundColor = key.color;
+        }
+
+        if (m_LastBoundUVRect != key.uvRect) {
+            shader->SetUniformVec4("u_UVRect", key.uvRect);
+            m_LastBoundUVRect = key.uvRect;
         }
 
         shader->SetUniform1i("u_Shape", key.shape);
@@ -508,6 +524,7 @@ void Rendering::Renderer::Clean() {
     m_LastBoundShader = nullptr;
     m_LastBoundTexture = nullptr;
     m_LastBoundColor = glm::vec4(0.0f);
+    m_LastBoundUVRect = glm::vec4(-1.0f);
     m_Lightmap[0] = {};
     m_Lightmap[1] = {};
 }
@@ -522,6 +539,7 @@ void Rendering::Renderer::InvalidateGLCache() {
         m_LastBoundShader = nullptr;
         m_LastBoundTexture = nullptr;
         m_LastBoundColor = glm::vec4(0.0f);
+        m_LastBoundUVRect = glm::vec4(-1.0f);
         m_Lightmap[0] = {};
         m_Lightmap[1] = {};
     }));

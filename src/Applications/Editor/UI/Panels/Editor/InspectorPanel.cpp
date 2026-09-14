@@ -8,6 +8,8 @@
 #include "ECS/Components/PrefabSourceComponent.h"
 #include "IO/Loaders/PrefabManager.h"
 #include "ECS/Components/ColliderComponent.h"
+#include "ECS/Components/SpriteSheetComponent.h"
+
 #include <cstring>
 #include <functional>
 #include <imgui.h>
@@ -26,6 +28,7 @@ Editor::UI::InspectorPanel::InspectorPanel() {
     m_Widgets.push_back(std::make_unique<CustomDataWidget>());
     m_Widgets.push_back(std::make_unique<ParticleEmitterWidget>());
     m_Widgets.push_back(std::make_unique<ColliderWidget>());
+    m_Widgets.push_back(std::make_unique<SpriteSheetWidget>());
 }
 
 Editor::UI::InspectorPanel::~InspectorPanel() = default;
@@ -180,6 +183,12 @@ void Editor::UI::InspectorPanel::OnImGuiRender() {
                                      m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::ColliderComponent>>(entId, ECS::Components::ColliderComponent{}), *m_EngineContext);
                                  }},
 
+                        {.name = "Sprite Sheet",
+                         .has = m_SelectedEntity.HasComponent<ECS::Components::SpriteSheetComponent>(),
+                         .add =
+                                 [this, entId] {
+                                     m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::SpriteSheetComponent>>(entId, ECS::Components::SpriteSheetComponent{}), *m_EngineContext);
+                                 }},
                 };
 
                 ImGui::TextDisabled("Available Components");

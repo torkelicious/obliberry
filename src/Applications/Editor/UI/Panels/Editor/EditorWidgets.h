@@ -232,5 +232,9 @@ namespace Editor::UI {
         void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr, UndoManager *undoManager = nullptr) override;
     };
 
+    struct SpriteSheetWidget : IComponentWidget {
+        [[nodiscard]] const char *GetName() const override;
+        void Draw(ECS::Entity entity, Core::EngineContext *engineContext, UndoManager *undoManager) override;
+    };
 
 } // namespace Editor::UI

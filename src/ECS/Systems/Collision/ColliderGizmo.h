@@ -262,8 +262,7 @@ namespace Editor::ColliderGizmo {
                         line(corners[i], corners[i | bit]);
                 }
             }
-        } 
-        else if (c.shape == Shape::Rectangle) {
+        } else if (c.shape == Shape::Rectangle) {
             const double x = c.size.x * 0.5;
             const double y = c.size.y * 0.5;
             line({-x, -y, 0}, {x, -y, 0});

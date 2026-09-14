@@ -1,6 +1,7 @@
 
 #include "Scene.h"
 #include "ECS/Systems/Collision/ColliderGeometry.h"
+#include "ECS/Systems/SpriteAnimationSystem.h"
 #include "Logger/LoggerService.h"
 #include "ECS/Systems/AISystem.h"
 #include "ECS/Systems/MapRenderSystem.h"
@@ -104,6 +105,7 @@ void Scenes::Scene::Update(const float dt) {
         ECS::Systems::LightingSystem::Update(m_Registry);
     }
     ECS::Systems::ParticleSystem::Update(m_Registry, dt);
+    ECS::Systems::SpriteAnimation::Update(m_Registry, dt);
     Platform::Time::updateTimers();
 }
 

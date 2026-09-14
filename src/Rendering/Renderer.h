@@ -6,6 +6,7 @@
 #include "Rendering/Types/Transform.h"
 #include "Platform/Threading/SmallTask.h"
 #include "PostProcessing/PostProcessing.h"
+#include "glm/ext/vector_float4.hpp"
 
 #include <atomic>
 #include <functional>
@@ -30,6 +31,7 @@ namespace Rendering {
         const Material *material;
         const Texture *effectiveTexture;
         glm::vec4 color;
+        glm::vec4 uvRect{0.0f, 0.0f, 1.0f, 1.0f};
         glm::mat4 model;
         int32_t sortKey;
         int32_t entityID;
@@ -40,6 +42,7 @@ namespace Rendering {
         const Material *material;
         const Texture *effectiveTexture;
         glm::vec4 color;
+        glm::vec4 uvRect{0.0f, 0.0f, 1.0f, 1.0f};
         int8_t blendMode = 0;
         int32_t renderOrder = 0;
         int8_t shape = 0;
@@ -62,8 +65,11 @@ namespace Rendering {
         const Material *material;
         const Texture *texture;
         glm::vec4 color;
+        glm::vec4 uvRect{0.0f, 0.0f, 1.0f, 1.0f};
         int32_t shape = 0;
-        bool operator==(const BatchKey &other) const noexcept { return mesh == other.mesh && material == other.material && texture == other.texture && color == other.color && shape == other.shape; }
+        bool operator==(const BatchKey &other) const noexcept {
+            return mesh == other.mesh && material == other.material && texture == other.texture && color == other.color && uvRect == other.uvRect && shape == other.shape;
+        }
     };
 
     class Renderer {
@@ -75,7 +81,8 @@ namespace Rendering {
 
         void BeginFrame();
 
-        void Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const Transform &transform, const Texture *textureOverride = nullptr, int32_t entityID = -1);
+        void Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const Transform &transform, const Texture *textureOverride = nullptr, int32_t entityID = -1,
+                    const glm::vec4 &uvRect = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
         void Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> &transforms, const std::vector<int32_t> &entityIDs = {});
         void Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> &transforms, const std::vector<glm::vec4> &colors, int32_t blendMode = 0,
                     int32_t renderOrder = 0, int8_t shape = 0);
@@ -171,6 +178,7 @@ namespace Rendering {
         const Shader *m_LastBoundShader = nullptr;
         const Texture *m_LastBoundTexture = nullptr;
         glm::vec4 m_LastBoundColor{0.0f};
+        glm::vec4 m_LastBoundUVRect{-1.0f};
 
         std::vector<BatchRange> m_BatchRanges;
         std::vector<glm::mat4> m_MergedTransforms;

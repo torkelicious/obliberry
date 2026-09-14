@@ -19,6 +19,8 @@
 #include "IO/VFS/VFS.h"
 #include "Rendering/Types/Shader/Shader.h"
 #include "imgui.h"
+#include "ECS/Components/SpriteSheetComponent.h"
+
 #include <filesystem>
 
 
@@ -740,6 +742,92 @@ void Editor::UI::ColliderWidget::Draw(const ECS::Entity entity, Core::EngineCont
     if (ImGui::Button("Remove ##Collider", ImVec2(buttonWidth, 0.0f))) {
         if (undoManager && engineContext) {
             undoManager->Execute(std::make_unique<Commands::RemoveComponentCommand<Component>>(id, *c), *engineContext);
+        } else {
+            entity.RemoveComponent<Component>();
+        }
+
+        MarkSceneChanged(engineContext);
+    }
+}
+
+const char *Editor::UI::SpriteSheetWidget::GetName() const { return "Sprite Sheet"; }
+
+void Editor::UI::SpriteSheetWidget::Draw(ECS::Entity entity, Core::EngineContext *engineContext, UndoManager *undoManager) {
+    using Component = ECS::Components::SpriteSheetComponent;
+
+    if (!entity.HasComponent<Component>()) {
+        return;
+    }
+    if (!ImGui::CollapsingHeader(GetName())) {
+        return;
+    }
+    auto *comp = entity.GetComponent<Component>();
+    Rendering::SpriteSheet sheet = comp->sheet ? *comp->sheet : Rendering::SpriteSheet{};
+    bool sheetChanged = false;
+    bool changed = false;
+
+    if (engineContext && engineContext->resources) {
+        sheetChanged |= TextureCombo("Texture", *engineContext->resources, sheet.texture);
+    }
+
+    sheetChanged |= ImGui::InputInt("Columns", &sheet.columns);
+    sheetChanged |= ImGui::InputInt("Rows", &sheet.rows);
+
+    sheet.columns = std::clamp(sheet.columns, 1, 4096);
+    sheet.rows = std::clamp(sheet.rows, 1, 4096);
+
+    if (sheetChanged) {
+        comp->sheet = std::make_shared<Rendering::SpriteSheet>(sheet);
+        changed = true;
+    }
+
+    const int totalFrames = sheet.FrameCount();
+    ImGui::Text("Total frames: %d", totalFrames);
+
+    changed |= ImGui::InputInt("Start Frame", &comp->startFrame);
+    changed |= ImGui::InputInt("Frame Count", &comp->frameCount);
+
+    comp->startFrame = std::clamp(comp->startFrame, 0, totalFrames - 1);
+    comp->frameCount = std::clamp(comp->frameCount, 1, totalFrames - comp->startFrame);
+
+    changed |= ImGui::InputFloat("FPS", &comp->framesPerSecond);
+
+    if (!std::isfinite(comp->framesPerSecond)) {
+        comp->framesPerSecond = 8.0f;
+    }
+
+    comp->framesPerSecond = std::clamp(comp->framesPerSecond, 0.0f, 240.0f);
+
+    changed |= ImGui::Checkbox("Loop", &comp->loop);
+    changed |= ImGui::Checkbox("Playing", &comp->playing);
+
+    if (ImGui::SliderInt("Current Frame", &comp->currentFrame, 0, comp->frameCount - 1)) {
+        comp->playing = false;
+        changed = true;
+    }
+
+    if (ImGui::Button("Restart")) {
+        comp->currentFrame = 0;
+        comp->playing = true;
+        changed = true;
+    }
+
+    if (changed) {
+        comp->elapsed = 0.0f;
+        MarkSceneChanged(engineContext);
+    }
+
+    ImGui::TextDisabled("Frame indices start at 0");
+
+    if (!sheet.texture) {
+        ImGui::TextDisabled("Select a sprite sheet texture");
+    }
+
+    ImGui::Separator();
+
+    if (ImGui::Button("Remove Sprite Sheet")) {
+        if (undoManager && engineContext) {
+            undoManager->Execute(std::make_unique<Commands::RemoveComponentCommand<Component>>(static_cast<ECS::EntityID>(entity), *comp), *engineContext);
         } else {
             entity.RemoveComponent<Component>();
         }
