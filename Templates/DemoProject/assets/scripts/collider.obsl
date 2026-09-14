@@ -1,0 +1,15 @@
+// collider
+
+fn on_trigger_enter(other){
+    if(other != null){
+        print "Trigger entered: ";
+        println other.GetName();
+    }
+}
+
+fn on_trigger_exit(other){
+    if(other != null){
+        print "Trigger exited: ";
+        println other.GetName();
+    }
+}

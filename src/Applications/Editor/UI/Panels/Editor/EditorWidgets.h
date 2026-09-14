@@ -9,10 +9,8 @@
 #include <string>
 #include <vector>
 
-#include "ECS/Components/MapComponent.h"
 #include "ECS/Components/MovementComponent.h"
 #include "ECS/Components/PointLightComponent.h"
-#include "ECS/Components/ScriptComponent.h"
 #include "ECS/Components/TransformComponent.h"
 
 #include "Applications/Editor/Commands/UndoManager.h"
@@ -228,4 +226,11 @@ namespace Editor::UI {
         [[nodiscard]] const char *GetName() const override;
         void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr, UndoManager *undoManager = nullptr) override;
     };
+
+    struct ColliderWidget : IComponentWidget {
+        [[nodiscard]] const char *GetName() const override;
+        void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr, UndoManager *undoManager = nullptr) override;
+    };
+
+
 } // namespace Editor::UI

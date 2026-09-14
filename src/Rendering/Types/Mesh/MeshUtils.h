@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Rendering/Types/Mesh/Mesh.h"
 #include <algorithm>
 #include <vector>
 #include <cmath>

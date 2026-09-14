@@ -1,19 +1,18 @@
+
 #include "Scene.h"
+#include "ECS/Systems/Collision/ColliderGeometry.h"
 #include "Logger/LoggerService.h"
 #include "ECS/Systems/AISystem.h"
 #include "ECS/Systems/MapRenderSystem.h"
 #include "ECS/Systems/MovementSystem.h"
 #include "ECS/Systems/PlayerControlSystem.h"
 #include "ECS/Systems/RenderSystem.h"
-#include "ECS/Systems/SpriteBillboardSystem.h"
 #include "ECS/Systems/LightingSystem.h"
 #include "ECS/Systems/ParticleSystem.h"
 #include "IO/Loaders/EntityFactory.h"
 #include "IO/SceneSerialization.h"
-#include <iostream>
 #include <utility>
 #include "ECS/Systems/ScriptSystem.h"
-#include "ECS/Systems/HierarchySystem.h"
 #include "ECS/Systems/HierarchySystem.h"
 #include "IO/Loaders/PrefabManager.h"
 #include "Math/Frustum.h"
@@ -27,6 +26,7 @@
 Scenes::Scene::Scene(Core::EngineContext *context, SceneProperties props) : m_Properties(std::move(props)), m_Context(context), m_UISystem(context->uiRenderer, context->input) {}
 
 void Scenes::Scene::OnEnter() {
+    m_CollisionWorld.Clear();
     LOG_INFO(LOG_WHO, "Entering scene: " + m_Properties.ScenePath);
 
     m_Context->uiSystem = &m_UISystem;
@@ -75,7 +75,7 @@ void Scenes::Scene::Update(const float dt) {
     m_Context->deltaTime = dt;
     m_Context->frameCount++;
 
-    ECS::Systems::HierarchySystem::Propagate(m_Registry);
+    ECS::Collision::BillboardBasis basis;
 
     if (m_Context->uiSystem) {
         m_Context->uiSystem->Update(dt);
@@ -84,8 +84,21 @@ void Scenes::Scene::Update(const float dt) {
 
     ECS::Systems::PlayerControlSystem::Update(m_Registry, *m_Context);
     ECS::Systems::AISystem::Update(m_Registry, dt);
-    ECS::Systems::MovementSystem::Update(m_Registry, dt);
+    ECS::Systems::MovementSystem::Update(m_Registry, dt, basis);
     ECS::Systems::ScriptSystem::Update(m_Registry, *m_Context);
+
+    ECS::Systems::HierarchySystem::Propagate(m_Registry); // movement and scrips might change transforms!
+
+
+    if (m_Context->camera) {
+        basis.right = m_Context->camera->GetRightVector();
+        basis.up = m_Context->camera->GetUpVector();
+    }
+
+    m_CollisionWorld.Update(m_Registry, basis);
+    ECS::Systems::ScriptSystem::DispatchCollisionEvents(m_Registry, *m_Context, m_CollisionWorld.GetEvents());
+
+    // ui
     m_UICmdBuf.flush(m_UISystem);
     if (m_Properties.EnableLightingSystem) {
         ECS::Systems::LightingSystem::Update(m_Registry);
@@ -107,9 +120,7 @@ void Scenes::Scene::Render() {
 
         ECS::Systems::MapRenderSystem::RenderAll(m_Registry, *m_Context, frustum);
 
-        ECS::Systems::SpriteBillboardSystem::Update(m_Registry, m_Context->camera, frustum3D);
-
-        ECS::Systems::RenderSystem::Render(m_Registry, *m_Context->renderer, frustum3D);
+        ECS::Systems::RenderSystem::Render(m_Registry, *m_Context->renderer, frustum3D, m_Context->camera);
 
         ECS::Systems::ParticleSystem::Render(m_Registry, *m_Context->renderer, m_Context->camera);
     }
@@ -123,6 +134,7 @@ void Scenes::Scene::Render() {
 }
 
 void Scenes::Scene::OnExit() {
+    m_CollisionWorld.Clear();
     std::vector<ECS::EntityID> deadEntities;
     m_Registry.ForEach<ECS::Components::DestroyTagComponent>([&](const ECS::Entity entity, ECS::Components::DestroyTagComponent *) { deadEntities.push_back(static_cast<ECS::EntityID>(entity)); });
 

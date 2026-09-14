@@ -3,9 +3,10 @@
 
 #include <string>
 #include <glm/glm.hpp>
+#include <vector>
+#include "ECS/Systems/Collision/CollisionWorld.h"
 #include "UI/Rendering/UISystem.h"
 #include "Core/EngineContext.h"
-#include "ECS/ECS.h"
 #include "ECS/Components/MapComponent.h"
 #include "Rendering/PostProcessing/PostProcessing.h"
 #include "Scripting/EngineLib/UICommandBuffer.h"
@@ -58,6 +59,9 @@ namespace Scenes {
         [[nodiscard]] std::vector<Rendering::PostProcessing::PostEffect> &PostFx() { return m_PostFx; }
         [[nodiscard]] const std::vector<Rendering::PostProcessing::PostEffect> &PostFx() const { return m_PostFx; }
 
+        const std::vector<ECS::Collision::Collision> &GetCollisions() const { return m_CollisionWorld.GetCollisions(); }
+        const std::vector<ECS::Collision::CollisionEvent> &GetCollisionEvents() const { return m_CollisionWorld.GetEvents(); }
+
     private:
         SceneProperties m_Properties;
         Core::EngineContext *m_Context;
@@ -66,5 +70,7 @@ namespace Scenes {
         UI::UISystem m_UISystem;
         Scripting::UICommandBuffer m_UICmdBuf;
         std::vector<Rendering::PostProcessing::PostEffect> m_PostFx;
+
+        ECS::Collision::CollisionWorld m_CollisionWorld;
     };
 } // namespace Scenes

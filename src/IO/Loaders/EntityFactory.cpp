@@ -1,4 +1,5 @@
 #include "EntityFactory.h"
+#include "ECS/Components/ColliderComponent.h"
 #include "Logger/LoggerService.h"
 
 #include "ECS/ECS.h"
@@ -215,6 +216,52 @@ void IO::EntityFactory::RegisterDeserializers() {
         }
         entity.AddComponent<ECS::Components::ParticleEmitterComponent>(ec);
     };
+
+    // COLLIDER
+    s_Deserializers["ColliderComponent"] = [](ECS::Entity &entity, const nlohmann::json &data, Core::ResourceManager &) {
+        using namespace ECS::Components;
+        if (data.value("version", 0) != 2)
+            throw std::runtime_error("ColliderComponent requires the version 2 3D format.");
+
+        ColliderComponent c;
+        const std::string shape = data.value("shape", std::string("Box"));
+
+        if (shape == "Box")
+            c.shape = ColliderShape::Box;
+        else if (shape == "Sphere")
+            c.shape = ColliderShape::Sphere;
+        else if (shape == "Cylinder")
+            c.shape = ColliderShape::Cylinder;
+        else if (shape == "Rectangle")
+            c.shape = ColliderShape::Rectangle;
+        else if (shape == "Circle")
+            c.shape = ColliderShape::Circle;
+        else
+            throw std::runtime_error("Unknown collider shape: " + shape);
+
+        const std::string orientation = data.value("orientation", std::string("Entity"));
+
+        if (orientation == "Entity")
+            c.orientation = ColliderOrientation::Entity;
+        else if (orientation == "Billboard")
+            c.orientation = ColliderOrientation::Billboard;
+        else
+            throw std::runtime_error("Unknown collider orientation: " + orientation);
+
+        const auto offset = data.value("offset", std::array<float, 3>{0.0f, 0.0f, 0.0f});
+        const auto size = data.value("size", std::array<float, 3>{1.0f, 1.0f, 1.0f});
+
+        c.offset = {offset[0], offset[1], offset[2]};
+        c.size = {size[0], size[1], size[2]};
+        c.radius = data.value("radius", 0.5f);
+        c.height = data.value("height", 1.0f);
+        c.isTrigger = data.value("isTrigger", false);
+
+        if (!IsValidCollider(c))
+            throw std::runtime_error("Invalid collider dimensions.");
+
+        entity.AddComponent<ColliderComponent>(c);
+    };
 }
 
 void IO::EntityFactory::RegisterSerializers() {
@@ -345,6 +392,41 @@ void IO::EntityFactory::RegisterSerializers() {
                 }
             }
         }
+    };
+
+    // COLLIDER
+    s_Serializers["ColliderComponent"] = [](const ECS::Entity &entity, nlohmann::json &data, Core::ResourceManager &) {
+        using Component = ECS::Components::ColliderComponent;
+        if (!entity.HasComponent<Component>())
+            return;
+
+        const auto &c = *entity.GetComponent<Component>();
+        const char *shape = "Box";
+        switch (c.shape) {
+            case ECS::Components::ColliderShape::Box:
+                shape = "Box";
+                break;
+            case ECS::Components::ColliderShape::Sphere:
+                shape = "Sphere";
+                break;
+            case ECS::Components::ColliderShape::Cylinder:
+                shape = "Cylinder";
+                break;
+            case ECS::Components::ColliderShape::Rectangle:
+                shape = "Rectangle";
+                break;
+            case ECS::Components::ColliderShape::Circle:
+                shape = "Circle";
+                break;
+        }
+        data["ColliderComponent"] = {{"version", 2},
+                                     {"shape", shape},
+                                     {"orientation", c.orientation == ECS::Components::ColliderOrientation::Billboard ? "Billboard" : "Entity"},
+                                     {"offset", {c.offset.x, c.offset.y, c.offset.z}},
+                                     {"size", {c.size.x, c.size.y, c.size.z}},
+                                     {"radius", c.radius},
+                                     {"height", c.height},
+                                     {"isTrigger", c.isTrigger}};
     };
 }
 

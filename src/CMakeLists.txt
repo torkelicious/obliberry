@@ -70,6 +70,9 @@ add_library(obliberry_engine STATIC
         UI/Rendering/UIRenderer.cpp
         UI/Rendering/UISystem.h
         UI/Rendering/UISystem.cpp
+
+        # Systems
+        ECS/Systems/Collision/CollisionWorld.cpp
 )
 
 target_include_directories(obliberry_engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

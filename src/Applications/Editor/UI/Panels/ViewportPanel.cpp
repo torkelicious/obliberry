@@ -81,7 +81,7 @@ void Editor::UI::ViewportPanel::OnImGuiRender() {
                     drawList->AddText(ImVec2(badgeMin.x + padding, badgeMin.y + padding), IM_COL32(255, 255, 255, 220), label);
                 }
 
-                if (m_IsHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGuizmo::IsOver() && !ImGuizmo::IsUsing() && !m_UIHandleHover) {
+                if (m_IsHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGuizmo::IsOver() && !ImGuizmo::IsUsing() && !m_UIHandleHover && !m_ColliderGizmoActive) {
                     const ImVec2 mousePos = ImGui::GetMousePos();
 
                     const int mouseX = static_cast<int>(mousePos.x - boundsMin.x);
@@ -108,4 +108,15 @@ glm::vec2 Editor::UI::ViewportPanel::MousePosToWorld(const Rendering::Camera &ca
     const float localX = mousePos.x - m_ViewportBoundsMin.x;
     const float localY = mousePos.y - m_ViewportBoundsMin.y;
     return camera.MouseToWorld(localX, localY, m_ViewportWidth, m_ViewportHeight);
+}
+
+void Editor::UI::ViewportPanel::SetColliderGizmoActive(bool active) {
+    m_ColliderGizmoActive = active;
+    if (active) {
+        m_ExpectingPick = false;
+        m_SelectedEntityID = -1;
+        m_HadEmptyClick = false;
+        if (m_EngineContext && m_EngineContext->renderer)
+            m_EngineContext->renderer->ClearPixelReadResult();
+    }
 }

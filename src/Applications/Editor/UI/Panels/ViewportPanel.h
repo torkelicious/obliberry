@@ -29,6 +29,8 @@ namespace Editor::UI {
         [[nodiscard]] ImVec2 GetLocalMousePos() const;
         [[nodiscard]] ImVec2 GetBoundsMin() const { return m_ViewportBoundsMin; }
 
+        void SetColliderGizmoActive(bool active);
+
     private:
         float m_ViewportWidth = 1280.0f;
         float m_ViewportHeight = 720.0f;
@@ -37,6 +39,7 @@ namespace Editor::UI {
         bool m_ExpectingPick = false;
         bool m_HadEmptyClick = false;
         bool m_UIHandleHover = false;
+        bool m_ColliderGizmoActive = false;
 
         ImVec2 m_ViewportBoundsMin{0, 0};
     };

@@ -3,14 +3,15 @@
 #include "ECS/Components/CustomDataComponent.h"
 #include "ECS/Components/DirectionalTextureComponent.h"
 #include "ECS/Components/ParticleEmitterComponent.h"
-#include "ECS/Components/MapStateComponent.h"
 #include "ECS/Components/MaterialComponent.h"
 #include "ECS/Components/MeshComponent.h"
 #include "ECS/Components/PrefabSourceComponent.h"
 #include "IO/Loaders/PrefabManager.h"
+#include "ECS/Components/ColliderComponent.h"
 #include <cstring>
 #include <functional>
 #include <imgui.h>
+#include <memory>
 
 Editor::UI::InspectorPanel::InspectorPanel() {
     m_Widgets.push_back(std::make_unique<TransformWidget>());
@@ -24,6 +25,7 @@ Editor::UI::InspectorPanel::InspectorPanel() {
     m_Widgets.push_back(std::make_unique<ScriptWidget>());
     m_Widgets.push_back(std::make_unique<CustomDataWidget>());
     m_Widgets.push_back(std::make_unique<ParticleEmitterWidget>());
+    m_Widgets.push_back(std::make_unique<ColliderWidget>());
 }
 
 Editor::UI::InspectorPanel::~InspectorPanel() = default;
@@ -167,6 +169,17 @@ void Editor::UI::InspectorPanel::OnImGuiRender() {
                                  [this, entId] {
                                      m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::CustomDataComponent>>(entId, ECS::Components::CustomDataComponent{}), *m_EngineContext);
                                  }},
+                        {.name = "Collider",
+                         .has = m_SelectedEntity.HasComponent<ECS::Components::ColliderComponent>(),
+                         .add =
+                                 [this, entId] {
+                                     if (!m_SelectedEntity.HasComponent<ECS::Components::TransformComponent>()) {
+                                         m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::TransformComponent>>(entId, ECS::Components::TransformComponent{}), *m_EngineContext);
+                                     }
+
+                                     m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::ColliderComponent>>(entId, ECS::Components::ColliderComponent{}), *m_EngineContext);
+                                 }},
+
                 };
 
                 ImGui::TextDisabled("Available Components");

@@ -1,13 +1,16 @@
 #include "EditState.h"
+#include "ECS/Components/ColliderComponent.h"
+#include "ECS/Systems/Collision/ColliderGizmo.h"
+#include "ECS/Systems/HierarchySystem.h"
 #include "ECS/Systems/LightingSystem.h"
 #include "Applications/Editor/EditorLayer.h"
 #include "Platform/Input/InputManager.h"
-#include "Sound/AudioEngine.h"
 #include <glm/gtc/type_ptr.hpp>
 #include "ECS/Components/BillboardTagComponent.h"
 #include "Applications/Editor/Commands/EditorCommands.h"
 #include "ECS/Systems/ParticleSystem.h"
 #include "UI/UIGizmo.h"
+#include "imgui.h"
 
 namespace Editor::States {
     ImGuizmo::OPERATION EditState::mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
@@ -60,7 +63,18 @@ void Editor::States::EditState::OnUpdate(const float dt) {
 
 void Editor::States::EditState::OnHandleInput(const float dt) {
     // must run before the WantCaptureKeyboard earlyout below
-    UI_HandleGizmoInput();
+
+    m_EditorLayer->m_ViewportPanel.SetColliderGizmoActive(m_EditCollider);
+    if (m_EditCollider) {
+        m_EditorLayer->m_ViewportPanel.SetUIHandleHover(false);
+    } else {
+        UI_HandleGizmoInput();
+    }
+
+    if (m_ColliderDragHandle >= 0) {
+        m_EditorLayer->m_Camera.StopKeyboardPan();
+        return;
+    }
 
     if (ImGui::GetIO().WantCaptureKeyboard)
         return;
@@ -137,7 +151,11 @@ void Editor::States::EditState::OnDrawPanels() {
         m_MeshCreatorPanel.OnImGuiRender();
     }
 
-    Entity_DrawGizmoForSelected();
+    if (m_EditCollider) {
+        Collider_DrawGizmoForSelected();
+    } else {
+        Entity_DrawGizmoForSelected();
+    }
 }
 
 void Editor::States::EditState::OnRender() {
@@ -146,7 +164,9 @@ void Editor::States::EditState::OnRender() {
     if (EditorLayer::s_RenderParticlesInEditor) {
         ECS::Systems::ParticleSystem::Render(*m_EditorLayer->m_Registry, *m_EditorLayer->m_Context->renderer, &m_EditorLayer->m_Camera);
     }
-    UI_DrawGizmoForSelected();
+    if (!m_EditCollider) {
+        UI_DrawGizmoForSelected();
+    }
 }
 
 void Editor::States::EditState::OnDrawModeToolbar() {
@@ -170,6 +190,20 @@ void Editor::States::EditState::OnDrawModeToolbar() {
     gizmoButton("R##Gizmo", ImGuizmo::ROTATE, "Rotate (R)", ImVec4(0.2f, 0.6f, 1.0f, 1.0f));
     ImGui::SameLine();
     gizmoButton("S##Gizmo", ImGuizmo::SCALE, "Scale (E)", ImVec4(1.0f, 0.8f, 0.2f, 1.0f));
+
+    const ECS::Entity selected = m_EditorLayer->m_RegistryPanel.GetSelectedEntity();
+    const bool canEditCollider = selected && selected.HasComponent<ECS::Components::ColliderComponent>();
+
+    if (m_EditCollider && !canEditCollider) {
+        m_EditCollider = false;
+    }
+
+    if (canEditCollider) {
+        ImGui::SameLine();
+        ImGui::BeginDisabled(m_ColliderDragHandle >= 0 || m_GizmoDragging || m_UIDragHandle != ::UI::HandleType::None);
+        ImGui::Checkbox("Edit Collider", &m_EditCollider);
+        ImGui::EndDisabled();
+    }
 }
 
 void Editor::States::EditState::OnSaveKey() {
@@ -407,4 +441,129 @@ void Editor::States::EditState::UI_DrawGizmoForSelected() const {
     if (m_EditorLayer->m_UIPanel.GetSelectedElement()) {
         ::UI::DrawGizmo(m_EditorLayer->m_UIPanel.GetSelectedElement(), m_EditorLayer->m_Context->uiRenderer, m_UIHoveredHandle);
     }
+}
+
+void Editor::States::EditState::Collider_DrawGizmoForSelected() {
+    using Collider = ECS::Components::ColliderComponent;
+    using Transform = ECS::Components::TransformComponent;
+    namespace Gizmo = Editor::ColliderGizmo;
+
+    auto &viewport = m_EditorLayer->m_ViewportPanel;
+    auto &registry = *m_EditorLayer->m_Registry;
+
+    const float width = viewport.GetWidth();
+    const float height = viewport.GetHeight();
+
+    if (width <= 0.0f || height <= 0.0f)
+        return;
+
+    const bool dragging = m_ColliderDragHandle >= 0;
+
+    const ECS::Entity selected = m_EditorLayer->m_RegistryPanel.GetSelectedEntity();
+    const ECS::EntityID entityID = dragging ? m_ColliderDragEntity : static_cast<ECS::EntityID>(selected);
+
+    auto *collider = registry.GetComponent<Collider>(entityID);
+    auto *transform = registry.GetComponent<Transform>(entityID);
+
+    if (!collider || !transform) {
+        m_ColliderDragHandle = -1;
+        m_ColliderHoveredHandle = -1;
+        m_ColliderDragEntity = ECS::INVALID_ENTITY_ID;
+        return;
+    }
+
+    // edits may have changed local transforms
+    ECS::Systems::HierarchySystem::Propagate(registry);
+
+    const auto &camera = m_EditorLayer->m_Camera;
+    const glm::mat4 vp = camera.GetProjectionMatrix(width / height) * camera.GetRotation() * camera.GetViewMatrix();
+
+    const ImVec2 boundsMin = viewport.GetBoundsMin();
+    const ImVec2 boundsMax{boundsMin.x + width, boundsMin.y + height};
+
+    ECS::Collision::BillboardBasis basis;
+    basis.right = camera.GetRightVector();
+    basis.up = camera.GetUpVector();
+
+    const glm::dvec3 viewDirection = glm::normalize(glm::cross(glm::dvec3(camera.GetRightVector()), glm::dvec3(camera.GetUpVector())));
+
+    auto world = ECS::Collision::BuildWorldCollider(entityID, *collider, *transform, basis);
+
+    const ImVec2 mouse = ImGui::GetMousePos();
+    const bool insideViewport = viewport.IsHovered() && mouse.x >= boundsMin.x && mouse.x < boundsMax.x && mouse.y >= boundsMin.y && mouse.y < boundsMax.y;
+
+    m_ColliderHoveredHandle = -1;
+
+    if (!dragging && insideViewport) {
+        m_ColliderHoveredHandle = Gizmo::HitTest({mouse.x, mouse.y}, world, vp, viewDirection, boundsMin, boundsMax);
+    }
+
+    if (!dragging && m_ColliderHoveredHandle >= 0 && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+        // zero scale on any axis makes the drag math meaningless
+        bool degenerate = false;
+        for (int i = 0; i < 3; ++i) {
+            if (glm::length(glm::dvec3(world.localToWorld[i])) < 0.000001)
+                degenerate = true;
+        }
+
+        if (!degenerate) {
+            const std::vector<Gizmo::Handle> handles = Gizmo::GetHandles(world);
+
+            m_ColliderDragEntity = entityID;
+            m_ColliderDragHandle = m_ColliderHoveredHandle;
+            m_ColliderDragStart = *collider;
+            m_ColliderDragStartWorld = world;
+            m_ColliderDragStartHandle = Gizmo::ToWorldPoint(world, handles[m_ColliderDragHandle].localPosition);
+            m_ColliderDragPlanePoint = m_ColliderDragStartHandle;
+            m_ColliderDragPlaneNormal = glm::normalize(glm::cross(glm::dvec3(camera.GetRightVector()), glm::dvec3(camera.GetUpVector())));
+        }
+    }
+
+    if (m_ColliderDragHandle >= 0) {
+        if (ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+            const glm::dmat4 inverseVP = glm::inverse(glm::dmat4(vp));
+
+            const double ndcX = ((mouse.x - boundsMin.x) / width) * 2.0 - 1.0;
+            const double ndcY = 1.0 - ((mouse.y - boundsMin.y) / height) * 2.0;
+
+            const glm::dvec4 nearPoint = inverseVP * glm::dvec4(ndcX, ndcY, -1.0, 1.0);
+            const glm::dvec4 farPoint = inverseVP * glm::dvec4(ndcX, ndcY, 1.0, 1.0);
+
+            const glm::dvec3 rayOrigin = glm::dvec3(nearPoint) / nearPoint.w;
+            const glm::dvec3 rayTarget = glm::dvec3(farPoint) / farPoint.w;
+            const glm::dvec3 rayDirection = glm::normalize(rayTarget - rayOrigin);
+
+            const double denominator = glm::dot(m_ColliderDragPlaneNormal, rayDirection);
+
+            if (std::abs(denominator) > 1e-9) {
+                const double t = glm::dot(m_ColliderDragPlanePoint - rayOrigin, m_ColliderDragPlaneNormal) / denominator;
+                const glm::dvec3 deltaWorld = rayOrigin + rayDirection * t - m_ColliderDragStartHandle;
+                const glm::dvec3 localDelta = Gizmo::WorldDeltaToLocal(m_ColliderDragStartWorld, deltaWorld);
+
+                *collider = m_ColliderDragStart;
+
+                const std::vector<Gizmo::Handle> handles = Gizmo::GetHandles(world);
+                Gizmo::TransformCollider(*collider, handles[m_ColliderDragHandle], localDelta);
+
+                if (*collider != m_ColliderDragStart) {
+                    m_EditorLayer->m_Scene->MarkAsChanged();
+                }
+            }
+        } else {
+            if (*collider != m_ColliderDragStart) {
+                m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::ModifyComponentFieldCommand<Collider>>(m_ColliderDragEntity, 0, sizeof(Collider), &m_ColliderDragStart, collider, "Edit Collider"),
+                                                     *m_EditorLayer->m_Context);
+            }
+
+            m_ColliderDragHandle = -1;
+            m_ColliderDragEntity = ECS::INVALID_ENTITY_ID;
+        }
+
+        // rebuild after drag
+        world = ECS::Collision::BuildWorldCollider(m_ColliderDragEntity, *collider, *transform, basis);
+    }
+
+    ImGui::Begin("Scene View");
+    Editor::ColliderGizmo::Draw(ImGui::GetWindowDrawList(), world, vp, viewDirection, boundsMin, boundsMax, m_ColliderDragHandle >= 0 ? m_ColliderDragHandle : m_ColliderHoveredHandle);
+    ImGui::End();
 }

@@ -1,6 +1,9 @@
 #include "EditorWidgets.h"
 #include "Applications/Editor/EditorLayer.h"
+#include <cfloat>
 #include <cstring>
+#include <type_traits>
+#include "ECS/Components/ColliderComponent.h"
 #include "EditorWidgetsCombo.h"
 #include "IO/Loaders/ParticleEmitterPrefabManager.h"
 #include "Core/Constants.h"
@@ -14,9 +17,8 @@
 #include "ECS/Components/MeshComponent.h"
 #include "ECS/Components/ScriptComponent.h"
 #include "IO/VFS/VFS.h"
-#include "Rendering/Renderer.h"
 #include "Rendering/Types/Shader/Shader.h"
-#include "Rendering/Types/Texture/Texture.h"
+#include "imgui.h"
 #include <filesystem>
 
 
@@ -647,5 +649,101 @@ void Editor::UI::ParticleEmitterWidget::Draw(const ECS::Entity entity, Core::Eng
             undoManager->Execute(std::make_unique<Commands::RemoveComponentCommand<ECS::Components::ParticleEmitterComponent>>(static_cast<ECS::EntityID>(entity), data), *engineContext);
             MarkSceneChanged(engineContext);
         }
+    }
+}
+
+const char *Editor::UI::ColliderWidget::GetName() const { return "Collider"; }
+
+void Editor::UI::ColliderWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext, UndoManager *undoManager) {
+    using Component = ECS::Components::ColliderComponent;
+
+    static_assert(std::is_trivially_copyable_v<Component>);
+
+    if (!entity.HasComponent<Component>())
+        return;
+
+    if (!ImGui::CollapsingHeader(GetName()))
+        return;
+
+    auto *c = entity.GetComponent<Component>();
+    const auto id = static_cast<ECS::EntityID>(entity);
+
+    auto commit = [&](const Component &before) {
+        if (undoManager && engineContext) {
+            undoManager->Execute(std::make_unique<Commands::ModifyComponentFieldCommand<Component>>(id, 0, sizeof(Component), &before, c, "Edit Collider"), *engineContext);
+        }
+
+        MarkSceneChanged(engineContext);
+    };
+
+    // snapshot used while a field is being edited; captured when it becomes active
+    static Component s_BeforeEdit;
+
+    auto field = [&](auto draw) {
+        const Component before = *c;
+        const bool changed = draw();
+
+        if (ImGui::IsItemActivated())
+            s_BeforeEdit = before;
+
+        if (ImGui::IsItemDeactivatedAfterEdit())
+            commit(s_BeforeEdit);
+        else if (changed && !ImGui::IsItemActive())
+            commit(before);
+
+        if (changed)
+            MarkSceneChanged(engineContext);
+    };
+
+    field([&] {
+        int value = static_cast<int>(c->shape);
+        const bool changed = ImGui::Combo("Shape", &value, "Box\0Sphere\0Cylinder\0Rectangle\0Circle\0");
+
+        if (changed)
+            c->shape = static_cast<ECS::Components::ColliderShape>(value);
+
+        return changed;
+    });
+
+    field([&] {
+        int value = static_cast<int>(c->orientation);
+        const bool changed = ImGui::Combo("Orientation", &value, "Entity\0Billboard\0");
+
+        if (changed)
+            c->orientation = static_cast<ECS::Components::ColliderOrientation>(value);
+
+        return changed;
+    });
+
+    field([&] { return ImGui::DragFloat3("Offset", &c->offset.x, 0.01f); });
+
+    constexpr float minimum = 0.001f;
+    constexpr auto flags = ImGuiSliderFlags_AlwaysClamp;
+
+    if (c->shape == ECS::Components::ColliderShape::Box) {
+        field([&] { return ImGui::DragFloat3("Size", &c->size.x, 0.01f, minimum, FLT_MAX, "%.3f", flags); });
+    } else if (c->shape == ECS::Components::ColliderShape::Rectangle) {
+        field([&] { return ImGui::DragFloat2("Size", &c->size.x, 0.01f, minimum, FLT_MAX, "%.3f", flags); });
+    } else {
+        field([&] { return ImGui::DragFloat("Radius", &c->radius, 0.01f, minimum, FLT_MAX, "%.3f", flags); });
+        if (c->shape == ECS::Components::ColliderShape::Cylinder) {
+            field([&] { return ImGui::DragFloat("Height", &c->height, 0.01f, minimum, FLT_MAX, "%.3f", flags); });
+        }
+    }
+
+    field([&] { return ImGui::Checkbox("Trigger", &c->isTrigger); });
+
+    ImGui::Separator();
+    const float buttonWidth = ImGui::CalcTextSize("Remove Collider").x + ImGui::GetStyle().FramePadding.x * 2.0f;
+    const float availableWidth = ImGui::GetContentRegionAvail().x;
+    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (availableWidth - buttonWidth) * 0.5f);
+    if (ImGui::Button("Remove ##Collider", ImVec2(buttonWidth, 0.0f))) {
+        if (undoManager && engineContext) {
+            undoManager->Execute(std::make_unique<Commands::RemoveComponentCommand<Component>>(id, *c), *engineContext);
+        } else {
+            entity.RemoveComponent<Component>();
+        }
+
+        MarkSceneChanged(engineContext);
     }
 }
