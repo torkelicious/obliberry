@@ -7,7 +7,6 @@
 #include "IO/VFS/VFS.h"
 #include "Preprocessor/ShaderPreprocessor.h"
 
-#include "Rendering/Types/Shader/InternalShaders.h"
 
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "Shader"

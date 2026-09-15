@@ -1,4 +1,5 @@
 #include "PostProcessing.h"
+#include "Core/ResourceManager.h"
 #include "Logger/LoggerService.h"
 #include "Rendering/Types/Shader/Shader.h"
 #include <chrono>

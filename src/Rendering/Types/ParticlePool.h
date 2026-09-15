@@ -1,7 +1,5 @@
 #pragma once
 
-#include <algorithm>
-#include <array>
 #include <glm/glm.hpp>
 #include <glm/gtc/random.hpp>
 #include <memory>

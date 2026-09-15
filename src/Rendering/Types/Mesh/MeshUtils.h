@@ -3,8 +3,6 @@
 #include "Rendering/Types/Mesh/Mesh.h"
 #include <algorithm>
 #include <vector>
-#include <cmath>
-#include <ranges>
 #include <numeric>
 #include <glm/glm.hpp>
 

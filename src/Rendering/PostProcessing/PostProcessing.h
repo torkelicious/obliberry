@@ -1,5 +1,4 @@
 #pragma once
-#include "Core/ResourceManager.h"
 #include "Rendering/Types/FBO/FrameBuffer.h"
 #include <glm/glm.hpp>
 #include <memory>
