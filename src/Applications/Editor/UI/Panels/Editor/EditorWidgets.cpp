@@ -1,6 +1,8 @@
 #include "EditorWidgets.h"
 #include "Applications/Editor/EditorLayer.h"
+#include <algorithm>
 #include <cfloat>
+#include <cmath>
 #include <cstring>
 #include <type_traits>
 #include "ECS/Components/ColliderComponent.h"
@@ -754,84 +756,130 @@ const char *Editor::UI::SpriteSheetWidget::GetName() const { return "Sprite Shee
 
 void Editor::UI::SpriteSheetWidget::Draw(ECS::Entity entity, Core::EngineContext *engineContext, UndoManager *undoManager) {
     using Component = ECS::Components::SpriteSheetComponent;
-
     if (!entity.HasComponent<Component>()) {
+        m_HasDraft = false;
         return;
     }
-    if (!ImGui::CollapsingHeader(GetName())) {
+    if (!ImGui::CollapsingHeader(GetName()))
         return;
-    }
     auto *comp = entity.GetComponent<Component>();
-    Rendering::SpriteSheet sheet = comp->sheet ? *comp->sheet : Rendering::SpriteSheet{};
-    bool sheetChanged = false;
-    bool changed = false;
-
-    if (engineContext && engineContext->resources) {
-        sheetChanged |= TextureCombo("Texture", *engineContext->resources, sheet.texture);
+    if (!m_HasDraft || m_EditEntity != entity) {
+        m_SheetDraft = comp->sheet ? *comp->sheet : Rendering::SpriteSheet{};
+        m_StartFrameInput = comp->startFrame;
+        m_FrameCountInput = comp->frameCount;
+        m_FPSInput = comp->framesPerSecond;
+        m_EditEntity = entity;
+        m_HasDraft = true;
     }
 
-    sheetChanged |= ImGui::InputInt("Columns", &sheet.columns);
-    sheetChanged |= ImGui::InputInt("Rows", &sheet.rows);
+    auto &sheet = m_SheetDraft;
+    bool layoutEdited = false;
+    bool changed = false;
+    if (engineContext && engineContext->resources)
+        layoutEdited |= TextureCombo("Texture", *engineContext->resources, sheet.texture);
 
-    sheet.columns = std::clamp(sheet.columns, 1, 4096);
-    sheet.rows = std::clamp(sheet.rows, 1, 4096);
+    auto layoutInput = [&](const char *label, int &value, int minimum) {
+        layoutEdited |= ImGui::InputInt(label, &value);
+        if (ImGui::IsItemDeactivatedAfterEdit()) {
+            const int corrected = std::clamp(value, minimum, 4096);
+            if (value != corrected) {
+                value = corrected;
+                layoutEdited = true;
+            }
+        }
+    };
+    layoutInput("Columns", sheet.columns, 1);
+    layoutInput("Rows", sheet.rows, 1);
+    layoutInput("Column spacing (px)", sheet.columnSpacing, 0);
+    layoutInput("Row spacing (px)", sheet.rowSpacing, 0);
 
-    if (sheetChanged) {
+    bool validLayout = false;
+    int frameWidth = 0, frameHeight = 0;
+    if (sheet.texture && sheet.columns >= 1 && sheet.columns <= 4096 && sheet.rows >= 1 && sheet.rows <= 4096 && sheet.columnSpacing >= 0 && sheet.columnSpacing <= 4096 && sheet.rowSpacing >= 0 &&
+        sheet.rowSpacing <= 4096) {
+        const int width = sheet.texture->GetWidth() - sheet.columnSpacing * (sheet.columns - 1);
+        const int height = sheet.texture->GetHeight() - sheet.rowSpacing * (sheet.rows - 1);
+        validLayout = width >= sheet.columns && height >= sheet.rows && width % sheet.columns == 0 && height % sheet.rows == 0;
+        if (validLayout) {
+            frameWidth = width / sheet.columns;
+            frameHeight = height / sheet.rows;
+        }
+    }
+    if (layoutEdited && validLayout) {
         comp->sheet = std::make_shared<Rendering::SpriteSheet>(sheet);
+        const int total = sheet.FrameCount();
+        comp->startFrame = std::clamp(comp->startFrame, 0, total - 1);
+        comp->frameCount = std::clamp(comp->frameCount, 1, total - comp->startFrame);
+        comp->currentFrame = std::clamp(comp->currentFrame, 0, comp->frameCount - 1);
+        m_StartFrameInput = comp->startFrame;
+        m_FrameCountInput = comp->frameCount;
         changed = true;
     }
+    if (validLayout)
+        ImGui::Text("Frame size: %d x %d px", frameWidth, frameHeight);
+    else
+        ImGui::TextWrapped("Invalid layout. The last accepted layout stays active. Spacing is between frames, with no outer border.");
 
-    const int totalFrames = sheet.FrameCount();
-    ImGui::Text("Total frames: %d", totalFrames);
+    const auto *active = comp->sheet.get();
+    const bool validGrid = active && active->columns >= 1 && active->columns <= 4096 && active->rows >= 1 && active->rows <= 4096;
+    const int total = validGrid ? active->FrameCount() : 0;
+    ImGui::Text("Sheet frames: %d", total);
 
-    changed |= ImGui::InputInt("Start Frame", &comp->startFrame);
-    changed |= ImGui::InputInt("Frame Count", &comp->frameCount);
-
-    comp->startFrame = std::clamp(comp->startFrame, 0, totalFrames - 1);
-    comp->frameCount = std::clamp(comp->frameCount, 1, totalFrames - comp->startFrame);
-
-    changed |= ImGui::InputFloat("FPS", &comp->framesPerSecond);
-
-    if (!std::isfinite(comp->framesPerSecond)) {
-        comp->framesPerSecond = 8.0f;
+    // persistent input buffers
+    bool animationEdited = ImGui::InputInt("Start frame", &m_StartFrameInput);
+    animationEdited |= ImGui::InputInt("Animation length", &m_FrameCountInput);
+    const bool validAnimation = total > 0 && m_StartFrameInput >= 0 && m_StartFrameInput < total && m_FrameCountInput >= 1 && m_FrameCountInput <= total - m_StartFrameInput;
+    if (animationEdited && validAnimation) {
+        comp->startFrame = m_StartFrameInput;
+        comp->frameCount = m_FrameCountInput;
+        comp->currentFrame = std::clamp(comp->currentFrame, 0, comp->frameCount - 1);
+        changed = true;
     }
+    if (!validAnimation)
+        ImGui::TextWrapped("Animation range is outside the accepted grid. Finish editing to apply it.");
 
-    comp->framesPerSecond = std::clamp(comp->framesPerSecond, 0.0f, 240.0f);
+    ImGui::BeginDisabled(total <= 0);
+    if (ImGui::Button("Use all frames")) {
+        comp->startFrame = m_StartFrameInput = 0;
+        comp->frameCount = m_FrameCountInput = total;
+        comp->currentFrame = 0;
+        changed = true;
+    }
+    ImGui::EndDisabled();
 
-    changed |= ImGui::Checkbox("Loop", &comp->loop);
-    changed |= ImGui::Checkbox("Playing", &comp->playing);
+    const bool fpsEdited = ImGui::InputFloat("FPS", &m_FPSInput);
+    const bool validFPS = std::isfinite(m_FPSInput) && m_FPSInput >= 0.0f && m_FPSInput <= 240.0f;
+    if (fpsEdited && validFPS) {
+        comp->framesPerSecond = m_FPSInput;
+        changed = true;
+    }
+    if (!validFPS)
+        ImGui::TextDisabled("FPS must be between 0 and 240.");
 
-    if (ImGui::SliderInt("Current Frame", &comp->currentFrame, 0, comp->frameCount - 1)) {
+    if (ImGui::Checkbox("Loop", &comp->loop))
+        MarkSceneChanged(engineContext);
+    if (ImGui::Checkbox("Playing", &comp->playing))
+        MarkSceneChanged(engineContext);
+    if (ImGui::SliderInt("Current frame", &comp->currentFrame, 0, std::max(0, comp->frameCount - 1))) {
         comp->playing = false;
         changed = true;
     }
-
     if (ImGui::Button("Restart")) {
         comp->currentFrame = 0;
         comp->playing = true;
         changed = true;
     }
-
     if (changed) {
         comp->elapsed = 0.0f;
         MarkSceneChanged(engineContext);
     }
-
-    ImGui::TextDisabled("Frame indices start at 0");
-
-    if (!sheet.texture) {
-        ImGui::TextDisabled("Select a sprite sheet texture");
-    }
-
     ImGui::Separator();
-
     if (ImGui::Button("Remove Sprite Sheet")) {
-        if (undoManager && engineContext) {
+        if (undoManager && engineContext)
             undoManager->Execute(std::make_unique<Commands::RemoveComponentCommand<Component>>(static_cast<ECS::EntityID>(entity), *comp), *engineContext);
-        } else {
+        else
             entity.RemoveComponent<Component>();
-        }
-
+        m_HasDraft = false;
         MarkSceneChanged(engineContext);
     }
 }

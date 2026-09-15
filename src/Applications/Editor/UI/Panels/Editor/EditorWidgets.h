@@ -1,4 +1,5 @@
 #pragma once
+#include "Rendering/Types/Texture/SpriteSheet.h"
 
 #include "Core/EngineContext.h"
 #include "ECS/Registry.h"
@@ -235,6 +236,14 @@ namespace Editor::UI {
     struct SpriteSheetWidget : IComponentWidget {
         [[nodiscard]] const char *GetName() const override;
         void Draw(ECS::Entity entity, Core::EngineContext *engineContext, UndoManager *undoManager) override;
+
+    private:
+        ECS::Entity m_EditEntity;
+        Rendering::SpriteSheet m_SheetDraft;
+        bool m_HasDraft = false;
+        int m_StartFrameInput = 0;
+        int m_FrameCountInput = 1;
+        float m_FPSInput = 8.0f;
     };
 
 } // namespace Editor::UI

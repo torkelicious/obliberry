@@ -15,6 +15,7 @@
 #include "ECS/Components/ScriptComponent.h"
 #include "ECS/Components/PrefabSourceComponent.h"
 #include "ECS/Components/ParticleEmitterComponent.h"
+#include <algorithm>
 
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "EntityFactory"
@@ -141,6 +142,11 @@ void IO::EntityFactory::RegisterDeserializers() {
             anim.playing = data["playing"].get<bool>();
         if (data.contains("current_frame"))
             anim.currentFrame = data["current_frame"].get<int>();
+        if (data.contains("column_spacing"))
+            anim.sheet->columnSpacing = std::max(0, data["column_spacing"].get<int>());
+        if (data.contains("row_spacing"))
+            anim.sheet->rowSpacing = std::max(0, data["row_spacing"].get<int>());
+
         entity.AddComponent<ECS::Components::SpriteSheetComponent>(anim);
     };
 
@@ -378,6 +384,8 @@ void IO::EntityFactory::RegisterSerializers() {
             data["SpriteSheetComponent"]["looping"] = anim->loop;
             data["SpriteSheetComponent"]["playing"] = anim->playing;
             data["SpriteSheetComponent"]["current_frame"] = anim->currentFrame;
+            data["SpriteSheetComponent"]["column_spacing"] = anim->sheet ? anim->sheet->columnSpacing : 0;
+            data["SpriteSheetComponent"]["row_spacing"] = anim->sheet ? anim->sheet->rowSpacing : 0;
         }
     };
 
