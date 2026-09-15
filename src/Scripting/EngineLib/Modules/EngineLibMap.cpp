@@ -239,7 +239,7 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
                                                                              [reg = m_registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
                                                                                  std::shared_lock lock(g_RegistryMutex);
                                                                                  if (const ECS::EntityID mapId = reg->FindFirstEntity<ECS::Components::MapComponent>(); mapId != ECS::INVALID_ENTITY_ID) {
-                                                                                     return CreateEntityObject(interp, *reg, mapId);
+                                                                                     return CreateEntityObjectLocked(interp, *reg, mapId);
                                                                                  }
                                                                                  return std::monostate{};
                                                                              },

@@ -1,3 +1,4 @@
+
 #include "Scripting/EngineLib/EngineLib.h"
 #include "Scripting/EngineLib/ScriptCommandBuffer.h"
 #include "Scripting/EngineLib/EntityWrapperCache.h"
@@ -14,6 +15,8 @@
 #include "ECS/Components/ParticleEmitterComponent.h"
 #include "ECS/Components/PersistentTagComponent.h"
 #include "ECS/Components/RelationshipComponent.h"
+#include "ECS/Components/ColliderComponent.h"
+#include "ECS/Components/SpriteSheetComponent.h"
 #include "IO/Loaders/PrefabManager.h"
 #include "Scripting/EngineLib/EngineLibFactories.h"
 #include <shared_mutex>
@@ -26,18 +29,17 @@ namespace Scripting {
         if (reg.IsValid(id)) {
             const ECS::Entity ent(id, &reg);
             for (const auto &children = ent.GetChildren(); const auto child : children) {
-                arr->elements.emplace_back(CreateEntityObject(interp, reg, child));
+                arr->elements.emplace_back(CreateEntityObjectLocked(interp, reg, child));
             }
         }
         return arr;
     }
 
-    ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, ECS::Registry &registry, ECS::EntityID id) {
+    ObSL::ObSLObject *CreateEntityObjectLocked(ObSL::Interpreter *interpreter, ECS::Registry &registry, ECS::EntityID id) {
         // cache hit reuses a previously built wrapper
         // when the entity is still live and belongs to the same registry.
         // names will be updated if such functions are called
         if (auto *cache = EntityWrapperCache::Get(interpreter)) {
-            std::shared_lock lk(g_RegistryMutex);
             if (auto *hit = cache->Find(registry, id, EntityWrapperCache::Kind::Entity, [&] { return registry.IsValid(id); })) {
                 hit->fields["id"] = static_cast<double>(id);
                 hit->fields["name"] = registry.GetEntityName(id);
@@ -55,7 +57,7 @@ namespace Scripting {
             if (args.empty() || !std::holds_alternative<std::string>(args[0]))
                 return std::monostate{};
             auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
-            auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
+            auto *cmd_buf = (worker ? worker->frame_context<ScriptCommandBuffer>() : nullptr);
             auto name = std::get<std::string>(args[0]);
             if (cmd_buf) {
                 cmd_buf->push([id, name = std::move(name)](ECS::Registry &reg) {
@@ -95,6 +97,16 @@ namespace Scripting {
                 return EngineLibFactories::CreateDestroyTagObject(interp, registry, id);
             if (comp_name == "ParticleEmitter")
                 return EngineLibFactories::CreateParticleEmitterObject(interp, registry, id);
+            if (comp_name == "Collider") {
+                if (!registry.HasComponent<ECS::Components::ColliderComponent>(id))
+                    return std::monostate{};
+                return EngineLibFactories::CreateColliderObject(interp, registry, id);
+            }
+            if (comp_name == "SpriteSheet") {
+                if (!registry.HasComponent<ECS::Components::SpriteSheetComponent>(id))
+                    return std::monostate{};
+                return EngineLibFactories::CreateSpriteSheetObject(interp, registry, id);
+            }
 
             return std::monostate{};
         };
@@ -104,7 +116,7 @@ namespace Scripting {
                 return std::monostate{};
             const std::string comp_name = std::get<std::string>(args[0]);
             auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
-            if (auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>()) {
+            if (auto *cmd_buf = (worker ? worker->frame_context<ScriptCommandBuffer>() : nullptr)) {
                 cmd_buf->push([id, comp_name](ECS::Registry &reg) {
                     if (!reg.IsValid(id))
                         return;
@@ -124,6 +136,10 @@ namespace Scripting {
                         reg.AddComponent<ECS::Components::DestroyTagComponent>(id, ECS::Components::DestroyTagComponent{});
                     else if (comp_name == "ParticleEmitter" && !reg.HasComponent<ECS::Components::ParticleEmitterComponent>(id))
                         reg.AddComponent<ECS::Components::ParticleEmitterComponent>(id, ECS::Components::ParticleEmitterComponent{});
+                    else if (comp_name == "Collider" && !reg.HasComponent<ECS::Components::ColliderComponent>(id))
+                        reg.AddComponent<ECS::Components::ColliderComponent>(id, ECS::Components::ColliderComponent{});
+                    else if (comp_name == "SpriteSheet" && !reg.HasComponent<ECS::Components::SpriteSheetComponent>(id))
+                        reg.AddComponent<ECS::Components::SpriteSheetComponent>(id, ECS::Components::SpriteSheetComponent{});
                 });
             } else if (reg_ptr) {
                 std::unique_lock lock(g_RegistryMutex);
@@ -145,6 +161,10 @@ namespace Scripting {
                     reg_ptr->AddComponent<ECS::Components::DestroyTagComponent>(id, ECS::Components::DestroyTagComponent{});
                 else if (comp_name == "ParticleEmitter" && !reg_ptr->HasComponent<ECS::Components::ParticleEmitterComponent>(id))
                     reg_ptr->AddComponent<ECS::Components::ParticleEmitterComponent>(id, ECS::Components::ParticleEmitterComponent{});
+                else if (comp_name == "Collider" && !reg_ptr->HasComponent<ECS::Components::ColliderComponent>(id))
+                    reg_ptr->AddComponent<ECS::Components::ColliderComponent>(id, ECS::Components::ColliderComponent{});
+                else if (comp_name == "SpriteSheet" && !reg_ptr->HasComponent<ECS::Components::SpriteSheetComponent>(id))
+                    reg_ptr->AddComponent<ECS::Components::SpriteSheetComponent>(id, ECS::Components::SpriteSheetComponent{});
             }
             return std::monostate{};
         };
@@ -155,7 +175,7 @@ namespace Scripting {
             if (args.size() != 2 || !std::holds_alternative<std::string>(args[0]))
                 return false;
             auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
-            auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
+            auto *cmd_buf = (worker ? worker->frame_context<ScriptCommandBuffer>() : nullptr);
             auto compName = std::get<std::string>(args[0]);
             ObSL::Value val = args[1];
             if (cmd_buf) {
@@ -226,6 +246,10 @@ namespace Scripting {
                 return registry.HasComponent<ECS::Components::DestroyTagComponent>(id);
             if (name == "ParticleEmitter")
                 return registry.HasComponent<ECS::Components::ParticleEmitterComponent>(id);
+            if (name == "Collider")
+                return registry.HasComponent<ECS::Components::ColliderComponent>(id);
+            if (name == "SpriteSheet")
+                return registry.HasComponent<ECS::Components::SpriteSheetComponent>(id);
             return false;
         };
 
@@ -234,7 +258,7 @@ namespace Scripting {
                 return std::monostate{};
             const std::string comp_name = std::get<std::string>(args[0]);
             auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
-            if (auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>()) {
+            if (auto *cmd_buf = (worker ? worker->frame_context<ScriptCommandBuffer>() : nullptr)) {
                 cmd_buf->push([id, comp_name](ECS::Registry &reg) {
                     if (!reg.IsValid(id))
                         return;
@@ -254,6 +278,10 @@ namespace Scripting {
                         reg.RemoveComponent<ECS::Components::DestroyTagComponent>(id);
                     else if (comp_name == "ParticleEmitter")
                         reg.RemoveComponent<ECS::Components::ParticleEmitterComponent>(id);
+                    else if (comp_name == "Collider")
+                        reg.RemoveComponent<ECS::Components::ColliderComponent>(id);
+                    else if (comp_name == "SpriteSheet")
+                        reg.RemoveComponent<ECS::Components::SpriteSheetComponent>(id);
                 });
             } else if (reg_ptr) {
                 std::unique_lock lock(g_RegistryMutex);
@@ -271,17 +299,21 @@ namespace Scripting {
                     reg_ptr->RemoveComponent<ECS::Components::DirectionalTextureComponent>(id);
                 else if (comp_name == "BillboardTag")
                     reg_ptr->RemoveComponent<ECS::Components::BillboardTagComponent>(id);
-                if (comp_name == "DestroyTag")
+                else if (comp_name == "DestroyTag")
                     reg_ptr->RemoveComponent<ECS::Components::DestroyTagComponent>(id);
                 else if (comp_name == "ParticleEmitter")
                     reg_ptr->RemoveComponent<ECS::Components::ParticleEmitterComponent>(id);
+                else if (comp_name == "Collider")
+                    reg_ptr->RemoveComponent<ECS::Components::ColliderComponent>(id);
+                else if (comp_name == "SpriteSheet")
+                    reg_ptr->RemoveComponent<ECS::Components::SpriteSheetComponent>(id);
             }
             return std::monostate{};
         };
 
         auto destroy_body = [id, reg_ptr = &registry](const ObSL::Interpreter *interpreter, const std::vector<ObSL::Value> &) -> ObSL::Value {
             auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
-            if (auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>()) {
+            if (auto *cmd_buf = (worker ? worker->frame_context<ScriptCommandBuffer>() : nullptr)) {
                 cmd_buf->push([id](ECS::Registry &reg) { reg.DestroyEntity(id); });
             } else if (reg_ptr) {
                 std::unique_lock lock(g_RegistryMutex);
@@ -311,6 +343,10 @@ namespace Scripting {
                 arr->elements.emplace_back(std::string("DestroyTag"));
             if (registry.HasComponent<ECS::Components::ParticleEmitterComponent>(id))
                 arr->elements.emplace_back(std::string("ParticleEmitter"));
+            if (registry.HasComponent<ECS::Components::ColliderComponent>(id))
+                arr->elements.emplace_back(std::string("Collider"));
+            if (registry.HasComponent<ECS::Components::SpriteSheetComponent>(id))
+                arr->elements.emplace_back(std::string("SpriteSheet"));
             return arr;
         };
 
@@ -328,7 +364,7 @@ namespace Scripting {
                 return std::monostate{};
             const bool shouldPersist = std::get<bool>(args[0]);
             auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
-            if (auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>()) {
+            if (auto *cmd_buf = (worker ? worker->frame_context<ScriptCommandBuffer>() : nullptr)) {
                 cmd_buf->push([id, shouldPersist](ECS::Registry &reg) {
                     if (!reg.IsValid(id))
                         return;
@@ -375,7 +411,7 @@ namespace Scripting {
             const auto *rel = registry.GetComponent<ECS::Components::RelationshipComponent>(id);
             if (!rel || rel->parent == ECS::INVALID_ENTITY_ID || !registry.IsValid(rel->parent))
                 return std::monostate{};
-            return CreateEntityObject(interp, registry, rel->parent);
+            return CreateEntityObjectLocked(interp, registry, rel->parent);
         };
 
         auto set_parent_body = [id, reg_ptr = &registry](const ObSL::Interpreter *interpreter, const std::vector<ObSL::Value> &args) -> ObSL::Value {
@@ -390,7 +426,7 @@ namespace Scripting {
                 }
             }
             auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
-            if (auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>()) {
+            if (auto *cmd_buf = (worker ? worker->frame_context<ScriptCommandBuffer>() : nullptr)) {
                 cmd_buf->push([id, parentId](ECS::Registry &reg) {
                     if (!reg.IsValid(id))
                         return;
@@ -426,7 +462,7 @@ namespace Scripting {
                 return std::monostate{};
             for (const ECS::EntityID childId : rel->children) {
                 if (registry.IsValid(childId) && registry.GetEntityName(childId) == childName)
-                    return CreateEntityObject(interp, registry, childId);
+                    return CreateEntityObjectLocked(interp, registry, childId);
             }
             return std::monostate{};
         };
@@ -441,6 +477,10 @@ namespace Scripting {
             cache->Store(registry, id, EntityWrapperCache::Kind::Entity, obj);
 
         return obj;
+    }
+    ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, ECS::Registry &registry, ECS::EntityID id) {
+        std::shared_lock lock(g_RegistryMutex);
+        return CreateEntityObjectLocked(interpreter, registry, id);
     }
 } // namespace Scripting
 
@@ -457,7 +497,7 @@ void Scripting::EngineLib::register_registry_modules(ObSL::Interpreter &interpre
 
                                                                           // Read-only
                                                                           std::shared_lock lock(g_RegistryMutex);
-                                                                          return CreateEntityObject(interp, *reg, id);
+                                                                          return CreateEntityObjectLocked(interp, *reg, id);
                                                                       },
                                                                       "GetEntity"));
 
@@ -472,7 +512,7 @@ void Scripting::EngineLib::register_registry_modules(ObSL::Interpreter &interpre
                                                                      std::shared_lock lock(g_RegistryMutex);
                                                                      for (const ECS::EntityID id : reg->GetLivingEntities()) {
                                                                          if (reg->GetEntityName(id) == target_name)
-                                                                             return CreateEntityObject(interp, *reg, id);
+                                                                             return CreateEntityObjectLocked(interp, *reg, id);
                                                                      }
                                                                      return std::monostate{};
                                                                  },
@@ -485,12 +525,11 @@ void Scripting::EngineLib::register_registry_modules(ObSL::Interpreter &interpre
                                                                              if (!args.empty() && std::holds_alternative<std::string>(args[0])) {
                                                                                  name = std::get<std::string>(args[0]);
                                                                              }
-                                                                             auto *worker = interp->user_data ? static_cast<ObSL::ScriptWorker *>(interp->user_data) : nullptr;
-                                                                             worker ? worker->frame_context<ScriptCommandBuffer>() : nullptr;
+
                                                                              std::unique_lock lock(g_RegistryMutex);
                                                                              const ECS::EntityID new_id = reg->CreateEntity();
                                                                              reg->SetEntityName(new_id, name);
-                                                                             return CreateEntityObject(interp, *reg, new_id);
+                                                                             return CreateEntityObjectLocked(interp, *reg, new_id);
                                                                          },
                                                                          "CreateEntity"));
 
@@ -500,13 +539,12 @@ void Scripting::EngineLib::register_registry_modules(ObSL::Interpreter &interpre
                                                                             if (args.empty() || !std::holds_alternative<std::string>(args[0]))
                                                                                 return std::monostate{};
                                                                             const std::string prefab_path = std::get<std::string>(args[0]);
-                                                                            auto *worker = interp->user_data ? static_cast<ObSL::ScriptWorker *>(interp->user_data) : nullptr;
-                                                                            worker ? worker->frame_context<ScriptCommandBuffer>() : nullptr;
+
                                                                             std::unique_lock lock(g_RegistryMutex);
                                                                             const ECS::EntityID new_id = IO::PrefabManager::Instantiate(*reg, *ctx->resources, prefab_path);
                                                                             if (new_id == 0)
                                                                                 return std::monostate{};
-                                                                            return CreateEntityObject(interp, *reg, new_id);
+                                                                            return CreateEntityObjectLocked(interp, *reg, new_id);
                                                                         },
                                                                         "Instantiate"));
 
@@ -518,7 +556,7 @@ void Scripting::EngineLib::register_registry_modules(ObSL::Interpreter &interpre
                                                                                   return std::monostate{};
                                                                               const auto id = static_cast<ECS::EntityID>(std::get<double>(args[0]));
                                                                               auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
-                                                                              if (auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>()) {
+                                                                              if (auto *cmd_buf = (worker ? worker->frame_context<ScriptCommandBuffer>() : nullptr)) {
                                                                                   cmd_buf->push([id](ECS::Registry &reg) { reg.DestroyEntity(id); });
                                                                               } else if (reg) {
                                                                                   std::unique_lock lock(g_RegistryMutex);

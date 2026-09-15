@@ -22,6 +22,8 @@ namespace Scripting {
             BillboardTag,
             DestroyTag,
             ParticleEmitter,
+            Collider,
+            SpriteSheet,
         };
 
         struct Key {
