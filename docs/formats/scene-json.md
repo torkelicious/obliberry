@@ -133,6 +133,76 @@ Each entity is an object:
 | `ScriptComponent`             | `scriptPath` (string, single script) **or** `scriptPaths` (array, multiple scripts). Paths are `.obsl` files.                                                                                                                                                                                                                                                                                                 |
 | `ParticleEmitterComponent`    | `maxParticles` int, `emitRate` float, `lifetimeMin`/`lifetimeMax` floats, `velocityMin`/`velocityMax` `[x,y,z]`, `gravity` `[x,y,z]`, `sizeStartMin`/`sizeStartMax`/`sizeEndMin`/`sizeEndMax` floats, `rotationSpeedMin`/`rotationSpeedMax` floats, `colorStart`/`colorEnd` `[r,g,b,a]`, `isBillboard` bool, `blendMode` int (0 = Alpha, 1 = Additive), `renderOrder` int, `shape` int, `material_id` string. |
 
+### `SpriteSheetComponent`
+
+```json
+{
+  "SpriteSheetComponent": {
+    "texture_id": "hero_walk",
+    "columns": 8,
+    "rows": 4,
+    "column_spacing": 2,
+    "row_spacing": 2,
+    "start_frame": 8,
+    "frame_count": 8,
+    "fps": 12.0,
+    "looping": true,
+    "playing": true,
+    "current_frame": 0
+  }
+}
+```
+
+Place this entry inside an entity's `components` object. `texture_id` references a registered
+texture resource. This example fits a 270 × 134 texture containing 32 × 32 frames and two-pixel gaps.
+
+| Field                           | Default    | Meaning                                                                            |
+|---------------------------------|------------|------------------------------------------------------------------------------------|
+| `texture_id`                    | No texture | Texture resource key.                                                              |
+| `columns`, `rows`               | 1 each     | Grid dimensions.                                                                   |
+| `column_spacing`, `row_spacing` | 0 each     | Pixel gaps between frames; negative values clamp to zero on load. No outer margin. |
+| `start_frame`                   | 0          | Absolute first sheet frame, numbered from the top-left across rows.                |
+| `frame_count`                   | 1          | Clip length, not grid cell count.                                                  |
+| `fps`                           | 8.0        | Frames per second.                                                                 |
+| `looping`, `playing`            | false each | Playback flags.                                                                    |
+| `current_frame`                 | 0          | Current frame relative to `start_frame`.                                           |
+
+Elapsed time within a frame is not saved. The loader does not perform the editor's full layout/clip
+validation: author positive grid dimensions, a clip within the grid, and spacing that leaves whole
+pixel-sized frames. See [spacing rules](../editor/components.md#spacing-and-invalid-layouts).
+The runtime UV helper falls back to the whole texture for invalid texture/grid/spacing geometry.
+
+### `ColliderComponent`
+
+```json
+{
+  "ColliderComponent": {
+    "version": 2,
+    "shape": "Box",
+    "orientation": "Entity",
+    "offset": [0.0, 0.0, 0.0],
+    "size": [1.0, 1.0, 1.0],
+    "radius": 0.5,
+    "height": 1.0,
+    "isTrigger": false
+  }
+}
+```
+
+Place this entry inside `components`. `version` must be **2**; missing or older versions raise a
+load error. Shape names are case-sensitive: `Box`, `Sphere`, `Cylinder`, `Rectangle`, `Circle`.
+Orientation is `Entity` or `Billboard`. Unknown names raise a load error.
+
+The example shows the defaults for all fields except the required version. Offset is local xyz;
+size contains full box dimensions (Rectangle uses xy). Sphere/Circle use radius; Cylinder uses
+radius and full height along local Y. Rectangle/Circle occupy the local XY plane.
+
+Offset must be finite. The current validator requires all three size entries to be finite and
+positive even for shapes that do not use every entry. Radius must be finite and positive for
+Sphere, Circle, and Cylinder; Cylinder height must also be finite and positive. Invalid dimensions
+raise a load error. All these fields are serialized, including dimensions unused by the selected shape.
+`isTrigger` selects trigger events when either collider in an overlapping pair has it enabled.
+
 **Prefabs** (`PrefabSourceComponent`) are *not* serialized into scene files - they are separate JSON files under
 `assets/prefabs/`, written by `IO::PrefabManager::SavePrefab` using the same per-entity structure.
 `Instantiate("assets/prefabs/foo.json")` loads one from a script.

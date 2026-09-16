@@ -93,6 +93,86 @@ Swaps the entity's texture based on which direction it's facing (6 directions on
 
 ---
 
+### Sprite Sheet
+
+Uses rectangular regions of one texture for a static sprite or a contiguous animation clip.
+Add the component in the Inspector, select the sheet texture, and configure its grid.
+Rendering still requires Transform, Mesh, and Material. When a sheet texture is assigned,
+it takes precedence over the material texture and DirectionalTexture selection.
+
+| UI field            | Meaning                                                               |
+|---------------------|-----------------------------------------------------------------------|
+| Texture             | Registered texture containing the whole sheet.                        |
+| Columns / Rows      | Number of frames across/down; 1–4096 each.                            |
+| Column spacing (px) | Horizontal gap between adjacent columns; 0–4096 pixels.               |
+| Row spacing (px)    | Vertical gap between adjacent rows; 0–4096 pixels.                    |
+| Frame size          | Calculated width and height of each frame, excluding gaps.            |
+| Sheet frames        | Accepted grid's columns multiplied by rows.                           |
+| Start frame         | First sheet frame of the animation, starting at zero.                 |
+| Animation length    | Number of consecutive frames in the clip; at least one.               |
+| Use all frames      | Set start to zero and length to the accepted grid's full frame count. |
+| FPS                 | Playback speed, 0–240. Zero prevents advancement.                     |
+| Loop                | Repeat after the last frame.                                          |
+| Playing             | Enable animation advancement.                                         |
+| Current frame       | Frame relative to the clip; changing it pauses playback.              |
+| Restart             | Reset to the clip's first frame and play.                             |
+| Remove Sprite Sheet | Remove the component.                                                 |
+
+Frames run left-to-right, then top-to-bottom. For 8 columns, frame 8 starts the second row.
+Start frame 8 and animation length 8 select sheet frames 8–15; current frame 2 displays sheet frame 10.
+The default animation length is **one**, even after enlarging the grid. Choose **Use all frames**
+or increase the length, then enable Playing to animate. A non-looping clip stops on its last frame.
+
+#### Spacing and invalid layouts
+
+Spacing means gaps **between** frames, with no outer border or inset inside each frame.
+With texture dimensions `W × H`, the widget calculates:
+
+```text
+frameWidth  = (W - columnSpacing * (columns - 1)) / columns
+frameHeight = (H - rowSpacing    * (rows - 1)) / rows
+```
+
+A valid layout needs a selected texture, fields within the limits above, and a positive whole-number
+pixel size for both frame dimensions. The divisions must leave no remainder.
+Four 32-pixel-wide frames with 2-pixel gaps require `4 * 32 + 3 * 2 = 134` pixels of texture width.
+Using a 128-pixel-wide texture with those settings is invalid: it would give 30.5 pixels per frame.
+Leave spacing at zero when the image has no gaps. Sheets with outer borders need cropping or
+additional margin support; these spacing fields do not describe that layout.
+
+With the updated widget, valid edits take effect automatically. Incomplete/invalid input stays in
+the input fields while the last accepted component settings remain active; there is no Apply/Revert
+step. An animation range is valid only when `start >= 0`, `length >= 1`, and
+`start + length <= columns * rows`. Correct an invalid draft before saving: only accepted values
+belong to the component.
+
+Animation also advances in Edit mode. The current frame and playing flag are serialized, so pause
+and select the intended starting frame before saving if you want a particular initial pose.
+
+### Collider
+
+Adds overlap detection to an entity with a Transform. This detects intersections and emits script
+events; it does not implement automatic movement blocking or physical collision response.
+
+| UI field    | Meaning                                                                                |
+|-------------|----------------------------------------------------------------------------------------|
+| Shape       | Box, Sphere, Cylinder, Rectangle, or Circle.                                           |
+| Orientation | Entity uses the world transform; Billboard faces the camera using the billboard basis. |
+| Offset      | Local offset from the entity origin, transformed with the collider.                    |
+| Size        | Full dimensions: xyz for Box, xy for Rectangle.                                        |
+| Radius      | Local radius for Sphere, Cylinder, or Circle.                                          |
+| Height      | Full cylinder height along local Y.                                                    |
+| Trigger     | Route overlaps through trigger hooks when either member of the pair is a trigger.      |
+
+Rectangle and Circle lie in the local XY plane. Dimensions are positive and affected by entity
+scale. Collider orientation is configured separately from the visual **Use Billboard** option.
+The default is a unit Box with Entity orientation, zero offset, and Trigger disabled.
+
+See [collision hooks](../scripting/api-reference.md) in the scripting reference
+and [collider serialization](../formats/scene-json.md#collidercomponent) for saved fields.
+
+---
+
 ### Script
 
 Attaches ObSL scripts to the entity. Scripts define custom logic.
@@ -212,8 +292,8 @@ enabled), `children` (array).
 | Category                   | Components                                                                                      |
 |----------------------------|-------------------------------------------------------------------------------------------------|
 | **Required for rendering** | Transform, Mesh, Material                                                                       |
-| **Movement & AI**          | Movement, DirectionalTexture                                                                    |
-| **Logic**                  | Script                                                                                          |
+| **Movement & AI**          | Movement, DirectionalTexture, SpriteSheet                                                       |
+| **Logic**                  | Script, Collider                                                                                |
 | **Visual effects**         | ParticleEmitter, PointLight                                                                     |
 | **Map**                    | Map, Map State (on MAP entity)                                                                  |
 | **Internal tags**          | BillboardTag (via Transform), DestroyTag, Relationship, CustomData, PersistentTag, PrefabSource |

@@ -6,22 +6,22 @@ organized by the nine registered modules.
 
 ## Conventions
 
-* **Numbers** are doubles in ObSL; parameters are cast to `float`/`int` as needed by the engine.
-* **Void** functions return `nil` (`null`); failing lookups usually return `nil` rather than throwing.
-* **Booleans** sometimes accept a number (`0` = false, non-zero = true); this is noted per-function.
-* **Composite values** come back as ObSL objects (`{x, y}`) or arrays (`[x, y, z]`), noted per-function.
+- **Numbers** are doubles in ObSL; parameters are cast to `float`/`int` as needed by the engine.
+- **Void** functions return `nil` (`null`); failing lookups usually return `nil` rather than throwing.
+- **Booleans** sometimes accept a number (`0` = false, non-zero = true); this is noted per-function.
+- **Composite values** come back as ObSL objects (`{x, y}`) or arrays (`[x, y, z]`), noted per-function.
   > I apologize if this is confusing, Object were implemented before arrays and some things may have gotten a bit
-  fragmented.
-* Most functions silently no-op (or return a zero value) when the relevant engine system isn't available e.g. `nil`/`0`/
+  > fragmented.
+- Most functions silently no-op (or return a zero value) when the relevant engine system isn't available e.g. `nil`/`0`/
   `false` when there is no context, camera, input manager, or UI system.
 
 ## Thread safety
 
 Scripts run in parallel on interpreter workers. The API hides the synchronization:
 
-* **Reads** are protected by per-module mutexes (camera, audio, window, scene management, time, input-camera) or the
+- **Reads** are protected by per-module mutexes (camera, audio, window, scene management, time, input-camera) or the
   shared registry mutex (`g_RegistryMutex`).
-* **Mutations** (registry and UI writes) are *deferred* through `ScriptCommandBuffer` / `UICommandBuffer` and applied on
+- **Mutations** (registry and UI writes) are _deferred_ through `ScriptCommandBuffer` / `UICommandBuffer` and applied on
   the main thread after the parallel script pass. If no command buffer is present (e.g. scripts run outside the normal
   frame path), the EngineLib falls back to direct mutation under the registry mutex.
 
@@ -35,7 +35,7 @@ You can call any function from any hook without extra bookkeeping.
 | `fn on_update(dt)` | Optional. Called every frame with the raw (unscaled) delta time in seconds.                                              |
 | `fn on_destroy()`  | Optional. Called when the entity is marked for destruction (`DestroyTagComponent`).                                      |
 | `fn on_exit()`     | Optional. Called when the scene exits.                                                                                   |
-| *(top-level code)* | Runs once when the script is loaded.                                                                                     |
+| _(top-level code)_ | Runs once when the script is loaded.                                                                                     |
 
 There is no `dt` global use `get_dt()` (time-scaled) or `GetRawDt()` (unscaled) outside `on_update`.
 
@@ -95,21 +95,21 @@ numbers: `0` = left, `1` = right, `2` = middle.
 
 ## Hex map
 
-| Function                            | Args                    | Returns                       | Description                                                                                                                                                    |
-|-------------------------------------|-------------------------|-------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `Math_WorldToHex(x, y)`             | numbers                 | object `{q, r}`               | Converts a world position to hex coordinates.                                                                                                                  |
-| `GetSelectedHex()`                  | -                       | object `{hasSelection, q, r}` | The currently selected hex (if any).                                                                                                                           |
-| `SetSelectedHex(q, r)`              | numbers                 | void                          | Selects the hex if it exists and is walkable; otherwise clears the selection.                                                                                  |
-| `SetPathToHex(entityId, q, r)`      | numbers                 | bool                          | Finds an A* path for the entity to `(q, r)` and starts movement (requires `MovementComponent` + `TransformComponent`). `false` if the entity/args are invalid. |
-| `ClearSelectionOverlay()`           | -                       | void                          | Clears the selection highlight on the map.                                                                                                                     |
-| `ClearPathTarget()`                 | -                       | void                          | Clears the path overlay.                                                                                                                                       |
-| `Map_IsHexWalkable(q, r)`           | numbers                 | bool                          | `true` if the hex exists and is walkable.                                                                                                                      |
-| `Map_SetHexWalkable(obj, walkable)` | object `{q, r}`, bool   | void                          | Sets the walkable state of the hex at `obj.q`, `obj.r`.                                                                                                        |
-| `Map_SetTileType(obj, type)`        | object `{q, r}`, number | void                          | Sets the tile type (0-255) of the hex at `obj.q`, `obj.r`.                                                                                                     |
-| `Map_GetMapEntity()`                | -                       | entity or `nil`               | The entity holding the scene's `MapComponent`.                                                                                                                 |
-| `Hex_Distance(aQ, aR, bQ, bR)`      | numbers                 | number                        | Hex-grid distance between two hexes.                                                                                                                           |
-| `Hex_GetNeighbors(q, r)`            | numbers                 | array of `{q, r}`             | The six neighbors of the hex.                                                                                                                                  |
-| `Hex_HexToWorld(q, r)`              | numbers                 | object `{x, y}`               | Converts hex coordinates to a world position.                                                                                                                  |
+| Function                            | Args                    | Returns                       | Description                                                                                                                                                     |
+|-------------------------------------|-------------------------|-------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `Math_WorldToHex(x, y)`             | numbers                 | object `{q, r}`               | Converts a world position to hex coordinates.                                                                                                                   |
+| `GetSelectedHex()`                  | -                       | object `{hasSelection, q, r}` | The currently selected hex (if any).                                                                                                                            |
+| `SetSelectedHex(q, r)`              | numbers                 | void                          | Selects the hex if it exists and is walkable; otherwise clears the selection.                                                                                   |
+| `SetPathToHex(entityId, q, r)`      | numbers                 | bool                          | Finds an A\* path for the entity to `(q, r)` and starts movement (requires `MovementComponent` + `TransformComponent`). `false` if the entity/args are invalid. |
+| `ClearSelectionOverlay()`           | -                       | void                          | Clears the selection highlight on the map.                                                                                                                      |
+| `ClearPathTarget()`                 | -                       | void                          | Clears the path overlay.                                                                                                                                        |
+| `Map_IsHexWalkable(q, r)`           | numbers                 | bool                          | `true` if the hex exists and is walkable.                                                                                                                       |
+| `Map_SetHexWalkable(obj, walkable)` | object `{q, r}`, bool   | void                          | Sets the walkable state of the hex at `obj.q`, `obj.r`.                                                                                                         |
+| `Map_SetTileType(obj, type)`        | object `{q, r}`, number | void                          | Sets the tile type (0-255) of the hex at `obj.q`, `obj.r`.                                                                                                      |
+| `Map_GetMapEntity()`                | -                       | entity or `nil`               | The entity holding the scene's `MapComponent`.                                                                                                                  |
+| `Hex_Distance(aQ, aR, bQ, bR)`      | numbers                 | number                        | Hex-grid distance between two hexes.                                                                                                                            |
+| `Hex_GetNeighbors(q, r)`            | numbers                 | array of `{q, r}`             | The six neighbors of the hex.                                                                                                                                   |
+| `Hex_HexToWorld(q, r)`              | numbers                 | object `{x, y}`               | Converts hex coordinates to a world position.                                                                                                                   |
 
 Hex coordinates are **odd-r offset** (pointy-top hexes). See `src/Math/HexMath.h` for the underlying math.
 
@@ -152,11 +152,12 @@ Entity objects are returned by `GetEntity`, `Find`, `CreateEntity`, `Instantiate
 
 **Built-in component names** (accepted by `GetComponent`/`HasComponent`/`AddComponent`/`RemoveComponent`):
 `"Transform"`, `"PointLight"`, `"Movement"`, `"MapState"`, `"DirectionalTexture"`, `"BillboardTag"`, `"DestroyTag"`,
-`"ParticleEmitter"`.
+`"ParticleEmitter"`, `"Collider"`, `"SpriteSheet"`.
 
 ### persistence
 
 Entities can be marked as **persistent**, these survive scene transitions.
+
 > (though scripts are reinitalized!)
 
 The `PersistentTagComponent` is not serialized to scene files and has no editor Inspector UI. It is intended to be set
@@ -228,6 +229,81 @@ These are the objects returned by `entity.GetComponent(name)`.
 | `SetActive(active)` | bool or number | void    | Enables/disables emission.                              |
 | `GetActive()`       | -              | bool    | Whether emission is active.                             |
 | `GetAliveCount()`   | -              | number  | Currently returns `0` (runtime-only; not wired up yet). |
+
+**Collider**
+
+| Method                | Args | Returns | Description                               |
+|-----------------------|------|---------|-------------------------------------------|
+| `GetIsTrigger()`      | -    | bool    | Returns whether the collider is a trigger |
+| `SetIsTrigger(value)` | bool | void    | Set isTrigger property of collider        |
+
+Only the trigger flag is exposed by the Collider wrapper; configure shape, orientation, and dimensions
+in the editor or scene JSON. These are overlap events, not a rigid-body solver: colliders do not
+automatically stop movement or push entities apart. If either collider is a trigger, the pair uses
+trigger hooks. The `other` argument is an entity wrapper, or `nil` if that entity is no longer valid.
+
+Scripts attached to the entities can define the following hooks:
+
+```obsl
+fn on_collision_enter(other){...}
+fn on_collision_stay(other){...}
+fn on_collision_exit(other){...}
+
+fn on_trigger_enter(other){...}
+fn on_trigger_stay(other){...}
+fn on_trigger_exit(other){...}
+```
+
+**SpriteSheet**
+
+Obtain the wrapper with `entity.GetComponent("SpriteSheet")`. The component must already exist;
+use `HasComponent`, `AddComponent`, or the Inspector to manage it.
+
+Frames are numbered left-to-right, then top-to-bottom, starting at zero. `GetStartFrame()` is
+an absolute sheet index; `GetFrame()` is relative to the animation clip. The displayed sheet
+index is `GetStartFrame() + GetFrame()`.
+
+| Method                                  | Returns | Description                                                                                                             |
+|-----------------------------------------|---------|-------------------------------------------------------------------------------------------------------------------------|
+| `GetFrame()`                            | number  | Current frame relative to the clip, starting at zero.                                                                   |
+| `GetStartFrame()`                       | number  | First sheet frame in the clip.                                                                                          |
+| `GetFrameCount()`                       | number  | Clip length, not the total number of sheet cells.                                                                       |
+| `GetFPS()`                              | number  | Playback speed.                                                                                                         |
+| `GetLoop()`                             | bool    | Whether playback loops.                                                                                                 |
+| `IsPlaying()`                           | bool    | Playback flag.                                                                                                          |
+| `GetColumns()` / `GetRows()`            | number  | Sheet grid dimensions.                                                                                                  |
+| `GetTexture()`                          | string  | Texture resource key.                                                                                                   |
+| `SetTexture(key)`                       | void    | Select an existing texture resource; an empty string clears it. Unknown nonempty keys raise an error.                   |
+| `SetGrid(columns, rows)`                | void    | Set positive integer grid dimensions; clamp the existing clip and current frame to the new grid and reset elapsed time. |
+| `SetAnimation(start, count, fps, loop)` | void    | Configure a contiguous clip; reset its current frame and elapsed time. Preserves the playing flag.                      |
+| `SetFrame(frame)`                       | void    | Select a clip-relative frame, reset elapsed time, and pause.                                                            |
+| `Play()`                                | void    | Resume a valid clip from its current frame.                                                                             |
+| `Pause()`                               | void    | Pause without resetting the frame or elapsed time.                                                                      |
+| `Restart()`                             | void    | Reset a valid clip to frame zero and start playback.                                                                    |
+| `Stop()`                                | void    | Pause and reset the frame and elapsed time.                                                                             |
+
+`SetAnimation` requires an integer start of at least zero, an integer count of at least one,
+a finite FPS greater than zero and at most 240, and a boolean loop argument. Invalid argument
+types/ranges raise an error. A clip outside the grid is ignored when the queued command executes;
+`SetFrame` similarly ignores frames outside the clip. `SetGrid` rejects a cell count above the
+signed integer limit, but does not validate pixel divisibility or spacing against the texture.
+
+Mutations from script workers are queued, so an immediate getter can still see the previous value.
+Texture/grid changes copy the sheet metadata before editing it. Column/row spacing is currently
+configured in the editor or scene JSON; there are no spacing methods in this wrapper.
+
+For an existing component and registered `hero_walk` texture containing an 8-by-4 grid:
+
+```obsl
+var sprite = this.GetComponent("SpriteSheet");
+sprite.SetTexture("hero_walk");
+sprite.SetGrid(8, 4);
+sprite.SetAnimation(8, 8, 12, true);
+sprite.Play();
+```
+
+This plays sheet frames 8–15. `sprite.SetFrame(2)` pauses on sheet frame 10.
+See [Sprite Sheet editor settings](../editor/components.md#sprite-sheet) for pixel spacing and layout validation.
 
 ## Scene management
 
@@ -311,6 +387,10 @@ by element name. Colors are `[r, g, b, a]` arrays, positions/sizes are `[x, y]` 
 
 ## See also
 
-* [Getting started with ObSL](getting-started.md) lifecycle, hooks, and full examples.
-* The language itself: [ObSL README](https://github.com/torkelicious/ObSL) and `external/obsl/docs/`.
-* Source for this page: `src/Scripting/EngineLib/` (the `EngineLib*` module files).
+- [Getting started with ObSL](getting-started.md) lifecycle, hooks, and full examples.
+- The language itself: [ObSL README](https://github.com/torkelicious/ObSL) and `external/obsl/docs/`.
+- Source for this page: `src/Scripting/EngineLib/` (the `EngineLib*` module files).
+
+```
+
+```

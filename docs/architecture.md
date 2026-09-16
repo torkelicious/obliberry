@@ -85,18 +85,20 @@ and [Scripting : API Reference](scripting/api-reference.md) for notes per module
   `AddComponent/GetComponent/HasComponent/RemoveComponent`, naming, and hierarchy helpers.
 * **Components** (`src/ECS/Components/`) : `TransformComponent`, `MeshComponent`, `MaterialComponent`,
   `ScriptComponent`, `MovementComponent`, `MapComponent`/`MapStateComponent`, `PointLightComponent`,
-  `ParticleEmitterComponent`, `DirectionalTextureComponent`, `BillboardTagComponent`, `DestroyTagComponent`,
+  `ParticleEmitterComponent`, `DirectionalTextureComponent`, `SpriteSheetComponent`, `ColliderComponent`,
+  `BillboardTagComponent`, `DestroyTagComponent`,
   `PrefabSourceComponent`, `RelationshipComponent` (hierarchy), `CustomDataComponent` (script data).
 * **Systems** (`src/ECS/Systems/`) : `RenderSystem`, `ScriptSystem`, `MovementSystem`, `MapRenderSystem`,
   `MapRuntimeSystem`, `LightingSystem`, `ParticleSystem`, `AISystem`, `PlayerControlSystem`, `HierarchySystem`,
-  `DirectionalAnimationSystem`, `SpriteBillboardSystem`.
+  `DirectionalAnimationSystem`, `SpriteBillboardSystem`, `SpriteAnimation::Update`, and `CollisionWorld`.
 
 ## Rendering (`src/Rendering`)
 
 * OpenGL forward renderer via GLAD. The camera is orthographic with an isometric-style rotation (tilt `angleX`, rotate
   `angleZ`) and zoom (`Rendering::Camera`).
 * Per frame the renderer collects `RenderCommand`s and `InstancedRenderCommand`s, merges them into batches by
-  mesh/material/texture/color/shape, and flushes them on the render thread. It supports instanced rendering,
+  mesh/material/texture/color/shape/UV rectangle, and flushes them on the render thread. It supports instanced
+  rendering,
   per-instance colors, blend modes, and `renderOrder`.
 * Resources: `Mesh` (with `MeshFactory` procedural factories such as `Quad`, `Hexagon`, `Circle`, `Ring`,
   `PointTopHex`, and serialized custom 2D meshes), `Material`, `Texture`, `Shader`, `Lightmap`, `FrameBuffer`
@@ -114,6 +116,39 @@ and [Scripting : API Reference](scripting/api-reference.md) for notes per module
   [formats/scene-json.md](formats/scene-json.md#postprocessing)) and edited via the editor's Post Processing window,
   which applies changes with a live preview + undoable commit (`PostProcEditor`, `PostProcUpdateCommand`).
 * Editor picking is done by reading the pixel from an entity-ID framebuffer attachment.
+
+### Spritesheets and animation
+
+`Rendering::SpriteSheet` references one Texture and stores grid dimensions plus column/row pixel
+spacing. `GetFrameUV` returns an offset and scale `(u, v, width, height)` for a frame, accounting for
+the file texture loader's vertical flip. It does not split the image into separate GPU textures.
+`SpriteSheetComponent` stores the clip range, speed, playback flags, relative current frame, and elapsed time.
+`SpriteAnimation::Update` advances that state in scene updates and editor preview updates.
+
+`RenderSystem` selects `startFrame + currentFrame`, takes the sheet texture, and passes the UV
+rectangle into rendering. A sheet texture overrides directional/material texture selection.
+The current renderer uses the `u_UVRect` uniform and includes the rectangle in the batch key;
+different regions therefore form separate batches. This is not a per-instance UV attribute.
+See [component settings](editor/components.md#sprite-sheet)
+and [scene fields](formats/scene-json.md#spritesheetcomponent).
+
+### Collision detection
+
+`CollisionWorld` builds transformed colliders from Collider and Transform components, tests overlaps,
+and tracks pairs to produce enter/stay/exit events. Box, Sphere, Cylinder, Rectangle, and Circle are
+supported, with entity or billboard orientation. If either member is a trigger, the pair produces
+trigger events. Scene updates dispatch these events to `ScriptSystem`.
+
+Collision also blocks hex movement: before changing position, `MovementSystem::Update` calls
+`Collision::CanOccupy` with the next hex's world position. The query tests the moving collider
+against other non-trigger colliders using AABB checks and GJK. If the target is blocked, movement
+cancels the current path without taking that step. An entity without a collider, or with a trigger
+collider, bypasses collider blocking; other trigger colliders are ignored.
+
+This is a destination occupancy check, not a swept test along the path. Direct Transform position
+changes do not automatically use this check. There is no rigid-body impulse or push-apart solver.
+
+See [Collider settings](editor/components.md#collider) and the [EngineLib API](scripting/api-reference.md).
 
 ## Scripting (`src/Scripting`)
 
