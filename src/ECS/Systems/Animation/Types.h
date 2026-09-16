@@ -1,3 +1,5 @@
+#pragma once
+
 #include "Rendering/Types/Texture/SpriteSheet.h"
 #include <cstdint>
 #include <memory>

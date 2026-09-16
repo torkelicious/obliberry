@@ -1,3 +1,4 @@
+#pragma once
 #include "ECS/Components/SpriteAnimatorComponent.h"
 #include <cmath>
 #include <vector>
