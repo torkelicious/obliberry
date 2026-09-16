@@ -574,6 +574,7 @@ namespace Scripting {
         }
 
 
+        // helpers
         namespace ComponentBinding {
             inline double Number(const std::vector<ObSL::Value> &args, size_t index) {
                 if (index >= args.size() || !std::holds_alternative<double>(args[index]))
