@@ -1,7 +1,12 @@
 #include "VFS.h"
+#include <exception>
 #include <fstream>
+#include <optional>
+#include <stdexcept>
 #include "Logger/LoggerService.h"
 #include "IO/Package/Container.h"
+#include "nlohmann/json.hpp"
+#include "nlohmann/json_fwd.hpp"
 
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "VFS"
@@ -104,6 +109,34 @@ namespace IO::VFS {
             return {};
         }
         return resolvedPath;
+    }
+
+    std::optional<std::string_view> ReadVirtualJson(const std::filesystem::path &virtualPath) {
+        std::string_view dataView;
+        std::string ownedData;
+        if (const auto view = VFS::ReadVirtualView(virtualPath)) {
+            dataView = *view;
+        } else if (auto owned = VFS::ReadVirtual(virtualPath)) {
+            ownedData = std::move(*owned);
+            dataView = ownedData;
+        } else {
+            LOG_ERROR(LOG_WHO, "Failed to load: " + virtualPath.string());
+            return std::nullopt;
+        }
+        nlohmann::json jsonData;
+        try {
+            if (VFS::IsPackaged()) {
+                jsonData = nlohmann::json::from_msgpack(dataView.begin(), dataView.end());
+            } else {
+                jsonData = nlohmann::json::parse(dataView);
+            }
+        } catch (std::exception &e) {
+            LOG_ERROR(LOG_WHO, "Failed to load: " + virtualPath.string() + e.what());
+        }
+        if (!dataView.empty()) {
+            return dataView;
+        }
+        return std::nullopt;
     }
 
     std::filesystem::path GetProjectRoot() { return s_State.rootDir; }

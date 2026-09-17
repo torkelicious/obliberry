@@ -1,4 +1,5 @@
 #pragma once
+#include "nlohmann/json_fwd.hpp"
 #include <algorithm>
 #include <filesystem>
 #include <optional>
@@ -20,6 +21,9 @@ namespace IO::VFS {
     // returns string_view into mmap blob.
     // returns nullopt if not packaged, entry is compressed, or not found
     std::optional<std::string_view> ReadVirtualView(const std::filesystem::path &virtualPath);
+
+    // resolves to virtual or virtual view ( pkgs use msgpack etc )
+    std::optional<std::string_view> ReadVirtualJson(const std::filesystem::path &virtualPath);
 
     [[nodiscard]] std::filesystem::path Resolve(const std::filesystem::path &virtualPath);
 
