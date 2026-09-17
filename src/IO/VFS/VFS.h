@@ -23,7 +23,7 @@ namespace IO::VFS {
     std::optional<std::string_view> ReadVirtualView(const std::filesystem::path &virtualPath);
 
     // resolves to virtual or virtual view ( pkgs use msgpack etc )
-    std::optional<std::string_view> ReadVirtualJson(const std::filesystem::path &virtualPath);
+    std::optional<nlohmann::json> ReadVirtualJson(const std::filesystem::path &virtualPath);
 
     [[nodiscard]] std::filesystem::path Resolve(const std::filesystem::path &virtualPath);
 

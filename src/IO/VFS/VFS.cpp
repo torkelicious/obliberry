@@ -111,32 +111,30 @@ namespace IO::VFS {
         return resolvedPath;
     }
 
-    std::optional<std::string_view> ReadVirtualJson(const std::filesystem::path &virtualPath) {
+    std::optional<nlohmann::json> ReadVirtualJson(const std::filesystem::path &virtualPath) {
         std::string_view dataView;
         std::string ownedData;
-        if (const auto view = VFS::ReadVirtualView(virtualPath)) {
+
+        if (const auto view = ReadVirtualView(virtualPath)) {
             dataView = *view;
-        } else if (auto owned = VFS::ReadVirtual(virtualPath)) {
+        } else if (auto owned = ReadVirtual(virtualPath)) {
             ownedData = std::move(*owned);
             dataView = ownedData;
         } else {
             LOG_ERROR(LOG_WHO, "Failed to load: " + virtualPath.string());
             return std::nullopt;
         }
-        nlohmann::json jsonData;
+
         try {
-            if (VFS::IsPackaged()) {
-                jsonData = nlohmann::json::from_msgpack(dataView.begin(), dataView.end());
-            } else {
-                jsonData = nlohmann::json::parse(dataView);
+            if (IsPackaged()) {
+                return nlohmann::json::from_msgpack(dataView.begin(), dataView.end());
             }
-        } catch (std::exception &e) {
-            LOG_ERROR(LOG_WHO, "Failed to load: " + virtualPath.string() + e.what());
+
+            return nlohmann::json::parse(dataView.begin(), dataView.end());
+        } catch (const std::exception &e) {
+            LOG_ERROR(LOG_WHO, "Failed to parse " + virtualPath.string() + ": " + e.what());
+            return std::nullopt;
         }
-        if (!dataView.empty()) {
-            return dataView;
-        }
-        return std::nullopt;
     }
 
     std::filesystem::path GetProjectRoot() { return s_State.rootDir; }
