@@ -2,6 +2,7 @@
 
 #include "Rendering/Types/Texture/SpriteSheet.h"
 #include <cstdint>
+#include <filesystem>
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -19,6 +20,7 @@ namespace Animation {
     };
 
     struct SpriteAnimationSet {
+        std::filesystem::path path;
         std::shared_ptr<Rendering::SpriteSheet> sheet;
         std::unordered_map<std::string, SpriteClip> clips;
     };
