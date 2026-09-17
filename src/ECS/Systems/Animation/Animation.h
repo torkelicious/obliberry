@@ -4,7 +4,6 @@
 #include "ECS/Systems/Animation/Types.h"
 #include "Rendering/Types/Texture/SpriteSheet.h"
 #include <cmath>
-#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <string>
@@ -44,6 +43,20 @@ namespace Animation {
 
         for (const auto &frame : clip.frames) {
             if (int64_t(frame.index) >= total || !std::isfinite(frame.duration) || frame.duration <= 0.0f) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    inline bool ValidateSet(const SpriteAnimationSet &anim) {
+        if (!ValidateSheet(*anim.sheet)) { // redundant but still
+            return false;
+        }
+
+        for (const auto &clip : anim.clips) {
+            if (!ValidateClip(anim, clip.second) || clip.first.empty()) {
                 return false;
             }
         }
