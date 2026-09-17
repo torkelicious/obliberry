@@ -17,10 +17,6 @@
 #include "Scenes/SceneManager.h"
 #include "UI/UIElement.h"
 #include "UI/Rendering/UISystem.h"
-#include "UI/Elements/UIImage.h"
-#include "UI/Elements/UIText.h"
-#include "UI/Elements/UIButton.h"
-#include "UI/Elements/UIRect.h"
 #include "Rendering/Types/Texture/Texture.h"
 #include "UI/Text/Font.h"
 
