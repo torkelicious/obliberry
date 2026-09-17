@@ -35,6 +35,7 @@ add_library(obliberry_engine STATIC
         IO/Loaders/EntityFactory.cpp
         IO/Loaders/UISerializer.cpp
         IO/SceneSerialization.cpp
+        IO/AnimationSerialization.cpp
         IO/VFS/VFS.cpp
 
         # Sound
