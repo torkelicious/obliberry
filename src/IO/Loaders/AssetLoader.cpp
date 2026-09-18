@@ -92,9 +92,8 @@ void IO::AssetLoader::LoadAssets(const json &assets, Core::ResourceManager &reso
     if (assets.contains("fonts"))
         LoadFonts(assets["fonts"], resources);
 
-    if(assets.contains("animation_sets"))
-        LoadAssets(assets["animation_sets"]);
-
+    if (assets.contains("animation_sets"))
+        LoadAnimations(assets["animation_sets"], resources);
 }
 
 void IO::AssetLoader::RegisterMeshFactory(const std::string &name, MeshFactory factory) { s_MeshFactories[name] = std::move(factory); }
