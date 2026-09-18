@@ -11,7 +11,7 @@
 #include "ECS/Systems/ParticleSystem.h"
 #include "UI/UIGizmo.h"
 #include "imgui.h"
-#include "ECS/Systems/SpriteAnimationSystem.h"
+#include "ECS/Systems/Animation/SpriteAnimationSystem.h"
 
 namespace Editor::States {
     ImGuizmo::OPERATION EditState::mCurrentGizmoOperation = ImGuizmo::TRANSLATE;

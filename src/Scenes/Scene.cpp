@@ -1,7 +1,7 @@
 
 #include "Scene.h"
 #include "ECS/Systems/Collision/ColliderGeometry.h"
-#include "ECS/Systems/SpriteAnimationSystem.h"
+#include "ECS/Systems/Animation/SpriteAnimationSystem.h"
 #include "Logger/LoggerService.h"
 #include "ECS/Systems/AISystem.h"
 #include "ECS/Systems/MapRenderSystem.h"
