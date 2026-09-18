@@ -12,19 +12,7 @@
 namespace Scripting {
     class EntityWrapperCache {
     public:
-        enum class Kind : uint8_t {
-            Entity = 0,
-            Transform,
-            PointLight,
-            Movement,
-            MapState,
-            DirectionalTexture,
-            BillboardTag,
-            DestroyTag,
-            ParticleEmitter,
-            Collider,
-            SpriteSheet,
-        };
+        enum class Kind : uint8_t { Entity = 0, Transform, PointLight, Movement, MapState, DirectionalTexture, BillboardTag, DestroyTag, ParticleEmitter, Collider, SpriteSheet, SpriteAnimator };
 
         struct Key {
             ECS::EntityID id;
