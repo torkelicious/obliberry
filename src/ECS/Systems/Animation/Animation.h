@@ -31,7 +31,7 @@ namespace Animation {
         const int64_t w = int64_t(sheet.texture->GetWidth() - int64_t(sheet.columnSpacing) * (cols - 1));
         const int64_t h = int64_t(sheet.texture->GetHeight() - int64_t(sheet.rowSpacing) * (rows - 1));
 
-        return w >= cols && h >= rows && w % cols == 0 && h % cols == 0;
+        return w >= cols && h >= rows && w % cols == 0 && h % rows == 0;
     }
 
     inline bool ValidateClip(const SpriteAnimationSet &set, const SpriteClip &clip) {
@@ -51,12 +51,12 @@ namespace Animation {
     }
 
     inline bool ValidateSet(const SpriteAnimationSet &anim) {
-        if (!ValidateSheet(*anim.sheet)) { // redundant but still
+        if (!anim.sheet || !ValidateSheet(*anim.sheet)) {
             return false;
         }
 
-        for (const auto &clip : anim.clips) {
-            if (!ValidateClip(anim, clip.second) || clip.first.empty()) {
+        for (const auto &[name, clip] : anim.clips) {
+            if (name.empty() || !ValidateClip(anim, clip)) {
                 return false;
             }
         }
