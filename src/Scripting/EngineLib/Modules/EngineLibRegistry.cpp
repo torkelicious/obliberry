@@ -47,9 +47,9 @@ namespace Scripting {
         return arr;
     }
 
-        // cache hit reuses a previously built wrapper
-        // when the entity is still live and belongs to the same registry.
-        // names will be updated if such functions are called
+    // cache hit reuses a previously built wrapper
+    // when the entity is still live and belongs to the same registry.
+    // names will be updated if such functions are called
     ObSL::ObSLObject *CreateEntityObjectLocked(ObSL::Interpreter *interpreter, ECS::Registry &registry, ECS::EntityID id) {
         if (!registry.IsValid(id)) {
             return nullptr;
