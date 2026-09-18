@@ -1,7 +1,12 @@
 #include "ProjectBrowserPanel.h"
+#include "Core/ResourceManager.h"
+#include "ECS/Systems/Animation/Animation.h"
+#include "ECS/Systems/Animation/Types.h"
+#include "IO/AnimationSerialization.h"
 #include "Platform/Threading/SmallTask.h"
+#include <exception>
+#include <memory>
 #include <thread>
-
 #include "Core/Constants.h"
 #include "Logger/LoggerService.h"
 #include "Applications/Editor/Platform/FileDialogs.h"
@@ -17,10 +22,12 @@
 #include "Rendering/Types/Shader/Shader.h"
 #include "UI/Text/Font.h"
 #include <imgui.h>
-#include <iostream>
 #include <filesystem>
 #include <cstring>
 #include <fstream>
+#include <utility>
+#include "ECS/Systems/Animation/Types.h"
+
 
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "ProjectBrowser"
@@ -119,6 +126,9 @@ namespace Editor::UI {
         }
         if (ImGui::CollapsingHeader("Fonts")) {
             DrawFontSection(resources);
+        }
+        if (ImGui::CollapsingHeader("Animations")) {
+            DrawAnimationSelection();
         }
         if (ImGui::CollapsingHeader("Scripts")) {
             DrawFileSection("Scripts", std::string(Core::SCRIPT_PATH), std::string(Core::SCRIPT_FILE_EXTENSION), "obsl,txt", "Script Files");
@@ -696,6 +706,9 @@ void Editor::UI::ProjectBrowserPanel::DrawDeleteConfirmPopup(Core::ResourceManag
                         resources.Unload<::UI::Font>(m_DeleteConfirmKey);
                         LOG_INFO(LOG_WHO, "Removed font '" + m_DeleteConfirmKey + "'");
                         break;
+                    case AssetType::Animation:
+                        resources.Unload<Animation::SpriteAnimationSet>(m_DeleteConfirmKey);
+                        LOG_INFO(LOG_WHO, "Removed animaton '" + m_DeleteConfirmKey + "'");
                 }
             }
             ImGui::CloseCurrentPopup();
@@ -872,4 +885,69 @@ void Editor::UI::ProjectBrowserPanel::ImportFile(const std::string &targetSubDir
         std::filesystem::copy(picked.value(), dir / std::filesystem::path(picked.value()).filename(), std::filesystem::copy_options::overwrite_existing);
     }
 }
+
+void Editor::UI::ProjectBrowserPanel::ImportAnimation() {
+    auto &resources = Core::ResourceManager::GetInstance();
+    if (!m_EngineContext) {
+        return;
+    }
+
+    const auto picked = Platform::FileDialogs::OpenFile(*m_EngineContext, {.filterExt = "json"});
+    if (!picked.has_value()) {
+        return;
+    }
+
+    const std::string key = KeyFromPath(picked.value());
+
+    if (resources.Get<Animation::SpriteAnimationSet>(key)) {
+        LOG_WARN(LOG_WHO, "Animation '" + key + "' already exists. Skipping");
+        return;
+    }
+
+    const auto finalPath = IO::AssetLoader::ImportAsset(picked.value(), "animations");
+
+    if (!finalPath.has_value()) {
+        return;
+    }
+
+    try {
+        auto anim = IO::AnimationIO::Deserialize(finalPath.value());
+        if (!anim.sheet || !Animation::ValidateSet(anim)) {
+            LOG_ERROR(LOG_WHO, "Could not import animation '" + key + "'");
+            return;
+        }
+
+        anim.path = finalPath.value();
+
+        resources.Register(key, std::make_shared<Animation::SpriteAnimationSet>(std::move(anim)));
+
+        LOG_INFO(LOG_WHO, "Imported animation '" + key + "' from " + finalPath.value());
+
+    } catch (const std::exception &e) {
+        LOG_ERROR(LOG_WHO, "Could not import animation '" + key + "': " + e.what());
+    }
+}
+
+void Editor::UI::ProjectBrowserPanel::DrawAnimationSelection() {
+    auto &resources = Core::ResourceManager::GetInstance();
+    const auto animations = resources.GetAll<Animation::SpriteAnimationSet>();
+
+    DrawResourceSection(
+            resources, animations, AssetType::Animation, "##animationList", 130.0f, "No animations imported.", "animation",
+            [](const std::shared_ptr<Animation::SpriteAnimationSet> &animation) {
+                if (animation && animation->sheet && animation->sheet->texture) {
+                    Core::Utils::UI::ImGuiImageFlipped(animation->sheet->texture->GetID(), ImVec2(64, 64));
+                } else {
+                    ImGui::Button("animation", ImVec2(64, 64));
+                }
+            },
+            [](const std::string &, Core::ResourceManager &) {
+                /* empyt */
+            });
+    ImGui::Spacing();
+    if (ImGui::Button("Import Animation")) {
+        ImportAnimation();
+    }
+}
+
 #pragma pop_macro("LOG_WHO")

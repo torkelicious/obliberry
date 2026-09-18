@@ -24,7 +24,7 @@ namespace Editor::UI {
         void OnImGuiRender() override;
 
     private:
-        enum class AssetType : uint8_t { Texture, Shader, Mesh, Material, Font };
+        enum class AssetType : uint8_t { Texture, Shader, Mesh, Material, Font, Animation };
 
         template <typename T>
         void DrawResourceSection(Core::ResourceManager &resources, const std::vector<std::pair<std::string, std::shared_ptr<T>>> &allItems, AssetType assetType, const char *childId, float childHeight,
@@ -38,12 +38,14 @@ namespace Editor::UI {
         void DrawMaterialSection(Core::ResourceManager &resources);
         void DrawFontSection(Core::ResourceManager &resources);
         void DrawFileSection(const char *label, const std::string &directory, const std::string &extension, const char *importFilter, const char *importFilterName);
+        void DrawAnimationSelection();
 
         void ImportTexture(Core::ResourceManager &resources) const;
         void ImportShader(Core::ResourceManager &resources) const;
         void ImportFont(Core::ResourceManager &resources) const;
         void CreateMesh(Core::ResourceManager &resources);
         void ImportFile(const std::string &targetSubDir, const char *filterExt, const char *filterName) const;
+        void ImportAnimation();
 
         void ReplaceTexture(Core::ResourceManager &resources, const std::string &key) const;
         void ReplaceShader(Core::ResourceManager &resources, const std::string &key) const;
