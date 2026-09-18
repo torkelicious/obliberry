@@ -30,7 +30,8 @@
 #include "ECS/Components/ParticleEmitterComponent.h"
 #include "ECS/Components/BillboardTagComponent.h"
 #include "ECS/Components/DestroyTagComponent.h"
-
+#include "ECS/Components/SpriteAnimatorComponent.h"
+#include "ECS/Systems/Animation/Animation.h"
 
 namespace Scripting {
     // Protects all ECS registry access during parallel script execution.
@@ -651,10 +652,6 @@ namespace Scripting {
                 const int64_t total = int64_t(c.sheet->columns) * c.sheet->rows;
                 return total <= std::numeric_limits<int>::max() ? static_cast<int>(total) : 0;
             }
-            inline bool ValidClip(const ECS::Components::SpriteSheetComponent &c) {
-                const int total = TotalFrames(c);
-                return c.startFrame >= 0 && c.startFrame < total && c.frameCount > 0 && c.frameCount <= total - c.startFrame;
-            }
             inline std::shared_ptr<Rendering::SpriteSheet> CopySheet(const ECS::Components::SpriteSheetComponent &c) {
                 return c.sheet ? std::make_shared<Rendering::SpriteSheet>(*c.sheet) : std::make_shared<Rendering::SpriteSheet>();
             }
@@ -663,119 +660,131 @@ namespace Scripting {
         inline ObSL::ObSLObject *CreateSpriteSheetObject(ObSL::Interpreter *interpreter, ECS::Registry &registry, ECS::EntityID id) {
             using C = ECS::Components::SpriteSheetComponent;
             using namespace ComponentBinding;
-            if (!registry.IsValid(id) || !registry.HasComponent<C>(id))
+
+            if (!registry.IsValid(id) || !registry.HasComponent<C>(id)) {
                 return nullptr;
-            if (auto *hit = LookupCachedComponent<C>(interpreter, registry, id, EntityWrapperCache::Kind::SpriteSheet))
+            }
+
+            if (auto *hit = LookupCachedComponent<C>(interpreter, registry, id, EntityWrapperCache::Kind::SpriteSheet)) {
                 return hit;
+            }
+
             auto *obj = interpreter->gc.allocate<ObSL::ObSLObject>();
             GCProtectGuard guard(interpreter, obj);
-            Method(interpreter, obj, "GetFrame", 0, [id, &registry](ObSL::Interpreter *i, const std::vector<ObSL::Value> &) -> ObSL::Value {
-                return Read<C>(i, registry, id, [](ObSL::Interpreter *, const C &c) -> ObSL::Value { return static_cast<double>(c.currentFrame); });
+
+            Method(interpreter, obj, "GetFrame", 0, [id, &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
+                return Read<C>(interp, registry, id, [](ObSL::Interpreter *, const C &c) -> ObSL::Value { return static_cast<double>(c.frame); });
             });
-            Method(interpreter, obj, "GetStartFrame", 0, [id, &registry](ObSL::Interpreter *i, const std::vector<ObSL::Value> &) -> ObSL::Value {
-                return Read<C>(i, registry, id, [](ObSL::Interpreter *, const C &c) -> ObSL::Value { return static_cast<double>(c.startFrame); });
+
+            Method(interpreter, obj, "GetColumns", 0, [id, &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
+                return Read<C>(interp, registry, id, [](ObSL::Interpreter *, const C &c) -> ObSL::Value { return static_cast<double>(c.sheet ? c.sheet->columns : 0); });
             });
-            Method(interpreter, obj, "GetFrameCount", 0, [id, &registry](ObSL::Interpreter *i, const std::vector<ObSL::Value> &) -> ObSL::Value {
-                return Read<C>(i, registry, id, [](ObSL::Interpreter *, const C &c) -> ObSL::Value { return static_cast<double>(c.frameCount); });
+
+            Method(interpreter, obj, "GetRows", 0, [id, &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
+                return Read<C>(interp, registry, id, [](ObSL::Interpreter *, const C &c) -> ObSL::Value { return static_cast<double>(c.sheet ? c.sheet->rows : 0); });
             });
-            Method(interpreter, obj, "GetFPS", 0, [id, &registry](ObSL::Interpreter *i, const std::vector<ObSL::Value> &) -> ObSL::Value {
-                return Read<C>(i, registry, id, [](ObSL::Interpreter *, const C &c) -> ObSL::Value { return static_cast<double>(c.framesPerSecond); });
+
+            Method(interpreter, obj, "GetTexture", 0, [id, &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
+                return Read<C>(interp, registry, id, [](ObSL::Interpreter *, const C &c) -> ObSL::Value { return Core::ResourceManager::GetInstance().GetKey<Rendering::Texture>(c.sheet ? c.sheet->texture : nullptr); });
             });
-            Method(interpreter, obj, "GetLoop", 0,
-                   [id, &registry](ObSL::Interpreter *i, const std::vector<ObSL::Value> &) -> ObSL::Value { return Read<C>(i, registry, id, [](ObSL::Interpreter *, const C &c) -> ObSL::Value { return c.loop; }); });
-            Method(interpreter, obj, "IsPlaying", 0,
-                   [id, &registry](ObSL::Interpreter *i, const std::vector<ObSL::Value> &) -> ObSL::Value { return Read<C>(i, registry, id, [](ObSL::Interpreter *, const C &c) -> ObSL::Value { return c.playing; }); });
-            Method(interpreter, obj, "GetColumns", 0, [id, &registry](ObSL::Interpreter *i, const std::vector<ObSL::Value> &) -> ObSL::Value {
-                return Read<C>(i, registry, id, [](ObSL::Interpreter *, const C &c) -> ObSL::Value { return static_cast<double>(c.sheet ? c.sheet->columns : 0); });
+
+            Method(interpreter, obj, "SetFrame", 1, [id, &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+                const int frame = Integer(args, 0, 0, std::numeric_limits<int>::max());
+
+                return Write<C>(interp, registry, id, [frame](C &c) {
+                    if (frame >= TotalFrames(c)) {
+                        return;
+                    }
+
+                    c.frame = static_cast<uint32_t>(frame);
+                });
             });
-            Method(interpreter, obj, "GetRows", 0, [id, &registry](ObSL::Interpreter *i, const std::vector<ObSL::Value> &) -> ObSL::Value {
-                return Read<C>(i, registry, id, [](ObSL::Interpreter *, const C &c) -> ObSL::Value { return static_cast<double>(c.sheet ? c.sheet->rows : 0); });
-            });
-            Method(interpreter, obj, "GetTexture", 0, [id, &registry](ObSL::Interpreter *i, const std::vector<ObSL::Value> &) -> ObSL::Value {
-                return Read<C>(i, registry, id, [](ObSL::Interpreter *, const C &c) -> ObSL::Value { return Core::ResourceManager::GetInstance().GetKey<Rendering::Texture>(c.sheet ? c.sheet->texture : nullptr); });
-            });
-            Method(interpreter, obj, "SetTexture", 1, [id, &registry](ObSL::Interpreter *i, const std::vector<ObSL::Value> &a) -> ObSL::Value {
-                const auto key = String(a, 0);
+
+            Method(interpreter, obj, "SetTexture", 1, [id, &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+                const auto key = String(args, 0);
+
                 auto texture = key.empty() ? nullptr : Core::ResourceManager::GetInstance().Get<Rendering::Texture>(key);
-                if (!key.empty() && !texture)
-                    throw std::runtime_error("Spritesheet texture resource not found: " + key);
-                return Write<C>(i, registry, id, [texture = std::move(texture)](C &c) {
+
+                if (!key.empty() && !texture) {
+                    return std::monostate{};
+                }
+
+                return Write<C>(interp, registry, id, [texture = std::move(texture)](C &c) {
                     auto sheet = CopySheet(c);
                     sheet->texture = texture;
                     c.sheet = std::move(sheet);
                 });
             });
-            Method(interpreter, obj, "SetGrid", 2, [id, &registry](ObSL::Interpreter *i, const std::vector<ObSL::Value> &a) -> ObSL::Value {
-                const int columns = Integer(a, 0, 1, std::numeric_limits<int>::max());
-                const int rows = Integer(a, 1, 1, std::numeric_limits<int>::max());
-                if (int64_t(columns) * rows > std::numeric_limits<int>::max())
-                    throw std::runtime_error("Spritesheet grid is too large");
-                return Write<C>(i, registry, id, [columns, rows](C &c) {
+
+            Method(interpreter, obj, "SetGrid", 2, [id, &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+                const int columns = Integer(args, 0, 1, std::numeric_limits<int>::max());
+                const int rows = Integer(args, 1, 1, std::numeric_limits<int>::max());
+
+                if (int64_t(columns) * rows > std::numeric_limits<int>::max()) {
+                    return std::monostate{};
+                }
+
+                return Write<C>(interp, registry, id, [columns, rows](C &c) {
                     auto sheet = CopySheet(c);
                     sheet->columns = columns;
                     sheet->rows = rows;
                     c.sheet = std::move(sheet);
-                    const int total = TotalFrames(c);
-                    c.startFrame = std::clamp(c.startFrame, 0, total - 1);
-                    c.frameCount = std::clamp(c.frameCount, 1, total - c.startFrame);
-                    c.currentFrame = std::clamp(c.currentFrame, 0, c.frameCount - 1);
-                    c.elapsed = 0.0f;
+
+                    c.frame = std::min(c.frame, static_cast<uint32_t>(TotalFrames(c) - 1));
                 });
             });
-            Method(interpreter, obj, "SetAnimation", 4, [id, &registry](ObSL::Interpreter *i, const std::vector<ObSL::Value> &a) -> ObSL::Value {
-                const int start = Integer(a, 0, 0, std::numeric_limits<int>::max());
-                const int count = Integer(a, 1, 1, std::numeric_limits<int>::max());
-                const float fps = Float(a, 2, true);
-                if (fps > 240.0f)
-                    throw std::runtime_error("FPS must be at most 240");
-                const bool loop = Boolean(a, 3);
-                return Write<C>(i, registry, id, [start, count, fps, loop](C &c) {
-                    const int total = TotalFrames(c);
-                    // Validate against grid state at execution, including earlier queued SetGrid calls.
-                    if (start >= total || count > total - start)
-                        return;
-                    c.startFrame = start;
-                    c.frameCount = count;
-                    c.framesPerSecond = fps;
-                    c.loop = loop;
-                    c.currentFrame = 0;
-                    c.elapsed = 0.0f;
-                });
-            });
-            Method(interpreter, obj, "SetFrame", 1, [id, &registry](ObSL::Interpreter *i, const std::vector<ObSL::Value> &a) -> ObSL::Value {
-                const int frame = Integer(a, 0, 0, std::numeric_limits<int>::max());
-                return Write<C>(i, registry, id, [frame](C &c) {
-                    if (!ValidClip(c) || frame >= c.frameCount)
-                        return;
-                    c.currentFrame = frame;
-                    c.elapsed = 0.0f;
-                    c.playing = false;
-                });
-            });
-            Method(interpreter, obj, "Play", 0, [id, &registry](ObSL::Interpreter *i, const std::vector<ObSL::Value> &) -> ObSL::Value {
-                return Write<C>(i, registry, id, [](C &c) {
-                    if (ValidClip(c))
-                        c.playing = true;
-                });
-            });
-            Method(interpreter, obj, "Pause", 0, [id, &registry](ObSL::Interpreter *i, const std::vector<ObSL::Value> &) -> ObSL::Value { return Write<C>(i, registry, id, [](C &c) { c.playing = false; }); });
-            Method(interpreter, obj, "Restart", 0, [id, &registry](ObSL::Interpreter *i, const std::vector<ObSL::Value> &) -> ObSL::Value {
-                return Write<C>(i, registry, id, [](C &c) {
-                    if (ValidClip(c)) {
-                        c.currentFrame = 0;
-                        c.elapsed = 0.0f;
-                        c.playing = true;
-                    }
-                });
-            });
-            Method(interpreter, obj, "Stop", 0, [id, &registry](ObSL::Interpreter *i, const std::vector<ObSL::Value> &) -> ObSL::Value {
-                return Write<C>(i, registry, id, [](C &c) {
-                    c.currentFrame = 0;
-                    c.elapsed = 0.0f;
-                    c.playing = false;
-                });
-            });
+
             StoreCachedComponent(interpreter, registry, id, EntityWrapperCache::Kind::SpriteSheet, obj);
+
+            return obj;
+        }
+
+        inline ObSL::ObSLObject *CreateSpriteAnimatorObject(ObSL::Interpreter *interpreter, ECS::Registry &registry, ECS::EntityID id) {
+            using C = ECS::Components::SpriteAnimatorComponent;
+            using namespace ComponentBinding;
+
+            if (!registry.IsValid(id) || !registry.HasComponent<C>(id)) {
+                return nullptr;
+            }
+
+            if (auto *hit = LookupCachedComponent<C>(interpreter, registry, id, EntityWrapperCache::Kind::SpriteAnimator)) {
+                return hit;
+            }
+
+            auto *obj = interpreter->gc.allocate<ObSL::ObSLObject>();
+            GCProtectGuard guard(interpreter, obj);
+
+            Method(interpreter, obj, "Play", 1, [id, &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+                const auto name = String(args, 0);
+
+                return Write<C>(interp, registry, id, [name](C &player) { Animation::Play(player, name, Animation::RestartSetting::KeepIfSame); });
+            });
+
+            Method(interpreter, obj, "Restart", 1, [id, &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+                const auto name = String(args, 0);
+
+                return Write<C>(interp, registry, id, [name](C &player) { Animation::Play(player, name, Animation::RestartSetting::Restart); });
+            });
+
+            Method(interpreter, obj, "Pause", 0,
+                   [id, &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value { return Write<C>(interp, registry, id, [](C &player) { Animation::Pause(player); }); });
+
+            Method(interpreter, obj, "Resume", 0,
+                   [id, &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value { return Write<C>(interp, registry, id, [](C &player) { Animation::Resume(player); }); });
+
+            Method(interpreter, obj, "Stop", 0,
+                   [id, &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value { return Write<C>(interp, registry, id, [](C &player) { Animation::Stop(player); }); });
+
+            Method(interpreter, obj, "IsPlaying", 0, [id, &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
+                return Read<C>(interp, registry, id, [](ObSL::Interpreter *, const C &player) -> ObSL::Value { return player.playing; });
+            });
+
+            Method(interpreter, obj, "GetClip", 0, [id, &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
+                return Read<C>(interp, registry, id, [](ObSL::Interpreter *, const C &player) -> ObSL::Value { return player.clip; });
+            });
+
+            StoreCachedComponent(interpreter, registry, id, EntityWrapperCache::Kind::SpriteAnimator, obj);
+
             return obj;
         }
     } // namespace EngineLibFactories

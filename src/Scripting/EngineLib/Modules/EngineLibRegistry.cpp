@@ -1,4 +1,3 @@
-
 #include "Scripting/EngineLib/EngineLib.h"
 #include "Scripting/EngineLib/ScriptCommandBuffer.h"
 #include "Scripting/EngineLib/EntityWrapperCache.h"
@@ -29,17 +28,18 @@ namespace Scripting {
         if (reg.IsValid(id)) {
             const ECS::Entity ent(id, &reg);
             for (const auto &children = ent.GetChildren(); const auto child : children) {
-                arr->elements.emplace_back(CreateEntityObjectLocked(interp, reg, child));
+                arr->elements.emplace_back(CreateEntityObject(interp, reg, child));
             }
         }
         return arr;
     }
 
-    ObSL::ObSLObject *CreateEntityObjectLocked(ObSL::Interpreter *interpreter, ECS::Registry &registry, ECS::EntityID id) {
+    ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, ECS::Registry &registry, ECS::EntityID id) {
         // cache hit reuses a previously built wrapper
         // when the entity is still live and belongs to the same registry.
         // names will be updated if such functions are called
         if (auto *cache = EntityWrapperCache::Get(interpreter)) {
+            std::shared_lock lk(g_RegistryMutex);
             if (auto *hit = cache->Find(registry, id, EntityWrapperCache::Kind::Entity, [&] { return registry.IsValid(id); })) {
                 hit->fields["id"] = static_cast<double>(id);
                 hit->fields["name"] = registry.GetEntityName(id);
@@ -411,7 +411,7 @@ namespace Scripting {
             const auto *rel = registry.GetComponent<ECS::Components::RelationshipComponent>(id);
             if (!rel || rel->parent == ECS::INVALID_ENTITY_ID || !registry.IsValid(rel->parent))
                 return std::monostate{};
-            return CreateEntityObjectLocked(interp, registry, rel->parent);
+            return CreateEntityObject(interp, registry, rel->parent);
         };
 
         auto set_parent_body = [id, reg_ptr = &registry](const ObSL::Interpreter *interpreter, const std::vector<ObSL::Value> &args) -> ObSL::Value {
@@ -462,7 +462,7 @@ namespace Scripting {
                 return std::monostate{};
             for (const ECS::EntityID childId : rel->children) {
                 if (registry.IsValid(childId) && registry.GetEntityName(childId) == childName)
-                    return CreateEntityObjectLocked(interp, registry, childId);
+                    return CreateEntityObject(interp, registry, childId);
             }
             return std::monostate{};
         };
@@ -477,10 +477,6 @@ namespace Scripting {
             cache->Store(registry, id, EntityWrapperCache::Kind::Entity, obj);
 
         return obj;
-    }
-    ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, ECS::Registry &registry, ECS::EntityID id) {
-        std::shared_lock lock(g_RegistryMutex);
-        return CreateEntityObjectLocked(interpreter, registry, id);
     }
 } // namespace Scripting
 
@@ -497,7 +493,7 @@ void Scripting::EngineLib::register_registry_modules(ObSL::Interpreter &interpre
 
                                                                           // Read-only
                                                                           std::shared_lock lock(g_RegistryMutex);
-                                                                          return CreateEntityObjectLocked(interp, *reg, id);
+                                                                          return CreateEntityObject(interp, *reg, id);
                                                                       },
                                                                       "GetEntity"));
 
@@ -512,7 +508,7 @@ void Scripting::EngineLib::register_registry_modules(ObSL::Interpreter &interpre
                                                                      std::shared_lock lock(g_RegistryMutex);
                                                                      for (const ECS::EntityID id : reg->GetLivingEntities()) {
                                                                          if (reg->GetEntityName(id) == target_name)
-                                                                             return CreateEntityObjectLocked(interp, *reg, id);
+                                                                             return CreateEntityObject(interp, *reg, id);
                                                                      }
                                                                      return std::monostate{};
                                                                  },
@@ -525,11 +521,12 @@ void Scripting::EngineLib::register_registry_modules(ObSL::Interpreter &interpre
                                                                              if (!args.empty() && std::holds_alternative<std::string>(args[0])) {
                                                                                  name = std::get<std::string>(args[0]);
                                                                              }
-
+                                                                             auto *worker = interp->user_data ? static_cast<ObSL::ScriptWorker *>(interp->user_data) : nullptr;
+                                                                             worker ? worker->frame_context<ScriptCommandBuffer>() : nullptr;
                                                                              std::unique_lock lock(g_RegistryMutex);
                                                                              const ECS::EntityID new_id = reg->CreateEntity();
                                                                              reg->SetEntityName(new_id, name);
-                                                                             return CreateEntityObjectLocked(interp, *reg, new_id);
+                                                                             return CreateEntityObject(interp, *reg, new_id);
                                                                          },
                                                                          "CreateEntity"));
 
@@ -539,12 +536,13 @@ void Scripting::EngineLib::register_registry_modules(ObSL::Interpreter &interpre
                                                                             if (args.empty() || !std::holds_alternative<std::string>(args[0]))
                                                                                 return std::monostate{};
                                                                             const std::string prefab_path = std::get<std::string>(args[0]);
-
+                                                                            auto *worker = interp->user_data ? static_cast<ObSL::ScriptWorker *>(interp->user_data) : nullptr;
+                                                                            worker ? worker->frame_context<ScriptCommandBuffer>() : nullptr;
                                                                             std::unique_lock lock(g_RegistryMutex);
                                                                             const ECS::EntityID new_id = IO::PrefabManager::Instantiate(*reg, *ctx->resources, prefab_path);
                                                                             if (new_id == 0)
                                                                                 return std::monostate{};
-                                                                            return CreateEntityObjectLocked(interp, *reg, new_id);
+                                                                            return CreateEntityObject(interp, *reg, new_id);
                                                                         },
                                                                         "Instantiate"));
 
