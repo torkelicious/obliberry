@@ -473,6 +473,61 @@ void IO::EntityFactory::RegisterSerializers() {
                                      {"height", c.height},
                                      {"isTrigger", c.isTrigger}};
     };
+
+    // SPRITE ANIMATION
+    s_Serializers["SpriteSheetComponent"] = [](const ECS::Entity &entity, nlohmann::json &data, Core::ResourceManager &resources) {
+        const auto *sprite = entity.GetComponent<ECS::Components::SpriteSheetComponent>();
+        if (!sprite) {
+            return;
+        }
+
+        auto &spriteData = data["SpriteSheetComponent"];
+        spriteData = nlohmann::json::object();
+
+        if (entity.HasComponent<ECS::Components::SpriteAnimatorComponent>()) {
+            return;
+        }
+
+        if (!sprite->sheet) {
+            return;
+        }
+
+        const auto &sheet = *sprite->sheet;
+
+        spriteData["texture_id"] = sheet.texture ? resources.GetKey<Rendering::Texture>(sheet.texture) : "";
+        spriteData["columns"] = sheet.columns;
+        spriteData["rows"] = sheet.rows;
+        spriteData["column_spacing"] = sheet.columnSpacing;
+        spriteData["row_spacing"] = sheet.rowSpacing;
+        spriteData["frame"] = sprite->frame;
+    };
+
+    s_Serializers["SpriteAnimatorComponent"] = [](const ECS::Entity &entity, nlohmann::json &data, Core::ResourceManager &resources) {
+        const auto *player = entity.GetComponent<ECS::Components::SpriteAnimatorComponent>();
+        if (!player) {
+            return;
+        }
+
+        std::string animationID;
+
+        if (player->animations) {
+            for (const auto &[id, asset] : resources.GetAll<Animation::SpriteAnimationSet>()) {
+                if (asset == player->animations) {
+                    animationID = id;
+                    break;
+                }
+            }
+
+            if (animationID.empty()) {
+                LOG_ERROR(LOG_WHO, "Could not serialize animation reference: animation set is not registered.");
+            }
+        }
+
+        auto &playerData = data["SpriteAnimatorComponent"];
+        playerData["animation_id"] = animationID;
+        playerData["initial_clip"] = player->initialClip;
+        playerData["autoplay"] = player->autoplay;
+    };
 }
 
 void IO::EntityFactory::DeserializeEntity(ECS::Entity &entity, const nlohmann::json &entityData, Core::ResourceManager &resources) {
