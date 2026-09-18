@@ -1,6 +1,12 @@
 #include "EntityFactory.h"
+#include "Core/ResourceManager.h"
 #include "ECS/Components/ColliderComponent.h"
+#include "ECS/Components/SpriteAnimatorComponent.h"
 #include "ECS/Components/SpriteSheetComponent.h"
+#include "ECS/Entity.h"
+#include "ECS/Systems/Animation/Animation.h"
+#include "ECS/Systems/Animation/Types.h"
+#include "IO/AnimationSerialization.h"
 #include "Logger/LoggerService.h"
 
 #include "ECS/ECS.h"
@@ -15,6 +21,7 @@
 #include "ECS/Components/ScriptComponent.h"
 #include "ECS/Components/PrefabSourceComponent.h"
 #include "ECS/Components/ParticleEmitterComponent.h"
+#include "nlohmann/json_fwd.hpp"
 #include <algorithm>
 
 #pragma push_macro("LOG_WHO")
@@ -118,37 +125,44 @@ void IO::EntityFactory::RegisterDeserializers() {
         entity.AddComponent<ECS::Components::DirectionalTextureComponent>(dirTex);
     };
 
-    s_Deserializers["SpriteSheetComponent"] = [](ECS::Entity &entity, const nlohmann::json &data, Core::ResourceManager &resources) {
-        ECS::Components::SpriteSheetComponent anim;
-        if (data.contains("texture_id")) {
-            const std::string texID = data["texture_id"].get<std::string>();
-            anim.sheet->texture = resources.Get<Rendering::Texture>(texID);
-            if (!anim.sheet->texture)
-                LOG_ERROR(LOG_WHO, "Failed to find Texture ID '" + texID + "' for SpriteAnimationComponent");
-        }
-        if (data.contains("columns"))
-            anim.sheet->columns = data["columns"].get<int>();
-        if (data.contains("rows"))
-            anim.sheet->rows = data["rows"].get<int>();
-        if (data.contains("start_frame"))
-            anim.startFrame = data["start_frame"].get<int>();
-        if (data.contains("frame_count"))
-            anim.frameCount = data["frame_count"].get<int>();
-        if (data.contains("fps"))
-            anim.framesPerSecond = data["fps"].get<float>();
-        if (data.contains("looping"))
-            anim.loop = data["looping"].get<bool>();
-        if (data.contains("playing"))
-            anim.playing = data["playing"].get<bool>();
-        if (data.contains("current_frame"))
-            anim.currentFrame = data["current_frame"].get<int>();
-        if (data.contains("column_spacing"))
-            anim.sheet->columnSpacing = std::max(0, data["column_spacing"].get<int>());
-        if (data.contains("row_spacing"))
-            anim.sheet->rowSpacing = std::max(0, data["row_spacing"].get<int>());
+    s_Deserializers["SpriteAnimatorComponent"] =
+            [](ECS::Entity &entity, const nlohmann::json &data, Core::ResourceManager &resources) {
+                ECS::Components::SpriteAnimatorComponent player;
 
-        entity.AddComponent<ECS::Components::SpriteSheetComponent>(anim);
-    };
+            }
+
+    /*     s_Deserializers["SpriteSheetComponent"] = [](ECS::Entity &entity, const nlohmann::json &data, Core::ResourceManager &resources) {
+            ECS::Components::SpriteSheetComponent anim;
+            if (data.contains("texture_id")) {
+                const std::string texID = data["texture_id"].get<std::string>();
+                anim.sheet->texture = resources.Get<Rendering::Texture>(texID);
+                if (!anim.sheet->texture)
+                    LOG_ERROR(LOG_WHO, "Failed to find Texture ID '" + texID + "' for SpriteAnimationComponent");
+            }
+            if (data.contains("columns"))
+                anim.sheet->columns = data["columns"].get<int>();
+            if (data.contains("rows"))
+                anim.sheet->rows = data["rows"].get<int>();
+            if (data.contains("start_frame"))
+                anim.startFrame = data["start_frame"].get<int>();
+            if (data.contains("frame_count"))
+                anim.frameCount = data["frame_count"].get<int>();
+            if (data.contains("fps"))
+                anim.framesPerSecond = data["fps"].get<float>();
+            if (data.contains("looping"))
+                anim.loop = data["looping"].get<bool>();
+            if (data.contains("playing"))
+                anim.playing = data["playing"].get<bool>();
+            if (data.contains("current_frame"))
+                anim.currentFrame = data["current_frame"].get<int>();
+            if (data.contains("column_spacing"))
+                anim.sheet->columnSpacing = std::max(0, data["column_spacing"].get<int>());
+            if (data.contains("row_spacing"))
+                anim.sheet->rowSpacing = std::max(0, data["row_spacing"].get<int>());
+
+            entity.AddComponent<ECS::Components::SpriteSheetComponent>(anim);
+        } */
+    ;
 
 
     // POINT LIGHT COMPONENT
@@ -372,22 +386,23 @@ void IO::EntityFactory::RegisterSerializers() {
     };
 
     // SPRITE SHEET COMPONENT
-    s_Serializers["SpriteSheetComponent"] = [](const ECS::Entity &entity, nlohmann::json &data, Core::ResourceManager &resources) {
-        if (entity.HasComponent<ECS::Components::SpriteSheetComponent>()) {
-            const auto *anim = entity.GetComponent<ECS::Components::SpriteSheetComponent>();
-            data["SpriteSheetComponent"]["texture_id"] = anim->sheet && anim->sheet->texture ? resources.GetKey<Rendering::Texture>(anim->sheet->texture) : "";
-            data["SpriteSheetComponent"]["columns"] = anim->sheet ? anim->sheet->columns : 1;
-            data["SpriteSheetComponent"]["rows"] = anim->sheet ? anim->sheet->rows : 1;
-            data["SpriteSheetComponent"]["start_frame"] = anim->startFrame;
-            data["SpriteSheetComponent"]["frame_count"] = anim->frameCount;
-            data["SpriteSheetComponent"]["fps"] = anim->framesPerSecond;
-            data["SpriteSheetComponent"]["looping"] = anim->loop;
-            data["SpriteSheetComponent"]["playing"] = anim->playing;
-            data["SpriteSheetComponent"]["current_frame"] = anim->currentFrame;
-            data["SpriteSheetComponent"]["column_spacing"] = anim->sheet ? anim->sheet->columnSpacing : 0;
-            data["SpriteSheetComponent"]["row_spacing"] = anim->sheet ? anim->sheet->rowSpacing : 0;
-        }
-    };
+    /*     s_Serializers["SpriteSheetComponent"] = [](const ECS::Entity &entity, nlohmann::json &data, Core::ResourceManager &resources) {
+            if (entity.HasComponent<ECS::Components::SpriteSheetComponent>()) {
+                const auto *anim = entity.GetComponent<ECS::Components::SpriteSheetComponent>();
+                data["SpriteSheetComponent"]["texture_id"] = anim->sheet && anim->sheet->texture ? resources.GetKey<Rendering::Texture>(anim->sheet->texture) : "";
+                data["SpriteSheetComponent"]["columns"] = anim->sheet ? anim->sheet->columns : 1;
+                data["SpriteSheetComponent"]["rows"] = anim->sheet ? anim->sheet->rows : 1;
+                data["SpriteSheetComponent"]["start_frame"] = anim->startFrame;
+                data["SpriteSheetComponent"]["frame_count"] = anim->frameCount;
+                data["SpriteSheetComponent"]["fps"] = anim->framesPerSecond;
+                data["SpriteSheetComponent"]["looping"] = anim->loop;
+                data["SpriteSheetComponent"]["playing"] = anim->playing;
+                data["SpriteSheetComponent"]["current_frame"] = anim->currentFrame;
+                data["SpriteSheetComponent"]["column_spacing"] = anim->sheet ? anim->sheet->columnSpacing : 0;
+                data["SpriteSheetComponent"]["row_spacing"] = anim->sheet ? anim->sheet->rowSpacing : 0;
+            }
+        } */
+    ;
 
     // POINT LIGHT COMPONENT
     s_Serializers["PointLightComponent"] = [](const ECS::Entity &entity, nlohmann::json &data, Core::ResourceManager &) {
