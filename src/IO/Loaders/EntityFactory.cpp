@@ -3,6 +3,7 @@
 #include "ECS/Components/ColliderComponent.h"
 #include "ECS/Components/SpriteAnimatorComponent.h"
 #include "ECS/Components/SpriteSheetComponent.h"
+#include "ECS/Registry.h"
 #include "ECS/Entity.h"
 #include "ECS/Systems/Animation/Animation.h"
 #include "ECS/Systems/Animation/Types.h"
