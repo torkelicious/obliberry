@@ -34,8 +34,8 @@ namespace IO {
         static void LoadMeshes(const json &meshes, Core::ResourceManager &resources);
 
         static void LoadFonts(const json &fonts, Core::ResourceManager &resources);
-        
-        static void LoadAnimations(const json& animations, Core::ResourceManager &resources);
+
+        static void LoadAnimations(const json &animations, Core::ResourceManager &resources);
 
         static std::unordered_map<std::string, MeshFactory> s_MeshFactories;
     };
