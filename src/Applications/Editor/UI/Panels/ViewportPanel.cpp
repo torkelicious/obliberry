@@ -110,7 +110,7 @@ glm::vec2 Editor::UI::ViewportPanel::MousePosToWorld(const Rendering::Camera &ca
     return camera.MouseToWorld(localX, localY, m_ViewportWidth, m_ViewportHeight);
 }
 
-void Editor::UI::ViewportPanel::SetColliderGizmoActive(bool active) {
+void Editor::UI::ViewportPanel::SetColliderGizmoActive(const bool active) {
     m_ColliderGizmoActive = active;
     if (active) {
         m_ExpectingPick = false;

@@ -2,7 +2,7 @@
 #include <glm/glm.hpp>
 
 namespace Math {
-    inline glm::mat4 MakeBillboardMatrix(const glm::vec3 &position, float width, float height, const glm::vec3 &right, const glm::vec3 &up) {
+    inline glm::mat4 MakeBillboardMatrix(const glm::vec3 &position, const float width, const float height, const glm::vec3 &right, const glm::vec3 &up) {
         const glm::vec3 forward = glm::cross(right, up);
         const glm::vec3 center = position + up * (height * 0.5f);
         glm::mat4 matrix(1.0f);

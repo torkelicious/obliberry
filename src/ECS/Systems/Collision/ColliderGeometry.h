@@ -27,7 +27,7 @@ namespace ECS::Collision {
         glm::dmat4 localToWorld{1.0f};
     };
 
-    inline WorldCollider BuildWorldCollider(EntityID entity, const Components::ColliderComponent &collider, const Components::TransformComponent &transform, const BillboardBasis &basis) {
+    inline WorldCollider BuildWorldCollider(const EntityID entity, const Components::ColliderComponent &collider, const Components::TransformComponent &transform, const BillboardBasis &basis) {
         glm::mat4 frame = transform.worldTransform.GetMatrix();
         if (collider.orientation == Components::ColliderOrientation::Billboard) {
             const auto &position = transform.worldTransform.GetPosition();
@@ -113,7 +113,7 @@ namespace ECS::Collision {
         return aabb;
     }
 
-    inline bool OverlapsAABB(const ColliderAABB &a, const ColliderAABB &b, double tolerance = CollisionTolerance) {
+    inline bool OverlapsAABB(const ColliderAABB &a, const ColliderAABB &b, const double tolerance = CollisionTolerance) {
         for (int axis = 0; axis < 3; ++axis) {
             if (a.min[axis] > b.max[axis] + tolerance || b.min[axis] > a.max[axis] + tolerance) {
                 return false;

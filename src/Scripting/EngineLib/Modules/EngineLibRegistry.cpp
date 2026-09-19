@@ -642,7 +642,7 @@ namespace Scripting {
         return obj;
     }
 
-    ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, ECS::Registry &registry, ECS::EntityID id) {
+    ObSL::ObSLObject *CreateEntityObject(ObSL::Interpreter *interpreter, ECS::Registry &registry, const ECS::EntityID id) {
         std::shared_lock lock(g_RegistryMutex);
         return CreateEntityObjectLocked(interpreter, registry, id);
     }

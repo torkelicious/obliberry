@@ -465,7 +465,7 @@ namespace ECS::Systems::ScriptSystem {
             ctx.scriptPool->get_worker(w)->clear_frame_context();
     }
 
-    inline const std::vector<ObSL::ObSLCallable *> *GetCollisionHook(const Components::ScriptSlot &slot, Collision::CollisionEventType type, bool trigger) {
+    inline const std::vector<ObSL::ObSLCallable *> *GetCollisionHook(const Components::ScriptSlot &slot, const Collision::CollisionEventType type, const bool trigger) {
         using Type = Collision::CollisionEventType;
         switch (type) {
             case Type::Enter:
@@ -500,7 +500,7 @@ namespace ECS::Systems::ScriptSystem {
 
         std::vector<CollisionWork> work;
 
-        auto qReceiver = [&](EntityID receiver, EntityID other, const Collision::CollisionEvent &event) {
+        auto qReceiver = [&](const EntityID receiver, const EntityID other, const Collision::CollisionEvent &event) {
             if (!registry.IsValid(receiver)) {
                 return;
             }
@@ -523,7 +523,7 @@ namespace ECS::Systems::ScriptSystem {
                     continue;
                 }
 
-                work.push_back({receiver, other, slotIdx, event.type, event.isTrigger});
+                work.push_back({.receiver = receiver, .other = other, .slotIdx = slotIdx, .type = event.type, .trigger = event.isTrigger});
             }
         };
 
@@ -553,7 +553,7 @@ namespace ECS::Systems::ScriptSystem {
             }
         };
 
-        ContextCleanup cleanup{ctx, workerCount};
+        ContextCleanup cleanup{.ctx = ctx, .count = workerCount};
 
         constexpr ObSL::Token callToken{.type = ObSL::TokenType::LEFT_PAREN, .lexeme = "(", .line = 0, .column = 0, .start_pos = 0, .end_pos = 0};
 

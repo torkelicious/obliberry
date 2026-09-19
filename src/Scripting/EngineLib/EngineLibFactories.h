@@ -62,7 +62,7 @@ namespace Scripting {
             return nullptr;
         }
 
-        inline void StoreCachedComponent(ObSL::Interpreter *interpreter, const ECS::Registry &registry, const ECS::EntityID id, const EntityWrapperCache::Kind kind, ObSL::ObSLObject *wrapper) {
+        inline void StoreCachedComponent(const ObSL::Interpreter *interpreter, const ECS::Registry &registry, const ECS::EntityID id, const EntityWrapperCache::Kind kind, ObSL::ObSLObject *wrapper) {
             if (auto *cache = EntityWrapperCache::Get(interpreter))
                 cache->Store(registry, id, kind, wrapper);
         }
@@ -538,7 +538,7 @@ namespace Scripting {
                 return std::monostate{};
             };
 
-            auto set_trigger = [id, &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+            auto set_trigger = [id, &registry](const ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
                 if (args.empty() || !std::holds_alternative<bool>(args[0])) {
                     return std::monostate{};
                 }
@@ -577,35 +577,35 @@ namespace Scripting {
 
         // helpers
         namespace ComponentBinding {
-            inline double Number(const std::vector<ObSL::Value> &args, size_t index) {
+            inline double Number(const std::vector<ObSL::Value> &args, const size_t index) {
                 if (index >= args.size() || !std::holds_alternative<double>(args[index]))
                     throw std::runtime_error("Expected a numeric argument");
-                double value = std::get<double>(args[index]);
+                const double value = std::get<double>(args[index]);
                 if (!std::isfinite(value))
                     throw std::runtime_error("Expected a finite number");
                 return value;
             }
-            inline int Integer(const std::vector<ObSL::Value> &args, size_t index, int lo, int hi) {
-                double value = Number(args, index);
+            inline int Integer(const std::vector<ObSL::Value> &args, const size_t index, const int lo, const int hi) {
+                const double value = Number(args, index);
                 if (value < lo || value > hi || std::trunc(value) != value)
                     throw std::runtime_error("Integer argument is out of range");
                 return static_cast<int>(value);
             }
-            inline float Float(const std::vector<ObSL::Value> &args, size_t index, bool positive = false) {
-                double value = Number(args, index);
+            inline float Float(const std::vector<ObSL::Value> &args, const size_t index, const bool positive = false) {
+                const double value = Number(args, index);
                 if (std::abs(value) > std::numeric_limits<float>::max())
                     throw std::runtime_error("Float argument is out of range");
-                float result = static_cast<float>(value);
+                const float result = static_cast<float>(value);
                 if (positive && result <= 0.0f)
                     throw std::runtime_error("Expected a positive float");
                 return result;
             }
-            inline bool Boolean(const std::vector<ObSL::Value> &args, size_t index) {
+            inline bool Boolean(const std::vector<ObSL::Value> &args, const size_t index) {
                 if (index >= args.size() || !std::holds_alternative<bool>(args[index]))
                     throw std::runtime_error("Expected a boolean argument");
                 return std::get<bool>(args[index]);
             }
-            inline std::string String(const std::vector<ObSL::Value> &args, size_t index) {
+            inline std::string String(const std::vector<ObSL::Value> &args, const size_t index) {
                 if (index >= args.size() || !std::holds_alternative<std::string>(args[index]))
                     throw std::runtime_error("Expected a string argument");
                 return std::get<std::string>(args[index]);
@@ -613,7 +613,7 @@ namespace Scripting {
             template <typename F> void Method(ObSL::Interpreter *interp, ObSL::ObSLObject *obj, const char *name, int arity, F fn) {
                 obj->fields[name] = interp->gc.allocate<ObSL::NativeFunction>(arity, std::move(fn), name);
             }
-            template <typename C, typename F> ObSL::Value Read(ObSL::Interpreter *interp, ECS::Registry &reg, ECS::EntityID id, F fn) {
+            template <typename C, typename F> ObSL::Value Read(ObSL::Interpreter *interp, ECS::Registry &reg, const ECS::EntityID id, F fn) {
                 std::shared_lock lock(g_RegistryMutex);
                 if (reg.IsValid(id)) {
                     if (auto *comp = reg.GetComponent<C>(id))
@@ -649,7 +649,7 @@ namespace Scripting {
             inline int TotalFrames(const ECS::Components::SpriteSheetComponent &c) {
                 if (!c.sheet || c.sheet->columns <= 0 || c.sheet->rows <= 0)
                     return 0;
-                const int64_t total = int64_t(c.sheet->columns) * c.sheet->rows;
+                const int64_t total = static_cast<int64_t>(c.sheet->columns) * c.sheet->rows;
                 return total <= std::numeric_limits<int>::max() ? static_cast<int>(total) : 0;
             }
             inline std::shared_ptr<Rendering::SpriteSheet> CopySheet(const ECS::Components::SpriteSheetComponent &c) {
@@ -720,7 +720,7 @@ namespace Scripting {
                 const int columns = Integer(args, 0, 1, std::numeric_limits<int>::max());
                 const int rows = Integer(args, 1, 1, std::numeric_limits<int>::max());
 
-                if (int64_t(columns) * rows > std::numeric_limits<int>::max()) {
+                if (static_cast<int64_t>(columns) * rows > std::numeric_limits<int>::max()) {
                     return std::monostate{};
                 }
 

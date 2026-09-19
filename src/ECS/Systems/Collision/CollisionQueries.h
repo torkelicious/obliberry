@@ -11,7 +11,7 @@
 
 namespace ECS::Collision {
 
-    inline bool CanOccupy(Registry &registry, EntityID entity, const glm::vec3 &targetWorldPos, const BillboardBasis &basis) {
+    inline bool CanOccupy(Registry &registry, const EntityID entity, const glm::vec3 &targetWorldPos, const BillboardBasis &basis) {
         const auto *collider = registry.GetComponent<Components::ColliderComponent>(entity);
         const auto *transform = registry.GetComponent<Components::TransformComponent>(entity);
 

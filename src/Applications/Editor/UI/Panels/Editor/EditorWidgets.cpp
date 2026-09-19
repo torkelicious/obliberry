@@ -800,7 +800,7 @@ void Editor::UI::SpriteSheetWidget::Draw(ECS::Entity entity, Core::EngineContext
 
         auto assets = resources.GetAll<Animation::SpriteAnimationSet>();
 
-        std::sort(assets.begin(), assets.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
+        std::ranges::sort(assets, [](const auto &a, const auto &b) { return a.first < b.first; });
 
         std::string selectedAsset = player->animations ? "<Unregistered>" : "<None>";
 
@@ -855,11 +855,11 @@ void Editor::UI::SpriteSheetWidget::Draw(ECS::Entity entity, Core::EngineContext
             std::vector<std::string> names;
             names.reserve(player->animations->clips.size());
 
-            for (const auto &[name, clip] : player->animations->clips) {
+            for (const auto &name : player->animations->clips | std::views::keys) {
                 names.push_back(name);
             }
 
-            std::sort(names.begin(), names.end());
+            std::ranges::sort(names);
 
             const char *preview = player->initialClip.empty() ? "<None>" : player->initialClip.c_str();
 
@@ -966,7 +966,7 @@ void Editor::UI::SpriteSheetWidget::Draw(ECS::Entity entity, Core::EngineContext
     if (layoutChanged && validLayout) {
         sprite->sheet = std::make_shared<Rendering::SpriteSheet>(m_SheetDraft);
 
-        const auto total = static_cast<uint32_t>(int64_t(m_SheetDraft.columns) * m_SheetDraft.rows);
+        const auto total = static_cast<uint32_t>(static_cast<int64_t>(m_SheetDraft.columns) * m_SheetDraft.rows);
 
         sprite->frame = std::min(sprite->frame, total - 1);
 
@@ -987,9 +987,9 @@ void Editor::UI::SpriteSheetWidget::Draw(ECS::Entity entity, Core::EngineContext
         const int64_t columns = m_SheetDraft.columns;
         const int64_t rows = m_SheetDraft.rows;
 
-        const int64_t width = int64_t(m_SheetDraft.texture->GetWidth()) - int64_t(m_SheetDraft.columnSpacing) * (columns - 1);
+        const int64_t width = static_cast<int64_t>(m_SheetDraft.texture->GetWidth()) - static_cast<int64_t>(m_SheetDraft.columnSpacing) * (columns - 1);
 
-        const int64_t height = int64_t(m_SheetDraft.texture->GetHeight()) - int64_t(m_SheetDraft.rowSpacing) * (rows - 1);
+        const int64_t height = static_cast<int64_t>(m_SheetDraft.texture->GetHeight()) - static_cast<int64_t>(m_SheetDraft.rowSpacing) * (rows - 1);
 
         if (columns * rows > std::numeric_limits<int>::max()) {
             ImGui::TextWrapped("The grid contains too many frames.");
@@ -1013,14 +1013,14 @@ void Editor::UI::SpriteSheetWidget::Draw(ECS::Entity entity, Core::EngineContext
     int64_t totalFrames = 0;
 
     if (sprite->sheet && Animation::ValidateSheet(*sprite->sheet)) {
-        totalFrames = int64_t(sprite->sheet->columns) * sprite->sheet->rows;
+        totalFrames = static_cast<int64_t>(sprite->sheet->columns) * sprite->sheet->rows;
     }
 
     ImGui::Text("Accepted sheet frames: %lld", static_cast<long long>(totalFrames));
 
     const bool frameChanged = ImGui::InputInt("Frame", &m_FrameInput);
 
-    const bool validFrame = m_FrameInput >= 0 && int64_t(m_FrameInput) < totalFrames;
+    const bool validFrame = m_FrameInput >= 0 && static_cast<int64_t>(m_FrameInput) < totalFrames;
 
     if (frameChanged && validFrame) {
         sprite->frame = static_cast<uint32_t>(m_FrameInput);

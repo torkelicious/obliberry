@@ -16,7 +16,7 @@ namespace Animation {
 
     enum class RestartSetting : uint8_t { KeepIfSame, Restart };
 
-    inline bool ValidateSheet(Rendering::SpriteSheet &sheet) {
+    inline bool ValidateSheet(const Rendering::SpriteSheet &sheet) {
         if (!sheet.texture || sheet.columns <= 0 || sheet.rows <= 0 || sheet.columnSpacing < 0 || sheet.rowSpacing < 0) {
             return false;
         }
@@ -28,8 +28,8 @@ namespace Animation {
             return false;
         }
 
-        const int64_t w = int64_t(sheet.texture->GetWidth() - int64_t(sheet.columnSpacing) * (cols - 1));
-        const int64_t h = int64_t(sheet.texture->GetHeight() - int64_t(sheet.rowSpacing) * (rows - 1));
+        const int64_t w = static_cast<int64_t>(sheet.texture->GetWidth() - static_cast<int64_t>(sheet.columnSpacing) * (cols - 1));
+        const int64_t h = static_cast<int64_t>(sheet.texture->GetHeight() - static_cast<int64_t>(sheet.rowSpacing) * (rows - 1));
 
         return w >= cols && h >= rows && w % cols == 0 && h % rows == 0;
     }
@@ -39,10 +39,10 @@ namespace Animation {
             return false;
         }
 
-        const int64_t total = int64_t(set.sheet->columns) * set.sheet->rows;
+        const int64_t total = static_cast<int64_t>(set.sheet->columns) * set.sheet->rows;
 
         for (const auto &frame : clip.frames) {
-            if (int64_t(frame.index) >= total || !std::isfinite(frame.duration) || frame.duration <= 0.0f) {
+            if (static_cast<int64_t>(frame.index) >= total || !std::isfinite(frame.duration) || frame.duration <= 0.0f) {
                 return false;
             }
         }
@@ -73,7 +73,7 @@ namespace Animation {
         return it == player.animations->clips.end() ? nullptr : &it->second;
     }
 
-    inline bool Play(Player &player, const std::string &name, RestartSetting setting = RestartSetting::KeepIfSame) {
+    inline bool Play(Player &player, const std::string &name, const RestartSetting setting = RestartSetting::KeepIfSame) {
         if (!player.animations) {
             return false;
         }

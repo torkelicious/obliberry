@@ -236,7 +236,7 @@ namespace Editor::UI {
 
     struct SpriteSheetWidget : IComponentWidget {
         [[nodiscard]] const char *GetName() const override;
-        void Draw(ECS::Entity entity, Core::EngineContext *engineContext, UndoManager *undoManager) override;
+        void Draw(ECS::Entity entity, Core::EngineContext *ctx, UndoManager *undomgr) override;
 
     private:
         ECS::Entity m_EditEntity;

@@ -65,7 +65,7 @@ namespace ECS::Collision {
                     continue;
                 }
 
-                nextCollisions.push_back({std::min(a.entity, b.entity), std::max(a.entity, b.entity), a.geometry.isTrigger || b.geometry.isTrigger});
+                nextCollisions.push_back({.entityA = std::min(a.entity, b.entity), .entityB = std::max(a.entity, b.entity), .isTrigger = a.geometry.isTrigger || b.geometry.isTrigger});
             }
         }
         CollisionMap nextPairs;
@@ -110,12 +110,14 @@ namespace ECS::Collision {
         if (a > b) {
             std::swap(a, b);
         }
-        return (uint64_t(a) << 32) | uint64_t(b);
+        return (static_cast<uint64_t>(a) << 32) | static_cast<uint64_t>(b);
     }
 
-    void CollisionWorld::Emit(CollisionEventType type, const Collision &collision) { m_Events.push_back({type, collision.entityA, collision.entityB, collision.isTrigger}); }
+    void CollisionWorld::Emit(const CollisionEventType type, const Collision &collision) {
+        m_Events.push_back({.type = type, .entityA = collision.entityA, .entityB = collision.entityB, .isTrigger = collision.isTrigger});
+    }
 
-    void CollisionWorld::ReportInvalidCollider(EntityID entity, bool valid) {
+    void CollisionWorld::ReportInvalidCollider(const EntityID entity, const bool valid) {
         if (!valid && m_ReportedInvalid.insert(entity).second) {
             LOG_ERROR(LOG_WHO, "Collision skipped entity with invalid collider: " + std::to_string(entity));
         } else if (valid) {
@@ -123,7 +125,7 @@ namespace ECS::Collision {
         }
     }
 
-    void CollisionWorld::ReportIndeterminate(EntityID a, EntityID b, bool indeterminate) {
+    void CollisionWorld::ReportIndeterminate(const EntityID a, const EntityID b, const bool indeterminate) {
         const uint64_t key = MakeKey(a, b);
 
         if (!indeterminate) {

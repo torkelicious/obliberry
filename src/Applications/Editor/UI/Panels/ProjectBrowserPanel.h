@@ -51,7 +51,7 @@ namespace Editor::UI {
         void ImportFont(Core::ResourceManager &resources) const;
         void CreateMesh(Core::ResourceManager &resources);
         void ImportFile(const std::string &targetSubDir, const char *filterExt, const char *filterName) const;
-        void ImportAnimation();
+        void ImportAnimation() const;
 
         void ReplaceTexture(Core::ResourceManager &resources, const std::string &key) const;
         void ReplaceShader(Core::ResourceManager &resources, const std::string &key) const;

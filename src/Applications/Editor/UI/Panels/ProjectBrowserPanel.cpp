@@ -887,7 +887,7 @@ void Editor::UI::ProjectBrowserPanel::ImportFile(const std::string &targetSubDir
     }
 }
 
-void Editor::UI::ProjectBrowserPanel::ImportAnimation() {
+void Editor::UI::ProjectBrowserPanel::ImportAnimation() const {
     auto &resources = Core::ResourceManager::GetInstance();
     if (!m_EngineContext) {
         return;

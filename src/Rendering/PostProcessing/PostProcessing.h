@@ -50,7 +50,7 @@ namespace Rendering::PostProcessing {
         void AddEffect(PostEffect fx);
         [[nodiscard]] std::vector<PostEffect> &Effects() { return m_Effects; }
 
-        FrameBuffer *Execute(FrameBuffer *scene, FrameBuffer *pingA, FrameBuffer *pingB) const;
+        FrameBuffer *Execute(const FrameBuffer *scene, FrameBuffer *pingA, FrameBuffer *pingB) const;
 
         // JSON:
         // [
