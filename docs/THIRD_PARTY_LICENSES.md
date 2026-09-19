@@ -9,7 +9,7 @@ time. Both are covered here.
 ## Summary
 
 | Project                                                                        | License                        | Copyright                                                                                             |
-|--------------------------------------------------------------------------------|--------------------------------|-------------------------------------------------------------------------------------------------------|
+| ------------------------------------------------------------------------------ | ------------------------------ | ----------------------------------------------------------------------------------------------------- |
 | [ObSL](https://github.com/torkelicious/ObSL)                                   | MIT                            | (c) 2026 torkelicious                                                                                 |
 | [GLAD](https://github.com/Dav1dde/glad)                                        | MIT                            | (c) The GLAD authors                                                                                  |
 | [GLFW](https://github.com/glfw/glfw)                                           | zlib/libpng                    | (c) 2002-2006 Marcus Geelnard, (c) 2006-2019 Camilla Löwy                                             |
@@ -189,7 +189,7 @@ SOFTWARE.
 ### nlohmann/json (MIT)
 
 ```
-MIT License 
+MIT License
 
 Copyright (c) 2013-2026 Niels Lohmann
 

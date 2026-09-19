@@ -15,23 +15,23 @@ Post Processing chain is stored **per scene**, inside the scene JSON (see
 
 The top list shows the effect chain. Effects run **top to bottom**; each effect's output is the next effect's input.
 
-* **Checkbox** - Enable/disable the effect without removing it.
-* **Click** an effect to select it and edit its settings below.
-* **Drag & drop** an entry to reorder the chain.
-* **Add effect...** - Adds one of the built-in effects, or use **Import shader...** to bring in your own.
-* **Delete** - Removes the selected effect from the chain.
+- **Checkbox** - Enable/disable the effect without removing it.
+- **Click** an effect to select it and edit its settings below.
+- **Drag & drop** an entry to reorder the chain.
+- **Add effect...** - Adds one of the built-in effects, or use **Import shader...** to bring in your own.
+- **Delete** - Removes the selected effect from the chain.
 
 Reordering, enabling, adding, and deleting take effect immediately in the Scene View
 
 ### Effect settings
 
-* **Passes (1–16)** - How many times the effect runs, ping-ponging between render targets. Multi-pass effects like a
+- **Passes (1–16)** - How many times the effect runs, ping-ponging between render targets. Multi-pass effects like a
   separable blur need one pass per direction.
-* **Uses scene texture (`u_Scene`)** - Also binds the *original* unprocessed scene on texture unit 1, for compositing
+- **Uses scene texture (`u_Scene`)** - Also binds the _original_ unprocessed scene on texture unit 1, for compositing
   effects (e.g. bloom adds the blurred bright-pass back onto the scene).
-* **Uniforms** - Editable values per effect. `float`/`int`/`vec2/3/4` get drag widgets, uniforms with `Color` in the
+- **Uniforms** - Editable values per effect. `float`/`int`/`vec2/3/4` get drag widgets, uniforms with `Color` in the
   name get a color picker. **Ctrl+click** a drag widget to type an exact value.
-* **Pass N** sections - Per-pass uniform overrides for multi-pass effects (e.g. `u_Horizontal` for the blur).
+- **Pass N** sections - Per-pass uniform overrides for multi-pass effects (e.g. `u_Horizontal` for the blur).
 
 ### Live preview, Apply, Close
 
@@ -45,7 +45,7 @@ Committing marks the scene as changed remember to save the scene (Ctrl+S) afterw
 ## Built-in Effects
 
 | Effect             | does                                                                | uniforms                                                                                              |
-|--------------------|---------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
+| ------------------ | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | **Passthrough**    | Copies the input unchanged                                          | –                                                                                                     |
 | **Grayscale**      | Desaturates the image                                               | `u_Strength` (0–1)                                                                                    |
 | **BrightPass**     | Extracts pixels brighter than a threshold                           | `u_Threshold`, `u_SoftKnee` (soft cutoff)                                                             |
@@ -86,20 +86,20 @@ The engine sets these for every effect when the shader declares them. don't decl
 effect config, they're automatically ser per-frame:
 
 | Uniform        | Type        | Meaning                                             |
-|----------------|-------------|-----------------------------------------------------|
+| -------------- | ----------- | --------------------------------------------------- |
 | `u_Texture`    | `sampler2D` | Previous pass output (texture unit 0).              |
 | `u_Resolution` | `vec2`      | Render target size in pixels.                       |
 | `u_TexelSize`  | `vec2`      | `1.0 / u_Resolution`.                               |
 | `u_Time`       | `float`     | Seconds since engine start.                         |
-| `u_Scene`      | `sampler2D` | Original scene (unit 1); only with *scene texture*. |
+| `u_Scene`      | `sampler2D` | Original scene (unit 1); only with _scene texture_. |
 
 ### Uniform rules
 
-* Supported types for editing/serialization: `float`, `int`, `bool`, `vec2`, `vec3`, `vec4` (`bool` is stored as
+- Supported types for editing/serialization: `float`, `int`, `bool`, `vec2`, `vec3`, `vec4` (`bool` is stored as
   `int` 0/1). Samplers and matrices are not currently exposed.
-* Reserved names (`u_Texture`, `u_Resolution`, `u_TexelSize`, `u_Time`, `u_Scene`) are managed by the engine and
+- Reserved names (`u_Texture`, `u_Resolution`, `u_TexelSize`, `u_Time`, `u_Scene`) are managed by the engine and
   excluded from the editor UI.
-* The parser is simple: no arrays, no layout qualifiers etc.
+- The parser is simple: no arrays, no layout qualifiers etc.
 
 Shader files go through the engine's preprocessor, so `#include "..."`, `#pragma once`, and accurate `#line` error
 reporting work in effect shaders too. Includes resolve through the project VFS first,
@@ -111,13 +111,13 @@ the engine (e.g.
 ### Engine shader helpers (`resources/shaders/`)
 
 | File             | Provides                                                                                                                           |
-|------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | `rand.glsl`      | `hash(uint)` + `rand(vec2)` — deterministic, per-seed pseudo-random.                                                               |
 | `auto_rand.glsl` | `auto_rand(vec2)` — `rand` seeded per-frame from `u_Time`; includes `rand.glsl`.                                                   |
 | `commons.glsl`   | Declarations for the engine-provided uniforms (`u_Texture`, `u_Resolution`, `u_TexelSize`, `u_Time`, `u_Scene`). Includes nothing. |
 
 **Include guard convention** :
-any helper file that declares *uniforms* (or anything else that must be unique per shader) should wrap its declarations
+any helper file that declares _uniforms_ (or anything else that must be unique per shader) should wrap its declarations
 in `#pragma once` plus an `#ifndef` guard, so it can be included transitively from several files without redeclaration
 errors:
 
@@ -138,15 +138,15 @@ The engine's own helpers follow this pattern, so `#include "auto_rand.glsl"` in 
 > Exporting a game packs the contents of `resources/shaders/` into the `.obpak` (under `engine/shaders/`), so helper
 > includes keep working in packaged builds too.
 
-* Imported shaders get the resource ID `[PP] <name>` and are regenerated from the scene's `assets.shaders` section on
+- Imported shaders get the resource ID `[PP] <name>` and are regenerated from the scene's `assets.shaders` section on
   load. A shader entry with **no vertex path** is automatically treated as a post-processing effect shader and gets the
   fullscreen vertex pass.
-* Always make sure the scene referencing an effect is saved after importing, so the chain + shader asset both persist.
+- Always make sure the scene referencing an effect is saved after importing, so the chain + shader asset both persist.
 
 ---
 
 ## See Also
 
-* [Scene format: PostProcessing](../formats/scene-json.md#postprocessing)
-* [Scenes](scenes.md)
-* [Architecture](../architecture.md#rendering-srcrendering) 
+- [Scene format: PostProcessing](../formats/scene-json.md#postprocessing)
+- [Scenes](scenes.md)
+- [Architecture](../architecture.md#rendering-srcrendering)
