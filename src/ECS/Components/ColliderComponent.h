@@ -34,7 +34,7 @@ namespace ECS::Components {
                 return false;
         }
 
-        auto positive = [](float value) { return std::isfinite(value) && value > 0.0f; };
+        auto positive = [](const float value) { return std::isfinite(value) && value > 0.0f; };
 
         switch (c.shape) {
             case ColliderShape::Box:

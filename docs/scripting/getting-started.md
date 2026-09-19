@@ -52,7 +52,7 @@ fn on_destroy() {                 // entity destroyed
 
 ### The `this` binding
 
-Inside a script, the global **`this`** is an *entity object* referring to the entity the script is attached to. Use it
+Inside a script, the global **`this`** is an _entity object_ referring to the entity the script is attached to. Use it
 to reach components:
 
 ```obsl
@@ -71,10 +71,10 @@ See [Registry : entity objects](api-reference.md#entity-objects).
 
 ### `dt` and time
 
-* The `dt` passed to `on_update` is the **raw** delta time (not scaled by time scale).
-* `get_dt()` returns the *time-scaled* delta (`deltaTime * timeScale`), useful inside helper functions that don't
+- The `dt` passed to `on_update` is the **raw** delta time (not scaled by time scale).
+- `get_dt()` returns the _time-scaled_ delta (`deltaTime * timeScale`), useful inside helper functions that don't
   receive `dt`.
-* See the [Time module](api-reference.md#time) for `GetRawDt`, `GetTimeScale`/`SetTimeScale`, and `GetFrameCount`.
+- See the [Time module](api-reference.md#time) for `GetRawDt`, `GetTimeScale`/`SetTimeScale`, and `GetFrameCount`.
 
 ### Hot reload
 
@@ -86,8 +86,8 @@ new version. Good for iterating in the editor.
 
 Scripts execute in **parallel** across interpreter workers. The EngineLib API handles the details for you:
 
-* Reads (components, input, camera, …) are safe and can be done anywhere.
-* Mutations (component writes, entity creation/destruction, UI changes) are *deferred*: they are queued and applied on
+- Reads (components, input, camera, …) are safe and can be done anywhere.
+- Mutations (component writes, entity creation/destruction, UI changes) are _deferred_: they are queued and applied on
   the main thread after the parallel script pass. You don't need to do anything just call the API.
 
 ## Player movement
@@ -114,10 +114,10 @@ fn on_update(dt) {
 }
 ```
 
-* `GetSelectedHex()` returns the hex that the map's selection state currently points at
-* `SetPathToHex(entityId, q, r)` runs A* pathfinding on the map grid from the entity's current hex toward `(q, r)`,
+- `GetSelectedHex()` returns the hex that the map's selection state currently points at
+- `SetPathToHex(entityId, q, r)` runs A\* pathfinding on the map grid from the entity's current hex toward `(q, r)`,
   stores the path, and starts the `MovementSystem` walking the entity along it.
-* The engine draws a path overlay on the map (`hasPathTo`), which is why the script clears it once movement finished.
+- The engine draws a path overlay on the map (`hasPathTo`), which is why the script clears it once movement finished.
 
 ## Camera controls
 
@@ -175,24 +175,24 @@ fn on_update(dt) {
 
 Notes:
 
-* `Camera_PanScreenSpace(dx, dy)` takes a screen-space delta and converts it to world movement, compensating for zoom
+- `Camera_PanScreenSpace(dx, dy)` takes a screen-space delta and converts it to world movement, compensating for zoom
   and the camera's rotation, it's the right tool for player-controlled cameras.
-* `Input_GetMouseWorldPos()` returns world coordinates under the cursor; in the editor it accounts for the viewport
+- `Input_GetMouseWorldPos()` returns world coordinates under the cursor; in the editor it accounts for the viewport
   framebuffer, in the runtime it uses the window size.
-* Key names are strings resolved through the input manager's key mappings (e.g. `"Space"`, `"Esc"`, `"W"`). Mouse
+- Key names are strings resolved through the input manager's key mappings (e.g. `"Space"`, `"Esc"`, `"W"`). Mouse
   buttons are numbers: `0` = left, `1` = right, `2` = middle.
 
 ## More examples
 
 The engine ships a set of example scripts in `src/Scripting/EngineLib/Examples/`:
 
-* `PlayerMovement.obsl` hex movement via click-to-move.
-* `InteractionSystem.obsl` camera controls + hover selection.
-* `UITest.obsl` create a UI button and set its text.
-* `examples.obsl` an API showcase covering entities, components, audio, input, hex, camera, and scene loading. As its
+- `PlayerMovement.obsl` hex movement via click-to-move.
+- `InteractionSystem.obsl` camera controls + hover selection.
+- `UITest.obsl` create a UI button and set its text.
+- `examples.obsl` an API showcase covering entities, components, audio, input, hex, camera, and scene loading. As its
   header warns, it's a showcase rather than plug-and-play code check the [API reference](api-reference.md) for the
   current names.
-* `engine_integ_test.obsl` a larger test exercising many EngineLib functions.
+- `engine_integ_test.obsl` a larger test exercising many EngineLib functions.
 
 ## A minimal UI example
 

@@ -4,21 +4,22 @@
 
 ## Quick Start
 
-| If you want to...                             | Start here                            |
-|-----------------------------------------------|---------------------------------------|
-| Learn the editor UI, modes, and keybinds      | [Editor Guide](usage.md)              |
-| The core concepts (ECS, entities, components) | [Core Concepts](concepts.md)          |
-| See all components / what they do             | [Component Reference](components.md)  |
-| Work with scenes and maps                     | [Scenes](scenes.md)                   |
-| Add fullscreen effects (bloom, CRT, custom)   | [Post-Processing](post-processing.md) |
-| Create reusable entity templates              | [Prefabs](prefabs.md)                 |
+| If you want to...                             | Start here                              |
+| --------------------------------------------- | --------------------------------------- |
+| Learn the editor UI, modes, and keybinds      | [Editor Guide](usage.md)                |
+| The core concepts (ECS, entities, components) | [Core Concepts](concepts.md)            |
+| See all components / what they do             | [Component Reference](components.md)    |
+| Work with scenes and maps                     | [Scenes](scenes.md)                     |
+| Add fullscreen effects (bloom, CRT, custom)   | [Post-Processing](post-processing.md)   |
+| Create reusable entity templates              | [Prefabs](prefabs.md)                   |
+| Create and edit sprite animations             | [Sprite Animation](sprite-animation.md) |
 
 ---
 
 ## Related Documentation
 
 | Topic                   | Location                          |
-|-------------------------|-----------------------------------|
+| ----------------------- | --------------------------------- |
 | ObSL Scripting Language | `../scripting/getting-started.md` |
 | Project Structure       | `concepts.md#project-structure`   |
 | Scene File Format       | `../formats/scene-json.md`        |

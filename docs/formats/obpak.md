@@ -15,13 +15,13 @@ Offset 44 (toc)       entry_count × TocEntry (40 bytes each)
 ...                   blob (blob_data_offset) entry payloads back-to-back, no padding
 ```
 
-Sections are packed consecutively with no alignment and no section headers. TOC entry `data_offset` values are *
-*relative to `blob_data_offset`** and cumulative (payloads are laid out in TOC order, back to back).
+Sections are packed consecutively with no alignment and no section headers. TOC entry `data_offset` values are \*
+\*relative to `blob_data_offset`\*\* and cumulative (payloads are laid out in TOC order, back to back).
 
 ## File header `Package::FileHeader` (44 bytes)
 
 | Field                 | Type       | Size | Meaning                                                                |
-|-----------------------|------------|------|------------------------------------------------------------------------|
+| --------------------- | ---------- | ---- | ---------------------------------------------------------------------- |
 | `magic[4]`            | `char[4]`  | 4 B  | ASCII `"OBPK"`.                                                        |
 | `version`             | `uint16_t` | 2 B  | Must be `1`; the reader rejects anything else.                         |
 | `flags`               | `uint16_t` | 2 B  | Written as `0`; not interpreted by the reader.                         |
@@ -34,7 +34,7 @@ Sections are packed consecutively with no alignment and no section headers. TOC 
 ## TOC entry `Package::TocEntry` (40 bytes)
 
 | Field               | Type         | Size | Meaning                                                               |
-|---------------------|--------------|------|-----------------------------------------------------------------------|
+| ------------------- | ------------ | ---- | --------------------------------------------------------------------- |
 | `name_offset`       | `uint32_t`   | 4 B  | Offset into the string table.                                         |
 | `name_length`       | `uint32_t`   | 4 B  | Path length (names are **not** NUL-terminated; offset + length only). |
 | `data_offset`       | `uint64_t`   | 8 B  | Blob-relative offset of the payload.                                  |
@@ -51,15 +51,15 @@ enum class EntryFlags : uint8_t { None = 0, Compressed = 1 << 0 };  // bit 0
 
 ## Compression
 
-* **LZ4 block format** (`LZ4_compress_default` / `LZ4_decompress_safe`).
-* A payload is stored with `EntryFlags::Compressed` unless compression fails (returns ≤ 0). **There is no size-based
+- **LZ4 block format** (`LZ4_compress_default` / `LZ4_decompress_safe`).
+- A payload is stored with `EntryFlags::Compressed` unless compression fails (returns ≤ 0). **There is no size-based
   fallback** incompressible data may end up compressed-but-larger on disk.
-* Decompression must reproduce `uncompressed_size` exactly; otherwise the read fails.
+- Decompression must reproduce `uncompressed_size` exactly; otherwise the read fails.
 
 ### Per-type storage rules (from `AssetPacking`)
 
 | File type                               | Stored as                        | Compressed?                  |
-|-----------------------------------------|----------------------------------|------------------------------|
+| --------------------------------------- | -------------------------------- | ---------------------------- |
 | `.obsl` scripts                         | `SerializedAST` (pre-parsed AST) | yes (unless `--no-compress`) |
 | `.json`                                 | `BinaryJSON` (msgpack)           | yes                          |
 | `.png`, `.jpg`, `.jpeg`, `.mp3`, `.ogg` | `Media` (raw)                    | **never**                    |
@@ -77,12 +77,12 @@ graph.
 
 `ContainerReader` (`ContainerReader.cpp`):
 
-* `open(path)` validates magic + version, reads the TOC and string table, then **memory-maps** the whole file (
+- `open(path)` validates magic + version, reads the TOC and string table, then **memory-maps** the whole file (
   `MAP_PRIVATE` + `madvise(MADV_SEQUENTIAL)` on POSIX; `CreateFileMappingW` on Windows).
-* `read(canonicalPath)` → `optional<string>` decompresses if flagged; bounds-checked.
-* `read_view(canonicalPath)` → `optional<string_view>` zero-copy, **only for uncompressed entries**.
-* `get_entry_paths()` / `print_entries()` listing helpers.
-* Lookup is via a `string_view → index` map over the TOC.
+- `read(canonicalPath)` → `optional<string>` decompresses if flagged; bounds-checked.
+- `read_view(canonicalPath)` → `optional<string_view>` zero-copy, **only for uncompressed entries**.
+- `get_entry_paths()` / `print_entries()` listing helpers.
+- Lookup is via a `string_view → index` map over the TOC.
 
 ## VFS integration
 
@@ -105,7 +105,7 @@ ob_packer [options] <project_directory>
 ```
 
 | Option                         | Meaning                                                                        |
-|--------------------------------|--------------------------------------------------------------------------------|
+| ------------------------------ | ------------------------------------------------------------------------------ |
 | `-o, --output <file>`          | Output `.obpak` path (default: `<project_directory>.obpak`).                   |
 | `-q, --quiet`                  | Suppress non-error output.                                                     |
 | `--verbose`                    | Per-file detailed logging.                                                     |
@@ -122,7 +122,7 @@ ob_unpack [options] <package.obpak> [output_directory]
 ```
 
 | Option           | Meaning                                                  |
-|------------------|----------------------------------------------------------|
+| ---------------- | -------------------------------------------------------- |
 | `-l, --list`     | List contents without extracting.                        |
 | `-r, --readable` | Decode `.json` entries from msgpack back to pretty JSON. |
 | `-q, --quiet`    | Suppress output.                                         |
@@ -160,7 +160,7 @@ Rules are evaluated in order **last matching rule wins**.
 
 At pack time, every `using "..."` in a script must resolve to another packed script. `DependencyGraph::validate` checks:
 
-1. **Missing modules**  `using` targets that aren't in the package.
+1. **Missing modules** `using` targets that aren't in the package.
 2. **Cycles** circular `using` dependency chains.
 
 Both are reported as errors; `--strict` turns them into hard failures.

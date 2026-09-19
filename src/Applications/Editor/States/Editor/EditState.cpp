@@ -11,7 +11,7 @@
 #include "ECS/Systems/ParticleSystem.h"
 #include "UI/UIGizmo.h"
 #include "imgui.h"
-#include "ECS/Systems/SpriteAnimationSystem.h"
+#include "ECS/Systems/Animation/SpriteAnimationSystem.h"
 
 namespace Editor::States {
     ImGuizmo::OPERATION EditState::mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
@@ -28,6 +28,11 @@ void Editor::States::EditState::OnEnter() {
     SetWindowTitle(title);
 
     m_MeshCreatorPanel.SetContext(m_EditorLayer->m_SceneManager.GetCurrentScene(), *m_EditorLayer->m_Context, &m_EditorLayer->m_UndoManager);
+    m_SpriteAnimationPanel.SetContext(m_EditorLayer->m_SceneManager.GetCurrentScene(), *m_EditorLayer->m_Context, &m_EditorLayer->m_UndoManager);
+
+    m_EditorLayer->m_ProjectBrowserPanel.OnEditAnimation = [this](const std::string &key, const std::shared_ptr<Animation::SpriteAnimationSet> &asset) { m_SpriteAnimationPanel.Open(key, asset); };
+
+    m_EditorLayer->m_ProjectBrowserPanel.OnCreateAnimation = [this](const std::string &key, const std::filesystem::path &path) { m_SpriteAnimationPanel.Create(key, path); };
 }
 
 void Editor::States::EditState::OnUpdate(const float dt) {
@@ -155,6 +160,8 @@ void Editor::States::EditState::OnDrawPanels() {
         m_MeshCreatorPanel.OnImGuiRender();
     }
 
+    m_SpriteAnimationPanel.OnImGuiRender();
+
     if (m_EditCollider) {
         Collider_DrawGizmoForSelected();
     } else {
@@ -213,6 +220,12 @@ void Editor::States::EditState::OnDrawModeToolbar() {
 void Editor::States::EditState::OnSaveKey() {
     if (CanSaveScene()) {
         m_EditorLayer->SaveScene();
+    }
+}
+void Editor::States::EditState::OnExit() {
+    if (m_EditorLayer) {
+        m_EditorLayer->m_ProjectBrowserPanel.OnEditAnimation = {};
+        m_EditorLayer->m_ProjectBrowserPanel.OnCreateAnimation = {};
     }
 }
 

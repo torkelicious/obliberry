@@ -31,7 +31,7 @@ namespace ECS::Collision {
             glm::dvec3 closest(0.0);
             Simplex reduced;
 
-            auto consider = [&](const glm::dvec3 &point, std::initializer_list<int> indices) {
+            auto consider = [&](const glm::dvec3 &point, const std::initializer_list<int> indices) {
                 const double distSqred = glm::dot(point, point);
                 if (distSqred >= bestDistSqred)
                     return;
@@ -40,7 +40,7 @@ namespace ECS::Collision {
                 closest = point;
                 reduced.count = 0;
 
-                for (int index : indices) {
+                for (const int index : indices) {
                     reduced.points[reduced.count++] = points[index];
                 }
             };
@@ -114,7 +114,7 @@ namespace ECS::Collision {
         }
     } // namespace Detail
 
-    inline GJKResult IntersectsGJK(const WorldCollider &a, const WorldCollider &b, double tolerance = CollisionTolerance) {
+    inline GJKResult IntersectsGJK(const WorldCollider &a, const WorldCollider &b, const double tolerance = CollisionTolerance) {
         if (!std::isfinite(tolerance) || tolerance <= 0.0)
             return GJKResult::Indeterminate;
 

@@ -10,6 +10,9 @@
 #include "Sound/AudioEngine.h"
 #include "Core/Utils/ECSUtils.h"
 #include "IO/Loaders/UISerializer.h"
+#include "UI/Elements/UIRect.h"
+#include "UI/Elements/UIText.h"
+#include "UI/Elements/UIImage.h"
 
 namespace Editor::Commands {
 

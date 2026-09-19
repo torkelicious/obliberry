@@ -6,6 +6,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include "ECS/Types.h"
 #include "Logger/LoggerService.h"
 #include "EntityFactory.h"
 #include "IO/VFS/VFS.h"
@@ -24,34 +25,12 @@ namespace IO {
                 return newId;
             }
 
-            std::string_view dataView;
-            std::string ownedData;
-            if (const auto view = VFS::ReadVirtualView(filepath)) {
-                dataView = *view;
-            } else if (auto owned = VFS::ReadVirtual(filepath)) {
-                ownedData = std::move(*owned);
-                dataView = ownedData;
-            } else {
-                if (auto *logger = Logging::LoggerService::Get()) {
-                    logger->log("PrefabManager", "Failed to instantiate: " + filepath + " (Not found in VFS)", Logging::LogSeverity::Error);
-                }
+            const auto &read = VFS::ReadVirtualJson(filepath);
+            if (!read.has_value()) {
                 return ECS::INVALID_ENTITY_ID;
             }
 
-            nlohmann::json prefabJson;
-            try {
-                if (VFS::IsPackaged()) {
-                    prefabJson = nlohmann::json::from_msgpack(dataView.begin(), dataView.end());
-                } else {
-                    prefabJson = nlohmann::json::parse(dataView);
-                }
-            } catch (const std::exception &e) {
-                if (auto *logger = Logging::LoggerService::Get()) {
-                    logger->log("PrefabManager", "Core decoding error for " + filepath + ": " + e.what(), Logging::LogSeverity::Error);
-                }
-                return ECS::INVALID_ENTITY_ID;
-            }
-
+            nlohmann::json prefabJson = read.value();
 
             s_prefab_cache[filepath] = prefabJson;
 

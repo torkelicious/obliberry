@@ -7,10 +7,10 @@ in the editor.
 
 ## Why Prefabs?
 
-* **Reuse** - Define an enemy once, spawn it as much as you want, and where you want.
-* **Consistency** - Change the prefab, all instances update (when re-instantiated)
-* **Script spawning** - `Instantiate("assets/prefabs/enemy.json")` in ObSL
-* **Hierarchy** - Prefabs can contain child entities
+- **Reuse** - Define an enemy once, spawn it as much as you want, and where you want.
+- **Consistency** - Change the prefab, all instances update (when re-instantiated)
+- **Script spawning** - `Instantiate("assets/prefabs/enemy.json")` in ObSL
+- **Hierarchy** - Prefabs can contain child entities
 
 ---
 
@@ -26,14 +26,14 @@ in the editor.
 
 A prefab file stores:
 
-* The root entity's components
-* All child entities (recursively) with their components
-* Relative hierarchy (parent/child relationships)
+- The root entity's components
+- All child entities (recursively) with their components
+- Relative hierarchy (parent/child relationships)
 
 It does **not** store:
 
-* Scene-specific data (map references, scene properties)
-* Runtime state (movement progress, particle timers)
+- Scene-specific data (map references, scene properties)
+- Runtime state (movement progress, particle timers)
 
 ---
 
@@ -73,29 +73,29 @@ Example `assets/prefabs/enemy_basic.json`:
 
 ```json
 [
-  {
-    "name": "Enemy",
-    "components": {
-      "TransformComponent": {
-        "position": [0, 0, 0],
-        "rotation": [0, 0, 0],
-        "scale": [1, 1, 1]
-      },
-      "MeshComponent": {
-        "mesh_id": "[Engine] Quad"
-      },
-      "MaterialComponent": {
-        "material_id": "enemy_mat"
-      },
-      "MovementComponent": {
-        "timePerStep": 0.5,
-        "autoMove": true
-      },
-      "ScriptComponent": {
-        "scriptPaths": ["assets/scripts/EnemyAI.obsl"]
-      }
+    {
+        "name": "Enemy",
+        "components": {
+            "TransformComponent": {
+                "position": [0, 0, 0],
+                "rotation": [0, 0, 0],
+                "scale": [1, 1, 1]
+            },
+            "MeshComponent": {
+                "mesh_id": "[Engine] Quad"
+            },
+            "MaterialComponent": {
+                "material_id": "enemy_mat"
+            },
+            "MovementComponent": {
+                "timePerStep": 0.5,
+                "autoMove": true
+            },
+            "ScriptComponent": {
+                "scriptPaths": ["assets/scripts/EnemyAI.obsl"]
+            }
+        }
     }
-  }
 ]
 ```
 

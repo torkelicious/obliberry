@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Applications/Editor/States/Editor/EditState.h"
 #include "Applications/Editor/UI/Panels/EditorPanel.h"
 #include "Core/ResourceManager.h"
-#include "IO/VFS/VFS.h"
+#include "ECS/Systems/Animation/Types.h"
+#include "Scripting/SmallFunction.h"
 #include <filesystem>
 #include <glm/glm.hpp>
 #include <string>
@@ -23,8 +23,12 @@ namespace Editor::UI {
     public:
         void OnImGuiRender() override;
 
+        Scripting::SmallFunction<void(const std::string &, const std::shared_ptr<Animation::SpriteAnimationSet> &)> OnEditAnimation;
+
+        Scripting::SmallFunction<void(const std::string &, const std::filesystem::path &)> OnCreateAnimation;
+
     private:
-        enum class AssetType : uint8_t { Texture, Shader, Mesh, Material, Font };
+        enum class AssetType : uint8_t { Texture, Shader, Mesh, Material, Font, Animation };
 
         template <typename T>
         void DrawResourceSection(Core::ResourceManager &resources, const std::vector<std::pair<std::string, std::shared_ptr<T>>> &allItems, AssetType assetType, const char *childId, float childHeight,
@@ -38,12 +42,16 @@ namespace Editor::UI {
         void DrawMaterialSection(Core::ResourceManager &resources);
         void DrawFontSection(Core::ResourceManager &resources);
         void DrawFileSection(const char *label, const std::string &directory, const std::string &extension, const char *importFilter, const char *importFilterName);
+        void DrawAnimationSelection();
+        void DrawCreateAnimation();
+
 
         void ImportTexture(Core::ResourceManager &resources) const;
         void ImportShader(Core::ResourceManager &resources) const;
         void ImportFont(Core::ResourceManager &resources) const;
         void CreateMesh(Core::ResourceManager &resources);
         void ImportFile(const std::string &targetSubDir, const char *filterExt, const char *filterName) const;
+        void ImportAnimation() const;
 
         void ReplaceTexture(Core::ResourceManager &resources, const std::string &key) const;
         void ReplaceShader(Core::ResourceManager &resources, const std::string &key) const;
@@ -58,6 +66,9 @@ namespace Editor::UI {
         glm::vec4 m_MaterialColor = {1.0f, 1.0f, 1.0f, 1.0f};
         int m_SelectedMaterialShaderIdx = 0;
         int m_SelectedMaterialTextureIdx = 0;
+
+        char m_NewAnimationID[128] = {};
+        std::string m_CreateAnimationError;
 
         int m_FontSize = 48;
         bool m_FontUseSDF = false;
