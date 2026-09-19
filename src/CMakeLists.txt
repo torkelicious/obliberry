@@ -120,6 +120,7 @@ add_executable(obliberry_editor
         Applications/Editor/UI/Panels/Editor/UIPanel.cpp
         Applications/Editor/UI/Panels/Editor/MeshCreatorPanel.cpp
         Applications/Editor/UI/ConfigWindows/PostProcEditor.cpp
+        Applications/Editor/UI/Panels/Editor/SpriteAnimationPanel.cpp
 
         # config windows
         Applications/Editor/UI/ConfigWindows/ConfigWindow.cpp
@@ -135,7 +136,6 @@ add_executable(obliberry_editor
         # undo-redo stack
         Applications/Editor/Commands/UndoManager.cpp
         Applications/Editor/Commands/EditorCommands.cpp
-        Applications/Editor/UI/Panels/Editor/SpriteAnimationPanel.cpp
 )
 
 target_link_libraries(obliberry_editor PRIVATE obliberry_engine)
