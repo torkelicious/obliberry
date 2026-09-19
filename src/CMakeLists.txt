@@ -135,6 +135,7 @@ add_executable(obliberry_editor
         # undo-redo stack
         Applications/Editor/Commands/UndoManager.cpp
         Applications/Editor/Commands/EditorCommands.cpp
+        Applications/Editor/UI/Panels/Editor/SpriteAnimationPanel.cpp
 )
 
 target_link_libraries(obliberry_editor PRIVATE obliberry_engine)

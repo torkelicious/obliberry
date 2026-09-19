@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Applications/Editor/States/Editor/EditState.h"
 #include "Applications/Editor/UI/Panels/EditorPanel.h"
 #include "Core/ResourceManager.h"
-#include "IO/VFS/VFS.h"
+#include "ECS/Systems/Animation/Types.h"
+#include "Scripting/SmallFunction.h"
 #include <filesystem>
 #include <glm/glm.hpp>
 #include <string>
@@ -23,6 +23,10 @@ namespace Editor::UI {
     public:
         void OnImGuiRender() override;
 
+        Scripting::SmallFunction<void(const std::string &, const std::shared_ptr<Animation::SpriteAnimationSet> &)> OnEditAnimation;
+
+        Scripting::SmallFunction<void(const std::string &, const std::filesystem::path &)> OnCreateAnimation;
+
     private:
         enum class AssetType : uint8_t { Texture, Shader, Mesh, Material, Font, Animation };
 
@@ -39,6 +43,8 @@ namespace Editor::UI {
         void DrawFontSection(Core::ResourceManager &resources);
         void DrawFileSection(const char *label, const std::string &directory, const std::string &extension, const char *importFilter, const char *importFilterName);
         void DrawAnimationSelection();
+        void DrawCreateAnimation();
+
 
         void ImportTexture(Core::ResourceManager &resources) const;
         void ImportShader(Core::ResourceManager &resources) const;
@@ -60,6 +66,9 @@ namespace Editor::UI {
         glm::vec4 m_MaterialColor = {1.0f, 1.0f, 1.0f, 1.0f};
         int m_SelectedMaterialShaderIdx = 0;
         int m_SelectedMaterialTextureIdx = 0;
+
+        char m_NewAnimationID[128] = {};
+        std::string m_CreateAnimationError;
 
         int m_FontSize = 48;
         bool m_FontUseSDF = false;
