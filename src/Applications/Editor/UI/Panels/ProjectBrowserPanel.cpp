@@ -1006,9 +1006,10 @@ void Editor::UI::ProjectBrowserPanel::DrawCreateAnimation() {
                 return;
             }
 
-            const auto picked =
-                    Platform::FileDialogs::SaveFile(*m_EngineContext, {.filterName = "sprite animation (json)", .filterExt = "json", .defaultPath = dir.c_str(), .defaultName = std::string(key + ".json").c_str()});
+            const std::string defaultPath = dir.string();
+            const std::string defaultName = key + ".json";
 
+            const auto picked = Platform::FileDialogs::SaveFile(*m_EngineContext, {.filterName = "sprite animation (json)", .filterExt = "json", .defaultPath = defaultPath.c_str(), .defaultName = defaultName.c_str()});
             if (!picked.has_value()) {
                 return;
             }
