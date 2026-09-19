@@ -571,7 +571,7 @@ void Rendering::Renderer::EnsureSceneFramebufferSize(uint32_t width, uint32_t he
     }));
 }
 
-void Rendering::Renderer::RunPostProc() {
+void Rendering::Renderer::RunPostProc() const {
     if (!m_SceneFrameBuffer || !m_PingPong[0] || !m_PingPong[1])
         return;
     FrameBuffer *result = m_PostProcessor.Execute(m_SceneFrameBuffer.get(), m_PingPong[0].get(), m_PingPong[1].get());

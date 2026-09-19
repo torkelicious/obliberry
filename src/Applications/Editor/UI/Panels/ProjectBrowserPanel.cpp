@@ -1,10 +1,16 @@
 #include "ProjectBrowserPanel.h"
+#include "Core/ResourceManager.h"
+#include "ECS/Systems/Animation/Animation.h"
+#include "ECS/Systems/Animation/Types.h"
+#include "IO/AnimationSerialization.h"
 #include "Platform/Threading/SmallTask.h"
+#include <exception>
+#include <memory>
 #include <thread>
-
 #include "Core/Constants.h"
 #include "Logger/LoggerService.h"
 #include "Applications/Editor/Platform/FileDialogs.h"
+#include "Applications/Editor/States/Editor/EditState.h"
 #include "Core/Utils/OsUtils.h"
 #include "Core/Utils/UiUtils.h"
 #include "IO/VFS/VFS.h"
@@ -17,10 +23,12 @@
 #include "Rendering/Types/Shader/Shader.h"
 #include "UI/Text/Font.h"
 #include <imgui.h>
-#include <iostream>
 #include <filesystem>
 #include <cstring>
 #include <fstream>
+#include <utility>
+#include "ECS/Systems/Animation/Types.h"
+
 
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "ProjectBrowser"
@@ -119,6 +127,9 @@ namespace Editor::UI {
         }
         if (ImGui::CollapsingHeader("Fonts")) {
             DrawFontSection(resources);
+        }
+        if (ImGui::CollapsingHeader("Animations")) {
+            DrawAnimationSelection();
         }
         if (ImGui::CollapsingHeader("Scripts")) {
             DrawFileSection("Scripts", std::string(Core::SCRIPT_PATH), std::string(Core::SCRIPT_FILE_EXTENSION), "obsl,txt", "Script Files");
@@ -696,6 +707,9 @@ void Editor::UI::ProjectBrowserPanel::DrawDeleteConfirmPopup(Core::ResourceManag
                         resources.Unload<::UI::Font>(m_DeleteConfirmKey);
                         LOG_INFO(LOG_WHO, "Removed font '" + m_DeleteConfirmKey + "'");
                         break;
+                    case AssetType::Animation:
+                        resources.Unload<Animation::SpriteAnimationSet>(m_DeleteConfirmKey);
+                        LOG_INFO(LOG_WHO, "Removed animaton '" + m_DeleteConfirmKey + "'");
                 }
             }
             ImGui::CloseCurrentPopup();
@@ -872,4 +886,183 @@ void Editor::UI::ProjectBrowserPanel::ImportFile(const std::string &targetSubDir
         std::filesystem::copy(picked.value(), dir / std::filesystem::path(picked.value()).filename(), std::filesystem::copy_options::overwrite_existing);
     }
 }
+
+void Editor::UI::ProjectBrowserPanel::ImportAnimation() const {
+    auto &resources = Core::ResourceManager::GetInstance();
+    if (!m_EngineContext) {
+        return;
+    }
+
+    const auto picked = Platform::FileDialogs::OpenFile(*m_EngineContext, {.filterExt = "json"});
+    if (!picked.has_value()) {
+        return;
+    }
+
+    const std::string key = KeyFromPath(picked.value());
+
+    if (resources.Get<Animation::SpriteAnimationSet>(key)) {
+        LOG_WARN(LOG_WHO, "Animation '" + key + "' already exists. Skipping");
+        return;
+    }
+
+    const auto finalPath = IO::AssetLoader::ImportAsset(picked.value(), "animations");
+
+    if (!finalPath.has_value()) {
+        return;
+    }
+
+    try {
+        auto anim = IO::AnimationIO::Deserialize(finalPath.value());
+        if (!anim.sheet || !Animation::ValidateSet(anim)) {
+            LOG_ERROR(LOG_WHO, "Could not import animation '" + key + "'");
+            return;
+        }
+
+        anim.path = finalPath.value();
+
+        resources.Register(key, std::make_shared<Animation::SpriteAnimationSet>(std::move(anim)));
+
+        LOG_INFO(LOG_WHO, "Imported animation '" + key + "' from " + finalPath.value());
+
+    } catch (const std::exception &e) {
+        LOG_ERROR(LOG_WHO, "Could not import animation '" + key + "': " + e.what());
+    }
+}
+
+void Editor::UI::ProjectBrowserPanel::DrawAnimationSelection() {
+    auto &resources = Core::ResourceManager::GetInstance();
+    const auto animations = resources.GetAll<Animation::SpriteAnimationSet>();
+
+    DrawResourceSection(
+            resources, animations, AssetType::Animation, "##animationList", 130.0f, "No animations imported.", "animation",
+            [](const std::shared_ptr<Animation::SpriteAnimationSet> &animation) {
+                if (animation && animation->sheet && animation->sheet->texture) {
+                    Core::Utils::UI::ImGuiImageFlipped(animation->sheet->texture->GetID(), ImVec2(64, 64));
+                } else {
+                    ImGui::Button("animation", ImVec2(64, 64));
+                }
+            },
+            [this](const std::string &key, Core::ResourceManager &resources) {
+                ImGui::BeginDisabled(!OnEditAnimation);
+                if (ImGui::SmallButton("Edit")) {
+                    const auto asset = resources.Get<Animation::SpriteAnimationSet>(key);
+                    if (asset && OnEditAnimation) {
+                        OnEditAnimation(key, asset);
+                    }
+                }
+                ImGui::EndDisabled();
+            });
+    if (ImGui::Button("Import Animation")) {
+        ImportAnimation();
+    }
+    ImGui::SameLine();
+    ImGui::BeginDisabled(!OnCreateAnimation);
+    if (ImGui::Button("New Animation")) {
+        m_NewAnimationID[0] = '\0';
+        m_CreateAnimationError.clear();
+        ImGui::OpenPopup("Create Animation");
+    }
+    ImGui::EndDisabled();
+    DrawCreateAnimation();
+}
+void Editor::UI::ProjectBrowserPanel::DrawCreateAnimation() {
+    if (!ImGui::BeginPopupModal("Create Animation", nullptr, ImGuiChildFlags_AlwaysAutoResize)) {
+        return;
+    }
+
+    ImGui::InputText("Resource ID (name)", m_NewAnimationID, sizeof(m_NewAnimationID));
+
+    if (!m_CreateAnimationError.empty()) {
+        ImGui::TextWrapped("%s", m_CreateAnimationError.c_str());
+    }
+
+    if (ImGui::Button("Choose & Create")) {
+        auto create = [this]() {
+            const std::string key = m_NewAnimationID;
+            auto &resources = Core::ResourceManager::GetInstance();
+
+            if (key.find_first_not_of(" \t\r\n") == std::string::npos) {
+                m_CreateAnimationError = "enter ID.";
+                return;
+            }
+
+            if (resources.Get<Animation::SpriteAnimationSet>(key)) {
+                m_CreateAnimationError = "Resource ID is already taken!";
+                return;
+            }
+
+            if (!m_EngineContext || !OnCreateAnimation) {
+                m_CreateAnimationError = "Animation editor is unavailable...?";
+                return;
+            }
+
+            const auto assetDir = IO::VFS::GetAssetsDirectory();
+            const auto dir = assetDir / "animations";
+
+            std::error_code err;
+            std::filesystem::create_directories(dir, err);
+            if (err) {
+                m_CreateAnimationError = "Could not create asset dir: " + err.message();
+                return;
+            }
+
+            const auto picked =
+                    Platform::FileDialogs::SaveFile(*m_EngineContext, {.filterName = "sprite animation (json)", .filterExt = "json", .defaultPath = dir.c_str(), .defaultName = std::string(key + ".json").c_str()});
+
+            if (!picked.has_value()) {
+                return;
+            }
+
+            std::filesystem::path path = picked.value();
+
+            if (path.extension() != ".json") {
+                path += ".json";
+            }
+
+            const bool exists = std::filesystem::exists(path, err);
+
+            if (err) {
+                m_CreateAnimationError = "IO Error: " + err.message();
+                return;
+            }
+
+            if (exists) {
+                m_CreateAnimationError = "File already exists.";
+                return;
+            }
+
+            std::filesystem::path virtualPath;
+
+            try {
+                virtualPath = IO::VFS::ToRelative(path);
+            } catch (const std::filesystem::filesystem_error &e) {
+                m_CreateAnimationError = e.what();
+                return;
+            }
+
+            if (virtualPath.empty() || virtualPath.is_absolute()) {
+                m_CreateAnimationError = "Location is not inside project.";
+                return;
+            }
+
+            for (const auto &part : virtualPath) {
+                if (part == "..") {
+                    m_CreateAnimationError = "Choose a location inside the project.";
+                    return;
+                }
+            }
+
+            OnCreateAnimation(key, virtualPath);
+            m_CreateAnimationError.clear();
+            ImGui::CloseCurrentPopup();
+        };
+        create();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Cancel")) {
+        ImGui::CloseCurrentPopup();
+    }
+    ImGui::EndPopup();
+}
+
 #pragma pop_macro("LOG_WHO")

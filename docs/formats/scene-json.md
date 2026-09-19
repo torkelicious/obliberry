@@ -16,7 +16,7 @@ rounded to 3 decimals (`RoundJsonFloats`), and the file is written with 4-space 
 ## Top-level keys
 
 | Key              | Type   | Meaning                                                                                               |
-|------------------|--------|-------------------------------------------------------------------------------------------------------|
+| ---------------- | ------ | ----------------------------------------------------------------------------------------------------- |
 | `properties`     | object | Scene metadata (name, clear color, music, ambient light).                                             |
 | `assets`         | object | Asset registry: textures/shaders/meshes/materials/fonts referenced by id from entities, grid, and UI. |
 | `grid`           | object | Hex-grid map section; present iff the scene has a map entity with a non-empty `map_file`.             |
@@ -27,7 +27,7 @@ rounded to 3 decimals (`RoundJsonFloats`), and the file is written with 4-space 
 ## `properties`
 
 | Key                | Type                  | Default        | Meaning                                                           |
-|--------------------|-----------------------|----------------|-------------------------------------------------------------------|
+| ------------------ | --------------------- | -------------- | ----------------------------------------------------------------- |
 | `name`             | string                | `""`           | Scene display name.                                               |
 | `clear_color`      | `[r, g, b, a]` floats | `[0, 0, 0, 1]` | Background clear color.                                           |
 | `background_music` | string                | `""`           | VFS-relative path to background music.                            |
@@ -39,12 +39,55 @@ Each array entry is an object keyed by `id` the resource id referenced everywher
 resources use ids prefixed `"[Engine]"` (e.g. `"[Engine] Base"`, `"[Engine] Hex"`); user assets use any other id.
 
 | Key                | Entry shape                               | Notes                                                                                                                                                                                                                                                                            |
-|--------------------|-------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ------------------ | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `assets.textures`  | `{"id", "path"}`                          | `path` is VFS-relative.                                                                                                                                                                                                                                                          |
 | `assets.shaders`   | `{"id", "vertex", "fragment"}`            | `vertex`/`fragment` are shader source paths. `[Engine]` and `[Engine_PP]` shaders are engine-provided and never serialized. A shader with an empty `vertex` (or a `[PP]` id) is a **post-processing effect shader** (it automatically uses the engine's fullscreen vertex pass). |
 | `assets.meshes`    | `{"id", "factory"}`                       | `factory` names a registered procedural mesh factory (e.g. `"Quad"`, `"Hexagon"`, `"Circle"`, `"Ring"`, `"PointTopHex"`).                                                                                                                                                        |
 | `assets.materials` | `{"id", "shader", "texture", "color"}`    | `shader` defaults to `"[Engine] Base"`; `texture` may be `""`; `color` is `[r,g,b,a]` (defaults to white).                                                                                                                                                                       |
 | `assets.fonts`     | `{"id", "path", "size", "sdf", "spread"}` | Defaults: `size` 12, `sdf` false, `spread` 8.                                                                                                                                                                                                                                    |
+
+| `assets.animation_sets` | `{"id", "path"}` | Registered animation resource ID and project-relative JSON path. Textures load before animation sets. |
+
+### Sprite animation references
+
+Animation definitions live in separate
+[sprite animation JSON files](sprite-animation-json.md).
+The scene records their resource IDs and paths:
+
+```json
+{
+    "animation_sets": [
+        {
+            "id": "player_animations",
+            "path": "assets/animations/player_anim.json"
+        }
+    ]
+}
+```
+
+The object above belongs inside the scene's `assets` object.
+
+An animated entity uses these entries inside its `components` object:
+
+```json
+{
+    "SpriteSheetComponent": {},
+    "SpriteAnimatorComponent": {
+        "animation_id": "player_animations",
+        "initial_clip": "idle",
+        "autoplay": true
+    }
+}
+```
+
+The resource ID is separate from the file path.
+
+The scene saves the initial playback configuration, not the current
+clip position, elapsed time, or playing/paused state. Loading initializes
+the animator and resolves its initial sprite pose.
+
+Saving the scene records animation asset references. Save edited clip
+definitions from the animation editor as well.
 
 ## `PostProcessing`
 
@@ -54,7 +97,7 @@ Processing** window; see [Post-Processing](../editor/post-processing.md).
 Each entry is an object:
 
 | Key                 | Type   | Default  | Meaning                                                                                   |
-|---------------------|--------|----------|-------------------------------------------------------------------------------------------|
+| ------------------- | ------ | -------- | ----------------------------------------------------------------------------------------- |
 | `shader`            | string | required | Shader resource id. Built-ins are `[Engine_PP] <name>`; custom effects are `[PP] <name>`. |
 | `enabled`           | bool   | `true`   | Disabled effects are skipped.                                                             |
 | `uniforms`          | object | `{}`     | Tunable uniforms. Values: number (float/int), bool, or `[x,y(,z,w)]` arrays.              |
@@ -101,7 +144,7 @@ Example (bloom chain):
 ## `grid`
 
 | Key        | Type   | Default          | Meaning                                                                                                                                                                                         |
-|------------|--------|------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ---------- | ------ | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `map_file` | string | -                | Path to the binary hex map (`.obmap`); see [the `.obmap` format](obmap.md).                                                                                                                     |
 | `mesh_id`  | string | `"[Engine] Hex"` | Mesh resource id used for hex cells.                                                                                                                                                            |
 | `types`    | array  | -                | Material mapping per tile type id. Each entry: `id` (uint, default 1), `texture` (texture resource id, default `"hex_tex"`), `color` (`[r,g,b,a]`, default white; only written when not white). |
@@ -114,7 +157,7 @@ overlays are built from the same shader.
 Each entity is an object:
 
 | Key          | Type             | Meaning                                                                                                                                                     |
-|--------------|------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ------------ | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `name`       | string, optional | Entity name (written only if non-empty).                                                                                                                    |
 | `parent`     | int, optional    | **Index** into the same `entities` array identifying the parent (hierarchy is rebuilt after all entities load). Written only if the parent is in the scene. |
 | `components` | object           | Maps component type names to per-component data. Unknown component names are skipped with a warning.                                                        |
@@ -122,7 +165,7 @@ Each entity is an object:
 ### Component keys
 
 | Component key                 | Fields                                                                                                                                                                                                                                                                                                                                                                                                        |
-|-------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `TransformComponent`          | `position`, `rotation`, `scale` - `[x, y, z]` float arrays (Euler rotation).                                                                                                                                                                                                                                                                                                                                  |
 | `MovementComponent`           | `timePerStep` - float; `autoMove` - bool (default `false`). (Runtime movement state is intentionally not saved.)                                                                                                                                                                                                                                                                                              |
 | `MeshComponent`               | `mesh_id` - mesh resource id.                                                                                                                                                                                                                                                                                                                                                                                 |
@@ -132,60 +175,79 @@ Each entity is an object:
 | `PointLightComponent`         | `color` - `[r, g, b]`; `radius` - float; `intensity` - float.                                                                                                                                                                                                                                                                                                                                                 |
 | `ScriptComponent`             | `scriptPath` (string, single script) **or** `scriptPaths` (array, multiple scripts). Paths are `.obsl` files.                                                                                                                                                                                                                                                                                                 |
 | `ParticleEmitterComponent`    | `maxParticles` int, `emitRate` float, `lifetimeMin`/`lifetimeMax` floats, `velocityMin`/`velocityMax` `[x,y,z]`, `gravity` `[x,y,z]`, `sizeStartMin`/`sizeStartMax`/`sizeEndMin`/`sizeEndMax` floats, `rotationSpeedMin`/`rotationSpeedMax` floats, `colorStart`/`colorEnd` `[r,g,b,a]`, `isBillboard` bool, `blendMode` int (0 = Alpha, 1 = Additive), `renderOrder` int, `shape` int, `material_id` string. |
+| `SpriteSheetComponent`        | Static sprite: `texture_id`, `columns`, `rows`, `column_spacing`, `row_spacing`, `frame`. Saved as `{}` when an animator supplies the pose.                                                                                                                                                                                                                                                                   |
+| `SpriteAnimatorComponent`     | `animation_id`, `initial_clip`, `autoplay`. References a registered animation set.                                                                                                                                                                                                                                                                                                                            |
 
 ### `SpriteSheetComponent`
 
 ```json
 {
-  "SpriteSheetComponent": {
-    "texture_id": "hero_walk",
-    "columns": 8,
-    "rows": 4,
-    "column_spacing": 2,
-    "row_spacing": 2,
-    "start_frame": 8,
-    "frame_count": 8,
-    "fps": 12.0,
-    "looping": true,
-    "playing": true,
-    "current_frame": 0
-  }
+    "SpriteSheetComponent": {
+        "texture_id": "hero_walk",
+        "columns": 8,
+        "rows": 4,
+        "column_spacing": 2,
+        "row_spacing": 2,
+        "frame": 8
+    }
 }
 ```
 
-Place this entry inside an entity's `components` object. `texture_id` references a registered
-texture resource. This example fits a 270 × 134 texture containing 32 × 32 frames and two-pixel gaps.
+Place this entry inside an entity's `components` object. This static example fits a
+270 × 134 texture containing 32 × 32 frames separated by two-pixel gaps.
 
-| Field                           | Default    | Meaning                                                                            |
-|---------------------------------|------------|------------------------------------------------------------------------------------|
-| `texture_id`                    | No texture | Texture resource key.                                                              |
-| `columns`, `rows`               | 1 each     | Grid dimensions.                                                                   |
-| `column_spacing`, `row_spacing` | 0 each     | Pixel gaps between frames; negative values clamp to zero on load. No outer margin. |
-| `start_frame`                   | 0          | Absolute first sheet frame, numbered from the top-left across rows.                |
-| `frame_count`                   | 1          | Clip length, not grid cell count.                                                  |
-| `fps`                           | 8.0        | Frames per second.                                                                 |
-| `looping`, `playing`            | false each | Playback flags.                                                                    |
-| `current_frame`                 | 0          | Current frame relative to `start_frame`.                                           |
+| Field                           | Default      | Meaning                                                              |
+| ------------------------------- | ------------ | -------------------------------------------------------------------- |
+| `texture_id`                    | Empty string | Registered texture resource ID.                                      |
+| `columns`, `rows`               | 1 each       | Positive grid dimensions.                                            |
+| `column_spacing`, `row_spacing` | 0 each       | Non-negative pixel gaps between cells, with no outer margin.         |
+| `frame`                         | 0            | Absolute sheet index, numbered left-to-right and then top-to-bottom. |
 
-Elapsed time within a frame is not saved. The loader does not perform the editor's full layout/clip
-validation: author positive grid dimensions, a clip within the grid, and spacing that leaves whole
-pixel-sized frames. See [spacing rules](../editor/components.md#spacing-and-invalid-layouts).
-The runtime UV helper falls back to the whole texture for invalid texture/grid/spacing geometry.
+The component loader reads these values directly; it does not clamp negative spacing to zero.
+Author valid layouts and indices. The UV helper falls back to the whole texture for invalid
+texture/grid/spacing geometry and wraps frame indices for a valid grid.
+
+When an entity has a SpriteAnimator, this component is saved as `{}`. Its sheet and frame
+are reconstructed from the animator after loading.
+
+### `SpriteAnimatorComponent`
+
+```json
+{
+    "SpriteAnimatorComponent": {
+        "animation_id": "player_animations",
+        "initial_clip": "idle",
+        "autoplay": true
+    }
+}
+```
+
+| Field          | Default      | Meaning                                                    |
+| -------------- | ------------ | ---------------------------------------------------------- |
+| `animation_id` | Empty string | Resource ID from `assets.animation_sets`, not a file path. |
+| `initial_clip` | Empty string | Named clip selected during initialization.                 |
+| `autoplay`     | `true`       | Whether the initial clip starts playing.                   |
+
+After loading components, the loader ensures a SpriteSheet component exists, resets the
+animator to its initial clip, and resolves its pose. An empty or invalid initial clip cannot
+produce a pose. Current playback progress is not serialized.
+
+See [Sprite Animation JSON](sprite-animation-json.md) for clip definitions and sheet validation.
 
 ### `ColliderComponent`
 
 ```json
 {
-  "ColliderComponent": {
-    "version": 2,
-    "shape": "Box",
-    "orientation": "Entity",
-    "offset": [0.0, 0.0, 0.0],
-    "size": [1.0, 1.0, 1.0],
-    "radius": 0.5,
-    "height": 1.0,
-    "isTrigger": false
-  }
+    "ColliderComponent": {
+        "version": 2,
+        "shape": "Box",
+        "orientation": "Entity",
+        "offset": [0.0, 0.0, 0.0],
+        "size": [1.0, 1.0, 1.0],
+        "radius": 0.5,
+        "height": 1.0,
+        "isTrigger": false
+    }
 }
 ```
 
@@ -203,7 +265,7 @@ Sphere, Circle, and Cylinder; Cylinder height must also be finite and positive. 
 raise a load error. All these fields are serialized, including dimensions unused by the selected shape.
 `isTrigger` selects trigger events when either collider in an overlapping pair has it enabled.
 
-**Prefabs** (`PrefabSourceComponent`) are *not* serialized into scene files - they are separate JSON files under
+**Prefabs** (`PrefabSourceComponent`) are _not_ serialized into scene files - they are separate JSON files under
 `assets/prefabs/`, written by `IO::PrefabManager::SavePrefab` using the same per-entity structure.
 `Instantiate("assets/prefabs/foo.json")` loads one from a script.
 
@@ -212,7 +274,7 @@ raise a load error. All these fields are serialized, including dimensions unused
 `ui.elements` is an array of element objects. Shared fields:
 
 | Key             | Type            | Meaning                                                              |
-|-----------------|-----------------|----------------------------------------------------------------------|
+| --------------- | --------------- | -------------------------------------------------------------------- |
 | `name`          | string          | Element name (load default `"Unnamed"`).                             |
 | `type`          | string          | `"Text"`, `"Button"`, `"Image"`, `"Rect"`, or `"Element"` (default). |
 | `rect.position` | `[x, y]` floats | UI-space position.                                                   |
@@ -222,11 +284,11 @@ raise a load error. All these fields are serialized, including dimensions unused
 
 Type-specific fields:
 
-* `Text`: `text`, `color` (`[r,g,b,a]`), `font` (font resource id).
-* `Button`: `text`, `color`, `bg_color`, `hovered_bg_color` (`[r,g,b,a]`), `bg_texture` (texture resource id, optional),
+- `Text`: `text`, `color` (`[r,g,b,a]`), `font` (font resource id).
+- `Button`: `text`, `color`, `bg_color`, `hovered_bg_color` (`[r,g,b,a]`), `bg_texture` (texture resource id, optional),
   `font` (optional).
-* `Image`: `texture` (texture resource id), `color`.
-* `Rect`: `color`.
+- `Image`: `texture` (texture resource id), `color`.
+- `Rect`: `color`.
 
 ## Example
 
@@ -236,12 +298,7 @@ A trimmed scene combining most sections:
 {
     "properties": {
         "name": "level1",
-        "clear_color": [
-            0.1,
-            0.1,
-            0.1,
-            1.0
-        ],
+        "clear_color": [0.1, 0.1, 0.1, 1.0],
         "background_music": "",
         "ambient_light": 0.2
     },
@@ -261,12 +318,7 @@ A trimmed scene combining most sections:
                 "id": "[Engine] DefaultMaterial",
                 "shader": "[Engine] Base",
                 "texture": "",
-                "color": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                ]
+                "color": [1.0, 1.0, 1.0, 1.0]
             }
         ],
         "meshes": [
@@ -301,21 +353,9 @@ A trimmed scene combining most sections:
             "name": "Player",
             "components": {
                 "TransformComponent": {
-                    "position": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    "rotation": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ]
+                    "position": [0.0, 0.0, 0.0],
+                    "rotation": [0.0, 0.0, 0.0],
+                    "scale": [1.0, 1.0, 1.0]
                 },
                 "MeshComponent": {
                     "mesh_id": "player_mesh"
@@ -335,29 +375,13 @@ A trimmed scene combining most sections:
                 "name": "btnStart",
                 "type": "Button",
                 "rect": {
-                    "position": [
-                        160.0,
-                        270.0
-                    ],
-                    "scale": [
-                        251.0,
-                        59.0
-                    ]
+                    "position": [160.0, 270.0],
+                    "scale": [251.0, 59.0]
                 },
                 "flags": 3,
                 "text": "Start",
-                "color": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                ],
-                "bg_color": [
-                    0.5,
-                    0.54,
-                    0.8,
-                    1.0
-                ]
+                "color": [1.0, 1.0, 1.0, 1.0],
+                "bg_color": [0.5, 0.54, 0.8, 1.0]
             }
         ]
     }
@@ -366,7 +390,7 @@ A trimmed scene combining most sections:
 
 ## Caveats
 
-* Maps are stored as `.obmap` binaries, referenced by `map_file`; the grid is *not* embedded in the scene JSON.
-* `PrefabSourceComponent` is editor metadata only and never appears in scene files.
-* `properties.name` is a display name; the file path is the real scene identity (`ScenePath` is runtime-only and never
+- Maps are stored as `.obmap` binaries, referenced by `map_file`; the grid is _not_ embedded in the scene JSON.
+- `PrefabSourceComponent` is editor metadata only and never appears in scene files.
+- `properties.name` is a display name; the file path is the real scene identity (`ScenePath` is runtime-only and never
   serialized).

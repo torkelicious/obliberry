@@ -1,11 +1,10 @@
 #include "SceneSerialization.h"
 #include <fstream>
 #include <nlohmann/json.hpp>
+#include "ECS/Systems/Animation/Types.h"
 #include "Logger/LoggerService.h"
 #include "MapSerialization.h"
 #include "VFS/VFS.h"
-#include "Config/ProjectConfig.h"
-#include "Core/Utils/PathUtils.h"
 #include "Loaders/AssetLoader.h"
 #include "Loaders/EntityFactory.h"
 #include "Scenes/Scene.h"
@@ -15,8 +14,6 @@
 #include "ECS/Systems/MapRuntimeSystem.h"
 #include "IO/Loaders/UISerializer.h"
 #include "Rendering/PostProcessing/InternalPostProcFx.h"
-#include "UI/Rendering/UISystem.h"
-#include "UI/Text/Font.h"
 
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "SceneIO"
@@ -270,6 +267,7 @@ namespace IO::SceneIO {
         j["assets"]["meshes"] = json::array();
         j["assets"]["materials"] = json::array();
         j["assets"]["fonts"] = json::array();
+        j["assets"]["animation_sets"] = json::array();
 
         SerializeAssets(j["assets"]["textures"], resources.GetAll<Rendering::Texture>(), [](const std::string &id, const std::shared_ptr<Rendering::Texture> &tex) { return json{{"id", id}, {"path", tex->GetPath()}}; });
 
@@ -305,6 +303,9 @@ namespace IO::SceneIO {
         SerializeAssets(j["assets"]["fonts"], resources.GetAll<UI::Font>(), [&](const std::string &id, const std::shared_ptr<UI::Font> &font) {
             return json{{"id", id}, {"path", font->GetPath()}, {"size", font->GetFontSize()}, {"sdf", font->IsSDF()}, {"spread", font->GetSDFSpread()}};
         });
+
+        SerializeAssets(j["assets"]["animation_sets"], resources.GetAll<Animation::SpriteAnimationSet>(),
+                        [](const std::string &id, const std::shared_ptr<Animation::SpriteAnimationSet> &animation) { return json{{"id", id}, {"path", animation->path.generic_string()}}; });
 
 
         // Post Processor FX

@@ -17,10 +17,6 @@
 #include "Scenes/SceneManager.h"
 #include "UI/UIElement.h"
 #include "UI/Rendering/UISystem.h"
-#include "UI/Elements/UIImage.h"
-#include "UI/Elements/UIText.h"
-#include "UI/Elements/UIButton.h"
-#include "UI/Elements/UIRect.h"
 #include "Rendering/Types/Texture/Texture.h"
 #include "UI/Text/Font.h"
 
@@ -457,7 +453,7 @@ namespace Editor::Commands {
 
     class PasteEntityCommand final : public ICommand {
     public:
-        explicit PasteEntityCommand(nlohmann::json data, ECS::EntityID parentOverride = ECS::INVALID_ENTITY_ID) : m_Data(std::move(data)), m_ParentOverride(parentOverride) {}
+        explicit PasteEntityCommand(nlohmann::json data, const ECS::EntityID parentOverride = ECS::INVALID_ENTITY_ID) : m_Data(std::move(data)), m_ParentOverride(parentOverride) {}
 
         void Execute(Core::EngineContext &ctx) override;
         void Undo(Core::EngineContext &ctx) override;

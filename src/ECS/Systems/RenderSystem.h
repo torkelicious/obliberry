@@ -47,10 +47,10 @@ namespace ECS::Systems::RenderSystem {
                         }
                     }
 
-                    if (const auto *anim = animPool->Get(static_cast<EntityID>(entity)); anim && anim->sheet && anim->sheet->texture) {
-                        renderer.Pin(anim->sheet->texture);
-                        textureOverride = anim->sheet->texture.get();
-                        uvRect = anim->sheet->GetFrameUV(anim->startFrame + anim->currentFrame);
+                    if (const auto *sprite = animPool->Get(static_cast<EntityID>(entity)); sprite && sprite->sheet && sprite->sheet->texture) {
+                        renderer.Pin(sprite->sheet->texture);
+                        textureOverride = sprite->sheet->texture.get();
+                        uvRect = sprite->sheet->GetFrameUV(sprite->frame);
                     }
 
 

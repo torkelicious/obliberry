@@ -19,7 +19,7 @@ render.**
 Position, rotation, scale in world space. Also controls billboard mode.
 
 | UI Field          | Type             | Notes                                                                                                    |
-|-------------------|------------------|----------------------------------------------------------------------------------------------------------|
+| ----------------- | ---------------- | -------------------------------------------------------------------------------------------------------- |
 | **Position**      | DragFloat3 (xyz) | World position                                                                                           |
 | **Rotation**      | DragFloat3 (xyz) | Euler angles in degrees. Disabled if "Use Billboard" is checked.                                         |
 | **Scale**         | DragFloat3 (xyz) | Local scale                                                                                              |
@@ -32,7 +32,7 @@ Position, rotation, scale in world space. Also controls billboard mode.
 The geometric shape of the entity.
 
 | UI Field        | Type           | Notes                                                                                |
-|-----------------|----------------|--------------------------------------------------------------------------------------|
+| --------------- | -------------- | ------------------------------------------------------------------------------------ |
 | **Factory**     | Read-only text | Shows the mesh factory ID (e.g., `Quad`, `Hexagon`, `Circle`, `Ring`, `PointTopHex`) |
 | **Indices**     | Read-only text | Triangle index count                                                                 |
 | **Mesh**        | Combo box      | Pick from registered mesh factories                                                  |
@@ -45,7 +45,7 @@ The geometric shape of the entity.
 Appearance: texture, color, shader. Links to a material resource.
 
 | UI Field            | Type              | Notes                                                  |
-|---------------------|-------------------|--------------------------------------------------------|
+| ------------------- | ----------------- | ------------------------------------------------------ |
 | **Material**        | Combo box         | Pick from project materials                            |
 | **Color**           | ColorEdit4 (RGBA) | Tint color                                             |
 | **Texture**         | Combo box         | Pick from project textures                             |
@@ -63,7 +63,7 @@ Appearance: texture, color, shader. Links to a material resource.
 Allows an entity to navigate the hex grid using the movement system.
 
 | UI Field               | Type              | Notes                               |
-|------------------------|-------------------|-------------------------------------|
+| ---------------------- | ----------------- | ----------------------------------- |
 | **Time Per Step**      | Float             | Seconds per hex step (default 0.15) |
 | **Step Timer**         | Float (read-only) | Internal timer for current step     |
 | **Idle Timer**         | Float (read-only) | Time spent idle                     |
@@ -83,7 +83,7 @@ Allows an entity to navigate the hex grid using the movement system.
 Swaps the entity's texture based on which direction it's facing (6 directions on a hex grid).
 
 | UI Field                                | Type           | Notes                                                            |
-|-----------------------------------------|----------------|------------------------------------------------------------------|
+| --------------------------------------- | -------------- | ---------------------------------------------------------------- |
 | **Facing Index**                        | Slider (0-5)   | Current facing direction. 0-5 correspond to hex grid directions. |
 | **Dir 0 Texture** ... **Dir 5 Texture** | 6× Combo boxes | Texture for each direction. Empty = unset.                       |
 | **Missing count warning**               | Read-only text | Shows how many directions have no texture assigned.              |
@@ -93,61 +93,35 @@ Swaps the entity's texture based on which direction it's facing (6 directions on
 
 ---
 
-### Sprite Sheet
+### SpriteSheet
 
-Uses rectangular regions of one texture for a static sprite or a contiguous animation clip.
-Add the component in the Inspector, select the sheet texture, and configure its grid.
-Rendering still requires Transform, Mesh, and Material. When a sheet texture is assigned,
-it takes precedence over the material texture and DirectionalTexture selection.
+Selects a rectangular frame from a texture divided into a regular grid.
 
-| UI field            | Meaning                                                               |
-|---------------------|-----------------------------------------------------------------------|
-| Texture             | Registered texture containing the whole sheet.                        |
-| Columns / Rows      | Number of frames across/down; 1–4096 each.                            |
-| Column spacing (px) | Horizontal gap between adjacent columns; 0–4096 pixels.               |
-| Row spacing (px)    | Vertical gap between adjacent rows; 0–4096 pixels.                    |
-| Frame size          | Calculated width and height of each frame, excluding gaps.            |
-| Sheet frames        | Accepted grid's columns multiplied by rows.                           |
-| Start frame         | First sheet frame of the animation, starting at zero.                 |
-| Animation length    | Number of consecutive frames in the clip; at least one.               |
-| Use all frames      | Set start to zero and length to the accepted grid's full frame count. |
-| FPS                 | Playback speed, 0–240. Zero prevents advancement.                     |
-| Loop                | Repeat after the last frame.                                          |
-| Playing             | Enable animation advancement.                                         |
-| Current frame       | Frame relative to the clip; changing it pauses playback.              |
-| Restart             | Reset to the clip's first frame and play.                             |
-| Remove Sprite Sheet | Remove the component.                                                 |
+The sheet stores a texture, columns, rows, and pixel spacing between
+columns and rows. Frames are numbered from zero, left-to-right and then
+top-to-bottom.
 
-Frames run left-to-right, then top-to-bottom. For 8 columns, frame 8 starts the second row.
-Start frame 8 and animation length 8 select sheet frames 8–15; current frame 2 displays sheet frame 10.
-The default animation length is **one**, even after enlarging the grid. Choose **Use all frames**
-or increase the length, then enable Playing to animate. A non-looping clip stops on its last frame.
+Without a SpriteAnimator, this component displays a static frame.
+With a SpriteAnimator, its sheet and frame are supplied by the animation system.
 
-#### Spacing and invalid layouts
+### SpriteAnimator
 
-Spacing means gaps **between** frames, with no outer border or inset inside each frame.
-With texture dimensions `W × H`, the widget calculates:
+Plays named clips from a shared sprite animation set.
 
-```text
-frameWidth  = (W - columnSpacing * (columns - 1)) / columns
-frameHeight = (H - rowSpacing    * (rows - 1)) / rows
-```
+| Setting      | Meaning                                                |
+| ------------ | ------------------------------------------------------ |
+| Animation    | Registered animation-set asset.                        |
+| Initial Clip | Clip selected when the component is initialized.       |
+| Autoplay     | Whether the initial clip starts playing automatically. |
 
-A valid layout needs a selected texture, fields within the limits above, and a positive whole-number
-pixel size for both frame dimensions. The divisions must leave no remainder.
-Four 32-pixel-wide frames with 2-pixel gaps require `4 * 32 + 3 * 2 = 134` pixels of texture width.
-Using a 128-pixel-wide texture with those settings is invalid: it would give 30.5 pixels per frame.
-Leave spacing at zero when the image has no gaps. Sheets with outer borders need cropping or
-additional margin support; these spacing fields do not describe that layout.
+An animation set contains a sheet and named clips. Each clip contains
+an ordered list of sheet frame indices and durations, plus a looping flag.
 
-With the updated widget, valid edits take effect automatically. Incomplete/invalid input stays in
-the input fields while the last accepted component settings remain active; there is no Apply/Revert
-step. An animation range is valid only when `start >= 0`, `length >= 1`, and
-`start + length <= columns * rows`. Correct an invalid draft before saving: only accepted values
-belong to the component.
+The animator keeps playback state separately for each entity, so entities
+can share an animation set while playing different clips or frames.
 
-Animation also advances in Edit mode. The current frame and playing flag are serialized, so pause
-and select the intended starting frame before saving if you want a particular initial pose.
+Create and edit animation assets through the Project Browser.
+See [Sprite Animation](sprite-animation.md).
 
 ### Collider
 
@@ -155,7 +129,7 @@ Adds overlap detection to an entity with a Transform. This detects intersections
 events; it does not implement automatic movement blocking or physical collision response.
 
 | UI field    | Meaning                                                                                |
-|-------------|----------------------------------------------------------------------------------------|
+| ----------- | -------------------------------------------------------------------------------------- |
 | Shape       | Box, Sphere, Cylinder, Rectangle, or Circle.                                           |
 | Orientation | Entity uses the world transform; Billboard faces the camera using the billboard basis. |
 | Offset      | Local offset from the entity origin, transformed with the collider.                    |
@@ -178,7 +152,7 @@ and [collider serialization](../formats/scene-json.md#collidercomponent) for sav
 Attaches ObSL scripts to the entity. Scripts define custom logic.
 
 | UI Field        | Type           | Notes                                              |
-|-----------------|----------------|----------------------------------------------------|
+| --------------- | -------------- | -------------------------------------------------- |
 | **Script list** | Bullet list    | Each attached script path with a **Remove** button |
 | **Add Script**  | FileCombo      | Pick a `.obsl` file from `assets/scripts/`         |
 | **Total count** | Read-only text | Number of attached scripts                         |
@@ -192,7 +166,7 @@ Attaches ObSL scripts to the entity. Scripts define custom logic.
 Emits particles from the entity's position.
 
 | UI Section   | Fields                                                                                                                              |
-|--------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
 | **Emission** | **Active** (bool), **Editor Preview** (bool), **Max Particles** (int, 1-16384), **Emit Rate** (float, particles/sec)                |
 | **Lifetime** | **Min** / **Max** (float, seconds)                                                                                                  |
 | **Velocity** | **Min** / **Max** (DragFloat3, vec3)                                                                                                |
@@ -214,7 +188,7 @@ Emits particles from the entity's position.
 A dynamic point light that affects the lighting system.
 
 | UI Field      | Type         | Notes              |
-|---------------|--------------|--------------------|
+| ------------- | ------------ | ------------------ |
 | **Color**     | Color3 (RGB) | Light color        |
 | **Radius**    | Float        | World-space radius |
 | **Intensity** | Float        | Light intensity    |
@@ -230,7 +204,7 @@ These appear on the **MAP** entity (created automatically in Map Edit mode).
 ### Map
 
 | UI Field              | Type           | Notes                                        |
-|-----------------------|----------------|----------------------------------------------|
+| --------------------- | -------------- | -------------------------------------------- |
 | **Map File**          | FileCombo      | Pick `.obmap` file from `assets/maps/`       |
 | **Needs Mesh Update** | Checkbox       | Triggers mesh rebuild                        |
 | **Render Visibles**   | Read-only text | Number of visible tile types                 |
@@ -244,7 +218,7 @@ These appear on the **MAP** entity (created automatically in Map Edit mode).
 Runtime state for map editing (selection, pathfinding).
 
 | UI Field             | Type           | Notes                                       |
-|----------------------|----------------|---------------------------------------------|
+| -------------------- | -------------- | ------------------------------------------- |
 | **Has Selection**    | Checkbox       | Whether a hex is currently hovered/selected |
 | **Selected Hex**     | Read-only text | Coordinates `[q, r]` of selected hex        |
 | **Has Path To**      | Checkbox       | Whether a path target is set                |
@@ -259,7 +233,7 @@ These are used by the engine internally. You generally **don't add them manually
 shown as tag flags in the Inspector.
 
 | Tag                    | How It Appears in UI                                                                                                                                          |
-|------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **BillboardTag**       | As **"Use Billboard"** checkbox in Transform widget                                                                                                           |
 | **DestroyTag**         | Not shown (entity queued for deletion)                                                                                                                        |
 | **Relationship**       | Managed via Registry context menu (Create Child, Set Parent, Detach)                                                                                          |
@@ -276,7 +250,7 @@ UI elements (Text, Button, Image, Rect) are managed in the **UI Hierarchy** pane
 their own properties:
 
 | Element Type | Key Properties                                                                                     |
-|--------------|----------------------------------------------------------------------------------------------------|
+| ------------ | -------------------------------------------------------------------------------------------------- |
 | **Text**     | `text`, `color` (RGBA), `font` (font resource ID)                                                  |
 | **Button**   | `text`, `color`, `bg_color`, `hovered_bg_color` (RGBA), `bg_texture` (optional), `font` (optional) |
 | **Image**    | `texture` (texture resource ID), `color` (RGBA)                                                    |
@@ -290,21 +264,22 @@ enabled), `children` (array).
 ## Quick Reference Table
 
 | Category                   | Components                                                                                      |
-|----------------------------|-------------------------------------------------------------------------------------------------|
+| -------------------------- | ----------------------------------------------------------------------------------------------- |
 | **Required for rendering** | Transform, Mesh, Material                                                                       |
-| **Movement & AI**          | Movement, DirectionalTexture, SpriteSheet                                                       |
+| **Movement & AI**          | Movement, DirectionalTexture                                                                    |
 | **Logic**                  | Script, Collider                                                                                |
 | **Visual effects**         | ParticleEmitter, PointLight                                                                     |
 | **Map**                    | Map, Map State (on MAP entity)                                                                  |
 | **Internal tags**          | BillboardTag (via Transform), DestroyTag, Relationship, CustomData, PersistentTag, PrefabSource |
 | **UI**                     | Text, Button, Image, Rect (in UI Hierarchy)                                                     |
+| **Sprite animation**       | SpriteSheet, SpriteAnimator                                                                     |
 
 ---
 
 ## Common Patterns
 
 | Goal                              | Components to Add                                                    |
-|-----------------------------------|----------------------------------------------------------------------|
+| --------------------------------- | -------------------------------------------------------------------- |
 | Static prop (crate, rock)         | Transform + Mesh + Material                                          |
 | Moving character                  | Transform + Mesh + Material + Movement + Script                      |
 | Directional sprite (tank, NPC)    | Transform + Mesh + Material + Movement + DirectionalTexture + Script |

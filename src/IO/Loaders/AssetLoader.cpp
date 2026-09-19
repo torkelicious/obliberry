@@ -1,6 +1,11 @@
 #include "AssetLoader.h"
+#include "Core/ResourceManager.h"
+#include "ECS/Systems/Animation/Animation.h"
+#include "ECS/Systems/Animation/Types.h"
 #include "Platform/Threading/SmallTask.h"
 
+#include <exception>
+#include <memory>
 #include <stdexcept>
 #include <thread>
 #include "Logger/LoggerService.h"
@@ -11,6 +16,7 @@
 #include "Rendering/Types/Shader/Shader.h"
 #include "Rendering/Types/Texture/Texture.h"
 #include "UI/Text/Font.h"
+#include "IO/AnimationSerialization.h"
 
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "AssetLoader"
@@ -70,7 +76,7 @@ std::optional<std::string> IO::AssetLoader::ImportAsset(const std::string &Absou
     return finalVirtualPath;
 }
 
-void IO::AssetLoader::LoadAssets(const json &assets, Core::ResourceManager &resources) {
+void IO::AssetLoader::LoadAssets(const json &assets, Core::ResourceManager &resources = Core::ResourceManager::GetInstance()) {
     if (assets.contains("textures"))
         LoadTextures(assets["textures"], resources);
 
@@ -85,6 +91,9 @@ void IO::AssetLoader::LoadAssets(const json &assets, Core::ResourceManager &reso
 
     if (assets.contains("fonts"))
         LoadFonts(assets["fonts"], resources);
+
+    if (assets.contains("animation_sets"))
+        LoadAnimations(assets["animation_sets"], resources);
 }
 
 void IO::AssetLoader::RegisterMeshFactory(const std::string &name, MeshFactory factory) { s_MeshFactories[name] = std::move(factory); }
@@ -107,7 +116,7 @@ void IO::AssetLoader::LoadTextures(const json &textures, Core::ResourceManager &
 }
 
 
-void IO::AssetLoader::LoadShaders(const json &shaders, Core::ResourceManager &resources) {
+void IO::AssetLoader::LoadShaders(const json &shaders, Core::ResourceManager &resources = Core::ResourceManager::GetInstance()) {
     for (const auto &shader : shaders) {
         try {
             const std::string id = shader.at("id").get<std::string>();
@@ -146,7 +155,7 @@ void IO::AssetLoader::LoadShaders(const json &shaders, Core::ResourceManager &re
 }
 
 
-void IO::AssetLoader::LoadFonts(const json &fonts, Core::ResourceManager &resources) {
+void IO::AssetLoader::LoadFonts(const json &fonts, Core::ResourceManager &resources = Core::ResourceManager::GetInstance()) {
     for (const auto &font : fonts) {
         try {
             const std::string id = font.at("id").get<std::string>();
@@ -172,7 +181,7 @@ void IO::AssetLoader::LoadFonts(const json &fonts, Core::ResourceManager &resour
     }
 }
 
-void IO::AssetLoader::LoadMaterials(const json &materials, Core::ResourceManager &resources) {
+void IO::AssetLoader::LoadMaterials(const json &materials, Core::ResourceManager &resources = Core::ResourceManager::GetInstance()) {
     for (const auto &mat : materials) {
         try {
             const std::string id = mat.at("id").get<std::string>();
@@ -201,7 +210,7 @@ void IO::AssetLoader::LoadMaterials(const json &materials, Core::ResourceManager
     }
 }
 
-void IO::AssetLoader::LoadMeshes(const json &meshes, Core::ResourceManager &resources) {
+void IO::AssetLoader::LoadMeshes(const json &meshes, Core::ResourceManager &resources = Core::ResourceManager::GetInstance()) {
     for (const auto &mesh : meshes) {
         try {
             const std::string id = mesh.at("id").get<std::string>();
@@ -247,4 +256,33 @@ void IO::AssetLoader::LoadMeshes(const json &meshes, Core::ResourceManager &reso
         }
     }
 }
+
+
+void IO::AssetLoader::LoadAnimations(const json &animations, Core::ResourceManager &resources = Core::ResourceManager::GetInstance()) {
+    for (const auto &entry : animations) {
+
+        try {
+
+            const std::string id = entry.at("id").get<std::string>();
+
+            if (resources.Get<Animation::SpriteAnimationSet>(id)) {
+                continue;
+            }
+
+            const std::string path = VFS::ToRelative(entry.at("path").get<std::string>());
+            auto animaiton = AnimationIO::Deserialize(path);
+
+            if (!Animation::ValidateSet(animaiton)) {
+                LOG_ERROR(LOG_WHO, "Skipping invalid animation asset: " + path);
+                continue;
+            }
+
+            animaiton.path = path;
+            resources.Register<Animation::SpriteAnimationSet>(id, std::make_shared<Animation::SpriteAnimationSet>(std::move(animaiton)));
+        } catch (const std::exception &e) {
+            LOG_ERROR(LOG_WHO, std::string("Skipping animation asset: ") + e.what());
+        }
+    }
+}
+
 #pragma pop_macro("LOG_WHO")

@@ -4,6 +4,7 @@
 #include "Core/EngineContext.h"
 #include "ECS/Registry.h"
 #include "Scenes/SceneManager.h"
+#include <cstdint>
 #include <imgui.h>
 #include <cstring>
 #include <memory>
@@ -235,15 +236,15 @@ namespace Editor::UI {
 
     struct SpriteSheetWidget : IComponentWidget {
         [[nodiscard]] const char *GetName() const override;
-        void Draw(ECS::Entity entity, Core::EngineContext *engineContext, UndoManager *undoManager) override;
+        void Draw(ECS::Entity entity, Core::EngineContext *ctx, UndoManager *undomgr) override;
 
     private:
         ECS::Entity m_EditEntity;
         Rendering::SpriteSheet m_SheetDraft;
+        std::shared_ptr<Rendering::SpriteSheet> m_SourceSheet;
         bool m_HasDraft = false;
-        int m_StartFrameInput = 0;
-        int m_FrameCountInput = 1;
-        float m_FPSInput = 8.0f;
+        int m_FrameInput = 0;
+        uint32_t m_SourceFrame = 0;
     };
 
 } // namespace Editor::UI

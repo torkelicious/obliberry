@@ -1,6 +1,7 @@
 #include "MeshCreatorPanel.h"
 
 #include "Applications/Editor/EditorLayer.h"
+#include "Applications/Editor/States/Editor/EditState.h"
 #include "Rendering/Types/Mesh/MeshFactory.h"
 #include "Rendering/Renderer.h"
 #include "Platform/Threading/SmallTask.h"

@@ -9,10 +9,10 @@ make sense.
 
 An **entity** is just a unique ID. It has no data, no behavior, just an entry in the registry.
 
-* Created via **Registry → +** or `CreateEntity()` in script
-* Deleted via **Registry → -** or `DestroyEntity()` (adds `DestroyTag`)
-* Can have a **name** (for debugging/editor only)
-* Can be **parented** to form hierarchies (handled by `Relationship` component)
+- Created via **Registry → +** or `CreateEntity()` in script
+- Deleted via **Registry → -** or `DestroyEntity()` (adds `DestroyTag`)
+- Can have a **name** (for debugging/editor only)
+- Can be **parented** to form hierarchies (handled by `Relationship` component)
 
 ---
 
@@ -21,16 +21,16 @@ An **entity** is just a unique ID. It has no data, no behavior, just an entry in
 A **component** is a plain data structure. Examples: `TransformComponent` (position/rotation/scale), `MeshComponent`
 (mesh ID), `ScriptComponent` (list of script paths).
 
-* **One per entity per type** - You can't have two `TransformComponent`s on one entity
-* **But components can hold arrays** - One `ScriptComponent` holds *many* script paths
-* **Added/removed in Inspector** - Click "Add Component" dropdown, or via script
+- **One per entity per type** - You can't have two `TransformComponent`s on one entity
+- **But components can hold arrays** - One `ScriptComponent` holds _many_ script paths
+- **Added/removed in Inspector** - Click "Add Component" dropdown, or via script
 
 ### Tags vs. Components
 
 Some components are **tags** - empty structs that just mark an entity for a system:
 
 | Tag            | Meaning                                                     |
-|----------------|-------------------------------------------------------------|
+| -------------- | ----------------------------------------------------------- |
 | `BillboardTag` | Render this entity as a billboard (always faces camera)     |
 | `DestroyTag`   | Delete this entity at end of frame                          |
 | `Relationship` | Stores parent/child links (not shown in Add Component menu) |
@@ -45,7 +45,7 @@ Tags appear as **checkboxes/flags** in the Inspector, not as expandable componen
 specific set of components.
 
 | System                     | Required Components                                  | What It Does                                                             |
-|----------------------------|------------------------------------------------------|--------------------------------------------------------------------------|
+| -------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------ |
 | `RenderSystem`             | Transform + Mesh + Material                          | Draws the entity                                                         |
 | `MovementSystem`           | Transform + Movement                                 | Moves entity along hex path                                              |
 | `AISystem`                 | —                                                    | Randomly wanders entities with `autoMove` enabled on `MovementComponent` |
@@ -57,7 +57,7 @@ specific set of components.
 
 > [!NOTE]
 > You don't interact with systems directly in the editor. They run automatically in Play mode. In Edit mode, only the
-`RenderSystem` runs (for the Scene View).
+> `RenderSystem` runs (for the Scene View).
 
 ---
 
@@ -65,15 +65,15 @@ specific set of components.
 
 The **Registry** (left panel in Edit mode) is the scene's entity list. It shows:
 
-* Entity name (or "Entity #123" if unnamed)
-* Component icons/tags
-* Hierarchy (parent/child indentation)
+- Entity name (or "Entity #123" if unnamed)
+- Component icons/tags
+- Hierarchy (parent/child indentation)
 
 Right-click an entity for:
 
-* **Create Child** - New entity parented to this one
-* **Set Parent** - Reparent to another entity
-* **Detach** - Remove from parent
+- **Create Child** - New entity parented to this one
+- **Set Parent** - Reparent to another entity
+- **Detach** - Remove from parent
 
 ---
 
@@ -81,10 +81,10 @@ Right-click an entity for:
 
 Assets (textures, meshes, materials, shaders, fonts) are **referenced by ID**, not embedded in entities.
 
-* **Project Browser** (bottom panel) - Browse and create assets
-* **Material** - Links a shader + texture + color. Entities reference a Material ID.
-* **Mesh** - Procedural shapes (Quad, Hexagon, etc.) or loaded models. Entities reference a Mesh ID.
-* **Engine assets** - IDs prefixed with `[Engine]` (e.g., `[Engine] Base` shader, `[Engine] Hex` mesh). You should not
+- **Project Browser** (bottom panel) - Browse and create assets
+- **Material** - Links a shader + texture + color. Entities reference a Material ID.
+- **Mesh** - Procedural shapes (Quad, Hexagon, etc.) or loaded models. Entities reference a Mesh ID.
+- **Engine assets** - IDs prefixed with `[Engine]` (e.g., `[Engine] Base` shader, `[Engine] Hex` mesh). You should not
   try to delete these.
 
 ---
@@ -93,11 +93,11 @@ Assets (textures, meshes, materials, shaders, fonts) are **referenced by ID**, n
 
 Obliberry is built around a **pointy-top hex grid**.
 
-* **Map Edit mode** - Paint tiles, set tile types (terrain, walls, etc.)
-* **Tile types** - Each has an ID, texture, and color. Configured in the Tile Editor panel.
-* **Map file** - Saved as `.obmap` (binary). Referenced by the scene.
-* **Movement** - Entities with `MovementComponent` navigate using the grid's pathfinding.
-* **DirectionalTexture** - Uses the 6 hex directions (0-5) for sprite rotation.
+- **Map Edit mode** - Paint tiles, set tile types (terrain, walls, etc.)
+- **Tile types** - Each has an ID, texture, and color. Configured in the Tile Editor panel.
+- **Map file** - Saved as `.obmap` (binary). Referenced by the scene.
+- **Movement** - Entities with `MovementComponent` navigate using the grid's pathfinding.
+- **DirectionalTexture** - Uses the 6 hex directions (0-5) for sprite rotation.
 
 ---
 
@@ -105,10 +105,10 @@ Obliberry is built around a **pointy-top hex grid**.
 
 **ObSL (Obliberry Scripting Language)** is the built-in scripting language.
 
-* Files: `.obsl` in `assets/scripts/`
-* Attached via `ScriptComponent` (array of paths)
-* Runs in **Play mode** only
-* Can read/write any component, create/destroy entities, play audio, load scenes, etc.
+- Files: `.obsl` in `assets/scripts/`
+- Attached via `ScriptComponent` (array of paths)
+- Runs in **Play mode** only
+- Can read/write any component, create/destroy entities, play audio, load scenes, etc.
 
 See the [ObSL Getting Started](../scripting/getting-started.md) for syntax and API reference.
 
@@ -138,9 +138,9 @@ my-project/
 
 When you're done, **File → Export Project** creates a single `.obpak` file containing:
 
-* All scenes (as msgpack-encoded JSON)
-* All assets (textures, shaders, fonts, maps, scripts)
-* `project.json`
+- All scenes (as msgpack-encoded JSON)
+- All assets (textures, shaders, fonts, maps, scripts)
+- `project.json`
 
 Exporting will also copy the runtime over to the export directory with the same name as the project.
 
@@ -151,7 +151,7 @@ The `obliberry_runtime` loads `.obpak` files directly, that's your "game" execut
 ## Summary
 
 | Concept       | Key Point                                                  |
-|---------------|------------------------------------------------------------|
+| ------------- | ---------------------------------------------------------- |
 | **Entity**    | an ID. Add components to give it behavior.                 |
 | **Component** | data. One per type per entity.                             |
 | **System**    | Logic that runs on entities with matching components.      |

@@ -127,7 +127,7 @@ namespace Rendering {
         [[nodiscard]] PostProcessing::PostProcessor &GetPostProcessor() { return m_PostProcessor; }
         void SetPassthroughShader(std::shared_ptr<Shader> s) { m_PassthroughShader = std::move(s); }
 
-        void RunPostProc();
+        void RunPostProc() const;
         void PresentToScreen(uint32_t width, uint32_t height) const;
 
     private:

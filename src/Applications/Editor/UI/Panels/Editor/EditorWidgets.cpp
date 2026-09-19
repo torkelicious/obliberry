@@ -1,11 +1,16 @@
 #include "EditorWidgets.h"
+#include "Applications/Editor/Commands/EditorCommands.h"
 #include "Applications/Editor/EditorLayer.h"
 #include <algorithm>
 #include <cfloat>
-#include <cmath>
 #include <cstring>
+#include <memory>
 #include <type_traits>
 #include "ECS/Components/ColliderComponent.h"
+#include "ECS/Components/SpriteAnimatorComponent.h"
+#include "ECS/Entity.h"
+#include "ECS/Systems/Animation/Types.h"
+#include "ECS/Types.h"
 #include "EditorWidgetsCombo.h"
 #include "IO/Loaders/ParticleEmitterPrefabManager.h"
 #include "Core/Constants.h"
@@ -22,6 +27,7 @@
 #include "Rendering/Types/Shader/Shader.h"
 #include "imgui.h"
 #include "ECS/Components/SpriteSheetComponent.h"
+#include "ECS/Systems/Animation/Animation.h"
 
 #include <filesystem>
 
@@ -754,132 +760,290 @@ void Editor::UI::ColliderWidget::Draw(const ECS::Entity entity, Core::EngineCont
 
 const char *Editor::UI::SpriteSheetWidget::GetName() const { return "Sprite Sheet"; }
 
-void Editor::UI::SpriteSheetWidget::Draw(ECS::Entity entity, Core::EngineContext *engineContext, UndoManager *undoManager) {
-    using Component = ECS::Components::SpriteSheetComponent;
-    if (!entity.HasComponent<Component>()) {
+void Editor::UI::SpriteSheetWidget::Draw(ECS::Entity entity, Core::EngineContext *ctx, UndoManager *undomgr) {
+    using Sprite = ECS::Components::SpriteSheetComponent;
+    using Player = ECS::Components::SpriteAnimatorComponent;
+
+    auto *sprite = entity.GetComponent<Sprite>();
+    if (!sprite) {
         m_HasDraft = false;
         return;
     }
-    if (!ImGui::CollapsingHeader(GetName()))
+
+    if (!ImGui::CollapsingHeader(GetName())) {
         return;
-    auto *comp = entity.GetComponent<Component>();
-    if (!m_HasDraft || m_EditEntity != entity) {
-        m_SheetDraft = comp->sheet ? *comp->sheet : Rendering::SpriteSheet{};
-        m_StartFrameInput = comp->startFrame;
-        m_FrameCountInput = comp->frameCount;
-        m_FPSInput = comp->framesPerSecond;
+    }
+
+    ImGui::PushID("SpriteSheetWidget");
+
+    const auto id = static_cast<ECS::EntityID>(entity);
+    auto *player = entity.GetComponent<Player>();
+    auto &resources = Core::ResourceManager::GetInstance();
+
+    if (!player && ImGui::Button("Add Animator")) {
+        if (undomgr && ctx) {
+            undomgr->Execute(std::make_unique<Commands::AddComponentCommand<Player>>(id, Player{}), *ctx);
+        } else {
+            entity.AddComponent<Player>();
+        }
+
+        m_HasDraft = false;
+        MarkSceneChanged(ctx);
+
+        ImGui::PopID();
+        return;
+    }
+
+    if (player) {
+        m_HasDraft = false;
+        bool configChanged = false;
+
+        auto assets = resources.GetAll<Animation::SpriteAnimationSet>();
+
+        std::ranges::sort(assets, [](const auto &a, const auto &b) { return a.first < b.first; });
+
+        std::string selectedAsset = player->animations ? "<Unregistered>" : "<None>";
+
+        for (const auto &[key, asset] : assets) {
+            if (asset && asset == player->animations) {
+                selectedAsset = key;
+                break;
+            }
+        }
+
+        if (ImGui::BeginCombo("Animation", selectedAsset.c_str())) {
+            if (ImGui::Selectable("<None>", !player->animations)) {
+                if (player->animations || !player->initialClip.empty()) {
+                    player->animations.reset();
+                    player->initialClip.clear();
+                    configChanged = true;
+                }
+            }
+
+            for (const auto &[key, asset] : assets) {
+                if (!asset) {
+                    continue;
+                }
+
+                const bool isSelected = asset == player->animations;
+
+                ImGui::PushID(key.c_str());
+
+                if (ImGui::Selectable(key.c_str(), isSelected)) {
+                    if (!isSelected) {
+                        player->animations = asset;
+
+                        if (!asset->clips.contains(player->initialClip)) {
+                            player->initialClip.clear();
+                        }
+
+                        configChanged = true;
+                    }
+                }
+
+                if (isSelected) {
+                    ImGui::SetItemDefaultFocus();
+                }
+
+                ImGui::PopID();
+            }
+
+            ImGui::EndCombo();
+        }
+
+        if (player->animations) {
+            std::vector<std::string> names;
+            names.reserve(player->animations->clips.size());
+
+            for (const auto &name : player->animations->clips | std::views::keys) {
+                names.push_back(name);
+            }
+
+            std::ranges::sort(names);
+
+            const char *preview = player->initialClip.empty() ? "<None>" : player->initialClip.c_str();
+
+            if (ImGui::BeginCombo("Initial Clip", preview)) {
+                if (ImGui::Selectable("<None>", player->initialClip.empty())) {
+                    if (!player->initialClip.empty()) {
+                        player->initialClip.clear();
+                        configChanged = true;
+                    }
+                }
+
+                for (const auto &name : names) {
+                    const bool isSelected = name == player->initialClip;
+
+                    ImGui::PushID(name.c_str());
+
+                    if (ImGui::Selectable(name.c_str(), isSelected)) {
+                        if (!isSelected) {
+                            player->initialClip = name;
+                            configChanged = true;
+                        }
+                    }
+
+                    if (isSelected) {
+                        ImGui::SetItemDefaultFocus();
+                    }
+
+                    ImGui::PopID();
+                }
+
+                ImGui::EndCombo();
+            }
+        }
+
+        configChanged |= ImGui::Checkbox("Autoplay", &player->autoplay);
+
+        if (configChanged) {
+            Animation::ResetToInitial(*player);
+
+            if (!Animation::ResolvePose(*player, *sprite)) {
+                *sprite = Sprite{};
+            }
+
+            MarkSceneChanged(ctx);
+        }
+
+        if (!player->animations) {
+            ImGui::TextDisabled("Choose an animation asset.");
+        } else if (player->initialClip.empty()) {
+            ImGui::TextDisabled("Choose an initial clip.");
+        } else {
+            const auto it = player->animations->clips.find(player->initialClip);
+
+            if (it == player->animations->clips.end()) {
+                ImGui::TextWrapped("The initial clip does not exist in this asset.");
+            } else if (!Animation::ValidateClip(*player->animations, it->second)) {
+                ImGui::TextWrapped("The initial clip has an invalid sheet, "
+                                   "frame index, or frame duration.");
+            }
+        }
+
+        ImGui::Text("Sheet Frame: %u", static_cast<unsigned int>(sprite->frame));
+        ImGui::TextDisabled("The animator controls the sheet and frame.");
+
+        if (ImGui::Button("Remove Animator")) {
+            if (undomgr && ctx) {
+                undomgr->Execute(std::make_unique<Commands::RemoveComponentCommand<Player>>(id, *player), *ctx);
+            } else {
+                entity.RemoveComponent<Player>();
+            }
+
+            m_HasDraft = false;
+            MarkSceneChanged(ctx);
+        }
+
+        ImGui::PopID();
+        return;
+    }
+
+    if (!m_HasDraft || m_EditEntity != entity || m_SourceSheet != sprite->sheet || m_SourceFrame != sprite->frame) {
+
         m_EditEntity = entity;
+        m_SourceSheet = sprite->sheet;
+        m_SourceFrame = sprite->frame;
+
+        m_SheetDraft = sprite->sheet ? *sprite->sheet : Rendering::SpriteSheet{};
+
+        m_FrameInput = static_cast<int>(std::min(sprite->frame, static_cast<uint32_t>(std::numeric_limits<int>::max())));
+
         m_HasDraft = true;
     }
 
-    auto &sheet = m_SheetDraft;
-    bool layoutEdited = false;
-    bool changed = false;
-    if (engineContext && engineContext->resources)
-        layoutEdited |= TextureCombo("Texture", *engineContext->resources, sheet.texture);
+    bool layoutChanged = TextureCombo("Texture", resources, m_SheetDraft.texture);
 
-    auto layoutInput = [&](const char *label, int &value, int minimum) {
-        layoutEdited |= ImGui::InputInt(label, &value);
-        if (ImGui::IsItemDeactivatedAfterEdit()) {
-            const int corrected = std::clamp(value, minimum, 4096);
-            if (value != corrected) {
-                value = corrected;
-                layoutEdited = true;
-            }
+    layoutChanged |= ImGui::InputInt("Columns", &m_SheetDraft.columns);
+    layoutChanged |= ImGui::InputInt("Rows", &m_SheetDraft.rows);
+
+    layoutChanged |= ImGui::InputInt("Column spacing (px)", &m_SheetDraft.columnSpacing);
+
+    layoutChanged |= ImGui::InputInt("Row spacing (px)", &m_SheetDraft.rowSpacing);
+
+    const bool validLayout = Animation::ValidateSheet(m_SheetDraft);
+
+    if (layoutChanged && validLayout) {
+        sprite->sheet = std::make_shared<Rendering::SpriteSheet>(m_SheetDraft);
+
+        const auto total = static_cast<uint32_t>(static_cast<int64_t>(m_SheetDraft.columns) * m_SheetDraft.rows);
+
+        sprite->frame = std::min(sprite->frame, total - 1);
+
+        m_FrameInput = static_cast<int>(sprite->frame);
+        m_SourceSheet = sprite->sheet;
+        m_SourceFrame = sprite->frame;
+
+        MarkSceneChanged(ctx);
+    }
+
+    if (!m_SheetDraft.texture) {
+        ImGui::TextDisabled("Choose a texture.");
+    } else if (m_SheetDraft.columns <= 0 || m_SheetDraft.rows <= 0) {
+        ImGui::TextWrapped("Columns and rows must be at least 1.");
+    } else if (m_SheetDraft.columnSpacing < 0 || m_SheetDraft.rowSpacing < 0) {
+        ImGui::TextWrapped("Spacing cannot be negative.");
+    } else {
+        const int64_t columns = m_SheetDraft.columns;
+        const int64_t rows = m_SheetDraft.rows;
+
+        const int64_t width = static_cast<int64_t>(m_SheetDraft.texture->GetWidth()) - static_cast<int64_t>(m_SheetDraft.columnSpacing) * (columns - 1);
+
+        const int64_t height = static_cast<int64_t>(m_SheetDraft.texture->GetHeight()) - static_cast<int64_t>(m_SheetDraft.rowSpacing) * (rows - 1);
+
+        if (columns * rows > std::numeric_limits<int>::max()) {
+            ImGui::TextWrapped("The grid contains too many frames.");
+        } else if (width < columns || height < rows) {
+            ImGui::TextWrapped("The texture is too small for this grid and spacing. "
+                               "Each frame needs at least one pixel in each dimension.");
+        } else if (width % columns != 0 || height % rows != 0) {
+            ImGui::TextWrapped("The grid produces %.3f x %.3f pixels per frame. "
+                               "Both dimensions must be whole numbers.",
+                               static_cast<double>(width) / columns, static_cast<double>(height) / rows);
+        } else {
+            ImGui::Text("Frame size: %lld x %lld px", static_cast<long long>(width / columns), static_cast<long long>(height / rows));
         }
-    };
-    layoutInput("Columns", sheet.columns, 1);
-    layoutInput("Rows", sheet.rows, 1);
-    layoutInput("Column spacing (px)", sheet.columnSpacing, 0);
-    layoutInput("Row spacing (px)", sheet.rowSpacing, 0);
+    }
 
-    bool validLayout = false;
-    int frameWidth = 0, frameHeight = 0;
-    if (sheet.texture && sheet.columns >= 1 && sheet.columns <= 4096 && sheet.rows >= 1 && sheet.rows <= 4096 && sheet.columnSpacing >= 0 && sheet.columnSpacing <= 4096 && sheet.rowSpacing >= 0 &&
-        sheet.rowSpacing <= 4096) {
-        const int width = sheet.texture->GetWidth() - sheet.columnSpacing * (sheet.columns - 1);
-        const int height = sheet.texture->GetHeight() - sheet.rowSpacing * (sheet.rows - 1);
-        validLayout = width >= sheet.columns && height >= sheet.rows && width % sheet.columns == 0 && height % sheet.rows == 0;
-        if (validLayout) {
-            frameWidth = width / sheet.columns;
-            frameHeight = height / sheet.rows;
-        }
+    if (!validLayout) {
+        ImGui::TextWrapped("The last accepted layout remains active. "
+                           "Spacing is between frames; it does not include an outer border.");
     }
-    if (layoutEdited && validLayout) {
-        comp->sheet = std::make_shared<Rendering::SpriteSheet>(sheet);
-        const int total = sheet.FrameCount();
-        comp->startFrame = std::clamp(comp->startFrame, 0, total - 1);
-        comp->frameCount = std::clamp(comp->frameCount, 1, total - comp->startFrame);
-        comp->currentFrame = std::clamp(comp->currentFrame, 0, comp->frameCount - 1);
-        m_StartFrameInput = comp->startFrame;
-        m_FrameCountInput = comp->frameCount;
-        changed = true;
-    }
-    if (validLayout)
-        ImGui::Text("Frame size: %d x %d px", frameWidth, frameHeight);
-    else
-        ImGui::TextWrapped("Invalid layout. The last accepted layout stays active. Spacing is between frames, with no outer border.");
 
-    const auto *active = comp->sheet.get();
-    const bool validGrid = active && active->columns >= 1 && active->columns <= 4096 && active->rows >= 1 && active->rows <= 4096;
-    const int total = validGrid ? active->FrameCount() : 0;
-    ImGui::Text("Sheet frames: %d", total);
+    int64_t totalFrames = 0;
 
-    // persistent input buffers
-    bool animationEdited = ImGui::InputInt("Start frame", &m_StartFrameInput);
-    animationEdited |= ImGui::InputInt("Animation length", &m_FrameCountInput);
-    const bool validAnimation = total > 0 && m_StartFrameInput >= 0 && m_StartFrameInput < total && m_FrameCountInput >= 1 && m_FrameCountInput <= total - m_StartFrameInput;
-    if (animationEdited && validAnimation) {
-        comp->startFrame = m_StartFrameInput;
-        comp->frameCount = m_FrameCountInput;
-        comp->currentFrame = std::clamp(comp->currentFrame, 0, comp->frameCount - 1);
-        changed = true;
+    if (sprite->sheet && Animation::ValidateSheet(*sprite->sheet)) {
+        totalFrames = static_cast<int64_t>(sprite->sheet->columns) * sprite->sheet->rows;
     }
-    if (!validAnimation)
-        ImGui::TextWrapped("Animation range is outside the accepted grid. Finish editing to apply it.");
 
-    ImGui::BeginDisabled(total <= 0);
-    if (ImGui::Button("Use all frames")) {
-        comp->startFrame = m_StartFrameInput = 0;
-        comp->frameCount = m_FrameCountInput = total;
-        comp->currentFrame = 0;
-        changed = true;
-    }
-    ImGui::EndDisabled();
+    ImGui::Text("Accepted sheet frames: %lld", static_cast<long long>(totalFrames));
 
-    const bool fpsEdited = ImGui::InputFloat("FPS", &m_FPSInput);
-    const bool validFPS = std::isfinite(m_FPSInput) && m_FPSInput >= 0.0f && m_FPSInput <= 240.0f;
-    if (fpsEdited && validFPS) {
-        comp->framesPerSecond = m_FPSInput;
-        changed = true;
-    }
-    if (!validFPS)
-        ImGui::TextDisabled("FPS must be between 0 and 240.");
+    const bool frameChanged = ImGui::InputInt("Frame", &m_FrameInput);
 
-    if (ImGui::Checkbox("Loop", &comp->loop))
-        MarkSceneChanged(engineContext);
-    if (ImGui::Checkbox("Playing", &comp->playing))
-        MarkSceneChanged(engineContext);
-    if (ImGui::SliderInt("Current frame", &comp->currentFrame, 0, std::max(0, comp->frameCount - 1))) {
-        comp->playing = false;
-        changed = true;
+    const bool validFrame = m_FrameInput >= 0 && static_cast<int64_t>(m_FrameInput) < totalFrames;
+
+    if (frameChanged && validFrame) {
+        sprite->frame = static_cast<uint32_t>(m_FrameInput);
+        m_SourceFrame = sprite->frame;
+        MarkSceneChanged(ctx);
     }
-    if (ImGui::Button("Restart")) {
-        comp->currentFrame = 0;
-        comp->playing = true;
-        changed = true;
+
+    if (totalFrames > 0 && !validFrame) {
+        ImGui::TextWrapped("Frame must be between 0 and %lld.", static_cast<long long>(totalFrames - 1));
     }
-    if (changed) {
-        comp->elapsed = 0.0f;
-        MarkSceneChanged(engineContext);
-    }
+
     ImGui::Separator();
+
     if (ImGui::Button("Remove Sprite Sheet")) {
-        if (undoManager && engineContext)
-            undoManager->Execute(std::make_unique<Commands::RemoveComponentCommand<Component>>(static_cast<ECS::EntityID>(entity), *comp), *engineContext);
-        else
-            entity.RemoveComponent<Component>();
+        if (undomgr && ctx) {
+            undomgr->Execute(std::make_unique<Commands::RemoveComponentCommand<Sprite>>(id, *sprite), *ctx);
+        } else {
+            entity.RemoveComponent<Sprite>();
+        }
+
         m_HasDraft = false;
-        MarkSceneChanged(engineContext);
+        MarkSceneChanged(ctx);
     }
+
+    ImGui::PopID();
 }
