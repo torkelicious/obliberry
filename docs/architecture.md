@@ -44,31 +44,31 @@ flowchart TD
 
 ### Main loop (`src/Core/Application.cpp`)
 
-* The **main thread** polls input, updates the active layer (game logic, ECS systems, scripts), renders the layer
+- The **main thread** polls input, updates the active layer (game logic, ECS systems, scripts), renders the layer
   (submitting render commands and ImGui), then hands the finished frame to the render thread.
-* Rendering is **double-buffered at the frame level**: `m_Frames[2]` alternate between
+- Rendering is **double-buffered at the frame level**: `m_Frames[2]` alternate between
   `Free → Ready → Rendering → Free`. The main thread writes into one buffer while the render thread draws the other;
   when both are busy, the main thread blocks until a buffer frees up.
-* The **render thread** (`RenderThreadWorker`) has its own GL context. It waits for a `Ready` frame, flushes the
+- The **render thread** (`RenderThreadWorker`) has its own GL context. It waits for a `Ready` frame, flushes the
   submitted render commands and UI, draws ImGui, swaps buffers, and applies VSync / the `targetfps` frame limiter (the
   limiter only runs when VSync is off). In editor mode the scene is drawn into an editor framebuffer (used by the
   viewport and for entity picking).
-* `EngineContext` is a plain struct of pointers handed to layers and modules it is how systems reach the window, input,
+- `EngineContext` is a plain struct of pointers handed to layers and modules it is how systems reach the window, input,
   renderer, camera, resources, scene manager, script pool, thread pool, audio engine, and time data.
 
 ## Threading model
 
 | Thread              | Responsibility                                                                  |
-|---------------------|---------------------------------------------------------------------------------|
+| ------------------- | ------------------------------------------------------------------------------- |
 | Main                | Input, scene update (ECS systems), script dispatch, UI/ImGui, frame submission  |
 | Render              | All GL calls: command flush, framebuffer, present                               |
 | Thread pool workers | Parallel script execution and general tasks (`Platform::Threading::ThreadPool`) |
 
-* The thread pool sizes itself to `hardware_concurrency - 2` (2 threads are reserved for main + render; see
+- The thread pool sizes itself to `hardware_concurrency - 2` (2 threads are reserved for main + render; see
   `Core::ReservedThreads`).
-* ObSL scripts run **in parallel** across the script pool's workers (one interpreter per worker). Each entity's scripts
+- ObSL scripts run **in parallel** across the script pool's workers (one interpreter per worker). Each entity's scripts
   are assigned to a worker round robin.
-* Scripts must not mutate the ECS directly from a worker: the EngineLib routes mutations through `ScriptCommandBuffer` /
+- Scripts must not mutate the ECS directly from a worker: the EngineLib routes mutations through `ScriptCommandBuffer` /
   `UICommandBuffer`, which the main thread flushes after parallel execution. Reads are protected by a shared registry
   mutex (`g_RegistryMutex`). Module-specific state (camera, audio, window, …) has its own mutexes.
 
@@ -77,36 +77,43 @@ and [Scripting : API Reference](scripting/api-reference.md) for notes per module
 
 ## ECS (`src/ECS`)
 
-* **Registry** : owns entity pools (`ComponentPool<T>`, dense arrays) with a fixed cap on component types (
-  `MAX_COMPONENT_TYPES`) and a maximum entity count. Entity handles are *versioned* (
+- **Registry** : owns entity pools (`ComponentPool<T>`, dense arrays) with a fixed cap on component types (
+  `MAX_COMPONENT_TYPES`) and a maximum entity count. Entity handles are _versioned_ (
   `index | version << ENTITY_VERSION_SHIFT`) so stale handles don't alias new entities. `ForEach<Primary, Rest...>`
   iterates entities that have all listed components.
-* **Entity** : a lightweight handle wrapper (`{EntityID, Registry*}`) with
+- **Entity** : a lightweight handle wrapper (`{EntityID, Registry*}`) with
   `AddComponent/GetComponent/HasComponent/RemoveComponent`, naming, and hierarchy helpers.
-* **Components** (`src/ECS/Components/`) : `TransformComponent`, `MeshComponent`, `MaterialComponent`,
+- **Components** (`src/ECS/Components/`) : `TransformComponent`, `MeshComponent`, `MaterialComponent`,
   `ScriptComponent`, `MovementComponent`, `MapComponent`/`MapStateComponent`, `PointLightComponent`,
-  `ParticleEmitterComponent`, `DirectionalTextureComponent`, `SpriteSheetComponent`, `ColliderComponent`,
+  `ParticleEmitterComponent`, `DirectionalTextureComponent`, `SpriteSheetComponent`, `SpriteAnimatorComponent`, `ColliderComponent`,
   `BillboardTagComponent`, `DestroyTagComponent`,
   `PrefabSourceComponent`, `RelationshipComponent` (hierarchy), `CustomDataComponent` (script data).
-* **Systems** (`src/ECS/Systems/`) : `RenderSystem`, `ScriptSystem`, `MovementSystem`, `MapRenderSystem`,
+- **Systems** (`src/ECS/Systems/`) : `RenderSystem`, `ScriptSystem`, `MovementSystem`, `MapRenderSystem`,
   `MapRuntimeSystem`, `LightingSystem`, `ParticleSystem`, `AISystem`, `PlayerControlSystem`, `HierarchySystem`,
   `DirectionalAnimationSystem`, `SpriteBillboardSystem`, `SpriteAnimation::Update`, and `CollisionWorld`.
 
+Sprite animation uses `SpriteSheetComponent` for the displayed sheet/frame
+and `SpriteAnimatorComponent` for per-entity playback state.
+`Animation::SpriteAnimationSet` holds a shared sheet and named clips with
+per-frame durations. `ECS::Systems::SpriteAnimation::Update`, defined in
+`ECS/Systems/Animation/SpriteAnimationSystem.h`, advances playback and resolves
+the resulting pose into the SpriteSheet component.
+
 ## Rendering (`src/Rendering`)
 
-* OpenGL forward renderer via GLAD. The camera is orthographic with an isometric-style rotation (tilt `angleX`, rotate
+- OpenGL forward renderer via GLAD. The camera is orthographic with an isometric-style rotation (tilt `angleX`, rotate
   `angleZ`) and zoom (`Rendering::Camera`).
-* Per frame the renderer collects `RenderCommand`s and `InstancedRenderCommand`s, merges them into batches by
+- Per frame the renderer collects `RenderCommand`s and `InstancedRenderCommand`s, merges them into batches by
   mesh/material/texture/color/shape/UV rectangle, and flushes them on the render thread. It supports instanced
   rendering,
   per-instance colors, blend modes, and `renderOrder`.
-* Resources: `Mesh` (with `MeshFactory` procedural factories such as `Quad`, `Hexagon`, `Circle`, `Ring`,
+- Resources: `Mesh` (with `MeshFactory` procedural factories such as `Quad`, `Hexagon`, `Circle`, `Ring`,
   `PointTopHex`, and serialized custom 2D meshes), `Material`, `Texture`, `Shader`, `Lightmap`, `FrameBuffer`
   (editor viewport + picking), `ParticlePool`.
-* **Shaders** go through `ShaderPreprocessor` (`src/Rendering/Types/Shader/Preprocessor/`): supports
+- **Shaders** go through `ShaderPreprocessor` (`src/Rendering/Types/Shader/Preprocessor/`): supports
   `#include "..."` (resolved relative to the including file / through the VFS), `#pragma once`, circular-include
   detection, and emits `#line` markers so driver error logs map back to real files.
-* **Post-processing** (`src/Rendering/PostProcessing/`): after the scene is drawn to its framebuffer,
+- **Post-processing** (`src/Rendering/PostProcessing/`): after the scene is drawn to its framebuffer,
   `PostProcessor::Execute` runs a per-scene chain of fullscreen shader effects, ping-ponging between two framebuffers.
   Each `PostEffect` carries its shader, tunable uniforms (float/int/vec2/3/4), optional per-pass overrides for
   multi-pass effects, and a `wantsSceneTexture` flag that binds the original scene on unit 1 (`u_Scene`) for
@@ -115,22 +122,34 @@ and [Scripting : API Reference](scripting/api-reference.md) for notes per module
   chain is serialized into the scene file (`PostProcessing` key, see
   [formats/scene-json.md](formats/scene-json.md#postprocessing)) and edited via the editor's Post Processing window,
   which applies changes with a live preview + undoable commit (`PostProcEditor`, `PostProcUpdateCommand`).
-* Editor picking is done by reading the pixel from an entity-ID framebuffer attachment.
+- Editor picking is done by reading the pixel from an entity-ID framebuffer attachment.
+- **Sprite sheets:** the render system obtains the selected frame's UV
+  offset and scale from `SpriteSheet::GetFrameUV()`. Frames share the original
+  texture; selecting a frame does not create a separate texture.
 
 ### Spritesheets and animation
 
-`Rendering::SpriteSheet` references one Texture and stores grid dimensions plus column/row pixel
+`Rendering::SpriteSheet` references one texture and stores grid dimensions plus column/row pixel
 spacing. `GetFrameUV` returns an offset and scale `(u, v, width, height)` for a frame, accounting for
 the file texture loader's vertical flip. It does not split the image into separate GPU textures.
-`SpriteSheetComponent` stores the clip range, speed, playback flags, relative current frame, and elapsed time.
-`SpriteAnimation::Update` advances that state in scene updates and editor preview updates.
 
-`RenderSystem` selects `startFrame + currentFrame`, takes the sheet texture, and passes the UV
-rectangle into rendering. A sheet texture overrides directional/material texture selection.
-The current renderer uses the `u_UVRect` uniform and includes the rectangle in the batch key;
-different regions therefore form separate batches. This is not a per-instance UV attribute.
-See [component settings](editor/components.md#sprite-sheet)
-and [scene fields](formats/scene-json.md#spritesheetcomponent).
+`SpriteSheetComponent` stores a sheet reference and an absolute, zero-based sheet frame index.
+`SpriteAnimatorComponent` stores the animation-set reference, initial clip, autoplay setting, and
+per-entity playback state. `Animation::SpriteAnimationSet` contains the sheet and named clips;
+each clip stores a looping flag and an ordered list of frame indices and durations in seconds.
+
+`ECS::Systems::SpriteAnimation::Update` advances each animator and resolves its pose into the
+SpriteSheet component. The animation editor uses its own draft and preview player, calling
+`Animation::Advance` and `Animation::ResolvePose` for preview playback.
+
+`RenderSystem` uses `sprite.frame` to select a UV rectangle from the sheet. A valid sheet texture
+overrides directional/material texture selection. The current renderer uses the `u_UVRect`
+uniform and includes the rectangle in the batch key; different regions therefore form separate
+batches. This is not a per-instance UV attribute.
+
+See [component settings](editor/components.md#spritesheet),
+[the animation editor](editor/sprite-animation.md), and
+[scene fields](formats/scene-json.md#spritesheetcomponent).
 
 ### Collision detection
 
@@ -152,10 +171,10 @@ See [Collider settings](editor/components.md#collider) and the [EngineLib API](s
 
 ## Scripting (`src/Scripting`)
 
-* The engine embeds **ObSL** (submodule at `external/obsl`) language with its own docs (`external/obsl/docs/`).
-* `Scripting::EngineLib` registers the script-visible API in nine modules: Core, Registry, Input, Camera, Map, Audio,
+- The engine embeds **ObSL** (submodule at `external/obsl`) language with its own docs (`external/obsl/docs/`).
+- `Scripting::EngineLib` registers the script-visible API in nine modules: Core, Registry, Input, Camera, Map, Audio,
   Scene Management, Time, and UI.
-* `ECS::Systems::ScriptSystem` pre-parses and runs entity scripts, binds the `this` entity wrapper, calls `on_update`/
+- `ECS::Systems::ScriptSystem` pre-parses and runs entity scripts, binds the `this` entity wrapper, calls `on_update`/
   `on_destroy`/`on_exit` hooks in parallel, hot-reloads scripts when their source changes (loose projects only), and
   defers registry mutations to the main thread.
 
@@ -163,54 +182,60 @@ See [Collider settings](editor/components.md#collider) and the [EngineLib API](s
 
 ## Scenes (`src/Scenes`)
 
-* A `Scene` owns an `ECS::Registry`, a `UI::UISystem`, and `SceneProperties` (name, clear color, ambient light,
+- A `Scene` owns an `ECS::Registry`, a `UI::UISystem`, and `SceneProperties` (name, clear color, ambient light,
   background music).
-* `SceneManager` handles create/switch/save/load, including deferred scene changes (`pendingScenePath` , scripts call
+- `SceneManager` handles create/switch/save/load, including deferred scene changes (`pendingScenePath` , scripts call
   `LoadScene(...)` and the engine performs the switch).
-* Scenes serialize to JSON under `assets/scenes/`; see [Scene file format](formats/scene-json.md).
+- Scenes serialize to JSON under `assets/scenes/`; see [Scene file format](formats/scene-json.md).
 
 ## IO and packaging (`src/IO`)
 
-* **VFS** (`IO::VFS`) : mounts either a project directory (root = `project.json`'s parent) or a `.obpak` package.
+- **VFS** (`IO::VFS`) : mounts either a project directory (root = `project.json`'s parent) or a `.obpak` package.
   Virtual paths are project-relative (`assets/scripts/main.obsl`). A mounted package shadows the disk for reads.
-* **Serialization** : `SceneSerialization` (JSON scenes), `MapSerialization` (binary `.obmap` hex maps), `UISerializer`.
-* **Loaders** - `AssetLoader` (textures, shaders, meshes, materials, fonts from the scene `assets` section),
-  `EntityFactory` (component deserializers/serializers), `PrefabManager`/`ParticleEmitterPrefabManager`.
-* **Packaging** : `.obpak` container (header + TOC + string table + LZ4-compressed blob), plus the `ob_packer` /
+- **Serialization:** `SceneSerialization` (JSON scenes), `MapSerialization`
+  (binary `.obmap` hex maps), `UISerializer`, and `AnimationSerialization`
+  (JSON sprite animation definitions through `IO::AnimationIO`).
+  Animation deserialization uses `VFS::ReadVirtualJson()`.
+- **Loaders:** `AssetLoader` loads textures, shaders, meshes, materials, fonts,
+  and animation sets from the scene's `assets` section. Textures load before
+  animation sets. `EntityFactory` handles component serialization and
+  deserialization; `PrefabManager` and `ParticleEmitterPrefabManager`
+  handle prefab loading.
+- **Packaging** : `.obpak` container (header + TOC + string table + LZ4-compressed blob), plus the `ob_packer` /
   `ob_unpacker` / `obsl_pack_run` tools, `.pakignore` rules, and dependency graph validation.
 
 → [`.obmap`](formats/obmap.md) · [`.obpak`](formats/obpak.md) · [scene JSON](formats/scene-json.md)
 
 ## UI (`src/UI`)
 
-* `UI::UISystem` maintains a tree of `UIElement`s rooted at a `"Canvas"` element. Elements are `UIText`, `UIButton`,
+- `UI::UISystem` maintains a tree of `UIElement`s rooted at a `"Canvas"` element. Elements are `UIText`, `UIButton`,
   `UIImage`, and `UIRect`, each with a `RectTransform` (position + scale in UI space) and flags (`VISIBLE`, `ENABLED`,
   `FOCUSED`).
-* Hit testing walks the tree; button states (hovered/held/clicked) are snapshotted per frame for script queries.
-* `UI::UIRenderer` draws the UI with its own shaders; text is rendered via FreeType (`UI::Text::Font`). The whole scene
+- Hit testing walks the tree; button states (hovered/held/clicked) are snapshotted per frame for script queries.
+- `UI::UIRenderer` draws the UI with its own shaders; text is rendered via FreeType (`UI::Text::Font`). The whole scene
   UI can be authored in the editor's UI panel and is serialized into the scene file
   (see [scene format](formats/scene-json.md)).
 
 ## Sound (`src/Sound`)
 
-* `Sound::AudioEngine` wraps **miniaudio**. It provides 2D sound effects (`PlaySound2D`), looping music (`PlayMusic`/
+- `Sound::AudioEngine` wraps **miniaudio**. It provides 2D sound effects (`PlaySound2D`), looping music (`PlayMusic`/
   `StopMusic`), and a master volume control. Audio is updated once per frame on the main thread.
 
 ## Platform (`src/Platform`)
 
-* `Window` : GLFW window wrapper (size, fullscreen, swap, polling).
-* `InputManager` : keyboard (by GLFW key or named alias, e.g. `"Space"`), mouse buttons, scroll, mouse position with
+- `Window` : GLFW window wrapper (size, fullscreen, swap, polling).
+- `InputManager` : keyboard (by GLFW key or named alias, e.g. `"Space"`), mouse buttons, scroll, mouse position with
   viewport-offset support, and edge-triggered pressed/released state.
-* `ThreadPool` : fixed worker pool with `enqueue`/`wait` (used by script execution and other tasks).
+- `ThreadPool` : fixed worker pool with `enqueue`/`wait` (used by script execution and other tasks).
 
 ## Logger (`src/Logger`)
 
-* `LoggerService` holds a thread-local `ILogger`. The `LOG_INFO/LOG_WARN/LOG_ERROR/LOG_DEBUG(who, msg)` macros are the
+- `LoggerService` holds a thread-local `ILogger`. The `LOG_INFO/LOG_WARN/LOG_ERROR/LOG_DEBUG(who, msg)` macros are the
   standard way to log.
 
 ## Configuration (`src/Config`)
 
-* `ProjectConfig` : project-level settings (`title`, `start_scene`) from `project.json`.
-* `GraphicsConfig` : window size/fullscreen, MSAA, target FPS, vsync mode, performance overlay from `graphics.json`.
+- `ProjectConfig` : project-level settings (`title`, `start_scene`) from `project.json`.
+- `GraphicsConfig` : window size/fullscreen, MSAA, target FPS, vsync mode, performance overlay from `graphics.json`.
 
 → [project.json](formats/project-json.md) · [graphics.json](formats/graphics-json.md)

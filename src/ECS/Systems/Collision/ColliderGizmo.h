@@ -26,7 +26,7 @@ namespace Editor::ColliderGizmo {
 
     inline glm::dmat4 MakeMatrix(const glm::mat4 &viewProjection, const WorldCollider &world) { return glm::dmat4(viewProjection) * world.localToWorld; }
 
-    inline bool ToScreen(const glm::dmat4 &matrix, const glm::dvec3 &local, ImVec2 viewportMin, ImVec2 viewportMax, glm::vec2 &outScreen) {
+    inline bool ToScreen(const glm::dmat4 &matrix, const glm::dvec3 &local, const ImVec2 viewportMin, const ImVec2 viewportMax, glm::vec2 &outScreen) {
         const glm::dvec4 clip = matrix * glm::dvec4(local, 1.0);
 
         if (!std::isfinite(clip.x) || !std::isfinite(clip.y) || !std::isfinite(clip.z) || !std::isfinite(clip.w) || clip.w <= 0.0 || clip.z < -clip.w || clip.z > clip.w)
@@ -40,7 +40,7 @@ namespace Editor::ColliderGizmo {
         if (width <= 0.0 || height <= 0.0)
             return false;
 
-        outScreen = {float(viewportMin.x + (ndc.x * 0.5 + 0.5) * width), float(viewportMin.y + (0.5 - ndc.y * 0.5) * height)};
+        outScreen = {static_cast<float>(viewportMin.x + (ndc.x * 0.5 + 0.5) * width), static_cast<float>(viewportMin.y + (0.5 - ndc.y * 0.5) * height)};
         return true;
     }
 
@@ -71,7 +71,7 @@ namespace Editor::ColliderGizmo {
     inline std::vector<Handle> GetHandles(const WorldCollider &world) {
         std::vector<Handle> handles;
 
-        auto push = [&](HandleType type, const glm::dvec3 &local, const glm::dvec3 &direction) { handles.push_back({type, local, direction}); };
+        auto push = [&](const HandleType type, const glm::dvec3 &local, const glm::dvec3 &direction) { handles.push_back({.type = type, .localPosition = local, .direction = direction}); };
 
         // translate handle at the collider center
         push(HandleType::Translate, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0});
@@ -111,7 +111,7 @@ namespace Editor::ColliderGizmo {
         return handles;
     }
 
-    inline int HitTest(const glm::vec2 &mouseScreen, const WorldCollider &world, const glm::mat4 &viewProjection, const glm::dvec3 &viewDirection, ImVec2 viewportMin, ImVec2 viewportMax) {
+    inline int HitTest(const glm::vec2 &mouseScreen, const WorldCollider &world, const glm::mat4 &viewProjection, const glm::dvec3 &viewDirection, const ImVec2 viewportMin, const ImVec2 viewportMax) {
         constexpr float hitRadius = 12.0f;
         constexpr double unusable = 0.95;
 
@@ -152,7 +152,7 @@ namespace Editor::ColliderGizmo {
                 return;
             }
             case HandleType::Radius: {
-                collider.radius = float(std::max(minimum, double(collider.radius) + glm::dot(d, localDelta)));
+                collider.radius = static_cast<float>(std::max(minimum, static_cast<double>(collider.radius) + glm::dot(d, localDelta)));
                 return;
             }
             case HandleType::Height: {
@@ -161,8 +161,8 @@ namespace Editor::ColliderGizmo {
                 const double oldHeight = collider.height;
                 const double newHeight = std::max(minimum, oldHeight + sign * localDelta.y);
 
-                collider.height = float(newHeight);
-                collider.offset.y += float(sign * (newHeight - oldHeight) * 0.5);
+                collider.height = static_cast<float>(newHeight);
+                collider.offset.y += static_cast<float>(sign * (newHeight - oldHeight) * 0.5);
                 return;
             }
             case HandleType::Face: {
@@ -172,8 +172,8 @@ namespace Editor::ColliderGizmo {
                 const double oldSize = collider.size[axis];
                 const double newSize = std::max(minimum, oldSize + sign * localDelta[axis]);
 
-                collider.size[axis] = float(newSize);
-                collider.offset[axis] += float(sign * (newSize - oldSize) * 0.5);
+                collider.size[axis] = static_cast<float>(newSize);
+                collider.offset[axis] += static_cast<float>(sign * (newSize - oldSize) * 0.5);
                 return;
             }
             case HandleType::None:
@@ -181,7 +181,7 @@ namespace Editor::ColliderGizmo {
         }
     }
 
-    inline void Draw(ImDrawList *drawList, const WorldCollider &world, const glm::mat4 &viewProjection, const glm::dvec3 &viewDirection, ImVec2 viewportMin, ImVec2 viewportMax, int hovered = -1) {
+    inline void Draw(ImDrawList *drawList, const WorldCollider &world, const glm::mat4 &viewProjection, const glm::dvec3 &viewDirection, const ImVec2 viewportMin, const ImVec2 viewportMax, const int hovered = -1) {
         if (!drawList)
             return;
 
@@ -197,7 +197,7 @@ namespace Editor::ColliderGizmo {
 
         drawList->PushClipRect(viewportMin, viewportMax, true);
 
-        auto line = [&](glm::dvec3 a, glm::dvec3 b) {
+        auto line = [&](const glm::dvec3 &a, const glm::dvec3 &b) {
             glm::dvec4 ca = matrix * glm::dvec4(a, 1.0);
             glm::dvec4 cb = matrix * glm::dvec4(b, 1.0);
 
@@ -206,7 +206,7 @@ namespace Editor::ColliderGizmo {
                     return;
             }
 
-            for (double sign : {-1.0, 1.0}) {
+            for (const double sign : {-1.0, 1.0}) {
                 const double da = ca.w + sign * ca.z;
                 const double db = cb.w + sign * cb.z;
 
@@ -229,13 +229,13 @@ namespace Editor::ColliderGizmo {
             auto screen = [&](const glm::dvec4 &p) {
                 const glm::dvec3 ndc = glm::dvec3(p) / p.w;
 
-                return ImVec2(float(viewportMin.x + (ndc.x * 0.5 + 0.5) * width), float(viewportMin.y + (0.5 - ndc.y * 0.5) * height));
+                return ImVec2(static_cast<float>(viewportMin.x + (ndc.x * 0.5 + 0.5) * width), static_cast<float>(viewportMin.y + (0.5 - ndc.y * 0.5) * height));
             };
 
             drawList->AddLine(screen(ca), screen(cb), IM_COL32(0, 204, 255, 255), 2.0f);
         };
 
-        auto circle = [&](glm::dvec3 center, glm::dvec3 u, glm::dvec3 v) {
+        auto circle = [&](const glm::dvec3 &center, const glm::dvec3 &u, const glm::dvec3 &v) {
             constexpr int segments = 64;
             constexpr double tau = 6.283185307179586;
 
@@ -257,7 +257,7 @@ namespace Editor::ColliderGizmo {
             }
 
             for (int i = 0; i < 8; ++i) {
-                for (int bit : {1, 2, 4}) {
+                for (const int bit : {1, 2, 4}) {
                     if (!(i & bit))
                         line(corners[i], corners[i | bit]);
                 }

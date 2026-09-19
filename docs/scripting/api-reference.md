@@ -10,8 +10,8 @@ organized by the nine registered modules.
 - **Void** functions return `nil` (`null`); failing lookups usually return `nil` rather than throwing.
 - **Booleans** sometimes accept a number (`0` = false, non-zero = true); this is noted per-function.
 - **Composite values** come back as ObSL objects (`{x, y}`) or arrays (`[x, y, z]`), noted per-function.
-  > I apologize if this is confusing, Object were implemented before arrays and some things may have gotten a bit
-  > fragmented.
+    > I apologize if this is confusing, Object were implemented before arrays and some things may have gotten a bit
+    > fragmented.
 - Most functions silently no-op (or return a zero value) when the relevant engine system isn't available e.g. `nil`/`0`/
   `false` when there is no context, camera, input manager, or UI system.
 
@@ -30,7 +30,7 @@ You can call any function from any hook without extra bookkeeping.
 ## Script hooks and globals
 
 | Name               | Description                                                                                                              |
-|--------------------|--------------------------------------------------------------------------------------------------------------------------|
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------ |
 | `this`             | The entity the script is attached to (an [entity object](#entity-objects)). Bound per script instance by `ScriptSystem`. |
 | `fn on_update(dt)` | Optional. Called every frame with the raw (unscaled) delta time in seconds.                                              |
 | `fn on_destroy()`  | Optional. Called when the entity is marked for destruction (`DestroyTagComponent`).                                      |
@@ -44,7 +44,7 @@ There is no `dt` global use `get_dt()` (time-scaled) or `GetRawDt()` (unscaled) 
 ## Core & Window
 
 | Function                           | Args               | Returns | Description                                             |
-|------------------------------------|--------------------|---------|---------------------------------------------------------|
+| ---------------------------------- | ------------------ | ------- | ------------------------------------------------------- |
 | `get_dt()`                         | -                  | number  | Time-scaled frame delta time (`deltaTime * timeScale`). |
 | `Window_GetWidth()`                | -                  | number  | Current window width in pixels.                         |
 | `Window_GetHeight()`               | -                  | number  | Current window height in pixels.                        |
@@ -54,7 +54,7 @@ There is no `dt` global use `get_dt()` (time-scaled) or `GetRawDt()` (unscaled) 
 ## Audio
 
 | Function                    | Args                             | Returns | Description                                      |
-|-----------------------------|----------------------------------|---------|--------------------------------------------------|
+| --------------------------- | -------------------------------- | ------- | ------------------------------------------------ |
 | `PlaySound2D(path, volume)` | `path: string`, `volume: number` | void    | Plays a one-shot 2D sound at `volume` (0.0-1.0). |
 | `PlayMusic(path, volume)`   | `path: string`, `volume: number` | void    | Starts looping music playback.                   |
 | `StopMusic()`               | -                                | void    | Stops the currently playing music.               |
@@ -63,7 +63,7 @@ There is no `dt` global use `get_dt()` (time-scaled) or `GetRawDt()` (unscaled) 
 ## Camera
 
 | Function                          | Args           | Returns            | Description                                                                                                                  |
-|-----------------------------------|----------------|--------------------|------------------------------------------------------------------------------------------------------------------------------|
+| --------------------------------- | -------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
 | `Camera_GetPosition()`            | -              | object `{x, y, z}` | The camera's world position.                                                                                                 |
 | `Camera_SetPosition(x, y, z)`     | numbers        | bool               | Sets the camera position. `true` on success.                                                                                 |
 | `Camera_Move(dx, dy, dz)`         | numbers        | bool               | Translates the camera by the given world-space delta.                                                                        |
@@ -80,7 +80,7 @@ Key names are strings (e.g. `"Space"`, `"W"`, `"Esc"`) resolved via the input ma
 numbers: `0` = left, `1` = right, `2` = middle.
 
 | Function                        | Args   | Returns         | Description                                                                                 |
-|---------------------------------|--------|-----------------|---------------------------------------------------------------------------------------------|
+| ------------------------------- | ------ | --------------- | ------------------------------------------------------------------------------------------- |
 | `Input_IsKeyDown(keyName)`      | string | bool            | `true` while the key is held down.                                                          |
 | `Input_IsKeyPressed(keyName)`   | string | bool            | `true` only on the frame the key is first pressed (edge triggered).                         |
 | `Input_IsKeyReleased(keyName)`  | string | bool            | `true` only on the frame the key is released.                                               |
@@ -96,7 +96,7 @@ numbers: `0` = left, `1` = right, `2` = middle.
 ## Hex map
 
 | Function                            | Args                    | Returns                       | Description                                                                                                                                                     |
-|-------------------------------------|-------------------------|-------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ----------------------------------- | ----------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Math_WorldToHex(x, y)`             | numbers                 | object `{q, r}`               | Converts a world position to hex coordinates.                                                                                                                   |
 | `GetSelectedHex()`                  | -                       | object `{hasSelection, q, r}` | The currently selected hex (if any).                                                                                                                            |
 | `SetSelectedHex(q, r)`              | numbers                 | void                          | Selects the hex if it exists and is walkable; otherwise clears the selection.                                                                                   |
@@ -116,7 +116,7 @@ Hex coordinates are **odd-r offset** (pointy-top hexes). See `src/Math/HexMath.h
 ## Registry global functions
 
 | Function                  | Args              | Returns         | Description                                                        |
-|---------------------------|-------------------|-----------------|--------------------------------------------------------------------|
+| ------------------------- | ----------------- | --------------- | ------------------------------------------------------------------ |
 | `GetEntity(id)`           | number            | entity or `nil` | Wraps an entity by numeric id.                                     |
 | `Find(name)`              | string            | entity or `nil` | Finds the first entity with the given name.                        |
 | `CreateEntity(name)`      | string (optional) | entity          | Creates a new entity (default name `"NewEntity"`).                 |
@@ -131,7 +131,7 @@ Entity objects are returned by `GetEntity`, `Find`, `CreateEntity`, `Instantiate
 **Data fields:** `id` (number), `name` (string).
 
 | Method                            | Args             | Returns            | Description                                                                         |
-|-----------------------------------|------------------|--------------------|-------------------------------------------------------------------------------------|
+| --------------------------------- | ---------------- | ------------------ | ----------------------------------------------------------------------------------- |
 | `SetName(name)`                   | string           | void               | Renames the entity.                                                                 |
 | `GetName()`                       | -                | string             | The entity's name.                                                                  |
 | `GetComponent(name)`              | string           | component or `nil` | Wraps a built-in component (names below).                                           |
@@ -150,9 +150,15 @@ Entity objects are returned by `GetEntity`, `Find`, `CreateEntity`, `Instantiate
 | `SetPersistent(persistent)`       | bool             | void               | Marks the entity to survive scene loads.                                            |
 | `IsPersistent()`                  | -                | bool               | Whether the entity is marked as persistent.                                         |
 
-**Built-in component names** (accepted by `GetComponent`/`HasComponent`/`AddComponent`/`RemoveComponent`):
-`"Transform"`, `"PointLight"`, `"Movement"`, `"MapState"`, `"DirectionalTexture"`, `"BillboardTag"`, `"DestroyTag"`,
-`"ParticleEmitter"`, `"Collider"`, `"SpriteSheet"`.
+**Built-in component names** (accepted by
+`GetComponent`/`HasComponent`/`AddComponent`/`RemoveComponent`):
+`"Transform"`, `"PointLight"`, `"Movement"`, `"MapState"`,
+`"DirectionalTexture"`, `"BillboardTag"`, `"DestroyTag"`,
+`"ParticleEmitter"`, `"Collider"`, `"SpriteSheet"`, `"SpriteAnimator"`.
+
+Adding `"SpriteAnimator"` also adds `"SpriteSheet"` if it is missing.
+Removing `"SpriteAnimator"` leaves the sprite component and its last
+resolved pose.
 
 ### persistence
 
@@ -180,7 +186,7 @@ These are the objects returned by `entity.GetComponent(name)`.
 **Transform** : position/rotation/scale are `[x, y, z]` arrays.
 
 | Method                 | Args    | Returns           | Description                                                  |
-|------------------------|---------|-------------------|--------------------------------------------------------------|
+| ---------------------- | ------- | ----------------- | ------------------------------------------------------------ |
 | `SetPosition(x, y, z)` | numbers | void              | Sets world/local position.                                   |
 | `SetRotation(x, y, z)` | numbers | void              | Sets Euler rotation.                                         |
 | `SetScale(x, y, z)`    | numbers | void              | Sets scale.                                                  |
@@ -192,7 +198,7 @@ These are the objects returned by `entity.GetComponent(name)`.
 **PointLight**
 
 | Method                    | Args    | Returns | Description           |
-|---------------------------|---------|---------|-----------------------|
+| ------------------------- | ------- | ------- | --------------------- |
 | `SetColor(r, g, b)`       | numbers | void    | Sets light color.     |
 | `SetIntensity(intensity)` | number  | void    | Sets light intensity. |
 | `SetRadius(radius)`       | number  | void    | Sets light radius.    |
@@ -200,7 +206,7 @@ These are the objects returned by `entity.GetComponent(name)`.
 **Movement**
 
 | Method                    | Args   | Returns | Description                                |
-|---------------------------|--------|---------|--------------------------------------------|
+| ------------------------- | ------ | ------- | ------------------------------------------ |
 | `GetIsMoving()`           | -      | bool    | `true` while the entity is walking a path. |
 | `SetIsMoving(moving)`     | bool   | void    | Overrides the moving state.                |
 | `SetTimePerStep(seconds)` | number | void    | Time between path steps.                   |
@@ -208,7 +214,7 @@ These are the objects returned by `entity.GetComponent(name)`.
 **MapState**
 
 | Method              | Args | Returns        | Description                              |
-|---------------------|------|----------------|------------------------------------------|
+| ------------------- | ---- | -------------- | ---------------------------------------- |
 | `GetHasSelection()` | -    | bool           | Whether the map has an active selection. |
 | `GetSelectedHex()`  | -    | array `[q, r]` | The selected hex.                        |
 | `GetPathToHex()`    | -    | array `[q, r]` | The current path target hex.             |
@@ -216,7 +222,7 @@ These are the objects returned by `entity.GetComponent(name)`.
 **DirectionalTexture**
 
 | Method            | Args   | Returns | Description                                    |
-|-------------------|--------|---------|------------------------------------------------|
+| ----------------- | ------ | ------- | ---------------------------------------------- |
 | `SetIndex(index)` | number | void    | Sets the active direction texture index (0-5). |
 
 **BillboardTag / DestroyTag** empty wrapper objects (presence/absence is the state/tag; there are no methods).
@@ -224,7 +230,7 @@ These are the objects returned by `entity.GetComponent(name)`.
 **ParticleEmitter**
 
 | Method              | Args           | Returns | Description                                             |
-|---------------------|----------------|---------|---------------------------------------------------------|
+| ------------------- | -------------- | ------- | ------------------------------------------------------- |
 | `SetEmitRate(rate)` | number         | void    | Sets the particle emission rate.                        |
 | `SetActive(active)` | bool or number | void    | Enables/disables emission.                              |
 | `GetActive()`       | -              | bool    | Whether emission is active.                             |
@@ -233,7 +239,7 @@ These are the objects returned by `entity.GetComponent(name)`.
 **Collider**
 
 | Method                | Args | Returns | Description                               |
-|-----------------------|------|---------|-------------------------------------------|
+| --------------------- | ---- | ------- | ----------------------------------------- |
 | `GetIsTrigger()`      | -    | bool    | Returns whether the collider is a trigger |
 | `SetIsTrigger(value)` | bool | void    | Set isTrigger property of collider        |
 
@@ -256,66 +262,54 @@ fn on_trigger_exit(other){...}
 
 **SpriteSheet**
 
-Obtain the wrapper with `entity.GetComponent("SpriteSheet")`. The component must already exist;
-use `HasComponent`, `AddComponent`, or the Inspector to manage it.
+Controls the sheet and displayed frame of a static sprite.
 
-Frames are numbered left-to-right, then top-to-bottom, starting at zero. `GetStartFrame()` is
-an absolute sheet index; `GetFrame()` is relative to the animation clip. The displayed sheet
-index is `GetStartFrame() + GetFrame()`.
+| Method                   | Args           | Returns | Description                                               |
+| ------------------------ | -------------- | ------- | --------------------------------------------------------- |
+| `GetFrame()`             | —              | number  | Current zero-based sheet frame index.                     |
+| `GetColumns()`           | —              | number  | Number of sheet columns, or zero if no sheet is assigned. |
+| `GetRows()`              | —              | number  | Number of sheet rows, or zero if no sheet is assigned.    |
+| `GetTexture()`           | —              | string  | Registered texture resource ID.                           |
+| `SetFrame(index)`        | number         | void    | Selects a frame inside the current grid.                  |
+| `SetTexture(id)`         | string         | void    | Assigns a registered texture; an empty string clears it.  |
+| `SetGrid(columns, rows)` | number, number | void    | Sets the grid dimensions.                                 |
 
-| Method                                  | Returns | Description                                                                                                             |
-|-----------------------------------------|---------|-------------------------------------------------------------------------------------------------------------------------|
-| `GetFrame()`                            | number  | Current frame relative to the clip, starting at zero.                                                                   |
-| `GetStartFrame()`                       | number  | First sheet frame in the clip.                                                                                          |
-| `GetFrameCount()`                       | number  | Clip length, not the total number of sheet cells.                                                                       |
-| `GetFPS()`                              | number  | Playback speed.                                                                                                         |
-| `GetLoop()`                             | bool    | Whether playback loops.                                                                                                 |
-| `IsPlaying()`                           | bool    | Playback flag.                                                                                                          |
-| `GetColumns()` / `GetRows()`            | number  | Sheet grid dimensions.                                                                                                  |
-| `GetTexture()`                          | string  | Texture resource key.                                                                                                   |
-| `SetTexture(key)`                       | void    | Select an existing texture resource; an empty string clears it. Unknown nonempty keys raise an error.                   |
-| `SetGrid(columns, rows)`                | void    | Set positive integer grid dimensions; clamp the existing clip and current frame to the new grid and reset elapsed time. |
-| `SetAnimation(start, count, fps, loop)` | void    | Configure a contiguous clip; reset its current frame and elapsed time. Preserves the playing flag.                      |
-| `SetFrame(frame)`                       | void    | Select a clip-relative frame, reset elapsed time, and pause.                                                            |
-| `Play()`                                | void    | Resume a valid clip from its current frame.                                                                             |
-| `Pause()`                               | void    | Pause without resetting the frame or elapsed time.                                                                      |
-| `Restart()`                             | void    | Reset a valid clip to frame zero and start playback.                                                                    |
-| `Stop()`                                | void    | Pause and reset the frame and elapsed time.                                                                             |
+For animated entities, the animation system writes the sheet and frame.
+Manual SpriteSheet changes can therefore be overwritten by the animator.
 
-`SetAnimation` requires an integer start of at least zero, an integer count of at least one,
-a finite FPS greater than zero and at most 240, and a boolean loop argument. Invalid argument
-types/ranges raise an error. A clip outside the grid is ignored when the queued command executes;
-`SetFrame` similarly ignores frames outside the clip. `SetGrid` rejects a cell count above the
-signed integer limit, but does not validate pixel divisibility or spacing against the texture.
+**SpriteAnimator**
 
-Mutations from script workers are queued, so an immediate getter can still see the previous value.
-Texture/grid changes copy the sheet metadata before editing it. Column/row spacing is currently
-configured in the editor or scene JSON; there are no spacing methods in this wrapper.
+Controls playback of named clips from the assigned animation set.
 
-For an existing component and registered `hero_walk` texture containing an 8-by-4 grid:
+| Method          | Args   | Returns | Description                                                                                    |
+| --------------- | ------ | ------- | ---------------------------------------------------------------------------------------------- |
+| `Play(name)`    | string | void    | Starts a valid clip. Selecting the current clip does not restart it or resume paused playback. |
+| `Restart(name)` | string | void    | Starts a valid clip from its first frame, even if already selected.                            |
+| `Pause()`       | —      | void    | Pauses playback at its current position.                                                       |
+| `Resume()`      | —      | void    | Resumes the current valid clip.                                                                |
+| `Stop()`        | —      | void    | Pauses and resets playback to the current clip's first frame.                                  |
+| `IsPlaying()`   | —      | bool    | Whether playback is running.                                                                   |
+| `GetClip()`     | —      | string  | Current clip name, or an empty string when none is selected.                                   |
 
-```obsl
-var sprite = this.GetComponent("SpriteSheet");
-sprite.SetTexture("hero_walk");
-sprite.SetGrid(8, 4);
-sprite.SetAnimation(8, 8, 12, true);
-sprite.Play();
-```
+Assign the animation set through the editor or scene data before playing
+a clip. These bindings do not currently provide an animation-set setter.
 
-This plays sheet frames 8–15. `sprite.SetFrame(2)` pauses on sheet frame 10.
-See [Sprite Sheet editor settings](../editor/components.md#sprite-sheet) for pixel spacing and layout validation.
+When called from a script worker, mutations use the script command buffer.
+An immediate read after a queued mutation may still return the previous state.
+
+Looping clips repeat. Non-looping clips stop on their final frame.
 
 ## Scene management
 
 | Function                | Args   | Returns | Description                                                                                                                                                                    |
-|-------------------------|--------|---------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ----------------------- | ------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `LoadScene(scenePath)`  | string | void    | Requests a scene load (deferred; performed by the engine). Persistent entities in the current scene are carried over to the new scene (see [Scene Persistence](#persistence)). |
 | `GetCurrentScenePath()` | -      | string  | VFS path of the current scene (e.g. `"assets/scenes/level1.json"`).                                                                                                            |
 
 ## Time
 
 | Function              | Args             | Returns | Description                                                                                                                                |
-|-----------------------|------------------|---------|--------------------------------------------------------------------------------------------------------------------------------------------|
+| --------------------- | ---------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | `GetFrameCount()`     | -                | number  | Frames elapsed since the engine started.                                                                                                   |
 | `GetTimeScale()`      | -                | number  | Current time scale (default `1.0`).                                                                                                        |
 | `SetTimeScale(scale)` | number           | bool    | Sets the time scale, clamped to ≥ 0. `true` on success.                                                                                    |
@@ -330,7 +324,7 @@ by element name. Colors are `[r, g, b, a]` arrays, positions/sizes are `[x, y]` 
 ### Global functions
 
 | Function               | Args              | Returns          | Description                                      |
-|------------------------|-------------------|------------------|--------------------------------------------------|
+| ---------------------- | ----------------- | ---------------- | ------------------------------------------------ |
 | `FindUI(name)`         | string            | element or `nil` | Looks up an existing element by name.            |
 | `CreateUIButton(name)` | string (optional) | button           | Creates a button (default name `"NewButton"`).   |
 | `CreateUIText(name)`   | string (optional) | text             | Creates a text element (default `"NewText"`).    |
@@ -341,7 +335,7 @@ by element name. Colors are `[r, g, b, a]` arrays, positions/sizes are `[x, y]` 
 ### Base methods (all element types)
 
 | Method                | Args           | Returns        | Description              |
-|-----------------------|----------------|----------------|--------------------------|
+| --------------------- | -------------- | -------------- | ------------------------ |
 | `GetName()`           | -              | string         | Element name.            |
 | `GetPosition()`       | -              | array `[x, y]` | UI-space position.       |
 | `GetSize()`           | -              | array `[x, y]` | UI-space size.           |
@@ -355,7 +349,7 @@ by element name. Colors are `[r, g, b, a]` arrays, positions/sizes are `[x, y]` 
 ### Button methods
 
 | Method                           | Args    | Returns              | Description                    |
-|----------------------------------|---------|----------------------|--------------------------------|
+| -------------------------------- | ------- | -------------------- | ------------------------------ |
 | `GetText()`                      | -       | string               | Button label.                  |
 | `GetTextColor()`                 | -       | array `[r, g, b, a]` | Text color.                    |
 | `GetBackgroundColor()`           | -       | array `[r, g, b, a]` | Background color.              |
@@ -371,7 +365,7 @@ by element name. Colors are `[r, g, b, a]` arrays, positions/sizes are `[x, y]` 
 ### Text methods
 
 | Method                 | Args    | Returns              | Description                    |
-|------------------------|---------|----------------------|--------------------------------|
+| ---------------------- | ------- | -------------------- | ------------------------------ |
 | `GetText()`            | -       | string               | Text content.                  |
 | `GetColor()`           | -       | array `[r, g, b, a]` | Text color.                    |
 | `SetText(text)`        | string  | void                 | Sets content.                  |
@@ -381,7 +375,7 @@ by element name. Colors are `[r, g, b, a]` arrays, positions/sizes are `[x, y]` 
 ### Rect and Image methods
 
 | Method                 | Args    | Returns              | Description         |
-|------------------------|---------|----------------------|---------------------|
+| ---------------------- | ------- | -------------------- | ------------------- |
 | `GetColor()`           | -       | array `[r, g, b, a]` | Element color.      |
 | `SetColor(r, g, b, a)` | numbers | void                 | Sets element color. |
 

@@ -9,15 +9,15 @@ A tour of the Obliberry editor: the modes, camera controls, panels, and keybind 
 The editor has four states. You start in the Hub, and everything else hangs off it.
 
 | State        | What it is                                                                              |
-|--------------|-----------------------------------------------------------------------------------------|
+| ------------ | --------------------------------------------------------------------------------------- |
 | **Hub**      | The startup screen. Create or open a project.                                           |
 | **Edit**     | Build your scene: entities, transforms, materials, UI. Default after opening a project. |
 | **Play**     | Run the scene and its scripts, like a player would.                                     |
 | **Map Edit** | Paint and edit the hex-grid map.                                                        |
 
 > [!NOTE]
-> **Switching modes:** Use the mode dropdown in the top toolbar to switch between **Edit** and **Map Edit**. The *
-*Play/Stop** button next to it runs or stops the scene. Both are disabled while playing - stop Play first.
+> **Switching modes:** Use the mode dropdown in the top toolbar to switch between **Edit** and **Map Edit**. The \*
+> \*Play/Stop\*\* button next to it runs or stops the scene. Both are disabled while playing - stop Play first.
 
 ---
 
@@ -25,10 +25,10 @@ The editor has four states. You start in the Hub, and everything else hangs off 
 
 The Hub is a simple welcome screen with two buttons:
 
-* **Create New Project** - Pick a parent folder, then give the project a name and choose a template:
-    * `DemoProject` - The playable demo: a scene, a map, assets, and example scripts.
-    * `Empty` - A minimal blank project.
-* **Open Existing Project** - Pick the folder that contains `project.json`.
+- **Create New Project** - Pick a parent folder, then give the project a name and choose a template:
+    - `DemoProject` - The playable demo: a scene, a map, assets, and example scripts.
+    - `Empty` - A minimal blank project.
+- **Open Existing Project** - Pick the folder that contains `project.json`.
 
 ![new project screen](img/new-project-dialog.png)
 
@@ -39,7 +39,7 @@ The Hub is a simple welcome screen with two buttons:
 Camera input only works while the mouse is over the **Scene View**.
 
 | Input                      | Action                                     |
-|----------------------------|--------------------------------------------|
+| -------------------------- | ------------------------------------------ |
 | `W` `A` `S` `D`            | Pan the camera                             |
 | `Shift` + `WASD`           | Pan faster (3×)                            |
 | Scroll wheel               | Zoom in and out                            |
@@ -56,13 +56,13 @@ The camera starts in **isometric view**. Top-down is handy when painting maps or
 
 Edit mode is where you build the scene. The default layout:
 
-* **Scene View** (center) - The 3D viewport. Click an entity to select it, click empty space to deselect.
-* **Registry** (left) - The scene hierarchy. `+` creates a new entity, `-` deletes the selected one. Right-click an
+- **Scene View** (center) - The 3D viewport. Click an entity to select it, click empty space to deselect.
+- **Registry** (left) - The scene hierarchy. `+` creates a new entity, `-` deletes the selected one. Right-click an
   entity for parenting options (Create Child, Set Parent, Detach).
-* **UI Hierarchy** (left, under Registry) - Scene UI elements (text, buttons, images).
-* **Inspector** (right) - Edit the selected entity's components (transform, mesh, material, and more).
-* **Project Browser** (bottom) - Browse project assets like materials and textures.
-* **Console** (bottom) - Log output.
+- **UI Hierarchy** (left, under Registry) - Scene UI elements (text, buttons, images).
+- **Inspector** (right) - Edit the selected entity's components (transform, mesh, material, and more).
+- **Project Browser** (bottom) - Browse project assets like materials and textures.
+- **Console** (bottom) - Log output.
 
 Select an entity and drag the gizmo in the Scene View to move it around. The gizmo buttons in the toolbar (or the `T`
 `R` `E` keys) switch between **translate**, **rotate**, and **scale**. Gizmo edits are undoable. Rotation does nothing
@@ -71,6 +71,18 @@ on billboard sprites, and the editor will tell you so.
 ![Registry context menu](img/parenting-context-menu.png)
 
 Scenes are managed from the **Scene** menu: edit scene properties, create a new scene, or switch between scenes.
+
+---
+
+### Sprite animation editor
+
+Use the Project Browser's Animations section to create or import animation
+sets. Choose Edit on an asset to configure its sheet, clips, frame timings,
+and preview.
+
+Assign saved sets through an entity's SpriteAnimator controls.
+
+See [Sprite Animation](sprite-animation.md) for the complete workflow.
 
 ---
 
@@ -94,19 +106,19 @@ Switch the mode dropdown to **Map Edit**. If the scene has no map yet, the edito
 
 The toolbar has three tools:
 
-* **Paint** - Left-click to place tiles, drag to paint continuously.
-* **Erase** - Left-click to remove tiles, drag to erase continuously.
-* **Select** - Click a tile to inspect and edit its properties.
+- **Paint** - Left-click to place tiles, drag to paint continuously.
+- **Erase** - Left-click to remove tiles, drag to erase continuously.
+- **Select** - Click a tile to inspect and edit its properties.
 
 The **Size** slider sets the brush radius in hexes (1 to 5) and affects Paint and Erase. Use the **Tile Editor** panel
 to pick which tile type to paint.
 
 The **Map** menu lets you:
 
-* Start a fresh empty map (prompts to save the current one first)
-* Save the map (`Ctrl+S`)
-* Save the map under a new name
-* Load a `.obmap` file
+- Start a fresh empty map (prompts to save the current one first)
+- Save the map (`Ctrl+S`)
+- Save the map under a new name
+- Load a `.obmap` file
 
 Map edits are undoable. Maps are stored on a MAP entity in the scene, so the map file path is part of the scene and gets
 saved with it.
@@ -125,7 +137,7 @@ target to be built too. See the [architecture notes](../architecture.md) for how
 ### Global (any mode)
 
 | Key      | Action                                                         |
-|----------|----------------------------------------------------------------|
+| -------- | -------------------------------------------------------------- |
 | `Esc`    | Quit the editor (prompts to save if there are unsaved changes) |
 | `Ctrl+S` | Save the scene (or the map in Map Edit mode)                   |
 | `Ctrl+Z` | Undo                                                           |
@@ -140,7 +152,7 @@ target to be built too. See the [architecture notes](../architecture.md) for how
 ### Edit Mode
 
 | Key                       | Action                                                                    |
-|---------------------------|---------------------------------------------------------------------------|
+| ------------------------- | ------------------------------------------------------------------------- |
 | `V`                       | Toggle isometric / top-down camera                                        |
 | `T` `R` `E`               | Gizmo: translate / rotate / scale (`E` = scale, toolbar button shows `S`) |
 | `W` `A` `S` `D`           | Pan the camera (hold `Shift` for 3× speed)                                |
@@ -151,7 +163,7 @@ target to be built too. See the [architecture notes](../architecture.md) for how
 ### Map Edit Mode
 
 | Key                       | Action                                         |
-|---------------------------|------------------------------------------------|
+| ------------------------- | ---------------------------------------------- |
 | `V`                       | Toggle isometric / top-down camera             |
 | `W` `A` `S` `D`           | Pan the camera (hold `Shift` for 3× speed)     |
 | Scroll wheel              | Zoom                                           |

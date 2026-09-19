@@ -8,6 +8,7 @@
 #include <imgui.h>
 #include "ImGuizmo.h"
 #include "Applications/Editor/UI/Panels/Editor/MeshCreatorPanel.h"
+#include "Applications/Editor/UI/Panels/Editor/SpriteAnimationPanel.h"
 
 namespace Editor::States {
     class EditState : public EditorStateBase {
@@ -28,6 +29,8 @@ namespace Editor::States {
         void OnDrawModeToolbar() override;
 
         void OnSaveKey() override;
+
+        void OnExit() override;
 
         static void ShowMeshCreator() { s_ShowMeshCreator = true; }
         static void HideMeshCreator() { s_ShowMeshCreator = false; }
@@ -75,5 +78,8 @@ namespace Editor::States {
         // mesh panel
         UI::MeshCreatorPanel m_MeshCreatorPanel;
         inline static bool s_ShowMeshCreator = false;
+
+        // animator
+        UI::SpriteAnimationPanel m_SpriteAnimationPanel;
     };
 } // namespace Editor::States

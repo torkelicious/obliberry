@@ -21,6 +21,7 @@ namespace Core {
     constexpr std::string_view PREFAB_PATH = "assets/prefabs/";
     constexpr std::string_view PARTICLE_PRESET_PATH = "assets/particle_presets/";
     constexpr std::string_view FONT_PATH = "assets/fonts/";
+    constexpr std::string_view ANIMATION_PATH = "assets/animations/";
 
     // editor executable-relative
     constexpr std::string_view E_RESOURCES_PATH = "internal/resources/";
