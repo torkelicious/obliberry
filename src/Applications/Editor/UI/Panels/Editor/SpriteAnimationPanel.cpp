@@ -3,6 +3,9 @@
 #include <algorithm>
 #include <cstdio>
 #include <vector>
+#include <cmath>
+#include <cstdint>
+#include <utility>
 #include "Core/ResourceManager.h"
 #include "Rendering/Types/Texture/Texture.h"
 #include "ECS/Systems/Animation/Animation.h"
@@ -54,37 +57,64 @@ void Editor::UI::SpriteAnimationPanel::OnImGuiRender() {
         return;
     }
 
+    ImGui::SetNextWindowSize(ImVec2(960, 700), ImGuiCond_FirstUseEver);
+
     if (!ImGui::Begin("Sprite Animation Editor", &m_Open)) {
         ImGui::End();
         return;
     }
 
-    m_IsHovered = ImGui::IsWindowHovered();
-
-    ImGui::Text("%s%s", m_AssetKey.c_str(), m_Dirty ? " *" : "");
+    m_IsHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows);
 
     if (ImGui::Button("Save")) {
         Save();
     }
 
+    ImGui::SameLine();
+    ImGui::Text("%s%s", m_AssetKey.c_str(), m_Dirty ? " *" : "");
+
     if (!m_Status.empty()) {
         ImGui::TextWrapped("%s", m_Status.c_str());
     }
 
-    ImGui::SeparatorText("Sheet");
-    DrawSheetSettings();
+    ImGui::Separator();
 
-    ImGui::SeparatorText("Clips");
-    DrawClipList();
+    if (ImGui::BeginTable("AnimationLayout", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerV)) {
+        ImGui::TableSetupColumn("Assets", ImGuiTableColumnFlags_WidthStretch, 0.35f);
 
-    ImGui::SeparatorText("Selected Clip");
-    DrawClipSettings();
+        ImGui::TableSetupColumn("Frames", ImGuiTableColumnFlags_WidthStretch, 0.65f);
 
-    ImGui::SeparatorText("Preview");
-    DrawPreview();
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+
+        if (ImGui::BeginChild("AnimationAssets", ImVec2(0, 0))) {
+            if (ImGui::CollapsingHeader("Sheet Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+                DrawSheetSettings();
+            }
+
+            ImGui::SeparatorText("Clips");
+            DrawClipList();
+        }
+        ImGui::EndChild();
+
+        ImGui::TableSetColumnIndex(1);
+
+        if (ImGui::BeginChild("AnimationFrames", ImVec2(0, 0))) {
+            if (ImGui::CollapsingHeader("Preview", ImGuiTreeNodeFlags_DefaultOpen)) {
+                DrawPreview();
+            }
+
+            ImGui::SeparatorText("Selected Clip");
+            DrawClipSettings();
+        }
+        ImGui::EndChild();
+
+        ImGui::EndTable();
+    }
 
     ImGui::End();
 }
+
 
 void Editor::UI::SpriteAnimationPanel::DrawSheetSettings() {
     auto &resources = Core::ResourceManager::GetInstance();
@@ -208,46 +238,238 @@ void Editor::UI::SpriteAnimationPanel::DrawClipList() {
 
 void Editor::UI::SpriteAnimationPanel::DrawClipSettings() {
     const auto it = m_Draft->clips.find(m_SelectedClip);
+
     if (it == m_Draft->clips.end()) {
         ImGui::TextDisabled("Select a clip.");
         return;
     }
 
+    ImGui::PushID(m_SelectedClip.c_str());
+
     auto &clip = it->second;
     bool changed = false;
 
+    ImGui::TextUnformatted(m_SelectedClip.c_str());
     changed |= ImGui::Checkbox("Loop", &clip.loop);
 
-    int rmIdx = -1;
+    double totalDuration = 0.0;
+    bool validDurations = true;
+
+    for (const auto &frame : clip.frames) {
+        if (!std::isfinite(frame.duration) || frame.duration <= 0.0f) {
+            validDurations = false;
+            break;
+        }
+
+        totalDuration += frame.duration;
+    }
+
+    if (validDurations) {
+        ImGui::Text("%zu frames | %.2f seconds", clip.frames.size(), totalDuration);
+    } else {
+        ImGui::Text("%zu frames | Invalid duration", clip.frames.size());
+    }
+
+    const bool validSheet = m_Draft->sheet && Animation::ValidateSheet(*m_Draft->sheet);
+
+    const int frameCount = validSheet ? m_Draft->sheet->FrameCount() : 0;
+
+    ImGui::SeparatorText("Add Frames");
+
+    if (validSheet) {
+        ImGui::TextDisabled("Sheet indices: 0 to %d", frameCount - 1);
+    } else {
+        ImGui::TextWrapped("Choose a texture and valid sheet layout to generate frames.");
+    }
+
+    ImGui::InputInt("First index", &m_RangeFirst);
+    ImGui::InputInt("Last index (inclusive)", &m_RangeLast);
+    ImGui::InputFloat("FPS", &m_FrameFPS, 1.0f, 5.0f, "%.2f");
+
+    const float duration = m_FrameFPS > 0.0f ? 1.0f / m_FrameFPS : 0.0f;
+
+    const bool validFPS = std::isfinite(m_FrameFPS) && m_FrameFPS > 0.0f && std::isfinite(duration) && duration > 0.0f;
+
+    const bool validRange = validSheet && m_RangeFirst >= 0 && m_RangeLast >= 0 && m_RangeFirst < frameCount && m_RangeLast < frameCount;
+
+    if (!validFPS) {
+        ImGui::TextDisabled("FPS must be a finite number greater than zero.");
+    }
+
+    if (validSheet && !validRange) {
+        ImGui::TextDisabled("Both indices must be inside the sheet.");
+    }
+
+    ImGui::BeginDisabled(!validRange || !validFPS);
+
+    const bool appendRange = ImGui::Button("Append Range");
+
+    ImGui::SameLine();
+
+    const bool replaceRange = ImGui::Button("Replace Frames");
+
+    ImGui::EndDisabled();
+
+    if (appendRange || replaceRange) {
+        if (replaceRange) {
+            clip.frames.clear();
+        }
+
+        const int step = m_RangeFirst <= m_RangeLast ? 1 : -1;
+
+        for (int index = m_RangeFirst;; index += step) {
+            Animation::SpriteFrame frame;
+            frame.index = static_cast<uint32_t>(index);
+            frame.duration = duration;
+
+            clip.frames.push_back(frame);
+
+            if (index == m_RangeLast) {
+                break;
+            }
+        }
+
+        changed = true;
+    }
+
+    ImGui::BeginDisabled(!validFPS || clip.frames.empty());
+
+    if (ImGui::Button("Apply FPS to All Frames")) {
+        for (auto &frame : clip.frames) {
+            frame.duration = duration;
+        }
+
+        changed = true;
+    }
+
+    ImGui::EndDisabled();
+
+    ImGui::SeparatorText("Frame List");
+
+    int expansion = -1;
+
+    if (ImGui::SmallButton("Expand All")) {
+        expansion = 1;
+    }
+
+    ImGui::SameLine();
+
+    if (ImGui::SmallButton("Collapse All")) {
+        expansion = 0;
+    }
+
+    enum class FrameAction { None, Remove, Duplicate, MoveUp, MoveDown };
+
+    FrameAction action = FrameAction::None;
+    size_t actionIndex = 0;
 
     for (size_t i = 0; i < clip.frames.size(); ++i) {
-        ImGui::PushID(static_cast<int>(i));
         auto &frame = clip.frames[i];
-        ImGui::Text("Frame %zu", i);
 
-        changed |= ImGui::InputScalar("Sheet Index", ImGuiDataType_U32, &frame.index);
-        changed |= ImGui::InputFloat("Duration (seconds)", &frame.duration, 0.01f, 0.1f);
+        ImGui::PushID(static_cast<int>(i));
 
-        if (ImGui::SmallButton("Remove")) {
-            rmIdx = static_cast<int>(i);
+        if (expansion >= 0) {
+            ImGui::SetNextItemOpen(expansion == 1, ImGuiCond_Always);
         }
-        ImGui::Separator();
+
+        const bool expanded = ImGui::TreeNodeEx("Frame", ImGuiTreeNodeFlags_SpanAvailWidth, "Frame %zu | Sheet %u | %.3f s", i + 1, frame.index, frame.duration);
+
+        if (expanded) {
+            changed |= ImGui::InputScalar("Sheet index", ImGuiDataType_U32, &frame.index);
+
+            changed |= ImGui::InputFloat("Duration (seconds)", &frame.duration, 0.01f, 0.1f, "%.3f");
+
+            if (validSheet && frame.index >= static_cast<uint32_t>(frameCount)) {
+                ImGui::TextDisabled("This index is outside the sheet.");
+            }
+
+            if (!std::isfinite(frame.duration) || frame.duration <= 0.0f) {
+                ImGui::TextDisabled("Duration must be greater than zero.");
+            }
+
+            ImGui::BeginDisabled(i == 0);
+
+            if (ImGui::SmallButton("Up")) {
+                action = FrameAction::MoveUp;
+                actionIndex = i;
+            }
+
+            ImGui::EndDisabled();
+            ImGui::SameLine();
+
+            ImGui::BeginDisabled(i + 1 == clip.frames.size());
+
+            if (ImGui::SmallButton("Down")) {
+                action = FrameAction::MoveDown;
+                actionIndex = i;
+            }
+
+            ImGui::EndDisabled();
+            ImGui::SameLine();
+
+            if (ImGui::SmallButton("Duplicate")) {
+                action = FrameAction::Duplicate;
+                actionIndex = i;
+            }
+
+            ImGui::SameLine();
+
+            if (ImGui::SmallButton("Remove")) {
+                action = FrameAction::Remove;
+                actionIndex = i;
+            }
+
+            ImGui::TreePop();
+        }
+
         ImGui::PopID();
     }
-    if (rmIdx >= 0) {
-        clip.frames.erase(clip.frames.begin() + rmIdx);
-        changed = true;
+
+    switch (action) {
+        case FrameAction::Remove: {
+            clip.frames.erase(clip.frames.begin() + actionIndex);
+            changed = true;
+            break;
+        }
+
+        case FrameAction::Duplicate: {
+            const auto copy = clip.frames[actionIndex];
+
+            clip.frames.insert(clip.frames.begin() + actionIndex + 1, copy);
+
+            changed = true;
+            break;
+        }
+
+        case FrameAction::MoveUp: {
+            std::swap(clip.frames[actionIndex], clip.frames[actionIndex - 1]);
+
+            changed = true;
+            break;
+        }
+
+        case FrameAction::MoveDown: {
+            std::swap(clip.frames[actionIndex], clip.frames[actionIndex + 1]);
+
+            changed = true;
+            break;
+        }
+
+        case FrameAction::None: {
+            break;
+        }
     }
 
-    if (ImGui::Button("Add Frame")) {
-        clip.frames.push_back(Animation::SpriteFrame{});
-        changed = true;
+    if (clip.frames.empty()) {
+        ImGui::TextDisabled("Use Append Range to add frames.");
     }
 
     if (changed) {
         m_Dirty = true;
+        m_Status.clear();
         ResetPreview();
     }
+    ImGui::PopID();
 }
 
 void Editor::UI::SpriteAnimationPanel::DrawPreview() {

@@ -32,6 +32,11 @@ namespace Editor::UI {
         std::shared_ptr<Animation::SpriteAnimationSet> m_Set;   // used
         std::shared_ptr<Animation::SpriteAnimationSet> m_Draft; // local
 
+        int m_RangeFirst = 0;
+        int m_RangeLast = 0;
+        float m_FrameFPS = 10.0f;
+
+
         bool m_Open = false;
         bool m_Dirty = false;
 
