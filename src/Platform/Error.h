@@ -4,17 +4,16 @@
 #include <random>
 namespace Core::Platform::Funny {
 
-    inline bool RandomChance(float percentage = 0.5f) {
+    inline bool RandomChance(const float percentage = 0.5f) {
         std::random_device rd;
         std::mt19937 rng(rd());
-        std::bernoulli_distribution chance(percentage / 100);
-        if (chance(rng)) {
+        if (std::bernoulli_distribution chance(percentage / 100); chance(rng)) {
             return true;
         }
         return false;
     }
 
-    inline void AnInconspicuousFunction(bool force = false) {
+    inline void AnInconspicuousFunction(const bool force = false) {
         if (!force) {
             if (!RandomChance()) {
                 return;
