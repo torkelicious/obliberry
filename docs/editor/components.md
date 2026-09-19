@@ -121,7 +121,7 @@ The animator keeps playback state separately for each entity, so entities
 can share an animation set while playing different clips or frames.
 
 Create and edit animation assets through the Project Browser.
-See [Sprite Animation](sprite-animation.md)..
+See [Sprite Animation](sprite-animation.md).
 
 ### Collider
 
@@ -266,7 +266,7 @@ enabled), `children` (array).
 | Category                   | Components                                                                                      |
 | -------------------------- | ----------------------------------------------------------------------------------------------- |
 | **Required for rendering** | Transform, Mesh, Material                                                                       |
-| **Movement & AI**          | Movement, DirectionalTexture, SpriteSheet                                                       |
+| **Movement & AI**          | Movement, DirectionalTexture                                                                    |
 | **Logic**                  | Script, Collider                                                                                |
 | **Visual effects**         | ParticleEmitter, PointLight                                                                     |
 | **Map**                    | Map, Map State (on MAP entity)                                                                  |

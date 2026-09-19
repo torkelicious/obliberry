@@ -297,7 +297,9 @@ a clip. These bindings do not currently provide an animation-set setter.
 When called from a script worker, mutations use the script command buffer.
 An immediate read after a queued mutation may still return the previous state.
 
-Looping clips repeat. Non-looping clips stop on their final frame.## Scene management
+Looping clips repeat. Non-looping clips stop on their final frame.
+
+## Scene management
 
 | Function                | Args   | Returns | Description                                                                                                                                                                    |
 | ----------------------- | ------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

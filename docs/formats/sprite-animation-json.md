@@ -1,6 +1,6 @@
 # Sprite Animation Sets (`assets/animations/*.json`)
 
-A sprite animation set conataines one sheet, and a collection of named "clips".
+A sprite animation set contains one sheet, and a collection of named "clips".
 
 ## Example
 
@@ -42,15 +42,17 @@ A sprite animation set conataines one sheet, and a collection of named "clips".
 | `columns`        | Number of columns; must be greater than zero. |
 | `rows`           | Number of rows; must be greater than zero.    |
 | `column_spacing` | Non-negative pixel gap between columns.       |
-| `rows_spacing`   | Non-negative pixel gap between rows.          |
+| `row_spacing`    | Non-negative pixel gap between rows.          |
 
 Spacing describes a gap between cells. It is not an outer border of the sheet.
 
-The avaliable image width is:
+The available image width is:
 `texture Width - column_spacing * (columns - 1)`
 
-It must divide evenly into the columns, with at least one pixxel per column.
+It must divide evenly into the columns, with at least one pixel per column.
 The same applies to height, row spacing, and rows.
+
+The texture must be registered before the animation set is deserialized.
 
 ## Clips
 
@@ -63,8 +65,8 @@ Each key in `clips` is a non empty clip name.
 | `frames[].index`    | Zero-based sheet frame index.                  |
 | `frames[].duration` | Finite duration in seconds, greater than zero. |
 
-Indicies are run left-to-right then top-to-bottom.
-Each index must be less than `column * rows`.
+Indices run left-to-right then top-to-bottom.
+Each index must be less than `columns * rows`.
 
 Frames can repeat or appear in any order, or have differing durations.
 
@@ -73,7 +75,7 @@ FPS is more or less just an editor convenience, the file itself stores individua
 
 ### Resource id
 
-The animation resource ID and source path are storred in the scenes `assets.animation_sets` list, and are not part of this file.
+The animation resource ID and source path are stored in the scene’s `assets.animation_sets` list, and are not part of this file.
 
 See [Scene JSON](scene-json.md) for asset registration and component references.
 

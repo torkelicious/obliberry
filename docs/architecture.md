@@ -85,7 +85,7 @@ and [Scripting : API Reference](scripting/api-reference.md) for notes per module
   `AddComponent/GetComponent/HasComponent/RemoveComponent`, naming, and hierarchy helpers.
 - **Components** (`src/ECS/Components/`) : `TransformComponent`, `MeshComponent`, `MaterialComponent`,
   `ScriptComponent`, `MovementComponent`, `MapComponent`/`MapStateComponent`, `PointLightComponent`,
-  `ParticleEmitterComponent`, `DirectionalTextureComponent`, `SpriteSheetComponent`, `ColliderComponent`,
+  `ParticleEmitterComponent`, `DirectionalTextureComponent`, `SpriteSheetComponent`, `SpriteAnimatorComponent`, `ColliderComponent`,
   `BillboardTagComponent`, `DestroyTagComponent`,
   `PrefabSourceComponent`, `RelationshipComponent` (hierarchy), `CustomDataComponent` (script data).
 - **Systems** (`src/ECS/Systems/`) : `RenderSystem`, `ScriptSystem`, `MovementSystem`, `MapRenderSystem`,
@@ -129,18 +129,27 @@ the resulting pose into the SpriteSheet component.
 
 ### Spritesheets and animation
 
-`Rendering::SpriteSheet` references one Texture and stores grid dimensions plus column/row pixel
+`Rendering::SpriteSheet` references one texture and stores grid dimensions plus column/row pixel
 spacing. `GetFrameUV` returns an offset and scale `(u, v, width, height)` for a frame, accounting for
 the file texture loader's vertical flip. It does not split the image into separate GPU textures.
-`SpriteSheetComponent` stores the clip range, speed, playback flags, relative current frame, and elapsed time.
-`SpriteAnimation::Update` advances that state in scene updates and editor preview updates.
 
-`RenderSystem` selects `startFrame + currentFrame`, takes the sheet texture, and passes the UV
-rectangle into rendering. A sheet texture overrides directional/material texture selection.
-The current renderer uses the `u_UVRect` uniform and includes the rectangle in the batch key;
-different regions therefore form separate batches. This is not a per-instance UV attribute.
-See [component settings](editor/components.md#sprite-sheet)
-and [scene fields](formats/scene-json.md#spritesheetcomponent).
+`SpriteSheetComponent` stores a sheet reference and an absolute, zero-based sheet frame index.
+`SpriteAnimatorComponent` stores the animation-set reference, initial clip, autoplay setting, and
+per-entity playback state. `Animation::SpriteAnimationSet` contains the sheet and named clips;
+each clip stores a looping flag and an ordered list of frame indices and durations in seconds.
+
+`ECS::Systems::SpriteAnimation::Update` advances each animator and resolves its pose into the
+SpriteSheet component. The animation editor uses its own draft and preview player, calling
+`Animation::Advance` and `Animation::ResolvePose` for preview playback.
+
+`RenderSystem` uses `sprite.frame` to select a UV rectangle from the sheet. A valid sheet texture
+overrides directional/material texture selection. The current renderer uses the `u_UVRect`
+uniform and includes the rectangle in the batch key; different regions therefore form separate
+batches. This is not a per-instance UV attribute.
+
+See [component settings](editor/components.md#spritesheet),
+[the animation editor](editor/sprite-animation.md), and
+[scene fields](formats/scene-json.md#spritesheetcomponent).
 
 ### Collision detection
 

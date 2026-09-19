@@ -14,8 +14,8 @@ Entities reference these assets through their SpriteAnimator Component.
 7. Add a named clip and configure its frames.
 8. Preview the clip and save the animation asset.
 
-The resource ID itentifies the asset in scenes.
-The filepath points to its definition on disk.
+The resource ID identifies the asset in scenes.
+The file path points to its definition on disk.
 
 ## Importing sets
 

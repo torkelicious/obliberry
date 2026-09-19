@@ -38,15 +38,15 @@ rounded to 3 decimals (`RoundJsonFloats`), and the file is written with 4-space 
 Each array entry is an object keyed by `id` the resource id referenced everywhere else in the file. Engine-internal
 resources use ids prefixed `"[Engine]"` (e.g. `"[Engine] Base"`, `"[Engine] Hex"`); user assets use any other id.
 
-| Key                       | Entry shape                                                                                                                                                                                   | Notes                                                                                                                                                                                                                                                                            |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `assets.textures`         | `{"id", "path"}`                                                                                                                                                                              | `path` is VFS-relative.                                                                                                                                                                                                                                                          |
-| `assets.shaders`          | `{"id", "vertex", "fragment"}`                                                                                                                                                                | `vertex`/`fragment` are shader source paths. `[Engine]` and `[Engine_PP]` shaders are engine-provided and never serialized. A shader with an empty `vertex` (or a `[PP]` id) is a **post-processing effect shader** (it automatically uses the engine's fullscreen vertex pass). |
-| `assets.meshes`           | `{"id", "factory"}`                                                                                                                                                                           | `factory` names a registered procedural mesh factory (e.g. `"Quad"`, `"Hexagon"`, `"Circle"`, `"Ring"`, `"PointTopHex"`).                                                                                                                                                        |
-| `assets.materials`        | `{"id", "shader", "texture", "color"}`                                                                                                                                                        | `shader` defaults to `"[Engine] Base"`; `texture` may be `""`; `color` is `[r,g,b,a]` (defaults to white).                                                                                                                                                                       |
-| `assets.fonts`            | `{"id", "path", "size", "sdf", "spread"}`                                                                                                                                                     | Defaults: `size` 12, `sdf` false, `spread` 8.                                                                                                                                                                                                                                    |
-| `SpriteSheetComponent`    | Static sprite: `texture_id`, `columns`, `rows`, `column_spacing`, `row_spacing`, and `frame`. For an entity with SpriteAnimator, saved as `{}` because its pose is derived from the animator. |
-| `SpriteAnimatorComponent` | `animation_id` references an entry in `assets.animation_sets`; `initial_clip` selects the initial clip; `autoplay` controls initial playback.                                                 |
+| Key                | Entry shape                               | Notes                                                                                                                                                                                                                                                                            |
+| ------------------ | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `assets.textures`  | `{"id", "path"}`                          | `path` is VFS-relative.                                                                                                                                                                                                                                                          |
+| `assets.shaders`   | `{"id", "vertex", "fragment"}`            | `vertex`/`fragment` are shader source paths. `[Engine]` and `[Engine_PP]` shaders are engine-provided and never serialized. A shader with an empty `vertex` (or a `[PP]` id) is a **post-processing effect shader** (it automatically uses the engine's fullscreen vertex pass). |
+| `assets.meshes`    | `{"id", "factory"}`                       | `factory` names a registered procedural mesh factory (e.g. `"Quad"`, `"Hexagon"`, `"Circle"`, `"Ring"`, `"PointTopHex"`).                                                                                                                                                        |
+| `assets.materials` | `{"id", "shader", "texture", "color"}`    | `shader` defaults to `"[Engine] Base"`; `texture` may be `""`; `color` is `[r,g,b,a]` (defaults to white).                                                                                                                                                                       |
+| `assets.fonts`     | `{"id", "path", "size", "sdf", "spread"}` | Defaults: `size` 12, `sdf` false, `spread` 8.                                                                                                                                                                                                                                    |
+
+| `assets.animation_sets` | `{"id", "path"}` | Registered animation resource ID and project-relative JSON path. Textures load before animation sets. |
 
 ### Sprite animation references
 
@@ -175,6 +175,8 @@ Each entity is an object:
 | `PointLightComponent`         | `color` - `[r, g, b]`; `radius` - float; `intensity` - float.                                                                                                                                                                                                                                                                                                                                                 |
 | `ScriptComponent`             | `scriptPath` (string, single script) **or** `scriptPaths` (array, multiple scripts). Paths are `.obsl` files.                                                                                                                                                                                                                                                                                                 |
 | `ParticleEmitterComponent`    | `maxParticles` int, `emitRate` float, `lifetimeMin`/`lifetimeMax` floats, `velocityMin`/`velocityMax` `[x,y,z]`, `gravity` `[x,y,z]`, `sizeStartMin`/`sizeStartMax`/`sizeEndMin`/`sizeEndMax` floats, `rotationSpeedMin`/`rotationSpeedMax` floats, `colorStart`/`colorEnd` `[r,g,b,a]`, `isBillboard` bool, `blendMode` int (0 = Alpha, 1 = Additive), `renderOrder` int, `shape` int, `material_id` string. |
+| `SpriteSheetComponent`        | Static sprite: `texture_id`, `columns`, `rows`, `column_spacing`, `row_spacing`, `frame`. Saved as `{}` when an animator supplies the pose.                                                                                                                                                                                                                                                                   |
+| `SpriteAnimatorComponent`     | `animation_id`, `initial_clip`, `autoplay`. References a registered animation set.                                                                                                                                                                                                                                                                                                                            |
 
 ### `SpriteSheetComponent`
 
@@ -186,34 +188,51 @@ Each entity is an object:
         "rows": 4,
         "column_spacing": 2,
         "row_spacing": 2,
-        "start_frame": 8,
-        "frame_count": 8,
-        "fps": 12.0,
-        "looping": true,
-        "playing": true,
-        "current_frame": 0
+        "frame": 8
     }
 }
 ```
 
-Place this entry inside an entity's `components` object. `texture_id` references a registered
-texture resource. This example fits a 270 × 134 texture containing 32 × 32 frames and two-pixel gaps.
+Place this entry inside an entity's `components` object. This static example fits a
+270 × 134 texture containing 32 × 32 frames separated by two-pixel gaps.
 
-| Field                           | Default    | Meaning                                                                            |
-| ------------------------------- | ---------- | ---------------------------------------------------------------------------------- |
-| `texture_id`                    | No texture | Texture resource key.                                                              |
-| `columns`, `rows`               | 1 each     | Grid dimensions.                                                                   |
-| `column_spacing`, `row_spacing` | 0 each     | Pixel gaps between frames; negative values clamp to zero on load. No outer margin. |
-| `start_frame`                   | 0          | Absolute first sheet frame, numbered from the top-left across rows.                |
-| `frame_count`                   | 1          | Clip length, not grid cell count.                                                  |
-| `fps`                           | 8.0        | Frames per second.                                                                 |
-| `looping`, `playing`            | false each | Playback flags.                                                                    |
-| `current_frame`                 | 0          | Current frame relative to `start_frame`.                                           |
+| Field                           | Default      | Meaning                                                              |
+| ------------------------------- | ------------ | -------------------------------------------------------------------- |
+| `texture_id`                    | Empty string | Registered texture resource ID.                                      |
+| `columns`, `rows`               | 1 each       | Positive grid dimensions.                                            |
+| `column_spacing`, `row_spacing` | 0 each       | Non-negative pixel gaps between cells, with no outer margin.         |
+| `frame`                         | 0            | Absolute sheet index, numbered left-to-right and then top-to-bottom. |
 
-Elapsed time within a frame is not saved. The loader does not perform the editor's full layout/clip
-validation: author positive grid dimensions, a clip within the grid, and spacing that leaves whole
-pixel-sized frames. See [spacing rules](../editor/components.md#spacing-and-invalid-layouts).
-The runtime UV helper falls back to the whole texture for invalid texture/grid/spacing geometry.
+The component loader reads these values directly; it does not clamp negative spacing to zero.
+Author valid layouts and indices. The UV helper falls back to the whole texture for invalid
+texture/grid/spacing geometry and wraps frame indices for a valid grid.
+
+When an entity has a SpriteAnimator, this component is saved as `{}`. Its sheet and frame
+are reconstructed from the animator after loading.
+
+### `SpriteAnimatorComponent`
+
+```json
+{
+    "SpriteAnimatorComponent": {
+        "animation_id": "player_animations",
+        "initial_clip": "idle",
+        "autoplay": true
+    }
+}
+```
+
+| Field          | Default      | Meaning                                                    |
+| -------------- | ------------ | ---------------------------------------------------------- |
+| `animation_id` | Empty string | Resource ID from `assets.animation_sets`, not a file path. |
+| `initial_clip` | Empty string | Named clip selected during initialization.                 |
+| `autoplay`     | `true`       | Whether the initial clip starts playing.                   |
+
+After loading components, the loader ensures a SpriteSheet component exists, resets the
+animator to its initial clip, and resolves its pose. An empty or invalid initial clip cannot
+produce a pose. Current playback progress is not serialized.
+
+See [Sprite Animation JSON](sprite-animation-json.md) for clip definitions and sheet validation.
 
 ### `ColliderComponent`
 
