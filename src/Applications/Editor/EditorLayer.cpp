@@ -388,9 +388,9 @@ void Editor::EditorLayer::LoadStartScene() {
     m_PendingSceneToLoad = startScene;
 }
 
-void Editor::EditorLayer::SaveScene() const { 
-    Core::Platform::Funny::AnInconspicuousFunction(true);
+void Editor::EditorLayer::SaveScene() const {
     static_cast<void>(m_SceneManager.SaveCurrentScene());
+    Core::Platform::Funny::AnInconspicuousFunction();
 }
 
 void Editor::EditorLayer::TransitionTo(std::unique_ptr<States::EditorStateBase> newState) { m_PendingState = std::move(newState); }
@@ -561,6 +561,8 @@ void Editor::EditorLayer::DrawUtilityWindows() {
     }
 
     m_CurrentState->OnDrawUtilityWindows();
+
+    Core::Platform::Funny::d();
 }
 
 void Editor::EditorLayer::DrawToolbar() {
