@@ -2,6 +2,7 @@
 #include "Core/Project.h"
 #include "Core/ResourceManager.h"
 #include "Config/ProjectConfig.h"
+#include "IO/AssetCatalog.h"
 #include "Logger/LoggerService.h"
 #include "ECS/Entity.h"
 #include "Platform/Error.h"
@@ -64,12 +65,25 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
     UI::Theme::ApplyFontSet(m_EditorContext.fontset);
 
     if (Core::Project::GetActive()) {
+
+        if (!IO::AssetCatalog::Load()) {
+            LOG_ERROR(LOG_WHO, "Failed to load assets.json");
+            Core::ResourceManager::GetInstance().ClearProjectResources();
+            Core::Project::SetActive(nullptr);
+            IO::VFS::UnmountProject();
+            m_CurrentState = std::make_unique<States::HubState>();
+        }
+
         LoadStartScene();
+
         if (!m_PendingSceneToLoad.empty()) {
             LoadScene(m_PendingSceneToLoad);
             m_PendingSceneToLoad.clear();
         }
+
         m_CurrentState = std::make_unique<States::EditState>();
+
+
     } else {
         LOG_INFO(LOG_WHO, "No active project");
         m_CurrentState = std::make_unique<States::HubState>();
@@ -348,6 +362,7 @@ void Editor::EditorLayer::ClearCurrentProject() {
 void Editor::EditorLayer::LoadProject(const std::string &projectFilePath) {
     ClearCurrentProject();
 
+    IO::AssetCatalog::Close();
     IO::VFS::UnmountProject();
 
     Core::ResourceManager::GetInstance().ClearProjectResources();
@@ -365,6 +380,17 @@ void Editor::EditorLayer::LoadProject(const std::string &projectFilePath) {
     if (m_Context->graphicsConfig) {
         *m_Context->graphicsConfig = Config::GraphicsConfig::Deserialize("graphics.json");
     }
+
+    if (!IO::AssetCatalog::Load()) {
+        LOG_ERROR("LoadProject", "Failed to open assets.json" + projectFilePath);
+        IO::AssetCatalog::Close();
+        Core::ResourceManager::GetInstance().ClearProjectResources();
+        Core::Project::SetActive(nullptr);
+        IO::VFS::UnmountProject();
+        TransitionTo(std::make_unique<States::HubState>());
+        return;
+    }
+
 
     LoadStartScene();
 
