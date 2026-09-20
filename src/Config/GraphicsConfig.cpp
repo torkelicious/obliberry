@@ -50,33 +50,19 @@ namespace Config {
 
     GraphicsConfig GraphicsConfig::Deserialize(const std::filesystem::path &filepath) {
         GraphicsConfig config;
-        std::string_view dataView;
-        std::string ownedData;
 
         // Convert path to string for VFS calls that expect string keys/paths
         const std::string pathStr = filepath.string();
 
-        if (const auto view = IO::VFS::ReadVirtualView(pathStr)) {
-            dataView = *view;
-        } else if (auto owned = IO::VFS::ReadVirtual(pathStr)) {
-            ownedData = std::move(*owned);
-            dataView = ownedData;
-        } else if (IO::VFS::IsProjectLoaded()) {
-            if (auto loosePath = IO::VFS::GetProjectRoot() / filepath; std::filesystem::exists(loosePath)) {
-                if (std::ifstream file(loosePath); file.is_open()) {
-                    ownedData.assign(std::istreambuf_iterator(file), std::istreambuf_iterator<char>());
-                    dataView = ownedData;
-                }
-            }
-        }
+        const auto dataView = IO::VFS::ReadVirtualJson(pathStr);
 
-        if (dataView.empty()) {
+        if (!dataView.has_value()) {
             LOG_WARN(LOG_WHO, "Graphics config not found: " + pathStr + ". Using defaults");
             return config;
         }
 
         try {
-            nlohmann::json j = nlohmann::json::parse(dataView);
+            nlohmann::json j = dataView.value();
 
             GraphicsConfig parsed;
 
