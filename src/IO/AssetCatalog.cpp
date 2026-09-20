@@ -4,9 +4,13 @@
 #include "IO/VFS/VFS.h"
 #include "Logger/LoggerService.h"
 
+#include <algorithm>
+#include <exception>
 #include <filesystem>
 #include <nlohmann/json.hpp>
 #include <string>
+#include <string_view>
+#include <utility>
 
 namespace IO::AssetCatalog {
 
@@ -23,6 +27,23 @@ namespace IO::AssetCatalog {
         json s_Document;
         std::filesystem::path s_ProjectRoot;
         bool s_Loaded = false;
+
+        bool Commmit(json document) {
+            if (!IsLoaded() || VFS::IsPackaged()) {
+                return false;
+            }
+            try {
+                document = CatalogFile::Normalize(document, "asset catalog update");
+                CatalogFile::WriteAtomic(VFS::Resolve("assets.json"), document);
+                s_Document = std::move(document);
+                return true;
+
+            } catch (std::exception &e) {
+                LOG_ERROR("AssetCatalog", std::string("Update Failed: ") + e.what());
+            }
+            return false;
+        }
+
     } // namespace
 
     bool Load() {
@@ -50,26 +71,62 @@ namespace IO::AssetCatalog {
         }
     }
 
-    bool Save() {
-        if (!IsLoaded() || VFS::IsPackaged()) {
-            return false;
-        }
-
-        try {
-            CatalogFile::WriteAtomic(VFS::Resolve("assets.json"), s_Document);
-
-            return true;
-        } catch (const std::exception &e) {
-            LOG_ERROR("AssetCatalog", std::string("Save failed: ") + e.what());
-
-            return false;
-        }
-    }
+    bool Save() { return Commmit(s_Document); }
 
     void Close() {
         s_Document = json();
         s_ProjectRoot.clear();
         s_Loaded = false;
+    }
+
+    bool Upsert(std::string_view type, const nlohmann::json &def) {
+        if (!IsLoaded() || VFS::IsPackaged() || !def.is_object()) {
+            return false;
+        }
+
+        const auto idVal = def.find("id");
+        if (idVal == def.end() || !idVal->is_string() || idVal->get_ref<const std::string &>().empty()) {
+            return false;
+        }
+
+        json updated = s_Document;
+        auto entries = updated["assets"].find(std::string(type));
+
+        if (entries == updated["assets"].end() || !entries->is_array()) {
+            return false;
+        }
+
+        const std::string &id = idVal->get_ref<const std::string &>();
+        const auto existing = std::find_if(entries->begin(), entries->end(), [&](const json &asset) { return asset.is_object() && asset.value("id", std::string{}) == id; });
+
+        if (existing == entries->end()) {
+            entries->push_back(def);
+        } else {
+            *existing = def;
+        }
+        return Commmit(std::move(updated));
+    }
+
+    bool Remove(std::string_view type, std::string_view id) {
+        if (!IsLoaded() || VFS::IsPackaged() || id.empty()) {
+            return false;
+        }
+
+        json updated = s_Document;
+        auto entries = updated["assets"].find(std::string(type));
+
+        if (entries == updated["assets"].end() || !entries->is_array()) {
+            return false;
+        }
+
+        const auto firstRemoved = std::remove_if(entries->begin(), entries->end(), [&](const json &asset) { return asset.is_object() && asset.value("id", std::string{}) == id; });
+
+        if (firstRemoved == entries->end()) {
+            return false;
+        }
+
+        entries->erase(firstRemoved, entries->end());
+        return Commmit(std::move(updated));
     }
 
     bool IsLoaded() { return s_Loaded && VFS::IsProjectLoaded() && s_ProjectRoot == VFS::GetProjectRoot(); }

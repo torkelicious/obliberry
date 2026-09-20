@@ -4,9 +4,15 @@
 #include <string_view>
 
 namespace IO::AssetCatalog {
+
     bool Load();
+
     bool Save();
+
     void Close();
+
+    bool Upsert(std::string_view type, const nlohmann::json &def);
+    bool Remove(std::string_view type, std::string_view id);
 
     [[nodiscard]] bool IsLoaded();
 
