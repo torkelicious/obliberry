@@ -4,6 +4,7 @@
 #include "Core/EngineContext.h"
 #include "Core/Project.h"
 #include "Core/Utils/PathUtils.h"
+#include "IO/Loaders/SceneAssetLoader.h"
 #include "IO/SceneSerialization.h"
 #include "IO/VFS/VFS.h"
 #include "Scenes/Scene.h"
@@ -121,6 +122,25 @@ namespace {
                 scene->GetRegistry().SetParentDirect(newIds[i], newIds[parentIdx]);
             }
         }
+    }
+
+    bool AcquirePersistentAssets(Scenes::Scene *scene, const std::vector<MigratedEntity> &batch) {
+        if (!scene || batch.empty())
+            return true;
+
+        nlohmann::json references;
+        references["entities"] = nlohmann::json::array();
+        for (const auto &item : batch)
+            references["entities"].push_back(item.data);
+
+        IO::SceneAssetLoader::SceneAssetScope scope;
+        if (!IO::SceneAssetLoader::LoadReferenced(references, scope)) {
+            LOG_ERROR(LOG_WHO, "Failed to acquire assets for persistent entities");
+            return false;
+        }
+
+        scene->AddAssetScope(std::move(scope));
+        return true;
     }
 } // namespace
 
@@ -252,9 +272,11 @@ namespace Scenes {
     void SceneManager::LoadScene(std::unique_ptr<Scene> newScene) {
         std::vector<MigratedEntity> migrationBatch;
 
-        if (m_CurrentScene) {
-            migrationBatch = ExtractPersistentEntities(m_CurrentScene.get(), m_Context);
-            m_CurrentScene->OnExit();
+        auto previousScene = std::move(m_CurrentScene);
+
+        if (previousScene) {
+            migrationBatch = ExtractPersistentEntities(previousScene.get(), m_Context);
+            previousScene->OnExit();
         }
 
         if (m_Context->scriptPool) {
@@ -268,8 +290,11 @@ namespace Scenes {
 
         if (m_CurrentScene) {
             m_CurrentScene->OnEnter();
-            InjectPersistentEntities(m_CurrentScene.get(), m_Context, migrationBatch);
+            if (AcquirePersistentAssets(m_CurrentScene.get(), migrationBatch))
+                InjectPersistentEntities(m_CurrentScene.get(), m_Context, migrationBatch);
         }
+
+        previousScene.reset();
     }
 
     void SceneManager::Update(const float dt) const {

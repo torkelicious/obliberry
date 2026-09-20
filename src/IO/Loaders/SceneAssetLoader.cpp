@@ -1,13 +1,27 @@
 #include "SceneAssetLoader.h"
 
 #include "Core/ResourceManager.h"
+#include "ECS/Systems/Animation/Types.h"
 #include "IO/AssetCatalog.h"
 #include "IO/Loaders/AssetLoader.h"
 #include "IO/VFS/VFS.h"
 #include "Logger/LoggerService.h"
+#include "Rendering/Types/Material.h"
+#include "Rendering/Types/Mesh/Mesh.h"
+#include "Rendering/Types/Shader/Shader.h"
+#include "Rendering/Types/Texture/Texture.h"
+#include "UI/Text/Font.h"
 #include "nlohmann/json.hpp"
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <mutex>
 #include <set>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace {
     using json = nlohmann::json;
@@ -20,6 +34,95 @@ namespace {
         std::set<std::string> fonts;
         std::set<std::string> animationSets;
     };
+
+    enum class AssetKind : std::uint8_t { Texture, Shader, Mesh, Material, Font, AnimationSet };
+
+    struct AssetKey {
+        AssetKind kind;
+        std::string id;
+
+        bool operator==(const AssetKey &) const = default;
+    };
+
+    struct AssetKeyHash {
+        std::size_t operator()(const AssetKey &key) const noexcept { return std::hash<std::string>{}(key.id) ^ (static_cast<std::size_t>(key.kind) << 1); }
+    };
+
+    std::mutex s_ResidencyMutex;
+    std::unordered_map<AssetKey, std::size_t, AssetKeyHash> s_ReferenceCounts;
+
+    template <typename Func> void ForEachAsset(const RequiredAssets &assets, Func &&func) {
+        for (const auto &id : assets.textures)
+            func(AssetKey{AssetKind::Texture, id});
+        for (const auto &id : assets.shaders)
+            func(AssetKey{AssetKind::Shader, id});
+        for (const auto &id : assets.meshes)
+            func(AssetKey{AssetKind::Mesh, id});
+        for (const auto &id : assets.materials)
+            func(AssetKey{AssetKind::Material, id});
+        for (const auto &id : assets.fonts)
+            func(AssetKey{AssetKind::Font, id});
+        for (const auto &id : assets.animationSets)
+            func(AssetKey{AssetKind::AnimationSet, id});
+    }
+
+    bool IsLoaded(const AssetKey &asset) {
+        auto &resources = Core::ResourceManager::GetInstance();
+        switch (asset.kind) {
+            case AssetKind::Texture:
+                return resources.Get<Rendering::Texture>(asset.id) != nullptr;
+            case AssetKind::Shader:
+                return resources.Get<Rendering::Shader>(asset.id) != nullptr;
+            case AssetKind::Mesh:
+                return resources.Get<Rendering::Mesh>(asset.id) != nullptr;
+            case AssetKind::Material:
+                return resources.Get<Rendering::Material>(asset.id) != nullptr;
+            case AssetKind::Font:
+                return resources.Get<UI::Font>(asset.id) != nullptr;
+            case AssetKind::AnimationSet:
+                return resources.Get<Animation::SpriteAnimationSet>(asset.id) != nullptr;
+        }
+        return false;
+    }
+
+    void Unload(const AssetKey &asset) {
+        auto &resources = Core::ResourceManager::GetInstance();
+        switch (asset.kind) {
+            case AssetKind::Texture:
+                resources.Unload<Rendering::Texture>(asset.id);
+                break;
+            case AssetKind::Shader:
+                resources.Unload<Rendering::Shader>(asset.id);
+                break;
+            case AssetKind::Mesh:
+                resources.Unload<Rendering::Mesh>(asset.id);
+                break;
+            case AssetKind::Material:
+                resources.Unload<Rendering::Material>(asset.id);
+                break;
+            case AssetKind::Font:
+                resources.Unload<UI::Font>(asset.id);
+                break;
+            case AssetKind::AnimationSet:
+                resources.Unload<Animation::SpriteAnimationSet>(asset.id);
+                break;
+        }
+    }
+
+    void ReleaseAssets(const std::vector<AssetKey> &assets) {
+        std::lock_guard lock(s_ResidencyMutex);
+
+        for (auto it = assets.rbegin(); it != assets.rend(); ++it) {
+            const auto count = s_ReferenceCounts.find(*it);
+            if (count == s_ReferenceCounts.end())
+                continue;
+
+            if (--count->second == 0) {
+                Unload(*it);
+                s_ReferenceCounts.erase(count);
+            }
+        }
+    }
 
 
     bool IsCatalogAsset(const std::string &id) { return !id.empty() && !id.starts_with("[Engine]") && !id.starts_with("[Engine_PP]"); }
@@ -110,7 +213,11 @@ namespace {
         }
 
         for (const auto &type : *types) {
-            AddField(req.textures, type, "texture");
+            if (type.is_object() && !type.contains("texture")) {
+                req.textures.insert("hex_tex");
+            } else {
+                AddField(req.textures, type, "texture");
+            }
         }
     }
 
@@ -233,7 +340,20 @@ namespace {
 } // namespace
 
 namespace IO::SceneAssetLoader {
-    bool LoadReferenced(const nlohmann::json &sceneData) {
+    struct SceneAssetScope::State {
+        std::vector<AssetKey> assets;
+
+        ~State() { ReleaseAssets(assets); }
+    };
+
+    SceneAssetScope::SceneAssetScope() = default;
+    SceneAssetScope::~SceneAssetScope() = default;
+    SceneAssetScope::SceneAssetScope(SceneAssetScope &&) noexcept = default;
+    SceneAssetScope &SceneAssetScope::operator=(SceneAssetScope &&) noexcept = default;
+
+    bool LoadReferenced(const nlohmann::json &sceneData, SceneAssetScope &scope) {
+        scope = SceneAssetScope{};
+
         auto &resources = Core::ResourceManager::GetInstance();
         RequiredAssets required = CollectDirectRefs(sceneData);
         if (!ResolveDependencies(required)) {
@@ -243,7 +363,48 @@ namespace IO::SceneAssetLoader {
         if (!BuildAssetSubset(required, subset)) {
             return false;
         }
+
+        std::lock_guard residencyLock(s_ResidencyMutex);
+
+        std::unordered_set<AssetKey, AssetKeyHash> alreadyLoaded;
+        ForEachAsset(required, [&](const AssetKey &asset) {
+            if (IsLoaded(asset))
+                alreadyLoaded.insert(asset);
+        });
+
         AssetLoader::LoadAssets(subset, resources);
+
+        bool allLoaded = true;
+        ForEachAsset(required, [&](const AssetKey &asset) {
+            if (!IsLoaded(asset)) {
+                LOG_ERROR("SceneAssetLoader", "Asset failed to load: " + asset.id);
+                allLoaded = false;
+            }
+        });
+
+        if (!allLoaded) {
+            std::vector<AssetKey> loadedThisAttempt;
+            ForEachAsset(required, [&](const AssetKey &asset) {
+                if (!alreadyLoaded.contains(asset) && IsLoaded(asset))
+                    loadedThisAttempt.push_back(asset);
+            });
+            for (auto it = loadedThisAttempt.rbegin(); it != loadedThisAttempt.rend(); ++it)
+                Unload(*it);
+            return false;
+        }
+
+        auto state = std::make_unique<SceneAssetScope::State>();
+        ForEachAsset(required, [&](const AssetKey &asset) {
+            if (auto count = s_ReferenceCounts.find(asset); count != s_ReferenceCounts.end()) {
+                ++count->second;
+                state->assets.push_back(asset);
+            } else if (!alreadyLoaded.contains(asset)) {
+                s_ReferenceCounts.emplace(asset, 1);
+                state->assets.push_back(asset);
+            }
+        });
+
+        scope.m_State = std::move(state);
         return true;
     }
 } // namespace IO::SceneAssetLoader

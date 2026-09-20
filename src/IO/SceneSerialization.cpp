@@ -82,7 +82,8 @@ namespace IO::SceneIO {
         // factories must be registered before this point!
 
         //  ASSETS
-        if (!SceneAssetLoader::LoadReferenced(j)) {
+        SceneAssetLoader::SceneAssetScope assetScope;
+        if (!SceneAssetLoader::LoadReferenced(j, assetScope)) {
             LOG_ERROR(LOG_WHO, "Failed to load assets referenced in: " + path);
             return false;
         }
@@ -204,6 +205,7 @@ namespace IO::SceneIO {
         }
 
         ECS::Systems::MapRuntimeSystem::OnMapChanged(scene.GetRegistry(), scene.GetContext());
+        scene.AddAssetScope(std::move(assetScope));
         return true;
     }
 

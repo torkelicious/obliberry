@@ -1,9 +1,11 @@
 #include "GameLayer.h"
+#include "IO/AssetCatalog.h"
 #include "IO/Loaders/AssetLoader.h"
 #include "IO/VFS/VFS.h"
 #include <filesystem>
 #include <ObSL/ScriptRuntime.h>
 #include "Config/ProjectConfig.h"
+#include "Logger/LoggerService.h"
 #include "Platform/Window/Window.h"
 #include "Rendering/Renderer.h"
 #include <imgui.h>
@@ -29,6 +31,11 @@ void Game::GameLayer::Init(Core::EngineContext &ctx) {
     std::string startScene;
     if (m_Context->projectConfig) {
         startScene = m_Context->projectConfig->startScenePath;
+    }
+
+    if (!IO::AssetCatalog::Load()) {
+        LOG_ERROR("GameLayer", "Failed to open assets.json");
+        return;
     }
 
     if (!startScene.empty()) {

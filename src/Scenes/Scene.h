@@ -8,6 +8,7 @@
 #include "UI/Rendering/UISystem.h"
 #include "Core/EngineContext.h"
 #include "ECS/Components/MapComponent.h"
+#include "IO/Loaders/SceneAssetLoader.h"
 #include "Rendering/PostProcessing/PostProcessing.h"
 #include "Scripting/EngineLib/UICommandBuffer.h"
 
@@ -62,9 +63,12 @@ namespace Scenes {
         const std::vector<ECS::Collision::Collision> &GetCollisions() const { return m_CollisionWorld.GetCollisions(); }
         const std::vector<ECS::Collision::CollisionEvent> &GetCollisionEvents() const { return m_CollisionWorld.GetEvents(); }
 
+        void AddAssetScope(IO::SceneAssetLoader::SceneAssetScope scope);
+
     private:
         SceneProperties m_Properties;
         Core::EngineContext *m_Context;
+        std::vector<IO::SceneAssetLoader::SceneAssetScope> m_AssetScopes;
         ECS::Registry m_Registry;
         bool m_HasUnsavedChanges = false;
         UI::UISystem m_UISystem;

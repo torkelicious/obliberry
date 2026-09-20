@@ -26,6 +26,8 @@
 
 Scenes::Scene::Scene(Core::EngineContext *context, SceneProperties props) : m_Properties(std::move(props)), m_Context(context), m_UISystem(context->uiRenderer, context->input) {}
 
+void Scenes::Scene::AddAssetScope(IO::SceneAssetLoader::SceneAssetScope scope) { m_AssetScopes.push_back(std::move(scope)); }
+
 void Scenes::Scene::OnEnter() {
     m_CollisionWorld.Clear();
     LOG_INFO(LOG_WHO, "Entering scene: " + m_Properties.ScenePath);
@@ -150,6 +152,8 @@ void Scenes::Scene::OnExit() {
     IO::PrefabManager::ClearCache();
     ECS::Systems::ParticleSystem::OnSceneExit(m_Registry);
     m_UISystem.Clear();
+    if (m_Context->renderer)
+        m_Context->renderer->GetPostProcessor().Effects().clear();
     m_Context->uiSystem = nullptr;
     m_Context->uiCmdBuf = nullptr;
     LOG_INFO(LOG_WHO, "Exiting Scene " + m_Properties.ScenePath);
