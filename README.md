@@ -1,16 +1,14 @@
 # The Obliberry Game Engine
 
-A Fallout-inspired isometric game engine for hex-grid games, written in C++20 with OpenGL, featuring a visual editor,
-an ECS core, [its own scripting language](https://github.com/torkelicious/ObSL), and one-file packaging.
+A Fallout-inspired isometric game engine for hex-grid games, written in C++20 with OpenGL. It includes a visual
+editor, an ECS core, [its own scripting language](https://github.com/torkelicious/ObSL), lazy asset loading, and
+single-file project-data packaging.
 
-> **note:** still in active development. Scripting APIs, file formats, and the ObSL language can still change.
+> **Note:** Obliberry is still in active development. Scripting APIs, file formats, and the ObSL language can change.
 
 ![Editor application themed](docs/img/themed.png)
-<!--![Editor application in use](docs/img/demo-projects.gif)
 
-<sup><sub>Yes there is a lighting system bug in this gif, it has since been fixed :)</sub></sup>-->
-
-# Quick start
+## Quick start
 
 Download the latest prebuilt binaries from
 **the [releases page](https://github.com/torkelicious/obliberry/releases/latest).**
@@ -24,19 +22,29 @@ the `DemoProject` executable.
 
 To build the engine from source instead, see the [build instructions](docs/build.md).
 
-> **note:** this is developed and tested on Linux, sometimes tested in a Windows VM. macOS is expected to maybe work
-> but is untested.
+> **Note:** Obliberry is primarily developed and tested on Linux. Windows is tested less frequently, and macOS is
+> currently untested, but expected to work.
 
 ## Features
 
-- Visual editor with Hub, Edit, Play, and MapEditor states, gizmo transforms, and pixel-based entity picking.
-- ECS core with versioned entity handles and dense component pools.
-- Hex-grid maps (odd-r offset, pointy-top) with built-in A* pathfinding.
-- ObSL scripting: a small embedded language with hot reload, parallel execution, and lifecycle hooks like
-  `on_update(dt)`.
-- Ship a game as a single `.obpak` package with LZ4 compression and pre-parsed scripts.
-- Built-in scene UI (text, buttons, images) and audio (2D sound effects and looping music).
-- Basic particle and lighting systems.
+- Visual editor with Hub, Edit, Play, and Map Edit modes, transform and collider gizmos, pixel-based entity picking,
+  hierarchy editing, undo/redo, and project asset management.
+- ECS core with versioned entity handles, dense component pools, parent-child relationships, prefabs, and persistent
+  entities across scene transitions.
+- Pointy-top hex-grid maps using odd-r coordinates, a compact `.obmap` format, built-in A* pathfinding, and a dedicated
+  map editor.
+- Sprite-sheet animation with named clips, per-frame timing, configurable sheet spacing, editor previews, and ObSL
+  playback control.
+- Collider shapes for flat and 3D-style isometric objects, including collision and trigger enter/stay/exit events.
+- Project-wide `assets.json` catalog with lazy loading, dependency resolution, and automatic unloading when scenes
+  change.
+- Configurable post-processing chains with custom fragment shaders, editable uniforms, multi-pass effects, bloom, CRT,
+  color effects, and live editor previews.
+- ObSL scripting with hot reload, parallel execution, deferred thread-safe mutations, lifecycle hooks, collision
+  events, UI access, and scene management.
+- Instanced OpenGL rendering with directional sprites, billboards, picking, particles, lighting, and scene UI.
+- Audio support for sound effects and looping music.
+- Export project data into a single LZ4-compressed `.obpak` with MessagePack JSON and pre-parsed ObSL scripts.
 
 ## How it works
 
@@ -46,11 +54,16 @@ so the main thread prepares the next frame while the previous one is still being
 across a thread pool, one interpreter per worker, but they cannot mutate the ECS directly: writes are routed through
 command buffers that the main thread flushes, which keeps parallel scripts safe without locking every component access.
 
+Project assets are registered once in the project-root `assets.json` catalog. Scenes and prefabs store resource IDs
+instead of duplicating complete definitions. When a scene loads, Obliberry scans its asset references, resolves
+dependencies such as material textures and animation sheets, and loads only the required subset. Scene-owned asset
+scopes release resources that are no longer needed when switching scenes.
+
 Hex maps use an odd-r offset layout with pointy-top hexes, a compact binary format (`.obmap`), and A* pathfinding over
-the grid. Projects are packaged into a single `.obpak` file: a header, a table of contents, a string
-table, and an LZ4-compressed blob. Scripts are pre-parsed at pack time and stored as serialized ASTs, so a packaged game
-skips parsing on startup, and media files are stored uncompressed by design since compressing textures and audio rarely
-pays off.
+the grid. Exported project data is packaged into a single `.obpak` file containing a header, a table of contents, a
+string table, and an LZ4-compressed blob. Scripts are pre-parsed at pack time and stored as serialized ASTs, so a
+packaged game skips parsing on startup. Media files are stored uncompressed by design because compressing textures and
+audio rarely pays off.
 
 ## Credits and thanks
 
@@ -99,7 +112,7 @@ Big thanks to all of these great open-source projects and resources for making t
 Full documentation lives
 in [docs/](docs/index.md): [build instructions](docs/build.md), [editor guide](docs/editor/usage.md),
 [architecture notes](docs/architecture.md), the [ObSL scripting guide](docs/scripting/getting-started.md) and
-[API reference](docs/scripting/api-reference.md), and [file format specs](docs/formats/project-json.md).
+[API reference](docs/scripting/api-reference.md), the [`assets.json` catalog](docs/formats/assets-json.md), and
+[file format specs](docs/formats/project-json.md).
 
 Licensed under the MIT License. See [LICENSE](LICENSE).
-
