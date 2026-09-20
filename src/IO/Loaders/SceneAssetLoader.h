@@ -1,9 +1,19 @@
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <nlohmann/json_fwd.hpp>
+#include <string_view>
 
 namespace IO::SceneAssetLoader {
+
+    enum class AssetKind : std::uint8_t { Texture, Shader, Mesh, Material, Font, AnimationSet };
+
+    class SceneAssetScope;
+
+    bool LoadReferenced(const nlohmann::json &sceneData, SceneAssetScope &scope);
+    bool Acquire(AssetKind kind, std::string_view id, SceneAssetScope &scope);
+
     class SceneAssetScope {
     public:
         SceneAssetScope();
@@ -20,7 +30,7 @@ namespace IO::SceneAssetLoader {
         std::unique_ptr<State> m_State;
 
         friend bool LoadReferenced(const nlohmann::json &sceneData, SceneAssetScope &scope);
+        friend bool Acquire(AssetKind kind, std::string_view id, SceneAssetScope &scope);
     };
 
-    bool LoadReferenced(const nlohmann::json &sceneData, SceneAssetScope &scope);
 } // namespace IO::SceneAssetLoader

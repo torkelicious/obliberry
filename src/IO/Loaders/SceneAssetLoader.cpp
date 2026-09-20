@@ -13,8 +13,8 @@
 #include "UI/Text/Font.h"
 #include "nlohmann/json.hpp"
 #include <cstddef>
-#include <cstdint>
 #include <functional>
+#include <memory>
 #include <mutex>
 #include <set>
 #include <string>
@@ -22,9 +22,12 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <optional>
+#include <string_view>
 
 namespace {
     using json = nlohmann::json;
+    using IO::SceneAssetLoader::AssetKind;
 
     struct RequiredAssets {
         std::set<std::string> textures;
@@ -34,8 +37,6 @@ namespace {
         std::set<std::string> fonts;
         std::set<std::string> animationSets;
     };
-
-    enum class AssetKind : std::uint8_t { Texture, Shader, Mesh, Material, Font, AnimationSet };
 
     struct AssetKey {
         AssetKind kind;
@@ -280,6 +281,34 @@ namespace {
         return req;
     }
 
+    bool AddRequiredAsset(RequiredAssets &req, const AssetKind kind, const std::string id) {
+        if (id.empty()) {
+            return false;
+        }
+
+        switch (kind) {
+            case IO::SceneAssetLoader::AssetKind::Texture:
+                req.textures.insert(id);
+                return true;
+            case IO::SceneAssetLoader::AssetKind::Shader:
+                req.shaders.insert(id);
+                return true;
+            case IO::SceneAssetLoader::AssetKind::Mesh:
+                req.meshes.insert(id);
+                return true;
+            case IO::SceneAssetLoader::AssetKind::Material:
+                req.materials.insert(id);
+                return true;
+            case IO::SceneAssetLoader::AssetKind::Font:
+                req.fonts.insert(id);
+                return true;
+            case IO::SceneAssetLoader::AssetKind::AnimationSet:
+                req.animationSets.insert(id);
+                return true;
+        }
+        return false;
+    }
+
     bool ResolveDependencies(RequiredAssets &req) {
 
         for (const std::string &material_id : req.materials) {
@@ -337,6 +366,73 @@ namespace {
                AppendAssets(sub, "fonts", req.fonts) && AppendAssets(sub, "animation_sets", req.animationSets);
     }
 
+    std::optional<std::vector<AssetKey>> AcquireRequiredAssets(RequiredAssets req) {
+        if (!ResolveDependencies(req)) {
+            return std::nullopt;
+        }
+
+        json subset;
+        if (!BuildAssetSubset(req, subset)) {
+            return std::nullopt;
+        }
+
+        auto &resources = Core::ResourceManager::GetInstance();
+
+        std::lock_guard residencyLock(s_ResidencyMutex);
+        std::unordered_set<AssetKey, AssetKeyHash> alreadyLoaded;
+
+        ForEachAsset(req, [&](const AssetKey &asset) {
+            if (IsLoaded(asset)) {
+                alreadyLoaded.insert(asset);
+            }
+        });
+
+        IO::AssetLoader::LoadAssets(subset, resources);
+        bool allLoaded = true;
+
+        ForEachAsset(req, [&](const AssetKey &asset) {
+            if (!IsLoaded(asset)) {
+                LOG_ERROR("SceneAssetLoader", "Asset failed to load: " + asset.id);
+
+                allLoaded = false;
+            }
+        });
+
+        if (!allLoaded) {
+            std::vector<AssetKey> loadedThisAttempt;
+
+            ForEachAsset(req, [&](const AssetKey &asset) {
+                if (!alreadyLoaded.contains(asset) && IsLoaded(asset))
+                    loadedThisAttempt.push_back(asset);
+            });
+
+            for (auto it = loadedThisAttempt.rbegin(); it != loadedThisAttempt.rend(); ++it) {
+                Unload(*it);
+            }
+            return std::nullopt;
+        }
+
+        std::vector<AssetKey> acquiredAssets;
+
+        ForEachAsset(req, [&](const AssetKey &asset) {
+            const auto existing = s_ReferenceCounts.find(asset);
+            if (existing != s_ReferenceCounts.end()) {
+                ++existing->second;
+                acquiredAssets.push_back(asset);
+                return;
+            }
+
+            if (alreadyLoaded.contains(asset)) { // treat as pinned
+                return;
+            }
+
+            s_ReferenceCounts.emplace(asset, 1);
+            acquiredAssets.push_back(asset);
+        });
+
+        return acquiredAssets;
+    }
+
 } // namespace
 
 namespace IO::SceneAssetLoader {
@@ -354,57 +450,48 @@ namespace IO::SceneAssetLoader {
     bool LoadReferenced(const nlohmann::json &sceneData, SceneAssetScope &scope) {
         scope = SceneAssetScope{};
 
-        auto &resources = Core::ResourceManager::GetInstance();
-        RequiredAssets required = CollectDirectRefs(sceneData);
-        if (!ResolveDependencies(required)) {
+        auto acquired = AcquireRequiredAssets(CollectDirectRefs(sceneData));
+
+        if (!acquired)
+            return false;
+
+        auto state = std::make_unique<SceneAssetScope::State>();
+        state->assets = std::move(*acquired);
+        scope.m_State = std::move(state);
+
+        return true;
+    }
+
+    bool Acquire(AssetKind kind, const std::string_view id, SceneAssetScope &scope) {
+        scope = SceneAssetScope{};
+
+        if (id.empty()) {
             return false;
         }
-        json subset;
-        if (!BuildAssetSubset(required, subset)) {
+
+        const std::string assetId(id);
+        const AssetKey key{kind, assetId};
+
+        // permanent objs
+        if (!IsCatalogAsset(assetId)) {
+            return IsLoaded(key);
+        }
+
+        RequiredAssets required;
+        if (!AddRequiredAsset(required, kind, assetId)) {
             return false;
         }
 
-        std::lock_guard residencyLock(s_ResidencyMutex);
+        auto acquired = AcquireRequiredAssets(std::move(required));
 
-        std::unordered_set<AssetKey, AssetKeyHash> alreadyLoaded;
-        ForEachAsset(required, [&](const AssetKey &asset) {
-            if (IsLoaded(asset))
-                alreadyLoaded.insert(asset);
-        });
-
-        AssetLoader::LoadAssets(subset, resources);
-
-        bool allLoaded = true;
-        ForEachAsset(required, [&](const AssetKey &asset) {
-            if (!IsLoaded(asset)) {
-                LOG_ERROR("SceneAssetLoader", "Asset failed to load: " + asset.id);
-                allLoaded = false;
-            }
-        });
-
-        if (!allLoaded) {
-            std::vector<AssetKey> loadedThisAttempt;
-            ForEachAsset(required, [&](const AssetKey &asset) {
-                if (!alreadyLoaded.contains(asset) && IsLoaded(asset))
-                    loadedThisAttempt.push_back(asset);
-            });
-            for (auto it = loadedThisAttempt.rbegin(); it != loadedThisAttempt.rend(); ++it)
-                Unload(*it);
+        if (!acquired) {
             return false;
         }
 
         auto state = std::make_unique<SceneAssetScope::State>();
-        ForEachAsset(required, [&](const AssetKey &asset) {
-            if (auto count = s_ReferenceCounts.find(asset); count != s_ReferenceCounts.end()) {
-                ++count->second;
-                state->assets.push_back(asset);
-            } else if (!alreadyLoaded.contains(asset)) {
-                s_ReferenceCounts.emplace(asset, 1);
-                state->assets.push_back(asset);
-            }
-        });
-
+        state->assets = std::move(*acquired);
         scope.m_State = std::move(state);
         return true;
     }
+
 } // namespace IO::SceneAssetLoader
