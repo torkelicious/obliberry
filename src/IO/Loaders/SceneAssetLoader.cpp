@@ -226,9 +226,8 @@ namespace {
 
     bool BuildAssetSubset(const RequiredAssets &req, json &sub) {
         sub = json::object();
-        return AppendAssets(sub, "textures", req.textures) && AppendAssets(sub, "shaders", req.shaders) && AppendAssets(sub, "meshes", req.meshes) &&
-               AppendAssets(sub, "materials", req.materials) && AppendAssets(sub, "fonts", req.fonts) &&
-               AppendAssets(sub, "animation_sets", req.animationSets);
+        return AppendAssets(sub, "textures", req.textures) && AppendAssets(sub, "shaders", req.shaders) && AppendAssets(sub, "meshes", req.meshes) && AppendAssets(sub, "materials", req.materials) &&
+               AppendAssets(sub, "fonts", req.fonts) && AppendAssets(sub, "animation_sets", req.animationSets);
     }
 
 } // namespace
