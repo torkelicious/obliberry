@@ -4,7 +4,6 @@
 #include "Core/ResourceManager.h"
 #include "ECS/Systems/Animation/Types.h"
 #include "Scripting/SmallFunction.h"
-#include <cstdint>
 #include <filesystem>
 #include <glm/glm.hpp>
 #include <string>

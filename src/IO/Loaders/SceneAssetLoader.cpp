@@ -73,17 +73,17 @@ namespace {
 
     template <typename Func> void ForEachAsset(const RequiredAssets &assets, Func &&func) {
         for (const auto &id : assets.textures)
-            func(AssetKey{AssetKind::Texture, id});
+            func(AssetKey{.kind = AssetKind::Texture, .id = id});
         for (const auto &id : assets.shaders)
-            func(AssetKey{AssetKind::Shader, id});
+            func(AssetKey{.kind = AssetKind::Shader, .id = id});
         for (const auto &id : assets.meshes)
-            func(AssetKey{AssetKind::Mesh, id});
+            func(AssetKey{.kind = AssetKind::Mesh, .id = id});
         for (const auto &id : assets.materials)
-            func(AssetKey{AssetKind::Material, id});
+            func(AssetKey{.kind = AssetKind::Material, .id = id});
         for (const auto &id : assets.fonts)
-            func(AssetKey{AssetKind::Font, id});
+            func(AssetKey{.kind = AssetKind::Font, .id = id});
         for (const auto &id : assets.animationSets)
-            func(AssetKey{AssetKind::AnimationSet, id});
+            func(AssetKey{.kind = AssetKind::AnimationSet, .id = id});
     }
 
     bool IsLoaded(const AssetKey &asset) {
@@ -300,7 +300,7 @@ namespace {
         return req;
     }
 
-    bool AddRequiredAsset(RequiredAssets &req, const AssetKind kind, const std::string id) {
+    bool AddRequiredAsset(RequiredAssets &req, const AssetKind kind, const std::string &id) {
         if (id.empty()) {
             return false;
         }
@@ -481,7 +481,7 @@ namespace IO::SceneAssetLoader {
         return true;
     }
 
-    bool Acquire(AssetKind kind, const std::string_view id, SceneAssetScope &scope) {
+    bool Acquire(const AssetKind kind, const std::string_view id, SceneAssetScope &scope) {
         scope = SceneAssetScope{};
 
         if (id.empty()) {
@@ -489,7 +489,7 @@ namespace IO::SceneAssetLoader {
         }
 
         const std::string assetId(id);
-        const AssetKey key{kind, assetId};
+        const AssetKey key{.kind = kind, .id = assetId};
 
         // permanent objs
         if (!IsCatalogAsset(assetId)) {

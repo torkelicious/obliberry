@@ -17,7 +17,7 @@
 
 namespace Scripting {
 
-    static std::shared_ptr<UI::Font> AcquireFontForScene(Core::EngineContext *ctx, const std::string_view id) {
+    static std::shared_ptr<UI::Font> AcquireFontForScene(const Core::EngineContext *ctx, const std::string_view id) {
         if (!ctx || !ctx->sceneManager || id.empty()) {
             return nullptr;
         }
@@ -425,7 +425,7 @@ namespace Scripting {
                         ctx->uiCmdBuf->push([namePtr, fontname, ctx](UI::UISystem &ui) {
                             if (auto *el = ui.FindByName(*namePtr))
                                 if (auto *txt = dynamic_cast<UI::UIText *>(el)) {
-                                    if (auto font = AcquireFontForScene(ctx, fontname)) {
+                                    if (const auto font = AcquireFontForScene(ctx, fontname)) {
                                         txt->SetFont(font);
                                     }
                                 }

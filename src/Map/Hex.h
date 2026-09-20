@@ -7,7 +7,6 @@
 #include <vector>
 #include <queue>
 #include <algorithm>
-#include <unordered_set>
 #include "HexCoords.h"
 #include "Core/Constants.h"
 #include "Math/HexMath.h"

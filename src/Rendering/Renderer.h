@@ -6,7 +6,6 @@
 #include "Rendering/Types/Transform.h"
 #include "Platform/Threading/SmallTask.h"
 #include "PostProcessing/PostProcessing.h"
-#include "glm/ext/vector_float4.hpp"
 
 #include <atomic>
 #include <functional>

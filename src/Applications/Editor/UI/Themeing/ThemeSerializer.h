@@ -2,7 +2,6 @@
 
 #include "EditorTheme.h"
 #include "Core/Utils/PathUtils.h"
-#include "IO/VFS/VFS.h"
 
 #include <fstream>
 #include <nlohmann/json.hpp>

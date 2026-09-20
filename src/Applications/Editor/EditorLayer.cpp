@@ -549,7 +549,7 @@ void Editor::EditorLayer::DrawProjectLoadErrorPopup() {
         ImGui::Separator();
         ImGui::Spacing();
 
-        const float buttonWidth = 120.0f;
+        constexpr float buttonWidth = 120.0f;
         const float availableWidth = ImGui::GetContentRegionAvail().x;
 
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (availableWidth - buttonWidth) * 0.5f);

@@ -45,7 +45,7 @@ namespace Editor::UI {
         return hay.find(need) != std::string::npos;
     }
 
-    template <typename T> std::vector<std::pair<std::string, std::shared_ptr<T>>> GetCatalogItems(const char *catalogType) {
+    template <typename T> static std::vector<std::pair<std::string, std::shared_ptr<T>>> GetCatalogItems(const char *catalogType) {
         auto &resources = Core::ResourceManager::GetInstance();
 
         std::vector<std::pair<std::string, std::shared_ptr<T>>> result;

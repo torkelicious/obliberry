@@ -3,7 +3,6 @@
 #include "Applications/Editor/Commands/UndoManager.h"
 #include "Applications/Editor/UI/ConfigWindows/ConfigWindow.h"
 #include "Scenes/Scene.h"
-#include "Scenes/SceneManager.h"
 
 namespace Editor::UI {
     using Commands::UndoManager;

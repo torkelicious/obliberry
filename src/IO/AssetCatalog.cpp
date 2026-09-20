@@ -81,7 +81,7 @@ namespace IO::AssetCatalog {
         s_Loaded = false;
     }
 
-    bool Upsert(std::string_view type, const nlohmann::json &def) {
+    bool Upsert(const std::string_view type, const nlohmann::json &def) {
         if (!IsLoaded() || VFS::IsPackaged() || !def.is_object()) {
             return false;
         }
@@ -92,7 +92,7 @@ namespace IO::AssetCatalog {
         }
 
         json updated = s_Document;
-        auto entries = updated["assets"].find(std::string(type));
+        const auto entries = updated["assets"].find(std::string(type));
 
         if (entries == updated["assets"].end() || !entries->is_array()) {
             return false;
@@ -119,13 +119,13 @@ namespace IO::AssetCatalog {
         return true;
     }
 
-    bool Remove(std::string_view type, std::string_view id) {
+    bool Remove(const std::string_view type, const std::string_view id) {
         if (!IsLoaded() || VFS::IsPackaged() || id.empty()) {
             return false;
         }
 
         json updated = s_Document;
-        auto entries = updated["assets"].find(std::string(type));
+        const auto entries = updated["assets"].find(std::string(type));
 
         if (entries == updated["assets"].end() || !entries->is_array()) {
             return false;

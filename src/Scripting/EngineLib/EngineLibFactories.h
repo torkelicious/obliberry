@@ -707,7 +707,7 @@ namespace Scripting {
 
                 Core::EngineContext *context = nullptr;
 
-                if (auto *cache = EntityWrapperCache::Get(interp)) {
+                if (const auto *cache = EntityWrapperCache::Get(interp)) {
                     context = cache->GetContext();
                 }
 

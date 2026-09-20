@@ -137,7 +137,7 @@ int wmain(int argc, wchar_t *argv[]) {
     return Main(args);
 }
 #else
-int main(int argc, char *argv[]) {
+int main(const int argc, char *argv[]) {
     std::vector<std::filesystem::path> args;
     for (int i = 1; i < argc; ++i)
         args.emplace_back(argv[i]);

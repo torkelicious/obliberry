@@ -8,6 +8,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <unordered_set>
 
 #include <glm/glm.hpp>
 #define GLM_ENABLE_EXPERIMENTAL

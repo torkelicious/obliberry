@@ -31,7 +31,7 @@ namespace IO::CatalogFile {
         if (!incoming.is_object())
             throw std::runtime_error(source + ": assets must be an object");
         for (const auto &[type, entries] : incoming.items()) {
-            if (std::find(Types.begin(), Types.end(), type) == Types.end())
+            if (std::ranges::find(Types, type) == Types.end())
                 throw std::runtime_error(source + ": unsupported asset type '" + type + "'");
             if (!entries.is_array())
                 throw std::runtime_error(source + ": " + type + " must be an array");
@@ -40,7 +40,7 @@ namespace IO::CatalogFile {
                 if (!asset.is_object() || !asset.contains("id") || !asset.at("id").is_string() || asset.at("id").get_ref<const std::string &>().empty())
                     throw std::runtime_error(source + ": invalid " + type + " asset ID");
                 const auto &id = asset.at("id").get_ref<const std::string &>();
-                const auto found = std::find_if(output.begin(), output.end(), [&](const json &other) { return other.at("id") == id; });
+                const auto found = std::ranges::find_if(output, [&](const json &other) { return other.at("id") == id; });
                 if (found == output.end())
                     output.push_back(asset);
                 else if (*found != asset)

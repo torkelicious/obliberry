@@ -3,7 +3,6 @@
 #include "Applications/Editor/EditorLayer.h"
 #include <algorithm>
 #include <cfloat>
-#include <cstring>
 #include <memory>
 #include <type_traits>
 #include "ECS/Components/ColliderComponent.h"

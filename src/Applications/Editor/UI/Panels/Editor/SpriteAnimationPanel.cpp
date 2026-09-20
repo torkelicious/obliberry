@@ -4,7 +4,6 @@
 #include <cstdio>
 #include <vector>
 #include <cmath>
-#include <cstdint>
 #include <utility>
 #include "Core/ResourceManager.h"
 #include "Applications/Editor/UI/Panels/Editor/EditorWidgetsCombo.h"

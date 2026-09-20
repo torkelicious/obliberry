@@ -52,7 +52,7 @@ namespace {
         return {uniqueKeys.begin(), uniqueKeys.end()};
     }
 
-    bool RetainScope(Core::EngineContext *context, IO::SceneAssetLoader::SceneAssetScope scope) {
+    bool RetainScope(const Core::EngineContext *context, IO::SceneAssetLoader::SceneAssetScope scope) {
         if (!context || !context->sceneManager) {
             return false;
         }

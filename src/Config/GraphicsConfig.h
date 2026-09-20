@@ -1,7 +1,6 @@
 #pragma once
 #include "Core/Constants.h"
 #include "glad/glad.h"
-#include <cstdint>
 #include <filesystem>
 #include <string>
 #include <vector>

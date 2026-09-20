@@ -1,4 +1,3 @@
-#include <glad/glad.h>
 #include "UIText.h"
 #include "UI/Rendering/UIRenderer.h"
 #include "Rendering/Types/Texture/Texture.h"

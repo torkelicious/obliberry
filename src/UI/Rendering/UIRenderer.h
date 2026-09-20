@@ -5,10 +5,8 @@
 #include "Rendering/Types/VBO/VertexBuffer.h"
 #include "Rendering/Types/VAO/VertexArray.h"
 #include "Rendering/Types/IBO/IndexBuffer.h"
-#include "Rendering/Types/VBO/VertexBufferLayout.h"
 
 #include <glm/glm.hpp>
-#include <cstdint>
 #include <memory>
 #include <vector>
 

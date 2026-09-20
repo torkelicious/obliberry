@@ -1,6 +1,5 @@
 #pragma once
 
-#include "ECS/ECS.h"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Components/MovementComponent.h"
 #include "ECS/Components/MaterialComponent.h"
