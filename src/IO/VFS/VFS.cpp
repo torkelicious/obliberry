@@ -90,7 +90,7 @@ namespace IO::VFS {
         const std::filesystem::path basePath = s_State.isLoaded ? s_State.rootDir : std::filesystem::current_path();
 
         if (virtualPath.is_absolute()) {
-            LOG_ERROR(LOG_WHO, "path was absolute, it will not resolve.");
+            LOG_ERROR(LOG_WHO, "path '" + virtualPath.string() + "' was absolute, it will not resolve.");
             return {};
         }
 
