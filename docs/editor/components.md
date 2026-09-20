@@ -19,7 +19,7 @@ render.**
 Position, rotation, scale in world space. Also controls billboard mode.
 
 | UI Field          | Type             | Notes                                                                                                    |
-| ----------------- | ---------------- | -------------------------------------------------------------------------------------------------------- |
+|-------------------|------------------|----------------------------------------------------------------------------------------------------------|
 | **Position**      | DragFloat3 (xyz) | World position                                                                                           |
 | **Rotation**      | DragFloat3 (xyz) | Euler angles in degrees. Disabled if "Use Billboard" is checked.                                         |
 | **Scale**         | DragFloat3 (xyz) | Local scale                                                                                              |
@@ -32,7 +32,7 @@ Position, rotation, scale in world space. Also controls billboard mode.
 The geometric shape of the entity.
 
 | UI Field        | Type           | Notes                                                                                |
-| --------------- | -------------- | ------------------------------------------------------------------------------------ |
+|-----------------|----------------|--------------------------------------------------------------------------------------|
 | **Factory**     | Read-only text | Shows the mesh factory ID (e.g., `Quad`, `Hexagon`, `Circle`, `Ring`, `PointTopHex`) |
 | **Indices**     | Read-only text | Triangle index count                                                                 |
 | **Mesh**        | Combo box      | Pick from registered mesh factories                                                  |
@@ -45,7 +45,7 @@ The geometric shape of the entity.
 Appearance: texture, color, shader. Links to a material resource.
 
 | UI Field            | Type              | Notes                                                  |
-| ------------------- | ----------------- | ------------------------------------------------------ |
+|---------------------|-------------------|--------------------------------------------------------|
 | **Material**        | Combo box         | Pick from project materials                            |
 | **Color**           | ColorEdit4 (RGBA) | Tint color                                             |
 | **Texture**         | Combo box         | Pick from project textures                             |
@@ -63,7 +63,7 @@ Appearance: texture, color, shader. Links to a material resource.
 Allows an entity to navigate the hex grid using the movement system.
 
 | UI Field               | Type              | Notes                               |
-| ---------------------- | ----------------- | ----------------------------------- |
+|------------------------|-------------------|-------------------------------------|
 | **Time Per Step**      | Float             | Seconds per hex step (default 0.15) |
 | **Step Timer**         | Float (read-only) | Internal timer for current step     |
 | **Idle Timer**         | Float (read-only) | Time spent idle                     |
@@ -83,7 +83,7 @@ Allows an entity to navigate the hex grid using the movement system.
 Swaps the entity's texture based on which direction it's facing (6 directions on a hex grid).
 
 | UI Field                                | Type           | Notes                                                            |
-| --------------------------------------- | -------------- | ---------------------------------------------------------------- |
+|-----------------------------------------|----------------|------------------------------------------------------------------|
 | **Facing Index**                        | Slider (0-5)   | Current facing direction. 0-5 correspond to hex grid directions. |
 | **Dir 0 Texture** ... **Dir 5 Texture** | 6× Combo boxes | Texture for each direction. Empty = unset.                       |
 | **Missing count warning**               | Read-only text | Shows how many directions have no texture assigned.              |
@@ -109,7 +109,7 @@ With a SpriteAnimator, its sheet and frame are supplied by the animation system.
 Plays named clips from a shared sprite animation set.
 
 | Setting      | Meaning                                                |
-| ------------ | ------------------------------------------------------ |
+|--------------|--------------------------------------------------------|
 | Animation    | Registered animation-set asset.                        |
 | Initial Clip | Clip selected when the component is initialized.       |
 | Autoplay     | Whether the initial clip starts playing automatically. |
@@ -129,7 +129,7 @@ Adds overlap detection to an entity with a Transform. This detects intersections
 events; it does not implement automatic movement blocking or physical collision response.
 
 | UI field    | Meaning                                                                                |
-| ----------- | -------------------------------------------------------------------------------------- |
+|-------------|----------------------------------------------------------------------------------------|
 | Shape       | Box, Sphere, Cylinder, Rectangle, or Circle.                                           |
 | Orientation | Entity uses the world transform; Billboard faces the camera using the billboard basis. |
 | Offset      | Local offset from the entity origin, transformed with the collider.                    |
@@ -152,7 +152,7 @@ and [collider serialization](../formats/scene-json.md#collidercomponent) for sav
 Attaches ObSL scripts to the entity. Scripts define custom logic.
 
 | UI Field        | Type           | Notes                                              |
-| --------------- | -------------- | -------------------------------------------------- |
+|-----------------|----------------|----------------------------------------------------|
 | **Script list** | Bullet list    | Each attached script path with a **Remove** button |
 | **Add Script**  | FileCombo      | Pick a `.obsl` file from `assets/scripts/`         |
 | **Total count** | Read-only text | Number of attached scripts                         |
@@ -166,7 +166,7 @@ Attaches ObSL scripts to the entity. Scripts define custom logic.
 Emits particles from the entity's position.
 
 | UI Section   | Fields                                                                                                                              |
-| ------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+|--------------|-------------------------------------------------------------------------------------------------------------------------------------|
 | **Emission** | **Active** (bool), **Editor Preview** (bool), **Max Particles** (int, 1-16384), **Emit Rate** (float, particles/sec)                |
 | **Lifetime** | **Min** / **Max** (float, seconds)                                                                                                  |
 | **Velocity** | **Min** / **Max** (DragFloat3, vec3)                                                                                                |
@@ -188,7 +188,7 @@ Emits particles from the entity's position.
 A dynamic point light that affects the lighting system.
 
 | UI Field      | Type         | Notes              |
-| ------------- | ------------ | ------------------ |
+|---------------|--------------|--------------------|
 | **Color**     | Color3 (RGB) | Light color        |
 | **Radius**    | Float        | World-space radius |
 | **Intensity** | Float        | Light intensity    |
@@ -204,7 +204,7 @@ These appear on the **MAP** entity (created automatically in Map Edit mode).
 ### Map
 
 | UI Field              | Type           | Notes                                        |
-| --------------------- | -------------- | -------------------------------------------- |
+|-----------------------|----------------|----------------------------------------------|
 | **Map File**          | FileCombo      | Pick `.obmap` file from `assets/maps/`       |
 | **Needs Mesh Update** | Checkbox       | Triggers mesh rebuild                        |
 | **Render Visibles**   | Read-only text | Number of visible tile types                 |
@@ -218,7 +218,7 @@ These appear on the **MAP** entity (created automatically in Map Edit mode).
 Runtime state for map editing (selection, pathfinding).
 
 | UI Field             | Type           | Notes                                       |
-| -------------------- | -------------- | ------------------------------------------- |
+|----------------------|----------------|---------------------------------------------|
 | **Has Selection**    | Checkbox       | Whether a hex is currently hovered/selected |
 | **Selected Hex**     | Read-only text | Coordinates `[q, r]` of selected hex        |
 | **Has Path To**      | Checkbox       | Whether a path target is set                |
@@ -233,7 +233,7 @@ These are used by the engine internally. You generally **don't add them manually
 shown as tag flags in the Inspector.
 
 | Tag                    | How It Appears in UI                                                                                                                                          |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **BillboardTag**       | As **"Use Billboard"** checkbox in Transform widget                                                                                                           |
 | **DestroyTag**         | Not shown (entity queued for deletion)                                                                                                                        |
 | **Relationship**       | Managed via Registry context menu (Create Child, Set Parent, Detach)                                                                                          |
@@ -250,7 +250,7 @@ UI elements (Text, Button, Image, Rect) are managed in the **UI Hierarchy** pane
 their own properties:
 
 | Element Type | Key Properties                                                                                     |
-| ------------ | -------------------------------------------------------------------------------------------------- |
+|--------------|----------------------------------------------------------------------------------------------------|
 | **Text**     | `text`, `color` (RGBA), `font` (font resource ID)                                                  |
 | **Button**   | `text`, `color`, `bg_color`, `hovered_bg_color` (RGBA), `bg_texture` (optional), `font` (optional) |
 | **Image**    | `texture` (texture resource ID), `color` (RGBA)                                                    |
@@ -264,7 +264,7 @@ enabled), `children` (array).
 ## Quick Reference Table
 
 | Category                   | Components                                                                                      |
-| -------------------------- | ----------------------------------------------------------------------------------------------- |
+|----------------------------|-------------------------------------------------------------------------------------------------|
 | **Required for rendering** | Transform, Mesh, Material                                                                       |
 | **Movement & AI**          | Movement, DirectionalTexture                                                                    |
 | **Logic**                  | Script, Collider                                                                                |
@@ -279,7 +279,7 @@ enabled), `children` (array).
 ## Common Patterns
 
 | Goal                              | Components to Add                                                    |
-| --------------------------------- | -------------------------------------------------------------------- |
+|-----------------------------------|----------------------------------------------------------------------|
 | Static prop (crate, rock)         | Transform + Mesh + Material                                          |
 | Moving character                  | Transform + Mesh + Material + Movement + Script                      |
 | Directional sprite (tank, NPC)    | Transform + Mesh + Material + Movement + DirectionalTexture + Script |

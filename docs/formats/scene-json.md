@@ -1,11 +1,11 @@
 # Scene Files (`assets/scenes/*.json`)
 
-Scenes describe everything in a Scene: properties, assets, the hex grid, entities, and UI. They live under
-`assets/scenes/` inside a project and are referenced by `project.json`'s `start_scene`.
+Scenes describe the state of a level or screen: properties, the hex grid, post-processing, entities, and UI. They live
+under `assets/scenes/` inside a project and are referenced by `project.json`'s `start_scene`.
 
-I/O is handled by `IO::SceneIO` (`src/IO/SceneSerialization.cpp`). Loading order matters: `properties` → `assets` (asset
-factories must be registered first) → `grid` → `entities` (with `parent` re-parenting applied after all entities
-exist) → `ui`.
+I/O is handled by `IO::SceneIO` (`src/IO/SceneSerialization.cpp`). Loading order matters: `properties` → acquire asset
+IDs referenced by the scene from the project [asset catalog](assets-json.md) → `grid` → `PostProcessing` → `entities`
+(with `parent` re-parenting applied after all entities exist) → `ui`.
 
 When saving: entities with a `MapComponent` are **not** written as entities (they become the `grid` section), floats are
 rounded to 3 decimals (`RoundJsonFloats`), and the file is written with 4-space indentation.
@@ -15,59 +15,29 @@ rounded to 3 decimals (`RoundJsonFloats`), and the file is written with 4-space 
 
 ## Top-level keys
 
-| Key              | Type   | Meaning                                                                                               |
-| ---------------- | ------ | ----------------------------------------------------------------------------------------------------- |
-| `properties`     | object | Scene metadata (name, clear color, music, ambient light).                                             |
-| `assets`         | object | Asset registry: textures/shaders/meshes/materials/fonts referenced by id from entities, grid, and UI. |
-| `grid`           | object | Hex-grid map section; present iff the scene has a map entity with a non-empty `map_file`.             |
-| `PostProcessing` | array  | Post-processing effect chain; absent means the default built-in chain (all effects disabled).         |
-| `entities`       | array  | The scene's entities.                                                                                 |
-| `ui`             | object | UI element tree (`ui.elements`).                                                                      |
+| Key              | Type   | Meaning                                                                                       |
+|------------------|--------|-----------------------------------------------------------------------------------------------|
+| `properties`     | object | Scene metadata (name, clear color, music, ambient light).                                     |
+| `grid`           | object | Hex-grid map section; present iff the scene has a map entity with a non-empty `map_file`.     |
+| `PostProcessing` | array  | Post-processing effect chain; absent means the default built-in chain (all effects disabled). |
+| `entities`       | array  | The scene's entities.                                                                         |
+| `ui`             | object | UI element tree (`ui.elements`).                                                              |
 
 ## `properties`
 
 | Key                | Type                  | Default        | Meaning                                                           |
-| ------------------ | --------------------- | -------------- | ----------------------------------------------------------------- |
+|--------------------|-----------------------|----------------|-------------------------------------------------------------------|
 | `name`             | string                | `""`           | Scene display name.                                               |
 | `clear_color`      | `[r, g, b, a]` floats | `[0, 0, 0, 1]` | Background clear color.                                           |
 | `background_music` | string                | `""`           | VFS-relative path to background music.                            |
 | `ambient_light`    | float                 | `0.2`          | Ambient light intensity (also fed into the map lightmap on load). |
 
-## `assets`
+## Asset references
 
-Each array entry is an object keyed by `id` the resource id referenced everywhere else in the file. Engine-internal
-resources use ids prefixed `"[Engine]"` (e.g. `"[Engine] Base"`, `"[Engine] Hex"`); user assets use any other id.
+Scene files store resource IDs but do not define the resources. User asset definitions and paths live once in the
+project-root [`assets.json`](assets-json.md); engine IDs such as `"[Engine] Base"` are registered internally.
 
-| Key                | Entry shape                               | Notes                                                                                                                                                                                                                                                                            |
-| ------------------ | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `assets.textures`  | `{"id", "path"}`                          | `path` is VFS-relative.                                                                                                                                                                                                                                                          |
-| `assets.shaders`   | `{"id", "vertex", "fragment"}`            | `vertex`/`fragment` are shader source paths. `[Engine]` and `[Engine_PP]` shaders are engine-provided and never serialized. A shader with an empty `vertex` (or a `[PP]` id) is a **post-processing effect shader** (it automatically uses the engine's fullscreen vertex pass). |
-| `assets.meshes`    | `{"id", "factory"}`                       | `factory` names a registered procedural mesh factory (e.g. `"Quad"`, `"Hexagon"`, `"Circle"`, `"Ring"`, `"PointTopHex"`).                                                                                                                                                        |
-| `assets.materials` | `{"id", "shader", "texture", "color"}`    | `shader` defaults to `"[Engine] Base"`; `texture` may be `""`; `color` is `[r,g,b,a]` (defaults to white).                                                                                                                                                                       |
-| `assets.fonts`     | `{"id", "path", "size", "sdf", "spread"}` | Defaults: `size` 12, `sdf` false, `spread` 8.                                                                                                                                                                                                                                    |
-
-| `assets.animation_sets` | `{"id", "path"}` | Registered animation resource ID and project-relative JSON path. Textures load before animation sets. |
-
-### Sprite animation references
-
-Animation definitions live in separate
-[sprite animation JSON files](sprite-animation-json.md).
-The scene records their resource IDs and paths:
-
-```json
-{
-    "animation_sets": [
-        {
-            "id": "player_animations",
-            "path": "assets/animations/player_anim.json"
-        }
-    ]
-}
-```
-
-The object above belongs inside the scene's `assets` object.
-
-An animated entity uses these entries inside its `components` object:
+An animated entity, for example, stores its catalog ID inside `components`:
 
 ```json
 {
@@ -80,14 +50,15 @@ An animated entity uses these entries inside its `components` object:
 }
 ```
 
-The resource ID is separate from the file path.
+The `player_animations` definition and its JSON path live in `assets.json`. The resource ID is separate from the file
+path.
 
 The scene saves the initial playback configuration, not the current
 clip position, elapsed time, or playing/paused state. Loading initializes
 the animator and resolves its initial sprite pose.
 
-Saving the scene records animation asset references. Save edited clip
-definitions from the animation editor as well.
+Saving the scene records the entity's animation ID. Save edited clip definitions from the animation editor separately;
+that operation writes the animation JSON and updates its catalog entry.
 
 ## `PostProcessing`
 
@@ -97,7 +68,7 @@ Processing** window; see [Post-Processing](../editor/post-processing.md).
 Each entry is an object:
 
 | Key                 | Type   | Default  | Meaning                                                                                   |
-| ------------------- | ------ | -------- | ----------------------------------------------------------------------------------------- |
+|---------------------|--------|----------|-------------------------------------------------------------------------------------------|
 | `shader`            | string | required | Shader resource id. Built-ins are `[Engine_PP] <name>`; custom effects are `[PP] <name>`. |
 | `enabled`           | bool   | `true`   | Disabled effects are skipped.                                                             |
 | `uniforms`          | object | `{}`     | Tunable uniforms. Values: number (float/int), bool, or `[x,y(,z,w)]` arrays.              |
@@ -144,7 +115,7 @@ Example (bloom chain):
 ## `grid`
 
 | Key        | Type   | Default          | Meaning                                                                                                                                                                                         |
-| ---------- | ------ | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|------------|--------|------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `map_file` | string | -                | Path to the binary hex map (`.obmap`); see [the `.obmap` format](obmap.md).                                                                                                                     |
 | `mesh_id`  | string | `"[Engine] Hex"` | Mesh resource id used for hex cells.                                                                                                                                                            |
 | `types`    | array  | -                | Material mapping per tile type id. Each entry: `id` (uint, default 1), `texture` (texture resource id, default `"hex_tex"`), `color` (`[r,g,b,a]`, default white; only written when not white). |
@@ -157,7 +128,7 @@ overlays are built from the same shader.
 Each entity is an object:
 
 | Key          | Type             | Meaning                                                                                                                                                     |
-| ------------ | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|--------------|------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `name`       | string, optional | Entity name (written only if non-empty).                                                                                                                    |
 | `parent`     | int, optional    | **Index** into the same `entities` array identifying the parent (hierarchy is rebuilt after all entities load). Written only if the parent is in the scene. |
 | `components` | object           | Maps component type names to per-component data. Unknown component names are skipped with a warning.                                                        |
@@ -165,7 +136,7 @@ Each entity is an object:
 ### Component keys
 
 | Component key                 | Fields                                                                                                                                                                                                                                                                                                                                                                                                        |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|-------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `TransformComponent`          | `position`, `rotation`, `scale` - `[x, y, z]` float arrays (Euler rotation).                                                                                                                                                                                                                                                                                                                                  |
 | `MovementComponent`           | `timePerStep` - float; `autoMove` - bool (default `false`). (Runtime movement state is intentionally not saved.)                                                                                                                                                                                                                                                                                              |
 | `MeshComponent`               | `mesh_id` - mesh resource id.                                                                                                                                                                                                                                                                                                                                                                                 |
@@ -197,7 +168,7 @@ Place this entry inside an entity's `components` object. This static example fit
 270 × 134 texture containing 32 × 32 frames separated by two-pixel gaps.
 
 | Field                           | Default      | Meaning                                                              |
-| ------------------------------- | ------------ | -------------------------------------------------------------------- |
+|---------------------------------|--------------|----------------------------------------------------------------------|
 | `texture_id`                    | Empty string | Registered texture resource ID.                                      |
 | `columns`, `rows`               | 1 each       | Positive grid dimensions.                                            |
 | `column_spacing`, `row_spacing` | 0 each       | Non-negative pixel gaps between cells, with no outer margin.         |
@@ -222,11 +193,11 @@ are reconstructed from the animator after loading.
 }
 ```
 
-| Field          | Default      | Meaning                                                    |
-| -------------- | ------------ | ---------------------------------------------------------- |
-| `animation_id` | Empty string | Resource ID from `assets.animation_sets`, not a file path. |
-| `initial_clip` | Empty string | Named clip selected during initialization.                 |
-| `autoplay`     | `true`       | Whether the initial clip starts playing.                   |
+| Field          | Default      | Meaning                                                                   |
+|----------------|--------------|---------------------------------------------------------------------------|
+| `animation_id` | Empty string | Resource ID from `assets.json`'s `animation_sets` array, not a file path. |
+| `initial_clip` | Empty string | Named clip selected during initialization.                                |
+| `autoplay`     | `true`       | Whether the initial clip starts playing.                                  |
 
 After loading components, the loader ensures a SpriteSheet component exists, resets the
 animator to its initial clip, and resolves its pose. An empty or invalid initial clip cannot
@@ -274,7 +245,7 @@ raise a load error. All these fields are serialized, including dimensions unused
 `ui.elements` is an array of element objects. Shared fields:
 
 | Key             | Type            | Meaning                                                              |
-| --------------- | --------------- | -------------------------------------------------------------------- |
+|-----------------|-----------------|----------------------------------------------------------------------|
 | `name`          | string          | Element name (load default `"Unnamed"`).                             |
 | `type`          | string          | `"Text"`, `"Button"`, `"Image"`, `"Rect"`, or `"Element"` (default). |
 | `rect.position` | `[x, y]` floats | UI-space position.                                                   |
@@ -301,38 +272,6 @@ A trimmed scene combining most sections:
         "clear_color": [0.1, 0.1, 0.1, 1.0],
         "background_music": "",
         "ambient_light": 0.2
-    },
-    "assets": {
-        "textures": [
-            {
-                "id": "dirt_tex",
-                "path": "assets/textures/HexDirt.png"
-            },
-            {
-                "id": "grass_tex",
-                "path": "assets/textures/HexGrass.png"
-            }
-        ],
-        "materials": [
-            {
-                "id": "[Engine] DefaultMaterial",
-                "shader": "[Engine] Base",
-                "texture": "",
-                "color": [1.0, 1.0, 1.0, 1.0]
-            }
-        ],
-        "meshes": [
-            {
-                "id": "[Engine] Hex",
-                "factory": "PointTopHex"
-            },
-            {
-                "id": "player_mesh",
-                "factory": "Quad"
-            }
-        ],
-        "shaders": [],
-        "fonts": []
     },
     "grid": {
         "map_file": "assets/maps/level1.obmap",
@@ -361,7 +300,7 @@ A trimmed scene combining most sections:
                     "mesh_id": "player_mesh"
                 },
                 "MaterialComponent": {
-                    "material_id": "[Engine] DefaultMaterial"
+                    "material_id": "player_material"
                 },
                 "ScriptComponent": {
                     "scriptPath": "assets/scripts/PlayerMovement.obsl"
@@ -390,6 +329,8 @@ A trimmed scene combining most sections:
 
 ## Caveats
 
+- User asset IDs in scenes must have matching definitions in the project-root [`assets.json`](assets-json.md). The
+  example above therefore assumes catalog entries for `sand_tex`, `grass_tex`, `player_mesh`, and `player_material`.
 - Maps are stored as `.obmap` binaries, referenced by `map_file`; the grid is _not_ embedded in the scene JSON.
 - `PrefabSourceComponent` is editor metadata only and never appears in scene files.
 - `properties.name` is a display name; the file path is the real scene identity (`ScenePath` is runtime-only and never

@@ -14,8 +14,8 @@ Entities reference these assets through their SpriteAnimator Component.
 7. Add a named clip and configure its frames.
 8. Preview the clip and save the animation asset.
 
-The resource ID identifies the asset in scenes.
-The file path points to its definition on disk.
+The resource ID identifies the asset in scenes. The project-wide `assets.json` catalog maps that ID to the animation
+file path.
 
 ## Importing sets
 
@@ -75,11 +75,12 @@ See the [EngineLib API reference](../scripting/api-reference.md).
 
 ## Saving
 
-The animation editor edits a draft. Saving writes the animation file and
-updates the registered asset.
+The animation editor edits a draft. Saving writes the animation file and creates or updates its entry in
+[`assets.json`](../formats/assets-json.md).
 
-Save the scene after registering or assigning assets so their references
-are retained. Saving a scene does not save an unfinished animation draft.
+Save the scene after assigning an animation so the entity's `animation_id` is retained. Registering or editing the
+animation definition itself is persisted by the animation editor, not by scene saving. Saving a scene does not save an
+unfinished animation draft.
 
 You should save before opening another animation or leaving edit mode!
 

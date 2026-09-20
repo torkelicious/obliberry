@@ -10,7 +10,7 @@ If you want to get started with the Obliberry editor, please see: [Editor Docs](
 ## Contents
 
 | Section                                                     | Description                                                                         |
-| ----------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+|-------------------------------------------------------------|-------------------------------------------------------------------------------------|
 | [Build](build.md)                                           | Prerequisites, CMake presets, build options, and targets.                           |
 | [Editor Guide](editor/usage.md)                             | Using the editor: modes, camera controls, panels, and keybinds.                     |
 | [Post-Processing](editor/post-processing.md)                | Fullscreen effect chains per scene: built-ins, custom shaders, editing uniforms.    |
@@ -18,6 +18,7 @@ If you want to get started with the Obliberry editor, please see: [Editor Docs](
 | [Scripting : Getting Started](scripting/getting-started.md) | Write game logic in ObSL: the script lifecycle, hooks, and walkthroughs.            |
 | [Scripting : API Reference](scripting/api-reference.md)     | Every EngineLib function exposed to scripts.                                        |
 | [File Formats](formats/project-json.md)                     | `project.json`, `graphics.json`, scene files, `.obmap` maps, and `.obpak` packages. |
+| [Asset Catalog Format](formats/assets-json.md)              | Project-wide asset definitions, lazy loading, and legacy migration.                 |
 | [Third Party Licenses](THIRD_PARTY_LICENSES.md)             | License texts for every bundled and fetched dependency.                             |
 | [Sprite Animation](editor/sprite-animation.md)              | Creating, editing, previewing, and assigning sprite animation sets.                 |
 | [Sprite Animation Format](formats/sprite-animation-json.md) | Sheet layout, named clips, frame indices, and durations.                            |
@@ -25,7 +26,7 @@ If you want to get started with the Obliberry editor, please see: [Editor Docs](
 ## Where things live
 
 | Path                               | What it is                                                                      |
-| ---------------------------------- | ------------------------------------------------------------------------------- |
+|------------------------------------|---------------------------------------------------------------------------------|
 | `src/Core`                         | Application, main loop, engine context, project, resource manager               |
 | `src/Applications`                 | Editor, Runtime, and packaging tool executables                                 |
 | `src/Scripting/EngineLib`          | The ObSL ↔ engine binding (see the [API reference](scripting/api-reference.md)) |
@@ -40,3 +41,4 @@ If you want to get started with the Obliberry editor, please see: [Editor Docs](
   submodule. It ships with its own docs: `external/obsl/docs/ARCHITECTURE.md` and
   `external/obsl/docs/STANDARD_LIBRARY.md`.
 - [Build instructions](build.md) start here to build the repo
+- [`assets.json` format](formats/assets-json.md) describes asset registration, lazy loading, and project migration

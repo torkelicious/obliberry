@@ -45,7 +45,7 @@ Committing marks the scene as changed remember to save the scene (Ctrl+S) afterw
 ## Built-in Effects
 
 | Effect             | does                                                                | uniforms                                                                                              |
-| ------------------ | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+|--------------------|---------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
 | **Passthrough**    | Copies the input unchanged                                          | –                                                                                                     |
 | **Grayscale**      | Desaturates the image                                               | `u_Strength` (0–1)                                                                                    |
 | **BrightPass**     | Extracts pixels brighter than a threshold                           | `u_Threshold`, `u_SoftKnee` (soft cutoff)                                                             |
@@ -86,7 +86,7 @@ The engine sets these for every effect when the shader declares them. don't decl
 effect config, they're automatically ser per-frame:
 
 | Uniform        | Type        | Meaning                                             |
-| -------------- | ----------- | --------------------------------------------------- |
+|----------------|-------------|-----------------------------------------------------|
 | `u_Texture`    | `sampler2D` | Previous pass output (texture unit 0).              |
 | `u_Resolution` | `vec2`      | Render target size in pixels.                       |
 | `u_TexelSize`  | `vec2`      | `1.0 / u_Resolution`.                               |
@@ -111,7 +111,7 @@ the engine (e.g.
 ### Engine shader helpers (`resources/shaders/`)
 
 | File             | Provides                                                                                                                           |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+|------------------|------------------------------------------------------------------------------------------------------------------------------------|
 | `rand.glsl`      | `hash(uint)` + `rand(vec2)` — deterministic, per-seed pseudo-random.                                                               |
 | `auto_rand.glsl` | `auto_rand(vec2)` — `rand` seeded per-frame from `u_Time`; includes `rand.glsl`.                                                   |
 | `commons.glsl`   | Declarations for the engine-provided uniforms (`u_Texture`, `u_Resolution`, `u_TexelSize`, `u_Time`, `u_Scene`). Includes nothing. |
@@ -138,10 +138,11 @@ The engine's own helpers follow this pattern, so `#include "auto_rand.glsl"` in 
 > Exporting a game packs the contents of `resources/shaders/` into the `.obpak` (under `engine/shaders/`), so helper
 > includes keep working in packaged builds too.
 
-- Imported shaders get the resource ID `[PP] <name>` and are regenerated from the scene's `assets.shaders` section on
-  load. A shader entry with **no vertex path** is automatically treated as a post-processing effect shader and gets the
-  fullscreen vertex pass.
-- Always make sure the scene referencing an effect is saved after importing, so the chain + shader asset both persist.
+- Imported shaders get the resource ID `[PP] <name>` and are registered in the project-wide
+  [`assets.json`](../formats/assets-json.md) `shaders` array. A shader entry with **no vertex path** is automatically
+  treated as a post-processing effect shader and gets the fullscreen vertex pass.
+- Importing persists the shader definition in `assets.json`. Save the scene afterward to persist the effect-chain entry
+  that references that shader ID.
 
 ---
 

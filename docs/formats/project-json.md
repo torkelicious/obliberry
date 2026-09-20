@@ -3,6 +3,9 @@
 `project.json` sits at the **root of a project** and defines the project's identity and startup behavior. The project
 root is defined as the directory containing this file.
 
+A valid project also contains a project-root [`assets.json`](assets-json.md) catalog. `project.json` selects the start
+scene; `assets.json` maps the resource IDs used by that and other scenes to their load definitions.
+
 ## Loading
 
 - **Runtime** (`src/Applications/Runtime/RuntimeMain.cpp`): mounts a project (`-p`/`--project <path>` or autodetected
@@ -17,7 +20,7 @@ root is defined as the directory containing this file.
 ## Fields
 
 | Key            | Type   | Default               | Meaning                                                                                                                                                    |
-| -------------- | ------ | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|----------------|--------|-----------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `window`       | object | -                     | Window settings container.                                                                                                                                 |
 | `window.title` | string | `"Obliberry Project"` | Window/application title. The runtime uses it directly; the editor shows `"Obliberry: <title>"`.                                                           |
 | `start_scene`  | string | `""`                  | VFS-relative path of the scene loaded at startup, e.g. `"assets/scenes/default.json"`. New projects default this to `assets/scenes/default.json` if empty. |

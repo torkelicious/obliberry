@@ -30,7 +30,7 @@ A **component** is a plain data structure. Examples: `TransformComponent` (posit
 Some components are **tags** - empty structs that just mark an entity for a system:
 
 | Tag            | Meaning                                                     |
-| -------------- | ----------------------------------------------------------- |
+|----------------|-------------------------------------------------------------|
 | `BillboardTag` | Render this entity as a billboard (always faces camera)     |
 | `DestroyTag`   | Delete this entity at end of frame                          |
 | `Relationship` | Stores parent/child links (not shown in Add Component menu) |
@@ -45,7 +45,7 @@ Tags appear as **checkboxes/flags** in the Inspector, not as expandable componen
 specific set of components.
 
 | System                     | Required Components                                  | What It Does                                                             |
-| -------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------ |
+|----------------------------|------------------------------------------------------|--------------------------------------------------------------------------|
 | `RenderSystem`             | Transform + Mesh + Material                          | Draws the entity                                                         |
 | `MovementSystem`           | Transform + Movement                                 | Moves entity along hex path                                              |
 | `AISystem`                 | —                                                    | Randomly wanders entities with `autoMove` enabled on `MovementComponent` |
@@ -82,10 +82,14 @@ Right-click an entity for:
 Assets (textures, meshes, materials, shaders, fonts) are **referenced by ID**, not embedded in entities.
 
 - **Project Browser** (bottom panel) - Browse and create assets
+- **Asset catalog** (`assets.json`) - Stores project-wide user asset definitions and file paths
 - **Material** - Links a shader + texture + color. Entities reference a Material ID.
 - **Mesh** - Procedural shapes (Quad, Hexagon, etc.) or loaded models. Entities reference a Mesh ID.
 - **Engine assets** - IDs prefixed with `[Engine]` (e.g., `[Engine] Base` shader, `[Engine] Hex` mesh). You should not
   try to delete these.
+
+The catalog is parsed when the project opens, but its assets are loaded only when a scene, editor action, or supported
+script setter references them. Scene changes release resources that are no longer needed.
 
 ---
 
@@ -119,6 +123,7 @@ See the [ObSL Getting Started](../scripting/getting-started.md) for syntax and A
 ```
 my-project/
 ├── project.json          # Project config (name, start_scene)
+├── assets.json           # Project-wide asset IDs and definitions
 ├── assets/
 │   ├── scenes/           # *.json scene files
 │   ├── maps/             # *.obmap binary map files
@@ -129,8 +134,9 @@ my-project/
 ```
 
 > [!NOTE]
-> Materials and meshes are **not** separate asset files. They're stored inline in scene/prefab JSON and created in the
-> editor via the Inspector. The Project Browser shows them for reference, but they live in the scene/prefab data.
+> Materials and procedural/custom mesh definitions live in `assets.json`. Binary/source files such as textures,
+> shaders, fonts, and animation JSON remain under `assets/` and are referenced from the catalog by project-relative
+> paths.
 
 ---
 
@@ -151,7 +157,7 @@ The `obliberry_runtime` loads `.obpak` files directly, that's your "game" execut
 ## Summary
 
 | Concept       | Key Point                                                  |
-| ------------- | ---------------------------------------------------------- |
+|---------------|------------------------------------------------------------|
 | **Entity**    | an ID. Add components to give it behavior.                 |
 | **Component** | data. One per type per entity.                             |
 | **System**    | Logic that runs on entities with matching components.      |

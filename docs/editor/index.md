@@ -5,7 +5,7 @@
 ## Quick Start
 
 | If you want to...                             | Start here                              |
-| --------------------------------------------- | --------------------------------------- |
+|-----------------------------------------------|-----------------------------------------|
 | Learn the editor UI, modes, and keybinds      | [Editor Guide](usage.md)                |
 | The core concepts (ECS, entities, components) | [Core Concepts](concepts.md)            |
 | See all components / what they do             | [Component Reference](components.md)    |
@@ -19,9 +19,10 @@
 ## Related Documentation
 
 | Topic                   | Location                          |
-| ----------------------- | --------------------------------- |
+|-------------------------|-----------------------------------|
 | ObSL Scripting Language | `../scripting/getting-started.md` |
 | Project Structure       | `concepts.md#project-structure`   |
+| Asset Catalog Format    | `../formats/assets-json.md`       |
 | Scene File Format       | `../formats/scene-json.md`        |
 | Map File Format         | `../formats/obmap.md`             |
 | Architecture Overview   | `../architecture.md`              |

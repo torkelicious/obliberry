@@ -66,8 +66,10 @@ after instantiating.
 
 ## Prefab File Format
 
-Prefabs use the same entity serialization as scenes (see [scene-json.md](../formats/scene-json.md#entities)), just
-without the `properties`, `assets`, `grid`, and `ui` sections.
+Prefabs use the same per-entity serialization as scenes (see
+[scene-json.md](../formats/scene-json.md#entities)), without the scene-level `properties`, `grid`, `PostProcessing`, or
+`ui` sections. Asset fields contain IDs whose definitions live in the project-wide
+[`assets.json`](../formats/assets-json.md); prefab files do not embed asset definitions.
 
 Example `assets/prefabs/enemy_basic.json`:
 
