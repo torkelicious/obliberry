@@ -32,6 +32,7 @@ add_library(obliberry_engine STATIC
         # IO
         IO/MapSerialization.cpp
         IO/Loaders/AssetLoader.cpp
+        IO/Loaders/SceneAssetLoader.cpp
         IO/Loaders/EntityFactory.cpp
         IO/Loaders/UISerializer.cpp
         IO/SceneSerialization.cpp

@@ -1,12 +1,13 @@
 #include "SceneAssetLoader.h"
+
 #include "Core/ResourceManager.h"
+#include "IO/AssetCatalog.h"
+#include "IO/Loaders/AssetLoader.h"
+#include "IO/VFS/VFS.h"
+#include "Logger/LoggerService.h"
 #include "nlohmann/json.hpp"
-#include <cstddef>
-#include <functional>
 #include <set>
 #include <string>
-#include <unordered_set>
-#include <utility>
 
 namespace {
     using json = nlohmann::json;
@@ -19,6 +20,7 @@ namespace {
         std::set<std::string> fonts;
         std::set<std::string> animationSets;
     };
+
 
     bool IsCatalogAsset(const std::string &id) { return !id.empty() && !id.starts_with("[Engine]") && !id.starts_with("[Engine_PP]"); }
 
@@ -171,33 +173,78 @@ namespace {
         return req;
     }
 
-} // namespace
+    bool ResolveDependencies(RequiredAssets &req) {
 
-
-namespace IO::SceneAssetLoader {
-
-    struct AssetRef {
-        std::string type;
-        std::string id;
-        bool operator==(const AssetRef &) const = default;
-    };
-
-    struct AssetRefHash {
-        std::size_t operator()(const AssetRef &ref) const {
-            const auto typeHash = std::hash<std::string>{}(ref.type);
-            const auto idHash = std::hash<std::string>{}(ref.id);
-            return typeHash ^ (idHash << 1);
+        for (const std::string &material_id : req.materials) {
+            const json *mat = IO::AssetCatalog::Find("materials", material_id);
+            if (!mat) {
+                LOG_ERROR("SceneAssetLoader", "Material '" + material_id + "' is missing from assets.json");
+                return false;
+            }
+            AddField(req.shaders, *mat, "shader");
+            AddField(req.textures, *mat, "texture");
         }
-    };
 
-    using AssetSet = std::unordered_set<AssetRef, AssetRefHash>;
+        // animations need texture !
+        for (const std::string &anim_id : req.animationSets) {
+            const json *anim = IO::AssetCatalog::Find("animation_sets", anim_id);
 
-    void Add(AssetSet &assets, std::string type, const std::string &id) {
-        if (id.empty() || id.starts_with("[Engine]")) {
-            return;
+            if (!anim) {
+                LOG_ERROR("SceneAssetLoader", "Animation set '" + anim_id + "' is missing from assets.json");
+                return false;
+            }
+            const auto path = anim->find("path");
+            if (path == anim->end() || !path->is_string()) {
+                LOG_ERROR("SceneAssetLoader", "Animation set '" + anim_id + "' has no valid path");
+                return false;
+            }
+            const auto animationJson = IO::VFS::ReadVirtualJson(path->get<std::string>());
+            if (!animationJson) {
+                LOG_ERROR("SceneAssetLoader", "Could not read animation set '" + anim_id + "'");
+                return false;
+            }
+            const auto sheet = animationJson->find("sheet");
+            if (sheet != animationJson->end() && sheet->is_object()) {
+                AddField(req.textures, *sheet, "texture_id");
+            }
         }
-        assets.insert({std::move(type), id});
+        return true;
     }
 
-    bool LoadReferences(const nlohmann::json &sceneData) { auto &resources = Core::ResourceManager::GetInstance(); }
+    bool AppendAssets(json &destination, const char *type, const std::set<std::string> &ids) {
+        destination[type] = json::array();
+        for (const auto &id : ids) {
+            const json *asset = IO::AssetCatalog::Find(type, id);
+            if (!asset) {
+                LOG_ERROR("SceneAssetLoader", "Could not find: " + id + " in catalog");
+                return false;
+            }
+            destination[type].push_back(*asset);
+        }
+        return true;
+    }
+
+    bool BuildAssetSubset(const RequiredAssets &req, json &sub) {
+        sub = json::object();
+        return AppendAssets(sub, "textures", req.textures) && AppendAssets(sub, "shaders", req.shaders) && AppendAssets(sub, "meshes", req.meshes) &&
+               AppendAssets(sub, "materials", req.materials) && AppendAssets(sub, "fonts", req.fonts) &&
+               AppendAssets(sub, "animation_sets", req.animationSets);
+    }
+
+} // namespace
+
+namespace IO::SceneAssetLoader {
+    bool LoadReferenced(const nlohmann::json &sceneData) {
+        auto &resources = Core::ResourceManager::GetInstance();
+        RequiredAssets required = CollectDirectRefs(sceneData);
+        if (!ResolveDependencies(required)) {
+            return false;
+        }
+        json subset;
+        if (!BuildAssetSubset(required, subset)) {
+            return false;
+        }
+        AssetLoader::LoadAssets(subset, resources);
+        return true;
+    }
 } // namespace IO::SceneAssetLoader

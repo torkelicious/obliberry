@@ -2,10 +2,10 @@
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include "ECS/Systems/Animation/Types.h"
+#include "IO/Loaders/SceneAssetLoader.h"
 #include "Logger/LoggerService.h"
 #include "MapSerialization.h"
 #include "VFS/VFS.h"
-#include "Loaders/AssetLoader.h"
 #include "Loaders/EntityFactory.h"
 #include "Scenes/Scene.h"
 #include "ECS/Components/MapComponent.h"
@@ -80,10 +80,13 @@ namespace IO::SceneIO {
 
         auto &resources = *scene.GetContext().resources;
         // factories must be registered before this point!
+
         //  ASSETS
-        if (j.contains("assets")) {
-            AssetLoader::LoadAssets(j["assets"], resources);
+        if (!SceneAssetLoader::LoadReferenced(j)) {
+            LOG_ERROR(LOG_WHO, "Failed to load assets referenced in: " + path);
+            return false;
         }
+
 
         if (j.contains("grid") && j["grid"].contains("map_file")) {
             auto mapPath = j["grid"]["map_file"].get<std::string>();
