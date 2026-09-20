@@ -13,6 +13,7 @@
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
+#include <utility>
 
 namespace IO {
     inline ECS::Components::ParticleEmitterComponent DeserializeEmitter(const nlohmann::json &data, Scenes::Scene &scene) {
@@ -62,10 +63,15 @@ namespace IO {
         if (data.contains("shape"))
             ec.shape = data["shape"].get<int>();
         if (data.contains("material_id")) {
-            const std::string matID = data["material_id"].get<std::string>();
+            const std::string materialID = data["material_id"].get<std::string>();
             IO::SceneAssetLoader::SceneAssetScope scope;
-            if (IO::SceneAssetLoader::Acquire(SceneAssetLoader::AssetKind::Material, matID, scope)) {
-                ec.material = Core::ResourceManager::GetInstance().Get<Rendering::Material>(matID);
+
+            if (IO::SceneAssetLoader::Acquire(IO::SceneAssetLoader::AssetKind::Material, materialID, scope)) {
+                ec.material = Core::ResourceManager::GetInstance().Get<Rendering::Material>(materialID);
+
+                if (ec.material) {
+                    scene.AddAssetScope(std::move(scope));
+                }
             }
         }
         return ec;

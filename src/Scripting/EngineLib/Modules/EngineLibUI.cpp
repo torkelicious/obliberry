@@ -18,7 +18,7 @@
 namespace Scripting {
 
     static std::shared_ptr<UI::Font> AcquireFontForScene(Core::EngineContext *ctx, const std::string_view id) {
-        if (!ctx || !ctx->HasPendingScenePath() || id.empty()) {
+        if (!ctx || !ctx->sceneManager || id.empty()) {
             return nullptr;
         }
 
@@ -422,7 +422,7 @@ namespace Scripting {
                         return std::monostate{};
                     auto fontname = std::get<std::string>(args[0]);
                     if (ctx->uiCmdBuf) {
-                        ctx->uiCmdBuf->push([namePtr, fontname, &ctx](UI::UISystem &ui) {
+                        ctx->uiCmdBuf->push([namePtr, fontname, ctx](UI::UISystem &ui) {
                             if (auto *el = ui.FindByName(*namePtr))
                                 if (auto *txt = dynamic_cast<UI::UIText *>(el)) {
                                     if (auto font = AcquireFontForScene(ctx, fontname)) {
