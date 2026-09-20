@@ -4,6 +4,7 @@
 #include "Core/ResourceManager.h"
 #include "ECS/Systems/Animation/Types.h"
 #include "Scripting/SmallFunction.h"
+#include <cstdint>
 #include <filesystem>
 #include <glm/glm.hpp>
 #include <string>
@@ -46,16 +47,17 @@ namespace Editor::UI {
         void DrawCreateAnimation();
 
 
-        void ImportTexture(Core::ResourceManager &resources) const;
-        void ImportShader(Core::ResourceManager &resources) const;
-        void ImportFont(Core::ResourceManager &resources) const;
-        void CreateMesh(Core::ResourceManager &resources);
-        void ImportFile(const std::string &targetSubDir, const char *filterExt, const char *filterName) const;
+        void ImportTexture() const;
+        void ImportShader() const;
+        void ImportFont() const;
         void ImportAnimation() const;
 
-        void ReplaceTexture(Core::ResourceManager &resources, const std::string &key) const;
-        void ReplaceShader(Core::ResourceManager &resources, const std::string &key) const;
-        void ReplaceFont(Core::ResourceManager &resources, const std::string &key) const;
+        void CreateMesh();
+        void ImportFile(const std::string &targetSubDir, const char *filterExt, const char *filterName) const;
+
+        void ReplaceTexture(const std::string &key) const;
+        void ReplaceShader(const std::string &key) const;
+        void ReplaceFont(const std::string &key) const;
 
         void DrawDeleteConfirmPopup(Core::ResourceManager &resources);
 
@@ -73,11 +75,6 @@ namespace Editor::UI {
         int m_FontSize = 48;
         bool m_FontUseSDF = false;
         int m_FontSDFSpread = 8;
-
-        // rename state
-        std::string m_RenamingKey;
-        char m_RenameBuffer[128] = {};
-        bool m_RenameJustActivated = false;
 
         // Delete confirmation state
         std::string m_DeleteConfirmKey;

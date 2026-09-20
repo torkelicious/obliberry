@@ -6,32 +6,26 @@
 #include "Core/ResourceManager.h"
 #include "Core/Utils/OsUtils.h"
 #include "Core/Utils/UiUtils.h"
-#include "ECS/Systems/Animation/Animation.h"
 #include "ECS/Systems/Animation/Types.h"
-#include "IO/AnimationSerialization.h"
 #include "IO/AssetCatalog.h"
 #include "IO/Loaders/AssetLoader.h"
 #include "IO/VFS/VFS.h"
 #include "Logger/LoggerService.h"
-#include "Platform/Threading/SmallTask.h"
-#include "Rendering/Renderer.h"
 #include "Rendering/Types/Material.h"
 #include "Rendering/Types/Mesh/Mesh.h"
-#include "Rendering/Types/Mesh/MeshFactory.h"
 #include "Rendering/Types/Shader/Shader.h"
 #include "Rendering/Types/Texture/Texture.h"
 #include "UI/Text/Font.h"
 
 #include <algorithm>
+#include <cstdio>
 #include <cstring>
-#include <exception>
 #include <filesystem>
 #include <fstream>
 #include <imgui.h>
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <string>
-#include <thread>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -228,12 +222,7 @@ namespace Editor::UI {
                                                   const float childHeight, const char *emptyText, const char *typeName, std::type_identity_t<std::function<void(const std::shared_ptr<T> &)>> renderThumbnail,
                                                   const std::type_identity_t<std::function<void(const std::string &, Core::ResourceManager &)>> &renderExtraButtons,
                                                   std::type_identity_t<std::function<void(const std::string &, const std::shared_ptr<T> &, Core::ResourceManager &)>> renderTooltip) {
-        struct RenameOp {
-            std::string oldKey;
-            std::string newKey;
-        };
-
-        std::vector<RenameOp> pendingRenames;
+        (void)typeName;
 
         if (ImGui::BeginChild(childId, ImVec2(0, childHeight), true)) {
             if (m_ViewMode == ViewMode::Grid) {
@@ -259,39 +248,12 @@ namespace Editor::UI {
                     ImGui::BeginGroup();
                     ImGui::Text("%s", id.c_str());
 
-                    if (m_RenamingKey == id) {
-                        if (m_RenameJustActivated) {
-                            ImGui::SetKeyboardFocusHere();
-                            m_RenameJustActivated = false;
-                        }
-                        ImGui::SetNextItemWidth(80.0f);
-                        ImGui::InputText("##rename", m_RenameBuffer, sizeof(m_RenameBuffer));
-                        if (ImGui::SmallButton("Save")) {
-                            if (m_RenameBuffer[0] != '\0' && !resources.Get<T>(m_RenameBuffer)) {
-                                pendingRenames.push_back({id, m_RenameBuffer});
-                            }
-                            m_RenamingKey.clear();
-                        }
-                        ImGui::SameLine();
+                    const bool isEngineBuiltin = !id.empty() && id[0] == '[';
+                    renderExtraButtons(id, resources);
 
-                        if (ImGui::SmallButton("Cancel"))
-                            m_RenamingKey.clear();
-                    } else {
-                        const bool isEngineBuiltin = !id.empty() && id[0] == '[';
-                        if (!isEngineBuiltin) {
-                            if (ImGui::SmallButton("Rename")) {
-                                m_RenamingKey = id;
-                                m_RenameJustActivated = true;
-                                strncpy(m_RenameBuffer, id.c_str(), sizeof(m_RenameBuffer));
-                                m_RenameBuffer[sizeof(m_RenameBuffer) - 1] = '\0';
-                            }
-                        }
-                        renderExtraButtons(id, resources);
-
-                        if (!isEngineBuiltin && ImGui::SmallButton("Remove")) {
-                            m_DeleteConfirmKey = id;
-                            m_DeleteConfirmType = assetType;
-                        }
+                    if (!isEngineBuiltin && ImGui::SmallButton("Remove")) {
+                        m_DeleteConfirmKey = id;
+                        m_DeleteConfirmType = assetType;
                     }
 
                     ImGui::EndGroup();
@@ -315,47 +277,18 @@ namespace Editor::UI {
                     }
                     ImGui::PushID(id.c_str());
 
-                    if (m_RenamingKey == id) {
-                        if (m_RenameJustActivated) {
-                            ImGui::SetKeyboardFocusHere();
-                            m_RenameJustActivated = false;
-                        }
-                        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 100.0f);
-                        ImGui::InputText("##rename", m_RenameBuffer, sizeof(m_RenameBuffer));
+                    const bool isEngineBuiltin = !id.empty() && id[0] == '[';
+                    ImGui::Text("%s", id.c_str());
+                    if (renderTooltip && ImGui::IsItemHovered()) {
+                        renderTooltip(id, asset, resources);
+                    }
+                    ImGui::SameLine();
+                    renderExtraButtons(id, resources);
+                    if (!isEngineBuiltin) {
                         ImGui::SameLine();
-                        if (ImGui::SmallButton("Save")) {
-                            if (m_RenameBuffer[0] != '\0' && !resources.Get<T>(m_RenameBuffer)) {
-                                pendingRenames.push_back({id, m_RenameBuffer});
-                            }
-                            m_RenamingKey.clear();
-                        }
-                        ImGui::SameLine();
-
-                        if (ImGui::SmallButton("Cancel"))
-                            m_RenamingKey.clear();
-                    } else {
-                        const bool isEngineBuiltin = !id.empty() && id[0] == '[';
-                        ImGui::Text("%s", id.c_str());
-                        if (renderTooltip && ImGui::IsItemHovered()) {
-                            renderTooltip(id, asset, resources);
-                        }
-                        ImGui::SameLine();
-                        if (!isEngineBuiltin) {
-                            if (ImGui::SmallButton("Rename")) {
-                                m_RenamingKey = id;
-                                m_RenameJustActivated = true;
-                                strncpy(m_RenameBuffer, id.c_str(), sizeof(m_RenameBuffer));
-                                m_RenameBuffer[sizeof(m_RenameBuffer) - 1] = '\0';
-                            }
-                            ImGui::SameLine();
-                        }
-                        renderExtraButtons(id, resources);
-                        if (!isEngineBuiltin) {
-                            ImGui::SameLine();
-                            if (ImGui::SmallButton("Remove")) {
-                                m_DeleteConfirmKey = id;
-                                m_DeleteConfirmType = assetType;
-                            }
+                        if (ImGui::SmallButton("Remove")) {
+                            m_DeleteConfirmKey = id;
+                            m_DeleteConfirmType = assetType;
                         }
                     }
 
@@ -365,17 +298,7 @@ namespace Editor::UI {
         }
         ImGui::EndChild();
 
-        for (const auto &[oldKey, newKey] : pendingRenames) {
-            auto resource = resources.Get<T>(oldKey);
-
-            resources.Unload<T>(oldKey);
-
-            resources.LoadFromFactory<T>(newKey, [resource] { return resource; });
-
-            LOG_INFO(LOG_WHO, std::string("Renamed ") + typeName + " '" + oldKey + "' -> '" + newKey + "'");
-        }
-
-        if (allItems.empty() || (m_SearchBuffer[0] != '\0' && pendingRenames.empty())) {
+        if (allItems.empty()) {
             ImGui::TextDisabled("%s", emptyText);
         }
     }
@@ -399,15 +322,15 @@ namespace Editor::UI {
                         ImGui::Button("T", ImVec2(64, 64));
                     }
                 },
-                [this](const std::string &id, Core::ResourceManager &resourceManager) {
+                [this](const std::string &id, Core::ResourceManager &) {
                     if (ImGui::SmallButton("Replace"))
-                        ReplaceTexture(resourceManager, id);
+                        ReplaceTexture(id);
                 });
 
         ImGui::Spacing();
 
         if (ImGui::SmallButton("Import Texture"))
-            ImportTexture(resources);
+            ImportTexture();
     }
 
     void ProjectBrowserPanel::DrawShaderSection(Core::ResourceManager &resources) {
@@ -415,15 +338,15 @@ namespace Editor::UI {
 
         DrawResourceSection(
                 resources, allShaders, AssetType::Shader, "##shaderList", 130.0f, "No shaders imported.", "shader", [](const std::shared_ptr<Rendering::Shader> &) { ImGui::Button("S", ImVec2(64, 64)); },
-                [this](const std::string &id, Core::ResourceManager &resourceManager) {
+                [this](const std::string &id, Core::ResourceManager &) {
                     if (ImGui::SmallButton("Replace"))
-                        ReplaceShader(resourceManager, id);
+                        ReplaceShader(id);
                 });
 
         ImGui::Spacing();
 
         if (ImGui::SmallButton("Import Shader"))
-            ImportShader(resources);
+            ImportShader();
     }
 
     void ProjectBrowserPanel::DrawMeshSection(Core::ResourceManager &resources) {
@@ -447,10 +370,10 @@ namespace Editor::UI {
 
             const std::string id(m_MeshNameBuffer);
 
-            if (resources.Get<Rendering::Mesh>(id)) {
+            if (IO::AssetCatalog::Find("meshes", id) || resources.Get<Rendering::Mesh>(id)) {
                 LOG_ERROR(LOG_WHO, "Mesh '" + id + "' already exists");
             } else {
-                CreateMesh(resources);
+                CreateMesh();
             }
         }
     }
@@ -546,25 +469,18 @@ namespace Editor::UI {
 
             const std::string id(m_MaterialNameBuffer);
 
-            if (resources.Get<Rendering::Material>(id)) {
+            if (IO::AssetCatalog::Find("materials", id) || resources.Get<Rendering::Material>(id)) {
                 LOG_ERROR(LOG_WHO, "Material '" + id + "' already exists");
                 return;
             }
 
-            std::shared_ptr<Rendering::Shader> shader;
+            const std::string shaderId = m_SelectedMaterialShaderIdx > 0 && m_SelectedMaterialShaderIdx < static_cast<int>(shaderKeys.size()) ? shaderKeys[m_SelectedMaterialShaderIdx] : "[Engine] Base";
+            const std::string textureId = m_SelectedMaterialTextureIdx > 0 && m_SelectedMaterialTextureIdx < static_cast<int>(textureKeys.size()) ? textureKeys[m_SelectedMaterialTextureIdx] : "";
 
-            if (m_SelectedMaterialShaderIdx > 0 && m_SelectedMaterialShaderIdx < static_cast<int>(shaderKeys.size())) {
-                shader = resources.Get<Rendering::Shader>(shaderKeys[m_SelectedMaterialShaderIdx]);
+            if (!IO::AssetCatalog::Upsert("materials", {{"id", id}, {"shader", shaderId}, {"texture", textureId}, {"color", {m_MaterialColor.r, m_MaterialColor.g, m_MaterialColor.b, m_MaterialColor.a}}})) {
+                LOG_ERROR(LOG_WHO, "Failed to add material '" + id + "' to assets.json");
+                return;
             }
-
-            std::shared_ptr<Rendering::Texture> texture;
-
-            if (m_SelectedMaterialTextureIdx > 0 && m_SelectedMaterialTextureIdx < static_cast<int>(textureKeys.size())) {
-                texture = resources.Get<Rendering::Texture>(textureKeys[m_SelectedMaterialTextureIdx]);
-            }
-
-            resources.LoadFromFactory<Rendering::Material>(
-                    id, [shader, texture, color = m_MaterialColor] { return std::make_shared<Rendering::Material>(Rendering::Material{.shader = shader, .texture = texture, .color = color}); });
 
             LOG_INFO(LOG_WHO, "Created material '" + id + "'");
 
@@ -588,9 +504,9 @@ namespace Editor::UI {
                         ImGui::TextDisabled("%upx%s", font->GetFontSize(), font->IsSDF() ? " SDF" : "");
                     }
                 },
-                [this](const std::string &id, Core::ResourceManager &resourceManager) {
+                [this](const std::string &id, Core::ResourceManager &) {
                     if (ImGui::SmallButton("Replace"))
-                        ReplaceFont(resourceManager, id);
+                        ReplaceFont(id);
                 },
                 [](const std::string &key, const std::shared_ptr<::UI::Font> &font, Core::ResourceManager &) {
                     if (font) {
@@ -617,10 +533,10 @@ namespace Editor::UI {
         }
 
         if (ImGui::SmallButton("Import Font"))
-            ImportFont(resources);
+            ImportFont();
     }
 
-    void ProjectBrowserPanel::ImportFont(Core::ResourceManager &resources) const {
+    void ProjectBrowserPanel::ImportFont() const {
         if (!m_EngineContext)
             return;
 
@@ -629,31 +545,35 @@ namespace Editor::UI {
         if (!picked)
             return;
 
-        const auto finalPath = IO::AssetLoader::ImportAsset(*picked, "fonts");
+        const std::string key = KeyFromPath(std::filesystem::path(*picked));
+        auto &resources = Core::ResourceManager::GetInstance();
 
-        if (!finalPath)
-            return;
-
-        const std::string key = KeyFromPath(std::filesystem::path(*finalPath));
-
-        if (resources.Get<::UI::Font>(key)) {
+        if (IO::AssetCatalog::Find("fonts", key) || resources.Get<::UI::Font>(key)) {
             LOG_WARN(LOG_WHO, "Font '" + key + "' already exists. Skipping");
             return;
         }
 
-        auto font = resources.Load<::UI::Font>(key, *finalPath, static_cast<unsigned int>(m_FontSize), m_FontUseSDF, static_cast<unsigned int>(m_FontSDFSpread));
+        const auto finalPath = IO::AssetLoader::ImportAsset(*picked, "fonts");
 
-        std::thread([font] {
-            font->LoadCPU();
-            Rendering::Renderer::SubmitInitTask(::Platform::Threading::SmallTask([font] { font->InitGL(); }));
-        }).detach();
+        if (!finalPath)
+            return;
+
+        if (!IO::AssetCatalog::Upsert("fonts", {{"id", key}, {"path", *finalPath}, {"size", m_FontSize}, {"sdf", m_FontUseSDF}, {"spread", m_FontSDFSpread}})) {
+            LOG_ERROR(LOG_WHO, "Failed to add font '" + key + "' to assets.json");
+            return;
+        }
 
         LOG_INFO(LOG_WHO, "Imported font '" + key + "' from " + *finalPath);
     }
 
-    void ProjectBrowserPanel::ReplaceFont(Core::ResourceManager &resources, const std::string &key) const {
+    void ProjectBrowserPanel::ReplaceFont(const std::string &key) const {
         if (!m_EngineContext)
             return;
+
+        if (!IO::AssetCatalog::Find("fonts", key)) {
+            LOG_ERROR(LOG_WHO, "Cannot replace unknown font '" + key + "'");
+            return;
+        }
 
         const auto picked = Platform::FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Font", .filterExt = "ttf,otf"});
 
@@ -665,15 +585,12 @@ namespace Editor::UI {
         if (!finalPath)
             return;
 
-        resources.Unload<::UI::Font>(key);
+        if (!IO::AssetCatalog::Upsert("fonts", {{"id", key}, {"path", *finalPath}, {"size", m_FontSize}, {"sdf", m_FontUseSDF}, {"spread", m_FontSDFSpread}})) {
+            LOG_ERROR(LOG_WHO, "Failed to update font '" + key + "' in assets.json");
+            return;
+        }
 
-        auto font = resources.Load<::UI::Font>(key, *finalPath, static_cast<unsigned int>(m_FontSize), m_FontUseSDF, static_cast<unsigned int>(m_FontSDFSpread));
-
-        std::thread([font] {
-            font->LoadCPU();
-            Rendering::Renderer::SubmitInitTask(::Platform::Threading::SmallTask([font] { font->InitGL(); }));
-        }).detach();
-        LOG_INFO(LOG_WHO, "Replaced font '" + key + "'");
+        LOG_INFO(LOG_WHO, "Replaced font '" + key + "'. The new version will load on the next scene load.");
     }
 
 } // namespace Editor::UI
@@ -835,27 +752,53 @@ void Editor::UI::ProjectBrowserPanel::DrawDeleteConfirmPopup(Core::ResourceManag
                 }
                 // RM (as in resource manager, not rm) asset
             } else {
+                const char *catalogType = nullptr;
                 switch (m_DeleteConfirmType) {
                     case AssetType::Texture:
-                        resources.Unload<Rendering::Texture>(m_DeleteConfirmKey);
+                        catalogType = "textures";
                         break;
                     case AssetType::Shader:
-                        resources.Unload<Rendering::Shader>(m_DeleteConfirmKey);
+                        catalogType = "shaders";
                         break;
                     case AssetType::Mesh:
-                        resources.Unload<Rendering::Mesh>(m_DeleteConfirmKey);
+                        catalogType = "meshes";
                         break;
                     case AssetType::Material:
-                        resources.Unload<Rendering::Material>(m_DeleteConfirmKey);
+                        catalogType = "materials";
                         break;
                     case AssetType::Font:
-                        resources.Unload<::UI::Font>(m_DeleteConfirmKey);
+                        catalogType = "fonts";
                         break;
                     case AssetType::Animation:
-                        resources.Unload<Animation::SpriteAnimationSet>(m_DeleteConfirmKey);
+                        catalogType = "animation_sets";
                         break;
                 }
-                LOG_INFO(LOG_WHO, "Removed asset '" + m_DeleteConfirmKey + "'");
+
+                if (!catalogType || !IO::AssetCatalog::Remove(catalogType, m_DeleteConfirmKey)) {
+                    LOG_ERROR(LOG_WHO, "Failed to remove asset '" + m_DeleteConfirmKey + "' from assets.json");
+                } else {
+                    switch (m_DeleteConfirmType) {
+                        case AssetType::Texture:
+                            resources.Unload<Rendering::Texture>(m_DeleteConfirmKey);
+                            break;
+                        case AssetType::Shader:
+                            resources.Unload<Rendering::Shader>(m_DeleteConfirmKey);
+                            break;
+                        case AssetType::Mesh:
+                            resources.Unload<Rendering::Mesh>(m_DeleteConfirmKey);
+                            break;
+                        case AssetType::Material:
+                            resources.Unload<Rendering::Material>(m_DeleteConfirmKey);
+                            break;
+                        case AssetType::Font:
+                            resources.Unload<::UI::Font>(m_DeleteConfirmKey);
+                            break;
+                        case AssetType::Animation:
+                            resources.Unload<Animation::SpriteAnimationSet>(m_DeleteConfirmKey);
+                            break;
+                    }
+                    LOG_INFO(LOG_WHO, "Removed asset '" + m_DeleteConfirmKey + "'");
+                }
             }
             ImGui::CloseCurrentPopup();
             m_DeleteConfirmKey.clear();
@@ -871,7 +814,7 @@ void Editor::UI::ProjectBrowserPanel::DrawDeleteConfirmPopup(Core::ResourceManag
     }
 }
 
-void Editor::UI::ProjectBrowserPanel::ImportTexture(Core::ResourceManager &resources) const {
+void Editor::UI::ProjectBrowserPanel::ImportTexture() const {
     if (!m_EngineContext)
         return;
 
@@ -880,26 +823,29 @@ void Editor::UI::ProjectBrowserPanel::ImportTexture(Core::ResourceManager &resou
     if (!picked)
         return;
 
-    const auto finalPath = IO::AssetLoader::ImportAsset(*picked, "textures");
+    const std::string key = KeyFromPath(std::filesystem::path(*picked));
 
-    if (!finalPath)
-        return;
+    auto &resources = Core::ResourceManager::GetInstance();
 
-    const std::string key = KeyFromPath(std::filesystem::path(*finalPath));
-
-    if (resources.Get<Rendering::Texture>(key)) {
+    if (IO::AssetCatalog::Find("textures", key) || resources.Get<Rendering::Texture>(key)) {
         LOG_WARN(LOG_WHO, "Texture '" + key + "' already exists. Skipping");
         return;
     }
 
-    auto texture = resources.Load<Rendering::Texture>(key, *finalPath);
+    const auto finalPath = IO::AssetLoader::ImportAsset(*picked, "textures");
 
-    Rendering::Renderer::SubmitInitTask(::Platform::Threading::SmallTask([texture] { texture->InitGL(); }));
+    if (!finalPath)
+        return;
 
-    LOG_INFO(LOG_WHO, "Imported texture '" + key + "' from " + *finalPath);
+    if (!IO::AssetCatalog::Upsert("textures", {{"id", key}, {"path", *finalPath}})) {
+        LOG_ERROR(LOG_WHO, "Failed to add texture '" + key + "' to assets.json");
+        return;
+    }
+
+    LOG_INFO(LOG_WHO, "Imported texture '" + key + "' as " + *finalPath);
 }
 
-void Editor::UI::ProjectBrowserPanel::ImportShader(Core::ResourceManager &resources) const {
+void Editor::UI::ProjectBrowserPanel::ImportShader() const {
     if (!m_EngineContext)
         return;
 
@@ -913,29 +859,36 @@ void Editor::UI::ProjectBrowserPanel::ImportShader(Core::ResourceManager &resour
     if (!fragmentPicked)
         return;
 
-    const auto finalVertex = IO::AssetLoader::ImportAsset(*vertexPicked, "shaders");
+    const std::string key = KeyFromPath(std::filesystem::path(*vertexPicked));
+    auto &resources = Core::ResourceManager::GetInstance();
 
+    if (IO::AssetCatalog::Find("shaders", key) || resources.Get<Rendering::Shader>(key)) {
+        LOG_WARN(LOG_WHO, "Shader '" + key + "' already exists. Skipping");
+        return;
+    }
+
+    const auto finalVertex = IO::AssetLoader::ImportAsset(*vertexPicked, "shaders");
     const auto finalFragment = IO::AssetLoader::ImportAsset(*fragmentPicked, "shaders");
 
     if (!finalVertex || !finalFragment)
         return;
 
-    const std::string key = KeyFromPath(std::filesystem::path(*finalVertex));
-
-    if (resources.Get<Rendering::Shader>(key)) {
-        LOG_WARN(LOG_WHO, "Shader '" + key + "' already exists. Skipping");
+    if (!IO::AssetCatalog::Upsert("shaders", {{"id", key}, {"vertex", *finalVertex}, {"fragment", *finalFragment}})) {
+        LOG_ERROR(LOG_WHO, "Failed to add shader '" + key + "' to assets.json");
         return;
     }
 
-    auto shader = resources.Load<Rendering::Shader>(key, *finalVertex, *finalFragment);
-
-    Rendering::Renderer::SubmitInitTask(::Platform::Threading::SmallTask([shader] { shader->InitGL(); }));
     LOG_INFO(LOG_WHO, "Imported shader '" + key + "'");
 }
 
-void Editor::UI::ProjectBrowserPanel::ReplaceTexture(Core::ResourceManager &resources, const std::string &key) const {
+void Editor::UI::ProjectBrowserPanel::ReplaceTexture(const std::string &key) const {
     if (!m_EngineContext)
         return;
+
+    if (!IO::AssetCatalog::Find("textures", key)) {
+        LOG_ERROR(LOG_WHO, "Cannot replace unknown texture '" + key + "'");
+        return;
+    }
 
     const auto picked = Platform::FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Image", .filterExt = "png,jpg,jpeg,bmp,tga"});
 
@@ -947,18 +900,22 @@ void Editor::UI::ProjectBrowserPanel::ReplaceTexture(Core::ResourceManager &reso
     if (!finalPath)
         return;
 
-    resources.Unload<Rendering::Texture>(key);
+    if (!IO::AssetCatalog::Upsert("textures", {{"id", key}, {"path", *finalPath}})) {
+        LOG_ERROR(LOG_WHO, "Failed to update texture '" + key + "' in assets.json");
+        return;
+    }
 
-    auto texture = resources.Load<Rendering::Texture>(key, *finalPath);
-
-    Rendering::Renderer::SubmitInitTask(::Platform::Threading::SmallTask([texture] { texture->InitGL(); }));
-
-    LOG_INFO(LOG_WHO, "Replaced texture '" + key + "'");
+    LOG_INFO(LOG_WHO, "Replaced texture '" + key + "'. The new version will load on the next scene load.");
 }
 
-void Editor::UI::ProjectBrowserPanel::ReplaceShader(Core::ResourceManager &resources, const std::string &key) const {
+void Editor::UI::ProjectBrowserPanel::ReplaceShader(const std::string &key) const {
     if (!m_EngineContext)
         return;
+
+    if (!IO::AssetCatalog::Find("shaders", key)) {
+        LOG_ERROR(LOG_WHO, "Cannot replace unknown shader '" + key + "'");
+        return;
+    }
 
     const auto vertexPicked = Platform::FileDialogs::OpenFile(*m_EngineContext, {.filterName = "Vertex Shader", .filterExt = "vert,glsl"});
 
@@ -977,71 +934,33 @@ void Editor::UI::ProjectBrowserPanel::ReplaceShader(Core::ResourceManager &resou
     if (!finalVertex || !finalFragment)
         return;
 
-    resources.Unload<Rendering::Shader>(key);
+    if (!IO::AssetCatalog::Upsert("shaders", {{"id", key}, {"vertex", *finalVertex}, {"fragment", *finalFragment}})) {
+        LOG_ERROR(LOG_WHO, "Failed to update shader '" + key + "' in assets.json");
+        return;
+    }
 
-    auto shader = resources.Load<Rendering::Shader>(key, *finalVertex, *finalFragment);
-
-    Rendering::Renderer::SubmitInitTask(::Platform::Threading::SmallTask([shader] { shader->InitGL(); }));
-    LOG_INFO(LOG_WHO, "Replaced shader '" + key + "'");
+    LOG_INFO(LOG_WHO, "Replaced shader '" + key + "'. The new version will load on the next scene load.");
 }
 
-void Editor::UI::ProjectBrowserPanel::CreateMesh(Core::ResourceManager &resources) {
+void Editor::UI::ProjectBrowserPanel::CreateMesh() {
     const std::string id(m_MeshNameBuffer);
     if (id.empty())
         return;
 
-    Rendering::MeshData data;
     constexpr const char *meshTypes[] = {"Quad", "PointTopHex", "ETriang", "Ellipse", "Circle", "Pentagon", "Hexagon", "Octagon", "Ring", "Sector", "Diamond", "Custom"};
-    switch (m_SelectedMeshFactory) {
-        case 0:
-            data = Rendering::MeshFactory::CreateQuad();
-            break;
-        case 1:
-            data = Rendering::MeshFactory::CreatePointTopHex();
-            break;
-        case 2:
-            data = Rendering::MeshFactory::CreateEquiTriangle(0.5f);
-            break;
-        case 3:
-            data = Rendering::MeshFactory::CreateEllipse();
-            break;
-        case 4:
-            data = Rendering::MeshFactory::CreateRegularPolygon(32);
-            break;
-        case 5:
-            data = Rendering::MeshFactory::CreateRegularPolygon(5);
-            break;
-        case 6:
-            data = Rendering::MeshFactory::CreateRegularPolygon(6);
-            break;
-        case 7:
-            data = Rendering::MeshFactory::CreateRegularPolygon(8);
-            break;
-        case 8:
-            data = Rendering::MeshFactory::CreateRing();
-            break;
-        case 9:
-            data = Rendering::MeshFactory::CreateSector();
-            break;
-        case 10:
-            data = Rendering::MeshFactory::CreateDiamond();
-            break;
-        case 11:
-            States::EditState::ShowMeshCreator();
-            return;
-        default:
-            return;
+    if (m_SelectedMeshFactory == 11) {
+        States::EditState::ShowMeshCreator();
+        return;
     }
 
-    auto mesh = resources.LoadFromFactory<Rendering::Mesh>(id, [data = std::move(data), meshTypes, factoryIndex = m_SelectedMeshFactory] {
-        auto result = std::make_shared<Rendering::Mesh>(data);
+    if (m_SelectedMeshFactory < 0 || m_SelectedMeshFactory >= 11)
+        return;
 
-        result->SetFactoryId(meshTypes[factoryIndex]);
+    if (!IO::AssetCatalog::Upsert("meshes", {{"id", id}, {"factory", meshTypes[m_SelectedMeshFactory]}})) {
+        LOG_ERROR(LOG_WHO, "Failed to add mesh '" + id + "' to assets.json");
+        return;
+    }
 
-        return result;
-    });
-
-    Rendering::Renderer::SubmitInitTask(::Platform::Threading::SmallTask([mesh] { mesh->InitGL(); }));
     m_MeshNameBuffer[0] = '\0';
     LOG_INFO(LOG_WHO, "Created mesh '" + id + "'");
 }
@@ -1078,7 +997,7 @@ void Editor::UI::ProjectBrowserPanel::ImportAnimation() const {
 
     const std::string key = KeyFromPath(*picked);
 
-    if (resources.Get<Animation::SpriteAnimationSet>(key)) {
+    if (IO::AssetCatalog::Find("animation_sets", key) || resources.Get<Animation::SpriteAnimationSet>(key)) {
         LOG_WARN(LOG_WHO, "Animation '" + key + "' already exists. Skipping");
         return;
     }
@@ -1088,22 +1007,12 @@ void Editor::UI::ProjectBrowserPanel::ImportAnimation() const {
     if (!finalPath)
         return;
 
-    try {
-        auto animation = IO::AnimationIO::Deserialize(*finalPath);
-
-        if (!animation.sheet || !Animation::ValidateSet(animation)) {
-            LOG_ERROR(LOG_WHO, "Could not import animation '" + key + "'");
-            return;
-        }
-
-        animation.path = *finalPath;
-
-        resources.Register(key, std::make_shared<Animation::SpriteAnimationSet>(std::move(animation)));
-
-        LOG_INFO(LOG_WHO, "Imported animation '" + key + "' from " + *finalPath);
-    } catch (const std::exception &exception) {
-        LOG_ERROR(LOG_WHO, "Could not import animation '" + key + "': " + exception.what());
+    if (!IO::AssetCatalog::Upsert("animation_sets", {{"id", key}, {"path", *finalPath}})) {
+        LOG_ERROR(LOG_WHO, "Failed to add animation '" + key + "' to assets.json");
+        return;
     }
+
+    LOG_INFO(LOG_WHO, "Imported animation '" + key + "' from " + *finalPath);
 }
 
 void Editor::UI::ProjectBrowserPanel::DrawAnimationSelection() {
@@ -1167,7 +1076,7 @@ void Editor::UI::ProjectBrowserPanel::DrawCreateAnimation() {
                 return;
             }
 
-            if (resources.Get<Animation::SpriteAnimationSet>(key)) {
+            if (IO::AssetCatalog::Find("animation_sets", key) || resources.Get<Animation::SpriteAnimationSet>(key)) {
                 m_CreateAnimationError = "Resource ID is already taken!";
                 return;
             }
