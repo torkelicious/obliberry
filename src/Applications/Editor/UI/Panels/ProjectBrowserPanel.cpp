@@ -9,6 +9,7 @@
 #include "ECS/Systems/Animation/Types.h"
 #include "IO/AssetCatalog.h"
 #include "IO/Loaders/AssetLoader.h"
+#include "IO/Loaders/SceneAssetLoader.h"
 #include "IO/VFS/VFS.h"
 #include "Logger/LoggerService.h"
 #include "Rendering/Types/Material.h"
@@ -1030,12 +1031,16 @@ void Editor::UI::ProjectBrowserPanel::DrawAnimationSelection() {
                 }
             },
             [this](const std::string &key, Core::ResourceManager &resourceManager) {
-                ImGui::BeginDisabled(!OnEditAnimation);
+                ImGui::BeginDisabled(!OnEditAnimation || !m_SceneContext);
                 if (ImGui::SmallButton("Edit")) {
-                    const auto animation = resourceManager.Get<Animation::SpriteAnimationSet>(key);
-
-                    if (animation && OnEditAnimation)
-                        OnEditAnimation(key, animation);
+                    IO::SceneAssetLoader::SceneAssetScope scope;
+                    if (IO::SceneAssetLoader::Acquire(IO::SceneAssetLoader::AssetKind::AnimationSet, key, scope)) {
+                        const auto animation = resourceManager.Get<Animation::SpriteAnimationSet>(key);
+                        if (animation && OnEditAnimation) {
+                            m_SceneContext->AddAssetScope(std::move(scope));
+                            OnEditAnimation(key, animation);
+                        }
+                    }
                 }
 
                 ImGui::EndDisabled();

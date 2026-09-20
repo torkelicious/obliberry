@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <utility>
 #include "Core/ResourceManager.h"
+#include "Applications/Editor/UI/Panels/Editor/EditorWidgetsCombo.h"
 #include "IO/AssetCatalog.h"
 #include "Rendering/Types/Texture/Texture.h"
 #include "ECS/Systems/Animation/Animation.h"
@@ -118,36 +119,8 @@ void Editor::UI::SpriteAnimationPanel::OnImGuiRender() {
 
 
 void Editor::UI::SpriteAnimationPanel::DrawSheetSettings() {
-    auto &resources = Core::ResourceManager::GetInstance();
     auto &sheet = *m_Draft->sheet;
-
-    auto textures = resources.GetAll<Rendering::Texture>();
-
-    std::ranges::sort(textures, [](const auto &a, const auto &b) { return a.first < b.first; });
-
-    const std::string current = sheet.texture ? resources.GetKey<Rendering::Texture>(sheet.texture) : "<None>";
-
-    bool changed = false;
-
-    if (ImGui::BeginCombo("Texture", current.c_str())) {
-        if (ImGui::Selectable("<None>", !sheet.texture)) {
-            sheet.texture.reset();
-            changed = true;
-        }
-
-        for (const auto &[key, texture] : textures) {
-            if (!texture) {
-                continue;
-            }
-
-            if (ImGui::Selectable(key.c_str(), texture == sheet.texture)) {
-                sheet.texture = texture;
-                changed = true;
-            }
-        }
-
-        ImGui::EndCombo();
-    }
+    bool changed = TextureCombo("Texture", m_EngineContext, sheet.texture);
 
     changed |= ImGui::InputInt("Columns", &sheet.columns);
     changed |= ImGui::InputInt("Rows", &sheet.rows);
