@@ -3,8 +3,11 @@
 #include "Core/ResourceManager.h"
 #include "Core/Utils/JsonUtils.h"
 #include "ECS/Components/ParticleEmitterComponent.h"
+#include "IO/Loaders/SceneAssetLoader.h"
 #include "IO/VFS/VFS.h"
 #include "Logger/LoggerService.h"
+#include "Rendering/Types/Material.h"
+#include "Scenes/Scene.h"
 
 #include <fstream>
 #include <nlohmann/json.hpp>
@@ -12,7 +15,7 @@
 #include <string>
 
 namespace IO {
-    inline ECS::Components::ParticleEmitterComponent DeserializeEmitter(const nlohmann::json &data) {
+    inline ECS::Components::ParticleEmitterComponent DeserializeEmitter(const nlohmann::json &data, Scenes::Scene &scene) {
         ECS::Components::ParticleEmitterComponent ec;
         if (data.contains("maxParticles"))
             ec.maxParticles = data["maxParticles"].get<int>();
@@ -60,7 +63,10 @@ namespace IO {
             ec.shape = data["shape"].get<int>();
         if (data.contains("material_id")) {
             const std::string matID = data["material_id"].get<std::string>();
-            ec.material = Core::ResourceManager::GetInstance().Get<Rendering::Material>(matID);
+            IO::SceneAssetLoader::SceneAssetScope scope;
+            if (IO::SceneAssetLoader::Acquire(SceneAssetLoader::AssetKind::Material, matID, scope)) {
+                ec.material = Core::ResourceManager::GetInstance().Get<Rendering::Material>(matID);
+            }
         }
         return ec;
     }
@@ -110,7 +116,7 @@ namespace IO {
         return true;
     }
 
-    inline std::optional<ECS::Components::ParticleEmitterComponent> LoadEmitterPreset(const std::string &filepath) {
+    inline std::optional<ECS::Components::ParticleEmitterComponent> LoadEmitterPreset(const std::string &filepath, Scenes::Scene &scene) {
         std::string_view dataView;
         std::string ownedData;
         if (const auto view = VFS::ReadVirtualView(filepath))
@@ -136,7 +142,7 @@ namespace IO {
             return std::nullopt;
         }
 
-        return DeserializeEmitter(json);
+        return DeserializeEmitter(json,scene);
     }
 
     inline std::vector<std::string> GetEmitterPresetFiles() {

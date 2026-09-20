@@ -613,10 +613,14 @@ void Editor::UI::ParticleEmitterWidget::Draw(const ECS::Entity entity, Core::Eng
             ImGui::PushID("LoadEmitterPreset");
             if (FileCombo("Load Preset", std::string(Core::PARTICLE_PRESET_PATH), std::string(".json"), pendingPresetPath)) {
                 if (!pendingPresetPath.empty()) {
-                    if (const auto preset = IO::LoadEmitterPreset(pendingPresetPath)) {
-                        *comp = *preset;
-                        comp->isDirty = true;
-                        MarkSceneChanged(engineContext);
+                    if (engineContext && engineContext->sceneManager) {
+                        if (auto *scene = engineContext->sceneManager->GetCurrentScene()) {
+                            if (const auto preset = IO::LoadEmitterPreset(pendingPresetPath, *scene)) {
+                                *comp = *preset;
+                                comp->isDirty = true;
+                                MarkSceneChanged(engineContext);
+                            }
+                        }
                     }
                 }
                 pendingPresetPath.clear();
