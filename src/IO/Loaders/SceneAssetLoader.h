@@ -14,6 +14,9 @@ namespace IO::SceneAssetLoader {
     bool LoadReferenced(const nlohmann::json &sceneData, SceneAssetScope &scope);
     bool Acquire(AssetKind kind, std::string_view id, SceneAssetScope &scope);
 
+    void MarkStale(std::string_view catalogType, std::string_view id);
+    void UnloadStale();
+
     class SceneAssetScope {
     public:
         SceneAssetScope();

@@ -192,6 +192,7 @@ namespace Scenes {
             if (m_CurrentScene && m_CurrentScene->GetScenePath() == scenePath) {
                 m_CurrentScene->OnExit();
                 m_CurrentScene.reset();
+                IO::SceneAssetLoader::UnloadStale();
             }
             return std::filesystem::remove(fullPath);
         }
@@ -205,6 +206,7 @@ namespace Scenes {
             m_CurrentScene->OnExit();
             m_CurrentScene.reset();
         }
+        IO::SceneAssetLoader::UnloadStale();
     }
 
     void SceneManager::SwitchScene(const std::string &newScenePath) { LoadSceneByPath(newScenePath); }
@@ -286,6 +288,9 @@ namespace Scenes {
             m_Context->scriptPool->init(IO::VFS::GetAssetsDirectory().string() + "/scripts");
         }
 
+        previousScene.reset();
+        IO::SceneAssetLoader::UnloadStale();
+
         m_CurrentScene = std::move(newScene);
 
         if (m_CurrentScene) {
@@ -293,8 +298,6 @@ namespace Scenes {
             if (AcquirePersistentAssets(m_CurrentScene.get(), migrationBatch))
                 InjectPersistentEntities(m_CurrentScene.get(), m_Context, migrationBatch);
         }
-
-        previousScene.reset();
     }
 
     void SceneManager::Update(const float dt) const {

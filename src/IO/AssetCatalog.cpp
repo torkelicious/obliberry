@@ -1,6 +1,7 @@
 #include "AssetCatalog.h"
 
 #include "AssetCatalogFile.h"
+#include "IO/Loaders/SceneAssetLoader.h"
 #include "IO/VFS/VFS.h"
 #include "Logger/LoggerService.h"
 
@@ -74,6 +75,7 @@ namespace IO::AssetCatalog {
     bool Save() { return Commmit(s_Document); }
 
     void Close() {
+        SceneAssetLoader::UnloadStale();
         s_Document = json();
         s_ProjectRoot.clear();
         s_Loaded = false;
@@ -99,12 +101,22 @@ namespace IO::AssetCatalog {
         const std::string &id = idVal->get_ref<const std::string &>();
         const auto existing = std::find_if(entries->begin(), entries->end(), [&](const json &asset) { return asset.is_object() && asset.value("id", std::string{}) == id; });
 
-        if (existing == entries->end()) {
+        const bool replaceExisting = existing != entries->end();
+        if (!replaceExisting) {
             entries->push_back(def);
         } else {
             *existing = def;
         }
-        return Commmit(std::move(updated));
+
+        if (!Commmit(std::move(updated))) {
+            return false;
+        }
+
+        if (replaceExisting) {
+            SceneAssetLoader::MarkStale(type, id);
+        }
+
+        return true;
     }
 
     bool Remove(std::string_view type, std::string_view id) {
@@ -126,7 +138,13 @@ namespace IO::AssetCatalog {
         }
 
         entries->erase(firstRemoved, entries->end());
-        return Commmit(std::move(updated));
+
+        if (!Commmit(std::move(updated))) {
+            return false;
+        }
+
+        SceneAssetLoader::MarkStale(type, id);
+        return true;
     }
 
     bool IsLoaded() { return s_Loaded && VFS::IsProjectLoaded() && s_ProjectRoot == VFS::GetProjectRoot(); }

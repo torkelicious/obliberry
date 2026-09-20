@@ -51,6 +51,25 @@ namespace {
 
     std::mutex s_ResidencyMutex;
     std::unordered_map<AssetKey, std::size_t, AssetKeyHash> s_ReferenceCounts;
+    std::unordered_set<AssetKey, AssetKeyHash> s_StaleAssets;
+
+    std::optional<AssetKind> KindFromCatalogType(const std::string_view type) {
+        if (type == "textures")
+            return AssetKind::Texture;
+        if (type == "shaders")
+            return AssetKind::Shader;
+        if (type == "meshes")
+            return AssetKind::Mesh;
+        if (type == "materials")
+            return AssetKind::Material;
+        if (type == "fonts")
+            return AssetKind::Font;
+        if (type == "animation_sets")
+            return AssetKind::AnimationSet;
+
+        return std::nullopt;
+    }
+
 
     template <typename Func> void ForEachAsset(const RequiredAssets &assets, Func &&func) {
         for (const auto &id : assets.textures)
@@ -493,5 +512,27 @@ namespace IO::SceneAssetLoader {
         scope.m_State = std::move(state);
         return true;
     }
+
+    void MarkStale(const std::string_view catalogType, const std::string_view id) {
+        if (id.empty()) {
+            return;
+        }
+        const auto kind = KindFromCatalogType(catalogType);
+        if (!kind) {
+            return;
+        }
+        std::lock_guard lock(s_ResidencyMutex);
+        s_StaleAssets.insert(AssetKey{.kind = *kind, .id = std::string(id)});
+    }
+
+    void UnloadStale() {
+        std::lock_guard lock(s_ResidencyMutex);
+        for (const auto &asset : s_StaleAssets) {
+            Unload(asset);
+            s_ReferenceCounts.erase(asset);
+        }
+        s_StaleAssets.clear();
+    }
+
 
 } // namespace IO::SceneAssetLoader

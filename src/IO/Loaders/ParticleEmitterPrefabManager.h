@@ -142,7 +142,7 @@ namespace IO {
             return std::nullopt;
         }
 
-        return DeserializeEmitter(json,scene);
+        return DeserializeEmitter(json, scene);
     }
 
     inline std::vector<std::string> GetEmitterPresetFiles() {
