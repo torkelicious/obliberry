@@ -14,8 +14,6 @@
 #include "Applications/Editor/UI/Panels/Editor/EditorWidgetsCombo.h"
 #include "ECS/Components/MapComponent.h"
 #include "IO/VFS/VFS.h"
-#include "Rendering/Renderer.h"
-#include "Sound/AudioEngine.h"
 #include "imgui.h"
 #include "Applications/Editor/Commands/EditorCommands.h"
 

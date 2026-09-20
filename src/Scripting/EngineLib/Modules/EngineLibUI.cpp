@@ -1,4 +1,7 @@
+#include "Core/EngineContext.h"
 #include "Core/ResourceManager.h"
+#include "IO/Loaders/SceneAssetLoader.h"
+#include "Scenes/SceneManager.h"
 #include "Scripting/EngineLib/EngineLib.h"
 #include "Scripting/EngineLib/UICommandBuffer.h"
 #include "Scripting/EngineLib/EngineLibFactories.h"
@@ -7,10 +10,38 @@
 #include "UI/Elements/UIText.h"
 #include "UI/Elements/UIRect.h"
 #include "UI/Elements/UIImage.h"
+#include "UI/Text/Font.h"
 #include <ObSL/Interpreter.h>
 #include <memory>
+#include <string_view>
 
 namespace Scripting {
+
+    static std::shared_ptr<UI::Font> AcquireFontForScene(const Core::EngineContext *ctx, const std::string_view id) {
+        if (!ctx || !ctx->sceneManager || id.empty()) {
+            return nullptr;
+        }
+
+        auto *scene = ctx->sceneManager->GetCurrentScene();
+        if (!scene) {
+            return nullptr;
+        }
+
+        IO::SceneAssetLoader::SceneAssetScope scope;
+
+        if (!IO::SceneAssetLoader::Acquire(IO::SceneAssetLoader::AssetKind::Font, id, scope)) {
+            return nullptr;
+        }
+
+        auto font = Core::ResourceManager::GetInstance().Get<UI::Font>(std::string(id));
+
+        if (!font) {
+            return nullptr;
+        }
+
+        scene->AddAssetScope(std::move(scope));
+        return font;
+    }
 
     static void BuildBaseUIFields(ObSL::ObSLObject *obj, ObSL::Interpreter *interp, std::shared_ptr<const std::string> name, Core::EngineContext *ctx) {
         obj->fields["GetName"] = interp->gc.allocate<ObSL::NativeFunction>(0, [name](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value { return *name; }, "GetName");
@@ -279,13 +310,14 @@ namespace Scripting {
                         return std::monostate{};
                     auto fontname = std::get<std::string>(args[0]);
                     if (ctx->uiCmdBuf) {
-                        ctx->uiCmdBuf->push([namePtr, fontname](UI::UISystem &ui) {
-                            if (auto *el = ui.FindByName(*namePtr))
+                        ctx->uiCmdBuf->push([namePtr, fontname, ctx](UI::UISystem &ui) {
+                            if (auto *el = ui.FindByName(*namePtr)) {
                                 if (auto *btn = dynamic_cast<UI::UIButton *>(el)) {
-                                    if (const auto font = Core::ResourceManager::GetInstance().Get<UI::Font>(fontname)) {
-                                        btn->SetFont(font);
+                                    if (auto font = AcquireFontForScene(ctx, fontname)) {
+                                        btn->SetFont(std::move(font));
                                     }
                                 }
+                            }
                         });
                     }
                     return std::monostate{};
@@ -390,10 +422,10 @@ namespace Scripting {
                         return std::monostate{};
                     auto fontname = std::get<std::string>(args[0]);
                     if (ctx->uiCmdBuf) {
-                        ctx->uiCmdBuf->push([namePtr, fontname](UI::UISystem &ui) {
+                        ctx->uiCmdBuf->push([namePtr, fontname, ctx](UI::UISystem &ui) {
                             if (auto *el = ui.FindByName(*namePtr))
                                 if (auto *txt = dynamic_cast<UI::UIText *>(el)) {
-                                    if (const auto font = Core::ResourceManager::GetInstance().Get<UI::Font>(fontname)) {
+                                    if (const auto font = AcquireFontForScene(ctx, fontname)) {
                                         txt->SetFont(font);
                                     }
                                 }

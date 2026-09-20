@@ -32,11 +32,14 @@ add_library(obliberry_engine STATIC
         # IO
         IO/MapSerialization.cpp
         IO/Loaders/AssetLoader.cpp
+        IO/Loaders/SceneAssetLoader.cpp
         IO/Loaders/EntityFactory.cpp
         IO/Loaders/UISerializer.cpp
         IO/SceneSerialization.cpp
         IO/AnimationSerialization.cpp
         IO/VFS/VFS.cpp
+        IO/AssetCatalog.cpp
+        IO/AssetCatalog.h
 
         # Sound
         Sound/AudioEngine.cpp
@@ -155,6 +158,9 @@ if (BUILD_PACK_TOOLS)
 
     add_executable(obsl_pack_run Applications/Tools/Packaging/Runner.cpp)
     target_link_libraries(obsl_pack_run PRIVATE obliberry_engine)
+
+    add_executable(ob_asset_migrator Applications/Tools/Misc/Migrator.cpp)
+    target_link_libraries(ob_asset_migrator PRIVATE obliberry_engine)
 endif ()
 
 # Internal resources
@@ -179,5 +185,5 @@ add_custom_command(
 set_output_subdir(internal obliberry_runtime)
 
 if (BUILD_PACK_TOOLS)
-    set_output_subdir(tools ob_packer ob_unpacker obsl_pack_run)
+    set_output_subdir(tools ob_packer ob_unpacker obsl_pack_run ob_asset_migrator)
 endif ()

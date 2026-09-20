@@ -37,7 +37,7 @@ A sprite animation set contains one sheet, and a collection of named "clips".
 ## Sheet
 
 | Field            | Meaning                                       |
-| ---------------- | --------------------------------------------- |
+|------------------|-----------------------------------------------|
 | `texture_id`     | Registered Texture Resource ID                |
 | `columns`        | Number of columns; must be greater than zero. |
 | `rows`           | Number of rows; must be greater than zero.    |
@@ -52,14 +52,16 @@ The available image width is:
 It must divide evenly into the columns, with at least one pixel per column.
 The same applies to height, row spacing, and rows.
 
-The texture must be registered before the animation set is deserialized.
+The texture ID must have an entry in the project [`assets.json`](assets-json.md). Lazy loading resolves and acquires
+that
+texture before deserializing the animation set.
 
 ## Clips
 
 Each key in `clips` is a non empty clip name.
 
 | Field               | Meaning                                        |
-| ------------------- | ---------------------------------------------- |
+|---------------------|------------------------------------------------|
 | `loop`              | Whether playback repeats after the last frame. |
 | `frames`            | Non-empty array defining playback order.       |
 | `frames[].index`    | Zero-based sheet frame index.                  |
@@ -75,9 +77,11 @@ FPS is more or less just an editor convenience, the file itself stores individua
 
 ### Resource id
 
-The animation resource ID and source path are stored in the scene’s `assets.animation_sets` list, and are not part of this file.
+The animation resource ID and source path are stored in the project-root `assets.json` `animation_sets` array and are
+not part of this file.
 
-See [Scene JSON](scene-json.md) for asset registration and component references.
+See [`assets.json`](assets-json.md) for registration and [Scene JSON](scene-json.md#asset-references) for component
+references.
 
 ## Runtime state
 

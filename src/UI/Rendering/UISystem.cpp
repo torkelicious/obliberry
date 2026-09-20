@@ -108,7 +108,7 @@ namespace UI {
                 return false;
             if (e == element)
                 return true;
-            for (auto *child : e->Children) {
+            for (const auto *child : e->Children) {
                 if (search(child))
                     return true;
             }

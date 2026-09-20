@@ -3,7 +3,6 @@
 #include "Applications/Editor/EditorLayer.h"
 #include <algorithm>
 #include <cfloat>
-#include <cstring>
 #include <memory>
 #include <type_traits>
 #include "ECS/Components/ColliderComponent.h"
@@ -146,7 +145,7 @@ void Editor::UI::MeshWidget::Draw(const ECS::Entity entity, Core::EngineContext 
 
         if (engineContext && engineContext->resources) {
             ImGui::PushID("MeshCombo");
-            if (MeshCombo("Mesh", *engineContext->resources, comp->mesh)) {
+            if (MeshCombo("Mesh", engineContext, comp->mesh)) {
                 MarkSceneChanged(engineContext);
             }
             ImGui::PopID();
@@ -176,7 +175,7 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
         if (engineContext && engineContext->resources) {
             auto *matComp = entity.GetComponent<ECS::Components::MaterialComponent>();
             ImGui::PushID("MatSelectCombo");
-            if (MaterialCombo("Material", *engineContext->resources, matComp->material)) {
+            if (MaterialCombo("Material", engineContext, matComp->material)) {
                 MarkSceneChanged(engineContext);
             }
             ImGui::PopID();
@@ -196,7 +195,7 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
 
             if (engineContext && engineContext->resources) {
                 ImGui::PushID("TextureCombo");
-                if (TextureCombo("Texture", *engineContext->resources, comp->material->texture)) {
+                if (TextureCombo("Texture", engineContext, comp->material->texture)) {
                     MarkSceneChanged(engineContext);
                 }
                 ImGui::PopID();
@@ -207,7 +206,7 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
 
             if (engineContext && engineContext->resources) {
                 ImGui::PushID("ShaderCombo");
-                if (ShaderCombo("Shader", *engineContext->resources, comp->material->shader)) {
+                if (ShaderCombo("Shader", engineContext, comp->material->shader)) {
                     MarkSceneChanged(engineContext);
                 }
                 ImGui::PopID();
@@ -226,7 +225,7 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
             ImGui::TextDisabled("No material assigned");
             if (engineContext && engineContext->resources) {
                 ImGui::PushID("AssignMaterialCombo");
-                if (MaterialCombo("Assign Material", *engineContext->resources, comp->material)) {
+                if (MaterialCombo("Assign Material", engineContext, comp->material)) {
                     MarkSceneChanged(engineContext);
                 }
                 ImGui::PopID();
@@ -296,7 +295,7 @@ void Editor::UI::DirectionalTextureWidget::Draw(const ECS::Entity entity, Core::
                 ImGui::PushID(i);
                 char label[32];
                 snprintf(label, sizeof(label), "Dir %d Texture", i);
-                if (TextureCombo(label, *engineContext->resources, comp->textures[i])) {
+                if (TextureCombo(label, engineContext, comp->textures[i])) {
                     MarkSceneChanged(engineContext);
                 }
                 if (!comp->textures[i])
@@ -594,7 +593,7 @@ void Editor::UI::ParticleEmitterWidget::Draw(const ECS::Entity entity, Core::Eng
         ImGui::SeparatorText("Material");
         if (engineContext && engineContext->resources) {
             ImGui::PushID("EmitterMatCombo");
-            if (MaterialCombo("Material", *engineContext->resources, comp->material)) {
+            if (MaterialCombo("Material", engineContext, comp->material)) {
                 comp->isDirty = true;
                 MarkSceneChanged(engineContext);
             }
@@ -613,10 +612,14 @@ void Editor::UI::ParticleEmitterWidget::Draw(const ECS::Entity entity, Core::Eng
             ImGui::PushID("LoadEmitterPreset");
             if (FileCombo("Load Preset", std::string(Core::PARTICLE_PRESET_PATH), std::string(".json"), pendingPresetPath)) {
                 if (!pendingPresetPath.empty()) {
-                    if (const auto preset = IO::LoadEmitterPreset(pendingPresetPath)) {
-                        *comp = *preset;
-                        comp->isDirty = true;
-                        MarkSceneChanged(engineContext);
+                    if (engineContext && engineContext->sceneManager) {
+                        if (auto *scene = engineContext->sceneManager->GetCurrentScene()) {
+                            if (const auto preset = IO::LoadEmitterPreset(pendingPresetPath, *scene)) {
+                                *comp = *preset;
+                                comp->isDirty = true;
+                                MarkSceneChanged(engineContext);
+                            }
+                        }
                     }
                 }
                 pendingPresetPath.clear();
@@ -778,7 +781,6 @@ void Editor::UI::SpriteSheetWidget::Draw(ECS::Entity entity, Core::EngineContext
 
     const auto id = static_cast<ECS::EntityID>(entity);
     auto *player = entity.GetComponent<Player>();
-    auto &resources = Core::ResourceManager::GetInstance();
 
     if (!player && ImGui::Button("Add Animator")) {
         if (undomgr && ctx) {
@@ -798,57 +800,11 @@ void Editor::UI::SpriteSheetWidget::Draw(ECS::Entity entity, Core::EngineContext
         m_HasDraft = false;
         bool configChanged = false;
 
-        auto assets = resources.GetAll<Animation::SpriteAnimationSet>();
-
-        std::ranges::sort(assets, [](const auto &a, const auto &b) { return a.first < b.first; });
-
-        std::string selectedAsset = player->animations ? "<Unregistered>" : "<None>";
-
-        for (const auto &[key, asset] : assets) {
-            if (asset && asset == player->animations) {
-                selectedAsset = key;
-                break;
+        if (AnimationCombo("Animation", ctx, player->animations)) {
+            if (!player->animations || !player->animations->clips.contains(player->initialClip)) {
+                player->initialClip.clear();
             }
-        }
-
-        if (ImGui::BeginCombo("Animation", selectedAsset.c_str())) {
-            if (ImGui::Selectable("<None>", !player->animations)) {
-                if (player->animations || !player->initialClip.empty()) {
-                    player->animations.reset();
-                    player->initialClip.clear();
-                    configChanged = true;
-                }
-            }
-
-            for (const auto &[key, asset] : assets) {
-                if (!asset) {
-                    continue;
-                }
-
-                const bool isSelected = asset == player->animations;
-
-                ImGui::PushID(key.c_str());
-
-                if (ImGui::Selectable(key.c_str(), isSelected)) {
-                    if (!isSelected) {
-                        player->animations = asset;
-
-                        if (!asset->clips.contains(player->initialClip)) {
-                            player->initialClip.clear();
-                        }
-
-                        configChanged = true;
-                    }
-                }
-
-                if (isSelected) {
-                    ImGui::SetItemDefaultFocus();
-                }
-
-                ImGui::PopID();
-            }
-
-            ImGui::EndCombo();
+            configChanged = true;
         }
 
         if (player->animations) {
@@ -952,7 +908,7 @@ void Editor::UI::SpriteSheetWidget::Draw(ECS::Entity entity, Core::EngineContext
         m_HasDraft = true;
     }
 
-    bool layoutChanged = TextureCombo("Texture", resources, m_SheetDraft.texture);
+    bool layoutChanged = TextureCombo("Texture", ctx, m_SheetDraft.texture);
 
     layoutChanged |= ImGui::InputInt("Columns", &m_SheetDraft.columns);
     layoutChanged |= ImGui::InputInt("Rows", &m_SheetDraft.rows);

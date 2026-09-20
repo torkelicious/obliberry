@@ -1,8 +1,6 @@
 #pragma once
 
 #include "ColliderGeometry.h"
-#include "glm/ext/quaternion_geometric.hpp"
-#include "glm/ext/vector_double3.hpp"
 #include "glm/geometric.hpp"
 
 #include <algorithm>

@@ -1,5 +1,6 @@
 #pragma once
-#include "Core/Constants.h"
+#include <filesystem>
+#include <optional>
 #include <string>
 
 namespace Config {
@@ -10,6 +11,7 @@ namespace Config {
 
         // default to the central relative project tag identifier
         static ProjectConfig Deserialize(const std::string &filepath = "project.json");
+        static std::optional<ProjectConfig> DeserializeFile(const std::filesystem::path &filepath);
         static bool Serialize(const ProjectConfig &conf, const std::string &filepath = "project.json");
     };
 } // namespace Config

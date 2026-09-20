@@ -4,9 +4,10 @@
 #include <cstdio>
 #include <vector>
 #include <cmath>
-#include <cstdint>
 #include <utility>
 #include "Core/ResourceManager.h"
+#include "Applications/Editor/UI/Panels/Editor/EditorWidgetsCombo.h"
+#include "IO/AssetCatalog.h"
 #include "Rendering/Types/Texture/Texture.h"
 #include "ECS/Systems/Animation/Animation.h"
 #include "IO/AnimationSerialization.h"
@@ -117,36 +118,8 @@ void Editor::UI::SpriteAnimationPanel::OnImGuiRender() {
 
 
 void Editor::UI::SpriteAnimationPanel::DrawSheetSettings() {
-    auto &resources = Core::ResourceManager::GetInstance();
     auto &sheet = *m_Draft->sheet;
-
-    auto textures = resources.GetAll<Rendering::Texture>();
-
-    std::ranges::sort(textures, [](const auto &a, const auto &b) { return a.first < b.first; });
-
-    const std::string current = sheet.texture ? resources.GetKey<Rendering::Texture>(sheet.texture) : "<None>";
-
-    bool changed = false;
-
-    if (ImGui::BeginCombo("Texture", current.c_str())) {
-        if (ImGui::Selectable("<None>", !sheet.texture)) {
-            sheet.texture.reset();
-            changed = true;
-        }
-
-        for (const auto &[key, texture] : textures) {
-            if (!texture) {
-                continue;
-            }
-
-            if (ImGui::Selectable(key.c_str(), texture == sheet.texture)) {
-                sheet.texture = texture;
-                changed = true;
-            }
-        }
-
-        ImGui::EndCombo();
-    }
+    bool changed = TextureCombo("Texture", m_EngineContext, sheet.texture);
 
     changed |= ImGui::InputInt("Columns", &sheet.columns);
     changed |= ImGui::InputInt("Rows", &sheet.rows);
@@ -564,9 +537,8 @@ void Editor::UI::SpriteAnimationPanel::Reset() {
 
 
 bool Editor::UI::SpriteAnimationPanel::Save() {
-    if (!m_Draft) {
+    if (!m_Draft)
         return false;
-    }
 
     if (m_AssetKey.empty()) {
         m_Status = "Enter resource ID!";
@@ -574,9 +546,12 @@ bool Editor::UI::SpriteAnimationPanel::Save() {
     }
 
     auto &resources = Core::ResourceManager::GetInstance();
+
     const auto registered = resources.Get<Animation::SpriteAnimationSet>(m_AssetKey);
 
-    if (registered && registered != m_Set) {
+    const auto *catalogEntry = IO::AssetCatalog::Find("animation_sets", m_AssetKey);
+
+    if (!m_Set && (registered || catalogEntry)) {
         m_Status = "Resource ID already in use.";
         return false;
     }
@@ -587,7 +562,7 @@ bool Editor::UI::SpriteAnimationPanel::Save() {
     }
 
     if (m_Draft->path.empty()) {
-        m_Status = "No filepath, please select path before saving";
+        m_Status = "No filepath, please select path before saving.";
         return false;
     }
 
@@ -599,12 +574,18 @@ bool Editor::UI::SpriteAnimationPanel::Save() {
         return false;
     }
 
+    if (!IO::AssetCatalog::Upsert("animation_sets", {{"id", m_AssetKey}, {"path", saved.path.generic_string()}})) {
+        m_Status = "Animation was saved, but assets.json could not be updated.";
+        return false;
+    }
+
     if (m_Set) {
         *m_Set = std::move(saved);
     } else {
         m_Set = std::make_shared<Animation::SpriteAnimationSet>(std::move(saved));
     }
 
+    // it is being used by the animation editor, so keep this one loaded
     resources.Register<Animation::SpriteAnimationSet>(m_AssetKey, m_Set);
 
     if (m_EngineContext && m_EngineContext->sceneManager) {

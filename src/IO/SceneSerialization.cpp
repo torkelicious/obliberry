@@ -2,10 +2,10 @@
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include "ECS/Systems/Animation/Types.h"
+#include "IO/Loaders/SceneAssetLoader.h"
 #include "Logger/LoggerService.h"
 #include "MapSerialization.h"
 #include "VFS/VFS.h"
-#include "Loaders/AssetLoader.h"
 #include "Loaders/EntityFactory.h"
 #include "Scenes/Scene.h"
 #include "ECS/Components/MapComponent.h"
@@ -80,10 +80,14 @@ namespace IO::SceneIO {
 
         auto &resources = *scene.GetContext().resources;
         // factories must be registered before this point!
+
         //  ASSETS
-        if (j.contains("assets")) {
-            AssetLoader::LoadAssets(j["assets"], resources);
+        SceneAssetLoader::SceneAssetScope assetScope;
+        if (!SceneAssetLoader::LoadReferenced(j, assetScope)) {
+            LOG_ERROR(LOG_WHO, "Failed to load assets referenced in: " + path);
+            return false;
         }
+
 
         if (j.contains("grid") && j["grid"].contains("map_file")) {
             auto mapPath = j["grid"]["map_file"].get<std::string>();
@@ -201,6 +205,7 @@ namespace IO::SceneIO {
         }
 
         ECS::Systems::MapRuntimeSystem::OnMapChanged(scene.GetRegistry(), scene.GetContext());
+        scene.AddAssetScope(std::move(assetScope));
         return true;
     }
 
@@ -261,53 +266,7 @@ namespace IO::SceneIO {
             }
         });
 
-        // ASSETS
-        j["assets"]["textures"] = json::array();
-        j["assets"]["shaders"] = json::array();
-        j["assets"]["meshes"] = json::array();
-        j["assets"]["materials"] = json::array();
-        j["assets"]["fonts"] = json::array();
-        j["assets"]["animation_sets"] = json::array();
-
-        SerializeAssets(j["assets"]["textures"], resources.GetAll<Rendering::Texture>(), [](const std::string &id, const std::shared_ptr<Rendering::Texture> &tex) { return json{{"id", id}, {"path", tex->GetPath()}}; });
-
-        SerializeAssets(
-                j["assets"]["shaders"], resources.GetAll<Rendering::Shader>(),
-                [](const std::string &id, const std::shared_ptr<Rendering::Shader> &shad) { return json{{"id", id}, {"vertex", shad->GetVertexPath()}, {"fragment", shad->GetFragmentPath()}}; }, IsUserAsset);
-
-        SerializeAssets(
-                j["assets"]["meshes"], resources.GetAll<Rendering::Mesh>(),
-                [](const std::string &id, const std::shared_ptr<Rendering::Mesh> &mesh) {
-                    json entry = {{"id", id}, {"factory", mesh->GetFactoryId()}};
-                    if (mesh->IsCustom()) {
-                        const auto data = mesh->GetCustomData();
-                        entry["vertices"] = json::array();
-                        for (const auto &v : data.vertices) {
-                            entry["vertices"].push_back({{"position", {v.Position.x, v.Position.y, v.Position.z}}, {"uv", {v.UV.x, v.UV.y}}});
-                        }
-                        entry["indices"] = data.indices;
-                    }
-                    return entry;
-                },
-                IsUserAsset);
-
-        SerializeAssets(j["assets"]["materials"], resources.GetAll<Rendering::Material>(), [&](const std::string &id, const std::shared_ptr<Rendering::Material> &mat) {
-            return json{{"id", id},
-                        {"shader", mat->shader ? resources.GetKey(mat->shader) : "[Engine] Base"},
-                        {"texture", resources.GetKey(mat->texture)},
-                        {"color", {mat->color.r, mat->color.g, mat->color.b, mat->color.a}}};
-        });
-
         UISerializer::Serialize(j, scene.GetUISystem(), resources);
-
-        SerializeAssets(j["assets"]["fonts"], resources.GetAll<UI::Font>(), [&](const std::string &id, const std::shared_ptr<UI::Font> &font) {
-            return json{{"id", id}, {"path", font->GetPath()}, {"size", font->GetFontSize()}, {"sdf", font->IsSDF()}, {"spread", font->GetSDFSpread()}};
-        });
-
-        SerializeAssets(j["assets"]["animation_sets"], resources.GetAll<Animation::SpriteAnimationSet>(),
-                        [](const std::string &id, const std::shared_ptr<Animation::SpriteAnimationSet> &animation) { return json{{"id", id}, {"path", animation->path.generic_string()}}; });
-
-
         // Post Processor FX
         j["PostProcessing"] = Rendering::PostProcessing::SerializeEffects(scene.PostFx());
 

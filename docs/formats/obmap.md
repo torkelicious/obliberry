@@ -22,7 +22,7 @@ detection.
 ## Header `MapFileHeader` (14 bytes)
 
 | Field       | Type       | Size | Notes                                                 |
-| ----------- | ---------- | ---- | ----------------------------------------------------- |
+|-------------|------------|------|-------------------------------------------------------|
 | `magic[8]`  | `char[8]`  | 8 B  | ASCII `"OBLIHEXM"` (also `Core::MAP_FILE_MAGIC_STR`). |
 | `version`   | `uint16_t` | 2 B  | Written as `2`.                                       |
 | `tileCount` | `uint32_t` | 4 B  | Number of `SerializedTile` records that follow.       |
@@ -30,7 +30,7 @@ detection.
 ## Tile record `SerializedTile` (6 bytes)
 
 | Field      | Type      | Size | Notes                                                                   |
-| ---------- | --------- | ---- | ----------------------------------------------------------------------- |
+|------------|-----------|------|-------------------------------------------------------------------------|
 | `q`        | `int16_t` | 2 B  | Hex column (odd-r offset).                                              |
 | `r`        | `int16_t` | 2 B  | Hex row.                                                                |
 | `type`     | `uint8_t` | 1 B  | Tile type id (`Map::TileType`); matches `grid.types` in the scene file. |

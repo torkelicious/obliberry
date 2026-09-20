@@ -7,7 +7,6 @@
 #include "Applications/Editor/Platform/FileDialogs.h"
 #include "IO/VFS/VFS.h"
 #include "imgui.h"
-#include "Platform/Window/Window.h"
 #include "Applications/Editor/Commands/EditorCommands.h"
 
 

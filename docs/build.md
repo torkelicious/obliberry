@@ -58,7 +58,8 @@ cmake --preset <preset> [options]
 You can customize the build by passing standard CMake options (`-D<OPTION>=<VALUE>`) during the configuration step:
 
 * **`-DBUILD_PACK_TOOLS=ON|OFF`** (Default: `ON`)
-  Toggles the compilation of `.obpak` packaging tools (`ob_packer`, `ob_unpacker`, `obsl_pack_run`).
+  Toggles the compilation of project/package tools (`ob_packer`, `ob_unpacker`, `obsl_pack_run`,
+  `ob_asset_migrator`).
 
 * **`-DENGINE_ARCH_LEVEL="<arch>"`** (Default: `"x86-64-v2"`)
   Sets the target CPU architecture baseline for GCC/Clang on x86 architectures. Common options include `x86-64-v2`,
@@ -93,11 +94,34 @@ cmake --build --preset <preset> --target <target_name>
   > *(Note: `obliberry_runtime` must also be built for project exporting to function.)*
 * `obliberry_runtime`: The standalone runtime application.
 
-**Packaging Tools** *(Requires `BUILD_PACK_TOOLS=ON`)*
+**Project and Packaging Tools** *(Requires `BUILD_PACK_TOOLS=ON`)*
 
 * `ob_packer`: Builds `.obpak` packager tool.
 * `ob_unpacker`: Extracts `.obpak` packages.
 * `obsl_pack_run`: Run pre-parsed obsl scripts directly from .obpak archives.
+* `ob_asset_migrator`: Moves legacy per-scene asset definitions into the project-root `assets.json` catalog.
+
+The tools are written to `<build>/bin/tools/`.
+
+### Migrating legacy asset definitions
+
+Older projects stored complete asset definitions in each scene file. Validate and migrate a project with:
+
+```bash
+<build>/bin/tools/ob_asset_migrator "/path/to/project" --dry-run
+<build>/bin/tools/ob_asset_migrator "/path/to/project" --strip-scenes
+```
+
+On Windows:
+
+```powershell
+<build>\bin\tools\ob_asset_migrator.exe "C:\path\to\project" --dry-run
+<build>\bin\tools\ob_asset_migrator.exe "C:\path\to\project" --strip-scenes
+```
+
+`--dry-run` performs validation without writing. The default migration merges definitions into `assets.json` and
+leaves legacy scene sections intact. `--strip-scenes` also removes those sections after creating backups. See the
+[`assets.json` format](formats/assets-json.md#migrating-old-projects) for details.
 
 ## Running
 

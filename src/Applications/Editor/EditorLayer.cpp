@@ -2,6 +2,7 @@
 #include "Core/Project.h"
 #include "Core/ResourceManager.h"
 #include "Config/ProjectConfig.h"
+#include "IO/AssetCatalog.h"
 #include "Logger/LoggerService.h"
 #include "ECS/Entity.h"
 #include "Platform/Error.h"
@@ -26,6 +27,7 @@
 #include "Applications/Editor/States/Play/PlayState.h"
 #include "Applications/Editor/States/MapEditor/MapEditState.h"
 #include "Core/Utils/OsUtils.h"
+#include "IO/AssetCatalogFile.h"
 #include "IO/MapSerialization.h"
 #include "States/Hub/HubState.h"
 #include "Rendering/Renderer.h"
@@ -63,13 +65,31 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
     Editor::UI::Theme::Apply(m_EditorContext.theme);
     UI::Theme::ApplyFontSet(m_EditorContext.fontset);
 
-    if (Core::Project::GetActive()) {
-        LoadStartScene();
-        if (!m_PendingSceneToLoad.empty()) {
-            LoadScene(m_PendingSceneToLoad);
-            m_PendingSceneToLoad.clear();
+    if (const auto activeProject = Core::Project::GetActive()) {
+        if (!IO::AssetCatalog::Load()) {
+            const std::string projectPath = activeProject->GetProjectPath().string();
+
+            LOG_ERROR(LOG_WHO, "Failed to load assets.json for project: " + projectPath);
+
+            ShowProjectLoadError(projectPath, "The asset catalog could not be loaded. "
+                                              "assets.json may be missing, unreadable, or invalid.");
+
+            IO::AssetCatalog::Close();
+            Core::ResourceManager::GetInstance().ClearProjectResources();
+            Core::Project::SetActive(nullptr);
+            IO::VFS::UnmountProject();
+
+            m_CurrentState = std::make_unique<States::HubState>();
+        } else {
+            LoadStartScene();
+
+            if (!m_PendingSceneToLoad.empty()) {
+                LoadScene(m_PendingSceneToLoad);
+                m_PendingSceneToLoad.clear();
+            }
+
+            m_CurrentState = std::make_unique<States::EditState>();
         }
-        m_CurrentState = std::make_unique<States::EditState>();
     } else {
         LOG_INFO(LOG_WHO, "No active project");
         m_CurrentState = std::make_unique<States::HubState>();
@@ -80,12 +100,16 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
 
     m_ProjectConfigEditor.SetUndoMgr(&m_UndoManager);
     m_SceneConfigEditor.SetUndoMgr(&m_UndoManager);
+
     m_GraphicsConfigEditor.Init();
     m_GraphicsConfigEditor.SetUndoMgr(&m_UndoManager);
+
     m_ThemeConfigEditor.Init(m_EditorContext);
     m_ThemeConfigEditor.SetUndoMgr(&m_UndoManager);
+
     m_PostProcConfigEditor.SetUndoMgr(&m_UndoManager);
 }
+
 
 void Editor::EditorLayer::SetupFontSync(std::atomic<bool> *fontsDirty) { m_EditorContext.fontsDirty = fontsDirty; }
 
@@ -142,6 +166,8 @@ void Editor::EditorLayer::Render() {
     }
     m_SaveChangesDialog.Update();
     m_SaveMapDialog.Update();
+
+    DrawProjectLoadErrorPopup();
 }
 
 void Editor::EditorLayer::Shutdown() { m_ProjectHistory.Serialize(); }
@@ -346,24 +372,80 @@ void Editor::EditorLayer::ClearCurrentProject() {
 }
 
 void Editor::EditorLayer::LoadProject(const std::string &projectFilePath) {
-    ClearCurrentProject();
+    const std::filesystem::path projectFile(projectFilePath);
 
-    IO::VFS::UnmountProject();
+    try {
+        if (!std::filesystem::is_regular_file(projectFile)) {
+            ShowProjectLoadError(projectFilePath, "project.json does not exist or is not a regular file.");
+            return;
+        }
 
-    Core::ResourceManager::GetInstance().ClearProjectResources();
+        const std::filesystem::path catalogFile = projectFile.parent_path() / "assets.json";
 
-    const auto project = Core::Project::Load(projectFilePath);
-    if (!project) {
-        LOG_ERROR("LoadProject", "Failed to load project: " + projectFilePath);
+        if (!std::filesystem::is_regular_file(catalogFile)) {
+            ShowProjectLoadError(projectFilePath, "assets.json is missing.\n\n"
+                                                  "Older projects must be processed with "
+                                                  "ob_asset_migrator before they can be opened.");
+            return;
+        }
+
+        const nlohmann::json catalog = IO::CatalogFile::Read(catalogFile);
+
+        static_cast<void>(IO::CatalogFile::Normalize(catalog, catalogFile.string()));
+    } catch (const std::exception &e) {
+        ShowProjectLoadError(projectFilePath, std::string("The project files are invalid:\n") + e.what());
         return;
     }
 
-    // sync loaded config into EngineContext
+    const bool wasInHub = dynamic_cast<States::HubState *>(m_CurrentState.get()) != nullptr;
+
+    ClearCurrentProject();
+
+    IO::AssetCatalog::Close();
+    IO::VFS::UnmountProject();
+    Core::ResourceManager::GetInstance().ClearProjectResources();
+
+    const auto project = Core::Project::Load(projectFile);
+
+    if (!project) {
+        LOG_ERROR("LoadProject", "Failed to load project: " + projectFilePath);
+
+        ShowProjectLoadError(projectFilePath, "The project configuration could not be loaded.");
+
+        Core::Project::SetActive(nullptr);
+        IO::VFS::UnmountProject();
+
+        if (!wasInHub) {
+            TransitionTo(std::make_unique<States::HubState>());
+        }
+
+        return;
+    }
+
+
     if (m_Context->projectConfig) {
         *m_Context->projectConfig = project->GetConfig();
     }
+
     if (m_Context->graphicsConfig) {
         *m_Context->graphicsConfig = Config::GraphicsConfig::Deserialize("graphics.json");
+    }
+
+    if (!IO::AssetCatalog::Load()) {
+        LOG_ERROR("LoadProject", "Failed to load assets.json for project: " + projectFilePath);
+
+        ShowProjectLoadError(projectFilePath, "The project was mounted, but its asset catalog "
+                                              "could not be loaded.");
+
+        IO::AssetCatalog::Close();
+        Core::ResourceManager::GetInstance().ClearProjectResources();
+        Core::Project::SetActive(nullptr);
+        IO::VFS::UnmountProject();
+
+        if (!wasInHub) {
+            TransitionTo(std::make_unique<States::HubState>());
+        }
+        return;
     }
 
     LoadStartScene();
@@ -446,6 +528,39 @@ void Editor::EditorLayer::PromptSaveDirtyMap(const std::function<void()> &onProc
         onProceed();
     });
     m_SaveMapDialog.Open();
+}
+void Editor::EditorLayer::ShowProjectLoadError(const std::string &ProjectPath, const std::string &why) {
+    m_ProjectLoadError = "Could not open project:\n\n" + ProjectPath + "\n\n" + why;
+    m_ProjectLoadErrorPending = true;
+}
+void Editor::EditorLayer::DrawProjectLoadErrorPopup() {
+    if (m_ProjectLoadErrorPending && !m_PendingState) {
+        ImGui::OpenPopup("Could Not Open Project");
+        m_ProjectLoadErrorPending = false;
+    }
+
+    if (ImGui::BeginPopupModal("Could Not Open Project", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize)) {
+        ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + ImGui::GetFontSize() * 38.0f);
+
+        ImGui::TextWrapped("%s", m_ProjectLoadError.c_str());
+
+        ImGui::PopTextWrapPos();
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+
+        constexpr float buttonWidth = 120.0f;
+        const float availableWidth = ImGui::GetContentRegionAvail().x;
+
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (availableWidth - buttonWidth) * 0.5f);
+
+        if (ImGui::Button("OK", ImVec2(buttonWidth, 0.0f))) {
+            ImGui::CloseCurrentPopup();
+            m_ProjectLoadError.clear();
+        }
+
+        ImGui::EndPopup();
+    }
 }
 
 void Editor::EditorLayer::DrawEditorUI() {

@@ -96,6 +96,12 @@ namespace Editor {
         void ExecutePendingStateTransfer();
         void PromptSaveDirtyMap(const std::function<void()> &onProceed);
 
+        void ShowProjectLoadError(const std::string &ProjectPath, const std::string &why);
+        void DrawProjectLoadErrorPopup();
+        std::string m_ProjectLoadError;
+        bool m_ProjectLoadErrorPending;
+
+
         Core::EngineContext *m_Context = nullptr;
         EditorContext m_EditorContext;
         Scenes::Scene *m_Scene = nullptr;

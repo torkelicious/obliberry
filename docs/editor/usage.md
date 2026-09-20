@@ -9,7 +9,7 @@ A tour of the Obliberry editor: the modes, camera controls, panels, and keybind 
 The editor has four states. You start in the Hub, and everything else hangs off it.
 
 | State        | What it is                                                                              |
-| ------------ | --------------------------------------------------------------------------------------- |
+|--------------|-----------------------------------------------------------------------------------------|
 | **Hub**      | The startup screen. Create or open a project.                                           |
 | **Edit**     | Build your scene: entities, transforms, materials, UI. Default after opening a project. |
 | **Play**     | Run the scene and its scripts, like a player would.                                     |
@@ -39,7 +39,7 @@ The Hub is a simple welcome screen with two buttons:
 Camera input only works while the mouse is over the **Scene View**.
 
 | Input                      | Action                                     |
-| -------------------------- | ------------------------------------------ |
+|----------------------------|--------------------------------------------|
 | `W` `A` `S` `D`            | Pan the camera                             |
 | `Shift` + `WASD`           | Pan faster (3×)                            |
 | Scroll wheel               | Zoom in and out                            |
@@ -137,7 +137,7 @@ target to be built too. See the [architecture notes](../architecture.md) for how
 ### Global (any mode)
 
 | Key      | Action                                                         |
-| -------- | -------------------------------------------------------------- |
+|----------|----------------------------------------------------------------|
 | `Esc`    | Quit the editor (prompts to save if there are unsaved changes) |
 | `Ctrl+S` | Save the scene (or the map in Map Edit mode)                   |
 | `Ctrl+Z` | Undo                                                           |
@@ -152,7 +152,7 @@ target to be built too. See the [architecture notes](../architecture.md) for how
 ### Edit Mode
 
 | Key                       | Action                                                                    |
-| ------------------------- | ------------------------------------------------------------------------- |
+|---------------------------|---------------------------------------------------------------------------|
 | `V`                       | Toggle isometric / top-down camera                                        |
 | `T` `R` `E`               | Gizmo: translate / rotate / scale (`E` = scale, toolbar button shows `S`) |
 | `W` `A` `S` `D`           | Pan the camera (hold `Shift` for 3× speed)                                |
@@ -163,7 +163,7 @@ target to be built too. See the [architecture notes](../architecture.md) for how
 ### Map Edit Mode
 
 | Key                       | Action                                         |
-| ------------------------- | ---------------------------------------------- |
+|---------------------------|------------------------------------------------|
 | `V`                       | Toggle isometric / top-down camera             |
 | `W` `A` `S` `D`           | Pan the camera (hold `Shift` for 3× speed)     |
 | Scroll wheel              | Zoom                                           |

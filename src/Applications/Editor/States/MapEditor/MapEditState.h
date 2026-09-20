@@ -4,7 +4,6 @@
 #include "ECS/Components/MapStateComponent.h"
 #include "Applications/Editor/UI/Panels/MapEditor/TileEditorPanel.h"
 #include "Map/Hex.h"
-#include <cstdint>
 #include <functional>
 #include <optional>
 

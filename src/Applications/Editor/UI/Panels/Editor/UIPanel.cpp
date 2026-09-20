@@ -1,5 +1,6 @@
 #include "UIPanel.h"
 #include "Applications/Editor/Clipboard.h"
+#include "Core/ResourceManager.h"
 #include "IO/Loaders/UISerializer.h"
 #include "imgui.h"
 #include "UI/Elements/UIText.h"
@@ -345,7 +346,7 @@ namespace Editor::UI {
 
             if (auto *image = dynamic_cast<::UI::UIImage *>(m_SelectedElement)) {
                 ImGui::Text("Image Properties");
-                if (auto &tex = image->GetImage(); TextureCombo("Texture", *m_EngineContext->resources, tex)) {
+                if (auto &tex = image->GetImage(); TextureCombo("Texture", m_EngineContext, tex)) {
                     MarkSceneChanged(m_EngineContext);
                 }
 
@@ -372,7 +373,7 @@ namespace Editor::UI {
                 }
 
                 auto font = text->GetFont();
-                if (FontCombo("Font", *m_EngineContext->resources, font)) {
+                if (FontCombo("Font", m_EngineContext, font)) {
                     text->SetFont(font);
                     MarkSceneChanged(m_EngineContext);
                 }
@@ -406,7 +407,7 @@ namespace Editor::UI {
                 }
 
                 auto font = btn->GetFont();
-                if (FontCombo("Font", *m_EngineContext->resources, font)) {
+                if (FontCombo("Font", m_EngineContext, font)) {
                     btn->SetFont(font);
                     MarkSceneChanged(m_EngineContext);
                 }

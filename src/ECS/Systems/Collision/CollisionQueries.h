@@ -7,7 +7,6 @@
 #include "ECS/Types.h"
 #include "GJK.h"
 #include "ECS/Registry.h"
-#include "glm/ext/vector_double3.hpp"
 
 namespace ECS::Collision {
 

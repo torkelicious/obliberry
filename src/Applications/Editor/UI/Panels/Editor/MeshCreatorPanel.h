@@ -1,6 +1,5 @@
 #pragma once
 #include "Applications/Editor/UI/Panels/EditorPanel.h"
-#include "Core/ResourceManager.h"
 #include "Rendering/Types/Mesh/Mesh.h"
 #include <ImVectorEditor.h>
 #include <glm/glm.hpp>

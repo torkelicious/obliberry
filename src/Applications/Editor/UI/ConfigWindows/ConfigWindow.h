@@ -1,7 +1,6 @@
 #pragma once
 #pragma once
 #include "Core/EngineContext.h"
-#include "Config/ProjectConfig.h"
 #include "Applications/Editor/Commands/UndoManager.h"
 
 namespace Editor::UI {

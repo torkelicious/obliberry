@@ -1,3 +1,4 @@
+
 #include "ProjectHistory.h"
 #include "Logger/LoggerService.h"
 #include <algorithm>
@@ -90,13 +91,22 @@ namespace Editor {
 
     std::optional<ProjectHistoryEntry> ProjectHistory::pathToEntry(const std::filesystem::path &path) {
         try {
+            if (!std::filesystem::is_regular_file(path)) {
+                return std::nullopt;
+            }
+
+            auto config = Config::ProjectConfig::DeserializeFile(path);
+            if (!config) {
+                return std::nullopt;
+            }
+
             ProjectHistoryEntry entry;
-            entry.filePath = path;
+            entry.filePath = std::filesystem::absolute(path).lexically_normal();
             entry.timestamp = std::filesystem::last_write_time(path);
-            entry.ProjectConfig = Config::ProjectConfig::Deserialize(path.string());
+            entry.ProjectConfig = std::move(*config);
             return entry;
         } catch (const std::exception &e) {
-            LOG_ERROR(LOG_WHO, e.what());
+            LOG_ERROR(LOG_WHO, "Could not read project history entry '" + path.string() + "': " + e.what());
             return std::nullopt;
         }
     }

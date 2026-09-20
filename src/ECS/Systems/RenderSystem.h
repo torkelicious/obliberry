@@ -6,7 +6,6 @@
 #include "ECS/Components/MeshComponent.h"
 #include "ECS/Components/SpriteSheetComponent.h"
 #include "ECS/Components/TransformComponent.h"
-#include "ECS/ECS.h"
 #include "ECS/Types.h"
 #include "Math/Billboard.h"
 #include "Math/Frustum.h"

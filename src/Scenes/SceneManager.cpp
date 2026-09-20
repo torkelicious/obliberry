@@ -4,6 +4,7 @@
 #include "Core/EngineContext.h"
 #include "Core/Project.h"
 #include "Core/Utils/PathUtils.h"
+#include "IO/Loaders/SceneAssetLoader.h"
 #include "IO/SceneSerialization.h"
 #include "IO/VFS/VFS.h"
 #include "Scenes/Scene.h"
@@ -122,6 +123,25 @@ namespace {
             }
         }
     }
+
+    bool AcquirePersistentAssets(Scenes::Scene *scene, const std::vector<MigratedEntity> &batch) {
+        if (!scene || batch.empty())
+            return true;
+
+        nlohmann::json references;
+        references["entities"] = nlohmann::json::array();
+        for (const auto &item : batch)
+            references["entities"].push_back(item.data);
+
+        IO::SceneAssetLoader::SceneAssetScope scope;
+        if (!IO::SceneAssetLoader::LoadReferenced(references, scope)) {
+            LOG_ERROR(LOG_WHO, "Failed to acquire assets for persistent entities");
+            return false;
+        }
+
+        scene->AddAssetScope(std::move(scope));
+        return true;
+    }
 } // namespace
 
 namespace Scenes {
@@ -172,6 +192,7 @@ namespace Scenes {
             if (m_CurrentScene && m_CurrentScene->GetScenePath() == scenePath) {
                 m_CurrentScene->OnExit();
                 m_CurrentScene.reset();
+                IO::SceneAssetLoader::UnloadStale();
             }
             return std::filesystem::remove(fullPath);
         }
@@ -185,6 +206,7 @@ namespace Scenes {
             m_CurrentScene->OnExit();
             m_CurrentScene.reset();
         }
+        IO::SceneAssetLoader::UnloadStale();
     }
 
     void SceneManager::SwitchScene(const std::string &newScenePath) { LoadSceneByPath(newScenePath); }
@@ -252,9 +274,11 @@ namespace Scenes {
     void SceneManager::LoadScene(std::unique_ptr<Scene> newScene) {
         std::vector<MigratedEntity> migrationBatch;
 
-        if (m_CurrentScene) {
-            migrationBatch = ExtractPersistentEntities(m_CurrentScene.get(), m_Context);
-            m_CurrentScene->OnExit();
+        auto previousScene = std::move(m_CurrentScene);
+
+        if (previousScene) {
+            migrationBatch = ExtractPersistentEntities(previousScene.get(), m_Context);
+            previousScene->OnExit();
         }
 
         if (m_Context->scriptPool) {
@@ -264,11 +288,15 @@ namespace Scenes {
             m_Context->scriptPool->init(IO::VFS::GetAssetsDirectory().string() + "/scripts");
         }
 
+        previousScene.reset();
+        IO::SceneAssetLoader::UnloadStale();
+
         m_CurrentScene = std::move(newScene);
 
         if (m_CurrentScene) {
             m_CurrentScene->OnEnter();
-            InjectPersistentEntities(m_CurrentScene.get(), m_Context, migrationBatch);
+            if (AcquirePersistentAssets(m_CurrentScene.get(), migrationBatch))
+                InjectPersistentEntities(m_CurrentScene.get(), m_Context, migrationBatch);
         }
     }
 

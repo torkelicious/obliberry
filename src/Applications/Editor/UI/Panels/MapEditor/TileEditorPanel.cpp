@@ -214,7 +214,7 @@ namespace Editor::UI {
 
             ImGui::PushID("BrushMat");
             ImGui::Spacing();
-            TextureCombo("Texture", *m_EngineContext->resources, m_BrushTexture);
+            TextureCombo("Texture", m_EngineContext, m_BrushTexture);
 
             ImGui::ColorEdit4("Color", &m_BrushColor.x, ImGuiColorEditFlags_NoInputs);
             ImGui::PopID();
@@ -317,7 +317,7 @@ namespace Editor::UI {
 
             ImGui::PushID("EditMat");
             ImGui::Spacing();
-            TextureCombo("Texture", *m_EngineContext->resources, m_EditTexture);
+            TextureCombo("Texture", m_EngineContext, m_EditTexture);
             ImGui::ColorEdit4("Color", &m_EditColor.x, ImGuiColorEditFlags_NoInputs);
             ImGui::PopID();
 

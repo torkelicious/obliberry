@@ -11,7 +11,6 @@
 #include <array>
 #include <charconv>
 #include <cmath>
-#include <cstdio>
 #include <format>
 #include <imgui_internal.h>
 #include <optional>

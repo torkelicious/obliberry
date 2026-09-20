@@ -1,4 +1,3 @@
-#include <glad/glad.h>
 #include "UIRect.h"
 #include "UI/Rendering/UIRenderer.h"
 

@@ -1,6 +1,8 @@
 #include "Project.h"
+#include "Core/Constants.h"
 #include "Config/ProjectConfig.h"
 #include "Core/Utils/PathUtils.h"
+#include "IO/AssetCatalogFile.h"
 #include "Logger/LoggerService.h"
 #include "IO/VFS/VFS.h"
 #include <algorithm>
@@ -77,8 +79,11 @@ namespace Core {
                 std::filesystem::remove_all(destPath);
                 std::filesystem::copy(srcPath, destPath, std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
             }
+            if (const std::filesystem::path catalogPath = projectDir / "assets.json"; !std::filesystem::exists(catalogPath)) {
+                IO::CatalogFile::WriteAtomic(catalogPath, IO::CatalogFile::Empty());
+            }
         } catch (const std::exception &e) {
-            LOG_ERROR(LOG_WHO, "Failed to copy template project: " + std::string(e.what()));
+            LOG_ERROR(LOG_WHO, "Failed to create project: " + std::string(e.what()));
             return nullptr;
         }
 

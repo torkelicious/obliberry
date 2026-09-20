@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstddef>
 #include <filesystem>
 #include <variant>
 #include <vector>
@@ -119,9 +118,9 @@ namespace ECS::Systems::ScriptSystem {
             };
 
             {
-                std::vector<std::vector<ObSL::ObSLCallable *>> hooks = {slot.on_update_functions,          slot.on_exit_functions,           slot.on_exit_functions,
-                                                                        slot.on_collision_enter_functions, slot.on_collision_stay_functions, slot.on_collision_exit_functions,
-                                                                        slot.on_trigger_enter_functions,   slot.on_trigger_stay_functions,   slot.on_trigger_exit_functions};
+                const std::vector<std::vector<ObSL::ObSLCallable *>> hooks = {slot.on_update_functions,          slot.on_exit_functions,           slot.on_exit_functions,
+                                                                              slot.on_collision_enter_functions, slot.on_collision_stay_functions, slot.on_collision_exit_functions,
+                                                                              slot.on_trigger_enter_functions,   slot.on_trigger_stay_functions,   slot.on_trigger_exit_functions};
 
                 for (const auto &hook : hooks) {
                     remove_roots(hook);

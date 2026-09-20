@@ -4,7 +4,6 @@
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Types.h"
 #include "Math/Billboard.h"
-#include "glm/ext/vector_double3.hpp"
 #include "glm/geometric.hpp"
 #include "glm/matrix.hpp"
 
