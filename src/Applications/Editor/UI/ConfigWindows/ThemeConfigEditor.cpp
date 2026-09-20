@@ -1,6 +1,7 @@
 #include "ThemeConfigEditor.h"
 
 #include "Applications/Editor/Commands/EditorCommands.h"
+#include "imgui.h"
 
 #include <cstdio>
 
@@ -13,6 +14,30 @@ namespace Editor::UI {
             return;
 
         ImGui::Begin("Editor Theme Editor");
+
+        if (ImGui::BeginCombo("Preset", m_LocalTheme.name.c_str())) {
+            for (const auto &[id, name] : Theme::kBuiltInThemes) {
+                const bool selected = m_LocalTheme.name == name;
+                if (ImGui::Selectable(name.data(), selected)) {
+                    m_LocalTheme = Theme::CreateBuiltInTheme(id);
+                    Theme::Apply(m_LocalTheme);
+                    m_Palette.bg = m_LocalTheme.GetColor(ImGuiCol_WindowBg).value_or(m_Palette.bg);
+                    m_Palette.bgAlt = m_LocalTheme.GetColor(ImGuiCol_MenuBarBg).value_or(m_Palette.bgAlt);
+                    m_Palette.bgActive = m_LocalTheme.GetColor(ImGuiCol_FrameBgActive).value_or(m_Palette.bgActive);
+                    m_Palette.accent = m_LocalTheme.GetColor(ImGuiCol_Button).value_or(m_Palette.accent);
+                    m_Palette.accentHover = m_LocalTheme.GetColor(ImGuiCol_ButtonHovered).value_or(m_Palette.accentHover);
+                    m_Palette.accentActive = m_LocalTheme.GetColor(ImGuiCol_ButtonActive).value_or(m_Palette.accentActive);
+                    m_Palette.text = m_LocalTheme.GetColor(ImGuiCol_Text).value_or(m_Palette.text);
+                    m_Palette.textDim = m_LocalTheme.GetColor(ImGuiCol_TextDisabled).value_or(m_Palette.textDim);
+                    m_Palette.border = m_LocalTheme.GetColor(ImGuiCol_Border).value_or(m_Palette.border);
+                }
+                if (selected) {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+
+            ImGui::EndCombo();
+        }
 
         char nameBuf[128]{};
         std::snprintf(nameBuf, sizeof(nameBuf), "%s", m_LocalTheme.name.c_str());
