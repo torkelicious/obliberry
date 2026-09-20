@@ -18,7 +18,9 @@
 #include <ObSL/ScriptWorker.h>
 #include <variant>
 #include <vector>
+#include "IO/Loaders/SceneAssetLoader.h"
 #include "ObSL/Parser/ast.h"
+#include "Scenes/SceneManager.h"
 #include "Scripting/EngineLib/ScriptCommandBuffer.h"
 #include "Scripting/EngineLib/EntityWrapperCache.h"
 
@@ -701,18 +703,49 @@ namespace Scripting {
             });
 
             Method(interpreter, obj, "SetTexture", 1, [id, &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
-                const auto key = String(args, 0);
+                const std::string key = String(args, 0);
 
-                auto texture = key.empty() ? nullptr : Core::ResourceManager::GetInstance().Get<Rendering::Texture>(key);
+                Core::EngineContext *context = nullptr;
 
-                if (!key.empty() && !texture) {
-                    return std::monostate{};
+                if (auto *cache = EntityWrapperCache::Get(interp)) {
+                    context = cache->GetContext();
                 }
 
-                return Write<C>(interp, registry, id, [texture = std::move(texture)](C &c) {
-                    auto sheet = CopySheet(c);
-                    sheet->texture = texture;
-                    c.sheet = std::move(sheet);
+                return Write<C>(interp, registry, id, [key, context](C &component) {
+                    auto sheet = CopySheet(component);
+
+                    if (key.empty()) {
+                        sheet->texture.reset();
+                        component.sheet = std::move(sheet);
+                        return;
+                    }
+
+                    if (!context || !context->sceneManager) {
+                        return;
+                    }
+
+                    auto *scene = context->sceneManager->GetCurrentScene();
+
+                    if (!scene) {
+                        return;
+                    }
+
+                    IO::SceneAssetLoader::SceneAssetScope scope;
+
+                    if (!IO::SceneAssetLoader::Acquire(IO::SceneAssetLoader::AssetKind::Texture, key, scope)) {
+                        return;
+                    }
+
+                    auto texture = Core::ResourceManager::GetInstance().Get<Rendering::Texture>(key);
+
+                    if (!texture) {
+                        return;
+                    }
+
+                    scene->AddAssetScope(std::move(scope));
+
+                    sheet->texture = std::move(texture);
+                    component.sheet = std::move(sheet);
                 });
             });
 

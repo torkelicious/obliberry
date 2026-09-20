@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Core/EngineContext.h"
 #include "ECS/Registry.h"
 #include <ObSL/Interpreter.h>
 
@@ -8,6 +9,10 @@
 #include <shared_mutex>
 #include <unordered_map>
 #include <utility>
+
+namespace Core {
+    struct EngineContext;
+}
 
 namespace Scripting {
     class EntityWrapperCache {
@@ -27,7 +32,11 @@ namespace Scripting {
 
         class Cache {
         public:
-            explicit Cache(ObSL::Interpreter *interp) : m_Interp(interp) {}
+            Cache(ObSL::Interpreter *interp, Core::EngineContext *context) : m_Interp(interp), m_Context(context) {}
+
+            void SetContext(Core::EngineContext *context) { m_Context = context; }
+
+            [[nodiscard]] Core::EngineContext *GetContext() const { return m_Context; }
 
             template <typename Validate> ObSL::ObSLObject *Find(const ECS::Registry &registry, const ECS::EntityID id, const Kind kind, Validate &&valid) {
                 const auto it = m_Entries.find({.id = id, .kind = kind});
@@ -66,11 +75,17 @@ namespace Scripting {
 
             ObSL::Interpreter *m_Interp;
             std::unordered_map<Key, Entry, KeyHash> m_Entries;
+            Core::EngineContext *m_Context = nullptr;
         };
 
-        static void RegisterInterpreter(ObSL::Interpreter *interp) {
+        static void RegisterInterpreter(ObSL::Interpreter *interp, Core::EngineContext *context) {
             std::unique_lock lock(g_MapMutex);
-            g_Caches.try_emplace(interp, Cache(interp));
+
+            const auto [it, inserted] = g_Caches.try_emplace(interp, interp, context);
+
+            if (!inserted) {
+                it->second.SetContext(context);
+            }
         }
 
         static Cache *Get(const ObSL::Interpreter *interp) {

@@ -11,7 +11,7 @@ namespace Scripting {
         void register_enginelib(ObSL::Interpreter &interpreter, ECS::Registry &registry, Core::EngineContext &ctx) {
             m_ctx = &ctx;
             m_registry = &registry;
-            Scripting::EntityWrapperCache::RegisterInterpreter(&interpreter);
+            Scripting::EntityWrapperCache::RegisterInterpreter(&interpreter,&ctx);
             register_modules(interpreter);
         }
 
