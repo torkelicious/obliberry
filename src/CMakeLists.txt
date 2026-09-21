@@ -78,6 +78,8 @@ add_library(obliberry_engine STATIC
         # Systems
         ECS/Systems/Collision/CollisionWorld.cpp
 
+        # Save Data
+        SaveData/SaveGameSerialization.cpp
         Core/Utils/UUID.cpp
         Core/Utils/UUID.h
 )
