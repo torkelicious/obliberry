@@ -8,6 +8,7 @@
 #include "IO/VFS/VFS.h"
 #include "imgui.h"
 #include "Applications/Editor/Commands/EditorCommands.h"
+#include "Core/Utils/UUID.h"
 
 
 #pragma push_macro("LOG_WHO")
@@ -44,6 +45,12 @@ namespace Editor::UI {
         }
 
         ImGui::Begin("Project Properties", &isOpen);
+
+        ImGui::TextDisabled("UUID: %s", m_LocalConfig.UUID.c_str());
+        ImGui::SameLine();
+        if (ImGui::SmallButton("Regenerate")) {
+            m_LocalConfig.UUID = Core::Utils::UUID::UUIDGenerator::Generate();
+        }
 
         // title
         if (ImGui::InputText("Window Title", m_TitleBuffer, sizeof(m_TitleBuffer))) {
