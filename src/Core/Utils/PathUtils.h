@@ -1,10 +1,17 @@
 #pragma once
+
+#include <cstdlib>
 #include <filesystem>
+#include <stdexcept>
+#include <string>
+
 #ifdef _WIN32
 #include <windows.h>
+#include <shlobj.h>
 #elif defined(__APPLE__)
 #include <mach-o/dyld.h>
 #endif
+
 
 namespace Core::PathUtils {
     // accepts any number of string_views and joins them
@@ -49,5 +56,54 @@ namespace Core::PathUtils {
     inline std::filesystem::path GetInternalDir() { return GetExecutableDirectory() / "internal"; }
 
     inline std::filesystem::path GetInternalRecourcesDir() { return GetInternalDir() / "resources"; }
+
+    inline std::filesystem::path GetDataHome() {
+#ifdef _WIN32
+        PWSTR raw = nullptr;
+
+        const HRESULT result = SHGetKnownFolderPath(FOLDERID_LocalAppData, KF_FLAG_CREATE, nullptr, &raw);
+
+        if (FAILED(result) || raw == nullptr) {
+            if (raw) {
+                CoTaskMemFree(raw);
+            }
+
+            throw std::runtime_error("Could not locate the Windows LocalAppData directory");
+        }
+
+        std::filesystem::path path(raw);
+        CoTaskMemFree(raw);
+
+        return path;
+
+#elif defined(__APPLE__)
+        const auto home = GetHomeDirectory();
+
+        if (home.empty()) {
+            throw std::runtime_error("Could not locate the macOS home directory");
+        }
+
+        return home / "Library" / "Application Support";
+
+#else
+        if (const char *xdgDataHome = std::getenv("XDG_DATA_HOME"); xdgDataHome && *xdgDataHome != '\0') {
+
+            std::filesystem::path path(xdgDataHome);
+
+            if (path.is_absolute()) {
+                return path;
+            }
+        }
+
+        const auto home = GetHomeDirectory();
+
+        if (home.empty()) {
+            throw std::runtime_error("Could not locate the Linux home directory");
+        }
+
+        return home / ".local" / "share";
+#endif
+    }
+
 
 } // namespace Core::PathUtils
