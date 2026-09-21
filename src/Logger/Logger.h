@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ILogger.h"
-#include "Core/Utils/Utils.h"
+#include "Core/Utils/CircularBuffer.h"
 #include <string>
 #include <filesystem>
 #include <mutex>
