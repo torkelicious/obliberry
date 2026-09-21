@@ -5,9 +5,9 @@
 
 namespace Config {
     struct ProjectConfig {
+        std::string UUID;
         std::string Title = "Obliberry Project";
         std::string startScenePath;
-
 
         // default to the central relative project tag identifier
         static ProjectConfig Deserialize(const std::string &filepath = "project.json");

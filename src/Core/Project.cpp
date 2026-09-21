@@ -5,6 +5,8 @@
 #include "IO/AssetCatalogFile.h"
 #include "Logger/LoggerService.h"
 #include "IO/VFS/VFS.h"
+#include "Utils/UUID.h"
+
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
@@ -91,6 +93,7 @@ namespace Core {
 
         // templates
         project->m_Config = Config::ProjectConfig::Deserialize("project.json");
+        project->m_Config.UUID = Utils::UUID::UUIDGenerator::Generate();
         if (project->m_Config.startScenePath.empty())
             project->m_Config.startScenePath = std::string(SCENE_PATH) + "default.json";
         project->m_Config.Title = name;
@@ -107,6 +110,16 @@ namespace Core {
         project->m_ProjectFilepath = std::filesystem::absolute(projectFilePath);
         IO::VFS::MountProject(project->m_ProjectFilepath.string());
         project->m_Config = Config::ProjectConfig::Deserialize("project.json");
+
+        if (project->m_Config.UUID.empty()) {
+            project->m_Config.UUID = Utils::UUID::UUIDGenerator::Generate();
+            LOG_INFO(LOG_WHO, "Generated UUID for legacy project: " + project->m_Config.UUID);
+            if (!project->Save()) {
+                LOG_ERROR(LOG_WHO, "Could not save generated project UUID");
+                return nullptr;
+            }
+        }
+
         s_ActiveProject = project;
         return project;
     }

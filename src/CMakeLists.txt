@@ -77,6 +77,9 @@ add_library(obliberry_engine STATIC
 
         # Systems
         ECS/Systems/Collision/CollisionWorld.cpp
+
+        Core/Utils/UUID.cpp
+        Core/Utils/UUID.h
 )
 
 target_include_directories(obliberry_engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
@@ -90,6 +93,10 @@ target_link_libraries(obliberry_engine PUBLIC
         obliberry_deps
         obsl
 )
+
+if (WIN32)
+    target_link_libraries(obliberry_engine PRIVATE bcrypt)
+endif ()
 
 # Runtime Executable
 add_executable(obliberry_runtime

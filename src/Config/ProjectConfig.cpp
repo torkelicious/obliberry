@@ -12,6 +12,10 @@ namespace {
     Config::ProjectConfig ParseProjectConfig(const nlohmann::json &document) {
         Config::ProjectConfig config;
 
+        if (const auto id = document.find("UUID"); id != document.end() && id->is_string()) {
+            config.UUID = id->get<std::string>();
+        }
+
         if (const auto window = document.find("window"); window != document.end() && window->is_object()) {
             if (const auto title = window->find("title"); title != window->end() && title->is_string()) {
                 config.Title = title->get<std::string>();
@@ -63,6 +67,7 @@ namespace Config {
     bool ProjectConfig::Serialize(const ProjectConfig &conf, const std::string &filepath) {
         try {
             nlohmann::json j;
+            j["UUID"] = conf.UUID;
             j["window"]["title"] = conf.Title;
             j["start_scene"] = conf.startScenePath;
 
