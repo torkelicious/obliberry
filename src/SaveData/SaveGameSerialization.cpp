@@ -3,16 +3,22 @@
 #include "Core/Utils/PathUtils.h"
 #include "Core/Utils/OSFileUtils.h"
 #include "IO/VFS/VFS.h"
+#include "Logger/LoggerService.h"
 #include "SaveData/SaveGameManager.h"
 #include "nlohmann/json.hpp"
 #include <cmath>
 #include <cstdint>
+#include <exception>
 #include <filesystem>
+#include <fstream>
 #include <limits>
 #include <optional>
 #include <stdexcept>
 #include <type_traits>
 #include <variant>
+
+#pragma push_macro("LOG_WHO")
+#define LOG_WHO "SaveGameSerialization"
 
 namespace {
     using json = nlohmann::json;
@@ -190,6 +196,35 @@ namespace Saves::IO {
         const json j = ToJson(data);
         return (Core::Utils::OSFile::WriteAtomic(path, j.dump(4)));
     }
-    std::optional<SaveData> Read(const std::filesystem::path &path) {}
+    std::optional<SaveData> Read(const std::filesystem::path &path) {
+        try {
+            std::ifstream file(path, std::ios::binary);
+            if (!file) {
+                LOG_ERROR(LOG_WHO, "Could not open save file: " + path.string());
+                return std::nullopt;
+            }
+
+            json j;
+            file >> j;
+
+            if (file.bad()) {
+                LOG_ERROR(LOG_WHO, "Failure while reading save file: " + path.string());
+                return std::nullopt;
+            }
+
+            auto data = FromJson(j);
+            if (!data) {
+                LOG_ERROR(LOG_WHO, "Invalid file: " + path.string());
+                return std::nullopt;
+            }
+            return data;
+
+        } catch (std::exception &e) {
+            LOG_ERROR(LOG_WHO, "Failed to load file file '" + path.string() + "' : " + e.what());
+            return std::nullopt;
+        }
+    }
 
 } // namespace Saves::IO
+
+#pragma pop_macro("LOG_WHO");
