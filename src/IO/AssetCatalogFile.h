@@ -10,6 +10,7 @@
 #include <string>
 #include <string_view>
 #include <system_error>
+#include "Core/Utils/OSFileUtils.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -94,21 +95,6 @@ namespace IO::CatalogFile {
                 fs::remove_all(directory, ignored);
             }
         } cleanup{tempDir};
-        const auto temp = tempDir / "document.json";
-        {
-            std::ofstream file;
-            file.exceptions(std::ios::failbit | std::ios::badbit);
-            file.open(temp, std::ios::binary | std::ios::trunc);
-            file << document.dump(4) << '\n';
-            file.close();
-        }
-#ifdef _WIN32
-        if (!MoveFileExW(temp.c_str(), target.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
-            const DWORD error = GetLastError();
-            throw std::system_error(static_cast<int>(error), std::system_category(), "Replace " + target.string());
-        }
-#else
-        fs::rename(temp, target);
-#endif
+        Core::Utils::OSFile::WriteAtomic(target, document.dump(4), tempDir);
     }
 } // namespace IO::CatalogFile
