@@ -1,8 +1,11 @@
+#pragma once
+
 #include <exception>
 #include <filesystem>
 #include <fstream>
 #include <string_view>
 #include <system_error>
+
 #include "Logger/LoggerService.h"
 
 #ifdef _WIN32
@@ -14,7 +17,7 @@
 
 namespace Core::Utils::OSFile {
 
-    inline bool WriteAtomic(const std::filesystem::path &path, const std::string_view &data, const std::filesystem::path &tempDir = {}) {
+    inline bool WriteAtomic(const std::filesystem::path &path, std::string_view data, const std::filesystem::path &tempDir = {}) {
         std::filesystem::path temp;
 
         if (!tempDir.empty()) {
@@ -37,7 +40,7 @@ namespace Core::Utils::OSFile {
 #ifdef _WIN32
             if (!MoveFileExW(temp.c_str(), path.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
                 const DWORD err = GetLastError();
-                throw std::system_error(static_cast<int>(err), std::system_category(), "Failed to replace file"); 
+                throw std::system_error(static_cast<int>(err), std::system_category(), "Failed to replace file");
             }
 #else
             std::filesystem::rename(temp, path);
