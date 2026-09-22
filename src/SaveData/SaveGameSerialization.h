@@ -1,11 +1,16 @@
 #pragma once
 
-#include "SaveData/SaveGameManager.h"
+#include "SaveData/SaveGameData.h"
+
 #include <filesystem>
 #include <optional>
+
 namespace Saves::IO {
-    std::optional<std::filesystem::path> GenerateSaveDirectory();
+
+    [[nodiscard]] std::optional<std::filesystem::path> GenerateSaveDirectory();
+
     bool WriteAtomic(const std::filesystem::path &path, const SaveData &data);
-    std::optional<SaveData> Read(const std::filesystem::path);
+
+    [[nodiscard]] std::optional<SaveData> Read(const std::filesystem::path &path);
 
 } // namespace Saves::IO
