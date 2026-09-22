@@ -80,6 +80,7 @@ add_library(obliberry_engine STATIC
 
         # Save Data
         SaveData/SaveGameSerialization.cpp
+        SaveData/SaveGameManager.cpp
         Core/Utils/UUID.cpp
         Core/Utils/UUID.h
 )
