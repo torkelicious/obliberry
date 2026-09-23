@@ -1,5 +1,6 @@
 #include "Application.h"
 #include "Core/EngineContext.h"
+#include "Core/Utils/PathUtils.h"
 #include "Logger/LoggerService.h"
 #include "Rendering/Types/Mesh/MeshFactory.h"
 #include "Rendering/Types/Shader/InternalShaders.h"
