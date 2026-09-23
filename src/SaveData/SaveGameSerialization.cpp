@@ -1,9 +1,7 @@
 #include "SaveGameSerialization.h"
 
-#include "Core/Project.h"
 #include "Core/Utils/OSFileUtils.h"
 #include "Core/Utils/PathUtils.h"
-#include "IO/VFS/VFS.h"
 #include "Logger/LoggerService.h"
 
 #include <nlohmann/json.hpp>

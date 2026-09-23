@@ -18,7 +18,6 @@
 #include "ECS/Systems/ScriptSystem.h"
 #include "Rendering/PostProcessing/InternalPostProcFx.h"
 #include "Rendering/Types/Shader/Preprocessor/ShaderPreprocessor.h"
-#include "SaveData/SaveGameSerialization.h"
 
 Core::Application::Application(const Config::GraphicsConfig &gconf, Config::ProjectConfig pconf, std::unique_ptr<ApplicationLayer> layer)
     : m_Project(std::move(pconf)), m_GraphicsConfig(gconf), m_Window(m_GraphicsConfig.WindowWidth, m_GraphicsConfig.WindowHeight, m_Project.Title.c_str(), &gconf), m_Layer(std::move(layer)) {
