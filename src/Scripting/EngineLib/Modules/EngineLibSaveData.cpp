@@ -1,5 +1,6 @@
 #include "Scripting/EngineLib/EngineLib.h"
 #include "SaveData/SaveGameManager.h"
+#include "Scripting/EngineLib/EngineLibFactories.h"
 #include <ObSL/Interpreter.h>
 #include <cmath>
 #include <cstdint>
@@ -145,4 +146,25 @@ void Scripting::EngineLib::register_save_modules(ObSL::Interpreter &interpreter)
 
         return ctx->saveGameManager->DeleteSave(std::get<std::string>(args[0]));
     }, "save_delete"));
+
+    interpreter.get_global_environment()->define("save_list", interpreter.gc.allocate<ObSL::NativeFunction>(0, [ctx = m_ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
+        auto *result = interp->gc.allocate<ObSL::ObSLArray>();
+
+        EngineLibFactories::GCProtectGuard guard(interp, result);
+
+        if (!ctx || !ctx->saveGameManager) {
+            return result;
+        }
+
+        for (const auto &save : ctx->saveGameManager->ListSaves()) {
+            auto *object = interp->gc.allocate<ObSL::ObSLObject>();
+            object->fields["filename"] = save.filename.generic_string();
+            object->fields["display_name"] = save.displayName;
+            object->fields["created_at"] = static_cast<double>(save.createdAtUtc);
+            object->fields["updated_at"] = static_cast<double>(save.updatedAtUtc);
+            result->elements.emplace_back(object);
+        }
+
+        return result;
+    }, "save_list"));
 }
