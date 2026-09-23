@@ -3,7 +3,6 @@
 #include <GLFW/glfw3.h>
 #include <mutex>
 #include "Platform/Window/Window.h"
-#include "IO/Loaders/PrefabManager.h"
 #include <ObSL/Interpreter.h>
 
 namespace {

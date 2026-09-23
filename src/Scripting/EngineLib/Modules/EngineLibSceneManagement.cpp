@@ -3,7 +3,6 @@
 #include "Scenes/SceneManager.h"
 #include "Scenes/Scene.h"
 #include "Core/EngineContext.h"
-#include "IO/Loaders/PrefabManager.h"
 #include <ObSL/Interpreter.h>
 
 namespace {
