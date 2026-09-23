@@ -650,103 +650,90 @@ namespace Scripting {
 } // namespace Scripting
 
 void Scripting::EngineLib::register_registry_modules(ObSL::Interpreter &interpreter) {
-    interpreter.get_global_environment()->define("GetEntity", interpreter.gc.allocate<ObSL::NativeFunction>(
-                                                                      1,
-                                                                      [reg = m_registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
-                                                                          if (args.empty() || !std::holds_alternative<double>(args[0])) {
-                                                                              return std::monostate{};
-                                                                          }
+    interpreter.get_global_environment()->define("GetEntity", interpreter.gc.allocate<ObSL::NativeFunction>(1, [reg = m_registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        if (args.empty() || !std::holds_alternative<double>(args[0])) {
+            return std::monostate{};
+        }
 
-                                                                          const auto id = static_cast<ECS::EntityID>(std::get<double>(args[0]));
+        const auto id = static_cast<ECS::EntityID>(std::get<double>(args[0]));
 
-                                                                          std::shared_lock lock(g_RegistryMutex);
+        std::shared_lock lock(g_RegistryMutex);
 
-                                                                          if (!reg->IsValid(id)) {
-                                                                              return std::monostate{};
-                                                                          }
+        if (!reg->IsValid(id)) {
+            return std::monostate{};
+        }
 
-                                                                          return CreateEntityObjectLocked(interp, *reg, id);
-                                                                      },
-                                                                      "GetEntity"));
+        return CreateEntityObjectLocked(interp, *reg, id);
+    }, "GetEntity"));
 
-    interpreter.get_global_environment()->define("Find", interpreter.gc.allocate<ObSL::NativeFunction>(
-                                                                 1,
-                                                                 [reg = m_registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
-                                                                     if (args.empty() || !std::holds_alternative<std::string>(args[0])) {
-                                                                         return std::monostate{};
-                                                                     }
+    interpreter.get_global_environment()->define("Find", interpreter.gc.allocate<ObSL::NativeFunction>(1, [reg = m_registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        if (args.empty() || !std::holds_alternative<std::string>(args[0])) {
+            return std::monostate{};
+        }
 
-                                                                     const auto &targetName = std::get<std::string>(args[0]);
-                                                                     std::shared_lock lock(g_RegistryMutex);
+        const auto &targetName = std::get<std::string>(args[0]);
+        std::shared_lock lock(g_RegistryMutex);
 
-                                                                     for (const ECS::EntityID id : reg->GetLivingEntities()) {
-                                                                         if (reg->GetEntityName(id) == targetName) {
-                                                                             return CreateEntityObjectLocked(interp, *reg, id);
-                                                                         }
-                                                                     }
+        for (const ECS::EntityID id : reg->GetLivingEntities()) {
+            if (reg->GetEntityName(id) == targetName) {
+                return CreateEntityObjectLocked(interp, *reg, id);
+            }
+        }
 
-                                                                     return std::monostate{};
-                                                                 },
-                                                                 "Find"));
+        return std::monostate{};
+    }, "Find"));
 
-    interpreter.get_global_environment()->define("CreateEntity", interpreter.gc.allocate<ObSL::NativeFunction>(
-                                                                         1,
-                                                                         [reg = m_registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
-                                                                             std::string name = "NewEntity";
+    interpreter.get_global_environment()->define("CreateEntity", interpreter.gc.allocate<ObSL::NativeFunction>(1, [reg = m_registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        std::string name = "NewEntity";
 
-                                                                             if (!args.empty() && std::holds_alternative<std::string>(args[0])) {
-                                                                                 name = std::get<std::string>(args[0]);
-                                                                             }
+        if (!args.empty() && std::holds_alternative<std::string>(args[0])) {
+            name = std::get<std::string>(args[0]);
+        }
 
-                                                                             std::unique_lock lock(g_RegistryMutex);
+        std::unique_lock lock(g_RegistryMutex);
 
-                                                                             const ECS::EntityID id = reg->CreateEntity();
-                                                                             reg->SetEntityName(id, name);
+        const ECS::EntityID id = reg->CreateEntity();
+        reg->SetEntityName(id, name);
 
-                                                                             return CreateEntityObjectLocked(interp, *reg, id);
-                                                                         },
-                                                                         "CreateEntity"));
+        return CreateEntityObjectLocked(interp, *reg, id);
+    }, "CreateEntity"));
 
-    interpreter.get_global_environment()->define("Instantiate", interpreter.gc.allocate<ObSL::NativeFunction>(
-                                                                        1,
-                                                                        [reg = m_registry, ctx = m_ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
-                                                                            if (args.empty() || !std::holds_alternative<std::string>(args[0])) {
-                                                                                return std::monostate{};
-                                                                            }
+    interpreter.get_global_environment()->define(
+            "Instantiate", interpreter.gc.allocate<ObSL::NativeFunction>(1, [reg = m_registry, ctx = m_ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        if (args.empty() || !std::holds_alternative<std::string>(args[0])) {
+            return std::monostate{};
+        }
 
-                                                                            const auto &path = std::get<std::string>(args[0]);
-                                                                            std::unique_lock lock(g_RegistryMutex);
+        const auto &path = std::get<std::string>(args[0]);
+        std::unique_lock lock(g_RegistryMutex);
 
-                                                                            const ECS::EntityID id = IO::PrefabManager::Instantiate(*reg, *ctx->resources, path);
+        const ECS::EntityID id = IO::PrefabManager::Instantiate(*reg, *ctx->resources, path);
 
-                                                                            if (!reg->IsValid(id)) {
-                                                                                return std::monostate{};
-                                                                            }
+        if (!reg->IsValid(id)) {
+            return std::monostate{};
+        }
 
-                                                                            return CreateEntityObjectLocked(interp, *reg, id);
-                                                                        },
-                                                                        "Instantiate"));
+        return CreateEntityObjectLocked(interp, *reg, id);
+    }, "Instantiate"));
 
-    interpreter.get_global_environment()->define("DestroyEntity", interpreter.gc.allocate<ObSL::NativeFunction>(
-                                                                          1,
-                                                                          [reg = m_registry](const ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
-                                                                              if (args.empty() || !std::holds_alternative<double>(args[0])) {
-                                                                                  return std::monostate{};
-                                                                              }
+    interpreter.get_global_environment()->define(
+            "DestroyEntity", interpreter.gc.allocate<ObSL::NativeFunction>(1, [reg = m_registry](const ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        if (args.empty() || !std::holds_alternative<double>(args[0])) {
+            return std::monostate{};
+        }
 
-                                                                              const auto id = static_cast<ECS::EntityID>(std::get<double>(args[0]));
+        const auto id = static_cast<ECS::EntityID>(std::get<double>(args[0]));
 
-                                                                              auto *worker = static_cast<ObSL::ScriptWorker *>(interp->user_data);
-                                                                              auto *commands = worker ? worker->frame_context<ScriptCommandBuffer>() : nullptr;
+        auto *worker = static_cast<ObSL::ScriptWorker *>(interp->user_data);
+        auto *commands = worker ? worker->frame_context<ScriptCommandBuffer>() : nullptr;
 
-                                                                              if (commands) {
-                                                                                  commands->push([id](ECS::Registry &target) { target.DestroyEntity(id); });
-                                                                              } else {
-                                                                                  std::unique_lock lock(g_RegistryMutex);
-                                                                                  reg->DestroyEntity(id);
-                                                                              }
+        if (commands) {
+            commands->push([id](ECS::Registry &target) { target.DestroyEntity(id); });
+        } else {
+            std::unique_lock lock(g_RegistryMutex);
+            reg->DestroyEntity(id);
+        }
 
-                                                                              return std::monostate{};
-                                                                          },
-                                                                          "DestroyEntity"));
+        return std::monostate{};
+    }, "DestroyEntity"));
 }
