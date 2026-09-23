@@ -1,12 +1,8 @@
-#include "ObSL/Interpreter.h"
-#include "ObSL/Natives.h"
-#include "ObSL/Parser/ast.h"
-#include "SaveData/SaveGameData.h"
-#include "SaveData/SaveGameManager.h"
 #include "Scripting/EngineLib/EngineLib.h"
+#include "SaveData/SaveGameManager.h"
+#include <ObSL/Interpreter.h>
 #include <cmath>
 #include <cstdint>
-#include <limits>
 #include <optional>
 #include <string>
 #include <type_traits>
@@ -20,12 +16,11 @@ namespace {
         }
 
         if (std::holds_alternative<double>(value)) {
-            double dval = std::get<double>(value);
-            if (std::trunc(dval) == dval && dval >= std::numeric_limits<int64_t>::min(), dval <= std::numeric_limits<int64_t>::max()) {
-                int64_t ival = static_cast<int64_t>(dval);
-                return ival;
+            const double number = std::get<double>(value);
+            if (!std::isfinite(number)) {
+                return std::nullopt;
             }
-            return dval;
+            return number;
         }
 
         if (std::holds_alternative<std::string>(value)) {
@@ -36,31 +31,30 @@ namespace {
     }
 
     ObSL::Value ToObSLValue(const Saves::SaveValue &value) {
-        return std::visit([](const auto &v) -> ObSL::Value {
-            using Type = std::decay_t<decltype(v)>;
+        return std::visit([](const auto &stored) -> ObSL::Value {
+            using Type = std::decay_t<decltype(stored)>;
 
             if constexpr (std::is_same_v<Type, std::int64_t>) {
-                return static_cast<double>(v);
+                return static_cast<double>(stored);
             } else {
-                return v;
+                return stored;
             }
         }, value);
     }
-
 } // namespace
 
-
 void Scripting::EngineLib::register_save_modules(ObSL::Interpreter &interpreter) {
-
     // set a key value pair in savedata
     interpreter.get_global_environment()->define("save_set", interpreter.gc.allocate<ObSL::NativeFunction>(2, [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
         if (!ctx || !ctx->saveGameManager || args.size() != 2 || !std::holds_alternative<std::string>(args[0])) {
             return false;
         }
+
         const auto value = ToSaveValue(args[1]);
         if (!value) {
             return false;
         }
+
         ctx->saveGameManager->Set(std::get<std::string>(args[0]), *value);
         return true;
     }, "save_set"));
@@ -70,8 +64,8 @@ void Scripting::EngineLib::register_save_modules(ObSL::Interpreter &interpreter)
         if (!ctx || !ctx->saveGameManager || args.size() != 1 || !std::holds_alternative<std::string>(args[0])) {
             return std::monostate{};
         }
-        const auto value = ctx->saveGameManager->Get(std::get<std::string>(args[0]));
 
+        const auto value = ctx->saveGameManager->Get(std::get<std::string>(args[0]));
         if (!value) {
             return std::monostate{};
         }
@@ -80,30 +74,32 @@ void Scripting::EngineLib::register_save_modules(ObSL::Interpreter &interpreter)
     }, "save_get"));
 
     // see if key exists
-    interpreter.get_current_environment()->define("save_has", interpreter.gc.allocate<ObSL::NativeFunction>(1, [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+    interpreter.get_global_environment()->define("save_has", interpreter.gc.allocate<ObSL::NativeFunction>(1, [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
         if (!ctx || !ctx->saveGameManager || args.size() != 1 || !std::holds_alternative<std::string>(args[0])) {
             return false;
         }
+
         return ctx->saveGameManager->Contains(std::get<std::string>(args[0]));
     }, "save_has"));
 
     // rm
-    interpreter.get_current_environment()->define("save_remove", interpreter.gc.allocate<ObSL::NativeFunction>(1, [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
-        if (!ctx || ctx->saveGameManager || args.size() != 1 || !std::holds_alternative<std::string>(args[0])) {
+    interpreter.get_global_environment()->define("save_remove", interpreter.gc.allocate<ObSL::NativeFunction>(1, [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        if (!ctx || !ctx->saveGameManager || args.size() != 1 || !std::holds_alternative<std::string>(args[0])) {
             return false;
         }
+
         return ctx->saveGameManager->Remove(std::get<std::string>(args[0]));
     }, "save_remove"));
 
     // clear pairs
-    interpreter.get_global_environment()->define("save_clear", interpreter.gc.allocate<ObSL::NativeFunction>(1, [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+    interpreter.get_global_environment()->define("save_clear", interpreter.gc.allocate<ObSL::NativeFunction>(0, [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
         if (ctx && ctx->saveGameManager) {
             ctx->saveGameManager->ClearValues();
         }
         return std::monostate{};
     }, "save_clear"));
 
-    interpreter.get_global_environment()->define("save_new", interpreter.gc.allocate<ObSL::NativeFunction>(1, [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+    interpreter.get_global_environment()->define("save_new", interpreter.gc.allocate<ObSL::NativeFunction>(0, [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
         if (ctx && ctx->saveGameManager) {
             ctx->saveGameManager->BeginNewGame();
         }
