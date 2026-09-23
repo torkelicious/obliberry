@@ -124,7 +124,7 @@ namespace {
         }
 
         return {
-                {"version", data.version}, {"name", data.displayName}, {"current_scene", data.currentScene}, {"created_at", data.createdAtUtc}, {"updated_at", data.updatedAtUtc}, {"values", std::move(values)},
+                {"version", data.version}, {"name", data.displayName}, {"created_at", data.createdAtUtc}, {"updated_at", data.updatedAtUtc}, {"values", std::move(values)},
         };
     }
 
@@ -135,16 +135,15 @@ namespace {
 
         const auto version = document.find("version");
         const auto name = document.find("name");
-        const auto currentScene = document.find("current_scene");
         const auto creationTime = document.find("created_at");
         const auto updatedTime = document.find("updated_at");
         const auto values = document.find("values");
 
-        if (version == document.end() || name == document.end() || currentScene == document.end() || creationTime == document.end() || updatedTime == document.end() || values == document.end()) {
+        if (version == document.end() || name == document.end() || creationTime == document.end() || updatedTime == document.end() || values == document.end()) {
             return std::nullopt;
         }
 
-        if (!name->is_string() || !currentScene->is_string() || !values->is_object()) {
+        if (!name->is_string() || !values->is_object()) {
             return std::nullopt;
         }
 
@@ -159,7 +158,6 @@ namespace {
         Saves::SaveData data;
         data.version = *parsedVersion;
         data.displayName = name->get<std::string>();
-        data.currentScene = currentScene->get<std::string>();
         data.createdAtUtc = *parsedCreatedAt;
         data.updatedAtUtc = *parsedUpdatedAt;
 

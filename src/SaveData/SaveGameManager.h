@@ -15,7 +15,6 @@ namespace Saves {
     struct SaveInfo {
         std::filesystem::path filename;
         std::string displayName;
-        std::string currentScene;
         std::int64_t createdAtUtc = 0;
         std::int64_t updatedAtUtc = 0;
     };
@@ -32,7 +31,7 @@ namespace Saves {
         [[nodiscard]] bool IsConfigured() const;
 
         // active session
-        void BeginNewGame(std::string startingScene);
+        void BeginNewGame();
         [[nodiscard]] bool HasActiveFile() const;
 
         // values
@@ -41,10 +40,6 @@ namespace Saves {
         [[nodiscard]] bool Contains(std::string_view key) const;
         bool Remove(std::string_view key);
         void ClearValues();
-
-        // scene metadata
-        void SetCurrentScene(std::string scene);
-        [[nodiscard]] std::string GetCurrentScene() const;
 
         // files
         [[nodiscard]] std::optional<std::filesystem::path> CreateSave(std::string displayName);

@@ -20,9 +20,7 @@
 namespace Saves {
 
     namespace {
-        std::int64_t CurrentUtcMilliseconds() {
-            return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        }
+        std::int64_t CurrentUtcMilliseconds() { return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(); }
     } // namespace
 
     SaveGameManager::SaveGameManager(std::filesystem::path saveDirectory) { Configure(std::move(saveDirectory)); }
@@ -56,10 +54,9 @@ namespace Saves {
         return !m_SaveDirectory.empty();
     }
 
-    void SaveGameManager::BeginNewGame(std::string startingScene) {
+    void SaveGameManager::BeginNewGame() {
         std::unique_lock lock(m_DataMutex);
         m_ActiveSave = SaveData{};
-        m_ActiveSave.currentScene = std::move(startingScene);
         m_ActiveFilename.reset();
     }
 
@@ -101,16 +98,6 @@ namespace Saves {
     void SaveGameManager::ClearValues() {
         std::unique_lock lock(m_DataMutex);
         m_ActiveSave.values.clear();
-    }
-
-    void SaveGameManager::SetCurrentScene(std::string scene) {
-        std::unique_lock lock(m_DataMutex);
-        m_ActiveSave.currentScene = std::move(scene);
-    }
-
-    std::string SaveGameManager::GetCurrentScene() const {
-        std::shared_lock lock(m_DataMutex);
-        return m_ActiveSave.currentScene;
     }
 
     std::optional<std::filesystem::path> SaveGameManager::CreateSave(std::string displayName) {
@@ -253,7 +240,6 @@ namespace Saves {
                         saves.push_back(SaveInfo{
                                 .filename = name,
                                 .displayName = data->displayName,
-                                .currentScene = data->currentScene,
                                 .createdAtUtc = data->createdAtUtc,
                                 .updatedAtUtc = data->updatedAtUtc,
                         });
