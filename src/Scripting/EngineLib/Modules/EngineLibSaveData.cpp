@@ -105,4 +105,44 @@ void Scripting::EngineLib::register_save_modules(ObSL::Interpreter &interpreter)
         }
         return std::monostate{};
     }, "save_new"));
+
+    // disk ops
+
+    interpreter.get_global_environment()->define("save_create", interpreter.gc.allocate<ObSL::NativeFunction>(1, [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        if (!ctx || !ctx->saveGameManager || args.size() != 1 || !std::holds_alternative<std::string>(args[0])) {
+            return std::monostate{};
+        }
+
+        const auto filename = ctx->saveGameManager->CreateSave(std::get<std::string>(args[0]));
+
+        if (!filename) {
+            return std::monostate{};
+        }
+
+        return filename->generic_string();
+    }, "save_create"));
+
+    interpreter.get_global_environment()->define("save_write", interpreter.gc.allocate<ObSL::NativeFunction>(0, [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+        if (!ctx || !ctx->saveGameManager) {
+            return false;
+        }
+
+        return ctx->saveGameManager->SaveActive();
+    }, "save_write"));
+
+    interpreter.get_global_environment()->define("save_load", interpreter.gc.allocate<ObSL::NativeFunction>(1, [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        if (!ctx || !ctx->saveGameManager || args.size() != 1 || !std::holds_alternative<std::string>(args[0])) {
+            return false;
+        }
+
+        return ctx->saveGameManager->LoadSave(std::get<std::string>(args[0]));
+    }, "save_load"));
+
+    interpreter.get_global_environment()->define("save_delete", interpreter.gc.allocate<ObSL::NativeFunction>(1, [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        if (!ctx || !ctx->saveGameManager || args.size() != 1 || !std::holds_alternative<std::string>(args[0])) {
+            return false;
+        }
+
+        return ctx->saveGameManager->DeleteSave(std::get<std::string>(args[0]));
+    }, "save_delete"));
 }
