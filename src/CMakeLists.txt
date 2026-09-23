@@ -56,6 +56,7 @@ add_library(obliberry_engine STATIC
         Scripting/EngineLib/Modules/EngineLibTime.cpp
         Scripting/EngineLib/Modules/EngineLibUI.cpp
         Scripting/EngineLib/Modules/EngineLibRegistry.cpp
+        Scripting/EngineLib/Modules/EngineLibSaveData.cpp
 
         # Packaging
         IO/Package/ContainerWriter.cpp

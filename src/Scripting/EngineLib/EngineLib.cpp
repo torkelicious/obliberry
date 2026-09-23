@@ -10,4 +10,5 @@ void Scripting::EngineLib::register_modules(ObSL::Interpreter &interpreter) {
     register_scene_management_modules(interpreter);
     register_time_modules(interpreter);
     register_gui_modules(interpreter);
+    register_save_modules(interpreter);
 }

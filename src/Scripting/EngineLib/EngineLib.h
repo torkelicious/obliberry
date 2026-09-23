@@ -38,6 +38,8 @@ namespace Scripting {
 
         void register_gui_modules(ObSL::Interpreter &interpreter);
 
+        void register_save_modules(ObSL::Interpreter &interpreter);
+
         ECS::Registry *m_registry = nullptr;
         Core::EngineContext *m_ctx = nullptr;
     };
