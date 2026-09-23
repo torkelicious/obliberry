@@ -1,8 +1,4 @@
 #pragma once
-#include "Config/GraphicsConfig.h"
-#include "Logger/Logger.h"
-#include "UI/Rendering/UIRenderer.h"
-#include "UI/Rendering/UISystem.h"
 
 #include <filesystem>
 #include <mutex>
@@ -10,7 +6,8 @@
 
 namespace Config {
     struct ProjectConfig;
-}
+    struct GraphicsConfig;
+} // namespace Config
 
 namespace Platform::Window {
     class Window;
@@ -48,6 +45,20 @@ namespace ObSL {
 
 namespace Scripting {
     class UICommandBuffer;
+}
+
+namespace UI {
+    class UIRenderer;
+    class UISystem;
+} // namespace UI
+
+namespace Logging {
+    class ILogger;
+}
+
+namespace Saves {
+    class SaveGameManager;
+
 }
 
 namespace Core {
