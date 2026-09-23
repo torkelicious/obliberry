@@ -8,6 +8,8 @@
 #include "Logger/LoggerService.h"
 #include "Platform/Window/Window.h"
 #include "Rendering/Renderer.h"
+#include "SaveData/SaveGameManager.h"
+#include "SaveData/SaveGameSerialization.h"
 #include <imgui.h>
 
 void Game::GameLayer::Init(Core::EngineContext &ctx) {
@@ -31,6 +33,12 @@ void Game::GameLayer::Init(Core::EngineContext &ctx) {
     std::string startScene;
     if (m_Context->projectConfig) {
         startScene = m_Context->projectConfig->startScenePath;
+    }
+
+    if (m_Context->saveGameManager && m_Context->projectConfig) {
+        if (const auto savedir = Saves::IO::GenerateSaveDirectory(m_Context->projectConfig->UUID)) {
+            m_Context->saveGameManager->Configure(*savedir);
+        }
     }
 
     if (!IO::AssetCatalog::Load()) {

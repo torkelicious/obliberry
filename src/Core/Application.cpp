@@ -81,12 +81,6 @@ void Core::Application::Run() {
     context.logger = Logging::LoggerService::Get();
     context.saveGameManager = &m_SaveGameManager;
 
-    if (const auto saveDir = Saves::IO::GenerateSaveDirectory()) {
-        m_SaveGameManager.Configure(*saveDir);
-    } else {
-        LOG_ERROR("Application", "Could not configure the save game directory");
-    }
-
     Rendering::ShaderPreprocessor::Get().addIncludeDirectory(IO::VFS::GetAssetsDirectory() / "shaders");
 
     Rendering::ShaderPreprocessor::Get().addIncludeDirectory(PathUtils::GetInternalRecourcesDir() / "shaders");

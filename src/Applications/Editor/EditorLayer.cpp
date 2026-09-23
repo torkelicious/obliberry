@@ -6,10 +6,13 @@
 #include "Logger/LoggerService.h"
 #include "ECS/Entity.h"
 #include "Platform/Error.h"
+#include "SaveData/SaveGameManager.h"
+#include "SaveData/SaveGameSerialization.h"
 #include "Scenes/Scene.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 #include <ObSL/ScriptRuntime.h>
+#include <exception>
 #include <filesystem>
 #include <memory>
 #include <string>
@@ -369,6 +372,10 @@ void Editor::EditorLayer::ClearCurrentProject() {
     m_ViewportPanel.ClearSelectedEntityID();
 
     m_UndoManager.Clear();
+
+    if (m_Context && m_Context->saveGameManager) {
+        m_Context->saveGameManager->Reset();
+    }
 }
 
 void Editor::EditorLayer::LoadProject(const std::string &projectFilePath) {
@@ -425,6 +432,21 @@ void Editor::EditorLayer::LoadProject(const std::string &projectFilePath) {
 
     if (m_Context->projectConfig) {
         *m_Context->projectConfig = project->GetConfig();
+    }
+
+    if (m_Context->saveGameManager) {
+        const auto savedir = Saves::IO::GenerateSaveDirectory(project->GetConfig().UUID);
+        if (!savedir) {
+            ShowProjectLoadError(projectFilePath, "Could not determine project savedata directory.");
+            return;
+        }
+
+        try {
+            m_Context->saveGameManager->Configure(*savedir);
+        } catch (const std::exception &e) {
+            ShowProjectLoadError(projectFilePath, std::string("Could not initialize savegames:\n") + e.what());
+            return;
+        }
     }
 
     if (m_Context->graphicsConfig) {

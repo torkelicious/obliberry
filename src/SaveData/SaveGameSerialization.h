@@ -4,10 +4,11 @@
 
 #include <filesystem>
 #include <optional>
+#include <string_view>
 
 namespace Saves::IO {
 
-    [[nodiscard]] std::optional<std::filesystem::path> GenerateSaveDirectory();
+    [[nodiscard]] std::optional<std::filesystem::path> GenerateSaveDirectory(std::string_view uuid);
 
     bool WriteAtomic(const std::filesystem::path &path, const SaveData &data);
 

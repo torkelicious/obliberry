@@ -182,28 +182,18 @@ namespace {
 namespace Saves::IO {
 
     // <DataHome>/obliberry/<project uuid>/saves
-    std::optional<std::filesystem::path> GenerateSaveDirectory() {
-        if (!::IO::VFS::IsProjectLoaded()) {
-            return std::nullopt;
-        }
-
-        const auto &project = Core::Project::GetActive();
-        if (!project) {
-            return std::nullopt;
-        }
-
-        const std::string &uuid = project->GetConfig().UUID;
-        const std::filesystem::path projectId(uuid);
+    std::optional<std::filesystem::path> Saves::IO::GenerateSaveDirectory(const std::string_view uuid) {
+        const std::filesystem::path projectId{std::string(uuid)};
 
         if (projectId.empty() || projectId.is_absolute() || projectId.has_root_path() || projectId.has_parent_path() || projectId != projectId.filename()) {
-            LOG_ERROR(LOG_WHO, "The active project has an invalid UUID");
+            LOG_ERROR(LOG_WHO, "Invalid project UUID");
             return std::nullopt;
         }
 
         try {
             return Core::PathUtils::GetDataHome() / "obliberry" / projectId / "saves";
         } catch (const std::exception &error) {
-            LOG_ERROR(LOG_WHO, std::string("Could not determine the save directory: ") + error.what());
+            LOG_ERROR(LOG_WHO, std::string("Could not determine save directory: ") + error.what());
             return std::nullopt;
         }
     }
