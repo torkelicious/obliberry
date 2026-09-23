@@ -107,6 +107,8 @@ Assets: the textures in the demo project were drawn in GIMP by me, and the music
 
 Big thanks to all of these great open-source projects and resources for making this learning project possible :)
 
+This project is also part of [Hack Club Stardance](https://stardance.hackclub.com/) 
+
 ## Documentation
 
 Full documentation lives
