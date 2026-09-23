@@ -182,7 +182,7 @@ namespace {
 namespace Saves::IO {
 
     // <DataHome>/obliberry/<project uuid>/saves
-    std::optional<std::filesystem::path> Saves::IO::GenerateSaveDirectory(const std::string_view uuid) {
+    std::optional<std::filesystem::path> GenerateSaveDirectory(const std::string_view uuid) {
         const std::filesystem::path projectId{std::string(uuid)};
 
         if (projectId.empty() || projectId.is_absolute() || projectId.has_root_path() || projectId.has_parent_path() || projectId != projectId.filename()) {
