@@ -14,11 +14,10 @@
 #include <nfd.hpp>
 #include <thread>
 #include <utility>
-#include "Applications/Editor/EditorLayer.h"
 #include "ECS/Systems/ScriptSystem.h"
 #include "Rendering/PostProcessing/InternalPostProcFx.h"
 #include "Rendering/Types/Shader/Preprocessor/ShaderPreprocessor.h"
-
+#include "SaveData/SaveGameSerialization.h"
 
 Core::Application::Application(const Config::GraphicsConfig &gconf, Config::ProjectConfig pconf, std::unique_ptr<ApplicationLayer> layer)
     : m_Project(std::move(pconf)), m_GraphicsConfig(gconf), m_Window(m_GraphicsConfig.WindowWidth, m_GraphicsConfig.WindowHeight, m_Project.Title.c_str(), &gconf), m_Layer(std::move(layer)) {
@@ -79,6 +78,13 @@ void Core::Application::Run() {
     context.threadPool = &m_ThreadPool;
     context.audioEngine = m_AudioEngine.get();
     context.logger = Logging::LoggerService::Get();
+    context.saveGameManager = &m_SaveGameManager;
+
+    if (const auto saveDir = Saves::IO::GenerateSaveDirectory()) {
+        m_SaveGameManager.Configure(*saveDir);
+    } else {
+        LOG_ERROR("Application", "Could not configure the save game directory");
+    }
 
     Rendering::ShaderPreprocessor::Get().addIncludeDirectory(IO::VFS::GetAssetsDirectory() / "shaders");
 

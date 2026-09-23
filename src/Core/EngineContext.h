@@ -107,6 +107,8 @@ namespace Core {
         // Logging
         Logging::ILogger *logger = nullptr;
 
+        Saves::SaveGameManager *saveGameManager = nullptr;
+
     private:
         std::mutex m_PendingSceneMutex;
         std::string m_PendingScenePath;
