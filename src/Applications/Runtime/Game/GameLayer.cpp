@@ -1,7 +1,7 @@
 #include "GameLayer.h"
 #include "IO/AssetCatalog.h"
-#include "IO/Loaders/AssetLoader.h"
 #include "IO/VFS/VFS.h"
+#include <exception>
 #include <filesystem>
 #include <ObSL/ScriptRuntime.h>
 #include "Config/ProjectConfig.h"
@@ -11,6 +11,7 @@
 #include "SaveData/SaveGameManager.h"
 #include "SaveData/SaveGameSerialization.h"
 #include <imgui.h>
+#include <string>
 
 void Game::GameLayer::Init(Core::EngineContext &ctx) {
     m_Context = &ctx;
@@ -36,8 +37,16 @@ void Game::GameLayer::Init(Core::EngineContext &ctx) {
     }
 
     if (m_Context->saveGameManager && m_Context->projectConfig) {
-        if (const auto savedir = Saves::IO::GenerateSaveDirectory(m_Context->projectConfig->UUID)) {
+        const auto savedir = Saves::IO::GenerateSaveDirectory(m_Context->projectConfig->UUID);
+        if (!savedir) {
+            LOG_ERROR("GameLayer", "Could not determine save directory");
+            return;
+        }
+        try {
             m_Context->saveGameManager->Configure(*savedir);
+        } catch (std::exception &e) {
+            LOG_ERROR("GameLayer", std::string("Could not init savegames: ", e.what()));
+            return;
         }
     }
 
