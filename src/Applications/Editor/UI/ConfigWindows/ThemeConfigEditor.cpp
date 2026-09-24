@@ -101,24 +101,22 @@ namespace Editor::UI {
             for (const auto &info : Theme::kStyleVarTable) {
                 ImGui::PushID(info.id);
 
-                std::visit(
-                        [&](auto memberPtr) {
-                            using MemberT = std::decay_t<decltype(memberPtr)>;
-                            if constexpr (std::is_same_v<MemberT, Theme::FloatMember>) {
-                                float value = m_LocalTheme.GetFloat(info.id).value_or(ImGui::GetStyle().*memberPtr);
-                                if (ImGui::DragFloat(info.name.data(), &value, 0.1f, 0.0f, 32.0f)) {
-                                    m_LocalTheme.SetFloat(info.id, value);
-                                    Apply(m_LocalTheme);
-                                }
-                            } else {
-                                ImVec2 value = m_LocalTheme.GetVec2(info.id).value_or(ImGui::GetStyle().*memberPtr);
-                                if (ImGui::DragFloat2(info.name.data(), &value.x, 0.1f, 0.0f, 64.0f)) {
-                                    m_LocalTheme.SetVec2(info.id, value);
-                                    Apply(m_LocalTheme);
-                                }
-                            }
-                        },
-                        info.member);
+                std::visit([&](auto memberPtr) {
+                    using MemberT = std::decay_t<decltype(memberPtr)>;
+                    if constexpr (std::is_same_v<MemberT, Theme::FloatMember>) {
+                        float value = m_LocalTheme.GetFloat(info.id).value_or(ImGui::GetStyle().*memberPtr);
+                        if (ImGui::DragFloat(info.name.data(), &value, 0.1f, 0.0f, 32.0f)) {
+                            m_LocalTheme.SetFloat(info.id, value);
+                            Apply(m_LocalTheme);
+                        }
+                    } else {
+                        ImVec2 value = m_LocalTheme.GetVec2(info.id).value_or(ImGui::GetStyle().*memberPtr);
+                        if (ImGui::DragFloat2(info.name.data(), &value.x, 0.1f, 0.0f, 64.0f)) {
+                            m_LocalTheme.SetVec2(info.id, value);
+                            Apply(m_LocalTheme);
+                        }
+                    }
+                }, info.member);
 
                 ImGui::PopID();
             }

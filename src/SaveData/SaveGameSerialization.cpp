@@ -26,19 +26,17 @@ namespace {
     using json = nlohmann::json;
 
     json EncodeValue(const Saves::SaveValue &value) {
-        return std::visit(
-                [](const auto &stored) -> json {
-                    using ValueType = std::decay_t<decltype(stored)>;
+        return std::visit([](const auto &stored) -> json {
+            using ValueType = std::decay_t<decltype(stored)>;
 
-                    if constexpr (std::is_same_v<ValueType, double>) {
-                        if (!std::isfinite(stored)) {
-                            throw std::runtime_error("Cannot serialize a non-finite number");
-                        }
-                    }
+            if constexpr (std::is_same_v<ValueType, double>) {
+                if (!std::isfinite(stored)) {
+                    throw std::runtime_error("Cannot serialize a non-finite number");
+                }
+            }
 
-                    return stored;
-                },
-                value);
+            return stored;
+        }, value);
     }
 
     std::optional<Saves::SaveValue> DecodeValue(const json &value) {
@@ -122,7 +120,11 @@ namespace {
         }
 
         return {
-                {"version", data.version}, {"name", data.displayName}, {"created_at", data.createdAtUtc}, {"updated_at", data.updatedAtUtc}, {"values", std::move(values)},
+                {"version", data.version},
+                {"name", data.displayName},
+                {"created_at", data.createdAtUtc},
+                {"updated_at", data.updatedAtUtc},
+                {"values", std::move(values)},
         };
     }
 

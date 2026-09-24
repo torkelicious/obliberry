@@ -102,8 +102,8 @@ namespace UI {
 
     void UIRenderer::SubmitRect(const glm::vec2 pos, const glm::vec2 size, const glm::vec4 color) { SubmitQuad(pos, size, {0.0f, 0.0f}, {1.0f, 1.0f}, Rendering::Texture::White(), color); }
 
-    void UIRenderer::SubmitSDFQuad(const glm::vec2 pos, const glm::vec2 size, const glm::vec2 uvMin, const glm::vec2 uvMax, const Rendering::Texture *texture, const glm::vec4 color, const float sdfScale,
-                                   const float sdfSpread) {
+    void UIRenderer::SubmitSDFQuad(
+            const glm::vec2 pos, const glm::vec2 size, const glm::vec2 uvMin, const glm::vec2 uvMax, const Rendering::Texture *texture, const glm::vec4 color, const float sdfScale, const float sdfSpread) {
         if (!HasQuadCapacity())
             return;
 
@@ -174,11 +174,11 @@ namespace UI {
             }
         }
         m_Batches.push_back({.texture = currentTex,
-                             .indexOffset = batchStart * 6,
-                             .indexCount = (static_cast<uint32_t>(texs.size()) - batchStart) * 6,
-                             .shader = currentShader,
-                             .sdfScale = currentSDFScale,
-                             .sdfSpread = currentSDFSpread});
+                .indexOffset = batchStart * 6,
+                .indexCount = (static_cast<uint32_t>(texs.size()) - batchStart) * 6,
+                .shader = currentShader,
+                .sdfScale = currentSDFScale,
+                .sdfSpread = currentSDFSpread});
 
         // Upload to GPU
         m_VBO->SetDataOrphaned(verts.data(), static_cast<unsigned int>(verts.size() * sizeof(UIVertex)));

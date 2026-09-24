@@ -220,9 +220,9 @@ namespace Editor::UI {
 
     template <typename T>
     void ProjectBrowserPanel::DrawResourceSection(Core::ResourceManager &resources, const std::vector<std::pair<std::string, std::shared_ptr<T>>> &allItems, const AssetType assetType, const char *childId,
-                                                  const float childHeight, const char *emptyText, const char *typeName, std::type_identity_t<std::function<void(const std::shared_ptr<T> &)>> renderThumbnail,
-                                                  const std::type_identity_t<std::function<void(const std::string &, Core::ResourceManager &)>> &renderExtraButtons,
-                                                  std::type_identity_t<std::function<void(const std::string &, const std::shared_ptr<T> &, Core::ResourceManager &)>> renderTooltip) {
+            const float childHeight, const char *emptyText, const char *typeName, std::type_identity_t<std::function<void(const std::shared_ptr<T> &)>> renderThumbnail,
+            const std::type_identity_t<std::function<void(const std::string &, Core::ResourceManager &)>> &renderExtraButtons,
+            std::type_identity_t<std::function<void(const std::string &, const std::shared_ptr<T> &, Core::ResourceManager &)>> renderTooltip) {
         (void)typeName;
 
         if (ImGui::BeginChild(childId, ImVec2(0, childHeight), true)) {
@@ -314,19 +314,16 @@ namespace Editor::UI {
                 m_SearchBuffer[0] = '\0';
         }
 
-        DrawResourceSection(
-                resources, allTextures, AssetType::Texture, "##texList", 130.0f, "No textures imported.", "texture",
-                [](const std::shared_ptr<Rendering::Texture> &texture) {
-                    if (texture) {
-                        Core::Utils::UI::ImGuiImageFlipped(texture->GetID(), ImVec2(64, 64));
-                    } else {
-                        ImGui::Button("T", ImVec2(64, 64));
-                    }
-                },
-                [this](const std::string &id, Core::ResourceManager &) {
-                    if (ImGui::SmallButton("Replace"))
-                        ReplaceTexture(id);
-                });
+        DrawResourceSection(resources, allTextures, AssetType::Texture, "##texList", 130.0f, "No textures imported.", "texture", [](const std::shared_ptr<Rendering::Texture> &texture) {
+            if (texture) {
+                Core::Utils::UI::ImGuiImageFlipped(texture->GetID(), ImVec2(64, 64));
+            } else {
+                ImGui::Button("T", ImVec2(64, 64));
+            }
+        }, [this](const std::string &id, Core::ResourceManager &) {
+            if (ImGui::SmallButton("Replace"))
+                ReplaceTexture(id);
+        });
 
         ImGui::Spacing();
 
@@ -337,12 +334,11 @@ namespace Editor::UI {
     void ProjectBrowserPanel::DrawShaderSection(Core::ResourceManager &resources) {
         const auto allShaders = GetCatalogItems<Rendering::Shader>("shaders");
 
-        DrawResourceSection(
-                resources, allShaders, AssetType::Shader, "##shaderList", 130.0f, "No shaders imported.", "shader", [](const std::shared_ptr<Rendering::Shader> &) { ImGui::Button("S", ImVec2(64, 64)); },
+        DrawResourceSection(resources, allShaders, AssetType::Shader, "##shaderList", 130.0f, "No shaders imported.", "shader", [](const std::shared_ptr<Rendering::Shader> &) { ImGui::Button("S", ImVec2(64, 64)); },
                 [this](const std::string &id, Core::ResourceManager &) {
-                    if (ImGui::SmallButton("Replace"))
-                        ReplaceShader(id);
-                });
+            if (ImGui::SmallButton("Replace"))
+                ReplaceShader(id);
+        });
 
         ImGui::Spacing();
 
@@ -353,8 +349,7 @@ namespace Editor::UI {
     void ProjectBrowserPanel::DrawMeshSection(Core::ResourceManager &resources) {
         const auto allMeshes = GetCatalogItems<Rendering::Mesh>("meshes");
 
-        DrawResourceSection(
-                resources, allMeshes, AssetType::Mesh, "##meshList", 100.0f, "No meshes registered.", "mesh", [](const std::shared_ptr<Rendering::Mesh> &) { ImGui::Button("M", ImVec2(64, 64)); },
+        DrawResourceSection(resources, allMeshes, AssetType::Mesh, "##meshList", 100.0f, "No meshes registered.", "mesh", [](const std::shared_ptr<Rendering::Mesh> &) { ImGui::Button("M", ImVec2(64, 64)); },
                 [](const std::string &, Core::ResourceManager &) {});
 
         ImGui::Spacing();
@@ -382,28 +377,24 @@ namespace Editor::UI {
     void ProjectBrowserPanel::DrawMaterialSection(Core::ResourceManager &resources) {
         const auto allMaterials = GetCatalogItems<Rendering::Material>("materials");
 
-        DrawResourceSection(
-                resources, allMaterials, AssetType::Material, "##matList", 100.0f, "No materials registered.", "material",
-                [](const std::shared_ptr<Rendering::Material> &material) {
-                    if (material && material->texture) {
-                        Core::Utils::UI::ImGuiImageFlipped(material->texture->GetID(), ImVec2(64, 64));
-                    } else {
-                        ImGui::Button("M", ImVec2(64, 64));
-                    }
-                },
-                [](const std::string &, Core::ResourceManager &) {},
-                [](const std::string &id, const std::shared_ptr<Rendering::Material> &material, Core::ResourceManager &resourceManager) {
-                    if (!material) {
-                        ImGui::SetTooltip("%s\nNot currently loaded", id.c_str());
-                        return;
-                    }
+        DrawResourceSection(resources, allMaterials, AssetType::Material, "##matList", 100.0f, "No materials registered.", "material", [](const std::shared_ptr<Rendering::Material> &material) {
+            if (material && material->texture) {
+                Core::Utils::UI::ImGuiImageFlipped(material->texture->GetID(), ImVec2(64, 64));
+            } else {
+                ImGui::Button("M", ImVec2(64, 64));
+            }
+        }, [](const std::string &, Core::ResourceManager &) {}, [](const std::string &id, const std::shared_ptr<Rendering::Material> &material, Core::ResourceManager &resourceManager) {
+            if (!material) {
+                ImGui::SetTooltip("%s\nNot currently loaded", id.c_str());
+                return;
+            }
 
-                    const std::string shaderId = material->shader ? resourceManager.GetKey(material->shader) : "none";
+            const std::string shaderId = material->shader ? resourceManager.GetKey(material->shader) : "none";
 
-                    const std::string textureId = material->texture ? resourceManager.GetKey(material->texture) : "none";
+            const std::string textureId = material->texture ? resourceManager.GetKey(material->texture) : "none";
 
-                    ImGui::SetTooltip("Shader: %s\nTexture: %s", shaderId.c_str(), textureId.c_str());
-                });
+            ImGui::SetTooltip("Shader: %s\nTexture: %s", shaderId.c_str(), textureId.c_str());
+        });
 
         ImGui::Spacing();
         ImGui::SeparatorText("Create Material");
@@ -420,18 +411,15 @@ namespace Editor::UI {
         if (m_SelectedMaterialShaderIdx >= static_cast<int>(shaderKeys.size())) {
             m_SelectedMaterialShaderIdx = 0;
         }
-        ImGui::Combo(
-                "Shader##createMat", &m_SelectedMaterialShaderIdx,
-                [](void *data, const int index) -> const char * {
-                    const auto &keys = *static_cast<std::vector<std::string> *>(data);
+        ImGui::Combo("Shader##createMat", &m_SelectedMaterialShaderIdx, [](void *data, const int index) -> const char * {
+            const auto &keys = *static_cast<std::vector<std::string> *>(data);
 
-                    if (index < 0 || index >= static_cast<int>(keys.size())) {
-                        return "";
-                    }
+            if (index < 0 || index >= static_cast<int>(keys.size())) {
+                return "";
+            }
 
-                    return keys[index].c_str();
-                },
-                &shaderKeys, static_cast<int>(shaderKeys.size()));
+            return keys[index].c_str();
+        }, &shaderKeys, static_cast<int>(shaderKeys.size()));
 
         // Texture
         const auto allTextures = GetCatalogItems<Rendering::Texture>("textures");
@@ -446,18 +434,15 @@ namespace Editor::UI {
         if (m_SelectedMaterialTextureIdx >= static_cast<int>(textureKeys.size())) {
             m_SelectedMaterialTextureIdx = 0;
         }
-        ImGui::Combo(
-                "Texture##createMat", &m_SelectedMaterialTextureIdx,
-                [](void *data, const int index) -> const char * {
-                    const auto &keys = *static_cast<std::vector<std::string> *>(data);
+        ImGui::Combo("Texture##createMat", &m_SelectedMaterialTextureIdx, [](void *data, const int index) -> const char * {
+            const auto &keys = *static_cast<std::vector<std::string> *>(data);
 
-                    if (index < 0 || index >= static_cast<int>(keys.size())) {
-                        return "";
-                    }
+            if (index < 0 || index >= static_cast<int>(keys.size())) {
+                return "";
+            }
 
-                    return keys[index].c_str();
-                },
-                &textureKeys, static_cast<int>(textureKeys.size()));
+            return keys[index].c_str();
+        }, &textureKeys, static_cast<int>(textureKeys.size()));
 
         ImGui::ColorEdit4("Color##createMat", &m_MaterialColor.x, ImGuiColorEditFlags_NoInputs);
         ImGui::InputText("ID##mat", m_MaterialNameBuffer, sizeof(m_MaterialNameBuffer));
@@ -496,28 +481,24 @@ namespace Editor::UI {
     void ProjectBrowserPanel::DrawFontSection(Core::ResourceManager &resources) {
         const auto allFonts = GetCatalogItems<::UI::Font>("fonts");
 
-        DrawResourceSection(
-                resources, allFonts, AssetType::Font, "##fontList", 100.0f, "No fonts imported.", "font",
-                [](const std::shared_ptr<::UI::Font> &font) {
-                    ImGui::Text("%s", font ? "F" : "?");
-                    if (font) {
-                        ImGui::SameLine();
-                        ImGui::TextDisabled("%upx%s", font->GetFontSize(), font->IsSDF() ? " SDF" : "");
-                    }
-                },
-                [this](const std::string &id, Core::ResourceManager &) {
-                    if (ImGui::SmallButton("Replace"))
-                        ReplaceFont(id);
-                },
-                [](const std::string &key, const std::shared_ptr<::UI::Font> &font, Core::ResourceManager &) {
-                    if (font) {
-                        ImGui::SetTooltip("%s\nSize: %u\nSDF: %s"
-                                          "\nGlyphs: loaded",
-                                          key.c_str(), font->GetFontSize(), font->IsSDF() ? "yes" : "no");
-                    } else {
-                        ImGui::SetTooltip("%s\nNot currently loaded", key.c_str());
-                    }
-                });
+        DrawResourceSection(resources, allFonts, AssetType::Font, "##fontList", 100.0f, "No fonts imported.", "font", [](const std::shared_ptr<::UI::Font> &font) {
+            ImGui::Text("%s", font ? "F" : "?");
+            if (font) {
+                ImGui::SameLine();
+                ImGui::TextDisabled("%upx%s", font->GetFontSize(), font->IsSDF() ? " SDF" : "");
+            }
+        }, [this](const std::string &id, Core::ResourceManager &) {
+            if (ImGui::SmallButton("Replace"))
+                ReplaceFont(id);
+        }, [](const std::string &key, const std::shared_ptr<::UI::Font> &font, Core::ResourceManager &) {
+            if (font) {
+                ImGui::SetTooltip("%s\nSize: %u\nSDF: %s"
+                                  "\nGlyphs: loaded",
+                        key.c_str(), font->GetFontSize(), font->IsSDF() ? "yes" : "no");
+            } else {
+                ImGui::SetTooltip("%s\nNot currently loaded", key.c_str());
+            }
+        });
 
         ImGui::Spacing();
         ImGui::SeparatorText("Import Font");
@@ -1021,30 +1002,27 @@ void Editor::UI::ProjectBrowserPanel::DrawAnimationSelection() {
 
     const auto animations = GetCatalogItems<Animation::SpriteAnimationSet>("animation_sets");
 
-    DrawResourceSection(
-            resources, animations, AssetType::Animation, "##animationList", 130.0f, "No animations imported.", "animation",
-            [](const std::shared_ptr<Animation::SpriteAnimationSet> &animation) {
-                if (animation && animation->sheet && animation->sheet->texture) {
-                    Core::Utils::UI::ImGuiImageFlipped(animation->sheet->texture->GetID(), ImVec2(64, 64));
-                } else {
-                    ImGui::Button("animation", ImVec2(64, 64));
+    DrawResourceSection(resources, animations, AssetType::Animation, "##animationList", 130.0f, "No animations imported.", "animation", [](const std::shared_ptr<Animation::SpriteAnimationSet> &animation) {
+        if (animation && animation->sheet && animation->sheet->texture) {
+            Core::Utils::UI::ImGuiImageFlipped(animation->sheet->texture->GetID(), ImVec2(64, 64));
+        } else {
+            ImGui::Button("animation", ImVec2(64, 64));
+        }
+    }, [this](const std::string &key, Core::ResourceManager &resourceManager) {
+        ImGui::BeginDisabled(!OnEditAnimation || !m_SceneContext);
+        if (ImGui::SmallButton("Edit")) {
+            IO::SceneAssetLoader::SceneAssetScope scope;
+            if (IO::SceneAssetLoader::Acquire(IO::SceneAssetLoader::AssetKind::AnimationSet, key, scope)) {
+                const auto animation = resourceManager.Get<Animation::SpriteAnimationSet>(key);
+                if (animation && OnEditAnimation) {
+                    m_SceneContext->AddAssetScope(std::move(scope));
+                    OnEditAnimation(key, animation);
                 }
-            },
-            [this](const std::string &key, Core::ResourceManager &resourceManager) {
-                ImGui::BeginDisabled(!OnEditAnimation || !m_SceneContext);
-                if (ImGui::SmallButton("Edit")) {
-                    IO::SceneAssetLoader::SceneAssetScope scope;
-                    if (IO::SceneAssetLoader::Acquire(IO::SceneAssetLoader::AssetKind::AnimationSet, key, scope)) {
-                        const auto animation = resourceManager.Get<Animation::SpriteAnimationSet>(key);
-                        if (animation && OnEditAnimation) {
-                            m_SceneContext->AddAssetScope(std::move(scope));
-                            OnEditAnimation(key, animation);
-                        }
-                    }
-                }
+            }
+        }
 
-                ImGui::EndDisabled();
-            });
+        ImGui::EndDisabled();
+    });
 
     if (ImGui::Button("Import Animation"))
         ImportAnimation();

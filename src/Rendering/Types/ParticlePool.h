@@ -74,7 +74,7 @@ namespace Rendering {
         // spawn
 
         int Spawn(const glm::vec3 position, const glm::vec3 velocity, const glm::vec3 grav, const float sizeS, const float sizeE, const glm::vec4 colorS, const glm::vec4 colorE, const float life,
-                  const float rotSpeed = 0.0f) {
+                const float rotSpeed = 0.0f) {
             if (m_AliveCount >= m_Config.maxParticles)
                 return -1;
 

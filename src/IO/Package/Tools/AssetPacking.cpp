@@ -76,8 +76,8 @@ namespace IO::Package::Tools {
 
     // NOLINTEND (*-pro-type-static-cast-downcast)
 
-    bool pack_one_file(const std::filesystem::path &filepath, const std::filesystem::path &project_dir, const std::filesystem::path &script_root, ContainerWriter &writer, DependencyGraph &dep_graph,
-                       const PackOptions &opts) {
+    bool pack_one_file(
+            const std::filesystem::path &filepath, const std::filesystem::path &project_dir, const std::filesystem::path &script_root, ContainerWriter &writer, DependencyGraph &dep_graph, const PackOptions &opts) {
         std::string canonical_path = std::filesystem::relative(filepath, project_dir).generic_string();
         std::string ext = lower_ext(filepath);
 

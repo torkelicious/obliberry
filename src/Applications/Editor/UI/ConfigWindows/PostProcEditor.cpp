@@ -186,41 +186,39 @@ namespace Editor::UI {
             const std::string &key = entry->first;
             auto &value = entry->second;
 
-            std::visit(
-                    [&]<typename T0>(T0 &val) {
-                        using T = std::decay_t<T0>;
+            std::visit([&]<typename T0>(T0 &val) {
+                using T = std::decay_t<T0>;
 
-                        bool edited = false;
-                        if constexpr (std::is_same_v<T, float>) {
-                            edited = DragFloatClamped(key.c_str(), &val);
-                        } else if constexpr (std::is_same_v<T, int>) {
-                            edited = DragIntClamped(key.c_str(), &val);
-                        } else if constexpr (std::is_same_v<T, glm::vec2>) {
-                            edited = DragFloatNClamped(key.c_str(), &val.x, 2);
-                        } else if constexpr (std::is_same_v<T, glm::vec3>) {
-                            if (key.find("Wheel") != std::string::npos)
-                                edited = ImGui::ColorEdit3(key.c_str(), &val.x, ImGuiColorEditFlags_PickerHueWheel);
-                            else if (key.find("Color") != std::string::npos)
-                                edited = ImGui::ColorEdit3(key.c_str(), &val.x);
-                            else
-                                edited = DragFloatNClamped(key.c_str(), &val.x, 3);
-                        } else if constexpr (std::is_same_v<T, glm::vec4>) {
-                            if (key.find("Wheel") != std::string::npos)
-                                edited = ImGui::ColorEdit4(key.c_str(), &val.x, ImGuiColorEditFlags_PickerHueWheel);
-                            else if (key.find("Color") != std::string::npos)
-                                edited = ImGui::ColorEdit4(key.c_str(), &val.x);
-                            else
-                                edited = DragFloatNClamped(key.c_str(), &val.x, 4);
-                        }
+                bool edited = false;
+                if constexpr (std::is_same_v<T, float>) {
+                    edited = DragFloatClamped(key.c_str(), &val);
+                } else if constexpr (std::is_same_v<T, int>) {
+                    edited = DragIntClamped(key.c_str(), &val);
+                } else if constexpr (std::is_same_v<T, glm::vec2>) {
+                    edited = DragFloatNClamped(key.c_str(), &val.x, 2);
+                } else if constexpr (std::is_same_v<T, glm::vec3>) {
+                    if (key.find("Wheel") != std::string::npos)
+                        edited = ImGui::ColorEdit3(key.c_str(), &val.x, ImGuiColorEditFlags_PickerHueWheel);
+                    else if (key.find("Color") != std::string::npos)
+                        edited = ImGui::ColorEdit3(key.c_str(), &val.x);
+                    else
+                        edited = DragFloatNClamped(key.c_str(), &val.x, 3);
+                } else if constexpr (std::is_same_v<T, glm::vec4>) {
+                    if (key.find("Wheel") != std::string::npos)
+                        edited = ImGui::ColorEdit4(key.c_str(), &val.x, ImGuiColorEditFlags_PickerHueWheel);
+                    else if (key.find("Color") != std::string::npos)
+                        edited = ImGui::ColorEdit4(key.c_str(), &val.x);
+                    else
+                        edited = DragFloatNClamped(key.c_str(), &val.x, 4);
+                }
 
 
-                        if (edited)
-                            m_Dirty = true;
+                if (edited)
+                    m_Dirty = true;
 
-                        if (ImGui::IsItemDeactivatedAfterEdit())
-                            m_CommitPending = true;
-                    },
-                    value);
+                if (ImGui::IsItemDeactivatedAfterEdit())
+                    m_CommitPending = true;
+            }, value);
         }
     }
 

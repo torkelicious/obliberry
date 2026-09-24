@@ -129,66 +129,73 @@ void Editor::UI::InspectorPanel::OnImGuiRender() {
                 };
                 const CompEntry entries[] = {
                         {.name = "Transform",
-                         .has = m_SelectedEntity.HasComponent<ECS::Components::TransformComponent>(),
-                         .add = [this,
-                                 entId] { m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::TransformComponent>>(entId, ECS::Components::TransformComponent{}), *m_EngineContext); }},
+                                .has = m_SelectedEntity.HasComponent<ECS::Components::TransformComponent>(),
+                                .add =
+                                        [this, entId] {
+                    m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::TransformComponent>>(entId, ECS::Components::TransformComponent{}), *m_EngineContext);
+                }},
                         {.name = "Point Light",
-                         .has = m_SelectedEntity.HasComponent<ECS::Components::PointLightComponent>(),
-                         .add =
-                                 [this, entId] {
-                                     m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::PointLightComponent>>(entId, ECS::Components::PointLightComponent{}), *m_EngineContext);
-                                 }},
+                                .has = m_SelectedEntity.HasComponent<ECS::Components::PointLightComponent>(),
+                                .add =
+                                        [this, entId] {
+                    m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::PointLightComponent>>(entId, ECS::Components::PointLightComponent{}), *m_EngineContext);
+                }},
                         {.name = "Movement",
-                         .has = m_SelectedEntity.HasComponent<ECS::Components::MovementComponent>(),
-                         .add = [this,
-                                 entId] { m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::MovementComponent>>(entId, ECS::Components::MovementComponent{}), *m_EngineContext); }},
+                                .has = m_SelectedEntity.HasComponent<ECS::Components::MovementComponent>(),
+                                .add =
+                                        [this, entId] {
+                    m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::MovementComponent>>(entId, ECS::Components::MovementComponent{}), *m_EngineContext);
+                }},
                         {.name = "Mesh",
-                         .has = m_SelectedEntity.HasComponent<ECS::Components::MeshComponent>(),
-                         .add = [this, entId] { m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::MeshComponent>>(entId, ECS::Components::MeshComponent{}), *m_EngineContext); }},
+                                .has = m_SelectedEntity.HasComponent<ECS::Components::MeshComponent>(),
+                                .add =
+                                        [this, entId] {
+                    m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::MeshComponent>>(entId, ECS::Components::MeshComponent{}), *m_EngineContext);
+                }},
                         {.name = "Material",
-                         .has = m_SelectedEntity.HasComponent<ECS::Components::MaterialComponent>(),
-                         .add = [this,
-                                 entId] { m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::MaterialComponent>>(entId, ECS::Components::MaterialComponent{}), *m_EngineContext); }},
+                                .has = m_SelectedEntity.HasComponent<ECS::Components::MaterialComponent>(),
+                                .add =
+                                        [this, entId] {
+                    m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::MaterialComponent>>(entId, ECS::Components::MaterialComponent{}), *m_EngineContext);
+                }},
                         {.name = "Directional Texture",
-                         .has = m_SelectedEntity.HasComponent<ECS::Components::DirectionalTextureComponent>(),
-                         .add =
-                                 [this, entId] {
-                                     m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::DirectionalTextureComponent>>(entId, ECS::Components::DirectionalTextureComponent{}),
-                                                            *m_EngineContext);
-                                 }},
+                                .has = m_SelectedEntity.HasComponent<ECS::Components::DirectionalTextureComponent>(),
+                                .add =
+                                        [this, entId] {
+                    m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::DirectionalTextureComponent>>(entId, ECS::Components::DirectionalTextureComponent{}), *m_EngineContext);
+                }},
                         {.name = "Particle Emitter",
-                         .has = m_SelectedEntity.HasComponent<ECS::Components::ParticleEmitterComponent>(),
-                         .add =
-                                 [this, entId] {
-                                     if (!m_SelectedEntity.HasComponent<ECS::Components::TransformComponent>())
-                                         m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::TransformComponent>>(entId, ECS::Components::TransformComponent{}), *m_EngineContext);
-                                     m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::ParticleEmitterComponent>>(entId, ECS::Components::ParticleEmitterComponent{}),
-                                                            *m_EngineContext);
-                                 }},
+                                .has = m_SelectedEntity.HasComponent<ECS::Components::ParticleEmitterComponent>(),
+                                .add =
+                                        [this, entId] {
+                    if (!m_SelectedEntity.HasComponent<ECS::Components::TransformComponent>())
+                        m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::TransformComponent>>(entId, ECS::Components::TransformComponent{}), *m_EngineContext);
+                    m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::ParticleEmitterComponent>>(entId, ECS::Components::ParticleEmitterComponent{}), *m_EngineContext);
+                }},
                         {.name = "Scripts", .has = m_SelectedEntity.HasComponent<ECS::Components::ScriptComponent>(), .add = [this] { m_SelectedEntity.AddComponent<ECS::Components::ScriptComponent>(); }},
                         {.name = "ObSL Custom Data",
-                         .has = m_SelectedEntity.HasComponent<ECS::Components::CustomDataComponent>(),
-                         .add =
-                                 [this, entId] {
-                                     m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::CustomDataComponent>>(entId, ECS::Components::CustomDataComponent{}), *m_EngineContext);
-                                 }},
+                                .has = m_SelectedEntity.HasComponent<ECS::Components::CustomDataComponent>(),
+                                .add =
+                                        [this, entId] {
+                    m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::CustomDataComponent>>(entId, ECS::Components::CustomDataComponent{}), *m_EngineContext);
+                }},
                         {.name = "Collider",
-                         .has = m_SelectedEntity.HasComponent<ECS::Components::ColliderComponent>(),
-                         .add =
-                                 [this, entId] {
-                                     if (!m_SelectedEntity.HasComponent<ECS::Components::TransformComponent>()) {
-                                         m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::TransformComponent>>(entId, ECS::Components::TransformComponent{}), *m_EngineContext);
-                                     }
+                                .has = m_SelectedEntity.HasComponent<ECS::Components::ColliderComponent>(),
+                                .add =
+                                        [this, entId] {
+                    if (!m_SelectedEntity.HasComponent<ECS::Components::TransformComponent>()) {
+                        m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::TransformComponent>>(entId, ECS::Components::TransformComponent{}), *m_EngineContext);
+                    }
 
-                                     m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::ColliderComponent>>(entId, ECS::Components::ColliderComponent{}), *m_EngineContext);
-                                 }},
+                    m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::ColliderComponent>>(entId, ECS::Components::ColliderComponent{}), *m_EngineContext);
+                }},
 
                         {.name = "Sprite Sheet",
-                         .has = m_SelectedEntity.HasComponent<ECS::Components::SpriteSheetComponent>(),
-                         .add =
-                                 [this, entId] {
-                                     m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::SpriteSheetComponent>>(entId, ECS::Components::SpriteSheetComponent{}), *m_EngineContext);
-                                 }},
+                                .has = m_SelectedEntity.HasComponent<ECS::Components::SpriteSheetComponent>(),
+                                .add =
+                                        [this, entId] {
+                    m_UndoManager->Execute(std::make_unique<Commands::AddComponentCommand<ECS::Components::SpriteSheetComponent>>(entId, ECS::Components::SpriteSheetComponent{}), *m_EngineContext);
+                }},
                 };
 
                 ImGui::TextDisabled("Available Components");

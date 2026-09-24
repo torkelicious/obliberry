@@ -154,20 +154,20 @@ namespace {
 namespace Editor::UI {
 
     bool TextureCombo(const char *label, Core::EngineContext *context, std::shared_ptr<Rendering::Texture> &current) {
-        return AssetComboImpl(label, context, current, "textures", IO::SceneAssetLoader::AssetKind::Texture,
-                              [](const std::shared_ptr<Rendering::Texture> &texture) { ImGui::TextDisabled("%s", texture->GetPath().c_str()); });
+        return AssetComboImpl(
+                label, context, current, "textures", IO::SceneAssetLoader::AssetKind::Texture, [](const std::shared_ptr<Rendering::Texture> &texture) { ImGui::TextDisabled("%s", texture->GetPath().c_str()); });
     }
 
     bool ShaderCombo(const char *label, Core::EngineContext *context, std::shared_ptr<Rendering::Shader> &current) {
         return AssetComboImpl(label, context, current, "shaders", IO::SceneAssetLoader::AssetKind::Shader, [](const std::shared_ptr<Rendering::Shader> &shader) {
             ImGui::TextDisabled("Vert: %s  Frag: %s", shader->GetVertexPath().empty() ? shader->GetDebugName().c_str() : shader->GetVertexPath().c_str(),
-                                shader->GetFragmentPath().empty() ? shader->GetDebugName().c_str() : shader->GetFragmentPath().c_str());
+                    shader->GetFragmentPath().empty() ? shader->GetDebugName().c_str() : shader->GetFragmentPath().c_str());
         });
     }
 
     bool MeshCombo(const char *label, Core::EngineContext *context, std::shared_ptr<Rendering::Mesh> &current) {
         return AssetComboImpl(label, context, current, "meshes", IO::SceneAssetLoader::AssetKind::Mesh,
-                              [](const std::shared_ptr<Rendering::Mesh> &mesh) { ImGui::TextDisabled("%s, %u indices", mesh->GetFactoryId().c_str(), mesh->GetIndexCount()); });
+                [](const std::shared_ptr<Rendering::Mesh> &mesh) { ImGui::TextDisabled("%s, %u indices", mesh->GetFactoryId().c_str(), mesh->GetIndexCount()); });
     }
 
     bool MaterialCombo(const char *label, Core::EngineContext *context, std::shared_ptr<Rendering::Material> &current) {
@@ -180,8 +180,8 @@ namespace Editor::UI {
     }
 
     bool FontCombo(const char *label, Core::EngineContext *context, std::shared_ptr<::UI::Font> &current) {
-        const bool changed = AssetComboImpl(label, context, current, "fonts", IO::SceneAssetLoader::AssetKind::Font,
-                                            [](const std::shared_ptr<::UI::Font> &font) { ImGui::TextDisabled("%upx%s", font->GetFontSize(), font->IsSDF() ? " SDF" : ""); });
+        const bool changed = AssetComboImpl(
+                label, context, current, "fonts", IO::SceneAssetLoader::AssetKind::Font, [](const std::shared_ptr<::UI::Font> &font) { ImGui::TextDisabled("%upx%s", font->GetFontSize(), font->IsSDF() ? " SDF" : ""); });
         if (!current) {
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.4f, 0.4f, 1.0f));
             ImGui::TextWrapped("No font selected, text will not render!");
@@ -194,7 +194,7 @@ namespace Editor::UI {
         auto mutableCurrent = std::const_pointer_cast<Animation::SpriteAnimationSet>(current);
 
         const bool changed = AssetComboImpl(label, context, mutableCurrent, "animation_sets", IO::SceneAssetLoader::AssetKind::AnimationSet,
-                                            [](const std::shared_ptr<Animation::SpriteAnimationSet> &animation) { ImGui::TextDisabled("%zu clip(s)", animation->clips.size()); });
+                [](const std::shared_ptr<Animation::SpriteAnimationSet> &animation) { ImGui::TextDisabled("%zu clip(s)", animation->clips.size()); });
 
         if (changed) {
             current = std::move(mutableCurrent);

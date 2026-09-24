@@ -19,49 +19,49 @@ namespace ECS::Systems::RenderSystem {
 
         registry.ForEach<Components::MeshComponent, Components::MaterialComponent, Components::TransformComponent>(
                 [&](const Entity entity, const Components::MeshComponent *meshComp, const Components::MaterialComponent *matComp, const Components::TransformComponent *transComp) {
-                    if (!meshComp || !meshComp->mesh)
-                        return;
-                    if (!matComp || !matComp->material)
-                        return;
-                    if (!transComp)
-                        return;
+            if (!meshComp || !meshComp->mesh)
+                return;
+            if (!matComp || !matComp->material)
+                return;
+            if (!transComp)
+                return;
 
-                    const glm::vec3 &pos = transComp->worldTransform.GetPosition();
-                    const glm::vec3 &scale = transComp->worldTransform.GetScale();
+            const glm::vec3 &pos = transComp->worldTransform.GetPosition();
+            const glm::vec3 &scale = transComp->worldTransform.GetScale();
 
-                    const float meshRadius = meshComp->mesh->GetBoundingRadius();
-                    const float maxScale = std::max({scale.x, scale.y, scale.z, 1.0f});
+            const float meshRadius = meshComp->mesh->GetBoundingRadius();
+            const float maxScale = std::max({scale.x, scale.y, scale.z, 1.0f});
 
-                    if (const float worldRadius = meshRadius * maxScale; !frustum3D.IntersectsSphere(pos, worldRadius)) {
-                        return;
-                    }
+            if (const float worldRadius = meshRadius * maxScale; !frustum3D.IntersectsSphere(pos, worldRadius)) {
+                return;
+            }
 
-                    const Rendering::Texture *textureOverride = nullptr;
-                    glm::vec4 uvRect{0.0f, 0.0f, 1.0f, 1.0f};
+            const Rendering::Texture *textureOverride = nullptr;
+            glm::vec4 uvRect{0.0f, 0.0f, 1.0f, 1.0f};
 
-                    if (const auto *dir = dirPool->Get(static_cast<EntityID>(entity))) {
-                        if (const auto idx = dir->index % dir->textures.size(); dir->textures[idx]) {
-                            renderer.Pin(dir->textures[idx]);
-                            textureOverride = dir->textures[idx].get();
-                        }
-                    }
+            if (const auto *dir = dirPool->Get(static_cast<EntityID>(entity))) {
+                if (const auto idx = dir->index % dir->textures.size(); dir->textures[idx]) {
+                    renderer.Pin(dir->textures[idx]);
+                    textureOverride = dir->textures[idx].get();
+                }
+            }
 
-                    if (const auto *sprite = animPool->Get(static_cast<EntityID>(entity)); sprite && sprite->sheet && sprite->sheet->texture) {
-                        renderer.Pin(sprite->sheet->texture);
-                        textureOverride = sprite->sheet->texture.get();
-                        uvRect = sprite->sheet->GetFrameUV(sprite->frame);
-                    }
+            if (const auto *sprite = animPool->Get(static_cast<EntityID>(entity)); sprite && sprite->sheet && sprite->sheet->texture) {
+                renderer.Pin(sprite->sheet->texture);
+                textureOverride = sprite->sheet->texture.get();
+                uvRect = sprite->sheet->GetFrameUV(sprite->frame);
+            }
 
 
-                    const auto entityInt = static_cast<int32_t>(static_cast<EntityID>(entity));
-                    Rendering::Transform renderTransform = transComp->worldTransform;
-                    if (camera && entity.HasComponent<Components::BillboardTagComponent>()) {
-                        const auto scale = transComp->worldTransform.GetScale();
-                        glm::mat4 billboard = Math::MakeBillboardMatrix(transComp->worldTransform.GetPosition(), scale.x, scale.y, camera->GetRightVector(), camera->GetUpVector());
-                        billboard[2] *= scale.z;
-                        renderTransform.SetCustomMatrix(billboard);
-                    }
-                    renderer.Submit(meshComp->mesh, matComp->material, renderTransform, textureOverride, entityInt, uvRect);
-                });
+            const auto entityInt = static_cast<int32_t>(static_cast<EntityID>(entity));
+            Rendering::Transform renderTransform = transComp->worldTransform;
+            if (camera && entity.HasComponent<Components::BillboardTagComponent>()) {
+                const auto scale = transComp->worldTransform.GetScale();
+                glm::mat4 billboard = Math::MakeBillboardMatrix(transComp->worldTransform.GetPosition(), scale.x, scale.y, camera->GetRightVector(), camera->GetUpVector());
+                billboard[2] *= scale.z;
+                renderTransform.SetCustomMatrix(billboard);
+            }
+            renderer.Submit(meshComp->mesh, matComp->material, renderTransform, textureOverride, entityInt, uvRect);
+        });
     }
 } // namespace ECS::Systems::RenderSystem

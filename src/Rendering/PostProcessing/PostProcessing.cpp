@@ -28,21 +28,19 @@ namespace Rendering::PostProcessing {
     }
 
     static void ApplyUniformValue(Shader &shader, const char *name, const UniformValue &value) {
-        std::visit(
-                [&](const auto &v) {
-                    using T = std::decay_t<decltype(v)>;
-                    if constexpr (std::is_same_v<T, float>)
-                        shader.SetUniform1f(name, v);
-                    else if constexpr (std::is_same_v<T, int>)
-                        shader.SetUniform1i(name, v);
-                    else if constexpr (std::is_same_v<T, glm::vec2>)
-                        shader.SetUniformVec2(name, v);
-                    else if constexpr (std::is_same_v<T, glm::vec3>)
-                        shader.SetUniformVec3(name, v);
-                    else if constexpr (std::is_same_v<T, glm::vec4>)
-                        shader.SetUniformVec4(name, v);
-                },
-                value);
+        std::visit([&](const auto &v) {
+            using T = std::decay_t<decltype(v)>;
+            if constexpr (std::is_same_v<T, float>)
+                shader.SetUniform1f(name, v);
+            else if constexpr (std::is_same_v<T, int>)
+                shader.SetUniform1i(name, v);
+            else if constexpr (std::is_same_v<T, glm::vec2>)
+                shader.SetUniformVec2(name, v);
+            else if constexpr (std::is_same_v<T, glm::vec3>)
+                shader.SetUniformVec3(name, v);
+            else if constexpr (std::is_same_v<T, glm::vec4>)
+                shader.SetUniformVec4(name, v);
+        }, value);
     }
 
     static void ApplyUniformBag(Shader &shader, const std::unordered_map<std::string, UniformValue> &bag) {
@@ -128,21 +126,19 @@ namespace Rendering::PostProcessing {
     // serialization
 
     static nlohmann::json UniformValueToJson(const UniformValue &v) {
-        return std::visit(
-                []<typename T0>(const T0 &val) -> nlohmann::json {
-                    using T = std::decay_t<T0>;
-                    if constexpr (std::is_same_v<T, float>)
-                        return val;
-                    else if constexpr (std::is_same_v<T, int>)
-                        return val;
-                    else if constexpr (std::is_same_v<T, glm::vec2>)
-                        return {val.x, val.y};
-                    else if constexpr (std::is_same_v<T, glm::vec3>)
-                        return {val.x, val.y, val.z};
-                    else
-                        return {val.x, val.y, val.z, val.w};
-                },
-                v);
+        return std::visit([]<typename T0>(const T0 &val) -> nlohmann::json {
+            using T = std::decay_t<T0>;
+            if constexpr (std::is_same_v<T, float>)
+                return val;
+            else if constexpr (std::is_same_v<T, int>)
+                return val;
+            else if constexpr (std::is_same_v<T, glm::vec2>)
+                return {val.x, val.y};
+            else if constexpr (std::is_same_v<T, glm::vec3>)
+                return {val.x, val.y, val.z};
+            else
+                return {val.x, val.y, val.z, val.w};
+        }, v);
     }
 
     static std::optional<UniformValue> UniformValueFromJson(const nlohmann::json &j) {

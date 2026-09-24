@@ -260,7 +260,7 @@ namespace IO {
         std::string decompressed(entry.uncompressed_size, '\0');
 
         if (const int result = LZ4_decompress_safe(src, decompressed.data(), static_cast<int>(entry.compressed_size), static_cast<int>(entry.uncompressed_size));
-            result < 0 || static_cast<uint64_t>(result) != entry.uncompressed_size) {
+                result < 0 || static_cast<uint64_t>(result) != entry.uncompressed_size) {
             return std::nullopt;
         }
 

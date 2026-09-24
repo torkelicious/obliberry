@@ -33,19 +33,19 @@ namespace IO::AnimationIO {
                 return nullptr;
             }
             data = {{"sheet",
-                     {
+                            {
 
-                             {"texture_id", textureID},
+                                    {"texture_id", textureID},
 
-                             {"columns", sheet.columns},
+                                    {"columns", sheet.columns},
 
-                             {"rows", sheet.rows},
+                                    {"rows", sheet.rows},
 
-                             {"column_spacing", sheet.columnSpacing},
+                                    {"column_spacing", sheet.columnSpacing},
 
-                             {"row_spacing", sheet.rowSpacing}
+                                    {"row_spacing", sheet.rowSpacing}
 
-                     }},
+                            }},
                     {"clips", json::object()}};
 
             for (const auto &[name, clip] : animation.clips) {
