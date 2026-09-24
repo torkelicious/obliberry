@@ -4,6 +4,7 @@
 #include "Core/Utils/PathUtils.h"
 #include "Logger/LoggerService.h"
 
+#include <cstddef>
 #include <nlohmann/json.hpp>
 
 #include <cmath>
@@ -15,6 +16,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -177,6 +179,35 @@ namespace {
         return data;
     }
 
+    bool IsHexDigit(const char c) { return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'); }
+
+    // v4 RFC 4122 var
+    bool isValidUUID(const std::string_view uuid) {
+        if (uuid.size() != 36) {
+            return false;
+        }
+
+        for (std::size_t index = 0; index < uuid.size(); ++index) {
+            const bool isHpos = index == 8 || index == 13 || index == 18 || index == 23;
+
+            if (isHpos) {
+                if (uuid[index] != '-') {
+                    return false;
+                }
+            } else if (!IsHexDigit(uuid[index])) {
+                return false;
+            }
+        }
+
+        if (uuid[14] != '4') {
+            return false;
+        }
+
+        const char variant = uuid[19];
+        return variant == '8' || variant == '9' || variant == 'a' || variant == 'A' || variant == 'b' || variant == 'B';
+    }
+
+
 } // namespace
 
 namespace Saves::IO {
@@ -185,7 +216,7 @@ namespace Saves::IO {
     std::optional<std::filesystem::path> GenerateSaveDirectory(const std::string_view uuid) {
         const std::filesystem::path projectId{std::string(uuid)};
 
-        if (projectId.empty() || projectId.is_absolute() || projectId.has_root_path() || projectId.has_parent_path() || projectId != projectId.filename()) {
+        if (projectId.empty() || projectId.is_absolute() || projectId.has_root_path() || projectId.has_parent_path() || projectId != projectId.filename() || !isValidUUID(uuid)) {
             LOG_ERROR(LOG_WHO, "Invalid project UUID");
             return std::nullopt;
         }
