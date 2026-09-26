@@ -1,11 +1,17 @@
 #include "ProjectConfigEditor.h"
 
+#include <cstddef>
+#include <cstdint>
 #include <cstring>
+#include <exception>
 #include <filesystem>
+#include "Config/ProjectConfig.h"
 #include "Core/Project.h"
 #include "Logger/LoggerService.h"
 #include "Applications/Editor/Platform/FileDialogs.h"
 #include "IO/VFS/VFS.h"
+#include "SaveData/SaveGameManager.h"
+#include "SaveData/SaveGameSerialization.h"
 #include "imgui.h"
 #include "Applications/Editor/Commands/EditorCommands.h"
 #include "Core/Utils/UUID.h"
@@ -80,6 +86,34 @@ namespace Editor::UI {
             }
         }
 
+        {
+            ImGui::Checkbox("Enable Saves", &m_LocalConfig.useSaves);
+
+            ImGui::BeginDisabled(!m_LocalConfig.useSaves);
+
+            const char *saveLocationLabels[] = {"Data Home", "Portable"};
+            constexpr std::size_t count = sizeof(saveLocationLabels) / sizeof(saveLocationLabels[0]);
+
+            const std::uint8_t currentIdx = static_cast<std::uint8_t>(m_LocalConfig.saveLocation);
+            const char *preview = (currentIdx < count) ? saveLocationLabels[currentIdx] : "Unknown";
+
+            if (ImGui::BeginCombo("Save Data Location", preview)) {
+                for (std::size_t i = 0; i < count; ++i) {
+                    const bool isSelected = (currentIdx == i);
+
+                    if (ImGui::Selectable(saveLocationLabels[i], isSelected)) {
+                        m_LocalConfig.saveLocation = static_cast<Config::SaveLocation>(i);
+                    }
+
+                    if (isSelected) {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+                ImGui::EndCombo();
+            }
+            ImGui::EndDisabled();
+        }
+
         ImGui::SeparatorText("");
 
         // buttons
@@ -118,6 +152,21 @@ namespace Editor::UI {
         project->GetConfig() = m_LocalConfig;
         if (project->Save()) {
             project->ClearUnsavedChanges();
+
+            if (m_Context->saveGameManager) {
+                m_Context->saveGameManager->Reset();
+
+                if (m_LocalConfig.useSaves) {
+                    const auto savedir = Saves::IO::GenerateSaveDirectory(m_LocalConfig.UUID, m_LocalConfig.saveLocation);
+                    if (savedir) {
+                        try {
+                            m_Context->saveGameManager->Configure(*savedir);
+                        } catch (std::exception &e) {
+                            LOG_ERROR(LOG_WHO, std::string("Could not configure savegames") + e.what());
+                        }
+                    }
+                }
+            }
             LOG_INFO(LOG_WHO, "Project properties saved");
         } else {
             LOG_ERROR(LOG_WHO, "Failed to save project properties");

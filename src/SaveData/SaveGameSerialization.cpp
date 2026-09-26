@@ -1,5 +1,6 @@
 #include "SaveGameSerialization.h"
 
+#include "Config/ProjectConfig.h"
 #include "Core/Utils/OSFileUtils.h"
 #include "Core/Utils/PathUtils.h"
 #include "Logger/LoggerService.h"
@@ -182,7 +183,7 @@ namespace {
     bool IsHexDigit(const char c) { return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'); }
 
     // v4 RFC 4122 var
-    bool isValidUUID(const std::string_view uuid) {
+    bool IsValidUUID(const std::string_view uuid) {
         if (uuid.size() != 36) {
             return false;
         }
@@ -213,16 +214,34 @@ namespace {
 namespace Saves::IO {
 
     // <DataHome>/obliberry/<project uuid>/saves
-    std::optional<std::filesystem::path> GenerateSaveDirectory(const std::string_view uuid) {
-        const std::filesystem::path projectId{std::string(uuid)};
-
-        if (projectId.empty() || projectId.is_absolute() || projectId.has_root_path() || projectId.has_parent_path() || projectId != projectId.filename() || !isValidUUID(uuid)) {
+    // or:
+    // <executable directory>/obliberry/<project uuid>/saves
+    std::optional<std::filesystem::path> GenerateSaveDirectory(const std::string_view uuid, const Config::SaveLocation location) {
+        if (!IsValidUUID(uuid)) {
             LOG_ERROR(LOG_WHO, "Invalid project UUID");
             return std::nullopt;
         }
 
+        const std::filesystem::path projectId{std::string(uuid)};
+
         try {
-            return Core::PathUtils::GetDataHome() / "obliberry" / projectId / "saves";
+            std::filesystem::path saveHome;
+
+            switch (location) {
+                case Config::SaveLocation::DataHome:
+                    saveHome = Core::PathUtils::GetDataHome();
+                    break;
+
+                case Config::SaveLocation::Portable:
+                    saveHome = Core::PathUtils::GetExecutableDirectory();
+                    break;
+
+                default:
+                    LOG_ERROR(LOG_WHO, "Invalid save location");
+                    return std::nullopt;
+            }
+
+            return saveHome / "obliberry" / projectId / "saves";
         } catch (const std::exception &error) {
             LOG_ERROR(LOG_WHO, std::string("Could not determine save directory: ") + error.what());
             return std::nullopt;

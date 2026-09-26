@@ -429,22 +429,41 @@ void Editor::EditorLayer::LoadProject(const std::string &projectFilePath) {
         return;
     }
 
+    const auto abandonLoadedProject = [&]() {
+        if (m_Context && m_Context->saveGameManager) {
+            m_Context->saveGameManager->Reset();
+        }
+
+        IO::AssetCatalog::Close();
+        Core::ResourceManager::GetInstance().ClearProjectResources();
+        Core::Project::SetActive(nullptr);
+        IO::VFS::UnmountProject();
+
+        if (!wasInHub) {
+            TransitionTo(std::make_unique<States::HubState>());
+        }
+    };
+
 
     if (m_Context->projectConfig) {
         *m_Context->projectConfig = project->GetConfig();
     }
 
-    if (m_Context->saveGameManager) {
-        const auto savedir = Saves::IO::GenerateSaveDirectory(project->GetConfig().UUID);
-        if (!savedir) {
-            ShowProjectLoadError(projectFilePath, "Could not determine project savedata directory.");
+    const auto &projectConfig = project->GetConfig();
+    if (m_Context->saveGameManager && projectConfig.useSaves) {
+        const auto saveDirectory = Saves::IO::GenerateSaveDirectory(projectConfig.UUID, projectConfig.saveLocation);
+
+        if (!saveDirectory) {
+            ShowProjectLoadError(projectFilePath, "Could not determine project save-data directory.");
+            abandonLoadedProject();
             return;
         }
 
         try {
-            m_Context->saveGameManager->Configure(*savedir);
-        } catch (const std::exception &e) {
-            ShowProjectLoadError(projectFilePath, std::string("Could not initialize savegames:\n") + e.what());
+            m_Context->saveGameManager->Configure(*saveDirectory);
+        } catch (const std::exception &error) {
+            ShowProjectLoadError(projectFilePath, std::string("Could not initialize save games:\n") + error.what());
+            abandonLoadedProject();
             return;
         }
     }

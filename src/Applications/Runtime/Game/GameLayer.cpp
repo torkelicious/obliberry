@@ -36,16 +36,16 @@ void Game::GameLayer::Init(Core::EngineContext &ctx) {
         startScene = m_Context->projectConfig->startScenePath;
     }
 
-    if (m_Context->saveGameManager && m_Context->projectConfig) {
-        const auto savedir = Saves::IO::GenerateSaveDirectory(m_Context->projectConfig->UUID);
-        if (!savedir) {
+    if (m_Context->saveGameManager && m_Context->projectConfig && m_Context->projectConfig->useSaves) {
+        const auto saveDirectory = Saves::IO::GenerateSaveDirectory(m_Context->projectConfig->UUID, m_Context->projectConfig->saveLocation);
+        if (!saveDirectory) {
             LOG_ERROR("GameLayer", "Could not determine save directory");
             return;
         }
         try {
-            m_Context->saveGameManager->Configure(*savedir);
-        } catch (std::exception &e) {
-            LOG_ERROR("GameLayer", std::string("Could not init savegames: ", e.what()));
+            m_Context->saveGameManager->Configure(*saveDirectory);
+        } catch (const std::exception &error) {
+            LOG_ERROR("GameLayer", std::string("Could not initialize save games: ") + error.what());
             return;
         }
     }

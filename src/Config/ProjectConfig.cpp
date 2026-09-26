@@ -2,6 +2,7 @@
 #include "ProjectConfig.h"
 #include "Logger/LoggerService.h"
 #include "IO/VFS/VFS.h"
+#include <cstdint>
 #include <fstream>
 #include <nlohmann/json.hpp>
 
@@ -26,6 +27,31 @@ namespace {
             config.startScenePath = startScene->get<std::string>();
         }
 
+        if (const auto saves = document.find("saves"); saves != document.end() && saves->is_object()) {
+
+            if (const auto enabled = saves->find("enabled"); enabled != saves->end() && enabled->is_boolean()) {
+                config.useSaves = enabled->get<bool>();
+            }
+
+            if (const auto location = saves->find("location"); location != saves->end()) {
+
+                std::optional<std::int64_t> value;
+
+                if (location->is_number_unsigned()) {
+                    const auto unsignedValue = location->get<std::uint64_t>();
+
+                    if (unsignedValue <= static_cast<std::uint64_t>(Config::SaveLocation::Portable)) {
+                        value = static_cast<std::int64_t>(unsignedValue);
+                    }
+                } else if (location->is_number_integer()) {
+                    value = location->get<std::int64_t>();
+                }
+
+                if (value && *value >= static_cast<std::int64_t>(Config::SaveLocation::DataHome) && *value <= static_cast<std::int64_t>(Config::SaveLocation::Portable)) {
+                    config.saveLocation = static_cast<Config::SaveLocation>(*value);
+                }
+            }
+        }
         return config;
     }
 } // namespace
@@ -70,6 +96,8 @@ namespace Config {
             j["UUID"] = conf.UUID;
             j["window"]["title"] = conf.Title;
             j["start_scene"] = conf.startScenePath;
+            j["saves"]["enabled"] = conf.useSaves;
+            j["saves"]["location"] = static_cast<std::uint8_t>(conf.saveLocation);
 
             std::filesystem::path resolvedPath = IO::VFS::Resolve(filepath);
             std::ofstream file(resolvedPath);
