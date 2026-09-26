@@ -260,6 +260,7 @@ namespace Scenes {
 
         if (scenePath.find(".json") == std::string::npos) {
             LOG_ERROR(LOG_WHO, "Scene path should have .json extension: " + scenePath);
+            return false;
         }
         return true;
     }
