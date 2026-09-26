@@ -17,6 +17,9 @@
 #include <string_view>
 #include <variant>
 #include <freetype/freetype.h>
+#include <locale>
+#include <span>
+#include <sstream>
 #include "Types.h"
 
 namespace Editor::UI::Theme {
@@ -243,30 +246,23 @@ namespace Editor::UI::Theme {
 
     [[nodiscard]] inline std::string FormatFloat(float f) { return std::format("{:.4f}", f); }
 
-    [[nodiscard]] inline bool ParseFloats(std::string_view s, std::span<float> out) noexcept {
-        auto skipWs = [](std::string_view &sv) {
-            while (!sv.empty() && (sv.front() == ' ' || sv.front() == '\t' || sv.front() == '\r' || sv.front() == '\n')) {
-                sv.remove_prefix(1);
-            }
-        };
+    [[nodiscard]] inline bool ParseFloats(std::string_view s, std::span<float> out) {
+        std::istringstream input{std::string(s)};
+        input.imbue(std::locale::classic());
 
         for (float &val : out) {
-            skipWs(s);
-            if (s.empty())
+            if (!(input >> val)) {
                 return false;
+            }
 
-            const auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), val);
-            if (ec != std::errc{})
-                return false;
-
-            s.remove_prefix(static_cast<std::size_t>(ptr - s.data()));
-            skipWs(s);
-
-            if (!s.empty() && s.front() == ',') {
-                s.remove_prefix(1);
+            input >> std::ws;
+            if (input.peek() == ',') {
+                input.get();
             }
         }
-        return true;
+
+        input >> std::ws;
+        return input.eof();
     }
 
     [[nodiscard]] inline KeyValueList SerializeToKV(const Theme &theme) {
