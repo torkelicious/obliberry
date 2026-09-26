@@ -3,10 +3,13 @@
 //
 #pragma once
 
+#include "Logger/LoggerService.h"
 #include "imgui.h"
 #include "Platform/FreeType.h"
 #include <algorithm>
 #include <array>
+#include <exception>
+#include <filesystem>
 #include <format>
 #include <imgui_internal.h>
 #include <optional>
@@ -198,18 +201,28 @@ namespace Editor::UI::Theme {
         const ImFont *lastNonMergedFont = nullptr;
         for (constexpr FontRole roleOrder[] = {FontRole::Body, FontRole::Bold, FontRole::Monospace, FontRole::Small, FontRole::Heading, FontRole::Icons}; const FontRole role : roleOrder) {
             for (auto &font : set.fonts) {
+
+                if (!std::filesystem::exists(font.path)) {
+                    LOG_ERROR("Theme", "Font: " + font.path.string() + " was not found.");
+                    continue;
+                }
+
                 if (font.role == role) {
-                    font.fontPtr = nullptr;
-                    ImFontConfig cfg;
-                    cfg.SizePixels = font.sizePixels;
-                    cfg.MergeMode = font.mergeIntoPrevious;
-                    cfg.GlyphMinAdvanceX = font.iconMinAdvanceX;
-                    cfg.FontDataOwnedByAtlas = true;
-                    LOG_INFO("Theme",
-                            "Adding font: '" + font.name + "', role: " + std::to_string(static_cast<int>(role)) + ", size: " + std::to_string(font.sizePixels) + ", merge: " + std::to_string(font.mergeIntoPrevious));
-                    font.fontPtr = io.Fonts->AddFontFromFileTTF(font.path.string().c_str(), font.sizePixels, &cfg);
-                    if (!font.mergeIntoPrevious && font.fontPtr) {
-                        lastNonMergedFont = font.fontPtr;
+                    try {
+                        font.fontPtr = nullptr;
+                        ImFontConfig cfg;
+                        cfg.SizePixels = font.sizePixels;
+                        cfg.MergeMode = font.mergeIntoPrevious;
+                        cfg.GlyphMinAdvanceX = font.iconMinAdvanceX;
+                        cfg.FontDataOwnedByAtlas = true;
+                        LOG_INFO("Theme",
+                                "Adding font: '" + font.name + "', role: " + std::to_string(static_cast<int>(role)) + ", size: " + std::to_string(font.sizePixels) + ", merge: " + std::to_string(font.mergeIntoPrevious));
+                        font.fontPtr = io.Fonts->AddFontFromFileTTF(font.path.string().c_str(), font.sizePixels, &cfg);
+                        if (!font.mergeIntoPrevious && font.fontPtr) {
+                            lastNonMergedFont = font.fontPtr;
+                        }
+                    } catch (std::exception &e) {
+                        LOG_ERROR("Theme", std::string("Error loading font: ") + e.what());
                     }
                 }
             }
