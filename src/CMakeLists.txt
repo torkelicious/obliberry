@@ -156,7 +156,7 @@ target_link_libraries(obliberry_editor PRIVATE obliberry_engine)
 
 # Unity Build Handling
 if (ENABLE_UNITY_BUILD)
-    set_target_properties(obliberry_engine obliberry_editor PROPERTIES UNITY_BUILD ON)
+    set_target_properties(obliberry_engine obliberry_runtime obliberry_editor PROPERTIES UNITY_BUILD ON)
 endif ()
 
 # Packaging Tools Target
