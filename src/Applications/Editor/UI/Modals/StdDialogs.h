@@ -165,4 +165,37 @@ namespace Editor::UI {
         char m_NameBuf[128] = "";
         std::function<void(std::string)> m_OnConfirmCb;
     };
+
+    class RegenerateProjectIdDialog : public EditorDialog {
+    public:
+        RegenerateProjectIdDialog() : EditorDialog("Regenerate Project UUID") {}
+
+        void SetMessage(const std::string &message) { m_Message = message; }
+
+    protected:
+        void DrawContent() override {
+            ImGui::TextWrapped("%s", m_Message.c_str());
+            ImGui::Separator();
+
+            if (ImGui::Button("Regenerate")) {
+                if (m_OnConfirm) {
+                    m_OnConfirm();
+                }
+
+                Close();
+            }
+
+            ImGui::SameLine();
+
+            if (ImGui::Button("Cancel")) {
+                Close();
+            }
+        }
+
+    private:
+        std::string m_Message = "Are you sure you want to regenerate the project UUID?\n\n"
+                                "This project will no longer find save files associated with "
+                                "its current UUID. The existing save files will not be deleted.";
+    };
+
 } // namespace Editor::UI

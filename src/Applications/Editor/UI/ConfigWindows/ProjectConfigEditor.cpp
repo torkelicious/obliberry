@@ -24,6 +24,14 @@ namespace Editor::UI {
     void ProjectConfigEditor::Reload() {
         if (m_Context && m_Context->projectConfig) {
             m_LocalConfig = *m_Context->projectConfig;
+
+            m_IdDialog.SetOnConfirm([this]() {
+                m_LocalConfig.UUID = Core::Utils::UUID::UUIDGenerator::Generate();
+                if (const auto proj = Core::Project::GetActive()) {
+                    proj->MarkAsChanged();
+                }
+            });
+
             LoadConfigToBuffers();
         }
     }
@@ -55,8 +63,10 @@ namespace Editor::UI {
         ImGui::TextDisabled("UUID: %s", m_LocalConfig.UUID.c_str());
         ImGui::SameLine();
         if (ImGui::SmallButton("Regenerate")) {
-            m_LocalConfig.UUID = Core::Utils::UUID::UUIDGenerator::Generate();
+            m_IdDialog.Open();
         }
+
+        m_IdDialog.Update();
 
         // title
         if (ImGui::InputText("Window Title", m_TitleBuffer, sizeof(m_TitleBuffer))) {
