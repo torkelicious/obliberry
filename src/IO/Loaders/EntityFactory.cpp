@@ -465,14 +465,8 @@ void IO::EntityFactory::RegisterSerializers() {
                 shape = "Circle";
                 break;
         }
-        data["ColliderComponent"] = {{"version", 2},
-                                     {"shape", shape},
-                                     {"orientation", c.orientation == ECS::Components::ColliderOrientation::Billboard ? "Billboard" : "Entity"},
-                                     {"offset", {c.offset.x, c.offset.y, c.offset.z}},
-                                     {"size", {c.size.x, c.size.y, c.size.z}},
-                                     {"radius", c.radius},
-                                     {"height", c.height},
-                                     {"isTrigger", c.isTrigger}};
+        data["ColliderComponent"] = {{"version", 2}, {"shape", shape}, {"orientation", c.orientation == ECS::Components::ColliderOrientation::Billboard ? "Billboard" : "Entity"},
+                {"offset", {c.offset.x, c.offset.y, c.offset.z}}, {"size", {c.size.x, c.size.y, c.size.z}}, {"radius", c.radius}, {"height", c.height}, {"isTrigger", c.isTrigger}};
     };
 
     // SPRITE ANIMATION

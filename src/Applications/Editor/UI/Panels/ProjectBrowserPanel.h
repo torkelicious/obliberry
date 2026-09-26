@@ -32,9 +32,9 @@ namespace Editor::UI {
 
         template <typename T>
         void DrawResourceSection(Core::ResourceManager &resources, const std::vector<std::pair<std::string, std::shared_ptr<T>>> &allItems, AssetType assetType, const char *childId, float childHeight,
-                                 const char *emptyText, const char *typeName, std::type_identity_t<std::function<void(const std::shared_ptr<T> &)>> renderThumbnail,
-                                 const std::type_identity_t<std::function<void(const std::string &, Core::ResourceManager &)>> &renderExtraButtons,
-                                 std::type_identity_t<std::function<void(const std::string &, const std::shared_ptr<T> &, Core::ResourceManager &)>> renderTooltip = nullptr);
+                const char *emptyText, const char *typeName, std::type_identity_t<std::function<void(const std::shared_ptr<T> &)>> renderThumbnail,
+                const std::type_identity_t<std::function<void(const std::string &, Core::ResourceManager &)>> &renderExtraButtons,
+                std::type_identity_t<std::function<void(const std::string &, const std::shared_ptr<T> &, Core::ResourceManager &)>> renderTooltip = nullptr);
 
         void DrawTextureSection(Core::ResourceManager &resources);
         void DrawShaderSection(Core::ResourceManager &resources);

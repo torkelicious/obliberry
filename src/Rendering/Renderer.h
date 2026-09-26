@@ -81,10 +81,10 @@ namespace Rendering {
         void BeginFrame();
 
         void Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const Transform &transform, const Texture *textureOverride = nullptr, int32_t entityID = -1,
-                    const glm::vec4 &uvRect = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+                const glm::vec4 &uvRect = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
         void Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> &transforms, const std::vector<int32_t> &entityIDs = {});
         void Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> &transforms, const std::vector<glm::vec4> &colors, int32_t blendMode = 0,
-                    int32_t renderOrder = 0, int8_t shape = 0);
+                int32_t renderOrder = 0, int8_t shape = 0);
         void SubmitPersistent(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> *transforms, const std::vector<int32_t> *entityIDs = nullptr);
 
         template <typename T> void Pin(const std::shared_ptr<T> &resource) {

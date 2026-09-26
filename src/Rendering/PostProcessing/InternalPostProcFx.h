@@ -363,65 +363,65 @@ void main()
 
             {.name = "BrightPass", .vertex = kPP_PassthroughShaderVert, .fragment = kPP_BrightPassFrag, .uniforms = {{"u_Threshold", 0.8f}, {"u_SoftKnee", 0.5f}}},
             {.name = "GaussianBlur",
-             .vertex = kPP_PassthroughShaderVert,
-             .fragment = kPP_GaussianBlurFrag,
-             .passes = 2,
-             .passUniforms =
-                     {
-                             {{"u_Horizontal", 1}},
-                             {{"u_Horizontal", 0}},
-                     }},
+                    .vertex = kPP_PassthroughShaderVert,
+                    .fragment = kPP_GaussianBlurFrag,
+                    .passes = 2,
+                    .passUniforms =
+                            {
+                                    {{"u_Horizontal", 1}},
+                                    {{"u_Horizontal", 0}},
+                            }},
             {.name = "BloomComposite", .vertex = kPP_PassthroughShaderVert, .fragment = kPP_BloomCompositeFrag, .uniforms = {{"u_Strength", 1.0f}}, .wantsSceneTexture = true},
             {.name = "CRT",
-             .vertex = kPP_PassthroughShaderVert,
-             .fragment = kPP_CRTShaderFrag,
-             .uniforms =
-                     {
-                             {"u_Curvature", 0.05f},
-                             {"u_Aberration", 0.0015f},
-                             {"u_Scanline", 0.7f},
-                             {"u_Mask", 0.25f},
-                             {"u_Glow", 0.25f},
-                             {"u_Noise", 0.03f},
-                             {"u_Flicker", 0.5f},
-                             {"u_Vignette", 0.15f},
-                     }},
+                    .vertex = kPP_PassthroughShaderVert,
+                    .fragment = kPP_CRTShaderFrag,
+                    .uniforms =
+                            {
+                                    {"u_Curvature", 0.05f},
+                                    {"u_Aberration", 0.0015f},
+                                    {"u_Scanline", 0.7f},
+                                    {"u_Mask", 0.25f},
+                                    {"u_Glow", 0.25f},
+                                    {"u_Noise", 0.03f},
+                                    {"u_Flicker", 0.5f},
+                                    {"u_Vignette", 0.15f},
+                            }},
 
             {.name = "FilmGrain",
-             .vertex = kPP_PassthroughShaderVert,
-             .fragment = kPP_FilmGrainFrag,
-             .uniforms =
-                     {
-                             {"u_GrainAmount", 0.1f},
-                             {"u_GrainSize", 1.0f},
-                     }},
+                    .vertex = kPP_PassthroughShaderVert,
+                    .fragment = kPP_FilmGrainFrag,
+                    .uniforms =
+                            {
+                                    {"u_GrainAmount", 0.1f},
+                                    {"u_GrainSize", 1.0f},
+                            }},
             {.name = "ColorGrading",
-             .vertex = kPP_PassthroughShaderVert,
-             .fragment = kPP_ColorGradingFrag,
-             .uniforms =
-                     {
-                             {"u_Exposure", 0.0f},
-                             {"u_Contrast", 1.0f},
-                             {"u_Pivot", 0.5f},
-                             {"u_Saturation", 1.0f},
-                             {"u_Gamma", glm::vec3{1.0f, 1.0f, 1.0f}},
-                             {"u_Gain", glm::vec3{1.0f, 1.0f, 1.0f}},
-                             {"u_Lift", glm::vec3{0.0f, 0.0f, 0.0f}},
-                             {"u_ColorBalance", glm::vec3{0.0f, 0.0f, 0.0f}},
-                             {"u_ShadowWheel", glm::vec3{0.0f, 0.0f, 0.0f}},
-                             {"u_MidtoneWheel", glm::vec3{0.0f, 0.0f, 0.0f}},
-                             {"u_HighlightWheel", glm::vec3{0.0f, 0.0f, 0.0f}},
-                     }},
+                    .vertex = kPP_PassthroughShaderVert,
+                    .fragment = kPP_ColorGradingFrag,
+                    .uniforms =
+                            {
+                                    {"u_Exposure", 0.0f},
+                                    {"u_Contrast", 1.0f},
+                                    {"u_Pivot", 0.5f},
+                                    {"u_Saturation", 1.0f},
+                                    {"u_Gamma", glm::vec3{1.0f, 1.0f, 1.0f}},
+                                    {"u_Gain", glm::vec3{1.0f, 1.0f, 1.0f}},
+                                    {"u_Lift", glm::vec3{0.0f, 0.0f, 0.0f}},
+                                    {"u_ColorBalance", glm::vec3{0.0f, 0.0f, 0.0f}},
+                                    {"u_ShadowWheel", glm::vec3{0.0f, 0.0f, 0.0f}},
+                                    {"u_MidtoneWheel", glm::vec3{0.0f, 0.0f, 0.0f}},
+                                    {"u_HighlightWheel", glm::vec3{0.0f, 0.0f, 0.0f}},
+                            }},
 
             {.name = "Vingette",
-             .vertex = kPP_PassthroughShaderVert,
-             .fragment = kPP_VingetteFrag,
-             .uniforms =
-                     {
+                    .vertex = kPP_PassthroughShaderVert,
+                    .fragment = kPP_VingetteFrag,
+                    .uniforms =
+                            {
 
-                             {"u_Alpha", 0.8f}, {"u_InnerRadius", 0.25f}, {"u_OuterRadius", 0.7f}, {"u_UseAspect", true}
+                                    {"u_Alpha", 0.8f}, {"u_InnerRadius", 0.25f}, {"u_OuterRadius", 0.7f}, {"u_UseAspect", true}
 
-                     }},
+                            }},
 
 
     };

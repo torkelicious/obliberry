@@ -56,6 +56,7 @@ add_library(obliberry_engine STATIC
         Scripting/EngineLib/Modules/EngineLibTime.cpp
         Scripting/EngineLib/Modules/EngineLibUI.cpp
         Scripting/EngineLib/Modules/EngineLibRegistry.cpp
+        Scripting/EngineLib/Modules/EngineLibSaveData.cpp
 
         # Packaging
         IO/Package/ContainerWriter.cpp
@@ -78,6 +79,9 @@ add_library(obliberry_engine STATIC
         # Systems
         ECS/Systems/Collision/CollisionWorld.cpp
 
+        # Save Data
+        SaveData/SaveGameSerialization.cpp
+        SaveData/SaveGameManager.cpp
         Core/Utils/UUID.cpp
         Core/Utils/UUID.h
 )
@@ -95,8 +99,8 @@ target_link_libraries(obliberry_engine PUBLIC
 )
 
 if (WIN32)
-    target_link_libraries(obliberry_engine PRIVATE bcrypt)
-endif ()
+    target_link_libraries(obliberry_engine PRIVATE bcrypt ole32 shell32)
+endif()
 
 # Runtime Executable
 add_executable(obliberry_runtime

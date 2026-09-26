@@ -281,9 +281,9 @@ void Editor::UI::DirectionalTextureWidget::Draw(const ECS::Entity entity, Core::
             comp->index = static_cast<uint8_t>(facingIndex);
             if (undoManager && engineContext) {
                 const auto entId = static_cast<ECS::EntityID>(entity);
-                undoManager->Execute(std::make_unique<Commands::ModifyComponentFieldCommand<ECS::Components::DirectionalTextureComponent>>(entId, offsetof(ECS::Components::DirectionalTextureComponent, index),
-                                                                                                                                           sizeof(uint8_t), &s_DirTexOldIndex, &comp->index, "Facing Index"),
-                                     *engineContext);
+                undoManager->Execute(std::make_unique<Commands::ModifyComponentFieldCommand<ECS::Components::DirectionalTextureComponent>>(
+                                             entId, offsetof(ECS::Components::DirectionalTextureComponent, index), sizeof(uint8_t), &s_DirTexOldIndex, &comp->index, "Facing Index"),
+                        *engineContext);
             }
             MarkSceneChanged(engineContext);
         }
@@ -380,9 +380,9 @@ void Editor::UI::MapStateWidget::Draw(const ECS::Entity entity, Core::EngineCont
             if (ImGui::IsItemDeactivatedAfterEdit()) {
                 comp->hasSelection = hasSel;
                 if (undoManager && engineContext)
-                    undoManager->Execute(std::make_unique<Commands::ModifyComponentFieldCommand<ECS::Components::MapStateComponent>>(entId, offsetof(ECS::Components::MapStateComponent, hasSelection), sizeof(bool),
-                                                                                                                                     &s_OldHasSelection, &comp->hasSelection, "Has Selection"),
-                                         *engineContext);
+                    undoManager->Execute(std::make_unique<Commands::ModifyComponentFieldCommand<ECS::Components::MapStateComponent>>(
+                                                 entId, offsetof(ECS::Components::MapStateComponent, hasSelection), sizeof(bool), &s_OldHasSelection, &comp->hasSelection, "Has Selection"),
+                            *engineContext);
                 MarkSceneChanged(engineContext);
             }
         }
@@ -398,9 +398,9 @@ void Editor::UI::MapStateWidget::Draw(const ECS::Entity entity, Core::EngineCont
             if (ImGui::IsItemDeactivatedAfterEdit()) {
                 comp->hasPathTo = hasPath;
                 if (undoManager && engineContext)
-                    undoManager->Execute(std::make_unique<Commands::ModifyComponentFieldCommand<ECS::Components::MapStateComponent>>(entId, offsetof(ECS::Components::MapStateComponent, hasPathTo), sizeof(bool),
-                                                                                                                                     &s_OldHasPathTo, &comp->hasPathTo, "Has Path To"),
-                                         *engineContext);
+                    undoManager->Execute(std::make_unique<Commands::ModifyComponentFieldCommand<ECS::Components::MapStateComponent>>(
+                                                 entId, offsetof(ECS::Components::MapStateComponent, hasPathTo), sizeof(bool), &s_OldHasPathTo, &comp->hasPathTo, "Has Path To"),
+                            *engineContext);
                 MarkSceneChanged(engineContext);
             }
         }
@@ -955,7 +955,7 @@ void Editor::UI::SpriteSheetWidget::Draw(ECS::Entity entity, Core::EngineContext
         } else if (width % columns != 0 || height % rows != 0) {
             ImGui::TextWrapped("The grid produces %.3f x %.3f pixels per frame. "
                                "Both dimensions must be whole numbers.",
-                               static_cast<double>(width) / columns, static_cast<double>(height) / rows);
+                    static_cast<double>(width) / columns, static_cast<double>(height) / rows);
         } else {
             ImGui::Text("Frame size: %lld x %lld px", static_cast<long long>(width / columns), static_cast<long long>(height / rows));
         }

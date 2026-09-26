@@ -30,8 +30,10 @@ namespace Editor::UI::Theme {
     };
 
     inline constexpr std::array kBuiltInThemes{
-            BuiltInThemeInfo{BuiltInTheme::ObliberryDark, "Obliberry Dark"},   BuiltInThemeInfo{BuiltInTheme::ImGuiClassicDark, "ImGui Classic Dark"},
-            BuiltInThemeInfo{BuiltInTheme::ObliberryLight, "Obliberry Light"}, BuiltInThemeInfo{BuiltInTheme::HighContrastDark, "High Contrast Dark"},
+            BuiltInThemeInfo{BuiltInTheme::ObliberryDark, "Obliberry Dark"},
+            BuiltInThemeInfo{BuiltInTheme::ImGuiClassicDark, "ImGui Classic Dark"},
+            BuiltInThemeInfo{BuiltInTheme::ObliberryLight, "Obliberry Light"},
+            BuiltInThemeInfo{BuiltInTheme::HighContrastDark, "High Contrast Dark"},
             BuiltInThemeInfo{BuiltInTheme::TerminalGreen, "Haxxorman Green"},
     };
 
@@ -61,17 +63,15 @@ namespace Editor::UI::Theme {
                 continue;
             }
 
-            std::visit(
-                    [&](auto member) {
-                        using MemberType = std::decay_t<decltype(member)>;
+            std::visit([&](auto member) {
+                using MemberType = std::decay_t<decltype(member)>;
 
-                        if constexpr (std::is_same_v<MemberType, FloatMember>) {
-                            theme.floatVars[index] = style.*member;
-                        } else {
-                            theme.vec2Vars[index] = style.*member;
-                        }
-                    },
-                    info.member);
+                if constexpr (std::is_same_v<MemberType, FloatMember>) {
+                    theme.floatVars[index] = style.*member;
+                } else {
+                    theme.vec2Vars[index] = style.*member;
+                }
+            }, info.member);
         }
 
         return theme;

@@ -26,6 +26,9 @@ BraceWrapping:
     BeforeLambdaBody: false
     BeforeWhile: false
 
+AlignAfterOpenBracket: DontAlign
+LambdaBodyIndentation: OuterScope
+
 IndentCaseLabels: true
 NamespaceIndentation: All
 AccessModifierOffset: -4

@@ -30,7 +30,7 @@ A **component** is a plain data structure. Examples: `TransformComponent` (posit
 Some components are **tags** - empty structs that just mark an entity for a system:
 
 | Tag            | Meaning                                                     |
-|----------------|-------------------------------------------------------------|
+| -------------- | ----------------------------------------------------------- |
 | `BillboardTag` | Render this entity as a billboard (always faces camera)     |
 | `DestroyTag`   | Delete this entity at end of frame                          |
 | `Relationship` | Stores parent/child links (not shown in Add Component menu) |
@@ -45,7 +45,7 @@ Tags appear as **checkboxes/flags** in the Inspector, not as expandable componen
 specific set of components.
 
 | System                     | Required Components                                  | What It Does                                                             |
-|----------------------------|------------------------------------------------------|--------------------------------------------------------------------------|
+| -------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------ |
 | `RenderSystem`             | Transform + Mesh + Material                          | Draws the entity                                                         |
 | `MovementSystem`           | Transform + Movement                                 | Moves entity along hex path                                              |
 | `AISystem`                 | —                                                    | Randomly wanders entities with `autoMove` enabled on `MovementComponent` |
@@ -122,7 +122,7 @@ See the [ObSL Getting Started](../scripting/getting-started.md) for syntax and A
 
 ```
 my-project/
-├── project.json          # Project config (name, start_scene)
+├── project.json          # UUID, title, start scene, and save settings
 ├── assets.json           # Project-wide asset IDs and definitions
 ├── assets/
 │   ├── scenes/           # *.json scene files
@@ -137,6 +137,10 @@ my-project/
 > Materials and procedural/custom mesh definitions live in `assets.json`. Binary/source files such as textures,
 > shaders, fonts, and animation JSON remain under `assets/` and are referenced from the catalog by project-relative
 > paths.
+
+Save games normally do not live inside this project tree. They are stored below the platform data directory or, in
+portable mode, below the executable directory. Both layouts include the project UUID so equally named projects remain
+separate. See [Save-game format](../formats/save-json.md).
 
 ---
 
@@ -156,14 +160,15 @@ The `obliberry_runtime` loads `.obpak` files directly, that's your "game" execut
 
 ## Summary
 
-| Concept       | Key Point                                                  |
-|---------------|------------------------------------------------------------|
-| **Entity**    | an ID. Add components to give it behavior.                 |
-| **Component** | data. One per type per entity.                             |
-| **System**    | Logic that runs on entities with matching components.      |
-| **Registry**  | The entity list (left panel). Shows hierarchy.             |
-| **Asset**     | Referenced by ID. Materials link shaders + textures.       |
-| **Map**       | Hex grid painted in Map Edit mode. Saved as `.obmap`.      |
-| **Script**    | ObSL files attached via ScriptComponent. Run in Play mode. |
-| **Prefab**    | Reusable entity template. Instantiate from script.         |
-| **Export**    | Packages everything into `.obpak` for the runtime.         |
+| Concept       | Key Point                                                         |
+| ------------- | ----------------------------------------------------------------- |
+| **Entity**    | an ID. Add components to give it behavior.                        |
+| **Component** | data. One per type per entity.                                    |
+| **System**    | Logic that runs on entities with matching components.             |
+| **Registry**  | The entity list (left panel). Shows hierarchy.                    |
+| **Asset**     | Referenced by ID. Materials link shaders + textures.              |
+| **Map**       | Hex grid painted in Map Edit mode. Saved as `.obmap`.             |
+| **Script**    | ObSL files attached via ScriptComponent. Run in Play mode.        |
+| **Save data** | Script-defined key/value data stored separately per project UUID. |
+| **Prefab**    | Reusable entity template. Instantiate from script.                |
+| **Export**    | Packages everything into `.obpak` for the runtime.                |

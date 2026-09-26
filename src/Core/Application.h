@@ -13,6 +13,7 @@
 #include "Config/GraphicsConfig.h"
 #include <ObSL/ScriptRuntime.h>
 #include "Platform/Threading/ThreadPool.h"
+#include "SaveData/SaveGameManager.h"
 #include "Sound/AudioEngine.h"
 #include "UI/Rendering/UIRenderer.h"
 
@@ -48,6 +49,7 @@ namespace Core {
         Platform::Threading::ThreadPool m_ThreadPool;
         std::unique_ptr<Sound::AudioEngine> m_AudioEngine;
         UI::UIRenderer m_UIRenderer;
+        Saves::SaveGameManager m_SaveGameManager;
 
         std::unique_ptr<ApplicationLayer> m_Layer;
 

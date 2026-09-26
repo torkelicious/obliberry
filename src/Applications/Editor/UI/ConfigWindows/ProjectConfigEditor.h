@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Applications/Editor/UI/Modals/StdDialogs.h"
 #include "ConfigWindow.h"
 #include "Core/EngineContext.h"
 #include "Config/ProjectConfig.h"
@@ -27,5 +28,7 @@ namespace Editor::UI {
 
         char m_TitleBuffer[256]{};
         char m_StartSceneBuffer[512]{};
+
+        RegenerateProjectIdDialog m_IdDialog;
     };
 } // namespace Editor::UI

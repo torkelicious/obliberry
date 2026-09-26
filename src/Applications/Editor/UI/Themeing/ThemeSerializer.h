@@ -38,21 +38,19 @@ namespace Editor::UI::Theme::IO {
         json varsObj = json::object();
 
         for (const auto &info : kStyleVarTable) {
-            std::visit(
-                    [&]<typename T0>(T0) {
-                        using MemberT = std::decay_t<T0>;
+            std::visit([&]<typename T0>(T0) {
+                using MemberT = std::decay_t<T0>;
 
-                        if constexpr (std::is_same_v<MemberT, FloatMember>) {
-                            if (auto val = theme.GetFloat(info.id)) {
-                                varsObj[std::string(info.name)] = *val;
-                            }
-                        } else {
-                            if (auto val = theme.GetVec2(info.id)) {
-                                varsObj[std::string(info.name)] = {val->x, val->y};
-                            }
-                        }
-                    },
-                    info.member);
+                if constexpr (std::is_same_v<MemberT, FloatMember>) {
+                    if (auto val = theme.GetFloat(info.id)) {
+                        varsObj[std::string(info.name)] = *val;
+                    }
+                } else {
+                    if (auto val = theme.GetVec2(info.id)) {
+                        varsObj[std::string(info.name)] = {val->x, val->y};
+                    }
+                }
+            }, info.member);
         }
 
         j["vars"] = varsObj;
@@ -81,21 +79,19 @@ namespace Editor::UI::Theme::IO {
         if (j.contains("vars") && j["vars"].is_object()) {
             for (const auto &[name, val] : j["vars"].items()) {
                 if (const auto *info = FindStyleVar(name)) {
-                    std::visit(
-                            [&]<typename T0>(T0) {
-                                using MemberT = std::decay_t<T0>;
+                    std::visit([&]<typename T0>(T0) {
+                        using MemberT = std::decay_t<T0>;
 
-                                if constexpr (std::is_same_v<MemberT, FloatMember>) {
-                                    if (val.is_number()) {
-                                        theme.SetFloat(info->id, val.get<float>());
-                                    }
-                                } else {
-                                    if (val.is_array() && val.size() == 2) {
-                                        theme.SetVec2(info->id, ImVec2(val[0].get<float>(), val[1].get<float>()));
-                                    }
-                                }
-                            },
-                            info->member);
+                        if constexpr (std::is_same_v<MemberT, FloatMember>) {
+                            if (val.is_number()) {
+                                theme.SetFloat(info->id, val.get<float>());
+                            }
+                        } else {
+                            if (val.is_array() && val.size() == 2) {
+                                theme.SetVec2(info->id, ImVec2(val[0].get<float>(), val[1].get<float>()));
+                            }
+                        }
+                    }, info->member);
                 }
             }
         }
@@ -110,12 +106,8 @@ namespace Editor::UI::Theme::IO {
         j["fonts"] = json::array();
 
         for (const auto &font : set.fonts) {
-            j["fonts"].push_back({{"name", font.name},
-                                  {"path", font.path.string()},
-                                  {"sizePixels", font.sizePixels},
-                                  {"role", static_cast<int>(font.role)},
-                                  {"mergeIntoPrevious", font.mergeIntoPrevious},
-                                  {"iconMinAdvanceX", font.iconMinAdvanceX}});
+            j["fonts"].push_back({{"name", font.name}, {"path", font.path.string()}, {"sizePixels", font.sizePixels}, {"role", static_cast<int>(font.role)}, {"mergeIntoPrevious", font.mergeIntoPrevious},
+                    {"iconMinAdvanceX", font.iconMinAdvanceX}});
         }
 
         return j;
@@ -188,7 +180,7 @@ namespace Editor::UI::Theme::IO {
         }
 
         const auto j = json::parse(file, nullptr,
-                                   /* allow_exceptions = */ false);
+                /* allow_exceptions = */ false);
 
         if (j.is_discarded() || !j.is_object()) {
             LOG_WARN(LOG_WHO, "Invalid theme JSON");

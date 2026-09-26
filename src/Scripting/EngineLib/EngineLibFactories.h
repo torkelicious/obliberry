@@ -800,13 +800,13 @@ namespace Scripting {
             });
 
             Method(interpreter, obj, "Pause", 0,
-                   [id, &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value { return Write<C>(interp, registry, id, [](C &player) { Animation::Pause(player); }); });
+                    [id, &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value { return Write<C>(interp, registry, id, [](C &player) { Animation::Pause(player); }); });
 
             Method(interpreter, obj, "Resume", 0,
-                   [id, &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value { return Write<C>(interp, registry, id, [](C &player) { Animation::Resume(player); }); });
+                    [id, &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value { return Write<C>(interp, registry, id, [](C &player) { Animation::Resume(player); }); });
 
             Method(interpreter, obj, "Stop", 0,
-                   [id, &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value { return Write<C>(interp, registry, id, [](C &player) { Animation::Stop(player); }); });
+                    [id, &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value { return Write<C>(interp, registry, id, [](C &player) { Animation::Stop(player); }); });
 
             Method(interpreter, obj, "IsPlaying", 0, [id, &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
                 return Read<C>(interp, registry, id, [](ObSL::Interpreter *, const C &player) -> ObSL::Value { return player.playing; });

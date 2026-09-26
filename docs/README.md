@@ -19,6 +19,7 @@ If you want to get started with the Obliberry editor, please see: [Editor Docs](
 | [Scripting : API Reference](scripting/api-reference.md)     | Every EngineLib function exposed to scripts.                                        |
 | [File Formats](formats/project-json.md)                     | `project.json`, `graphics.json`, scene files, `.obmap` maps, and `.obpak` packages. |
 | [Asset Catalog Format](formats/assets-json.md)              | Project-wide asset definitions, lazy loading, and legacy migration.                 |
+| [Save-game Format](formats/save-json.md)                    | Save locations, metadata, key/value data, and the ObSL save lifecycle.              |
 | [Third Party Licenses](THIRD_PARTY_LICENSES.md)             | License texts for every bundled and fetched dependency.                             |
 | [Sprite Animation](editor/sprite-animation.md)              | Creating, editing, previewing, and assigning sprite animation sets.                 |
 | [Sprite Animation Format](formats/sprite-animation-json.md) | Sheet layout, named clips, frame indices, and durations.                            |
@@ -31,6 +32,7 @@ If you want to get started with the Obliberry editor, please see: [Editor Docs](
 | `src/Applications`                 | Editor, Runtime, and packaging tool executables                                 |
 | `src/Scripting/EngineLib`          | The ObSL ↔ engine binding (see the [API reference](scripting/api-reference.md)) |
 | `src/Scripting/EngineLib/Examples` | Example `.obsl` scripts                                                         |
+| `src/SaveData`                     | Save-game manager, JSON format, and per-project storage                          |
 | `Templates/DemoProject`            | A demo project template (assets, scenes, map)                                   |
 | `Templates/Empty`                  | Minimal empty project template                                                  |
 | `external/obsl`                    | The ObSL language submodule (interpreter, lexer, parser, stdlib)                |

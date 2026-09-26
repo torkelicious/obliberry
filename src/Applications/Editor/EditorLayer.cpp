@@ -6,10 +6,13 @@
 #include "Logger/LoggerService.h"
 #include "ECS/Entity.h"
 #include "Platform/Error.h"
+#include "SaveData/SaveGameManager.h"
+#include "SaveData/SaveGameSerialization.h"
 #include "Scenes/Scene.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 #include <ObSL/ScriptRuntime.h>
+#include <exception>
 #include <filesystem>
 #include <memory>
 #include <string>
@@ -369,6 +372,10 @@ void Editor::EditorLayer::ClearCurrentProject() {
     m_ViewportPanel.ClearSelectedEntityID();
 
     m_UndoManager.Clear();
+
+    if (m_Context && m_Context->saveGameManager) {
+        m_Context->saveGameManager->Reset();
+    }
 }
 
 void Editor::EditorLayer::LoadProject(const std::string &projectFilePath) {
@@ -422,9 +429,43 @@ void Editor::EditorLayer::LoadProject(const std::string &projectFilePath) {
         return;
     }
 
+    const auto abandonLoadedProject = [&]() {
+        if (m_Context && m_Context->saveGameManager) {
+            m_Context->saveGameManager->Reset();
+        }
+
+        IO::AssetCatalog::Close();
+        Core::ResourceManager::GetInstance().ClearProjectResources();
+        Core::Project::SetActive(nullptr);
+        IO::VFS::UnmountProject();
+
+        if (!wasInHub) {
+            TransitionTo(std::make_unique<States::HubState>());
+        }
+    };
+
 
     if (m_Context->projectConfig) {
         *m_Context->projectConfig = project->GetConfig();
+    }
+
+    const auto &projectConfig = project->GetConfig();
+    if (m_Context->saveGameManager && projectConfig.useSaves) {
+        const auto saveDirectory = Saves::IO::GenerateSaveDirectory(projectConfig.UUID, projectConfig.saveLocation);
+
+        if (!saveDirectory) {
+            ShowProjectLoadError(projectFilePath, "Could not determine project save-data directory.");
+            abandonLoadedProject();
+            return;
+        }
+
+        try {
+            m_Context->saveGameManager->Configure(*saveDirectory);
+        } catch (const std::exception &error) {
+            ShowProjectLoadError(projectFilePath, std::string("Could not initialize save games:\n") + error.what());
+            abandonLoadedProject();
+            return;
+        }
     }
 
     if (m_Context->graphicsConfig) {

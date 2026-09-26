@@ -69,7 +69,7 @@ namespace Editor::UI {
                     const std::string labelStr = FormatTypeLabel(id, *mat, resources, count);
 
                     if (const ImVec4 swatchCol(mat->color.r, mat->color.g, mat->color.b, mat->color.a);
-                        ImGui::ColorButton("##swatch", swatchCol, ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoInputs, ImVec2(16, 16))) {
+                            ImGui::ColorButton("##swatch", swatchCol, ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoInputs, ImVec2(16, 16))) {
                         current = id;
                         changed = true;
                     }
@@ -99,7 +99,7 @@ namespace Editor::UI {
                 for (int x = 0; x < static_cast<int>(size); x += checkerSize) {
                     const bool light = (x / checkerSize + y / checkerSize) % 2 == 0;
                     dl->AddRectFilled(ImVec2(cursor.x + x, cursor.y + y), ImVec2(cursor.x + std::min(x + checkerSize, static_cast<int>(size)), cursor.y + std::min(y + checkerSize, static_cast<int>(size))),
-                                      light ? IM_COL32(200, 200, 200, 255) : IM_COL32(120, 120, 120, 255));
+                            light ? IM_COL32(200, 200, 200, 255) : IM_COL32(120, 120, 120, 255));
                 }
             }
 
@@ -366,9 +366,9 @@ namespace Editor::UI {
                 if (uint8_t existingId = 0; FindTypeIdForMaterial(*m_MapComp, m_EditTexture, m_EditColor, existingId)) {
                     if (existingId != m_CurrentTile->type) {
                         ImGui::TextColored(ImVec4(0.9f, 0.8f, 0.4f, 1.0f),
-                                           "Same material as type %u. Use 'Override Current Type' "
-                                           "to share it, or change texture/colour.",
-                                           static_cast<unsigned>(existingId));
+                                "Same material as type %u. Use 'Override Current Type' "
+                                "to share it, or change texture/colour.",
+                                static_cast<unsigned>(existingId));
                     }
                 }
             }

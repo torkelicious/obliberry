@@ -568,8 +568,8 @@ void Editor::States::EditState::Collider_DrawGizmoForSelected() {
             }
         } else {
             if (*collider != m_ColliderDragStart) {
-                m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::ModifyComponentFieldCommand<Collider>>(m_ColliderDragEntity, 0, sizeof(Collider), &m_ColliderDragStart, collider, "Edit Collider"),
-                                                     *m_EditorLayer->m_Context);
+                m_EditorLayer->m_UndoManager.Execute(
+                        std::make_unique<Commands::ModifyComponentFieldCommand<Collider>>(m_ColliderDragEntity, 0, sizeof(Collider), &m_ColliderDragStart, collider, "Edit Collider"), *m_EditorLayer->m_Context);
             }
 
             m_ColliderDragHandle = -1;

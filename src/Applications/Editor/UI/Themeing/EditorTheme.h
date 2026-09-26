@@ -3,10 +3,13 @@
 //
 #pragma once
 
+#include "Logger/LoggerService.h"
 #include "imgui.h"
 #include "Platform/FreeType.h"
 #include <algorithm>
 #include <array>
+#include <exception>
+#include <filesystem>
 #include <format>
 #include <imgui_internal.h>
 #include <optional>
@@ -116,20 +119,18 @@ namespace Editor::UI::Theme {
             if (varIdx >= ImGuiStyleVar_COUNT)
                 continue;
 
-            std::visit(
-                    [&](auto memberPtr) {
-                        using MemberT = std::decay_t<decltype(memberPtr)>;
-                        if constexpr (std::is_same_v<MemberT, FloatMember>) {
-                            if (const auto &v = theme.floatVars[varIdx]; v) {
-                                style.*memberPtr = *v;
-                            }
-                        } else {
-                            if (const auto &v = theme.vec2Vars[varIdx]; v) {
-                                style.*memberPtr = *v;
-                            }
-                        }
-                    },
-                    info.member);
+            std::visit([&](auto memberPtr) {
+                using MemberT = std::decay_t<decltype(memberPtr)>;
+                if constexpr (std::is_same_v<MemberT, FloatMember>) {
+                    if (const auto &v = theme.floatVars[varIdx]; v) {
+                        style.*memberPtr = *v;
+                    }
+                } else {
+                    if (const auto &v = theme.vec2Vars[varIdx]; v) {
+                        style.*memberPtr = *v;
+                    }
+                }
+            }, info.member);
         }
     }
 
@@ -200,18 +201,28 @@ namespace Editor::UI::Theme {
         const ImFont *lastNonMergedFont = nullptr;
         for (constexpr FontRole roleOrder[] = {FontRole::Body, FontRole::Bold, FontRole::Monospace, FontRole::Small, FontRole::Heading, FontRole::Icons}; const FontRole role : roleOrder) {
             for (auto &font : set.fonts) {
+
+                if (!std::filesystem::exists(font.path)) {
+                    LOG_ERROR("Theme", "Font: " + font.path.string() + " was not found.");
+                    continue;
+                }
+
                 if (font.role == role) {
-                    font.fontPtr = nullptr;
-                    ImFontConfig cfg;
-                    cfg.SizePixels = font.sizePixels;
-                    cfg.MergeMode = font.mergeIntoPrevious;
-                    cfg.GlyphMinAdvanceX = font.iconMinAdvanceX;
-                    cfg.FontDataOwnedByAtlas = true;
-                    LOG_INFO("Theme",
-                             "Adding font: '" + font.name + "', role: " + std::to_string(static_cast<int>(role)) + ", size: " + std::to_string(font.sizePixels) + ", merge: " + std::to_string(font.mergeIntoPrevious));
-                    font.fontPtr = io.Fonts->AddFontFromFileTTF(font.path.string().c_str(), font.sizePixels, &cfg);
-                    if (!font.mergeIntoPrevious && font.fontPtr) {
-                        lastNonMergedFont = font.fontPtr;
+                    try {
+                        font.fontPtr = nullptr;
+                        ImFontConfig cfg;
+                        cfg.SizePixels = font.sizePixels;
+                        cfg.MergeMode = font.mergeIntoPrevious;
+                        cfg.GlyphMinAdvanceX = font.iconMinAdvanceX;
+                        cfg.FontDataOwnedByAtlas = true;
+                        LOG_INFO("Theme",
+                                "Adding font: '" + font.name + "', role: " + std::to_string(static_cast<int>(role)) + ", size: " + std::to_string(font.sizePixels) + ", merge: " + std::to_string(font.mergeIntoPrevious));
+                        font.fontPtr = io.Fonts->AddFontFromFileTTF(font.path.string().c_str(), font.sizePixels, &cfg);
+                        if (!font.mergeIntoPrevious && font.fontPtr) {
+                            lastNonMergedFont = font.fontPtr;
+                        }
+                    } catch (std::exception &e) {
+                        LOG_ERROR("Theme", std::string("Error loading font: ") + e.what());
                     }
                 }
             }
@@ -271,20 +282,18 @@ namespace Editor::UI::Theme {
         }
 
         for (const auto &info : kStyleVarTable) {
-            std::visit(
-                    [&](auto memberPtr) {
-                        using MemberT = std::decay_t<decltype(memberPtr)>;
-                        if constexpr (std::is_same_v<MemberT, FloatMember>) {
-                            if (const auto val = theme.GetFloat(info.id)) {
-                                out.emplace_back(std::format("var.{}", info.name), FormatFloat(*val));
-                            }
-                        } else {
-                            if (const auto val = theme.GetVec2(info.id)) {
-                                out.emplace_back(std::format("var.{}", info.name), FormatVec2(*val));
-                            }
-                        }
-                    },
-                    info.member);
+            std::visit([&](auto memberPtr) {
+                using MemberT = std::decay_t<decltype(memberPtr)>;
+                if constexpr (std::is_same_v<MemberT, FloatMember>) {
+                    if (const auto val = theme.GetFloat(info.id)) {
+                        out.emplace_back(std::format("var.{}", info.name), FormatFloat(*val));
+                    }
+                } else {
+                    if (const auto val = theme.GetVec2(info.id)) {
+                        out.emplace_back(std::format("var.{}", info.name), FormatVec2(*val));
+                    }
+                }
+            }, info.member);
         }
         return out;
     }
@@ -312,22 +321,20 @@ namespace Editor::UI::Theme {
                 }
             } else if (key.starts_with("var.")) {
                 if (const auto *info = FindStyleVar(key.substr(4))) {
-                    std::visit(
-                            [&](auto memberPtr) {
-                                using MemberT = std::decay_t<decltype(memberPtr)>;
-                                if constexpr (std::is_same_v<MemberT, FloatMember>) {
-                                    float f = 0.0f;
-                                    if (ParseFloats(value, std::span(&f, 1))) {
-                                        theme.SetFloat(info->id, f);
-                                    }
-                                } else {
-                                    float f[2]{};
-                                    if (ParseFloats(value, f)) {
-                                        theme.SetVec2(info->id, ImVec2(f[0], f[1]));
-                                    }
-                                }
-                            },
-                            info->member);
+                    std::visit([&](auto memberPtr) {
+                        using MemberT = std::decay_t<decltype(memberPtr)>;
+                        if constexpr (std::is_same_v<MemberT, FloatMember>) {
+                            float f = 0.0f;
+                            if (ParseFloats(value, std::span(&f, 1))) {
+                                theme.SetFloat(info->id, f);
+                            }
+                        } else {
+                            float f[2]{};
+                            if (ParseFloats(value, f)) {
+                                theme.SetVec2(info->id, ImVec2(f[0], f[1]));
+                            }
+                        }
+                    }, info->member);
                 }
             }
         }

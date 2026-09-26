@@ -26,45 +26,45 @@ namespace ECS::Systems::AISystem {
 
         registry.ForEach<Components::MovementComponent, Components::TransformComponent, Components::MaterialComponent>(
                 [&](const Entity entity, Components::MovementComponent *move, const Components::TransformComponent *trans, const Components::MaterialComponent *mat) {
-                    if (!move->autoMove) {
-                        return;
+            if (!move->autoMove) {
+                return;
+            }
+
+            if (!move->isMoving) {
+                move->idleTimer -= dt;
+
+                if (move->idleTimer <= 0.0f) {
+                    Map::HexCoords target;
+                    bool valid = false;
+                    int attempts = 10;
+
+                    while (!valid && attempts-- > 0) {
+                        target = map->grid.walkableTiles[dist(rng)];
+                        /*if (target != playerHex)*/
+                        valid = true;
                     }
 
-                    if (!move->isMoving) {
-                        move->idleTimer -= dt;
-
-                        if (move->idleTimer <= 0.0f) {
-                            Map::HexCoords target;
-                            bool valid = false;
-                            int attempts = 10;
-
-                            while (!valid && attempts-- > 0) {
-                                target = map->grid.walkableTiles[dist(rng)];
-                                /*if (target != playerHex)*/
-                                valid = true;
-                            }
-
-                            if (valid) {
-                                const glm::vec3 pos3 = trans->worldTransform.GetPosition();
-                                const Map::HexCoords startHex = Math::HexMath::PixelToHex({pos3.x, pos3.y});
-
-                                map->grid.FindPath(startHex, target, move->currentPath);
-
-                                if (!move->currentPath.empty()) {
-                                    MovementSystem::StartPath(entity);
-                                }
-
-                                move->idleTimer = timeDist(rng);
-                            }
-                        }
-                    }
-
-                    if (move->isMoving && move->currentPathIndex < move->currentPath.size()) {
+                    if (valid) {
                         const glm::vec3 pos3 = trans->worldTransform.GetPosition();
-                        const glm::vec2 pos{pos3.x, pos3.y};
-                        const glm::vec2 target = Math::HexMath::HexToWorld(move->currentPath[move->currentPathIndex]);
-                        DirectionalAnimation::UpdateFacing(entity, target - pos, mat);
+                        const Map::HexCoords startHex = Math::HexMath::PixelToHex({pos3.x, pos3.y});
+
+                        map->grid.FindPath(startHex, target, move->currentPath);
+
+                        if (!move->currentPath.empty()) {
+                            MovementSystem::StartPath(entity);
+                        }
+
+                        move->idleTimer = timeDist(rng);
                     }
-                });
+                }
+            }
+
+            if (move->isMoving && move->currentPathIndex < move->currentPath.size()) {
+                const glm::vec3 pos3 = trans->worldTransform.GetPosition();
+                const glm::vec2 pos{pos3.x, pos3.y};
+                const glm::vec2 target = Math::HexMath::HexToWorld(move->currentPath[move->currentPathIndex]);
+                DirectionalAnimation::UpdateFacing(entity, target - pos, mat);
+            }
+        });
     }
 } // namespace ECS::Systems::AISystem

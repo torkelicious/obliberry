@@ -21,6 +21,7 @@
 | Topic                   | Location                          |
 |-------------------------|-----------------------------------|
 | ObSL Scripting Language | `../scripting/getting-started.md` |
+| Save-game Format        | `../formats/save-json.md`         |
 | Project Structure       | `concepts.md#project-structure`   |
 | Asset Catalog Format    | `../formats/assets-json.md`       |
 | Scene File Format       | `../formats/scene-json.md`        |

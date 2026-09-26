@@ -1,4 +1,5 @@
 #pragma once
+#include "Config/GraphicsConfig.h"
 #include "ConfigWindow.h"
 
 namespace Editor::UI {

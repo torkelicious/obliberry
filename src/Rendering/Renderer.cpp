@@ -37,8 +37,8 @@ void Rendering::Renderer::BeginFrame() {
     }
 }
 
-void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const Transform &transform, const Texture *textureOverride, const int32_t entityID,
-                                 const glm::vec4 &uvRect) {
+void Rendering::Renderer::Submit(
+        const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const Transform &transform, const Texture *textureOverride, const int32_t entityID, const glm::vec4 &uvRect) {
 
     m_ResourcePins[m_SubmitIndex].push_back(mesh);
     if (material)
@@ -58,13 +58,13 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::s
     const glm::vec4 col = material ? material->color : glm::vec4(1.0f);
 
     m_Commands[m_SubmitIndex].push_back({.mesh = mesh.get(),
-                                         .material = material.get(),
-                                         .effectiveTexture = effectiveTex,
-                                         .color = col,
-                                         .uvRect = uvRect,
-                                         .model = transform.GetMatrix(),
-                                         .sortKey = packKey(pos.x, pos.y, pos.z),
-                                         .entityID = entityID});
+            .material = material.get(),
+            .effectiveTexture = effectiveTex,
+            .color = col,
+            .uvRect = uvRect,
+            .model = transform.GetMatrix(),
+            .sortKey = packKey(pos.x, pos.y, pos.z),
+            .entityID = entityID});
 }
 
 void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> &transforms, const std::vector<int32_t> &entityIDs) {
@@ -88,19 +88,19 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::s
     }
 
     m_InstancedCommands[m_SubmitIndex].push_back({.mesh = mesh.get(),
-                                                  .material = material.get(),
-                                                  .effectiveTexture = tex,
-                                                  .color = col,
-                                                  .transformPtr = nullptr,
-                                                  .transformOffset = transformOffset,
-                                                  .transformCount = transforms.size(),
-                                                  .entityIDPtr = nullptr,
-                                                  .entityIDOffset = entityIDOffset,
-                                                  .entityIDCount = transforms.size()});
+            .material = material.get(),
+            .effectiveTexture = tex,
+            .color = col,
+            .transformPtr = nullptr,
+            .transformOffset = transformOffset,
+            .transformCount = transforms.size(),
+            .entityIDPtr = nullptr,
+            .entityIDOffset = entityIDOffset,
+            .entityIDCount = transforms.size()});
 }
 
 void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> &transforms, const std::vector<glm::vec4> &colors, const int32_t blendMode,
-                                 const int32_t renderOrder, const int8_t shape) {
+        const int32_t renderOrder, const int8_t shape) {
     if (transforms.empty())
         return;
 
@@ -121,21 +121,21 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::s
     }
 
     m_InstancedCommands[m_SubmitIndex].push_back({.mesh = mesh.get(),
-                                                  .material = material.get(),
-                                                  .effectiveTexture = tex,
-                                                  .color = col,
-                                                  .blendMode = static_cast<int8_t>(blendMode),
-                                                  .renderOrder = renderOrder,
-                                                  .shape = shape,
-                                                  .transformPtr = nullptr,
-                                                  .transformOffset = transformOffset,
-                                                  .transformCount = transforms.size(),
-                                                  .colorPtr = nullptr,
-                                                  .colorOffset = colorOffset,
-                                                  .colorCount = transforms.size(),
-                                                  .entityIDPtr = nullptr,
-                                                  .entityIDOffset = 0,
-                                                  .entityIDCount = 0});
+            .material = material.get(),
+            .effectiveTexture = tex,
+            .color = col,
+            .blendMode = static_cast<int8_t>(blendMode),
+            .renderOrder = renderOrder,
+            .shape = shape,
+            .transformPtr = nullptr,
+            .transformOffset = transformOffset,
+            .transformCount = transforms.size(),
+            .colorPtr = nullptr,
+            .colorOffset = colorOffset,
+            .colorCount = transforms.size(),
+            .entityIDPtr = nullptr,
+            .entityIDOffset = 0,
+            .entityIDCount = 0});
 }
 
 void Rendering::Renderer::SubmitPersistent(const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const std::vector<glm::mat4> *transforms, const std::vector<int32_t> *entityIDs) {
@@ -162,18 +162,18 @@ void Rendering::Renderer::SubmitPersistent(const std::shared_ptr<Mesh> &mesh, co
     }
 
     m_InstancedCommands[m_SubmitIndex].push_back({.mesh = mesh.get(),
-                                                  .material = material.get(),
-                                                  .effectiveTexture = tex,
-                                                  .color = col,
-                                                  .transformPtr = nullptr,
-                                                  .transformOffset = transformOffset,
-                                                  .transformCount = transforms->size(),
-                                                  .colorPtr = nullptr,
-                                                  .colorOffset = 0,
-                                                  .colorCount = 0,
-                                                  .entityIDPtr = nullptr,
-                                                  .entityIDOffset = entityIDOffset,
-                                                  .entityIDCount = transforms->size()});
+            .material = material.get(),
+            .effectiveTexture = tex,
+            .color = col,
+            .transformPtr = nullptr,
+            .transformOffset = transformOffset,
+            .transformCount = transforms->size(),
+            .colorPtr = nullptr,
+            .colorOffset = 0,
+            .colorCount = 0,
+            .entityIDPtr = nullptr,
+            .entityIDOffset = entityIDOffset,
+            .entityIDCount = transforms->size()});
 }
 
 void Rendering::Renderer::Flush(const size_t renderIndex) {

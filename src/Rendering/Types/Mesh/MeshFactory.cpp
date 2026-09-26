@@ -190,10 +190,8 @@ namespace Rendering::MeshFactory {
         float hw = width * 0.5f;
         float hh = height * 0.5f;
 
-        data.vertices = {{.Position = {0.0f, hh, 0.0f}, .UV = {0.5f, 1.0f}},
-                         {.Position = {hw, 0.0f, 0.0f}, .UV = {1.0f, 0.5f}},
-                         {.Position = {0.0f, -hh, 0.0f}, .UV = {0.5f, 0.0f}},
-                         {.Position = {-hw, 0.0f, 0.0f}, .UV = {0.0f, 0.5f}}};
+        data.vertices = {{.Position = {0.0f, hh, 0.0f}, .UV = {0.5f, 1.0f}}, {.Position = {hw, 0.0f, 0.0f}, .UV = {1.0f, 0.5f}}, {.Position = {0.0f, -hh, 0.0f}, .UV = {0.5f, 0.0f}},
+                {.Position = {-hw, 0.0f, 0.0f}, .UV = {0.0f, 0.5f}}};
 
         data.indices = {0, 1, 2, 2, 3, 0};
 
