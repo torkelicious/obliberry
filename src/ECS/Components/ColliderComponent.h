@@ -26,29 +26,32 @@ namespace ECS::Components {
     };
 
     inline bool IsValidCollider(const ColliderComponent &c) {
-        if (c.orientation != ColliderOrientation::Entity && c.orientation != ColliderOrientation::Billboard)
+        if (c.orientation != ColliderOrientation::Entity && c.orientation != ColliderOrientation::Billboard) {
             return false;
-
-        for (int i = 0; i < 3; ++i) {
-            if (!std::isfinite(c.offset[i]) || !std::isfinite(c.size[i]) || c.size[i] <= 0.0f)
-                return false;
         }
 
-        auto positive = [](const float value) { return std::isfinite(value) && value > 0.0f; };
+        for (int i = 0; i < 3; ++i) {
+            if (!std::isfinite(c.offset[i])) {
+                return false;
+            }
+        }
+
+        const auto positive = [](const float value) { return std::isfinite(value) && value > 0.0f; };
 
         switch (c.shape) {
             case ColliderShape::Box:
                 return positive(c.size.x) && positive(c.size.y) && positive(c.size.z);
-            case ColliderShape::Circle:
+
             case ColliderShape::Sphere:
+            case ColliderShape::Circle:
                 return positive(c.radius);
+
             case ColliderShape::Cylinder:
                 return positive(c.radius) && positive(c.height);
+
             case ColliderShape::Rectangle:
                 return positive(c.size.x) && positive(c.size.y);
         }
-
-
         return false;
     }
 

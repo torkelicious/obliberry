@@ -47,7 +47,6 @@ namespace ECS::Collision {
             }
 
             if (!Components::IsValidCollider(*othercCol)) {
-                blocked = true;
                 return;
             }
 

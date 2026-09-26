@@ -79,6 +79,10 @@ void Scenes::Scene::Update(const float dt) {
     m_Context->frameCount++;
 
     ECS::Collision::BillboardBasis basis;
+    if (m_Context->camera) {
+        basis.right = m_Context->camera->GetRightVector();
+        basis.up = m_Context->camera->GetUpVector();
+    }
 
     if (m_Context->uiSystem) {
         m_Context->uiSystem->Update(dt);
@@ -91,13 +95,6 @@ void Scenes::Scene::Update(const float dt) {
     ECS::Systems::ScriptSystem::Update(m_Registry, *m_Context);
 
     ECS::Systems::HierarchySystem::Propagate(m_Registry); // movement and scrips might change transforms!
-
-
-    if (m_Context->camera) {
-        basis.right = m_Context->camera->GetRightVector();
-        basis.up = m_Context->camera->GetUpVector();
-    }
-
     m_CollisionWorld.Update(m_Registry, basis);
     ECS::Systems::ScriptSystem::DispatchCollisionEvents(m_Registry, *m_Context, m_CollisionWorld.GetEvents());
 
