@@ -16,6 +16,7 @@ src/
 ├── Math/           Hex math, general math, frustum
 ├── Platform/       Window (GLFW), input, thread pool
 ├── Rendering/      OpenGL renderer, camera, meshes, materials, shaders, lightmaps
+├── SaveData/       Save-game manager, JSON serialization, and per-project storage
 ├── Scenes/         Scene and SceneManager
 ├── Scripting/      ObSL EngineLib (the script engine bindings)
 ├── Sound/          AudioEngine (miniaudio wrapper)
@@ -173,13 +174,26 @@ See [Collider settings](editor/components.md#collider) and the [EngineLib API](s
 ## Scripting (`src/Scripting`)
 
 - The engine embeds **ObSL** (submodule at `external/obsl`) language with its own docs (`external/obsl/docs/`).
-- `Scripting::EngineLib` registers the script-visible API in nine modules: Core, Registry, Input, Camera, Map, Audio,
-  Scene Management, Time, and UI.
+- `Scripting::EngineLib` registers the script-visible API in ten modules: Core, Registry, Input, Camera, Map, Audio,
+  Scene Management, Time, UI, and Save Data.
 - `ECS::Systems::ScriptSystem` pre-parses and runs entity scripts, binds the `this` entity wrapper, calls `on_update`/
   `on_destroy`/`on_exit` hooks in parallel, hot-reloads scripts when their source changes (loose projects only), and
   defers registry mutations to the main thread.
 
 → [Getting started](scripting/getting-started.md) · [API reference](scripting/api-reference.md)
+
+## Save data (`src/SaveData`)
+
+- `SaveGameManager` owns one active in-memory `SaveData`, an optional active filename, and the configured per-project
+  save directory. Its value access is protected by a shared mutex for parallel ObSL workers.
+- `SaveGameSerialization` validates version-1 JSON saves and performs atomic writes. Save values are restricted to
+  booleans, signed integers, finite doubles, and strings.
+- The save directory is derived from the project's UUID and `SaveLocation`: either the platform data home or the
+  executable directory. The project config must enable saves before the editor/runtime configures this directory.
+- The Save Data EngineLib module exposes explicit key/value and file lifecycle functions. ECS state, scenes, and script
+  variables are not captured automatically.
+
+→ [Save-game format](formats/save-json.md) · [Save API](scripting/api-reference.md#save-data)
 
 ## Scenes (`src/Scenes`)
 
@@ -244,7 +258,9 @@ See [Collider settings](editor/components.md#collider) and the [EngineLib API](s
 
 ## Configuration (`src/Config`)
 
-- `ProjectConfig` : project-level settings (`title`, `start_scene`) from `project.json`.
+- `ProjectConfig` : project identity and settings (`UUID`, `title`, `start_scene`, save enablement, and save location)
+  from `project.json`.
 - `GraphicsConfig` : window size/fullscreen, MSAA, target FPS, vsync mode, performance overlay from `graphics.json`.
 
-→ [project.json](formats/project-json.md) · [graphics.json](formats/graphics-json.md)
+→ [project.json](formats/project-json.md) · [graphics.json](formats/graphics-json.md) ·
+[save-game JSON](formats/save-json.md)

@@ -9,7 +9,7 @@ A tour of the Obliberry editor: the modes, camera controls, panels, and keybind 
 The editor has four states. You start in the Hub, and everything else hangs off it.
 
 | State        | What it is                                                                              |
-|--------------|-----------------------------------------------------------------------------------------|
+| ------------ | --------------------------------------------------------------------------------------- |
 | **Hub**      | The startup screen. Create or open a project.                                           |
 | **Edit**     | Build your scene: entities, transforms, materials, UI. Default after opening a project. |
 | **Play**     | Run the scene and its scripts, like a player would.                                     |
@@ -39,7 +39,7 @@ The Hub is a simple welcome screen with two buttons:
 Camera input only works while the mouse is over the **Scene View**.
 
 | Input                      | Action                                     |
-|----------------------------|--------------------------------------------|
+| -------------------------- | ------------------------------------------ |
 | `W` `A` `S` `D`            | Pan the camera                             |
 | `Shift` + `WASD`           | Pan faster (3×)                            |
 | Scroll wheel               | Zoom in and out                            |
@@ -71,6 +71,24 @@ on billboard sprites, and the editor will tell you so.
 ![Registry context menu](img/parenting-context-menu.png)
 
 Scenes are managed from the **Scene** menu: edit scene properties, create a new scene, or switch between scenes.
+
+### Project settings and saves
+
+Open **File → Project Settings** to edit the project's identity, window title, start scene, and save-game settings.
+
+- **Enable Saves** configures persistent save storage and enables the ObSL save file operations for the project.
+- **Data Home** stores saves in the platform's normal application-data directory.
+- **Portable** stores saves below the game executable's directory. That directory must be writable.
+- **Regenerate UUID** assigns a new project identity.
+
+The UUID keeps projects with identical names from sharing saves. Regenerating it does not delete existing files, but
+the project starts looking under a new UUID directory and will no longer discover the old saves automatically.
+
+Changing these controls edits the local project configuration. Use **Save** or **Apply** in the Project Properties
+window to write the changes to `project.json`.
+
+See [`project.json`](../formats/project-json.md) and the [save-game format](../formats/save-json.md) for exact values and
+storage paths.
 
 ---
 
@@ -137,7 +155,7 @@ target to be built too. See the [architecture notes](../architecture.md) for how
 ### Global (any mode)
 
 | Key      | Action                                                         |
-|----------|----------------------------------------------------------------|
+| -------- | -------------------------------------------------------------- |
 | `Esc`    | Quit the editor (prompts to save if there are unsaved changes) |
 | `Ctrl+S` | Save the scene (or the map in Map Edit mode)                   |
 | `Ctrl+Z` | Undo                                                           |
@@ -152,7 +170,7 @@ target to be built too. See the [architecture notes](../architecture.md) for how
 ### Edit Mode
 
 | Key                       | Action                                                                    |
-|---------------------------|---------------------------------------------------------------------------|
+| ------------------------- | ------------------------------------------------------------------------- |
 | `V`                       | Toggle isometric / top-down camera                                        |
 | `T` `R` `E`               | Gizmo: translate / rotate / scale (`E` = scale, toolbar button shows `S`) |
 | `W` `A` `S` `D`           | Pan the camera (hold `Shift` for 3× speed)                                |
@@ -163,7 +181,7 @@ target to be built too. See the [architecture notes](../architecture.md) for how
 ### Map Edit Mode
 
 | Key                       | Action                                         |
-|---------------------------|------------------------------------------------|
+| ------------------------- | ---------------------------------------------- |
 | `V`                       | Toggle isometric / top-down camera             |
 | `W` `A` `S` `D`           | Pan the camera (hold `Shift` for 3× speed)     |
 | Scroll wheel              | Zoom                                           |
