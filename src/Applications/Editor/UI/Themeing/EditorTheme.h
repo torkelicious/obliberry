@@ -17,6 +17,9 @@
 #include <string_view>
 #include <variant>
 #include <freetype/freetype.h>
+#include <locale>
+#include <span>
+#include <sstream>
 #include "Types.h"
 
 namespace Editor::UI::Theme {
