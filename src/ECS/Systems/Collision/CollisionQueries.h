@@ -4,6 +4,7 @@
 #include "ECS/Components/ColliderComponent.h"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Entity.h"
+#include "ECS/Systems/Collision/CollisionFilter.h"
 #include "ECS/Types.h"
 #include "GJK.h"
 #include "ECS/Registry.h"
@@ -50,6 +51,9 @@ namespace ECS::Collision {
                 return;
             }
 
+            if (!shouldCollide(*collider, *othercCol)) {
+                return;
+            }
 
             const WorldCollider other = BuildWorldCollider(otherId, *othercCol, *otherTrans, basis);
 

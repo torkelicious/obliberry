@@ -20,6 +20,7 @@
 #include "ECS/Components/ParticleEmitterComponent.h"
 #include "Rendering/Types/Texture/Texture.h"
 #include "nlohmann/json_fwd.hpp"
+#include <cstdint>
 
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "EntityFactory"
@@ -303,6 +304,9 @@ void IO::EntityFactory::RegisterDeserializers() {
         c.height = data.value("height", 1.0f);
         c.isTrigger = data.value("isTrigger", false);
 
+        c.layer = static_cast<uint8_t>(data.value("layer", 0u));
+        c.mask = data.value("mask", 0xFFFFFFFFu);
+
         if (!IsValidCollider(c))
             throw std::runtime_error("Invalid collider dimensions.");
 
@@ -466,7 +470,8 @@ void IO::EntityFactory::RegisterSerializers() {
                 break;
         }
         data["ColliderComponent"] = {{"version", 2}, {"shape", shape}, {"orientation", c.orientation == ECS::Components::ColliderOrientation::Billboard ? "Billboard" : "Entity"},
-                {"offset", {c.offset.x, c.offset.y, c.offset.z}}, {"size", {c.size.x, c.size.y, c.size.z}}, {"radius", c.radius}, {"height", c.height}, {"isTrigger", c.isTrigger}};
+                {"offset", {c.offset.x, c.offset.y, c.offset.z}}, {"size", {c.size.x, c.size.y, c.size.z}}, {"radius", c.radius}, {"height", c.height}, {"isTrigger", c.isTrigger},
+                {"layer", static_cast<uint32_t>(c.layer)}, {"mask", c.mask}};
     };
 
     // SPRITE ANIMATION

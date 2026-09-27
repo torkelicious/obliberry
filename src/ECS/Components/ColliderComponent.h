@@ -22,10 +22,17 @@ namespace ECS::Components {
 
         bool isTrigger = false;
 
+        uint8_t layer = 0;
+        uint32_t mask = 0xFFFFFFFFu;
+
         bool operator==(const ColliderComponent &other) const = default;
     };
 
     inline bool IsValidCollider(const ColliderComponent &c) {
+        if (c.layer >= 32) {
+            return false;
+        }
+
         if (c.orientation != ColliderOrientation::Entity && c.orientation != ColliderOrientation::Billboard) {
             return false;
         }

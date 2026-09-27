@@ -3,6 +3,7 @@
 #include "Applications/Editor/EditorLayer.h"
 #include <algorithm>
 #include <cfloat>
+#include <cstdint>
 #include <memory>
 #include <type_traits>
 #include "ECS/Components/ColliderComponent.h"
@@ -745,6 +746,26 @@ void Editor::UI::ColliderWidget::Draw(const ECS::Entity entity, Core::EngineCont
     }
 
     field([&] { return ImGui::Checkbox("Trigger", &c->isTrigger); });
+
+    field([&] {
+        int layer = static_cast<int>(c->layer);
+        const bool changed = ImGui::SliderInt("Layer", &layer, 0, 31);
+
+        if (changed) {
+            c->layer = static_cast<uint8_t>(layer);
+        }
+        return changed;
+    });
+
+    field([&] {
+        uint32_t mask = c->mask;
+        const bool changed = ImGui::InputScalar("Mask", ImGuiDataType_U32, &mask, nullptr, nullptr, "%08X", ImGuiInputTextFlags_CharsHexadecimal);
+
+        if (changed) {
+            c->mask = mask;
+        }
+        return changed;
+    });
 
     ImGui::Separator();
     const float buttonWidth = ImGui::CalcTextSize("Remove Collider").x + ImGui::GetStyle().FramePadding.x * 2.0f;
