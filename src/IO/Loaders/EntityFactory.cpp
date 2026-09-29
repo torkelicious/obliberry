@@ -7,6 +7,7 @@
 #include "ECS/Entity.h"
 #include "ECS/Systems/Animation/Animation.h"
 #include "ECS/Systems/Animation/Types.h"
+#include "ECS/Types.h"
 #include "Logger/LoggerService.h"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Components/MovementComponent.h"
@@ -541,13 +542,31 @@ void IO::EntityFactory::RegisterSerializers() {
     };
 }
 
-void IO::EntityFactory::DeserializeEntity(ECS::Entity &entity, const nlohmann::json &entityData, Core::ResourceManager &resources) {
+void IO::EntityFactory::DeserializeEntity(ECS::Entity &entity, const nlohmann::json &entityData, Core::ResourceManager &resources, const bool preserveUUID) {
+
+    if (preserveUUID) {
+        const auto it = entityData.find("uuid");
+        if (it != entityData.end()) {
+            if (!it->is_string() || it->get_ref<const std::string &>().empty()) {
+                LOG_WARN(LOG_WHO, "Invalid entity UUID: keeping generated UUID.");
+            } else {
+                const bool accepted = entity.GetRegistry()->SetEntityUUID(static_cast<ECS::EntityID>(entity), it->get_ref<const std::string &>());
+                if (!accepted) {
+                    LOG_WARN(LOG_WHO, "Entity UUID rejected: keeping generated UUID.");
+                }
+            }
+        }
+    }
+
+
     if (!entityData.contains("components")) {
         return;
     }
+
     if (entityData.contains("name")) {
         entity.SetName(entityData["name"]);
     }
+
     for (const auto &[compName, compData] : entityData["components"].items()) {
         if (auto it = s_Deserializers.find(compName); it != s_Deserializers.end()) {
             try {
@@ -587,5 +606,6 @@ void IO::EntityFactory::SerializeEntity(ECS::Entity &entity, nlohmann::json &out
     if (!componentsData.empty()) {
         outEntityData["components"] = componentsData;
     }
+    outEntityData["uuid"] = entity.GetRegistry()->GetEntityUUID(static_cast<ECS::EntityID>(entity));
 }
 #pragma pop_macro("LOG_WHO")

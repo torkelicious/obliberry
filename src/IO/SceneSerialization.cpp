@@ -171,7 +171,7 @@ namespace IO::SceneIO {
             for (const auto &entityData : j["entities"]) {
                 ECS::Entity entity(scene.GetRegistry().CreateEntity(), &scene.GetRegistry());
                 try {
-                    EntityFactory::DeserializeEntity(entity, entityData, resources);
+                    EntityFactory::DeserializeEntity(entity, entityData, resources, true);
                     deserializedIds.push_back(static_cast<ECS::EntityID>(entity));
                 } catch (const std::exception &e) {
                     LOG_ERROR(LOG_WHO, std::string("Failed to deserialize entity: ") + e.what());

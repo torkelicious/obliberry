@@ -23,7 +23,7 @@ namespace IO {
 
         static const std::unordered_map<std::string, ComponentSerializer> &GetSerializers();
 
-        static void DeserializeEntity(ECS::Entity &entity, const nlohmann::json &entityData, Core::ResourceManager &resources);
+        static void DeserializeEntity(ECS::Entity &entity, const nlohmann::json &entityData, Core::ResourceManager &resources, bool preserveUUID = false);
 
         static void SerializeEntity(ECS::Entity &entity, nlohmann::json &outEntityData, Core::ResourceManager &resources);
 
