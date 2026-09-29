@@ -470,6 +470,7 @@ namespace ECS::Systems::ScriptSystem {
                 return trigger ? &slot.on_trigger_enter_functions : &slot.on_collision_enter_functions;
             case Type::Stay:
                 return trigger ? &slot.on_trigger_stay_functions : &slot.on_trigger_stay_functions;
+                return trigger ? &slot.on_trigger_stay_functions : &slot.on_collision_stay_functions;
             case Type::Exit:
                 return trigger ? &slot.on_trigger_exit_functions : &slot.on_collision_exit_functions;
         }
