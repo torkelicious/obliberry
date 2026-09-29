@@ -304,8 +304,19 @@ void IO::EntityFactory::RegisterDeserializers() {
         c.height = data.value("height", 1.0f);
         c.isTrigger = data.value("isTrigger", false);
 
-        c.layer = static_cast<uint8_t>(data.value("layer", 0u));
-        c.mask = data.value("mask", 0xFFFFFFFFu);
+        const auto layer = data.value("layer", nlohmann::json(0));
+        const auto mask = data.value("mask", nlohmann::json(0xFFFFFFFFu));
+
+        if (!layer.is_number_integer() || layer < 0 || layer > 31) {
+            throw std::runtime_error("Collider layer must be an integer between 0 and 31.");
+        }
+
+        if (!mask.is_number_integer() || mask < 0 || mask > 0xFFFFFFFFu) {
+            throw std::runtime_error("Collider mask must be a 32-bit unsigned integer.");
+        }
+
+        c.layer = layer.get<uint8_t>();
+        c.mask = mask.get<uint32_t>();
 
         if (!IsValidCollider(c))
             throw std::runtime_error("Invalid collider dimensions.");

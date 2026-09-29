@@ -1,3 +1,4 @@
+
 #include "EditorWidgets.h"
 #include "Applications/Editor/Commands/EditorCommands.h"
 #include "Applications/Editor/EditorLayer.h"
@@ -5,6 +6,7 @@
 #include <cfloat>
 #include <cstdint>
 #include <memory>
+#include <string>
 #include <type_traits>
 #include "ECS/Components/ColliderComponent.h"
 #include "ECS/Components/SpriteAnimatorComponent.h"
@@ -757,15 +759,44 @@ void Editor::UI::ColliderWidget::Draw(const ECS::Entity entity, Core::EngineCont
         return changed;
     });
 
-    field([&] {
-        uint32_t mask = c->mask;
-        const bool changed = ImGui::InputScalar("Mask", ImGuiDataType_U32, &mask, nullptr, nullptr, "%08X", ImGuiInputTextFlags_CharsHexadecimal);
-
-        if (changed) {
-            c->mask = mask;
+    if (ImGui::TreeNode("Collision Mask")) {
+        if (ImGui::Button("Select all##CollisionMask") && c->mask != 0xFFFFFFFFu) {
+            const Component before = *c;
+            c->mask = 0xFFFFFFFFu;
+            commit(before);
         }
-        return changed;
-    });
+
+        ImGui::SameLine();
+        if (ImGui::Button("Deselect all##CollisionMask") && c->mask != 0u) {
+            const Component before = *c;
+            c->mask = 0u;
+            commit(before);
+        }
+
+        for (uint32_t i = 0; i < 32; ++i) {
+            ImGui::PushID(static_cast<int>(i));
+
+            const uint32_t bit = uint32_t{1} << i;
+            bool enabled = (c->mask & bit) != 0;
+            const std::string label = "Layer " + std::to_string(i);
+
+            if (ImGui::Checkbox(label.c_str(), &enabled)) {
+                const Component before = *c;
+
+                if (enabled) {
+                    c->mask |= bit;
+                } else {
+                    c->mask &= ~bit;
+                }
+
+                commit(before);
+            }
+
+            ImGui::PopID();
+        }
+
+        ImGui::TreePop();
+    }
 
     ImGui::Separator();
     const float buttonWidth = ImGui::CalcTextSize("Remove Collider").x + ImGui::GetStyle().FramePadding.x * 2.0f;
