@@ -1,5 +1,6 @@
 #include "Logger/LoggerService.h"
 #include "Platform/Timeout.h"
+#include "Rendering/Types/Camera.h"
 #include "Scripting/EngineLib/EngineLib.h"
 #include "Scripting/EngineLib/ScriptCommandBuffer.h"
 #include <mutex>
@@ -43,7 +44,7 @@ void Scripting::EngineLib::register_time_modules(ObSL::Interpreter &interpreter)
     // this a lil janky
     interpreter.get_global_environment()->define("SetTimeout", interpreter.gc.allocate<ObSL::NativeFunction>(2,
                                                                        // func, ms
-                                                                       [reg = m_registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+                                                                       [reg = m_registry, ctx = m_ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
         if (args.size() < 2 || !std::holds_alternative<ObSL::ObSLCallable *>(args[0]) || !std::holds_alternative<double>(args[1]))
             return std::monostate{};
 
@@ -53,11 +54,17 @@ void Scripting::EngineLib::register_time_modules(ObSL::Interpreter &interpreter)
         // keep fn alive until timer fires
         interp->gc.add_root(fn);
 
-        auto call = [interp, fn, reg] {
+        auto call = [interp, fn, reg, ctx] {
             auto *worker = static_cast<ObSL::ScriptWorker *>(interp->user_data);
 
             // give the deferred code a command buffer
             ScriptCommandBuffer buf;
+            ECS::Collision::BillboardBasis basis;
+            if (ctx && ctx->camera) {
+                basis.right = ctx->camera->GetRightVector();
+                basis.up = ctx->camera->GetUpVector();
+            }
+            buf.SetCollisionBasis(basis);
             worker->set_frame_context(&buf);
             try {
                 constexpr ObSL::Token call_token{.type = ObSL::TokenType::LEFT_PAREN, .lexeme = "(", .line = 0, .column = 0, .start_pos = 0, .end_pos = 0};

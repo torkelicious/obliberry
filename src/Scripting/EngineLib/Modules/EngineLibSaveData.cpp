@@ -51,12 +51,17 @@ void Scripting::EngineLib::register_save_modules(ObSL::Interpreter &interpreter)
             return false;
         }
 
+        const auto &key = std::get<std::string>(args[0]);
+        if (key.empty()) {
+            return false;
+        }
+
         const auto value = ToSaveValue(args[1]);
         if (!value) {
             return false;
         }
 
-        ctx->saveGameManager->Set(std::get<std::string>(args[0]), *value);
+        ctx->saveGameManager->Set(key, *value);
         return true;
     }, "save_set"));
 

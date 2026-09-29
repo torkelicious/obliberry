@@ -543,7 +543,7 @@ namespace Scripting {
             auto get_alive_count = [id, &registry](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
                 std::shared_lock lock(g_RegistryMutex);
                 if (const auto *comp = registry.GetComponent<ECS::Components::ParticleEmitterComponent>(id))
-                    return static_cast<double>(comp->emitterIndex >= 0 ? comp->emitterIndex : 0); // runtime-only, no pool access from script
+                    return static_cast<double>(comp->aliveCount);
                 return 0.0;
             };
 
