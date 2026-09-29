@@ -532,11 +532,10 @@ namespace Scripting {
 
             auto get_trigger = [id, &registry](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
                 std::shared_lock lock(g_RegistryMutex);
-                if (registry.IsValid(id)) {
-                    if (auto *comp = registry.GetComponent<Component>(id)) {
-                        return comp->isTrigger;
-                    }
+                if (auto *comp = registry.GetComponent<Component>(id)) {
+                    return comp->isTrigger;
                 }
+
                 return std::monostate{};
             };
 
@@ -548,9 +547,6 @@ namespace Scripting {
                 const bool value = std::get<bool>(args[0]);
 
                 auto apply = [id, value](ECS::Registry &reg) {
-                    if (!reg.IsValid(id)) {
-                        return;
-                    }
                     if (auto *comp = reg.GetComponent<Component>(id)) {
                         comp->isTrigger = value;
                     }
@@ -565,11 +561,74 @@ namespace Scripting {
                     std::unique_lock lock(g_RegistryMutex);
                     apply(registry);
                 }
+
+                return std::monostate{};
+            };
+
+            auto get_filter = [id, &registry](bool readLayer) -> ObSL::Value {
+                std::shared_lock lock(g_RegistryMutex);
+
+                if (auto *comp = registry.GetComponent<Component>(id)) {
+                    if (readLayer) {
+                        return static_cast<double>(comp->layer);
+                    }
+
+                    return static_cast<double>(comp->mask);
+                }
+
+                return std::monostate{};
+            };
+
+            auto set_filter = [id, &registry](const ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args, bool changeLayer) -> ObSL::Value {
+                if (args.empty() || !std::holds_alternative<double>(args[0])) {
+                    return std::monostate{};
+                }
+
+                const double number = std::get<double>(args[0]);
+                const double maximum = changeLayer ? 31.0 : 4294967295.0;
+
+                if (!std::isfinite(number) || number < 0.0 || number > maximum || std::floor(number) != number) {
+                    return std::monostate{};
+                }
+
+                const auto value = static_cast<uint32_t>(number);
+
+                auto apply = [id, value, changeLayer](ECS::Registry &reg) {
+                    if (auto *comp = reg.GetComponent<Component>(id)) {
+                        if (changeLayer) {
+                            comp->layer = static_cast<uint8_t>(value);
+                        } else {
+                            comp->mask = value;
+                        }
+                    }
+                };
+
+                auto *worker = static_cast<ObSL::ScriptWorker *>(interp->user_data);
+                auto *commands = worker ? worker->frame_context<ScriptCommandBuffer>() : nullptr;
+
+                if (commands) {
+                    commands->push(std::move(apply));
+                } else {
+                    std::unique_lock lock(g_RegistryMutex);
+                    apply(registry);
+                }
+
                 return std::monostate{};
             };
 
             obj->fields["GetIsTrigger"] = interpreter->gc.allocate<ObSL::NativeFunction>(0, std::move(get_trigger), "GetIsTrigger");
+
             obj->fields["SetIsTrigger"] = interpreter->gc.allocate<ObSL::NativeFunction>(1, std::move(set_trigger), "SetIsTrigger");
+
+            obj->fields["GetLayer"] = interpreter->gc.allocate<ObSL::NativeFunction>(0, [get_filter](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value { return get_filter(true); }, "GetLayer");
+
+            obj->fields["SetLayer"] =
+                    interpreter->gc.allocate<ObSL::NativeFunction>(1, [set_filter](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value { return set_filter(interp, args, true); }, "SetLayer");
+
+            obj->fields["GetMask"] = interpreter->gc.allocate<ObSL::NativeFunction>(0, [get_filter](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value { return get_filter(false); }, "GetMask");
+
+            obj->fields["SetMask"] =
+                    interpreter->gc.allocate<ObSL::NativeFunction>(1, [set_filter](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value { return set_filter(interp, args, false); }, "SetMask");
 
             StoreCachedComponent(interpreter, registry, id, EntityWrapperCache::Kind::Collider, obj);
 
