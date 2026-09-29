@@ -23,7 +23,7 @@ namespace ECS::Collision {
         }
 
         if (!Components::IsValidCollider(*collider)) {
-            return false;
+            return true; // nonblocking failure ig
         }
 
         WorldCollider cand = BuildWorldCollider(entity, *collider, *transform, basis);
