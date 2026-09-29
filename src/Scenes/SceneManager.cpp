@@ -1,4 +1,5 @@
 #include "SceneManager.h"
+#include "ECS/Types.h"
 #include "Logger/LoggerService.h"
 #include "Core/Constants.h"
 #include "Core/EngineContext.h"
@@ -80,26 +81,29 @@ namespace {
         if (!scene || batch.empty())
             return;
 
-        // name based deduplication
-        // maybe not the best but ion wanna deal with more complicated shit for now
-        std::unordered_set<std::string> batchNames;
-        for (const auto &[data, parentBatchIndex] : batch) {
-            if (data.contains("name") && !data["name"].is_null()) {
-                batchNames.insert(data["name"].get<std::string>());
+        // uuid deduplication
+        std::unordered_set<std::string> uuids;
+        for (const auto &item : batch) {
+            const auto it = item.data.find("uuid");
+            if (it != item.data.end() && it->is_string()) {
+                const auto &uuid = it->get_ref<const std::string &>();
+                if (!uuid.empty()) {
+                    uuids.insert(uuid);
+                }
             }
         }
 
-        if (!batchNames.empty()) {
-            std::vector<ECS::EntityID> toDestroy;
-            for (const ECS::EntityID entityID : scene->GetRegistry().GetLivingEntities()) {
-                if (!scene->GetRegistry().IsValid(entityID))
-                    continue;
-                if (const std::string &name = scene->GetRegistry().GetEntityName(entityID); !name.empty() && batchNames.contains(name)) {
-                    toDestroy.push_back(entityID);
-                }
+        auto &registry = scene->GetRegistry();
+        std::vector<ECS::EntityID> toDestroy;
+        for (const auto id : registry.GetLivingEntities()) {
+            if (uuids.contains(registry.GetEntityUUID(id))) {
+                toDestroy.push_back(id);
             }
-            for (const ECS::EntityID id : toDestroy) {
-                scene->GetRegistry().DestroyEntity(id);
+        }
+
+        for (const auto id : toDestroy) {
+            if (registry.IsValid(id)) {
+                registry.DestroyEntity(id);
             }
         }
 
@@ -110,7 +114,7 @@ namespace {
         for (const auto &[data, parentBatchIndex] : batch) {
             ECS::EntityID id = scene->GetRegistry().CreateEntity();
             ECS::Entity newEntity(id, &scene->GetRegistry());
-            IO::EntityFactory::DeserializeEntity(newEntity, data, *context->resources);
+            IO::EntityFactory::DeserializeEntity(newEntity, data, *context->resources, true);
             // PersistentTagComponent is not serialized
             newEntity.AddComponent<ECS::Components::PersistentTagComponent>();
             newIds.push_back(id);
