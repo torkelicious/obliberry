@@ -52,9 +52,16 @@ namespace Editor::UI {
         // VSync
         ImGui::SeparatorText("VSync");
         const char *vsyncTypes[] = {"None", "Enabled", "Adaptive"};
-        int currentVsyncType = static_cast<int>(m_LocalConfig.VSync);
-        if (ImGui::Combo("Mode", &currentVsyncType, vsyncTypes, IM_ARRAYSIZE(vsyncTypes))) {
-            m_LocalConfig.VSync = static_cast<Config::VSyncType>(currentVsyncType);
+        constexpr Config::VSyncType vsyncValues[] = {Config::VSyncType::NONE, Config::VSyncType::STANDARD, Config::VSyncType::ADAPTIVE};
+        int currentVsyncIndex = 1;
+        for (int i = 0; i < IM_ARRAYSIZE(vsyncValues); ++i) {
+            if (vsyncValues[i] == m_LocalConfig.VSync) {
+                currentVsyncIndex = i;
+                break;
+            }
+        }
+        if (ImGui::Combo("Mode", &currentVsyncIndex, vsyncTypes, IM_ARRAYSIZE(vsyncTypes))) {
+            m_LocalConfig.VSync = vsyncValues[currentVsyncIndex];
         }
 
         // Antialiasing
@@ -80,7 +87,7 @@ namespace Editor::UI {
         constexpr float buttonWidth = 120.0f;
         if (ImGui::Button("Save", ImVec2(buttonWidth, 0.0f))) {
             m_Undomgr->Execute(std::make_unique<Commands::GraphicsConfigUpdateCommand>(m_OldConfig, m_LocalConfig), *m_Context);
-            Config::GraphicsConfig::Serialize(m_LocalConfig, IO::VFS::GetProjectRoot() / "graphics.json");
+            Config::GraphicsConfig::Serialize(m_LocalConfig, "graphics.json");
             isOpen = false;
         }
 
