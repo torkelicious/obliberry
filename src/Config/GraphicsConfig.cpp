@@ -1,10 +1,12 @@
 #include "GraphicsConfig.h"
+#include "Core/Utils/PathUtils.h"
 #include "Logger/LoggerService.h"
 #include "IO/VFS/VFS.h"
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <filesystem>
 #include <cmath>
+#include <stdexcept>
 
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "GraphicsConfig"
@@ -48,66 +50,97 @@ namespace Config {
         return closest;
     }
 
-    GraphicsConfig GraphicsConfig::Deserialize(const std::filesystem::path &filepath) {
-        GraphicsConfig config;
-
-        // Convert path to string for VFS calls that expect string keys/paths
-        const std::string pathStr = filepath.string();
-
-        const auto dataView = IO::VFS::ReadVirtualJson(pathStr);
-
-        if (!dataView.has_value()) {
-            LOG_WARN(LOG_WHO, "Graphics config not found: " + pathStr + ". Using defaults");
-            return config;
+    static GraphicsConfig ParseGraphicsConfig(const nlohmann::json &j) {
+        if (!j.is_object()) {
+            throw std::runtime_error("Graphics config must be a JSON object.");
         }
 
+        GraphicsConfig parsed;
+        if (j.contains("window")) {
+            const auto &w = j.at("window");
+            if (!w.is_object()) {
+                throw std::runtime_error("Graphics window settings must be an object.");
+            }
+            if (w.contains("width")) {
+                parsed.WindowWidth = w.at("width").get<int>();
+            }
+            if (w.contains("height")) {
+                parsed.WindowHeight = w.at("height").get<int>();
+            }
+            if (w.contains("fullscreen")) {
+                parsed.Fullscreen = w.at("fullscreen").get<bool>();
+            }
+        }
+        if (j.contains("antialiasing")) {
+            const auto &aa = j.at("antialiasing");
+            if (!aa.is_object()) {
+                throw std::runtime_error("Graphics antialiasing settings must be an object.");
+            }
+            if (aa.contains("MSAA")) {
+                parsed.MSAAEnabled = aa.at("MSAA").get<bool>();
+            }
+            if (aa.contains("samples")) {
+                parsed.AASamples = aa.at("samples").get<uint8_t>();
+            }
+        }
+        if (j.contains("targetfps")) {
+            parsed.TargetFPS = j.at("targetfps").get<int>();
+        }
+        if (j.contains("vsync")) {
+            const auto &vsync = j.at("vsync");
+            if (vsync.is_string()) {
+                parsed.VSync = StringToVSync(vsync.get<std::string>());
+            } else if (vsync.is_boolean()) {
+                parsed.VSync = vsync.get<bool>() ? VSyncType::STANDARD : VSyncType::NONE;
+            } else {
+                throw std::runtime_error("Graphics vsync must be a string or boolean.");
+            }
+        }
+        if (j.contains("overlay")) {
+            parsed.ShowPerformanceOverlay = j.at("overlay").get<bool>();
+        }
+        return parsed;
+    }
+
+    static void LogGraphicsConfig(const GraphicsConfig &config) {
+        LOG_INFO(LOG_WHO, "Loaded graphics config:");
+        LOG_INFO(LOG_WHO, "  Window:        " + std::to_string(config.WindowWidth) + "x" + std::to_string(config.WindowHeight) + (config.Fullscreen ? " (fullscreen)" : ""));
+        LOG_INFO(LOG_WHO, "  VSync:         " + std::string(GraphicsConfig::VSyncToString(config.VSync)));
+        LOG_INFO(LOG_WHO, "  Target FPS:    " + std::to_string(config.TargetFPS));
+        LOG_INFO(LOG_WHO, "  MSAA:          " + std::string(config.MSAAEnabled ? "on (" + std::to_string(config.AASamples) + "x)" : "off"));
+        LOG_INFO(LOG_WHO, "  FPS Overlay:   " + std::string(config.ShowPerformanceOverlay ? "on" : "off"));
+    }
+
+    GraphicsConfig GraphicsConfig::Deserialize(const std::filesystem::path &filepath) {
+        if (IO::VFS::IsPackaged() && filepath.is_relative()) {
+            try {
+                const auto overridePath = Core::PathUtils::GetExecutableDirectory() / filepath;
+                std::ifstream file(overridePath);
+                if (file.is_open()) {
+                    const auto j = nlohmann::json::parse(file);
+                    auto config = ParseGraphicsConfig(j);
+                    LOG_INFO(LOG_WHO, "Loaded graphics config : " + overridePath.string());
+                    LogGraphicsConfig(config);
+                    return config;
+                }
+            } catch (const std::exception &e) {
+                LOG_WARN(LOG_WHO, "Could not load graphics override, trying through VFS: " + std::string(e.what()));
+            }
+        }
+
+        const auto data = IO::VFS::ReadVirtualJson(filepath);
+        if (!data.has_value()) {
+            LOG_WARN(LOG_WHO, "Graphics config not found: " + filepath.string() + ". Using defaults");
+            return GraphicsConfig{};
+        }
         try {
-            nlohmann::json j = dataView.value();
-
-            GraphicsConfig parsed;
-
-            if (j.contains("window")) {
-                auto &w = j["window"];
-                if (w.contains("width"))
-                    parsed.WindowWidth = w["width"];
-                if (w.contains("height"))
-                    parsed.WindowHeight = w["height"];
-                if (w.contains("fullscreen"))
-                    parsed.Fullscreen = w["fullscreen"];
-            }
-            if (j.contains("antialiasing")) {
-                auto &aa = j["antialiasing"];
-                if (aa.contains("MSAA"))
-                    parsed.MSAAEnabled = aa["MSAA"];
-                if (aa.contains("samples"))
-                    parsed.AASamples = aa["samples"];
-            }
-            if (j.contains("targetfps"))
-                parsed.TargetFPS = j["targetfps"];
-            if (j.contains("vsync")) {
-                if (j["vsync"].is_string())
-                    parsed.VSync = StringToVSync(j["vsync"].get<std::string>());
-                else if (j["vsync"].is_boolean())
-                    parsed.VSync = j["vsync"].get<bool>() ? VSyncType::STANDARD : VSyncType::NONE;
-            }
-
-            if (j.contains("overlay")) {
-                parsed.ShowPerformanceOverlay = j["overlay"].get<bool>();
-            }
-
-            LOG_INFO(LOG_WHO, "Loaded graphics config:");
-            LOG_INFO(LOG_WHO, "  Window:        " + std::to_string(parsed.WindowWidth) + "x" + std::to_string(parsed.WindowHeight) + (parsed.Fullscreen ? " (fullscreen)" : ""));
-            LOG_INFO(LOG_WHO, "  VSync:         " + std::string(VSyncToString(parsed.VSync)));
-            LOG_INFO(LOG_WHO, "  Target FPS:    " + std::to_string(parsed.TargetFPS));
-            LOG_INFO(LOG_WHO, "  MSAA:          " + std::string(parsed.MSAAEnabled ? "on (" + std::to_string(parsed.AASamples) + "x)" : "off"));
-            LOG_INFO(LOG_WHO, "  FPS Overlay:   " + std::string(parsed.ShowPerformanceOverlay ? "on" : "off"));
-
-            config = std::move(parsed);
+            auto config = ParseGraphicsConfig(*data);
+            LogGraphicsConfig(config);
+            return config;
         } catch (const std::exception &e) {
             LOG_ERROR(LOG_WHO, "Failed to parse graphics config: " + std::string(e.what()));
+            return GraphicsConfig{};
         }
-
-        return config;
     }
 
     void GraphicsConfig::Serialize(const GraphicsConfig &conf, const std::filesystem::path &filepath) {
