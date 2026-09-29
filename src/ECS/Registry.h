@@ -1,9 +1,12 @@
 #pragma once
 #include "ComponentPool.h"
+#include "Core/Utils/UUID.h"
 #include "Entity.h"
 #include "Types.h"
 #include "ECS/Components/RelationshipComponent.h"
 #include "ECS/Components/TransformComponent.h"
+#include <stdexcept>
+#include <vector>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
@@ -13,6 +16,7 @@
 #include <queue>
 #include <string>
 #include <utility>
+#include "Core/Utils/UUID.h"
 
 namespace ECS {
     inline uint32_t NextPoolIndex() {
@@ -40,6 +44,7 @@ namespace ECS {
         std::array<IPool *, MAX_COMPONENT_TYPES> m_PoolCache{};
         std::vector<uint32_t> m_LivingEntityIndices; // EntityIndex -> m_LivingEntities idx
         std::vector<uint64_t> m_EntitySignatures;    // bitmask of owned components
+        std::vector<std::string> m_EntityUUIDs;
 
     public:
         template <typename T> ComponentPool<T> *GetPool() {
@@ -58,6 +63,7 @@ namespace ECS {
             m_EntityNames.resize(MAX_ENTITIES);
             m_LivingEntityIndices.resize(MAX_ENTITIES, 0);
             m_EntitySignatures.resize(MAX_ENTITIES, 0);
+            m_EntityUUIDs.resize(MAX_ENTITIES);
             // 0 is reserved as the invalid/null entity; real entities start at 1
             for (uint32_t i = 1; i < MAX_ENTITIES; ++i) {
                 m_AvailableEntities.push(i);
@@ -71,6 +77,7 @@ namespace ECS {
             }
 
             const uint32_t index = m_AvailableEntities.front();
+            m_EntityUUIDs[index] = Core::Utils::UUID::UUIDGenerator::Generate();
             m_AvailableEntities.pop();
 
 
@@ -191,6 +198,25 @@ namespace ECS {
                     return id;
             }
             return INVALID_ENTITY_ID;
+        }
+
+
+        [[nodiscard]] const std::string &GetEntityUUID(const EntityID id) const {
+            static const std::string empty{};
+            return IsValid(id) ? m_EntityUUIDs[GetEntityIndex(id)] : empty;
+        }
+
+        void SetEntityUUID(const EntityID id, const std::string &uuid) {
+            if (!IsValid(id) || uuid.empty()) {
+                throw std::runtime_error("cannot assign empty uuid or to invalid entity.");
+            }
+
+            for (const auto other : m_LivingEntities) {
+                if (other != id && GetEntityUUID(other) == uuid) {
+                    throw std::runtime_error("UUID already exists: " + uuid);
+                }
+            }
+            m_EntityUUIDs[GetEntityIndex(id)] = uuid;
         }
 
         void Reparent(const EntityID child, const EntityID newParent) {
