@@ -4,6 +4,7 @@
 #include <variant>
 #include <vector>
 #include <map>
+#include "ECS/Systems/Collision/ColliderGeometry.h"
 #include "ECS/Systems/Collision/CollisionWorld.h"
 #include "ECS/Types.h"
 #include "Logger/LoggerService.h"
@@ -210,7 +211,7 @@ namespace ECS::Systems::ScriptSystem {
         }
     }
 
-    inline void Update(Registry &registry, const Core::EngineContext &ctx) {
+    inline void Update(Registry &registry, const Core::EngineContext &ctx, const Collision::BillboardBasis &basis) {
         if (!ctx.scriptPool || !ctx.threadPool)
             return;
         constexpr ObSL::Token call_token{.type = ObSL::TokenType::LEFT_PAREN, .lexeme = "(", .line = 0, .column = 0, .start_pos = 0, .end_pos = 0};
@@ -218,6 +219,7 @@ namespace ECS::Systems::ScriptSystem {
         const bool shouldPollReload = !IO::VFS::IsPackaged() && ctx.frameCount % kReloadPollIntervalFrames == 0;
 
         static Scripting::ScriptCommandBuffer cmd_buf;
+        cmd_buf.SetCollisionBasis(basis);
         const size_t num_workers = ctx.scriptPool->worker_count();
 
         // make sure command buffer / frame context before code runs
@@ -378,13 +380,14 @@ namespace ECS::Systems::ScriptSystem {
             ctx.scriptPool->get_worker(w)->clear_frame_context();
     }
 
-    inline void OnSceneExit(Registry &registry, const Core::EngineContext &ctx) {
+    inline void OnSceneExit(Registry &registry, const Core::EngineContext &ctx, const Collision::BillboardBasis &basis) {
         if (!ctx.scriptPool || !ctx.threadPool)
             return;
         constexpr ObSL::Token call_token{.type = ObSL::TokenType::LEFT_PAREN, .lexeme = "(", .line = 0, .column = 0, .start_pos = 0, .end_pos = 0};
 
         // Static reuse
         static Scripting::ScriptCommandBuffer cmd_buf;
+        cmd_buf.SetCollisionBasis(basis);
         const size_t num_workers = ctx.scriptPool->worker_count();
 
         for (size_t w = 0; w < num_workers; ++w)
@@ -469,7 +472,6 @@ namespace ECS::Systems::ScriptSystem {
             case Type::Enter:
                 return trigger ? &slot.on_trigger_enter_functions : &slot.on_collision_enter_functions;
             case Type::Stay:
-                return trigger ? &slot.on_trigger_stay_functions : &slot.on_trigger_stay_functions;
                 return trigger ? &slot.on_trigger_stay_functions : &slot.on_collision_stay_functions;
             case Type::Exit:
                 return trigger ? &slot.on_trigger_exit_functions : &slot.on_collision_exit_functions;
@@ -478,7 +480,7 @@ namespace ECS::Systems::ScriptSystem {
     }
 
 
-    inline void DispatchCollisionEvents(Registry &registry, const Core::EngineContext &ctx, const std::vector<Collision::CollisionEvent> &events) {
+    inline void DispatchCollisionEvents(Registry &registry, const Core::EngineContext &ctx, const std::vector<Collision::CollisionEvent> &events, const Collision::BillboardBasis &basis) {
         if (!ctx.scriptPool || events.empty()) {
             return;
         }
@@ -536,6 +538,7 @@ namespace ECS::Systems::ScriptSystem {
         }
 
         Scripting::ScriptCommandBuffer commands;
+        commands.SetCollisionBasis(basis);
 
         for (size_t w = 0; w < workerCount; ++w) {
             ctx.scriptPool->get_worker(w)->set_frame_context(&commands);

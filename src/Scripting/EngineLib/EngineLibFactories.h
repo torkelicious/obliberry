@@ -18,7 +18,9 @@
 #include <ObSL/ScriptWorker.h>
 #include <variant>
 #include <vector>
+#include "ECS/Systems/Collision/CollisionQueries.h"
 #include "IO/Loaders/SceneAssetLoader.h"
+#include "ObSL/Natives.h"
 #include "ObSL/Parser/ast.h"
 #include "Scenes/SceneManager.h"
 #include "Scripting/EngineLib/ScriptCommandBuffer.h"
@@ -193,6 +195,39 @@ namespace Scripting {
                 return false;
             };
 
+            auto try_move_to = [id](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+                if (args.size() != 3) {
+                    return std::monostate{};
+                }
+
+                glm::vec3 target{};
+                constexpr double lim = static_cast<double>(std::numeric_limits<float>::max());
+
+                for (int i = 0; i < 3; ++i) {
+                    if (!std::holds_alternative<double>(args[i])) {
+                        return std::monostate{};
+                    }
+
+                    const double val = std::get<double>(args[i]);
+                    if (!std::isfinite(val) || val < -lim || val > lim) {
+                        return std::monostate{};
+                    }
+
+                    target[i] = static_cast<float>(val);
+                }
+
+                auto *worker = static_cast<ObSL::ScriptWorker *>(interp->user_data);
+                auto *commands = worker ? worker->frame_context<ScriptCommandBuffer>() : nullptr;
+
+                if (!commands) {
+                    return std::monostate{};
+                }
+
+                commands->push([id, target, commands](ECS::Registry &reg) { ECS::Collision::TryMoveTo(reg, id, target, commands->GetCollisionBasis()); });
+
+                return std::monostate{};
+            };
+
             obj->fields["SetPosition"] = interpreter->gc.allocate<ObSL::NativeFunction>(3, std::move(set_pos), "SetPosition");
             obj->fields["SetRotation"] = interpreter->gc.allocate<ObSL::NativeFunction>(3, std::move(set_rot), "SetRotation");
             obj->fields["SetScale"] = interpreter->gc.allocate<ObSL::NativeFunction>(3, std::move(set_scale), "SetScale");
@@ -200,6 +235,7 @@ namespace Scripting {
             obj->fields["GetRotation"] = interpreter->gc.allocate<ObSL::NativeFunction>(0, std::move(get_rot), "GetRotation");
             obj->fields["GetScale"] = interpreter->gc.allocate<ObSL::NativeFunction>(0, std::move(get_scale), "GetScale");
             obj->fields["IsMoving"] = interpreter->gc.allocate<ObSL::NativeFunction>(0, std::move(is_moving_body), "IsMoving");
+            obj->fields["TryMoveTo"] = interpreter->gc.allocate<ObSL::NativeFunction>(3, std::move(try_move_to), "TryMoveTo");
 
             StoreCachedComponent(interpreter, registry, id, EntityWrapperCache::Kind::Transform, obj);
 

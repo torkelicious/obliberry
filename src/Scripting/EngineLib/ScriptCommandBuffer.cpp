@@ -1,5 +1,6 @@
 #include "ScriptCommandBuffer.h"
 #include "ECS/Registry.h"
+#include "ECS/Systems/Collision/ColliderGeometry.h"
 
 namespace Scripting {
     void ScriptCommandBuffer::push(SmallFunction<void(ECS::Registry &)> command) {
@@ -24,4 +25,10 @@ namespace Scripting {
             }
         }
     }
+
+    void ScriptCommandBuffer::SetCollisionBasis(const ECS::Collision::BillboardBasis &basis) { m_CollisionBasis = basis; }
+
+    const ECS::Collision::BillboardBasis &ScriptCommandBuffer::GetCollisionBasis() const { return m_CollisionBasis; }
+
+
 } // namespace Scripting

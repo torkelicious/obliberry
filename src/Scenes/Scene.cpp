@@ -92,11 +92,11 @@ void Scenes::Scene::Update(const float dt) {
     ECS::Systems::PlayerControlSystem::Update(m_Registry, *m_Context);
     ECS::Systems::AISystem::Update(m_Registry, dt);
     ECS::Systems::MovementSystem::Update(m_Registry, dt, basis);
-    ECS::Systems::ScriptSystem::Update(m_Registry, *m_Context);
+    ECS::Systems::ScriptSystem::Update(m_Registry, *m_Context, basis);
 
     ECS::Systems::HierarchySystem::Propagate(m_Registry); // movement and scrips might change transforms!
     m_CollisionWorld.Update(m_Registry, basis);
-    ECS::Systems::ScriptSystem::DispatchCollisionEvents(m_Registry, *m_Context, m_CollisionWorld.GetEvents());
+    ECS::Systems::ScriptSystem::DispatchCollisionEvents(m_Registry, *m_Context, m_CollisionWorld.GetEvents(), basis);
 
     // ui
     m_UICmdBuf.flush(m_UISystem);
@@ -144,8 +144,13 @@ void Scenes::Scene::OnExit() {
             m_Registry.DestroyEntity(id);
         }
     }
+    ECS::Collision::BillboardBasis basis{};
+    if (m_Context->camera) {
+        basis.right = m_Context->camera->GetRightVector();
+        basis.up = m_Context->camera->GetUpVector();
+    }
 
-    ECS::Systems::ScriptSystem::OnSceneExit(m_Registry, *m_Context);
+    ECS::Systems::ScriptSystem::OnSceneExit(m_Registry, *m_Context, basis);
     IO::PrefabManager::ClearCache();
     ECS::Systems::ParticleSystem::OnSceneExit(m_Registry);
     m_UISystem.Clear();
