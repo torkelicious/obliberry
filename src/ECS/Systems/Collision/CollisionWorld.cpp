@@ -1,4 +1,5 @@
 #include "CollisionWorld.h"
+#include "ECS/Systems/Collision/CollisionFilter.h"
 
 #define LOG_WHO "Collision"
 
@@ -43,12 +44,17 @@ namespace ECS::Collision {
         std::vector<Collision> nextCollisions;
         for (size_t i = 0; i < worldColliders.size(); ++i) {
             for (size_t j = i + 1; j < worldColliders.size(); ++j) {
-                if (!OverlapsAABB(aabbs[i], aabbs[j])) {
-                    continue;
-                }
 
                 const auto &a = worldColliders[i];
                 const auto &b = worldColliders[j];
+
+                if (!shouldCollide(a.geometry, b.geometry)) {
+                    continue;
+                }
+
+                if (!OverlapsAABB(aabbs[i], aabbs[j])) {
+                    continue;
+                }
 
                 const GJKResult result = IntersectsGJK(a, b);
 

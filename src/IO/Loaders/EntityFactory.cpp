@@ -20,6 +20,7 @@
 #include "ECS/Components/ParticleEmitterComponent.h"
 #include "Rendering/Types/Texture/Texture.h"
 #include "nlohmann/json_fwd.hpp"
+#include <cstdint>
 
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "EntityFactory"
@@ -303,6 +304,20 @@ void IO::EntityFactory::RegisterDeserializers() {
         c.height = data.value("height", 1.0f);
         c.isTrigger = data.value("isTrigger", false);
 
+        const auto layer = data.value("layer", nlohmann::json(0));
+        const auto mask = data.value("mask", nlohmann::json(0xFFFFFFFFu));
+
+        if (!layer.is_number_integer() || layer < 0 || layer > 31) {
+            throw std::runtime_error("Collider layer must be an integer between 0 and 31.");
+        }
+
+        if (!mask.is_number_integer() || mask < 0 || mask > 0xFFFFFFFFu) {
+            throw std::runtime_error("Collider mask must be a 32-bit unsigned integer.");
+        }
+
+        c.layer = layer.get<uint8_t>();
+        c.mask = mask.get<uint32_t>();
+
         if (!IsValidCollider(c))
             throw std::runtime_error("Invalid collider dimensions.");
 
@@ -466,7 +481,8 @@ void IO::EntityFactory::RegisterSerializers() {
                 break;
         }
         data["ColliderComponent"] = {{"version", 2}, {"shape", shape}, {"orientation", c.orientation == ECS::Components::ColliderOrientation::Billboard ? "Billboard" : "Entity"},
-                {"offset", {c.offset.x, c.offset.y, c.offset.z}}, {"size", {c.size.x, c.size.y, c.size.z}}, {"radius", c.radius}, {"height", c.height}, {"isTrigger", c.isTrigger}};
+                {"offset", {c.offset.x, c.offset.y, c.offset.z}}, {"size", {c.size.x, c.size.y, c.size.z}}, {"radius", c.radius}, {"height", c.height}, {"isTrigger", c.isTrigger},
+                {"layer", static_cast<uint32_t>(c.layer)}, {"mask", c.mask}};
     };
 
     // SPRITE ANIMATION

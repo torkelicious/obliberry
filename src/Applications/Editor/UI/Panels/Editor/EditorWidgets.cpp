@@ -1,9 +1,12 @@
+
 #include "EditorWidgets.h"
 #include "Applications/Editor/Commands/EditorCommands.h"
 #include "Applications/Editor/EditorLayer.h"
 #include <algorithm>
 #include <cfloat>
+#include <cstdint>
 #include <memory>
+#include <string>
 #include <type_traits>
 #include "ECS/Components/ColliderComponent.h"
 #include "ECS/Components/SpriteAnimatorComponent.h"
@@ -745,6 +748,55 @@ void Editor::UI::ColliderWidget::Draw(const ECS::Entity entity, Core::EngineCont
     }
 
     field([&] { return ImGui::Checkbox("Trigger", &c->isTrigger); });
+
+    field([&] {
+        int layer = static_cast<int>(c->layer);
+        const bool changed = ImGui::SliderInt("Layer", &layer, 0, 31);
+
+        if (changed) {
+            c->layer = static_cast<uint8_t>(layer);
+        }
+        return changed;
+    });
+
+    if (ImGui::TreeNode("Collision Mask")) {
+        if (ImGui::Button("Select all##CollisionMask") && c->mask != 0xFFFFFFFFu) {
+            const Component before = *c;
+            c->mask = 0xFFFFFFFFu;
+            commit(before);
+        }
+
+        ImGui::SameLine();
+        if (ImGui::Button("Deselect all##CollisionMask") && c->mask != 0u) {
+            const Component before = *c;
+            c->mask = 0u;
+            commit(before);
+        }
+
+        for (uint32_t i = 0; i < 32; ++i) {
+            ImGui::PushID(static_cast<int>(i));
+
+            const uint32_t bit = uint32_t{1} << i;
+            bool enabled = (c->mask & bit) != 0;
+            const std::string label = "Layer " + std::to_string(i);
+
+            if (ImGui::Checkbox(label.c_str(), &enabled)) {
+                const Component before = *c;
+
+                if (enabled) {
+                    c->mask |= bit;
+                } else {
+                    c->mask &= ~bit;
+                }
+
+                commit(before);
+            }
+
+            ImGui::PopID();
+        }
+
+        ImGui::TreePop();
+    }
 
     ImGui::Separator();
     const float buttonWidth = ImGui::CalcTextSize("Remove Collider").x + ImGui::GetStyle().FramePadding.x * 2.0f;
