@@ -133,6 +133,7 @@ namespace ECS::Systems::ParticleSystem {
             }
 
             state.pool.Update(dt);
+            comp->aliveCount = state.pool.AliveCount();
         });
 
         for (int i = static_cast<int>(emitters.size()) - 1; i >= 0; --i) {
@@ -176,6 +177,12 @@ namespace ECS::Systems::ParticleSystem {
         });
     }
 
-    inline void OnSceneExit(Registry &reg) { GetEmitters().clear(); }
+    inline void OnSceneExit(Registry &reg) {
+        reg.ForEach<Components::ParticleEmitterComponent>([](const Entity, Components::ParticleEmitterComponent *comp) {
+            comp->emitterIndex = -1;
+            comp->aliveCount = 0;
+        });
+        GetEmitters().clear();
+    }
 
 } // namespace ECS::Systems::ParticleSystem
