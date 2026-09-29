@@ -60,10 +60,6 @@ namespace ECS::Systems::MovementSystem {
                 moveComp->stepTimer -= moveComp->timePerStep;
                 const Map::HexCoords targetHex = moveComp->currentPath[moveComp->currentPathIndex];
 
-                // const glm::vec2 targetWorldPos2D = Map::HexGrid::GetWorldPos(targetHex);
-                // transComp->transform.SetPosition(glm::vec3(targetWorldPos2D.x, targetWorldPos2D.y, transComp->transform.GetPosition().z));
-                // moveComp->currentPathIndex++;
-
                 const Map::Tile *tile = map->grid.Get(targetHex);
                 if (!tile || !tile->walkable) {
                     CancelPath(moveComp);
@@ -84,13 +80,12 @@ namespace ECS::Systems::MovementSystem {
 
                 // would be no op
                 if (glm::dot(targetPos - currPos, targetPos - currPos) > 1e-12f) {
-                    if (!ECS::Collision::CanOccupy(registry, entID, targetPos, basis)) {
+                    if (!Collision::TryMoveTo(registry, entID, targetPos, basis)) {
                         CancelPath(moveComp);
                         return;
                     }
-                    transComp->transform.SetPosition(targetPos);
-                    HierarchySystem::Propagate(registry);
                 }
+
                 moveComp->currentPathIndex++;
                 if (moveComp->currentPathIndex >= moveComp->currentPath.size()) {
                     CancelPath(moveComp);

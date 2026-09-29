@@ -5,9 +5,12 @@
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Entity.h"
 #include "ECS/Systems/Collision/CollisionFilter.h"
+#include "ECS/Systems/HierarchySystem.h"
 #include "ECS/Types.h"
 #include "GJK.h"
 #include "ECS/Registry.h"
+#include "Math/GLMUtils.h"
+#include "glm/ext/vector_float3.hpp"
 
 namespace ECS::Collision {
 
@@ -67,6 +70,38 @@ namespace ECS::Collision {
         });
 
         return !blocked;
+    }
+
+    inline bool TryMoveTo(Registry &registry, const EntityID id, const glm::vec3 &targetWorldPos, const BillboardBasis &basis) {
+        if (!registry.IsValid(id)) {
+            return false;
+        }
+
+        if (!Math::GLMUtils::VecIsFinite(targetWorldPos)) {
+            return false;
+        }
+
+        auto *transform = registry.GetComponent<Components::TransformComponent>(id);
+        if (!transform) {
+            return false;
+        }
+
+        const auto *relationship = registry.GetComponent<Components::RelationshipComponent>(id);
+        if (relationship && relationship->parent != INVALID_ENTITY_ID) {
+            return false;
+        }
+
+        Systems::HierarchySystem::Propagate(registry);
+
+        if (!CanOccupy(registry, id, targetWorldPos, basis)) {
+            return false;
+        }
+
+        transform->transform.SetPosition(targetWorldPos);
+
+        Systems::HierarchySystem::Propagate(registry);
+
+        return true;
     }
 
 
