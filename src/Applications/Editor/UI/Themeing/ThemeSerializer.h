@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Applications/Editor/EditorContext.h"
 #include "EditorTheme.h"
 #include "Core/Utils/PathUtils.h"
 

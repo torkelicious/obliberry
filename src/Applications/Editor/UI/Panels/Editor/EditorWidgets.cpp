@@ -11,7 +11,6 @@
 #include "ECS/Components/ColliderComponent.h"
 #include "ECS/Components/SpriteAnimatorComponent.h"
 #include "ECS/Entity.h"
-#include "ECS/Systems/Animation/Types.h"
 #include "ECS/Types.h"
 #include "EditorWidgetsCombo.h"
 #include "IO/Loaders/ParticleEmitterPrefabManager.h"

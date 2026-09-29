@@ -8,7 +8,6 @@
 #include "Core/ResourceManager.h"
 #include "Applications/Editor/UI/Panels/Editor/EditorWidgetsCombo.h"
 #include "IO/AssetCatalog.h"
-#include "Rendering/Types/Texture/Texture.h"
 #include "ECS/Systems/Animation/Animation.h"
 #include "IO/AnimationSerialization.h"
 #include "Scenes/SceneManager.h"

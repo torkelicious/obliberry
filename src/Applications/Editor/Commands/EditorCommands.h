@@ -1,7 +1,6 @@
 #pragma once
 #include "ICommand.h"
 #include "Applications/Editor/EditorContext.h"
-#include "Applications/Editor/UI/Themeing/EditorTheme.h"
 #include "Config/ProjectConfig.h"
 #include "Platform/Window/Window.h"
 #include <glm/glm.hpp>
