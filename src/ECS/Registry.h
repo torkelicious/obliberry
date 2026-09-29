@@ -206,17 +206,19 @@ namespace ECS {
             return IsValid(id) ? m_EntityUUIDs[GetEntityIndex(id)] : empty;
         }
 
-        void SetEntityUUID(const EntityID id, const std::string &uuid) {
+        [[nodiscard]] bool SetEntityUUID(const EntityID id, const std::string &uuid) {
             if (!IsValid(id) || uuid.empty()) {
-                throw std::runtime_error("cannot assign empty uuid or to invalid entity.");
+                return false;
             }
 
-            for (const auto other : m_LivingEntities) {
+            for (const EntityID other : m_LivingEntities) {
                 if (other != id && GetEntityUUID(other) == uuid) {
-                    throw std::runtime_error("UUID already exists: " + uuid);
+                    return false;
                 }
             }
+
             m_EntityUUIDs[GetEntityIndex(id)] = uuid;
+            return true;
         }
 
         void Reparent(const EntityID child, const EntityID newParent) {
