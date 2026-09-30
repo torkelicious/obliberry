@@ -100,7 +100,7 @@ namespace ECS::Collision {
                 const double volume = glm::determinant(edges);
                 const double scale = glm::length(edges[0]) * glm::length(edges[1]) * glm::length(edges[2]);
                 if (std::abs(volume) > 1e-12 * scale) {
-                    const glm::dvec3 weights = glm::inverse(edges) * (-points[0]);
+                    const glm::dvec3 weights = glm::inverse(edges) * -points[0];
 
                     if (weights.x >= 0.0 && weights.y >= 0.0 && weights.z >= 0.0 && weights.x + weights.y + weights.z <= 1.0) {
                         return glm::dvec3(0.0);
@@ -118,7 +118,7 @@ namespace ECS::Collision {
 
         auto support = [&](const glm::dvec3 &direction) { return SupportWorld(a, direction) - SupportWorld(b, -direction); };
 
-        glm::dvec3 direction = glm::dvec3(b.localToWorld[3] - a.localToWorld[3]);
+        auto direction = glm::dvec3(b.localToWorld[3] - a.localToWorld[3]);
 
         if (!Detail::IsFinite(direction))
             return GJKResult::Indeterminate;

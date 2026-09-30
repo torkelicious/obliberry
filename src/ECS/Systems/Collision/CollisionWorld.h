@@ -12,8 +12,8 @@
 namespace ECS::Collision {
 
     struct Collision {
-        ECS::EntityID entityA = INVALID_ENTITY_ID;
-        ECS::EntityID entityB = INVALID_ENTITY_ID;
+        EntityID entityA = INVALID_ENTITY_ID;
+        EntityID entityB = INVALID_ENTITY_ID;
         bool isTrigger = false;
     };
 
@@ -21,8 +21,8 @@ namespace ECS::Collision {
 
     struct CollisionEvent {
         CollisionEventType type = CollisionEventType::Enter;
-        ECS::EntityID entityA = INVALID_ENTITY_ID;
-        ECS::EntityID entityB = INVALID_ENTITY_ID;
+        EntityID entityA = INVALID_ENTITY_ID;
+        EntityID entityB = INVALID_ENTITY_ID;
         bool isTrigger = false;
     };
 

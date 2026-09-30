@@ -119,8 +119,8 @@ namespace ECS::Systems::ScriptSystem {
             };
 
             {
-                const std::vector<std::vector<ObSL::ObSLCallable *>> hooks = {slot.on_update_functions, slot.on_exit_functions, slot.on_exit_functions, slot.on_collision_enter_functions, slot.on_collision_stay_functions,
-                        slot.on_collision_exit_functions, slot.on_trigger_enter_functions, slot.on_trigger_stay_functions, slot.on_trigger_exit_functions};
+                const std::vector hooks = {slot.on_update_functions, slot.on_exit_functions, slot.on_exit_functions, slot.on_collision_enter_functions, slot.on_collision_stay_functions, slot.on_collision_exit_functions,
+                        slot.on_trigger_enter_functions, slot.on_trigger_stay_functions, slot.on_trigger_exit_functions};
 
                 for (const auto &hook : hooks) {
                     remove_roots(hook);
@@ -606,7 +606,7 @@ namespace ECS::Systems::ScriptSystem {
                 }
                 Scripting::EngineLibFactories::GCProtectGuard protect(&interpreter, otherArg); // keep alive
 
-                const std::vector<ObSL::Value> args{otherArg};
+                const std::vector args{otherArg};
 
                 function->call(&interpreter, args, callToken);
             } catch (const std::exception &error) {

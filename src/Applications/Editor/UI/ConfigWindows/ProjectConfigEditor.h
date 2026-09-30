@@ -2,7 +2,6 @@
 
 #include "Applications/Editor/UI/Modals/StdDialogs.h"
 #include "ConfigWindow.h"
-#include "Core/EngineContext.h"
 #include "Config/ProjectConfig.h"
 #include "Applications/Editor/Commands/UndoManager.h"
 

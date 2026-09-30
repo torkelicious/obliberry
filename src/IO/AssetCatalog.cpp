@@ -98,7 +98,7 @@ namespace IO::AssetCatalog {
             return false;
         }
 
-        const std::string &id = idVal->get_ref<const std::string &>();
+        const auto &id = idVal->get_ref<const std::string &>();
         const auto existing = std::find_if(entries->begin(), entries->end(), [&](const json &asset) { return asset.is_object() && asset.value("id", std::string{}) == id; });
 
         const bool replaceExisting = existing != entries->end();

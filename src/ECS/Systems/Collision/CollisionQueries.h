@@ -10,7 +10,6 @@
 #include "GJK.h"
 #include "ECS/Registry.h"
 #include "Math/GLMUtils.h"
-#include "glm/ext/vector_float3.hpp"
 
 namespace ECS::Collision {
 

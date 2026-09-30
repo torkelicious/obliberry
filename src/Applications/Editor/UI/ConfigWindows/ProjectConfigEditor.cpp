@@ -1,7 +1,6 @@
 #include "ProjectConfigEditor.h"
 
 #include <cstddef>
-#include <cstdint>
 #include <cstring>
 #include <exception>
 #include <filesystem>
@@ -25,7 +24,7 @@ namespace Editor::UI {
         if (m_Context && m_Context->projectConfig) {
             m_LocalConfig = *m_Context->projectConfig;
 
-            m_IdDialog.SetOnConfirm([this]() {
+            m_IdDialog.SetOnConfirm([this] {
                 m_LocalConfig.UUID = Core::Utils::UUID::UUIDGenerator::Generate();
                 if (const auto proj = Core::Project::GetActive()) {
                     proj->MarkAsChanged();
@@ -102,14 +101,14 @@ namespace Editor::UI {
             ImGui::BeginDisabled(!m_LocalConfig.useSaves);
 
             const char *saveLocationLabels[] = {"Data Home", "Portable"};
-            constexpr std::size_t count = sizeof(saveLocationLabels) / sizeof(saveLocationLabels[0]);
+            constexpr std::size_t count = std::size(saveLocationLabels);
 
             const std::uint8_t currentIdx = static_cast<std::uint8_t>(m_LocalConfig.saveLocation);
-            const char *preview = (currentIdx < count) ? saveLocationLabels[currentIdx] : "Unknown";
+            const char *preview = currentIdx < count ? saveLocationLabels[currentIdx] : "Unknown";
 
             if (ImGui::BeginCombo("Save Data Location", preview)) {
                 for (std::size_t i = 0; i < count; ++i) {
-                    const bool isSelected = (currentIdx == i);
+                    const bool isSelected = currentIdx == i;
 
                     if (ImGui::Selectable(saveLocationLabels[i], isSelected)) {
                         m_LocalConfig.saveLocation = static_cast<Config::SaveLocation>(i);

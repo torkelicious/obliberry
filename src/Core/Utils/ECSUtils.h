@@ -88,7 +88,7 @@ namespace ECS::Utils {
             return INVALID_ENTITY_ID;
 
         const auto &entities = data["entities"];
-        std::vector<EntityID> newIds(entities.size(), INVALID_ENTITY_ID);
+        std::vector newIds(entities.size(), INVALID_ENTITY_ID);
 
         for (size_t i = 0; i < entities.size(); ++i) {
             const EntityID newId = reg->CreateEntity();
@@ -120,12 +120,12 @@ namespace ECS::Utils {
     }
 
     // True when candidate is an ancestor of entity
-    inline bool IsAncestorOf(ECS::Registry &registry, const ECS::EntityID entity, const ECS::EntityID candidate) {
-        const auto *rel = registry.GetComponent<ECS::Components::RelationshipComponent>(entity);
-        while (rel && rel->parent != ECS::INVALID_ENTITY_ID) {
+    inline bool IsAncestorOf(Registry &registry, const EntityID entity, const EntityID candidate) {
+        const auto *rel = registry.GetComponent<Components::RelationshipComponent>(entity);
+        while (rel && rel->parent != INVALID_ENTITY_ID) {
             if (rel->parent == candidate)
                 return true;
-            rel = registry.GetComponent<ECS::Components::RelationshipComponent>(rel->parent);
+            rel = registry.GetComponent<Components::RelationshipComponent>(rel->parent);
         }
         return false;
     }

@@ -11,6 +11,7 @@
 #include "ECS/Systems/Animation/Animation.h"
 #include "IO/AnimationSerialization.h"
 #include "Scenes/SceneManager.h"
+#include "imgui.h"
 
 void Editor::UI::SpriteAnimationPanel::Open(const std::string &key, const std::shared_ptr<Animation::SpriteAnimationSet> &asset) {
     if (!asset) {
@@ -332,7 +333,7 @@ void Editor::UI::SpriteAnimationPanel::DrawClipSettings() {
 
     enum class FrameAction { None, Remove, Duplicate, MoveUp, MoveDown };
 
-    FrameAction action = FrameAction::None;
+    auto action = FrameAction::None;
     size_t actionIndex = 0;
 
     for (size_t i = 0; i < clip.frames.size(); ++i) {

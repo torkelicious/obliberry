@@ -74,7 +74,7 @@ namespace Saves {
         m_ActiveSave.values.insert_or_assign(std::move(key), std::move(value));
     }
 
-    std::optional<SaveValue> SaveGameManager::Get(std::string_view key) const {
+    std::optional<SaveValue> SaveGameManager::Get(const std::string_view key) const {
         std::shared_lock lock(m_DataMutex);
 
         const auto found = m_ActiveSave.values.find(std::string(key));
@@ -84,13 +84,13 @@ namespace Saves {
         return found->second;
     }
 
-    bool SaveGameManager::Contains(std::string_view key) const {
+    bool SaveGameManager::Contains(const std::string_view key) const {
         std::shared_lock lock(m_DataMutex);
 
         return m_ActiveSave.values.contains(std::string(key));
     }
 
-    bool SaveGameManager::Remove(std::string_view key) {
+    bool SaveGameManager::Remove(const std::string_view key) {
         std::unique_lock lock(m_DataMutex);
         return m_ActiveSave.values.erase(std::string(key)) != 0;
     }

@@ -21,7 +21,6 @@
 #include "ECS/Components/ParticleEmitterComponent.h"
 #include "Rendering/Types/Texture/Texture.h"
 #include "nlohmann/json_fwd.hpp"
-#include <cstdint>
 
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "EntityFactory"
@@ -296,8 +295,8 @@ void IO::EntityFactory::RegisterDeserializers() {
         else
             throw std::runtime_error("Unknown collider orientation: " + orientation);
 
-        const auto offset = data.value("offset", std::array<float, 3>{0.0f, 0.0f, 0.0f});
-        const auto size = data.value("size", std::array<float, 3>{1.0f, 1.0f, 1.0f});
+        const auto offset = data.value("offset", std::array{0.0f, 0.0f, 0.0f});
+        const auto size = data.value("size", std::array{1.0f, 1.0f, 1.0f});
 
         c.offset = {offset[0], offset[1], offset[2]};
         c.size = {size[0], size[1], size[2]};
@@ -463,7 +462,7 @@ void IO::EntityFactory::RegisterSerializers() {
             return;
 
         const auto &c = *entity.GetComponent<Component>();
-        const char *shape = "Box";
+        auto shape = "Box";
         switch (c.shape) {
             case ECS::Components::ColliderShape::Box:
                 shape = "Box";

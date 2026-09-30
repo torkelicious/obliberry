@@ -17,7 +17,7 @@ namespace UI {
 
     inline glm::vec2 GetWorldPosition(const UIElement *element) {
         glm::vec2 worldPos = element->Rect.Position;
-        const UI::UIElement *current = element->Parent;
+        const UIElement *current = element->Parent;
         while (current != nullptr) {
             worldPos += current->Rect.Position;
             current = current->Parent;

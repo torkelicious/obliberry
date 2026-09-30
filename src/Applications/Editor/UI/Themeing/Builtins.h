@@ -30,11 +30,11 @@ namespace Editor::UI::Theme {
     };
 
     inline constexpr std::array kBuiltInThemes{
-            BuiltInThemeInfo{BuiltInTheme::ObliberryDark, "Obliberry Dark"},
-            BuiltInThemeInfo{BuiltInTheme::ImGuiClassicDark, "ImGui Classic Dark"},
-            BuiltInThemeInfo{BuiltInTheme::ObliberryLight, "Obliberry Light"},
-            BuiltInThemeInfo{BuiltInTheme::HighContrastDark, "High Contrast Dark"},
-            BuiltInThemeInfo{BuiltInTheme::TerminalGreen, "Haxxorman Green"},
+            BuiltInThemeInfo{.id = BuiltInTheme::ObliberryDark, .name = "Obliberry Dark"},
+            BuiltInThemeInfo{.id = BuiltInTheme::ImGuiClassicDark, .name = "ImGui Classic Dark"},
+            BuiltInThemeInfo{.id = BuiltInTheme::ObliberryLight, .name = "Obliberry Light"},
+            BuiltInThemeInfo{.id = BuiltInTheme::HighContrastDark, .name = "High Contrast Dark"},
+            BuiltInThemeInfo{.id = BuiltInTheme::TerminalGreen, .name = "Haxxorman Green"},
     };
 
     [[nodiscard]] inline ImVec4 ColorFromHex(const std::uint32_t rgb, const float alpha = 1.0f) noexcept {

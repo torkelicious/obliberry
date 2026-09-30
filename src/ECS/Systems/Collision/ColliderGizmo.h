@@ -59,7 +59,7 @@ namespace Editor::ColliderGizmo {
         if (handle.type == HandleType::Translate)
             return 0.0;
 
-        const glm::dvec3 axisWorld = glm::dvec3(world.localToWorld * glm::dvec4(handle.direction, 0.0));
+        const auto axisWorld = glm::dvec3(world.localToWorld * glm::dvec4(handle.direction, 0.0));
         const double length = glm::length(axisWorld);
 
         if (length <= 1e-12)
@@ -167,7 +167,7 @@ namespace Editor::ColliderGizmo {
             }
             case HandleType::Face: {
                 // move one face while the opposite face stays anchored
-                const int axis = d.x != 0.0 ? 0 : (d.y != 0.0 ? 1 : 2);
+                const int axis = d.x != 0.0 ? 0 : d.y != 0.0 ? 1 : 2;
                 const double sign = d[axis];
                 const double oldSize = collider.size[axis];
                 const double newSize = std::max(minimum, oldSize + sign * localDelta[axis]);

@@ -2,7 +2,6 @@
 #include "Core/ResourceManager.h"
 #include <algorithm>
 #include <cmath>
-#include <cstdint>
 #include <limits>
 #include <stdexcept>
 #include <string>
@@ -195,7 +194,7 @@ namespace Scripting {
                 return false;
             };
 
-            auto try_move_to = [id](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+            auto try_move_to = [id](const ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
                 if (args.size() != 3) {
                     return std::monostate{};
                 }
@@ -601,10 +600,10 @@ namespace Scripting {
                 return std::monostate{};
             };
 
-            auto get_filter = [id, &registry](bool readLayer) -> ObSL::Value {
+            auto get_filter = [id, &registry](const bool readLayer) -> ObSL::Value {
                 std::shared_lock lock(g_RegistryMutex);
 
-                if (auto *comp = registry.GetComponent<Component>(id)) {
+                if (const auto *comp = registry.GetComponent<Component>(id)) {
                     if (readLayer) {
                         return static_cast<double>(comp->layer);
                     }
@@ -658,13 +657,13 @@ namespace Scripting {
 
             obj->fields["GetLayer"] = interpreter->gc.allocate<ObSL::NativeFunction>(0, [get_filter](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value { return get_filter(true); }, "GetLayer");
 
-            obj->fields["SetLayer"] =
-                    interpreter->gc.allocate<ObSL::NativeFunction>(1, [set_filter](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value { return set_filter(interp, args, true); }, "SetLayer");
+            obj->fields["SetLayer"] = interpreter->gc.allocate<ObSL::NativeFunction>(
+                    1, [set_filter](const ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value { return set_filter(interp, args, true); }, "SetLayer");
 
             obj->fields["GetMask"] = interpreter->gc.allocate<ObSL::NativeFunction>(0, [get_filter](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value { return get_filter(false); }, "GetMask");
 
-            obj->fields["SetMask"] =
-                    interpreter->gc.allocate<ObSL::NativeFunction>(1, [set_filter](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value { return set_filter(interp, args, false); }, "SetMask");
+            obj->fields["SetMask"] = interpreter->gc.allocate<ObSL::NativeFunction>(
+                    1, [set_filter](const ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value { return set_filter(interp, args, false); }, "SetMask");
 
             StoreCachedComponent(interpreter, registry, id, EntityWrapperCache::Kind::Collider, obj);
 

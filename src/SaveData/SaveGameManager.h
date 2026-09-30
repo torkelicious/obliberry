@@ -2,7 +2,6 @@
 
 #include "SaveGameData.h"
 
-#include <cstdint>
 #include <filesystem>
 #include <optional>
 #include <shared_mutex>

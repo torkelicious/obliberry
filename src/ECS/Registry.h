@@ -16,7 +16,6 @@
 #include <queue>
 #include <string>
 #include <utility>
-#include "Core/Utils/UUID.h"
 
 namespace ECS {
     inline uint32_t NextPoolIndex() {

@@ -64,9 +64,9 @@ namespace IO {
             ec.shape = data["shape"].get<int>();
         if (data.contains("material_id")) {
             const std::string materialID = data["material_id"].get<std::string>();
-            IO::SceneAssetLoader::SceneAssetScope scope;
+            SceneAssetLoader::SceneAssetScope scope;
 
-            if (IO::SceneAssetLoader::Acquire(IO::SceneAssetLoader::AssetKind::Material, materialID, scope)) {
+            if (IO::SceneAssetLoader::Acquire(SceneAssetLoader::AssetKind::Material, materialID, scope)) {
                 ec.material = Core::ResourceManager::GetInstance().Get<Rendering::Material>(materialID);
 
                 if (ec.material) {

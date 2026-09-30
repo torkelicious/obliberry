@@ -92,7 +92,7 @@ namespace IO::Package::Tools {
                 try {
                     auto raw = read_file_binary(entry.path());
                     const std::string virtPath = "engine/shaders/" + entry.path().filename().generic_string();
-                    writer.add_raw_data(virtPath, std::move(raw), Package::EntryType::ShaderSource, opts.global_compress);
+                    writer.add_raw_data(virtPath, std::move(raw), EntryType::ShaderSource, opts.global_compress);
                     ++success_count;
                     LOG_INFO(LOG_WHO, "[ENGINE_SHADER] " + virtPath);
                 } catch (const std::exception &e) {

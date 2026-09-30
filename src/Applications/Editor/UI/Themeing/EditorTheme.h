@@ -246,7 +246,7 @@ namespace Editor::UI::Theme {
 
     [[nodiscard]] inline std::string FormatFloat(float f) { return std::format("{:.4f}", f); }
 
-    [[nodiscard]] inline bool ParseFloats(std::string_view s, std::span<float> out) {
+    [[nodiscard]] inline bool ParseFloats(const std::string_view s, std::span<float> out) {
         std::istringstream input{std::string(s)};
         input.imbue(std::locale::classic());
 

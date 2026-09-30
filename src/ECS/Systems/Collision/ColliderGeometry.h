@@ -21,7 +21,7 @@ namespace ECS::Collision {
     };
 
     struct WorldCollider {
-        ECS::EntityID entity = INVALID_ENTITY_ID;
+        EntityID entity = INVALID_ENTITY_ID;
         Components::ColliderComponent geometry;
         glm::dmat4 localToWorld{1.0f};
     };

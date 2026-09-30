@@ -436,7 +436,7 @@ void main()
         });
     }
 
-    inline void RegisterBuiltinPostProcShaders(Rendering::Renderer &renderer) {
+    inline void RegisterBuiltinPostProcShaders(Renderer &renderer) {
         auto &resources = Core::ResourceManager::GetInstance();
 
         for (const auto &reg : ppRegistrations)

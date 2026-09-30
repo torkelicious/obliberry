@@ -429,7 +429,7 @@ void Editor::EditorLayer::LoadProject(const std::string &projectFilePath) {
         return;
     }
 
-    const auto abandonLoadedProject = [&]() {
+    const auto abandonLoadedProject = [&] {
         if (m_Context && m_Context->saveGameManager) {
             m_Context->saveGameManager->Reset();
         }

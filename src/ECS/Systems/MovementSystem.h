@@ -4,13 +4,11 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include "ECS/Components/RelationshipComponent.h"
-#include "ECS/ECS.h"
 #include "ECS/Components/MovementComponent.h"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Components/MapComponent.h"
 #include "ECS/Systems/Collision/ColliderGeometry.h"
 #include "ECS/Systems/Collision/CollisionQueries.h"
-#include "ECS/Systems/HierarchySystem.h"
 #include "ECS/Types.h"
 #include "Map/Hex.h"
 #include "glm/geometric.hpp"
@@ -46,7 +44,7 @@ namespace ECS::Systems::MovementSystem {
             return;
         }
 
-        registry.ForEach<Components::MovementComponent, Components::TransformComponent>([&](const Entity entity, Components::MovementComponent *moveComp, Components::TransformComponent *transComp) {
+        registry.ForEach<Components::MovementComponent, Components::TransformComponent>([&](const Entity entity, Components::MovementComponent *moveComp, const Components::TransformComponent *transComp) {
             if (!moveComp->isMoving)
                 return;
 

@@ -463,7 +463,7 @@ void Editor::States::EditState::UI_DrawGizmoForSelected() const {
 void Editor::States::EditState::Collider_DrawGizmoForSelected() {
     using Collider = ECS::Components::ColliderComponent;
     using Transform = ECS::Components::TransformComponent;
-    namespace Gizmo = Editor::ColliderGizmo;
+    namespace Gizmo = ColliderGizmo;
 
     auto &viewport = m_EditorLayer->m_ViewportPanel;
     auto &registry = *m_EditorLayer->m_Registry;
@@ -540,8 +540,8 @@ void Editor::States::EditState::Collider_DrawGizmoForSelected() {
         if (ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
             const glm::dmat4 inverseVP = glm::inverse(glm::dmat4(vp));
 
-            const double ndcX = ((mouse.x - boundsMin.x) / width) * 2.0 - 1.0;
-            const double ndcY = 1.0 - ((mouse.y - boundsMin.y) / height) * 2.0;
+            const double ndcX = (mouse.x - boundsMin.x) / width * 2.0 - 1.0;
+            const double ndcY = 1.0 - (mouse.y - boundsMin.y) / height * 2.0;
 
             const glm::dvec4 nearPoint = inverseVP * glm::dvec4(ndcX, ndcY, -1.0, 1.0);
             const glm::dvec4 farPoint = inverseVP * glm::dvec4(ndcX, ndcY, 1.0, 1.0);
@@ -581,6 +581,6 @@ void Editor::States::EditState::Collider_DrawGizmoForSelected() {
     }
 
     ImGui::Begin("Scene View");
-    Editor::ColliderGizmo::Draw(ImGui::GetWindowDrawList(), world, vp, viewDirection, boundsMin, boundsMax, m_ColliderDragHandle >= 0 ? m_ColliderDragHandle : m_ColliderHoveredHandle);
+    ColliderGizmo::Draw(ImGui::GetWindowDrawList(), world, vp, viewDirection, boundsMin, boundsMax, m_ColliderDragHandle >= 0 ? m_ColliderDragHandle : m_ColliderHoveredHandle);
     ImGui::End();
 }

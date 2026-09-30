@@ -306,22 +306,22 @@ namespace {
         }
 
         switch (kind) {
-            case IO::SceneAssetLoader::AssetKind::Texture:
+            case AssetKind::Texture:
                 req.textures.insert(id);
                 return true;
-            case IO::SceneAssetLoader::AssetKind::Shader:
+            case AssetKind::Shader:
                 req.shaders.insert(id);
                 return true;
-            case IO::SceneAssetLoader::AssetKind::Mesh:
+            case AssetKind::Mesh:
                 req.meshes.insert(id);
                 return true;
-            case IO::SceneAssetLoader::AssetKind::Material:
+            case AssetKind::Material:
                 req.materials.insert(id);
                 return true;
-            case IO::SceneAssetLoader::AssetKind::Font:
+            case AssetKind::Font:
                 req.fonts.insert(id);
                 return true;
-            case IO::SceneAssetLoader::AssetKind::AnimationSet:
+            case AssetKind::AnimationSet:
                 req.animationSets.insert(id);
                 return true;
         }
