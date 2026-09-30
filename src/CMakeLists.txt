@@ -100,7 +100,7 @@ target_link_libraries(obliberry_engine PUBLIC
 
 if (WIN32)
     target_link_libraries(obliberry_engine PRIVATE bcrypt ole32 shell32)
-endif()
+endif ()
 
 # Runtime Executable
 add_executable(obliberry_runtime

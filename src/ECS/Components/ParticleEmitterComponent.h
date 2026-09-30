@@ -9,7 +9,7 @@ namespace ECS::Components {
 
     struct ParticleEmitterComponent {
         int emitterIndex = -1;
-        int aliveCount = 0; 
+        int aliveCount = 0;
 
         int maxParticles = 256;
         float emitRate = 50.0f;
