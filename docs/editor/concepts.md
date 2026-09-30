@@ -7,11 +7,13 @@ make sense.
 
 ## Entities
 
-An **entity** is just a unique ID. It has no data, no behavior, just an entry in the registry.
+An **entity** is an entry in the registry with a versioned numeric runtime handle and a separate stable UUID.
+Components supply its data and behaviour. UUIDs are saved with entities and used for persistent scene transitions;
+the numeric handle remains the ID used during a scene's lifetime.
 
 - Created via **Registry → +** or `CreateEntity()` in script
-- Deleted via **Registry → -** or `DestroyEntity()` (adds `DestroyTag`)
-- Can have a **name** (for debugging/editor only)
+- Deleted via **Registry → -** or `DestroyEntity()` (queues direct registry destruction during normal script execution)
+- Can have a **name** (an editor label and script lookup key; not a persistence identity)
 - Can be **parented** to form hierarchies (handled by `Relationship` component)
 
 ---
@@ -30,7 +32,7 @@ A **component** is a plain data structure. Examples: `TransformComponent` (posit
 Some components are **tags** - empty structs that just mark an entity for a system:
 
 | Tag            | Meaning                                                     |
-| -------------- | ----------------------------------------------------------- |
+|----------------|-------------------------------------------------------------|
 | `BillboardTag` | Render this entity as a billboard (always faces camera)     |
 | `DestroyTag`   | Delete this entity at end of frame                          |
 | `Relationship` | Stores parent/child links (not shown in Add Component menu) |
@@ -45,19 +47,20 @@ Tags appear as **checkboxes/flags** in the Inspector, not as expandable componen
 specific set of components.
 
 | System                     | Required Components                                  | What It Does                                                             |
-| -------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------ |
+|----------------------------|------------------------------------------------------|--------------------------------------------------------------------------|
 | `RenderSystem`             | Transform + Mesh + Material                          | Draws the entity                                                         |
 | `MovementSystem`           | Transform + Movement                                 | Moves entity along hex path                                              |
 | `AISystem`                 | —                                                    | Randomly wanders entities with `autoMove` enabled on `MovementComponent` |
 | `DirectionalTextureSystem` | Transform + Movement + DirectionalTexture + Material | Swaps texture based on facing                                            |
 | `ScriptSystem`             | Script                                               | Runs ObSL scripts                                                        |
-| `ParticleSystem`           | Transform + ParticleEmitter + Material               | Spawns/updates particles                                                 |
-| `LightingSystem`           | PointLight                                           | Computes lighting                                                        |
+| `ParticleSystem`           | Transform + ParticleEmitter (with emitter material)  | Spawns/updates particles                                                 |
+| `LightingSystem`           | Transform + PointLight                               | Computes lighting                                                        |
+| `CollisionWorld`           | Transform + Collider                                 | Filters collider pairs and emits overlap events.                         |
 | `UISystem`                 | (UI elements)                                        | Layout, input, rendering                                                 |
 
 > [!NOTE]
-> You don't interact with systems directly in the editor. They run automatically in Play mode. In Edit mode, only the
-> `RenderSystem` runs (for the Scene View).
+> Gameplay systems run automatically in Play mode. Edit mode also updates hierarchy and supported visual previews,
+> including animation, lighting, and particle previews; regular entity gameplay scripts do not run there.
 
 ---
 
@@ -112,7 +115,8 @@ Obliberry is built around a **pointy-top hex grid**.
 - Files: `.obsl` in `assets/scripts/`
 - Attached via `ScriptComponent` (array of paths)
 - Runs in **Play mode** only
-- Can read/write any component, create/destroy entities, play audio, load scenes, etc.
+- Exposes supported component wrappers, entity creation/destruction, audio, scene loading, save data, and UI. See the
+  API for the exact available operations.
 
 See the [ObSL Getting Started](../scripting/getting-started.md) for syntax and API reference.
 
@@ -152,7 +156,10 @@ When you're done, **File → Export Project** creates a single `.obpak` file con
 - All assets (textures, shaders, fonts, maps, scripts)
 - `project.json`
 
-Exporting will also copy the runtime over to the export directory with the same name as the project.
+Export also copies the built runtime binary, named from the sanitized project title, and a loose `graphics.json`.
+Save changes before exporting: the export command packages the files currently on disk. The packaged runtime reads
+the text graphics file beside its executable before falling back to the archive; see
+[graphics loading](../formats/graphics-json.md#loading).
 
 The `obliberry_runtime` loads `.obpak` files directly, that's your "game" executable
 
@@ -161,7 +168,7 @@ The `obliberry_runtime` loads `.obpak` files directly, that's your "game" execut
 ## Summary
 
 | Concept       | Key Point                                                         |
-| ------------- | ----------------------------------------------------------------- |
+|---------------|-------------------------------------------------------------------|
 | **Entity**    | an ID. Add components to give it behavior.                        |
 | **Component** | data. One per type per entity.                                    |
 | **System**    | Logic that runs on entities with matching components.             |

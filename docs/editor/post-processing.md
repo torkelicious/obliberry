@@ -30,7 +30,8 @@ Reordering, enabling, adding, and deleting take effect immediately in the Scene 
 - **Uses scene texture (`u_Scene`)** - Also binds the _original_ unprocessed scene on texture unit 1, for compositing
   effects (e.g. bloom adds the blurred bright-pass back onto the scene).
 - **Uniforms** - Editable values per effect. `float`/`int`/`vec2/3/4` get drag widgets, uniforms with `Color` in the
-  name get a color picker. **Ctrl+click** a drag widget to type an exact value.
+  name get a color picker; names containing `Wheel` use a hue-wheel picker. **Ctrl+click** a drag widget to type an
+  exact value.
 - **Pass N** sections - Per-pass uniform overrides for multi-pass effects (e.g. `u_Horizontal` for the blur).
 
 ### Live preview, Apply, Close
@@ -51,10 +52,34 @@ Committing marks the scene as changed remember to save the scene (Ctrl+S) afterw
 | **BrightPass**     | Extracts pixels brighter than a threshold                           | `u_Threshold`, `u_SoftKnee` (soft cutoff)                                                             |
 | **GaussianBlur**   | 9-tap separable blur; needs 2 passes, `u_Horizontal` 1 then 0       | `u_Horizontal` (per-pass, 1/0)                                                                        |
 | **BloomComposite** | Adds the blurred bright-pass back onto the scene                    | `u_Strength`                                                                                          |
+| **ColorGrading**   | Exposure, contrast, tonal wheels, and saturation                    | See parameters below.                                                                                 |
+| **Vingette**       | Darkens image edges                                                 | `u_Alpha`, `u_InnerRadius`, `u_OuterRadius`, `u_UseAspect`                                            |
 | **FilmGrain**      | per-pixel grain; `u_GrainSize` is the grain cell in pixels          | `u_GrainAmount`, `u_GrainSize`                                                                        |
 | **CRT**            | Retro CRT monitor: curvature, scanlines, mask, glow, noise, flicker | `u_Curvature`, `u_Aberration`, `u_Scanline`, `u_Mask`, `u_Glow`, `u_Noise`, `u_Flicker`, `u_Vignette` |
 
-A default chain containing all of these (disabled by default) is used for scenes that don't specify one.
+The default chain includes Grayscale, BrightPass, GaussianBlur, BloomComposite, CRT, FilmGrain, ColorGrading, and
+Vingette, all disabled. Passthrough is registered separately and is not in the default chain. Explicit scene chains
+retain their own order. Resource IDs are `[Engine_PP] <name>`.
+
+### ColorGrading
+
+ColorGrading applies exposure, contrast, lift/gamma/gain, tonal wheels, color balance, then saturation.
+
+| Uniform                                                 | Default               | Meaning                                                                                 |
+|---------------------------------------------------------|-----------------------|-----------------------------------------------------------------------------------------|
+| `u_Exposure`                                            | `0`                   | Exposure in stops; RGB is multiplied by `2^value`.                                      |
+| `u_Contrast` / `u_Pivot`                                | `1` / `0.5`           | Contrast strength and pivot.                                                            |
+| `u_Saturation`                                          | `1`                   | Saturation multiplier.                                                                  |
+| `u_Gamma` / `u_Gain`                                    | `[1,1,1]` / `[1,1,1]` | Per-channel gamma and gain.                                                             |
+| `u_Lift` / `u_ColorBalance`                             | `[0,0,0]` / `[0,0,0]` | Per-channel lift and additive balance.                                                  |
+| `u_ShadowWheel` / `u_MidtoneWheel` / `u_HighlightWheel` | `[0,0,0]` each        | Per-channel tonal adjustments; names containing `Wheel` use the hue-wheel color picker. |
+
+### Vingette
+
+**`Vingette`** (`[Engine_PP] Vingette`) darkens the edges while preserving alpha. `u_Alpha` defaults to `0.8`,
+`u_InnerRadius` to `0.25`,
+`u_OuterRadius` to `0.7`, and `u_UseAspect` to `true`. Keep the outer radius greater than the inner radius.
+The aspect option scales horizontal distance by the render target's aspect ratio.
 
 ---
 
@@ -83,7 +108,7 @@ void main() {
 ### Engine uniforms
 
 The engine sets these for every effect when the shader declares them. don't declare your own values for them in the
-effect config, they're automatically ser per-frame:
+effect config, they are set automatically per frame:
 
 | Uniform        | Type        | Meaning                                             |
 |----------------|-------------|-----------------------------------------------------|

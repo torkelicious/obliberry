@@ -36,10 +36,10 @@ Both executables (`obliberry_runtime` and `obliberry_editor`) are thin shells ar
 
 ```mermaid
 flowchart TD
-    A[Main thread<br/>poll events<br/>ApplicationLayer Update<br/>scene ECS systems ObSL scripts<br/>ApplicationLayer Render ImGui] --> B[Hand frame to render thread<br/>double-buffered FrameSync]
-    B --> C[Render thread<br/>GL draw calls<br/>editor framebuffer<br/>present vsync frame limit]
-    A --> D[Thread pool<br/>ObSL script workers<br/>tasks]
-    D --> E[ScriptCommandBuffer UICommandBuffer<br/>deferred writes flushed on main thread]
+    A["Main thread: input, scene update, frame submission"] --> B["Two frame buffers"]
+    B --> C["Render thread: draw and present"]
+    A --> D["Script workers"]
+    D --> E["Command buffers: queued writes"]
     E --> A
 ```
 
@@ -69,9 +69,9 @@ flowchart TD
   `Core::ReservedThreads`).
 - ObSL scripts run **in parallel** across the script pool's workers (one interpreter per worker). Each entity's scripts
   are assigned to a worker round robin.
-- Scripts must not mutate the ECS directly from a worker: the EngineLib routes mutations through `ScriptCommandBuffer` /
-  `UICommandBuffer`, which the main thread flushes after parallel execution. Reads are protected by a shared registry
-  mutex (`g_RegistryMutex`). Module-specific state (camera, audio, window, …) has its own mutexes.
+- Most EngineLib component writes, destruction, and UI mutations use `ScriptCommandBuffer` / `UICommandBuffer`,
+  flushed on the main thread. Entity creation and prefab instantiation are synchronous under the registry mutex;
+  save access uses its own mutex. Reads use the shared registry mutex (`g_RegistryMutex`) or module-specific locks.
 
 See [Scripting : Getting Started](scripting/getting-started.md) for the scripting model,
 and [Scripting : API Reference](scripting/api-reference.md) for notes per module.
@@ -80,7 +80,9 @@ and [Scripting : API Reference](scripting/api-reference.md) for notes per module
 
 - **Registry** : owns entity pools (`ComponentPool<T>`, dense arrays) with a fixed cap on component types (
   `MAX_COMPONENT_TYPES`) and a maximum entity count. Entity handles are _versioned_ (
-  `index | version << ENTITY_VERSION_SHIFT`) so stale handles don't alias new entities. `ForEach<Primary, Rest...>`
+  `index | version << ENTITY_VERSION_SHIFT`) so stale handles don't alias new entities. Each live entity also has a
+  generated UUID stored separately by the registry for serialization and persistent scene transitions.
+  `ForEach<Primary, Rest...>`
   iterates entities that have all listed components.
 - **Entity** : a lightweight handle wrapper (`{EntityID, Registry*}`) with
   `AddComponent/GetComponent/HasComponent/RemoveComponent`, naming, and hierarchy helpers.
@@ -89,7 +91,8 @@ and [Scripting : API Reference](scripting/api-reference.md) for notes per module
   `ParticleEmitterComponent`, `DirectionalTextureComponent`, `SpriteSheetComponent`, `SpriteAnimatorComponent`,
   `ColliderComponent`,
   `BillboardTagComponent`, `DestroyTagComponent`,
-  `PrefabSourceComponent`, `RelationshipComponent` (hierarchy), `CustomDataComponent` (script data).
+  `PrefabSourceComponent`, `PersistentTagComponent`, `RelationshipComponent` (hierarchy), `CustomDataComponent` (runtime
+  script data).
 - **Systems** (`src/ECS/Systems/`) : `RenderSystem`, `ScriptSystem`, `MovementSystem`, `MapRenderSystem`,
   `MapRuntimeSystem`, `LightingSystem`, `ParticleSystem`, `AISystem`, `PlayerControlSystem`, `HierarchySystem`,
   `DirectionalAnimationSystem`, `SpriteBillboardSystem`, `SpriteAnimation::Update`, and `CollisionWorld`.
@@ -119,7 +122,8 @@ the resulting pose into the SpriteSheet component.
   `PostProcessor::Execute` runs a per-scene chain of fullscreen shader effects, ping-ponging between two framebuffers.
   Each `PostEffect` carries its shader, tunable uniforms (float/int/vec2/3/4), optional per-pass overrides for
   multi-pass effects, and a `wantsSceneTexture` flag that binds the original scene on unit 1 (`u_Scene`) for
-  compositing. Built-in effects (Grayscale, BrightPass, GaussianBlur, BloomComposite, CRT) are registered at startup
+  compositing. Built-in effects (Grayscale, BrightPass, GaussianBlur, BloomComposite, CRT, FilmGrain, ColorGrading,
+  Vingette) are registered at startup
   with keys `[Engine_PP] <name>` (`InternalPostProcFx.h`); user effects imported in the editor use `[PP] <name>`. The
   chain is serialized into the scene file (`PostProcessing` key, see
   [formats/scene-json.md](formats/scene-json.md#postprocessing)) and edited via the editor's Post Processing window,
@@ -157,17 +161,20 @@ See [component settings](editor/components.md#spritesheet),
 
 `CollisionWorld` builds transformed colliders from Collider and Transform components, tests overlaps,
 and tracks pairs to produce enter/stay/exit events. Box, Sphere, Cylinder, Rectangle, and Circle are
-supported, with entity or billboard orientation. If either member is a trigger, the pair produces
-trigger events. Scene updates dispatch these events to `ScriptSystem`.
+supported, with entity or billboard orientation. Invalid colliders are skipped. If either member is a
+trigger, the pair produces trigger events. Scene updates dispatch these events to `ScriptSystem`.
 
-Collision also blocks hex movement: before changing position, `MovementSystem::Update` calls
-`Collision::CanOccupy` with the next hex's world position. The query tests the moving collider
-against other non-trigger colliders using AABB checks and GJK. If the target is blocked, movement
-cancels the current path without taking that step. An entity without a collider, or with a trigger
-collider, bypasses collider blocking; other trigger colliders are ignored.
+Each collider has a layer index (0–31) and a 32-bit mask. Both masks must accept the other collider's
+layer. `CollisionWorld` and collision queries use the same pair filter.
 
-This is a destination occupancy check, not a swept test along the path. Direct Transform position
-changes do not automatically use this check. There is no rigid-body impulse or push-apart solver.
+`Collision::TryMoveTo` in `CollisionQueries.h` checks a root entity's destination with `CanOccupy`
+before changing its position, returning `true` on success. `MovementSystem` uses this helper for hex
+steps and cancels the path if a step is blocked. Movement and overlap detection use the same camera
+basis for billboard colliders.
+
+This is a destination occupancy check, not a swept test along the path. It checks the moving entity's
+own collider; missing, trigger, or invalid colliders bypass blocking. Direct Transform position changes
+teleport. There is no rigid-body impulse or push-apart solver.
 
 See [Collider settings](editor/components.md#collider) and the [EngineLib API](scripting/api-reference.md).
 
@@ -177,8 +184,8 @@ See [Collider settings](editor/components.md#collider) and the [EngineLib API](s
 - `Scripting::EngineLib` registers the script-visible API in ten modules: Core, Registry, Input, Camera, Map, Audio,
   Scene Management, Time, UI, and Save Data.
 - `ECS::Systems::ScriptSystem` pre-parses and runs entity scripts, binds the `this` entity wrapper, calls `on_update`/
-  `on_destroy`/`on_exit` hooks in parallel, hot-reloads scripts when their source changes (loose projects only), and
-  defers registry mutations to the main thread.
+  `on_destroy`/`on_exit` and collision/trigger hooks in parallel, hot-reloads scripts when their source changes (loose
+  projects only), and defers most component writes to the main thread.
 
 → [Getting started](scripting/getting-started.md) · [API reference](scripting/api-reference.md)
 
@@ -198,10 +205,13 @@ See [Collider settings](editor/components.md#collider) and the [EngineLib API](s
 ## Scenes (`src/Scenes`)
 
 - A `Scene` owns an `ECS::Registry`, a `UI::UISystem`, and `SceneProperties` (name, clear color, ambient light,
-  background music).
+  background music, and lighting enablement).
 - `SceneManager` handles create/switch/save/load, including deferred scene changes (`pendingScenePath` , scripts call
   `LoadScene(...)` and the engine performs the switch).
 - Scenes serialize to JSON under `assets/scenes/`; see [Scene file format](formats/scene-json.md).
+- Scene transitions serialize persistent entities and their child subtrees, preserve UUIDs, replace destination
+  entities with matching UUIDs, and rebuild hierarchy in the destination registry. Scripts are reinitialized;
+  CustomData and script variables are not carried over.
 
 ## IO and packaging (`src/IO`)
 

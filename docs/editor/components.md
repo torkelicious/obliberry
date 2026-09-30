@@ -11,17 +11,19 @@ you can add in the Inspector, what it does, what it requires, and what fields ar
 
 ## Core Components (Added Automatically)
 
-When you create a new entity, it gets these three components by default. **Without all three, the entity will not
+Entities created with the editor Registry **+** receive these three components. ObSL `CreateEntity` creates an empty
+entity; add its required components explicitly. **Without all three, the entity will not
 render.**
 
 ### Transform
 
-Position, rotation, scale in world space. Also controls billboard mode.
+Position, rotation, and scale are local to the parent. Root entities use world coordinates. Also controls billboard
+mode. The Inspector, scene files, and ObSL all use radians for entity rotation.
 
 | UI Field          | Type             | Notes                                                                                                    |
 |-------------------|------------------|----------------------------------------------------------------------------------------------------------|
-| **Position**      | DragFloat3 (xyz) | World position                                                                                           |
-| **Rotation**      | DragFloat3 (xyz) | Euler angles in degrees. Disabled if "Use Billboard" is checked.                                         |
+| **Position**      | DragFloat3 (xyz) | Local position (world position for a root entity)                                                        |
+| **Rotation**      | DragFloat3 (xyz) | Local Euler angles in radians. Disabled if "Use Billboard" is checked.                                   |
 | **Scale**         | DragFloat3 (xyz) | Local scale                                                                                              |
 | **Use Billboard** | Checkbox         | Adds/removes `BillboardTagComponent`. When enabled, rotation has no effect (sprite always faces camera). |
 
@@ -62,19 +64,19 @@ Appearance: texture, color, shader. Links to a material resource.
 
 Allows an entity to navigate the hex grid using the movement system.
 
-| UI Field               | Type              | Notes                               |
-|------------------------|-------------------|-------------------------------------|
-| **Time Per Step**      | Float             | Seconds per hex step (default 0.15) |
-| **Step Timer**         | Float (read-only) | Internal timer for current step     |
-| **Idle Timer**         | Float (read-only) | Time spent idle                     |
-| **Is Moving**          | Bool (read-only)  | Whether entity is currently moving  |
-| **Auto-move**          | Bool              | Enable AI-controlled movement       |
-| **Path Nodes**         | Read-only text    | Number of hexes in current path     |
-| **Current Path Index** | Read-only text    | Progress along path                 |
+| UI Field               | Type           | Notes                               |
+|------------------------|----------------|-------------------------------------|
+| **Time Per Step**      | Float          | Seconds per hex step (default 0.15) |
+| **Step Timer**         | Float          | Internal timer for current step     |
+| **Idle Timer**         | Float          | Time spent idle                     |
+| **Is Moving**          | Bool           | Whether entity is currently moving  |
+| **Auto-move**          | Bool           | Enable AI-controlled movement       |
+| **Path Nodes**         | Read-only text | Number of hexes in current path     |
+| **Current Path Index** | Read-only text | Progress along path                 |
 
 > [!NOTE]
-> `Step Timer`, `Idle Timer`, `Is Moving`, `Path Nodes`, and `Current Path Index` are runtime state shown for debugging.
-> Only **Time Per Step** and **Auto-move** are editable.
+> `Step Timer`, `Idle Timer`, and `Is Moving` are editable runtime fields.
+> They are not saved; only **Time Per Step** and **Auto-move** are serialized. Path length and index are read-only.
 
 ---
 
@@ -125,22 +127,26 @@ See [Sprite Animation](sprite-animation.md).
 
 ### Collider
 
-Adds overlap detection to an entity with a Transform. This detects intersections and emits script
-events; it does not implement automatic movement blocking or physical collision response.
+Adds overlap detection to an entity with a Transform. Valid solid colliders also block hex movement and the
+collision-aware movement helper. Direct position edits teleport; there is no rigid-body collision response.
 
-| UI field    | Meaning                                                                                |
-|-------------|----------------------------------------------------------------------------------------|
-| Shape       | Box, Sphere, Cylinder, Rectangle, or Circle.                                           |
-| Orientation | Entity uses the world transform; Billboard faces the camera using the billboard basis. |
-| Offset      | Local offset from the entity origin, transformed with the collider.                    |
-| Size        | Full dimensions: xyz for Box, xy for Rectangle.                                        |
-| Radius      | Local radius for Sphere, Cylinder, or Circle.                                          |
-| Height      | Full cylinder height along local Y.                                                    |
-| Trigger     | Route overlaps through trigger hooks when either member of the pair is a trigger.      |
+| UI field    | Meaning                                                                                                  |
+|-------------|----------------------------------------------------------------------------------------------------------|
+| Shape       | Box, Sphere, Cylinder, Rectangle, or Circle.                                                             |
+| Orientation | Entity uses the world transform; Billboard faces the camera using the billboard basis.                   |
+| Offset      | Local offset from the entity origin, transformed with the collider.                                      |
+| Size        | Full dimensions: xyz for Box, xy for Rectangle.                                                          |
+| Radius      | Local radius for Sphere, Cylinder, or Circle.                                                            |
+| Height      | Full cylinder height along local Y.                                                                      |
+| Trigger     | Route overlaps through trigger hooks when either member of the pair is a trigger; do not block movement. |
+| Layer       | Layer index from 0 to 31 (default 0).                                                                    |
+| Mask        | 32-bit accepted-layer bitfield (default 4294967295, every layer).                                        |
 
 Rectangle and Circle lie in the local XY plane. Dimensions are positive and affected by entity
 scale. Collider orientation is configured separately from the visual **Use Billboard** option.
-The default is a unit Box with Entity orientation, zero offset, and Trigger disabled.
+The default is a unit Box with Entity orientation, zero offset, Trigger disabled, layer 0, and every mask bit enabled.
+Both masks must accept the opposite layer. Expand **Collision Mask** to select accepted layers, or use **Select all** /
+**Deselect all**. Enable **Edit Collider** in the toolbar to edit its offset and size in the Scene View.
 
 See [collision hooks](../scripting/api-reference.md) in the scripting reference
 and [collider serialization](../formats/scene-json.md#collidercomponent) for saved fields.
@@ -172,14 +178,17 @@ Emits particles from the entity's position.
 | **Velocity** | **Min** / **Max** (DragFloat3, vec3)                                                                                                |
 | **Physics**  | **Gravity** (DragFloat3, vec3)                                                                                                      |
 | **Size**     | **Start Min** / **Start Max**, **End Min** / **End Max** (float)                                                                    |
-| **Rotation** | **Speed Min** / **Speed Max** (float, degrees/sec)                                                                                  |
+| **Rotation** | **Speed Min** / **Speed Max** (float, radians/sec)                                                                                  |
 | **Color**    | **Start** / **End** (ColorEdit4, RGBA)                                                                                              |
 | **Options**  | **Billboard** (bool), **Blend Mode** (Alpha / Additive), **Render Order** (int, -10 to 10), **Shape** (Quad / Circle / Soft Circle) |
-| **Material** | Combo box to pick material (must have texture for visible particles)                                                                |
-| **Presets**  | **Load Preset** (FileCombo from `assets/particles/`), **Save as Preset** (button + popup)                                           |
+| **Material** | Combo box to assign the emitter material                                                                                            |
+| **Presets**  | **Load Preset** (FileCombo from `assets/particle_presets/`), **Save as Preset** (button + popup)                                    |
 | **Remove**   | Button to remove component                                                                                                          |
 
-**Requires:** `TransformComponent`, `MaterialComponent`
+**Requires:** `TransformComponent` and a material assigned on the emitter; a separate Material component is not
+required.
+
+Presets save emitter settings. Active state and live particles are not saved.
 
 ---
 
@@ -237,8 +246,8 @@ shown as tag flags in the Inspector.
 | **BillboardTag**       | As **"Use Billboard"** checkbox in Transform widget                                                                                                           |
 | **DestroyTag**         | Not shown (entity queued for deletion)                                                                                                                        |
 | **Relationship**       | Managed via Registry context menu (Create Child, Set Parent, Detach)                                                                                          |
-| **CustomData**         | Shows as **ObSL Custom Data** widget (read-only list of script-defined variables)                                                                             |
-| **PrefabSource**       | Added automatically when dragging a prefab in. Shows "Select Prefab Source" in Registry context menu.                                                         |
+| **CustomData**         | Shows as **ObSL Custom Data** (runtime values only; not serialized or migrated between scenes)                                                                |
+| **PrefabSource**       | Added when instantiating a prefab. Inspector shows its path and **Revert** / **Break Prefab** controls.                                                       |
 | **MapState** / **Map** | On the MAP entity (see above)                                                                                                                                 |
 | **PersistentTag**      | Runtime-only (not serialized). Added/removed via `entity.SetPersistent(bool)` in scripts. See [Scene Persistence](../scripting/api-reference.md#persistence). |
 
@@ -284,5 +293,5 @@ enabled), `children` (array).
 | Moving character                  | Transform + Mesh + Material + Movement + Script                      |
 | Directional sprite (tank, NPC)    | Transform + Mesh + Material + Movement + DirectionalTexture + Script |
 | Light source                      | Transform + PointLight                                               |
-| Particle effect (fire, magic)     | Transform + Material + ParticleEmitter                               |
+| Particle effect (fire, magic)     | Transform + ParticleEmitter (assign emitter material)                |
 | Billboard sprite (tree, particle) | Transform + Mesh + Material (check "Use Billboard" in Transform)     |

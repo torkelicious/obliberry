@@ -9,7 +9,7 @@ the map, entities, UI, lighting, music, and references to project assets.
 
 | Section              | Description                                                                  |
 |----------------------|------------------------------------------------------------------------------|
-| **Scene Properties** | Name, background clear color, background music, ambient light intensity      |
+| **Scene Properties** | Name, background clear color, music, ambient light, lighting enablement      |
 | **Registry**         | All entities and their components (Transform, Mesh, Material, Script, etc.)  |
 | **Map**              | hex-grid map (stored as a `.obmap` file, referenced by the scene)            |
 | **UI**               | UI element tree (text, buttons, images) !! separate from the entity Registry |
@@ -28,22 +28,24 @@ it uses.
 
 ### New Scene
 
-**Scene → New Scene** - Creates a blank scene with a default camera and empty registry.
+**Scene → Create Scene** creates a blank scene file. Use **Scene → Switch To** to load it.
 
 ### Switch Scenes
 
-**Scene → Open Scene** - Lists all scenes in `assets/scenes/`. Switching saves the current scene first.
+**Scene → Switch To** lists scenes in `assets/scenes/`. If the current scene or map is dirty, the editor prompts to save
+or discard changes before switching.
 
 ### Scene Properties
 
 ![Scene Properties](img/scene-properties-window.png)
 
-**Scene → Scene Properties** - Edit:
+**Scene → Edit Scene Properties** - Edit:
 
 - **Name** - Display name (shown in the scene list)
 - **Clear Color** - Background color (RGBA)
 - **Background Music** - Path to music file (relative to project assets)
 - **Ambient Light** - Global ambient intensity (0-1), also feeds into the map lightmap
+- **Enable Lighting System** - Toggles scene lighting (saved as `properties.lighting`).
 
 ---
 
@@ -67,9 +69,9 @@ automatically.
 
 | Task                          | How                                                                                            |
 |-------------------------------|------------------------------------------------------------------------------------------------|
-| **Start a new level**         | Scene → New Scene, then Map Edit mode to paint the grid                                        |
+| **Start a new level**         | Scene → Create Scene, then Scene → Switch To, then Map Edit mode to paint the grid             |
 | **Reuse a map across scenes** | In Map Edit mode: Map → Save Map As... → give it a name. Then in the new scene: Map → Load Map |
-| **Duplicate a scene**         | Copy the `.json` file in `assets/scenes/`, rename it, then Scene → Open Scene                  |
+| **Duplicate a scene**         | Copy the `.json` file in `assets/scenes/`, rename it, then Scene → Switch To                   |
 | **Set the starting scene**    | Edit `project.json` → `start_scene` field (relative to `assets/scenes/`)                       |
 
 ---
@@ -77,8 +79,12 @@ automatically.
 ## Saving
 
 - **Ctrl+S** - Save current scene (or map in Map Edit mode)
-- **Scene → Save Scene As...** - Save under a specific name
-- The editor prompts to save before: switching scenes, entering Play mode, exporting, or quitting
+- The editor prompts for dirty scene changes when switching scenes, entering Play mode, or quitting.
+- Save the scene, map, and asset drafts before exporting; export reads disk files and does not prompt to save.
+
+Copying a scene JSON also copies its entity UUIDs. Preserve those UUIDs only when the entities should represent the
+same logical identities across scenes. For independent entities, remove their `uuid` fields before loading, then
+save to record the newly generated identities. Hierarchy still uses array indices in `parent`.
 
 ---
 
@@ -101,14 +107,13 @@ that are no longer referenced. Persistent entities reacquire their required asse
 
 ## Scene Persistence
 
-Entities can be marked as **persistent** so they survive scene transitions they carry themselves over to the next scene,
-and reinitialize scripts.
+Scripts can mark an entity with `SetPersistent(true)`. Scene transitions migrate it and its child subtree, preserve
+UUIDs, and replace destination entities with matching UUIDs. Names do not control deduplication. Runtime IDs change,
+and all migrated members are marked persistent in the new registry.
 
-see: [api reference](../scripting/api-reference.md#persistence)
-
-> [!NOTE]
-> scripts are re-initalized on scene change, use ObSL custom data if you are looking to to store persitent values
-> between scenes!
+Scripts are initialized again. CustomData and script variables are not included in the serialized migration.
+Use explicit `save_set` / `save_get` values and restore the relevant state in the new script instance. See
+[Persistence](../scripting/api-reference.md#persistence) for details.
 
 ---
 

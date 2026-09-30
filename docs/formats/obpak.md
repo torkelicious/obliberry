@@ -15,8 +15,8 @@ Offset 44 (toc)       entry_count × TocEntry (40 bytes each)
 ...                   blob (blob_data_offset) entry payloads back-to-back, no padding
 ```
 
-Sections are packed consecutively with no alignment and no section headers. TOC entry `data_offset` values are \*
-\*relative to `blob_data_offset`\*\* and cumulative (payloads are laid out in TOC order, back to back).
+Sections are packed consecutively with no alignment and no section headers. TOC entry `data_offset` values are
+**relative to `blob_data_offset`** and cumulative (payloads are laid out in TOC order, back to back).
 
 ## File header `Package::FileHeader` (44 bytes)
 
@@ -99,7 +99,8 @@ obliberry_runtime -pk game.obpak
 
 ## Tools
 
-All three tools are built when `BUILD_PACK_TOOLS=ON` (default) and land in `bin/tools/`.
+The packaging tools below, plus `ob_asset_migrator`, are built when `BUILD_PACK_TOOLS=ON` (default) and land in
+`bin/tools/`.
 
 ### `ob_packer` create packages
 
@@ -121,7 +122,7 @@ Requires `<project_dir>/assets/scripts` to exist. Exit code `0` only if every fi
 ### `ob_unpacker` extract packages
 
 ```
-ob_unpack [options] <package.obpak> [output_directory]
+ob_unpacker [options] <package.obpak> [output_directory]
 ```
 
 | Option           | Meaning                                                  |
@@ -172,4 +173,6 @@ Both are reported as errors; `--strict` turns them into hard failures.
 
 The editor's export flow (`ObpakTools.cpp`) does the equivalent of `ob_packer` into `data.obpak` (with
 `BINARY_NAME = "obliberry exporter"`), then copies the runtime binary next to it, renamed to a sanitized version of the
-project title (e.g. `My Game` → `My_Game`), plus `graphics.json`. `obliberry_runtime` must be built for export to work.
+project title (e.g. `My Game` → `My_Game`), plus a loose `graphics.json`. `obliberry_runtime` must be built and
+located under the editor's `internal` directory for that copy to succeed. Export packages disk files without a save
+prompt; save scene/map edits and asset drafts beforehand.

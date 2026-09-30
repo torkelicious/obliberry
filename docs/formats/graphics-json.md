@@ -5,13 +5,14 @@ and is read by both the editor and the runtime.
 
 ## Loading
 
-- Deserialized by `Config::GraphicsConfig::Deserialize("graphics.json")` right after the VFS mount (runtime) or after
-  `Core::Project::Load` (editor).
-- Read order: VFS first, then a fallback to the loose file `<project root>/graphics.json`. If neither exists, the
-  defaults below are used with a warning.
-- Unlike `project.json` and scene files, `graphics.json` is **always parsed as plain text JSON** even inside a packaged
-  `.obpak`. A packaged graphics config must be text JSON, otherwise all defaults apply.
-- The editor writes it back via `Config::GraphicsConfig::Serialize`.
+- Loose projects read `graphics.json` from the project root.
+- Packaged builds first read text `graphics.json` beside the executable. If it is missing or invalid, the loader
+  tries the packaged configuration, then uses defaults. Packaged JSON is stored as msgpack and decoded by the VFS.
+- Export copies a loose `graphics.json` beside the runtime. It is excluded from the package by default; add
+  `!graphics.json` to `.pakignore` to include a packaged fallback.
+- **Save** in the editor's Graphics Settings writes the project configuration.
+
+A valid loose configuration replaces the packaged configuration; omitted fields use the defaults below.
 
 ## Fields
 

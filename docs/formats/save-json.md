@@ -52,7 +52,7 @@ containing parent directories are rejected.
 ## Fields
 
 | Key          | Type    | Meaning                                                              |
-| ------------ | ------- | -------------------------------------------------------------------- |
+|--------------|---------|----------------------------------------------------------------------|
 | `version`    | integer | Save-format version. The current and supported version is `1`.       |
 | `name`       | string  | User-facing display name supplied to `save_create`.                  |
 | `created_at` | integer | Creation time in UTC milliseconds since the Unix epoch.              |
@@ -64,6 +64,15 @@ as doubles, so integers read by a script are exposed as ObSL numbers.
 
 Unknown save versions, missing required fields, empty value keys, unsupported JSON value types, and non-finite numbers
 cause the file to be rejected.
+
+## In-memory data
+
+`save_set` / `save_get` use one project-wide store that remains available across scene transitions. Disk storage
+requires enabled, configured saves; the in-memory store does not. Use non-empty keys;
+`save_set("", value)` returns `false` without modifying the store.
+
+Loading a file replaces the active values and filename. Applying project settings resets them before configuring
+storage, so write any active save you intend to keep first.
 
 ## Lifecycle
 

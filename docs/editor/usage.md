@@ -9,15 +9,15 @@ A tour of the Obliberry editor: the modes, camera controls, panels, and keybind 
 The editor has four states. You start in the Hub, and everything else hangs off it.
 
 | State        | What it is                                                                              |
-| ------------ | --------------------------------------------------------------------------------------- |
+|--------------|-----------------------------------------------------------------------------------------|
 | **Hub**      | The startup screen. Create or open a project.                                           |
 | **Edit**     | Build your scene: entities, transforms, materials, UI. Default after opening a project. |
 | **Play**     | Run the scene and its scripts, like a player would.                                     |
 | **Map Edit** | Paint and edit the hex-grid map.                                                        |
 
 > [!NOTE]
-> **Switching modes:** Use the mode dropdown in the top toolbar to switch between **Edit** and **Map Edit**. The \*
-> \*Play/Stop\*\* button next to it runs or stops the scene. Both are disabled while playing - stop Play first.
+> **Switching modes:** Use the mode dropdown in the top toolbar to switch between **Edit** and **Map Edit**. The
+**Play/Stop** button next to it runs or stops the scene. Both are disabled while playing - stop Play first.
 
 ---
 
@@ -39,7 +39,7 @@ The Hub is a simple welcome screen with two buttons:
 Camera input only works while the mouse is over the **Scene View**.
 
 | Input                      | Action                                     |
-| -------------------------- | ------------------------------------------ |
+|----------------------------|--------------------------------------------|
 | `W` `A` `S` `D`            | Pan the camera                             |
 | `Shift` + `WASD`           | Pan faster (3×)                            |
 | Scroll wheel               | Zoom in and out                            |
@@ -70,6 +70,10 @@ on billboard sprites, and the editor will tell you so.
 
 ![Registry context menu](img/parenting-context-menu.png)
 
+Select an entity with a Collider and enable **Edit Collider** in the toolbar for collider offset and size handles in the
+Scene View.
+These drags are undoable. See [Collider settings](components.md#collider) for layer and mask options.
+
 Scenes are managed from the **Scene** menu: edit scene properties, create a new scene, or switch between scenes.
 
 ### Project settings and saves
@@ -85,9 +89,11 @@ The UUID keeps projects with identical names from sharing saves. Regenerating it
 the project starts looking under a new UUID directory and will no longer discover the old saves automatically.
 
 Changing these controls edits the local project configuration. Use **Save** or **Apply** in the Project Properties
-window to write the changes to `project.json`.
+window to write the changes to `project.json`. Applying the project configuration also resets the save manager's
+active in-memory data and filename before reconfiguring storage; write any active save you intend to keep first.
 
-See [`project.json`](../formats/project-json.md) and the [save-game format](../formats/save-json.md) for exact values and
+See [`project.json`](../formats/project-json.md) and the [save-game format](../formats/save-json.md) for exact values
+and
 storage paths.
 
 ---
@@ -145,8 +151,11 @@ saved with it.
 
 ## Exporting a Game
 
-Use **File → Export Project** to package the project into a single `.obpak` file. This needs the `obliberry_runtime`
-target to be built too. See the [architecture notes](../architecture.md) for how the runtime loads packaged games.
+Save scene/map edits and asset drafts, then use **File → Export Project** and choose an output directory.
+Export reads files from disk without a save prompt. It writes `data.obpak`, copies the built `obliberry_runtime` under
+the sanitized project title, and copies `graphics.json`. The runtime must be available in the editor's `internal`
+directory. See [package export](../formats/obpak.md#editor-export) and
+[graphics loading](../formats/graphics-json.md#loading).
 
 ---
 
@@ -155,7 +164,7 @@ target to be built too. See the [architecture notes](../architecture.md) for how
 ### Global (any mode)
 
 | Key      | Action                                                         |
-| -------- | -------------------------------------------------------------- |
+|----------|----------------------------------------------------------------|
 | `Esc`    | Quit the editor (prompts to save if there are unsaved changes) |
 | `Ctrl+S` | Save the scene (or the map in Map Edit mode)                   |
 | `Ctrl+Z` | Undo                                                           |
@@ -170,7 +179,7 @@ target to be built too. See the [architecture notes](../architecture.md) for how
 ### Edit Mode
 
 | Key                       | Action                                                                    |
-| ------------------------- | ------------------------------------------------------------------------- |
+|---------------------------|---------------------------------------------------------------------------|
 | `V`                       | Toggle isometric / top-down camera                                        |
 | `T` `R` `E`               | Gizmo: translate / rotate / scale (`E` = scale, toolbar button shows `S`) |
 | `W` `A` `S` `D`           | Pan the camera (hold `Shift` for 3× speed)                                |
@@ -181,7 +190,7 @@ target to be built too. See the [architecture notes](../architecture.md) for how
 ### Map Edit Mode
 
 | Key                       | Action                                         |
-| ------------------------- | ---------------------------------------------- |
+|---------------------------|------------------------------------------------|
 | `V`                       | Toggle isometric / top-down camera             |
 | `W` `A` `S` `D`           | Pan the camera (hold `Shift` for 3× speed)     |
 | Scroll wheel              | Zoom                                           |

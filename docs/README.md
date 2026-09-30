@@ -32,7 +32,7 @@ If you want to get started with the Obliberry editor, please see: [Editor Docs](
 | `src/Applications`                 | Editor, Runtime, and packaging tool executables                                 |
 | `src/Scripting/EngineLib`          | The ObSL ↔ engine binding (see the [API reference](scripting/api-reference.md)) |
 | `src/Scripting/EngineLib/Examples` | Example `.obsl` scripts                                                         |
-| `src/SaveData`                     | Save-game manager, JSON format, and per-project storage                          |
+| `src/SaveData`                     | Save-game manager, JSON format, and per-project storage                         |
 | `Templates/DemoProject`            | A demo project template (assets, scenes, map)                                   |
 | `Templates/Empty`                  | Minimal empty project template                                                  |
 | `external/obsl`                    | The ObSL language submodule (interpreter, lexer, parser, stdlib)                |

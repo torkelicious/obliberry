@@ -50,6 +50,9 @@ fn on_destroy() {                 // entity destroyed
 }
 ```
 
+Use `this.AddComponent("DestroyTag")` to run `on_destroy` before deletion. Direct `DestroyEntity` /
+`this.Destroy()` calls do not run this hook.
+
 ### The `this` binding
 
 Inside a script, the global **`this`** is an _entity object_ referring to the entity the script is attached to. Use it
@@ -87,8 +90,13 @@ new version. Good for iterating in the editor.
 Scripts execute in **parallel** across interpreter workers. The EngineLib API handles the details for you:
 
 - Reads (components, input, camera, …) are safe and can be done anywhere.
-- Mutations (component writes, entity creation/destruction, UI changes) are _deferred_: they are queued and applied on
-  the main thread after the parallel script pass. You don't need to do anything just call the API.
+- Most component writes, destruction, and UI mutations are queued and applied on the main thread after the script
+  pass. Immediate getters may still return old values. `CreateEntity` and `Instantiate` return entities immediately.
+- `CreateEntity` starts without components. Add the components needed for your entity explicitly.
+- `SetPosition` teleports in local coordinates. `TryMoveTo` attempts movement to a world position, checking solid
+  colliders. See the [Transform API](api-reference.md#component-wrappers) for usage and limits.
+
+See [thread safety](api-reference.md#thread-safety) for command-buffer details.
 
 ## Player movement
 

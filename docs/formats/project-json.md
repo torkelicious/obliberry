@@ -18,29 +18,29 @@ scene; `assets.json` maps the resource IDs used by that and other scenes to thei
 
 ## Fields
 
-| Key              | Type    | Default               | Meaning |
-|------------------|---------|-----------------------|---------|
+| Key              | Type    | Default               | Meaning                                                                                                                       |
+|------------------|---------|-----------------------|-------------------------------------------------------------------------------------------------------------------------------|
 | `UUID`           | string  | `""`                  | Stable project identifier. New projects use a UUID v4. The value separates this project's save directory from other projects. |
-| `window`         | object  | -                     | Window settings container. |
-| `window.title`   | string  | `"Obliberry Project"` | Window/application title. The runtime uses it directly; the editor shows `"Obliberry: <title>"`. |
-| `start_scene`    | string  | `""`                  | VFS-relative scene path loaded at startup, for example `"assets/scenes/default.json"`. |
-| `saves`          | object  | -                     | Save-game settings container. |
-| `saves.enabled`  | boolean | `false`               | Configures persistent save-game storage for the project. |
-| `saves.location` | integer | `0`                   | Storage mode: `0` = operating-system data directory, `1` = portable storage beside the executable. |
+| `window`         | object  | -                     | Window settings container.                                                                                                    |
+| `window.title`   | string  | `"Obliberry Project"` | Window/application title. The runtime uses it directly; the editor shows `"Obliberry: <title>"`.                              |
+| `start_scene`    | string  | `""`                  | VFS-relative scene path loaded at startup, for example `"assets/scenes/default.json"`.                                        |
+| `saves`          | object  | -                     | Save-game settings container.                                                                                                 |
+| `saves.enabled`  | boolean | `false`               | Configures persistent save-game storage for the project.                                                                      |
+| `saves.location` | integer | `0`                   | Storage mode: `0` = operating-system data directory, `1` = portable storage beside the executable.                            |
 
 ## Example
 
 ```json
 {
-  "UUID": "6f7dcf16-2f23-46de-b95f-f49d797a24ac",
-  "window": {
-    "title": "My Game"
-  },
-  "start_scene": "assets/scenes/default.json",
-  "saves": {
-    "enabled": true,
-    "location": 0
-  }
+    "UUID": "6f7dcf16-2f23-46de-b95f-f49d797a24ac",
+    "window": {
+        "title": "My Game"
+    },
+    "start_scene": "assets/scenes/default.json",
+    "saves": {
+        "enabled": true,
+        "location": 0
+    }
 }
 ```
 
@@ -48,6 +48,8 @@ scene; `assets.json` maps the resource IDs used by that and other scenes to thei
 
 The UUID identifies a project independently of its name or directory. Save paths contain this UUID, so two projects
 with the same title do not share save files.
+
+This project UUID is separate from entity UUIDs stored in [scene records](scene-json.md#entities).
 
 Regenerating the UUID changes where the project looks for saves. Existing save files are not deleted, but they remain
 under the previous UUID and are no longer discovered automatically.
@@ -73,7 +75,8 @@ See [Save-game format](save-json.md) for filenames, JSON fields, and the script-
 ## Writing
 
 The editor serializes `UUID`, `window.title`, `start_scene`, `saves.enabled`, and `saves.location` when the project
-configuration is saved.
+configuration is saved. **Save** / **Apply** also resets the active in-memory save and filename, then reconfigures the
+save manager.
 
 ## Notes
 

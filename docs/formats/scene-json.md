@@ -31,6 +31,7 @@ rounded to 3 decimals (`RoundJsonFloats`), and the file is written with 4-space 
 | `clear_color`      | `[r, g, b, a]` floats | `[0, 0, 0, 1]` | Background clear color.                                           |
 | `background_music` | string                | `""`           | VFS-relative path to background music.                            |
 | `ambient_light`    | float                 | `0.2`          | Ambient light intensity (also fed into the map lightmap on load). |
+| `lighting`         | boolean               | `true`         | Enables the scene lighting system.                                |
 
 ## Asset references
 
@@ -79,37 +80,39 @@ Each entry is an object:
 Example (bloom chain):
 
 ```json
-"PostProcessing": [
-    {
-        "shader": "[Engine_PP] BrightPass",
-        "enabled": true,
-        "uniforms": {
-            "u_Threshold": 0.8,
-            "u_SoftKnee": 0.5
-        }
-    },
-    {
-        "shader": "[Engine_PP] GaussianBlur",
-        "enabled": true,
-        "passes": 2,
-        "passUniforms": [
-            {
-                "u_Horizontal": 1
-            },
-            {
-                "u_Horizontal": 0
+{
+    "PostProcessing": [
+        {
+            "shader": "[Engine_PP] BrightPass",
+            "enabled": true,
+            "uniforms": {
+                "u_Threshold": 0.8,
+                "u_SoftKnee": 0.5
             }
-        ]
-    },
-    {
-        "shader": "[Engine_PP] BloomComposite",
-        "enabled": true,
-        "wantsSceneTexture": true,
-        "uniforms": {
-            "u_Strength": 1.0
+        },
+        {
+            "shader": "[Engine_PP] GaussianBlur",
+            "enabled": true,
+            "passes": 2,
+            "passUniforms": [
+                {
+                    "u_Horizontal": 1
+                },
+                {
+                    "u_Horizontal": 0
+                }
+            ]
+        },
+        {
+            "shader": "[Engine_PP] BloomComposite",
+            "enabled": true,
+            "wantsSceneTexture": true,
+            "uniforms": {
+                "u_Strength": 1.0
+            }
         }
-    }
-]
+    ]
+}
 ```
 
 ## `grid`
@@ -129,15 +132,22 @@ Each entity is an object:
 
 | Key          | Type             | Meaning                                                                                                                                                     |
 |--------------|------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `uuid`       | string, optional | Stable entity identity. Written on save; preserved by scene loading and persistent migration, regenerated for entity copies and prefab instances.           |
 | `name`       | string, optional | Entity name (written only if non-empty).                                                                                                                    |
 | `parent`     | int, optional    | **Index** into the same `entities` array identifying the parent (hierarchy is rebuilt after all entities load). Written only if the parent is in the scene. |
-| `components` | object           | Maps component type names to per-component data. Unknown component names are skipped with a warning.                                                        |
+| `components` | object           | Maps component type names to per-component data. Unknown component names are logged as errors and skipped.                                                  |
+
+UUIDs are generated when entities are created. Scene loading preserves a valid, unused `uuid`; missing, empty,
+non-string, or duplicate values keep the newly generated ID. Invalid values are logged. Save older scenes after
+loading to retain their generated IDs. Hierarchy still uses array indices in `parent`.
+
+Unknown components and components that fail deserialization are logged and skipped.
 
 ### Component keys
 
 | Component key                 | Fields                                                                                                                                                                                                                                                                                                                                                                                                        |
 |-------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `TransformComponent`          | `position`, `rotation`, `scale` - `[x, y, z]` float arrays (Euler rotation).                                                                                                                                                                                                                                                                                                                                  |
+| `TransformComponent`          | `position`, `rotation`, `scale` - `[x, y, z]` float arrays (local coordinates; Euler rotation in radians).                                                                                                                                                                                                                                                                                                    |
 | `MovementComponent`           | `timePerStep` - float; `autoMove` - bool (default `false`). (Runtime movement state is intentionally not saved.)                                                                                                                                                                                                                                                                                              |
 | `MeshComponent`               | `mesh_id` - mesh resource id.                                                                                                                                                                                                                                                                                                                                                                                 |
 | `MaterialComponent`           | `material_id` - material resource id.                                                                                                                                                                                                                                                                                                                                                                         |
@@ -146,6 +156,7 @@ Each entity is an object:
 | `PointLightComponent`         | `color` - `[r, g, b]`; `radius` - float; `intensity` - float.                                                                                                                                                                                                                                                                                                                                                 |
 | `ScriptComponent`             | `scriptPath` (string, single script) **or** `scriptPaths` (array, multiple scripts). Paths are `.obsl` files.                                                                                                                                                                                                                                                                                                 |
 | `ParticleEmitterComponent`    | `maxParticles` int, `emitRate` float, `lifetimeMin`/`lifetimeMax` floats, `velocityMin`/`velocityMax` `[x,y,z]`, `gravity` `[x,y,z]`, `sizeStartMin`/`sizeStartMax`/`sizeEndMin`/`sizeEndMax` floats, `rotationSpeedMin`/`rotationSpeedMax` floats, `colorStart`/`colorEnd` `[r,g,b,a]`, `isBillboard` bool, `blendMode` int (0 = Alpha, 1 = Additive), `renderOrder` int, `shape` int, `material_id` string. |
+| `ColliderComponent`           | `version: 2`, `shape`, `orientation`, `offset`, `size`, `radius`, `height`, `isTrigger`, `layer`, `mask`; see validation below.                                                                                                                                                                                                                                                                               |
 | `SpriteSheetComponent`        | Static sprite: `texture_id`, `columns`, `rows`, `column_spacing`, `row_spacing`, `frame`. Saved as `{}` when an animator supplies the pose.                                                                                                                                                                                                                                                                   |
 | `SpriteAnimatorComponent`     | `animation_id`, `initial_clip`, `autoplay`. References a registered animation set.                                                                                                                                                                                                                                                                                                                            |
 
@@ -213,28 +224,50 @@ See [Sprite Animation JSON](sprite-animation-json.md) for clip definitions and s
         "version": 2,
         "shape": "Box",
         "orientation": "Entity",
-        "offset": [0.0, 0.0, 0.0],
-        "size": [1.0, 1.0, 1.0],
+        "offset": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "size": [
+            1.0,
+            1.0,
+            1.0
+        ],
         "radius": 0.5,
         "height": 1.0,
-        "isTrigger": false
+        "isTrigger": false,
+        "layer": 0,
+        "mask": 4294967295
     }
 }
 ```
 
-Place this entry inside `components`. `version` must be **2**; missing or older versions raise a
-load error. Shape names are case-sensitive: `Box`, `Sphere`, `Cylinder`, `Rectangle`, `Circle`.
-Orientation is `Entity` or `Billboard`. Unknown names raise a load error.
+Place this entry inside `components`. `version` must be **2**; missing or older versions cause the Collider component to
+fail loading and be skipped with an error log. Shape names are case-sensitive: `Box`, `Sphere`, `Cylinder`, `Rectangle`,
+`Circle`.
+Orientation is `Entity` or `Billboard`. Unknown names fail that component, not the entire scene.
 
 The example shows the defaults for all fields except the required version. Offset is local xyz;
 size contains full box dimensions (Rectangle uses xy). Sphere/Circle use radius; Cylinder uses
 radius and full height along local Y. Rectangle/Circle occupy the local XY plane.
 
-Offset must be finite. The current validator requires all three size entries to be finite and
-positive even for shapes that do not use every entry. Radius must be finite and positive for
-Sphere, Circle, and Cylinder; Cylinder height must also be finite and positive. Invalid dimensions
-raise a load error. All these fields are serialized, including dimensions unused by the selected shape.
-`isTrigger` selects trigger events when either collider in an overlapping pair has it enabled.
+Offset must be finite. Dimension validation depends on the selected shape:
+
+| Shape           | Required finite, positive dimensions |
+|-----------------|--------------------------------------|
+| Box             | `size.x`, `size.y`, `size.z`         |
+| Rectangle       | `size.x`, `size.y`                   |
+| Sphere / Circle | `radius`                             |
+| Cylinder        | `radius`, `height`                   |
+
+All dimension fields are serialized, including those unused by the current shape. `layer` must be a JSON integer
+in 0–31 (default 0); `mask` must be a JSON integer in 0–4294967295 (default all bits set). Invalid fields cause the
+Collider component to be logged and skipped by the entity loader.
+`isTrigger` selects trigger events when either member is a trigger and bypasses movement blocking.
+
+Layers are indices and masks contain accepted-layer bits. Both masks must accept the other's layer for overlap
+events or solid blocking. See [Collider settings](../editor/components.md#collider).
 
 **Prefabs** (`PrefabSourceComponent`) are _not_ serialized into scene files - they are separate JSON files under
 `assets/prefabs/`, written by `IO::PrefabManager::SavePrefab` using the same per-entity structure.
@@ -269,9 +302,15 @@ A trimmed scene combining most sections:
 {
     "properties": {
         "name": "level1",
-        "clear_color": [0.1, 0.1, 0.1, 1.0],
+        "clear_color": [
+            0.1,
+            0.1,
+            0.1,
+            1.0
+        ],
         "background_music": "",
-        "ambient_light": 0.2
+        "ambient_light": 0.2,
+        "lighting": true
     },
     "grid": {
         "map_file": "assets/maps/level1.obmap",
@@ -289,12 +328,25 @@ A trimmed scene combining most sections:
     },
     "entities": [
         {
+            "uuid": "7c7dd4ae-1a88-4b6e-94d5-846a230312c2",
             "name": "Player",
             "components": {
                 "TransformComponent": {
-                    "position": [0.0, 0.0, 0.0],
-                    "rotation": [0.0, 0.0, 0.0],
-                    "scale": [1.0, 1.0, 1.0]
+                    "position": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
                 },
                 "MeshComponent": {
                     "mesh_id": "player_mesh"
@@ -314,13 +366,29 @@ A trimmed scene combining most sections:
                 "name": "btnStart",
                 "type": "Button",
                 "rect": {
-                    "position": [160.0, 270.0],
-                    "scale": [251.0, 59.0]
+                    "position": [
+                        160.0,
+                        270.0
+                    ],
+                    "scale": [
+                        251.0,
+                        59.0
+                    ]
                 },
                 "flags": 3,
                 "text": "Start",
-                "color": [1.0, 1.0, 1.0, 1.0],
-                "bg_color": [0.5, 0.54, 0.8, 1.0]
+                "color": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "bg_color": [
+                    0.5,
+                    0.54,
+                    0.8,
+                    1.0
+                ]
             }
         ]
     }
