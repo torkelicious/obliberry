@@ -7,7 +7,7 @@
 #include "ECS/Types.h"
 #include "IO/Loaders/EntityFactory.h"
 #include "TestingUtils.h"
-#include "nlohmann/json_fwd.hpp"
+#include "nlohmann/json.hpp"
 #include <gtest/gtest.h>
 
 
