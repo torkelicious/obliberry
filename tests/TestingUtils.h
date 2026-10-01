@@ -1,13 +1,14 @@
 #pragma once
 
-//
-// Some helpers used for unit tests.
-//
-
 #include "Math/GLMUtils.h"
 #include "glm/glm.hpp"
 #include <cassert>
 #include <gtest/gtest.h>
+
+
+//
+// Some helpers used for unit tests.
+//
 namespace TestUtils {
 
     // used for glm::vec types.
