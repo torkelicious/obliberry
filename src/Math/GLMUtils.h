@@ -1,5 +1,7 @@
 #pragma once
+
 #include "glm/glm.hpp"
+#include <type_traits>
 #include <algorithm>
 #include <cmath>
 
@@ -22,8 +24,10 @@ namespace Math::GLMUtils {
     }
 
     template <GlmVec T> void ClampVecPositive(T &vec) {
+        using Scalar = typename T::value_type;
+
         for (glm::length_t i = 0; i < vec.length(); ++i) {
-            vec[i] = std::max(vec[i], 0.0f);
+            vec[i] = std::max(vec[i], Scalar{0});
         }
     }
 
