@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include "ECS/Systems/Collision/CollisionFilter.h"
 
-TEST(CollisionFilter, BothMasksMustAcceptTheOtherLayer) {
+TEST(Colliders, BothMasksMustAcceptTheOtherLayer) {
     ECS::Components::ColliderComponent a;
     ECS::Components::ColliderComponent b;
 
