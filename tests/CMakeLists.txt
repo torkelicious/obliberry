@@ -22,6 +22,7 @@ add_executable(obliberry_tests
     RegistryTests.cpp
     EntityUUIDTests.cpp
     EntitySerializationTests.cpp
+    SaveGameTests.cpp
 )
 
 target_compile_features(obliberry_tests PRIVATE cxx_std_20)
