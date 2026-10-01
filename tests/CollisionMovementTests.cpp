@@ -86,11 +86,11 @@ TEST_F(CollisionMovementTests, InvalidObstacleIgnored) {
     const ECS::EntityID obstacle = CreateBox(destination);
     auto *collider = registry.GetComponent<ECS::Components::ColliderComponent>(obstacle);
     ASSERT_NE(collider, nullptr);
-    
+
     collider->size.x = 0.0f; // invalid collider
-    
+
     ASSERT_FALSE(ECS::Components::IsValidCollider(*collider));
-    
+
     const bool moved = ECS::Collision::TryMoveTo(registry, entity, destination, basis);
 
     EXPECT_TRUE(moved);
