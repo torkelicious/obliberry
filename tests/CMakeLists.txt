@@ -18,6 +18,7 @@ FetchContent_MakeAvailable(googletest)
 
 add_executable(obliberry_tests
     ColliderTests.cpp
+    CollisionMovementTests.cpp
 )
 
 target_compile_features(obliberry_tests PRIVATE cxx_std_20)
