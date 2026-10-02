@@ -23,6 +23,7 @@ add_executable(obliberry_tests
     EntityUUIDTests.cpp
     EntitySerializationTests.cpp
     SaveGameTests.cpp
+    HierarchyTests.cpp
 )
 
 target_compile_features(obliberry_tests PRIVATE cxx_std_20)
