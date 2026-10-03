@@ -5,10 +5,10 @@
 #include "Types.h"
 #include "ECS/Components/RelationshipComponent.h"
 #include "ECS/Components/TransformComponent.h"
-#include <stdexcept>
 #include <vector>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
+#include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 #include <array>
 #include <cassert>
@@ -283,7 +283,9 @@ namespace ECS {
                     glm::vec4 perspective;
                     glm::decompose(localRelative, scale, rot, pos, skew, perspective);
                     childTrans->transform.SetPosition(pos);
-                    childTrans->transform.SetRotation(glm::eulerAngles(rot));
+                    glm::vec3 rotationAngles;
+                    glm::extractEulerAngleXYZ(glm::mat4_cast(rot), rotationAngles.x, rotationAngles.y, rotationAngles.z);
+                    childTrans->transform.SetRotation(rotationAngles);
                     childTrans->transform.SetScale(scale);
                 }
             } else {
@@ -299,7 +301,9 @@ namespace ECS {
                     glm::vec4 perspective;
                     glm::decompose(worldBefore, scale, rot, pos, skew, perspective);
                     childTrans->transform.SetPosition(pos);
-                    childTrans->transform.SetRotation(glm::eulerAngles(rot));
+                    glm::vec3 rotationAngles;
+                    glm::extractEulerAngleXYZ(glm::mat4_cast(rot), rotationAngles.x, rotationAngles.y, rotationAngles.z);
+                    childTrans->transform.SetRotation(rotationAngles);
                     childTrans->transform.SetScale(scale);
                 }
             }
