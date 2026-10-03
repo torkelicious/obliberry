@@ -24,6 +24,7 @@ add_executable(obliberry_tests
     EntitySerializationTests.cpp
     SaveGameTests.cpp
     HierarchyTests.cpp
+    MapTests.cpp
 )
 
 target_compile_features(obliberry_tests PRIVATE cxx_std_20)
