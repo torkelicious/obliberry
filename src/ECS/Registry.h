@@ -149,6 +149,9 @@ namespace ECS {
         }
 
         template <typename T> void RemoveComponent(const EntityID entity) {
+            if (!IsValid(entity)) {
+                return;
+            }
             GetPool<T>()->EntityDestroyed(entity);
             m_EntitySignatures[GetEntityIndex(entity)] &= ~(1ULL << ComponentTypeID<T>::ID());
         }
@@ -167,6 +170,9 @@ namespace ECS {
         }
 
         template <typename T> bool HasComponent(EntityID entity) {
+            if (!IsValid(entity)) {
+                return false;
+            }
             const uint32_t index = ComponentTypeID<T>::ID();
             assert(index < MAX_COMPONENT_TYPES && "too many component types");
             if (!m_PoolCache[index])
