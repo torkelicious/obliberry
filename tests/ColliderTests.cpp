@@ -1,15 +1,26 @@
+#include "gtest/gtest.h"
+#include <array>
 #include <gtest/gtest.h>
 
 #include "ECS/Components/ColliderComponent.h"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Registry.h"
+#include "ECS/Systems/Collision/ColliderGeometry.h"
 #include "ECS/Systems/Collision/CollisionFilter.h"
 #include "ECS/Systems/Collision/CollisionWorld.h"
+#include "ECS/Systems/Collision/GJK.h"
 #include "ECS/Systems/HierarchySystem.h"
 
 #include <algorithm>
 #include <cstddef>
 #include <initializer_list>
+#include <tuple>
+
+namespace {
+    using Shape = ECS::Components::ColliderShape;
+    constexpr std::array colliderTestShapes{Shape::Box, Shape::Sphere, Shape::Cylinder, Shape::Rectangle, Shape::Circle};
+} // namespace
+
 
 TEST(ColliderTests, BothMasksMustAcceptTheOtherLayer) {
     ECS::Components::ColliderComponent a;
@@ -177,3 +188,39 @@ TEST_F(CollisionWorldTests, TriggerChangeProducesExitThenEnter) {
     Update();
     ExpectEvents({{Type::Stay, true}});
 }
+
+class ColliderGeometryTests : public testing::TestWithParam<std::tuple<Shape, Shape>> {
+protected:
+    using Result = ECS::Collision::GJKResult;
+
+    ECS::Collision::WorldCollider CreateCollider(const Shape shape, const glm::vec3 &position) {
+        ECS::Components::ColliderComponent collider;
+        collider.shape = shape;
+
+        ECS::Components::TransformComponent transform;
+        transform.worldTransform.SetPosition(position);
+
+        return ECS::Collision::BuildWorldCollider(ECS::INVALID_ENTITY_ID, collider, transform, {});
+    }
+
+    void ExpectResult(const glm::vec3 &secondPosition, const Result expected) {
+        const auto &[firstShape, secondShape] = GetParam();
+        const auto first = CreateCollider(firstShape, {0.0f, 0.0f, 0.0f});
+        const auto second = CreateCollider(secondShape, secondPosition);
+        EXPECT_EQ(ECS::Collision::IntersectsGJK(first, second), expected);
+    }
+};
+
+TEST_P(ColliderGeometryTests, OverlappingShapesIntersect) { ExpectResult({0.2f, 0.1f, 0.0f}, Result::Intersecting); }
+
+TEST_P(ColliderGeometryTests, SeparatedShapesDoNotIntersect) {
+    for (int axis = 0; axis < 3; ++axis) {
+        SCOPED_TRACE(axis);
+        glm::vec3 position{0.0f};
+        position[axis] = 3.0f;
+
+        ExpectResult(position, Result::Separated);
+    }
+}
+
+INSTANTIATE_TEST_SUITE_P(AllShapePairs, ColliderGeometryTests, testing::Combine(testing::ValuesIn(colliderTestShapes), testing::ValuesIn(colliderTestShapes)));
