@@ -56,7 +56,6 @@ protected:
 
     Values MakeChangedValues() const {
         auto values = expectedValues;
-        values["IntigerValue"] = std::int64_t{123};
         values["IntegerValue"] = std::int64_t{123};
         values["ExtraValue"] = std::string("This is only in the changed one");
         return values;
