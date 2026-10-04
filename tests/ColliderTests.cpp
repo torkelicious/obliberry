@@ -220,6 +220,15 @@ protected:
             ExpectResult({dir * distance, 0.0f, 0.0f}, expected);
         }
     }
+
+    void ExpectPointInsideAABB(const ECS::Collision::ColliderAABB &bounds, const glm::dvec3 &point) {
+        const double tolerance = ECS::Collision::CollisionTolerance;
+        for (int axis = 0; axis < 3; ++axis) {
+            SCOPED_TRACE(axis);
+            EXPECT_GE(point[axis], bounds.min[axis] - tolerance);
+            EXPECT_LE(point[axis], bounds.max[axis] + tolerance);
+        }
+    }
 };
 
 TEST_P(ColliderGeometryTests, SeparatedShapesDoNotIntersect) {
@@ -270,5 +279,46 @@ TEST_P(ColliderGeometryTests, RotationChangesCollisionRotation) {
 }
 
 TEST_P(ColliderGeometryTests, LocalOffsetIsScaledAndRotated) { ExpectResult({0.0f, 2.0f, 0.0f}, Result::Intersecting, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, glm::radians(90.0f)}, {2.0f, 1.0f, 1.0f}); }
+
+TEST_P(ColliderGeometryTests, AABBMatchesTransformedBounds) {
+    const auto shape = std::get<0>(GetParam());
+    const auto collider = CreateCollider(shape, {3.0f, -2.0f, 5.0f}, {0.5f, -0.25f, 0.75f}, {0.0f, 0.0f, glm::radians(90.0f)}, {2.0f, 4.0f, 6.0f});
+    const auto bounds = ECS::Collision::ComputeWorldAABB(collider);
+    const glm::dvec3 center{4.0, -1.0, 9.5};
+    glm::dvec3 halfExtents{2.0, 1.0, 3.0};
+
+    if (shape == Shape::Rectangle || shape == Shape::Circle) {
+        halfExtents.z = 0.0;
+    }
+
+    const glm::dvec3 expectedMin = center - halfExtents;
+    const glm::dvec3 expectedMax = center + halfExtents;
+
+    for (int axis = 0; axis < 3; ++axis) {
+        SCOPED_TRACE(axis);
+        EXPECT_NEAR(bounds.min[axis], expectedMin[axis], 1e-5);
+        EXPECT_NEAR(bounds.max[axis], expectedMax[axis], 1e-5);
+    }
+}
+
+TEST_P(ColliderGeometryTests, AABBContainsSupportPointsAfterTransforms) {
+    const auto shape = std::get<0>(GetParam());
+    const auto collider = CreateCollider(shape, {3.0f, -2.0f, 5.0f}, {0.4f, -0.2f, 0.3f}, {0.3f, -0.7f, 0.9f}, {2.0f, 0.5f, 3.0f});
+    const auto bounds = ECS::Collision::ComputeWorldAABB(collider);
+
+    for (int x = -1; x <= 1; ++x) {
+        for (int y = -1; y <= 1; ++y) {
+            for (int z = -1; z <= 1; ++z) {
+                if (x == 0 && y == 0 && z == 0) {
+                    continue;
+                }
+                SCOPED_TRACE(testing::Message() << "Direction: " << x << ", " << y << ", " << z);
+                const glm::dvec3 direction{x, y, z};
+                ExpectPointInsideAABB(bounds, ECS::Collision::SupportWorld(collider, direction));
+            }
+        }
+    }
+}
+
 
 INSTANTIATE_TEST_SUITE_P(AllShapePairs, ColliderGeometryTests, testing::Combine(testing::ValuesIn(colliderTestShapes), testing::ValuesIn(colliderTestShapes)));
