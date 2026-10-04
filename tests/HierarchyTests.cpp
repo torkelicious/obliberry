@@ -50,13 +50,8 @@ protected:
 
     void ExpectWorldMatrix(ECS::EntityID entity, const glm::mat4 &expected) {
         const auto *transform = registry.GetComponent<ECS::Components::TransformComponent>(entity);
-        ASSERT_NE(transform, nullptr);
-        const auto &actual = transform->worldTransform.GetMatrix();
-        for (glm::length_t column = 0; column < 4; ++column) {
-            for (glm::length_t row = 0; row < 4; ++row) {
-                EXPECT_NEAR(actual[column][row], expected[column][row], 0.00001f) << "column " << column << ", row " << row;
-            }
-        }
+        ASSERT_NE(transform, nullptr) << "entity " << entity;
+        TestUtils::GLM_MatExpectNear(transform->worldTransform.GetMatrix(), expected);
     }
 };
 
