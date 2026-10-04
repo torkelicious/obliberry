@@ -209,6 +209,14 @@ protected:
         const auto second = CreateCollider(secondShape, secondPosition);
         EXPECT_EQ(ECS::Collision::IntersectsGJK(first, second), expected);
     }
+
+    void ExpectContactAtGap(const double gap, const Result expected) {
+        const float distance = static_cast<float>(1.0 + gap);
+        for (const float dir : {-1.0f, 1.0f}) {
+            SCOPED_TRACE(dir);
+            ExpectResult({dir * distance, 0.0f, 0.0f}, expected);
+        }
+    }
 };
 
 TEST_P(ColliderGeometryTests, OverlappingShapesIntersect) { ExpectResult({0.2f, 0.1f, 0.0f}, Result::Intersecting); }
@@ -222,5 +230,9 @@ TEST_P(ColliderGeometryTests, SeparatedShapesDoNotIntersect) {
         ExpectResult(position, Result::Separated);
     }
 }
+
+TEST_P(ColliderGeometryTests, TouchingShapesIntersect) { ExpectContactAtGap(-2.0 * ECS::Collision::CollisionTolerance, Result::Intersecting); }
+TEST_P(ColliderGeometryTests, GapWithinToleranceConsideredIntersect) { ExpectContactAtGap(0.5 * ECS::Collision::CollisionTolerance, Result::Intersecting); }
+TEST_P(ColliderGeometryTests, GapOutsideToleranceConsideredSepareted) { ExpectContactAtGap(2.0 * ECS::Collision::CollisionTolerance, Result::Separated); }
 
 INSTANTIATE_TEST_SUITE_P(AllShapePairs, ColliderGeometryTests, testing::Combine(testing::ValuesIn(colliderTestShapes), testing::ValuesIn(colliderTestShapes)));
