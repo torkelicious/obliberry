@@ -193,19 +193,22 @@ class ColliderGeometryTests : public testing::TestWithParam<std::tuple<Shape, Sh
 protected:
     using Result = ECS::Collision::GJKResult;
 
-    ECS::Collision::WorldCollider CreateCollider(const Shape shape, const glm::vec3 &position) {
+    ECS::Collision::WorldCollider CreateCollider(
+            const Shape shape, const glm::vec3 &position, const glm::vec3 &offset = glm::vec3{0.0f}, const glm::vec3 &rotation = glm::vec3{0.0f}, const glm::vec3 &scale = glm::vec3{1.0f}) {
         ECS::Components::ColliderComponent collider;
         collider.shape = shape;
-
+        collider.offset = offset;
         ECS::Components::TransformComponent transform;
         transform.worldTransform.SetPosition(position);
-
+        transform.worldTransform.SetRotation(rotation);
+        transform.worldTransform.SetScale(scale);
         return ECS::Collision::BuildWorldCollider(ECS::INVALID_ENTITY_ID, collider, transform, {});
     }
 
-    void ExpectResult(const glm::vec3 &secondPosition, const Result expected) {
+    void ExpectResult(
+            const glm::vec3 &secondPosition, const Result expected, const glm::vec3 &firstOffset = glm::vec3{0.0f}, const glm::vec3 &firstRotation = glm::vec3{0.0f}, const glm::vec3 &firstScale = glm::vec3{1.0f}) {
         const auto &[firstShape, secondShape] = GetParam();
-        const auto first = CreateCollider(firstShape, {0.0f, 0.0f, 0.0f});
+        const auto first = CreateCollider(firstShape, {0.0f, 0.0f, 0.0f}, firstOffset, firstRotation, firstScale);
         const auto second = CreateCollider(secondShape, secondPosition);
         EXPECT_EQ(ECS::Collision::IntersectsGJK(first, second), expected);
     }
@@ -233,5 +236,39 @@ TEST_P(ColliderGeometryTests, OverlappingShapesIntersect) { ExpectResult({0.2f, 
 TEST_P(ColliderGeometryTests, TouchingShapesIntersect) { ExpectContactAtGap(-2.0 * ECS::Collision::CollisionTolerance, Result::Intersecting); }
 TEST_P(ColliderGeometryTests, GapWithinToleranceConsideredIntersect) { ExpectContactAtGap(0.5 * ECS::Collision::CollisionTolerance, Result::Intersecting); }
 TEST_P(ColliderGeometryTests, GapOutsideToleranceConsideredSepareted) { ExpectContactAtGap(2.0 * ECS::Collision::CollisionTolerance, Result::Separated); }
+
+TEST_P(ColliderGeometryTests, OffsetCanCreateIntersection) {
+    const glm::vec3 position{3.2f, 0.1f, 0.0f};
+    ExpectResult(position, Result::Separated);
+    ExpectResult(position, Result::Intersecting, {3.0f, 0.0f, 0.0f});
+}
+
+TEST_P(ColliderGeometryTests, OffsetCanRemoveIntersection) {
+    const glm::vec3 position{0.2f, 0.1f, 0.0f};
+    ExpectResult(position, Result::Intersecting);
+    ExpectResult(position, Result::Separated, {3.0f, 0.0f, 0.0f});
+}
+
+TEST_P(ColliderGeometryTests, ScalingCanCreateIntersection) {
+    const glm::vec3 position{2.0f, 0.0f, 0.0f};
+    ExpectResult(position, Result::Separated);
+    ExpectResult(position, Result::Intersecting, {}, {}, {4.0f, 1.0f, 1.0f});
+}
+
+TEST_P(ColliderGeometryTests, ShrinkingCanRemoveIntersection) {
+    const glm::vec3 position{0.8f, 0.0f, 0.0f};
+    ExpectResult(position, Result::Intersecting);
+    ExpectResult(position, Result::Separated, {}, {}, {0.25f, 0.25f, 0.25f});
+}
+
+TEST_P(ColliderGeometryTests, RotationChangesCollisionRotation) {
+    const glm::vec3 scale{4.0f, 1.0f, 1.0f};
+    const glm::vec3 rotation{0.0f, 0.0f, glm::radians(90.0f)};
+    ExpectResult({1.5f, 0.0f, 0.0f}, Result::Intersecting, {}, {}, scale);
+    ExpectResult({1.5f, 0.0f, 0.0f}, Result::Separated, {}, rotation, scale);
+    ExpectResult({0.0f, 1.5f, 0.0f}, Result::Intersecting, {}, rotation, scale);
+}
+
+TEST_P(ColliderGeometryTests, LocalOffsetIsScaledAndRotated) { ExpectResult({0.0f, 2.0f, 0.0f}, Result::Intersecting, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, glm::radians(90.0f)}, {2.0f, 1.0f, 1.0f}); }
 
 INSTANTIATE_TEST_SUITE_P(AllShapePairs, ColliderGeometryTests, testing::Combine(testing::ValuesIn(colliderTestShapes), testing::ValuesIn(colliderTestShapes)));
