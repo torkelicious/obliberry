@@ -1,3 +1,4 @@
+#include <array>
 #include <gtest/gtest.h>
 
 #include "ECS/Registry.h"
@@ -37,6 +38,8 @@ protected:
 
         TestUtils::GLM_VecExpectFloat(actual, expected);
     }
+
+    bool TryMove(const glm::vec3 &target = destination) { return ECS::Collision::TryMoveTo(registry, entity, target, basis); }
 };
 
 // Check that we can move to a non-blocked position
@@ -95,4 +98,116 @@ TEST_F(CollisionMovementTests, InvalidObstacleIgnored) {
 
     EXPECT_TRUE(moved);
     ExpectPosition(destination);
+}
+
+TEST_F(CollisionMovementTests, InvalidHandleIsRejected) {
+    const std::array<ECS::EntityID, 2> invalidhandles{ECS::INVALID_ENTITY_ID, static_cast<ECS::EntityID>(ECS::MAX_ENTITIES)};
+    for (const auto handle : invalidhandles) {
+        SCOPED_TRACE(handle);
+        EXPECT_FALSE(ECS::Collision::TryMoveTo(registry, handle, destination, basis));
+        ExpectPosition({0.0f, 0.0f, 0.0f});
+    }
+}
+
+TEST_F(CollisionMovementTests, DestroyedEntityCannotMove) {
+    registry.DestroyEntity(entity);
+    ASSERT_FALSE(registry.IsValid(entity));
+    EXPECT_FALSE(TryMove());
+    EXPECT_EQ(registry.GetComponent<ECS::Components::TransformComponent>(entity), nullptr);
+}
+
+
+TEST_F(CollisionMovementTests, MissingTransformRejectsMovement) {
+    registry.RemoveComponent<ECS::Components::TransformComponent>(entity);
+
+    EXPECT_FALSE(TryMove());
+    EXPECT_TRUE(registry.IsValid(entity));
+
+    EXPECT_EQ(registry.GetComponent<ECS::Components::TransformComponent>(entity), nullptr);
+}
+
+TEST_F(CollisionMovementTests, EntityWithoutColliderCanOverlapSolid) {
+    CreateBox(destination);
+    registry.RemoveComponent<ECS::Components::ColliderComponent>(entity);
+
+    EXPECT_TRUE(TryMove());
+    ExpectPosition(destination);
+}
+
+TEST_F(CollisionMovementTests, MovingTriggerCanOverlapSolid) {
+    CreateBox(destination);
+
+    auto *collider = registry.GetComponent<ECS::Components::ColliderComponent>(entity);
+
+    ASSERT_NE(collider, nullptr);
+    collider->isTrigger = true;
+
+    EXPECT_TRUE(TryMove());
+    ExpectPosition(destination);
+}
+
+
+TEST_F(CollisionMovementTests, InvalidMovingColliderDoesNotBlockMovement) {
+    CreateBox(destination);
+    auto *collider = registry.GetComponent<ECS::Components::ColliderComponent>(entity);
+    ASSERT_NE(collider, nullptr);
+    collider->size.x = 0.0f;
+
+    ASSERT_FALSE(ECS::Components::IsValidCollider(*collider));
+
+    EXPECT_TRUE(TryMove());
+    ExpectPosition(destination);
+}
+
+TEST_F(CollisionMovementTests, NonfiniteDestinationsPreservePosition) {
+    const std::array<float, 3> invalidValues{std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity()};
+
+    for (glm::length_t axis = 0; axis < 3; ++axis) {
+        for (const float value : invalidValues) {
+            SCOPED_TRACE(testing::Message() << "axis: " << axis << ", value: " << value);
+
+            glm::vec3 target = destination;
+            target[axis] = value;
+
+            EXPECT_FALSE(TryMove(target));
+            ExpectPosition({0.0f, 0.0f, 0.0f});
+        }
+    }
+}
+
+TEST_F(CollisionMovementTests, ParentedEntityCannotMoveIndependently) {
+    const auto parent = CreateBox({10.0f, 0.0f, 0.0f});
+
+    ECS::Systems::HierarchySystem::Propagate(registry);
+    registry.Reparent(entity, parent);
+    ECS::Systems::HierarchySystem::Propagate(registry);
+
+    const auto *transform = registry.GetComponent<ECS::Components::TransformComponent>(entity);
+
+    ASSERT_NE(transform, nullptr);
+
+    const glm::vec3 localBefore = transform->transform.GetPosition();
+    const glm::mat4 worldBefore = transform->worldTransform.GetMatrix();
+
+    EXPECT_FALSE(TryMove());
+
+    ExpectPosition(localBefore);
+    TestUtils::GLM_MatExpectNear(transform->worldTransform.GetMatrix(), worldBefore);
+
+    const auto *relationship = registry.GetComponent<ECS::Components::RelationshipComponent>(entity);
+
+    ASSERT_NE(relationship, nullptr);
+    EXPECT_EQ(relationship->parent, parent);
+}
+
+TEST_F(CollisionMovementTests, SuccessfulMovementUpdatesWorldTransform) {
+    ASSERT_TRUE(TryMove());
+
+    ExpectPosition(destination);
+
+    const auto *transform = registry.GetComponent<ECS::Components::TransformComponent>(entity);
+
+    ASSERT_NE(transform, nullptr);
+
+    TestUtils::GLM_VecExpectFloat(transform->worldTransform.GetPosition(), destination);
 }
