@@ -219,8 +219,6 @@ protected:
     }
 };
 
-TEST_P(ColliderGeometryTests, OverlappingShapesIntersect) { ExpectResult({0.2f, 0.1f, 0.0f}, Result::Intersecting); }
-
 TEST_P(ColliderGeometryTests, SeparatedShapesDoNotIntersect) {
     for (int axis = 0; axis < 3; ++axis) {
         SCOPED_TRACE(axis);
@@ -231,6 +229,7 @@ TEST_P(ColliderGeometryTests, SeparatedShapesDoNotIntersect) {
     }
 }
 
+TEST_P(ColliderGeometryTests, OverlappingShapesIntersect) { ExpectResult({0.2f, 0.1f, 0.0f}, Result::Intersecting); }
 TEST_P(ColliderGeometryTests, TouchingShapesIntersect) { ExpectContactAtGap(-2.0 * ECS::Collision::CollisionTolerance, Result::Intersecting); }
 TEST_P(ColliderGeometryTests, GapWithinToleranceConsideredIntersect) { ExpectContactAtGap(0.5 * ECS::Collision::CollisionTolerance, Result::Intersecting); }
 TEST_P(ColliderGeometryTests, GapOutsideToleranceConsideredSepareted) { ExpectContactAtGap(2.0 * ECS::Collision::CollisionTolerance, Result::Separated); }
