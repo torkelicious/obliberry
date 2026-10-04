@@ -1,4 +1,6 @@
 #include "Math/GLMUtils.h"
+#include <gtest/gtest.h>
+#include "glm/glm.hpp"
 
 //
 // Some helpers used for unit tests.
