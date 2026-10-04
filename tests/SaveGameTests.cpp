@@ -1,7 +1,12 @@
 #include "Core/Utils/UUID.h"
 #include "SaveData/SaveGameData.h"
 #include "SaveData/SaveGameManager.h"
+#include "SaveData/SaveGameSerialization.h"
+#include <nlohmann/json.hpp>
 
+#include <limits>
+#include <optional>
+#include <vector>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -12,6 +17,7 @@
 
 class SaveGameTests : public testing::Test {
 protected:
+    using Json = nlohmann::json;
     using Values = std::unordered_map<std::string, Saves::SaveValue>;
 
     Saves::SaveGameManager manager;
@@ -59,6 +65,24 @@ protected:
         values["IntegerValue"] = std::int64_t{123};
         values["ExtraValue"] = std::string("This is only in the changed one");
         return values;
+    }
+
+    Json MakeValidDocument() const { return {{"version", Saves::SAVE_FORMAT_VERSION}, {"name", "Validation Save"}, {"created_at", 100}, {"updated_at", 200}, {"values", {{"Value", 42}}}}; }
+
+    void ExpectRejectedDocument(const Json &document) {
+        const auto filename = directory / "save-validation.json";
+
+        std::ofstream file(filename, std::ios::binary | std::ios::trunc);
+        ASSERT_TRUE(file.is_open());
+
+        file << document.dump();
+        file.close();
+
+        ASSERT_FALSE(file.fail());
+
+        std::optional<Saves::SaveData> loaded;
+        ASSERT_NO_THROW(loaded = Saves::IO::Read(filename));
+        EXPECT_FALSE(loaded.has_value());
     }
 };
 
@@ -282,4 +306,152 @@ TEST_F(SaveGameTests, DeletingMissingSavePreservesCurrentState) {
     EXPECT_TRUE(manager.HasActiveFile());
 
     ASSERT_NO_FATAL_FAILURE(ExpectValues(expectedValues));
+}
+
+TEST_F(SaveGameTests, SerializationPreservesDataAndLimits) {
+    Saves::SaveData expected;
+    expected.displayName = "Boundary Test";
+    expected.createdAtUtc = 100;
+    expected.updatedAtUtc = 200;
+    expected.values = expectedValues;
+
+    expected.values["MinimumInteger"] = std::numeric_limits<std::int64_t>::min();
+
+    expected.values["MaximumInteger"] = std::numeric_limits<std::int64_t>::max();
+
+    expected.values["MaximumDouble"] = std::numeric_limits<double>::max();
+
+    // fucked up text
+    expected.values["EscapedText"] = std::string{"\xC3\xA5\xC3\xA4\xC3\xB6\n\"quoted\"\\path"};
+
+    const auto filename = directory / "save-boundaries.json";
+
+    ASSERT_TRUE(Saves::IO::WriteAtomic(filename, expected));
+
+    const auto loaded = Saves::IO::Read(filename);
+    ASSERT_TRUE(loaded.has_value());
+
+    EXPECT_EQ(loaded->version, expected.version);
+    EXPECT_EQ(loaded->displayName, expected.displayName);
+    EXPECT_EQ(loaded->createdAtUtc, expected.createdAtUtc);
+    EXPECT_EQ(loaded->updatedAtUtc, expected.updatedAtUtc);
+    EXPECT_EQ(loaded->values, expected.values);
+}
+
+TEST_F(SaveGameTests, SerializationRejectsMissingFields) {
+    for (const char *field : {"version", "name", "created_at", "updated_at", "values"}) {
+        SCOPED_TRACE(field);
+        auto doc = MakeValidDocument();
+        doc.erase(field);
+        ASSERT_NO_FATAL_FAILURE(ExpectRejectedDocument(doc));
+    }
+}
+
+TEST_F(SaveGameTests, SerializationRejectsNonobjectDocuments) {
+    const std::vector<Json> invalidDocuments{nullptr, true, 42, "text", Json::array()};
+
+    for (const auto &document : invalidDocuments) {
+        SCOPED_TRACE(document.dump());
+
+        ASSERT_NO_FATAL_FAILURE(ExpectRejectedDocument(document));
+    }
+}
+
+TEST_F(SaveGameTests, SerializationRejectsWrongFieldTypes) {
+    struct Case {
+        const char *field;
+        Json value;
+    };
+
+    const std::vector<Case> cases{{"name", 42}, {"name", true}, {"name", nullptr}, {"values", Json::array()}, {"values", "text"}, {"values", false}, {"values", nullptr}};
+
+    for (const auto &test : cases) {
+        SCOPED_TRACE(testing::Message() << test.field << ": " << test.value.dump());
+
+        auto document = MakeValidDocument();
+        document[test.field] = test.value;
+
+        ASSERT_NO_FATAL_FAILURE(ExpectRejectedDocument(document));
+    }
+}
+
+TEST_F(SaveGameTests, SerializationRejectsInvalidTimestamps) {
+    const std::vector<Json> invalidValues{-1, 1.5, "100", true, nullptr, std::numeric_limits<std::uint64_t>::max()};
+
+    for (const char *field : {"created_at", "updated_at"}) {
+        for (const auto &value : invalidValues) {
+            SCOPED_TRACE(testing::Message() << field << ": " << value.dump());
+
+            auto document = MakeValidDocument();
+            document[field] = value;
+
+            ASSERT_NO_FATAL_FAILURE(ExpectRejectedDocument(document));
+        }
+    }
+}
+
+TEST_F(SaveGameTests, SerializationRejectsUnsupportedValuesAndEmptyKeys) {
+    const std::vector<Json> invalidValues{nullptr, Json::array({1, 2}), Json::object({{"nested", 1}}), std::numeric_limits<std::uint64_t>::max()};
+
+    for (const auto &value : invalidValues) {
+        SCOPED_TRACE(value.dump());
+
+        auto document = MakeValidDocument();
+        document["values"]["InvalidValue"] = value;
+
+        ASSERT_NO_FATAL_FAILURE(ExpectRejectedDocument(document));
+    }
+
+    auto document = MakeValidDocument();
+    document["values"][""] = 42;
+
+    ASSERT_NO_FATAL_FAILURE(ExpectRejectedDocument(document));
+}
+
+TEST_F(SaveGameTests, NonfiniteWritePreservesExistingFile) {
+    Saves::SaveData original;
+    original.displayName = "Original";
+    original.values = expectedValues;
+
+    const auto filename = directory / "save-existing.json";
+    ASSERT_TRUE(Saves::IO::WriteAtomic(filename, original));
+
+    const std::vector<double> invalidValues{std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::infinity(), -std::numeric_limits<double>::infinity()};
+
+    for (const double value : invalidValues) {
+        SCOPED_TRACE(value);
+
+        auto invalid = original;
+        invalid.displayName = "Should Not Replace Original";
+        invalid.values["InvalidValue"] = value;
+
+        EXPECT_FALSE(Saves::IO::WriteAtomic(filename, invalid));
+
+        const auto loaded = Saves::IO::Read(filename);
+        ASSERT_TRUE(loaded.has_value());
+
+        EXPECT_EQ(loaded->displayName, original.displayName);
+        EXPECT_EQ(loaded->values, original.values);
+    }
+}
+
+TEST_F(SaveGameTests, EmptyKeyWritePreservesExistingFile) {
+    Saves::SaveData original;
+    original.displayName = "Original";
+    original.values = expectedValues;
+
+    const auto filename = directory / "save-existing.json";
+    ASSERT_TRUE(Saves::IO::WriteAtomic(filename, original));
+
+    auto invalid = original;
+    invalid.displayName = "Should Not Replace Original";
+    invalid.values[""] = true;
+
+    EXPECT_FALSE(Saves::IO::WriteAtomic(filename, invalid));
+
+    const auto loaded = Saves::IO::Read(filename);
+    ASSERT_TRUE(loaded.has_value());
+
+    EXPECT_EQ(loaded->displayName, original.displayName);
+    EXPECT_EQ(loaded->values, original.values);
 }
