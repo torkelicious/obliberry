@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <gtest/gtest.h>
 #include <vector>
-    // mock components for testing
+// mock components for testing
 
 namespace {
     struct ComponentA {
