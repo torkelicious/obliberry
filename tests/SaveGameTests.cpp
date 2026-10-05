@@ -84,6 +84,15 @@ protected:
         ASSERT_NO_THROW(loaded = Saves::IO::Read(filename));
         EXPECT_FALSE(loaded.has_value());
     }
+
+    void WriteListedSave(const std::filesystem::path &filename, const std::string &displayName, const std::int64_t created, const std::int64_t updated) {
+        Saves::SaveData data;
+        data.displayName = displayName;
+        data.createdAtUtc = created;
+        data.updatedAtUtc = updated;
+        data.values = expectedValues;
+        ASSERT_TRUE(Saves::IO::WriteAtomic(directory / filename, data));
+    }
 };
 
 // saving and loading restores the original values and their types
@@ -454,4 +463,60 @@ TEST_F(SaveGameTests, EmptyKeyWritePreservesExistingFile) {
 
     EXPECT_EQ(loaded->displayName, original.displayName);
     EXPECT_EQ(loaded->values, original.values);
+}
+
+TEST_F(SaveGameTests, ListSavesReturnsCorrectMetadata) {
+    ASSERT_NO_FATAL_FAILURE(WriteListedSave("save-metadata.json", "Named Save", 123, 456));
+
+    const auto saves = manager.ListSaves();
+    ASSERT_EQ(saves.size(), 1u);
+
+    EXPECT_EQ(saves[0].filename, std::filesystem::path{"save-metadata.json"});
+    EXPECT_EQ(saves[0].displayName, "Named Save");
+    EXPECT_EQ(saves[0].createdAtUtc, 123);
+    EXPECT_EQ(saves[0].updatedAtUtc, 456);
+}
+
+TEST_F(SaveGameTests, ListSavesSkipsInvalidFilesAndDirectories) {
+    ASSERT_NO_FATAL_FAILURE(WriteListedSave("save-valid.json", "Valid Save", 10, 20));
+    ASSERT_NO_FATAL_FAILURE(WriteListedSave("ordinary.json", "Wrong Prefix", 10, 20));
+    ASSERT_NO_FATAL_FAILURE(WriteListedSave("save-wrong.txt", "Wrong Extension", 10, 20));
+
+    const std::array malformedFiles{std::pair{"save-broken.json", "{ broken json"}, std::pair{"save-incomplete.json", "{}"}};
+
+    for (const auto &[filename, contents] : malformedFiles) {
+        SCOPED_TRACE(filename);
+
+        std::ofstream file(directory / filename);
+        ASSERT_TRUE(file.is_open());
+
+        file << contents;
+        file.close();
+
+        ASSERT_FALSE(file.fail());
+    }
+
+    ASSERT_TRUE(std::filesystem::create_directory(directory / "save-folder.json"));
+
+    const auto saves = manager.ListSaves();
+    ASSERT_EQ(saves.size(), 1u);
+
+    EXPECT_EQ(saves[0].filename, std::filesystem::path{"save-valid.json"});
+}
+
+TEST_F(SaveGameTests, ListSavesSortsByUpdatedTimeNewestFirst) {
+    ASSERT_NO_FATAL_FAILURE(WriteListedSave("save-a-middle.json", "Middle", 20, 200));
+    ASSERT_NO_FATAL_FAILURE(WriteListedSave("save-m-newest.json", "Newest", 10, 300));
+    ASSERT_NO_FATAL_FAILURE(WriteListedSave("save-z-oldest.json", "Oldest", 90, 100));
+
+    const auto saves = manager.ListSaves();
+    ASSERT_EQ(saves.size(), 3u);
+
+    EXPECT_EQ(saves[0].filename, std::filesystem::path{"save-m-newest.json"});
+    EXPECT_EQ(saves[1].filename, std::filesystem::path{"save-a-middle.json"});
+    EXPECT_EQ(saves[2].filename, std::filesystem::path{"save-z-oldest.json"});
+
+    EXPECT_EQ(saves[0].updatedAtUtc, 300);
+    EXPECT_EQ(saves[1].updatedAtUtc, 200);
+    EXPECT_EQ(saves[2].updatedAtUtc, 100);
 }
