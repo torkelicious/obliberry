@@ -36,9 +36,11 @@ void Scenes::Scene::OnEnter() {
     m_Context->uiCmdBuf = &m_UICmdBuf;
 
     // Register EngineLib native functions on every worker's interpreter
-    for (size_t w = 0; w < m_Context->scriptPool->worker_count(); ++w) {
-        Scripting::EngineLib lib;
-        lib.register_enginelib(m_Context->scriptPool->get_worker(w)->GetInterpreter(), m_Registry, *m_Context);
+    if (m_Context->scriptPool) {
+        for (size_t w = 0; w < m_Context->scriptPool->worker_count(); ++w) {
+            Scripting::EngineLib lib;
+            lib.register_enginelib(m_Context->scriptPool->get_worker(w)->GetInterpreter(), m_Registry, *m_Context);
+        }
     }
 
     IO::EntityFactory::RegisterDeserializers();
