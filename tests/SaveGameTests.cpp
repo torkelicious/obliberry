@@ -1,4 +1,6 @@
 #include "Core/Utils/UUID.h"
+#include "Core/Utils/PathUtils.h"
+#include "Config/ProjectConfig.h"
 #include "SaveData/SaveGameData.h"
 #include "SaveData/SaveGameManager.h"
 #include "SaveData/SaveGameSerialization.h"
@@ -6,6 +8,9 @@
 
 #include <limits>
 #include <optional>
+#include <array>
+#include <iterator>
+#include <utility>
 #include <vector>
 #include <cstdint>
 #include <filesystem>
@@ -356,6 +361,19 @@ TEST_F(SaveGameTests, SerializationRejectsMissingFields) {
     }
 }
 
+TEST_F(SaveGameTests, SerializationRejectsInvalidVersions) {
+    const std::vector<Json> invalidVersions{-1, 0, static_cast<unsigned>(Saves::SAVE_FORMAT_VERSION) + 1u, 256, static_cast<double>(Saves::SAVE_FORMAT_VERSION), "1", true, nullptr};
+
+    for (const auto &version : invalidVersions) {
+        SCOPED_TRACE(version.dump());
+
+        auto document = MakeValidDocument();
+        document["version"] = version;
+
+        ASSERT_NO_FATAL_FAILURE(ExpectRejectedDocument(document));
+    }
+}
+
 TEST_F(SaveGameTests, SerializationRejectsNonobjectDocuments) {
     const std::vector<Json> invalidDocuments{nullptr, true, 42, "text", Json::array()};
 
@@ -519,4 +537,246 @@ TEST_F(SaveGameTests, ListSavesSortsByUpdatedTimeNewestFirst) {
     EXPECT_EQ(saves[0].updatedAtUtc, 300);
     EXPECT_EQ(saves[1].updatedAtUtc, 200);
     EXPECT_EQ(saves[2].updatedAtUtc, 100);
+}
+
+TEST_F(SaveGameTests, CreatingSavesPreservesFilesAndTheirContents) {
+    std::unordered_map<std::string, std::int64_t> created;
+
+    for (std::int64_t i = 0; i < 32; ++i) {
+        SCOPED_TRACE(i);
+        manager.Set("SaveNumber", i);
+
+        const auto filename = manager.CreateSave("Repeated Name");
+        ASSERT_TRUE(filename.has_value());
+        ASSERT_TRUE(created.emplace(filename->string(), i).second) << "Reused filename: " << filename->string();
+
+        EXPECT_TRUE(std::filesystem::is_regular_file(directory / *filename));
+    }
+
+    ASSERT_EQ(manager.ListSaves().size(), created.size());
+    manager.Set("SaveNumber", std::int64_t{-1});
+
+    for (const auto &[filename, expected] : created) {
+        SCOPED_TRACE(filename);
+
+        ASSERT_TRUE(manager.LoadSave(filename));
+
+        const auto actual = manager.Get("SaveNumber");
+        ASSERT_TRUE(actual.has_value());
+        EXPECT_EQ(*actual, Saves::SaveValue{expected});
+    }
+}
+
+TEST_F(SaveGameTests, RemovingKeyPreservesOtherValues) {
+    SetValues(expectedValues);
+
+    ASSERT_TRUE(manager.Remove("IntegerValue"));
+
+    EXPECT_FALSE(manager.Contains("IntegerValue"));
+    EXPECT_FALSE(manager.Get("IntegerValue").has_value());
+
+    auto remaining = expectedValues;
+    remaining.erase("IntegerValue");
+
+    ASSERT_NO_FATAL_FAILURE(ExpectValues(remaining));
+
+    EXPECT_FALSE(manager.Remove("IntegerValue"));
+    ASSERT_NO_FATAL_FAILURE(ExpectValues(remaining));
+}
+
+
+TEST_F(SaveGameTests, RemovingMissingKeyPreservesValues) {
+    SetValues(expectedValues);
+
+    EXPECT_FALSE(manager.Remove("MissingValue"));
+    EXPECT_FALSE(manager.Remove(""));
+
+    ASSERT_NO_FATAL_FAILURE(ExpectValues(expectedValues));
+}
+
+TEST_F(SaveGameTests, ClearValuesPreservesActiveFileAndConfiguration) {
+    SetValues(expectedValues);
+
+    const auto filename = manager.CreateSave("Keep Save");
+    ASSERT_TRUE(filename.has_value());
+
+    manager.ClearValues();
+
+    for (const auto &[key, value] : expectedValues) {
+        SCOPED_TRACE(key);
+
+        EXPECT_FALSE(manager.Contains(key));
+        EXPECT_FALSE(manager.Get(key).has_value());
+    }
+
+    EXPECT_TRUE(manager.IsConfigured());
+    EXPECT_TRUE(manager.HasActiveFile());
+    EXPECT_EQ(manager.GetActiveFilename(), filename);
+    EXPECT_TRUE(std::filesystem::is_regular_file(directory / *filename));
+
+    ASSERT_TRUE(manager.LoadSave(*filename));
+    ASSERT_NO_FATAL_FAILURE(ExpectValues(expectedValues));
+}
+
+TEST_F(SaveGameTests, ResetClearsSessionAndConfigurationButPreservesFiles) {
+    SetValues(expectedValues);
+
+    const auto filename = manager.CreateSave("Keep Save");
+    ASSERT_TRUE(filename.has_value());
+
+    manager.Set("unsaved", true);
+    manager.Reset();
+
+    EXPECT_FALSE(manager.IsConfigured());
+    EXPECT_FALSE(manager.HasActiveFile());
+    EXPECT_FALSE(manager.GetActiveFilename().has_value());
+
+    for (const auto &[key, value] : expectedValues) {
+        SCOPED_TRACE(key);
+
+        EXPECT_FALSE(manager.Contains(key));
+        EXPECT_FALSE(manager.Get(key).has_value());
+    }
+
+    EXPECT_FALSE(manager.Contains("unsaved"));
+    EXPECT_FALSE(manager.Get("unsaved").has_value());
+
+    EXPECT_TRUE(manager.ListSaves().empty());
+    EXPECT_FALSE(manager.SaveActive());
+    EXPECT_FALSE(manager.LoadSave(*filename));
+    EXPECT_FALSE(manager.DeleteSave(*filename));
+    EXPECT_FALSE(manager.CreateSave("Unconfigured Save").has_value());
+
+    ASSERT_TRUE(std::filesystem::is_regular_file(directory / *filename));
+
+    ASSERT_NO_THROW(manager.Reset());
+
+    manager.Configure(directory);
+
+    ASSERT_TRUE(manager.LoadSave(*filename));
+    ASSERT_NO_FATAL_FAILURE(ExpectValues(expectedValues));
+    EXPECT_FALSE(manager.Contains("unsaved"));
+}
+
+TEST_F(SaveGameTests, FailedWritePreservesFileAndUnsavedValues) {
+    SetValues(expectedValues);
+
+    const auto filename = manager.CreateSave("Original Save");
+    ASSERT_TRUE(filename.has_value());
+
+    const auto path = directory / *filename;
+
+    const auto readBytes = [&]() {
+        std::ifstream file(path, std::ios::binary);
+        return std::string{std::istreambuf_iterator<char>{file}, std::istreambuf_iterator<char>{}};
+    };
+
+    const auto originalBytes = readBytes();
+    ASSERT_FALSE(originalBytes.empty());
+
+    const auto changed = MakeChangedValues();
+    SetValues(changed);
+
+    auto temporaryPath = path;
+    temporaryPath += ".tmp";
+    ASSERT_TRUE(std::filesystem::create_directory(temporaryPath));
+
+    ASSERT_FALSE(manager.SaveActive());
+
+    EXPECT_EQ(readBytes(), originalBytes);
+    EXPECT_EQ(manager.GetActiveFilename(), filename);
+    EXPECT_TRUE(manager.HasActiveFile());
+    ASSERT_NO_FATAL_FAILURE(ExpectValues(changed));
+
+    ASSERT_TRUE(manager.LoadSave(*filename));
+    ASSERT_NO_FATAL_FAILURE(ExpectValues(expectedValues));
+    EXPECT_FALSE(manager.Contains("ExtraValue"));
+}
+
+namespace {
+    constexpr const char *firstProjectUUID = "01234567-89ab-4cde-8fab-0123456789ab";
+    constexpr const char *secondProjectUUID = "89abcdef-0123-4567-89ab-cdef01234567";
+
+    constexpr std::array saveLocations{Config::SaveLocation::DataHome, Config::SaveLocation::Portable};
+} // namespace
+
+TEST(SaveDirectoryTests, DataHomeLocationUsesProjectUUID) {
+    const auto expected = Core::PathUtils::GetDataHome() / "obliberry" / firstProjectUUID / "saves";
+
+    const auto actual = Saves::IO::GenerateSaveDirectory(firstProjectUUID, Config::SaveLocation::DataHome);
+
+    ASSERT_TRUE(actual.has_value());
+    EXPECT_EQ(*actual, expected);
+    EXPECT_TRUE(actual->is_absolute());
+}
+
+TEST(SaveDirectoryTests, PortableLocationUsesExecutableDirectory) {
+    const auto expected = Core::PathUtils::GetExecutableDirectory() / "obliberry" / firstProjectUUID / "saves";
+
+    const auto actual = Saves::IO::GenerateSaveDirectory(firstProjectUUID, Config::SaveLocation::Portable);
+
+    ASSERT_TRUE(actual.has_value());
+    EXPECT_EQ(*actual, expected);
+    EXPECT_TRUE(actual->is_absolute());
+}
+
+TEST(SaveDirectoryTests, DifferentProjectUUIDsProduceSeparateDirectories) {
+    for (const auto location : saveLocations) {
+        SCOPED_TRACE(static_cast<unsigned>(location));
+
+        const auto first = Saves::IO::GenerateSaveDirectory(firstProjectUUID, location);
+        const auto second = Saves::IO::GenerateSaveDirectory(secondProjectUUID, location);
+        const auto repeated = Saves::IO::GenerateSaveDirectory(firstProjectUUID, location);
+
+        ASSERT_TRUE(first.has_value());
+        ASSERT_TRUE(second.has_value());
+        ASSERT_TRUE(repeated.has_value());
+
+        EXPECT_NE(*first, *second);
+        EXPECT_EQ(*first, *repeated);
+        EXPECT_EQ(first->parent_path().filename(), std::filesystem::path{firstProjectUUID});
+        EXPECT_EQ(second->parent_path().filename(), std::filesystem::path{secondProjectUUID});
+    }
+}
+
+TEST(SaveDirectoryTests, InvalidProjectUUIDsAreRejected) {
+    const std::vector<std::string> invalidUUIDs{"", "not-a-uuid", "../outside", "01234567-89ab-4cde-8fab-0123456789a", "01234567-89ab-4cde-8fab-0123456789ab0", "01234567_89ab-4cde-8fab-0123456789ab",
+            "01234567-89ab-4cde-8fab-0123456789ag", "01234567-89ab-3cde-8fab-0123456789ab", "01234567-89ab-4cde-7fab-0123456789ab", "01234567-89ab-4cde-cfab-0123456789ab"};
+
+    for (const auto location : saveLocations) {
+        for (const auto &uuid : invalidUUIDs) {
+            SCOPED_TRACE(testing::Message() << "Location: " << static_cast<unsigned>(location) << ", UUID: " << uuid);
+
+            std::optional<std::filesystem::path> actual;
+            ASSERT_NO_THROW(actual = Saves::IO::GenerateSaveDirectory(uuid, location));
+            EXPECT_FALSE(actual.has_value());
+        }
+    }
+}
+
+TEST(SaveDirectoryTests, ValidUUIDVariantsAndUppercaseAreAccepted) {
+    const std::array validUUIDs{"01234567-89ab-4cde-8fab-0123456789ab", "01234567-89ab-4cde-9fab-0123456789ab", "01234567-89ab-4cde-afab-0123456789ab", "01234567-89ab-4cde-bfab-0123456789ab",
+            "01234567-89AB-4CDE-AFAB-0123456789AB", "01234567-89AB-4CDE-BFAB-0123456789AB"};
+
+    for (const auto location : saveLocations) {
+        for (const char *uuid : validUUIDs) {
+            SCOPED_TRACE(testing::Message() << "Location: " << static_cast<unsigned>(location) << ", UUID: " << uuid);
+
+            const auto actual = Saves::IO::GenerateSaveDirectory(uuid, location);
+            ASSERT_TRUE(actual.has_value());
+            EXPECT_EQ(actual->parent_path().filename(), std::filesystem::path{uuid});
+            EXPECT_EQ(actual->filename(), std::filesystem::path{"saves"});
+        }
+    }
+}
+
+TEST(SaveDirectoryTests, InvalidSaveLocationsAreRejected) {
+    for (const unsigned value : {2u, 255u}) {
+        SCOPED_TRACE(value);
+        const auto location = static_cast<Config::SaveLocation>(value);
+
+        std::optional<std::filesystem::path> actual;
+        ASSERT_NO_THROW(actual = Saves::IO::GenerateSaveDirectory(firstProjectUUID, location));
+        EXPECT_FALSE(actual.has_value());
+    }
 }
