@@ -146,6 +146,36 @@ namespace IO::Package::Tools {
                 }
             }
 
+            std::vector<std::string> pendingScripts;
+
+            for (const auto &file : result.files) {
+                auto ext = std::filesystem::path(file).extension().string();
+                for (char &c : ext) {
+                    c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+                }
+                if (ext == ".obsl") {
+                    pendingScripts.push_back(file);
+                }
+            }
+
+            const auto scriptRoot = projRoot / "assets" / "scripts";
+            std::set<std::string> scannedScripts;
+
+            for (std::size_t i = 0; i < pendingScripts.size(); ++i) {
+                const auto scriptPath = pendingScripts[i];
+                if (!scannedScripts.insert(scriptPath).second) {
+                    continue;
+                }
+                const auto dependencies = CollectScriptDependencies(VFS::Resolve(scriptPath), projRoot, scriptRoot);
+
+                for (const auto &dep : dependencies) {
+                    addFile(dep);
+                    if (!scannedScripts.contains(dep)) {
+                        pendingScripts.push_back(dep);
+                    }
+                }
+            }
+
             manifest = std::move(result);
             return true;
 
