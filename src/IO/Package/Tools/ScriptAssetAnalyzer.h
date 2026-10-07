@@ -21,8 +21,8 @@ namespace IO::Package::Tools {
         std::set<std::string> dynamicAssets;
 
         bool includeAllCatalogAssets = true;
-
-        [[nodiscard]] ScriptAssetAnalysis AnalyzeScriptAssets(const std::vector<std::unique_ptr<ObSL::Stmt>> &statements, const nlohmann::json &catalogAssets);
     };
+
+    [[nodiscard]] ScriptAssetAnalysis AnalyzeScriptAssets(const std::vector<std::unique_ptr<ObSL::Stmt>> &statements, const nlohmann::json &catalogAssets);
 
 } // namespace IO::Package::Tools
