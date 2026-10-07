@@ -1,21 +1,160 @@
 #include "ObpakTools.h"
+#include <exception>
 #include <filesystem>
+#include "IO/AssetCatalog.h"
+#include "IO/AssetCatalogFile.h"
+#include "IO/AssetDependencies.h"
 #include "Logger/LoggerService.h"
 #include <iostream>
 #include "AssetPacking.h"
 #include "DependencyGraph.h"
 #include "FileIO.h"
 #include "IgnoreRules.h"
+#include <set>
+#include <stdexcept>
 #include <string>
 #include <cctype>
+#include <vector>
+#include <utility>
 #include "Core/Project.h"
 #include "IO/VFS/VFS.h"
 #include "IO/Package/Container.h"
+#include "nlohmann/json.hpp"
+#include "nlohmann/json_fwd.hpp"
 
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "ObpakTools"
 
 namespace IO::Package::Tools {
+
+    struct ExportManifest {
+        nlohmann::json catalog;
+        std::set<std::string> files; // paths
+    };
+
+    static bool BuildExportManifest(const std::vector<std::string> &scenePaths, ExportManifest &manifest) {
+        try {
+            const auto projRoot = VFS::GetProjectRoot();
+            if (projRoot.empty() || scenePaths.empty()) {
+                throw std::runtime_error("No project or export scenes specified");
+            }
+
+            if (!AssetCatalog::IsLoaded() && !AssetCatalog::Load()) {
+                return false;
+            }
+
+            ExportManifest result;
+            AssetDependencies::RequiredAssets required;
+
+            const auto addFile = [&](const std::string &path) {
+                if (path.empty()) {
+                    return;
+                }
+
+                const auto resolved = VFS::Resolve(VFS::ToRelative(path));
+                if (resolved.empty() || !std::filesystem::is_regular_file(resolved)) {
+                    throw std::runtime_error("Required export file is missing or invalid: " + path);
+                }
+
+                result.files.insert(std::filesystem::relative(resolved, projRoot).generic_string());
+            };
+
+            addFile("project.json");
+
+            for (const auto &scenePath : scenePaths) {
+                addFile(scenePath);
+                const auto scene = VFS::ReadVirtualJson(VFS::ToRelative(scenePath));
+                if (!scene || !scene->is_object()) {
+                    throw std::runtime_error("Could not read export scene: " + scenePath);
+                }
+
+                auto refs = AssetDependencies::CollectDirectRefs(*scene);
+                required.textures.merge(refs.textures);
+                required.shaders.merge(refs.shaders);
+                required.meshes.merge(refs.meshes);
+                required.materials.merge(refs.materials);
+                required.fonts.merge(refs.fonts);
+                required.animationSets.merge(refs.animationSets);
+
+                if (const auto properties = scene->find("properties"); properties != scene->end() && properties->is_object()) {
+                    addFile(properties->value("background_music", std::string{}));
+                }
+
+                if (const auto grid = scene->find("grid"); grid != scene->end() && grid->is_object()) {
+                    addFile(grid->value("map_file", std::string{}));
+                }
+
+                const auto entities = scene->find("entities");
+                if (entities == scene->end() || !entities->is_array()) {
+                    continue;
+                }
+
+                for (const auto &entity : *entities) {
+                    if (!entity.is_object()) {
+                        continue;
+                    }
+
+                    const auto components = entity.find("components");
+                    if (components == entity.end() || !components->is_object()) {
+                        continue;
+                    }
+
+                    const auto script = components->find("ScriptComponent");
+                    if (script == components->end() || !script->is_object()) {
+                        continue;
+                    }
+
+                    if (script->contains("scriptPath")) {
+                        addFile(script->at("scriptPath").get<std::string>());
+                    } else if (const auto paths = script->find("scriptPaths"); paths != script->end() && paths->is_array()) {
+                        for (const auto &path : *paths) {
+                            addFile(path.get<std::string>());
+                        }
+                    }
+                }
+            }
+
+            if (!AssetDependencies::ResolveDependencies(required)) {
+                return false;
+            }
+
+            nlohmann::json subset;
+            if (!AssetDependencies::BuildAssetSubset(required, subset)) {
+                return false;
+            }
+
+            result.catalog = IO::CatalogFile::Empty();
+            result.catalog["assets"] = std::move(subset);
+
+            for (const auto &[type, entries] : result.catalog.at("assets").items()) {
+                for (const auto &asset : entries) {
+                    if (type == "textures" || type == "fonts" || type == "animation_sets") {
+                        const auto path = asset.at("path").get<std::string>();
+                        if (path.empty()) {
+                            throw std::runtime_error("Empty file path for asset: " + asset.at("id").get<std::string>());
+                        }
+                        addFile(path);
+                    } else if (type == "shaders") {
+                        addFile(asset.value("vertex", std::string{}));
+
+                        const auto fragment = asset.at("fragment").get<std::string>();
+                        if (fragment.empty()) {
+                            throw std::runtime_error("Empty fragment path for shader: " + asset.at("id").get<std::string>());
+                        }
+                        addFile(fragment);
+                    }
+                }
+            }
+
+            manifest = std::move(result);
+            return true;
+
+        } catch (const std::exception &e) {
+            LOG_ERROR(LOG_WHO, std::string("Could not build export manifest: ") + e.what());
+            return false;
+        }
+    }
+
     static std::string SanitizeExecutableName(const std::string &input) {
         std::string out;
         bool lastWasUnderscore = false;

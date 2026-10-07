@@ -40,6 +40,7 @@ add_library(obliberry_engine STATIC
         IO/VFS/VFS.cpp
         IO/AssetCatalog.cpp
         IO/AssetCatalog.h
+        IO/AssetDependencies.cpp
 
         # Sound
         Sound/AudioEngine.cpp
