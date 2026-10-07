@@ -118,7 +118,11 @@ namespace Editor::Commands {
     public:
         RemoveComponentCommand(const ECS::EntityID target, const T &componentData) : m_EntityID(target), m_OldData(componentData) {}
         void Execute(Core::EngineContext &ctx) override { ctx.sceneManager->GetCurrentScene()->GetRegistry().RemoveComponent<T>(m_EntityID); }
-        void Undo(Core::EngineContext &ctx) override { ctx.sceneManager->GetCurrentScene()->GetRegistry().AddComponent<T>(m_EntityID, m_OldData); }
+        void Undo(Core::EngineContext &ctx) override {
+            auto &registry = ctx.sceneManager->GetCurrentScene()->GetRegistry();
+            if (registry.IsValid(m_EntityID))
+                registry.AddComponent<T>(m_EntityID, m_OldData);
+        }
         [[nodiscard]] std::string_view Name() const noexcept override { return "Remove Component"; }
 
     private:
@@ -130,7 +134,11 @@ namespace Editor::Commands {
     template <typename T> class AddComponentCommand final : public ICommand {
     public:
         AddComponentCommand(const ECS::EntityID target, const T &componentData) : m_EntityID(target), m_Data(componentData) {}
-        void Execute(Core::EngineContext &ctx) override { ctx.sceneManager->GetCurrentScene()->GetRegistry().AddComponent<T>(m_EntityID, m_Data); }
+        void Execute(Core::EngineContext &ctx) override {
+            auto &registry = ctx.sceneManager->GetCurrentScene()->GetRegistry();
+            if (registry.IsValid(m_EntityID))
+                registry.AddComponent<T>(m_EntityID, m_Data);
+        }
         void Undo(Core::EngineContext &ctx) override { ctx.sceneManager->GetCurrentScene()->GetRegistry().RemoveComponent<T>(m_EntityID); }
         [[nodiscard]] std::string_view Name() const noexcept override { return "Add Component"; }
 
