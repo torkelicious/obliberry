@@ -65,6 +65,7 @@ add_library(obliberry_engine STATIC
         IO/Package/Tools/AssetPacking.cpp
         IO/Package/Tools/DependencyGraph.cpp
         IO/Package/Tools/IgnoreRules.cpp
+        IO/Package/Tools/ScriptAssetAnalyzer.cpp
 
         # UI
         UI/Text/Font.cpp
