@@ -46,9 +46,6 @@ jobs:
         with:
           arch: x64
 
-      - name: Enable tests in root CMake
-        run: python tests/enable_tests.py
-
       - name: Configure tests
         run: cmake --preset ${{ matrix.preset }} -DBUILD_TESTING=ON -DBUILD_PACK_TOOLS=OFF -DOBLIBERRY_TEST_RENDERING=${{ matrix.rendering }}
 
