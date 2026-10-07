@@ -1,3 +1,4 @@
+
 #include "ObpakTools.h"
 #include <exception>
 #include <filesystem>
@@ -115,6 +116,78 @@ namespace IO::Package::Tools {
                 }
             }
 
+            const auto *catalogAssets = AssetCatalog::GetAssets();
+            if (!catalogAssets) {
+                throw std::runtime_error("No asset catalog loaded.");
+            }
+
+            std::vector<std::string> pendingScripts;
+            for (const auto &file : result.files) {
+                auto extension = std::filesystem::path(file).extension().string();
+                for (char &c : extension) {
+                    c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+                }
+
+                if (extension == ".obsl") {
+                    pendingScripts.push_back(file);
+                }
+            }
+
+            const auto scriptRoot = projRoot / "assets" / "scripts";
+            std::set<std::string> scannedScripts;
+            std::set<std::string> keepEntireTypes;
+            bool keepAllCatalogAssets = false;
+
+            for (std::size_t index = 0; index < pendingScripts.size(); ++index) {
+                const auto scriptPath = pendingScripts[index];
+
+                if (!scannedScripts.insert(scriptPath).second) {
+                    continue;
+                }
+
+                ScriptAssetAnalysis analysis;
+                const auto dependencies = CollectScriptDependencies(VFS::Resolve(scriptPath), projRoot, scriptRoot, *catalogAssets, analysis);
+
+                required.textures.merge(analysis.required.textures);
+                required.shaders.merge(analysis.required.shaders);
+                required.meshes.merge(analysis.required.meshes);
+                required.materials.merge(analysis.required.materials);
+                required.fonts.merge(analysis.required.fonts);
+                required.animationSets.merge(analysis.required.animationSets);
+
+                keepAllCatalogAssets |= analysis.includeAllCatalogAssets;
+                keepEntireTypes.insert(analysis.dynamicAssets.begin(), analysis.dynamicAssets.end());
+
+                for (const auto &dependency : dependencies) {
+                    addFile(dependency);
+
+                    if (!scannedScripts.contains(dependency)) {
+                        pendingScripts.push_back(dependency);
+                    }
+                }
+            }
+
+            const std::pair<const char *, std::set<std::string> *> targets[] = {{"textures", &required.textures}, {"shaders", &required.shaders}, {"meshes", &required.meshes}, {"materials", &required.materials},
+                    {"fonts", &required.fonts}, {"animation_sets", &required.animationSets}};
+
+            for (const auto &type : keepEntireTypes) {
+                if (!catalogAssets->contains(type)) {
+                    throw std::runtime_error("Unknown dynamic asset type: " + type);
+                }
+            }
+
+            for (const auto &[type, ids] : targets) {
+                if (keepAllCatalogAssets || keepEntireTypes.contains(type)) {
+                    for (const auto &asset : catalogAssets->at(type)) {
+                        ids->insert(asset.at("id").get<std::string>());
+                    }
+                }
+            }
+
+            if (keepAllCatalogAssets) {
+                LOG_INFO("ObpakTools", "Scripts require keeping the full asset catalog.");
+            }
+
             if (!AssetDependencies::ResolveDependencies(required)) {
                 return false;
             }
@@ -143,37 +216,6 @@ namespace IO::Package::Tools {
                             throw std::runtime_error("Empty fragment path for shader: " + asset.at("id").get<std::string>());
                         }
                         addFile(fragment);
-                    }
-                }
-            }
-
-            // scripts
-
-            std::vector<std::string> pendingScripts;
-
-            for (const auto &file : result.files) {
-                auto ext = std::filesystem::path(file).extension().string();
-                for (char &c : ext) {
-                    c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-                }
-                if (ext == ".obsl") {
-                    pendingScripts.push_back(file);
-                }
-            }
-
-            const auto scriptRoot = projRoot / "assets" / "scripts";
-            std::set<std::string> scannedScripts;
-
-            for (std::size_t i = 0; i < pendingScripts.size(); ++i) {
-                const auto scriptPath = pendingScripts[i];
-                if (!scannedScripts.insert(scriptPath).second) {
-                    continue;
-                }
-                const auto dependencies = CollectScriptDependencies(VFS::Resolve(scriptPath), projRoot, scriptRoot);
-
-                for (const auto &dep : dependencies) {
-                    addFile(dep);
-                    if (!scannedScripts.contains(dep)) {
                     }
                 }
             }
@@ -218,7 +260,6 @@ namespace IO::Package::Tools {
 
             manifest = std::move(result);
             return true;
-
         } catch (const std::exception &e) {
             LOG_ERROR(LOG_WHO, std::string("Could not build export manifest: ") + e.what());
             return false;
