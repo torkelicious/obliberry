@@ -62,8 +62,7 @@ protected:
         const auto id = registry.CreateEntity();
         registry.AddComponent<ECS::Components::TransformComponent>(id).transform.SetPosition(position);
         registry.AddComponent<ECS::Components::ColliderComponent>(id);
-        Interpreter().get_global_environment()->define(variable,
-            Scripting::CreateEntityObject(&Interpreter(), registry, id));
+        Interpreter().get_global_environment()->define(variable, Scripting::CreateEntityObject(&Interpreter(), registry, id));
         return id;
     }
 };
@@ -74,20 +73,17 @@ TEST_F(ObSLBindingTests, MovementBlocksAndTeleportBypassesCollision) {
     ECS::Systems::HierarchySystem::Propagate(registry);
     ASSERT_NO_THROW(Run("var transform = actor.GetComponent(\"Transform\"); transform.TryMoveTo(0, 0, 0);"));
     commands.flush(registry);
-    TestUtils::GLM_VecExpectFloat(
-        registry.GetComponent<ECS::Components::TransformComponent>(moving)->transform.GetPosition(), glm::vec3{-3, 0, 0});
+    TestUtils::GLM_VecExpectFloat(registry.GetComponent<ECS::Components::TransformComponent>(moving)->transform.GetPosition(), glm::vec3{-3, 0, 0});
 
     runtime.get_worker(0)->set_frame_context(&commands);
     ASSERT_NO_THROW(Run("transform.TryMoveTo(-2, 0, 0);"));
     commands.flush(registry);
-    TestUtils::GLM_VecExpectFloat(
-        registry.GetComponent<ECS::Components::TransformComponent>(moving)->transform.GetPosition(), glm::vec3{-2, 0, 0});
+    TestUtils::GLM_VecExpectFloat(registry.GetComponent<ECS::Components::TransformComponent>(moving)->transform.GetPosition(), glm::vec3{-2, 0, 0});
 
     runtime.get_worker(0)->set_frame_context(&commands);
     ASSERT_NO_THROW(Run("transform.SetPosition(0, 0, 0);"));
     commands.flush(registry);
-    TestUtils::GLM_VecExpectFloat(
-        registry.GetComponent<ECS::Components::TransformComponent>(moving)->transform.GetPosition(), glm::vec3{0});
+    TestUtils::GLM_VecExpectFloat(registry.GetComponent<ECS::Components::TransformComponent>(moving)->transform.GetPosition(), glm::vec3{0});
 }
 
 TEST_F(ObSLBindingTests, SaveBindingsPersistAndRestoreValues) {
@@ -114,8 +110,7 @@ TEST_F(ObSLBindingTests, DestroyedWrappersFailSafelyAndDoNotModifyReplacement) {
     ASSERT_NO_THROW(Run("var oldName = old.GetName(); old.SetName(\"Bad\"); oldTransform.SetPosition(1, 2, 3);"));
     commands.flush(registry);
     EXPECT_TRUE(std::holds_alternative<std::monostate>(Interpreter().get_global_environment()->get("oldName")));
-    TestUtils::GLM_VecExpectFloat(
-        registry.GetComponent<ECS::Components::TransformComponent>(replacement)->transform.GetPosition(), glm::vec3{7, 8, 9});
+    TestUtils::GLM_VecExpectFloat(registry.GetComponent<ECS::Components::TransformComponent>(replacement)->transform.GetPosition(), glm::vec3{7, 8, 9});
     EXPECT_NE(registry.GetEntityName(replacement), "Bad");
 }
 

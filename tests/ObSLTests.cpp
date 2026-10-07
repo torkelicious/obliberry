@@ -26,9 +26,7 @@ protected:
         interpreter.execute_block(programs.back(), interpreter.get_global_environment());
     }
 
-    ObSL::Value Get(const std::string &name) {
-        return interpreter.get_global_environment()->get(name);
-    }
+    ObSL::Value Get(const std::string &name) { return interpreter.get_global_environment()->get(name); }
 
     void ExpectNumber(const std::string &name, const double expected) {
         const auto value = Get(name);
@@ -56,10 +54,8 @@ TEST_F(ObSLTests, LiteralsEscapesCommentsAndOperators) {
 }
 
 TEST_F(ObSLTests, PrecedenceParenthesesAndAssociativity) {
-    ASSERT_NO_THROW(Run(
-        "var a = 2 + 3 * 4; var b = (2 + 3) * 4; "
-        "var c = 20 - 5 - 3; var d = -2 * (3 + 1);"
-    ));
+    ASSERT_NO_THROW(Run("var a = 2 + 3 * 4; var b = (2 + 3) * 4; "
+                        "var c = 20 - 5 - 3; var d = -2 * (3 + 1);"));
     ExpectNumber("a", 14);
     ExpectNumber("b", 20);
     ExpectNumber("c", 12);
@@ -67,9 +63,7 @@ TEST_F(ObSLTests, PrecedenceParenthesesAndAssociativity) {
 }
 
 TEST_F(ObSLTests, MalformedSyntaxReportsErrors) {
-    for (const std::string_view source : {
-        "var x = ;", "var x = (1 + 2;", "fn broken( {", "if (true) {", "\"unfinished"
-    }) {
+    for (const std::string_view source : {"var x = ;", "var x = (1 + 2;", "fn broken( {", "if (true) {", "\"unfinished"}) {
         SCOPED_TRACE(source);
         EXPECT_THROW(Run(std::string{source}), ObSL::RuntimeError);
     }
@@ -118,10 +112,8 @@ TEST_F(ObSLTests, ConditionalsLoopsAndShortCircuiting) {
 }
 
 TEST_F(ObSLTests, ArraysSupportValidReadAndWriteIndices) {
-    ASSERT_NO_THROW(Run(
-        "var array = [10, 20, 30]; array[1] = 25; "
-        "var first = array[0]; var middle = array[1]; var last = array[2];"
-    ));
+    ASSERT_NO_THROW(Run("var array = [10, 20, 30]; array[1] = 25; "
+                        "var first = array[0]; var middle = array[1]; var last = array[2];"));
     ExpectNumber("first", 10);
     ExpectNumber("middle", 25);
     ExpectNumber("last", 30);
@@ -129,10 +121,7 @@ TEST_F(ObSLTests, ArraysSupportValidReadAndWriteIndices) {
 
 TEST_F(ObSLTests, InvalidIndicesAndRuntimeTypesReportErrorsAndRecover) {
     ASSERT_NO_THROW(Run("var array = [10, 20];"));
-    for (const char *source : {
-        "var bad = array[2];", "array[-3] = 1;", "var bad = array[\"x\"];",
-        "var bad = true - 1;", "var bad = unknownVariable;", "var bad = 3();"
-    }) {
+    for (const char *source : {"var bad = array[2];", "array[-3] = 1;", "var bad = array[\"x\"];", "var bad = true - 1;", "var bad = unknownVariable;", "var bad = 3();"}) {
         SCOPED_TRACE(source);
         EXPECT_THROW(Run(source), ObSL::RuntimeError);
     }

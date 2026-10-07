@@ -4,7 +4,6 @@
 #include "Core/ResourceManager.h"
 #include "ECS/Components/MovementComponent.h"
 #include "ECS/Components/TransformComponent.h"
-#include "IO/Loaders/EntityFactory.h"
 #include "TestingUtils.h"
 #include <memory>
 
@@ -20,11 +19,7 @@ protected:
         context.sceneManager = &scenes;
         context.isEditorMode = true;
         scenes.SetContext(context);
-        ASSERT_NO_FATAL_FAILURE(WriteJson("scene.json", {
-            {"properties", {{"lighting", false}}},
-            {"entities", nlohmann::json::array()},
-            {"PostProcessing", nlohmann::json::array()}
-        }));
+        ASSERT_NO_FATAL_FAILURE(WriteJson("scene.json", {{"properties", {{"lighting", false}}}, {"entities", nlohmann::json::array()}, {"PostProcessing", nlohmann::json::array()}}));
         scenes.LoadSceneByPath("scene.json");
         ASSERT_NE(scenes.GetCurrentScene(), nullptr);
     }

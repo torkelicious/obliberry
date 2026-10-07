@@ -29,12 +29,9 @@ TEST_F(ConfigurationTests, ProjectDefaultsAndInvalidSaveLocations) {
     EXPECT_EQ(actual.startScenePath, defaults.startScenePath);
     EXPECT_EQ(actual.useSaves, defaults.useSaves);
     EXPECT_EQ(actual.saveLocation, defaults.saveLocation);
-    for (const auto &invalid : std::vector<nlohmann::json>{-1, 2, 256, 1.5, "1", true, nullptr,
-            std::numeric_limits<std::uint64_t>::max()}) {
+    for (const auto &invalid : std::vector<nlohmann::json>{-1, 2, 256, 1.5, "1", true, nullptr, std::numeric_limits<std::uint64_t>::max()}) {
         SCOPED_TRACE(invalid.dump());
-        ASSERT_NO_FATAL_FAILURE(WriteJson("project.json", {
-            {"saves", {{"enabled", true}, {"location", invalid}}}
-        }));
+        ASSERT_NO_FATAL_FAILURE(WriteJson("project.json", {{"saves", {{"enabled", true}, {"location", invalid}}}}));
         const auto loaded = Config::ProjectConfig::Deserialize();
         EXPECT_EQ(loaded.saveLocation, defaults.saveLocation);
         EXPECT_TRUE(loaded.useSaves);

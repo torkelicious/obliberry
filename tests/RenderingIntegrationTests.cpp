@@ -18,8 +18,7 @@ protected:
             glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_NULL);
         }
         if (!glfwInit()) {
-            ASSERT_EQ(std::getenv("OBLIBERRY_REQUIRE_RENDERING_TESTS"), nullptr)
-                << "CI requires a working display for rendering tests.";
+            ASSERT_EQ(std::getenv("OBLIBERRY_REQUIRE_RENDERING_TESTS"), nullptr) << "CI requires a working display for rendering tests.";
             GTEST_SKIP() << "GLFW could not initialize a display.";
         }
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
@@ -31,8 +30,7 @@ protected:
         }
         window = glfwCreateWindow(32, 32, "Rendering tests", nullptr, nullptr);
         if (!window) {
-            ASSERT_EQ(std::getenv("OBLIBERRY_REQUIRE_RENDERING_TESTS"), nullptr)
-                << "CI requires an OpenGL 4.3 context.";
+            ASSERT_EQ(std::getenv("OBLIBERRY_REQUIRE_RENDERING_TESTS"), nullptr) << "CI requires an OpenGL 4.3 context.";
             GTEST_SKIP() << "An OpenGL 4.3 context is unavailable.";
         }
         glfwMakeContextCurrent(window);
@@ -54,17 +52,16 @@ TEST_F(RenderingIntegrationTests, PickingReadsRenderedEntityAndBackground) {
     glDisable(GL_BLEND);
     glDisable(GL_DEPTH_TEST);
     Rendering::Shader shader{
-        R"glsl(#version 430 core
+            R"glsl(#version 430 core
             void main() {
                 vec2 p[3] = vec2[3](vec2(-0.5,-0.5), vec2(0.5,-0.5), vec2(0,0.5));
                 gl_Position = vec4(p[gl_VertexID], 0, 1);
             })glsl",
-        R"glsl(#version 430 core
+            R"glsl(#version 430 core
             layout(location=0) out vec4 color;
             layout(location=1) out int entity;
             void main() { color=vec4(1); entity=42; })glsl",
-        "Picking test"
-    };
+            "Picking test"};
     shader.InitGL();
     ASSERT_TRUE(shader.IsValid());
     shader.Bind();
@@ -103,10 +100,12 @@ TEST_F(RenderingIntegrationTests, EffectsExecuteInOrderAndSkipDisabledPasses) {
         })glsl";
     auto add = std::make_shared<Rendering::Shader>(vertex, R"glsl(#version 430 core
         in vec2 uv; out vec4 color; uniform sampler2D u_Texture;
-        void main() { color=texture(u_Texture,uv)+vec4(0.125,0,0,0); })glsl", "Add test");
+        void main() { color=texture(u_Texture,uv)+vec4(0.125,0,0,0); })glsl",
+            "Add test");
     auto multiply = std::make_shared<Rendering::Shader>(vertex, R"glsl(#version 430 core
         in vec2 uv; out vec4 color; uniform sampler2D u_Texture;
-        void main() { color=texture(u_Texture,uv)*vec4(2,1,1,1); })glsl", "Multiply test");
+        void main() { color=texture(u_Texture,uv)*vec4(2,1,1,1); })glsl",
+            "Multiply test");
     add->InitGL();
     multiply->InitGL();
     ASSERT_TRUE(add->IsValid());

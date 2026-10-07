@@ -1,7 +1,6 @@
 #include "TemporaryProject.h"
 #include "IO/Package/Container.h"
 #include "IO/Package/Tools/DependencyGraph.h"
-#include <algorithm>
 #include <cstring>
 #include <iterator>
 #include <limits>
@@ -45,7 +44,7 @@ TEST_F(VFSPackageTests, CompressedAndUncompressedPackagesPreserveContents) {
 
 TEST_F(VFSPackageTests, ReturningFromPackageToProjectResetsMountState) {
     IO::ContainerWriter writer;
-    writer.add_raw_data("value.txt", {'p','a','c','k'}, IO::Package::EntryType::RawBinary, false);
+    writer.add_raw_data("value.txt", {'p', 'a', 'c', 'k'}, IO::Package::EntryType::RawBinary, false);
     writer.write(directory / "data.obpak");
     ASSERT_NO_FATAL_FAILURE(Write("value.txt", "disk"));
 
@@ -62,7 +61,7 @@ TEST_F(VFSPackageTests, ReturningFromPackageToProjectResetsMountState) {
 
 TEST_F(VFSPackageTests, InvalidHeadersAndTruncatedPackagesFailSafely) {
     IO::ContainerWriter writer;
-    writer.add_raw_data("value.txt", {'a','b','c'}, IO::Package::EntryType::RawBinary, false);
+    writer.add_raw_data("value.txt", {'a', 'b', 'c'}, IO::Package::EntryType::RawBinary, false);
     writer.write(directory / "valid.obpak");
     std::ifstream file(directory / "valid.obpak", std::ios::binary);
     const std::string original{std::istreambuf_iterator<char>{file}, {}};

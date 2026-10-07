@@ -19,8 +19,7 @@ protected:
     void SetUp() override {
         IO::AssetCatalog::Close();
         IO::VFS::UnmountProject();
-        directory = std::filesystem::temp_directory_path() /
-            ("obliberry-test-" + Core::Utils::UUID::UUIDGenerator::Generate());
+        directory = std::filesystem::temp_directory_path() / ("obliberry-test-" + Core::Utils::UUID::UUIDGenerator::Generate());
         ASSERT_TRUE(std::filesystem::create_directory(directory));
         ownsDirectory = true;
         IO::VFS::MountProject(directory / "project.json");
@@ -47,7 +46,5 @@ protected:
         ASSERT_FALSE(file.fail());
     }
 
-    void WriteJson(const std::string &path, const nlohmann::json &document) {
-        Write(path, document.dump());
-    }
+    void WriteJson(const std::string &path, const nlohmann::json &document) { Write(path, document.dump()); }
 };
