@@ -83,6 +83,11 @@ namespace IO {
     }
 
     bool ContainerReader::open(const std::filesystem::path &file) {
+        m_path_to_index.clear();
+        m_toc.clear();
+        m_string_table.clear();
+        m_blob_data = nullptr;
+        m_blob_size = 0;
         // clean up any previous mapping
         if (m_mapped_region && m_mapped_region != MAP_FAILED) {
 #ifdef _WIN32
@@ -225,6 +230,9 @@ namespace IO {
     }
 
     std::optional<std::string> ContainerReader::read(const std::string &canonical_path) const {
+        if (!m_blob_data) {
+            return std::nullopt;
+        }
 
         const auto it = m_path_to_index.find(canonical_path);
         if (it == m_path_to_index.end())
@@ -268,6 +276,9 @@ namespace IO {
     }
 
     std::optional<std::string_view> ContainerReader::read_view(const std::string &canonical_path) const {
+        if (!m_blob_data) {
+            return std::nullopt;
+        }
         const auto it = m_path_to_index.find(canonical_path);
         if (it == m_path_to_index.end())
             return std::nullopt;

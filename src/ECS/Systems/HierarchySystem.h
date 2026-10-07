@@ -58,7 +58,9 @@ namespace ECS::Systems::HierarchySystem {
                 glm::decompose(worldMatrix, scale, rotation, position, skew, perspective);
 
                 childTc->worldTransform.SetPosition(position);
-                childTc->worldTransform.SetRotation(glm::eulerAngles(rotation));
+                glm::vec3 rotationAngles;
+                glm::extractEulerAngleXYZ(glm::mat4_cast(rotation), rotationAngles.x, rotationAngles.y, rotationAngles.z);
+                childTc->worldTransform.SetRotation(rotationAngles);
                 childTc->worldTransform.SetScale(scale);
                 childTc->worldTransform.SetCustomMatrix(worldMatrix);
 

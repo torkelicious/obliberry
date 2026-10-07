@@ -24,12 +24,16 @@ namespace Editor::Commands {
 
     void TranslateEntityCommand::Execute(Core::EngineContext &ctx) {
         const ECS::Entity ent(m_EntityID, &ctx.sceneManager->GetCurrentScene()->GetRegistry());
-        ent.GetComponent<ECS::Components::TransformComponent>()->transform.SetPosition(m_NewPos);
+        if (auto *transform = ent.GetComponent<ECS::Components::TransformComponent>()) {
+            transform->transform.SetPosition(m_NewPos);
+        }
     }
 
     void TranslateEntityCommand::Undo(Core::EngineContext &ctx) {
         const ECS::Entity ent(m_EntityID, &ctx.sceneManager->GetCurrentScene()->GetRegistry());
-        ent.GetComponent<ECS::Components::TransformComponent>()->transform.SetPosition(m_OldPos);
+        if (auto *transform = ent.GetComponent<ECS::Components::TransformComponent>()) {
+            transform->transform.SetPosition(m_OldPos);
+        }
     }
 
     std::string_view TranslateEntityCommand::Name() const noexcept { return "Move entity"; }
@@ -39,12 +43,16 @@ namespace Editor::Commands {
 
     void RotateEntityCommand::Execute(Core::EngineContext &ctx) {
         const ECS::Entity ent(m_EntityID, &ctx.sceneManager->GetCurrentScene()->GetRegistry());
-        ent.GetComponent<ECS::Components::TransformComponent>()->transform.SetRotation(m_NewRot);
+        if (auto *transform = ent.GetComponent<ECS::Components::TransformComponent>()) {
+            transform->transform.SetRotation(m_NewRot);
+        }
     }
 
     void RotateEntityCommand::Undo(Core::EngineContext &ctx) {
         const ECS::Entity ent(m_EntityID, &ctx.sceneManager->GetCurrentScene()->GetRegistry());
-        ent.GetComponent<ECS::Components::TransformComponent>()->transform.SetRotation(m_OldRot);
+        if (auto *transform = ent.GetComponent<ECS::Components::TransformComponent>()) {
+            transform->transform.SetRotation(m_OldRot);
+        }
     }
 
     std::string_view RotateEntityCommand::Name() const noexcept { return "Rotate entity"; }
@@ -54,12 +62,16 @@ namespace Editor::Commands {
 
     void ScaleEntityCommand::Execute(Core::EngineContext &ctx) {
         const ECS::Entity ent(m_EntityID, &ctx.sceneManager->GetCurrentScene()->GetRegistry());
-        ent.GetComponent<ECS::Components::TransformComponent>()->transform.SetScale(m_NewScale);
+        if (auto *transform = ent.GetComponent<ECS::Components::TransformComponent>()) {
+            transform->transform.SetScale(m_NewScale);
+        }
     }
 
     void ScaleEntityCommand::Undo(Core::EngineContext &ctx) {
         const ECS::Entity ent(m_EntityID, &ctx.sceneManager->GetCurrentScene()->GetRegistry());
-        ent.GetComponent<ECS::Components::TransformComponent>()->transform.SetScale(m_OldScale);
+        if (auto *transform = ent.GetComponent<ECS::Components::TransformComponent>()) {
+            transform->transform.SetScale(m_OldScale);
+        }
     }
 
     std::string_view ScaleEntityCommand::Name() const noexcept { return "Scale entity"; }

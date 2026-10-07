@@ -3,6 +3,8 @@ set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 
 project(obliberry LANGUAGES CXX C)
 
+include(CTest)
+
 option(ENABLE_UNITY_BUILD "Enable unity builds" OFF)
 option(BUILD_PACK_TOOLS "Build .obpak packager tools" ON)
 option(ENABLE_SANITIZERS "Enable AddressSanitizer and UndefinedBehaviorSanitizer" OFF)
@@ -14,3 +16,7 @@ include(cmake/utils.cmake)
 include(cmake/dependencies.cmake)
 
 add_subdirectory(src)
+
+if(BUILD_TESTING)
+    add_subdirectory(tests)
+endif()

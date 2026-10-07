@@ -31,7 +31,7 @@ To build the engine from source instead, see the [build instructions](docs/build
   hierarchy editing, undo/redo, and project asset management.
 - ECS core with versioned entity handles, dense component pools, parent-child relationships, prefabs, and persistent
   entities across scene transitions.
-- Pointy-top hex-grid maps using odd-r coordinates, a compact `.obmap` format, built-in A* pathfinding, and a dedicated
+- Pointy-top hex-grid maps using odd-r coordinates, a compact `.obmap` format, built-in A\* pathfinding, and a dedicated
   map editor.
 - Sprite-sheet animation with named clips, per-frame timing, configurable sheet spacing, editor previews, and ObSL
   playback control.
@@ -59,7 +59,7 @@ instead of duplicating complete definitions. When a scene loads, Obliberry scans
 dependencies such as material textures and animation sheets, and loads only the required subset. Scene-owned asset
 scopes release resources that are no longer needed when switching scenes.
 
-Hex maps use an odd-r offset layout with pointy-top hexes, a compact binary format (`.obmap`), and A* pathfinding over
+Hex maps use an odd-r offset layout with pointy-top hexes, a compact binary format (`.obmap`), and A\* pathfinding over
 the grid. Exported project data is packaged into a single `.obpak` file containing a header, a table of contents, a
 string table, and an LZ4-compressed blob. Scripts are pre-parsed at pack time and stored as serialized ASTs, so a
 packaged game skips parsing on startup. Media files are stored uncompressed by design because compressing textures and
@@ -70,7 +70,7 @@ audio rarely pays off.
 Open-source projects used:
 
 | Project                                                                                                                                                                                  | Where it is used                                                |
-|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------|
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
 | [ObSL](https://github.com/torkelicious/ObSL)                                                                                                                                             | The embedded scripting language (submodule, MIT), made by me :D |
 | [GLAD](https://github.com/Dav1dde/glad)                                                                                                                                                  | OpenGL loader                                                   |
 | [GLFW](https://github.com/glfw/glfw)                                                                                                                                                     | Window and input                                                |
@@ -85,29 +85,30 @@ Open-source projects used:
 | [Open Sans](https://github.com/googlefonts/opensans)                                                                                                                                     | Demo project UI font (SIL OFL 1.1)                              |
 | More fonts from [Google Fonts](https://fonts.google.com/) are bundled with their licenses, see [resources/fonts/](https://github.com/torkelicious/obliberry/tree/master/resources/fonts) | Editor UI text                                                  |
 | [LZ4](https://github.com/lz4/lz4)                                                                                                                                                        | `.obpak` compression                                            |
+| [GoogleTest](https://github.com/google/googletest)                                                                                                                                       | Unit tests for testing obliberry                                |
 
 Full license texts for the above: [THIRD_PARTY_LICENSES.md](docs/THIRD_PARTY_LICENSES.md).
 
 Learning resources that shaped the codebase:
 
-* [LearnOpenGL](http://learnopengl.com/) and [docs.gl](https://docs.gl/) for OpenGL.
-* [Red Blob Games](https://www.redblobgames.com/grids/hexagons/) for hex grid math.
-* [Crafting Interpreters](https://craftinginterpreters.com/contents.html) for the ObSL interpreter.
-* [A Quick Guide to Interpreter Design in Modern C++](https://simplifycpp.org/books/cpp/Quick_Guide_to_Interpreter_Design_by_Modern_CPP.pdf)
+- [LearnOpenGL](http://learnopengl.com/) and [docs.gl](https://docs.gl/) for OpenGL.
+- [Red Blob Games](https://www.redblobgames.com/grids/hexagons/) for hex grid math.
+- [Crafting Interpreters](https://craftinginterpreters.com/contents.html) for the ObSL interpreter.
+- [A Quick Guide to Interpreter Design in Modern C++](https://simplifycpp.org/books/cpp/Quick_Guide_to_Interpreter_Design_by_Modern_CPP.pdf)
   by Ayman Alheraki, for the ObSL interpreter.
-* For the
+- For the
   ECS: [C++ Game Engine Design: Basics to Advanced](https://codezup.com/cpp-game-engine-design-basics-advanced/),
   [A Simple Entity Component System (ECS) [C++]](https://austinmorlan.com/posts/entity_component_system/),
   [An Entity Component System from Scratch](https://www.codingwiththomas.com/blog/an-entity-component-system-from-scratch),
   and
   [Making a Simple ECS](https://www.david-colson.com/2020/02/09/making-a-simple-ecs.html).
-* [rgbguy's framebuffer picking guide](https://rgbguy.in/blogs/object-picking.html) for entity picking.
+- [rgbguy's framebuffer picking guide](https://rgbguy.in/blogs/object-picking.html) for entity picking.
 
 Assets: the textures in the demo project were drawn in GIMP by me, and the music was also made by me.
 
 Big thanks to all of these great open-source projects and resources for making this learning project possible :)
 
-This project is also part of [Hack Club Stardance](https://stardance.hackclub.com/) 
+This project is also part of [Hack Club Stardance](https://stardance.hackclub.com/)
 
 ## Documentation
 

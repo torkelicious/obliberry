@@ -2,6 +2,7 @@
 #include <exception>
 #include <fstream>
 #include <optional>
+#include <utility>
 #include "Logger/LoggerService.h"
 #include "IO/Package/Container.h"
 #include "nlohmann/json.hpp"
@@ -25,6 +26,8 @@ namespace IO::VFS {
 
     void MountProject(const std::filesystem::path &projectConfigPath) {
         try {
+            s_State.packReader = ContainerReader{};
+            s_State.isPackaged = false;
             // Absolute turns a potential relative "project.json" into its true OS representation
             const auto absolutePath = std::filesystem::absolute(projectConfigPath);
             s_State.rootDir = absolutePath.parent_path();
@@ -39,16 +42,22 @@ namespace IO::VFS {
     }
 
     void UnmountProject() {
+        s_State.packReader = ContainerReader{};
+        s_State.isPackaged = false;
         s_State.rootDir.clear();
         s_State.assetsDir.clear();
         s_State.isLoaded = false;
     }
 
     void MountPackage(const std::filesystem::path &packagepath) {
-        if (!s_State.packReader.open(packagepath)) {
+        ContainerReader reader;
+        if (!reader.open(packagepath)) {
             LOG_ERROR(LOG_WHO, "Failed to open package: " + packagepath.string());
             return;
         }
+        s_State.packReader = std::move(reader);
+        s_State.rootDir.clear();
+        s_State.assetsDir.clear();
         s_State.isPackaged = true;
         s_State.isLoaded = true;
         LOG_INFO(LOG_WHO, "Package mounted: " + packagepath.string());
