@@ -27,6 +27,15 @@ add_executable(obliberry_tests
     MapTests.cpp
     AnimationTests.cpp
     SceneTests.cpp
+    ObSLTests.cpp
+    ObSLBindingTests.cpp
+    AssetTests.cpp
+    VFSPackageTests.cpp
+    ConfigurationTests.cpp
+    EditorCommandTests.cpp
+    AudioIntegrationTests.cpp
+    ../src/Applications/Editor/Commands/UndoManager.cpp
+    ../src/Applications/Editor/Commands/EditorCommands.cpp
 )
 
 target_compile_features(obliberry_tests PRIVATE cxx_std_20)
@@ -36,5 +45,10 @@ target_link_libraries(obliberry_tests PRIVATE
     GTest::gtest_main
 )
 
+option(OBLIBERRY_TEST_RENDERING "Run integration tests that require OpenGL 4.3" OFF)
+if (OBLIBERRY_TEST_RENDERING)
+    target_sources(obliberry_tests PRIVATE RenderingIntegrationTests.cpp)
+endif()
+
 include(GoogleTest)
-gtest_discover_tests(obliberry_tests)
+gtest_discover_tests(obliberry_tests DISCOVERY_MODE PRE_TEST PROPERTIES TIMEOUT 30)
