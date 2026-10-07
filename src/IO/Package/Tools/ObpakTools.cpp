@@ -19,6 +19,7 @@
 #include "Core/Project.h"
 #include "IO/VFS/VFS.h"
 #include "IO/Package/Container.h"
+#include "Rendering/Types/Shader/Preprocessor/ShaderPreprocessor.h"
 #include "nlohmann/json.hpp"
 #include "nlohmann/json_fwd.hpp"
 
@@ -146,6 +147,8 @@ namespace IO::Package::Tools {
                 }
             }
 
+            // scripts
+
             std::vector<std::string> pendingScripts;
 
             for (const auto &file : result.files) {
@@ -171,10 +174,47 @@ namespace IO::Package::Tools {
                 for (const auto &dep : dependencies) {
                     addFile(dep);
                     if (!scannedScripts.contains(dep)) {
-                        pendingScripts.push_back(dep);
                     }
                 }
             }
+
+            // shaders
+            Rendering::ShaderPreprocessor preprocessor;
+            preprocessor.setVirtualPathMode(true);
+            const auto engineShaderDir = GetInternalsDirectory() / "resources" / "shaders";
+
+            preprocessor.setFileLoader([&](const std::filesystem::path &path) -> std::string {
+                const auto resolved = VFS::Resolve(path);
+                if (!resolved.empty() && std::filesystem::is_regular_file(resolved)) {
+                    addFile(path.generic_string());
+                    return read_file_string(resolved);
+                }
+
+                const auto enginePath = engineShaderDir / path.filename();
+                if (std::filesystem::is_regular_file(enginePath)) {
+                    return read_file_string(enginePath);
+                }
+
+                throw std::runtime_error("Required shader include is missing: " + path.generic_string());
+            });
+
+
+            for (const auto &shader : result.catalog.at("assets").at("shaders")) {
+                for (const char *type : {"vertex", "fragment"}) {
+
+                    const auto path = shader.value(type, std::string{});
+                    if (path.empty()) {
+                        continue;
+                    }
+
+                    const auto virtualPath = VFS::ToRelative(path);
+                    const auto src = read_file_string(VFS::Resolve(virtualPath));
+
+                    Rendering::BuiltinPPState state;
+                    preprocessor.processSource(src, virtualPath, state);
+                }
+            }
+
 
             manifest = std::move(result);
             return true;
