@@ -243,94 +243,136 @@ namespace IO::Package::Tools {
     }
 
 
-    void PackageCurrentProject(const std::string &output_dir) {
-        std::filesystem::path project_dir = VFS::GetProjectRoot();
-
-        std::filesystem::path out_file = "data.obpak";
-        const std::string BINARY_NAME = "obliberry exporter";
-
-
-        if (project_dir.empty()) {
-            LOG_ERROR(LOG_WHO, "No project directory specified");
-            return;
-        }
-        if (!std::filesystem::exists(project_dir) || !std::filesystem::is_directory(project_dir)) {
-            LOG_ERROR(LOG_WHO, "Provided path is not a valid directory: " + project_dir.string());
-            return;
-        }
-        out_file = std::filesystem::path(output_dir) / out_file;
-
-        std::cout << "Packing project: " + project_dir.string() << "\n";
-        std::cout << "Output file: " + out_file.string() << "\n";
-
-        std::filesystem::path script_root = project_dir / "assets" / "scripts";
-        if (!std::filesystem::exists(script_root)) {
-            std::cout << "Expected scripts folder not found: " + script_root.string() << "\n";
-            return;
-        }
-
-        ContainerWriter writer;
-        DependencyGraph dep_graph;
-        IgnoreRules ignore_rules = IgnoreRules::ForProject(project_dir);
-        PackOptions opts{.global_compress = true, .verbose = true, .quiet = false, .binary_name = BINARY_NAME};
-        opts.ignore = &ignore_rules;
-
-        int success_count = 0, fail_count = 0;
-
-        for (std::filesystem::recursive_directory_iterator it(project_dir), end_it; it != end_it; ++it) {
-            if (it->is_directory()) {
-                // prune ignored directories
-                if (ignore_rules.IsIgnored(it->path(), /*is_dir=*/true))
-                    it.disable_recursion_pending();
-                continue;
+    bool PackageCurrentProject(const std::string &output_dir) {
+        namespace fs = std::filesystem;
+        try {
+            const auto projectDir = VFS::GetProjectRoot();
+            if (projectDir.empty() || !fs::is_directory(projectDir)) {
+                throw std::runtime_error("No valid project directory mounted.");
             }
-            try {
-                if (pack_one_file(it->path(), project_dir, script_root, writer, dep_graph, opts))
-                    ++success_count;
-            } catch (const std::exception &e) {
-                LOG_ERROR(LOG_WHO, it->path().string() + " - " + e.what());
-                ++fail_count;
+            if (output_dir.empty()) {
+                throw std::runtime_error("No export directory specified.");
             }
-        }
 
-        // engine shader helpers inside the package so shader #includes work properly in exported games (VFS prefix engine/shaders/)
-        if (const std::filesystem::path engineShaderDir = GetInternalsDirectory() / "resources" / "shaders"; std::filesystem::exists(engineShaderDir)) {
-            for (const auto &entry : std::filesystem::directory_iterator(engineShaderDir)) {
-                if (!entry.is_regular_file())
-                    continue;
-                try {
-                    auto raw = read_file_binary(entry.path());
-                    const std::string virtPath = "engine/shaders/" + entry.path().filename().generic_string();
-                    writer.add_raw_data(virtPath, std::move(raw), EntryType::ShaderSource, opts.global_compress);
-                    ++success_count;
-                    LOG_INFO(LOG_WHO, "[ENGINE_SHADER] " + virtPath);
-                } catch (const std::exception &e) {
-                    LOG_ERROR(LOG_WHO, entry.path().string() + " - " + e.what());
-                    ++fail_count;
+            const auto projectJson = VFS::ReadVirtualJson("project.json");
+            if (!projectJson || !projectJson->is_object()) {
+                throw std::runtime_error("Could not read project.json.");
+            }
+
+            std::set<std::string> scenes;
+            const auto startScene = projectJson->value("start_scene", std::string{});
+
+            if (!startScene.empty()) {
+                scenes.insert(VFS::ToRelative(startScene));
+            }
+
+            const auto sceneDir = VFS::Resolve("assets/scenes");
+            if (!sceneDir.empty() && fs::is_directory(sceneDir)) {
+                for (const auto &entry : fs::recursive_directory_iterator(sceneDir)) {
+                    if (!entry.is_regular_file()) {
+                        continue;
+                    }
+
+                    auto extension = entry.path().extension().string();
+                    for (char &c : extension) {
+                        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+                    }
+
+                    if (extension == ".json") {
+                        scenes.insert(VFS::ToRelative(entry.path()));
+                    }
                 }
             }
-        }
 
-        if (!dep_graph.validate(BINARY_NAME)) {
-            LOG_WARN(LOG_WHO, "Dependency validation warnings reported (packing will continue)");
-        }
-
-        if (success_count > 0) {
-            try {
-                writer.write(out_file);
-                std::cout << "Wrote " + out_file.string() << "\n";
-                std::cout << "Packed " + std::to_string(success_count) + "/" + std::to_string(success_count + fail_count) + " files.\n";
-            } catch (const std::exception &e) {
-                LOG_ERROR(LOG_WHO, std::string("Could not write package - ") + e.what());
+            const std::vector<std::string> scenePaths(scenes.begin(), scenes.end());
+            ExportManifest manifest;
+            if (!BuildExportManifest(scenePaths, manifest)) {
+                return false;
             }
-        } else {
-            LOG_ERROR(LOG_WHO, "No valid assets found to pack");
+
+            manifest.files.erase("assets.json");
+
+            const auto ignoreRules = IgnoreRules::ForProject(projectDir);
+            const auto checkRequiredFile = [&](const std::string &path) {
+                const fs::path relativePath(path);
+
+                if (ignoreRules.IsIgnored(projectDir / relativePath, false)) {
+                    throw std::runtime_error("Required export file is ignored: " + path);
+                }
+
+                for (auto directory = relativePath.parent_path(); !directory.empty(); directory = directory.parent_path()) {
+                    if (ignoreRules.IsIgnored(projectDir / directory, true)) {
+                        throw std::runtime_error("Required export file is inside an ignored directory: " + path);
+                    }
+                }
+            };
+
+            checkRequiredFile("assets.json");
+            for (const auto &path : manifest.files) {
+                checkRequiredFile(path);
+            }
+
+            ContainerWriter writer;
+            DependencyGraph dependencies;
+            PackOptions options{.global_compress = true, .verbose = true, .quiet = false, .binary_name = "obliberry exporter"};
+
+            writer.add_binary_json("assets.json", nlohmann::json::to_msgpack(manifest.catalog), options.global_compress);
+
+            std::size_t packedFiles = 1;
+            const auto scriptRoot = projectDir / "assets" / "scripts";
+
+            for (const auto &path : manifest.files) {
+                if (!pack_one_file(VFS::Resolve(path), projectDir, scriptRoot, writer, dependencies, options)) {
+                    throw std::runtime_error("Could not pack: " + path);
+                }
+
+                ++packedFiles;
+            }
+
+            const auto engineShaderDir = GetInternalsDirectory() / "resources" / "shaders";
+
+            if (fs::is_directory(engineShaderDir)) {
+                for (const auto &entry : fs::directory_iterator(engineShaderDir)) {
+                    if (!entry.is_regular_file()) {
+                        continue;
+                    }
+
+                    const auto virtualPath = "engine/shaders/" + entry.path().filename().generic_string();
+
+                    writer.add_raw_data(virtualPath, read_file_binary(entry.path()), EntryType::ShaderSource, options.global_compress);
+
+                    ++packedFiles;
+                }
+            }
+
+            if (!dependencies.validate(options.binary_name)) {
+                throw std::runtime_error("Script dependency validation failed.");
+            }
+
+            fs::create_directories(output_dir);
+            const auto outFile = fs::path(output_dir) / "data.obpak";
+            writer.write(outFile);
+
+            LOG_INFO(LOG_WHO, "Wrote " + outFile.string() + " (" + std::to_string(packedFiles) + " files)");
+
+            return true;
+        } catch (const std::exception &error) {
+            LOG_ERROR(LOG_WHO, std::string("Could not package project: ") + error.what());
+            return false;
         }
     }
 
     void ExportGame(const std::string &output_dir) {
         std::cout << "Exporting game to: " << output_dir << "\n";
-        PackageCurrentProject(output_dir);
+
+        if (!Core::Project::GetActive()) {
+            LOG_ERROR(LOG_WHO, "No active project.");
+            return;
+        }
+
+        if (!PackageCurrentProject(output_dir)) {
+            return;
+        }
 
         const std::string clean_project_name = SanitizeExecutableName(Core::Project::GetActive()->GetConfig().Title);
 #ifdef _WIN32
