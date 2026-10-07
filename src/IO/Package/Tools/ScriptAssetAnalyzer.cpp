@@ -20,6 +20,49 @@ namespace IO::Package::Tools {
             return index;
         }
 
+        std::optional<std::string> TryResolveString(const ObSL::Expr *expression) {
+            if (!expression) {
+                return std::nullopt;
+            }
+
+            using namespace ObSL;
+
+            switch (expression->type()) {
+                case ExprType::Literal: {
+                    const auto *node = static_cast<const LiteralExpr *>(expression);
+
+                    if (const auto *text = std::get_if<std::string>(&node->value)) {
+                        return *text;
+                    }
+
+                    return std::nullopt;
+                }
+
+                case ExprType::Grouping:
+                    return TryResolveString(static_cast<const GroupingExpr *>(expression)->expr.get());
+
+                case ExprType::Binary: {
+                    const auto *node = static_cast<const BinaryExpr *>(expression);
+
+                    if (node->oprt_type != TokenType::PLUS) {
+                        return std::nullopt;
+                    }
+
+                    const auto left = TryResolveString(node->left.get());
+                    const auto right = TryResolveString(node->right.get());
+
+                    if (!left || !right) {
+                        return std::nullopt;
+                    }
+
+                    return *left + *right;
+                }
+
+                default:
+                    return std::nullopt;
+            }
+        }
+
         struct LiteralCollector {
             const CatalogIndex &index;
             ScriptAssetAnalysis &result;
@@ -79,6 +122,9 @@ namespace IO::Package::Tools {
 
                     case ExprType::Binary: {
                         const auto *node = static_cast<const BinaryExpr *>(expression);
+                        if (const auto text = TryResolveString(expression)) {
+                            Collect(*text);
+                        }
 
                         VisitExpr(node->left.get());
                         VisitExpr(node->right.get());
