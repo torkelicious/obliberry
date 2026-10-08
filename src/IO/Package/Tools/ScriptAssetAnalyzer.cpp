@@ -1,22 +1,26 @@
 #include "ScriptAssetAnalyzer.h"
+
+#include <optional>
 #include <set>
 #include <string>
-#include "ObSL/Parser/ast.h"
-#include "nlohmann/json.hpp"
 #include <unordered_map>
 
-namespace IO::Package::Tools {
+#include "ObSL/Parser/ast.h"
+#include "nlohmann/json.hpp"
 
+namespace IO::Package::Tools {
     namespace {
         using CatalogIndex = std::unordered_map<std::string, std::set<std::string>>;
 
         CatalogIndex BuildCatalogIndex(const nlohmann::json &assets) {
             CatalogIndex index;
+
             for (const auto &[type, entries] : assets.items()) {
                 for (const auto &asset : entries) {
                     index[asset.at("id").get<std::string>()].insert(type);
                 }
             }
+
             return index;
         }
 
@@ -38,8 +42,11 @@ namespace IO::Package::Tools {
                     return std::nullopt;
                 }
 
-                case ExprType::Grouping:
-                    return TryResolveString(static_cast<const GroupingExpr *>(expression)->expr.get());
+                case ExprType::Grouping: {
+                    const auto *node = static_cast<const GroupingExpr *>(expression);
+
+                    return TryResolveString(node->expr.get());
+                }
 
                 case ExprType::Binary: {
                     const auto *node = static_cast<const BinaryExpr *>(expression);
@@ -75,6 +82,7 @@ namespace IO::Package::Tools {
 
                 for (const auto &type : found->second) {
                     auto &required = result.required;
+
                     if (type == "textures") {
                         required.textures.insert(id);
                     } else if (type == "shaders") {
@@ -90,6 +98,28 @@ namespace IO::Package::Tools {
                     } else {
                         result.includeAllCatalogAssets = true;
                     }
+                }
+            }
+
+            void TrackAssetArgument(const char *type, const ObSL::Expr *arg) {
+                if (const auto id = TryResolveString(arg)) {
+                    Collect(*id);
+                } else {
+                    result.dynamicAssets.insert(type);
+                }
+            }
+
+            void TrackFileArgument(const std::string &callName, const ObSL::Expr *arg, std::set<std::string> &out) {
+                if (!arg) {
+                    return;
+                }
+
+                if (const auto path = TryResolveString(arg)) {
+                    if (!path->empty()) {
+                        out.insert(*path);
+                    }
+                } else {
+                    result.unresolvedFileCalls.insert(callName);
                 }
             }
 
@@ -113,15 +143,44 @@ namespace IO::Package::Tools {
                     case ExprType::Call: {
                         const auto *node = static_cast<const CallExpr *>(expression);
 
+                        const Expr *callee = node->callee.get();
+                        while (callee && callee->type() == ExprType::Grouping) {
+                            callee = static_cast<const GroupingExpr *>(callee)->expr.get();
+                        }
+
+                        const Expr *argument = node->arguments.empty() ? nullptr : node->arguments.front().get();
+
+                        if (callee && callee->type() == ExprType::Get) {
+                            const auto *member = static_cast<const GetExpr *>(callee);
+
+                            if (member->name == "SetTexture") {
+                                TrackAssetArgument("textures", argument);
+                            } else if (member->name == "SetFont") {
+                                TrackAssetArgument("fonts", argument);
+                            }
+                        } else if (callee && callee->type() == ExprType::Variable) {
+                            const auto *func = static_cast<const VariableExpr *>(callee);
+                            const auto &name = func->name;
+
+                            if (name == "PlaySound2D" || name == "PlayMusic") {
+                                TrackFileArgument(name, argument, result.files);
+                            } else if (name == "LoadScene") {
+                                TrackFileArgument(name, argument, result.scenes);
+                            } else if (name == "Instantiate") {
+                                TrackFileArgument(name, argument, result.prefabs);
+                            }
+                        }
+
                         VisitExpr(node->callee.get());
-                        for (const auto &argument : node->arguments) {
-                            VisitExpr(argument.get());
+                        for (const auto &arg : node->arguments) {
+                            VisitExpr(arg.get());
                         }
                         break;
                     }
 
                     case ExprType::Binary: {
                         const auto *node = static_cast<const BinaryExpr *>(expression);
+
                         if (const auto text = TryResolveString(expression)) {
                             Collect(*text);
                         }
@@ -139,17 +198,26 @@ namespace IO::Package::Tools {
                         break;
                     }
 
-                    case ExprType::Grouping:
-                        VisitExpr(static_cast<const GroupingExpr *>(expression)->expr.get());
-                        break;
+                    case ExprType::Grouping: {
+                        const auto *node = static_cast<const GroupingExpr *>(expression);
 
-                    case ExprType::Unary:
-                        VisitExpr(static_cast<const UnaryExpr *>(expression)->right.get());
+                        VisitExpr(node->expr.get());
                         break;
+                    }
 
-                    case ExprType::Assignment:
-                        VisitExpr(static_cast<const AssignmentExpr *>(expression)->value.get());
+                    case ExprType::Unary: {
+                        const auto *node = static_cast<const UnaryExpr *>(expression);
+
+                        VisitExpr(node->right.get());
                         break;
+                    }
+
+                    case ExprType::Assignment: {
+                        const auto *node = static_cast<const AssignmentExpr *>(expression);
+
+                        VisitExpr(node->value.get());
+                        break;
+                    }
 
                     case ExprType::Array: {
                         const auto *node = static_cast<const ArrayExpr *>(expression);
@@ -177,9 +245,12 @@ namespace IO::Package::Tools {
                         break;
                     }
 
-                    case ExprType::Get:
-                        VisitExpr(static_cast<const GetExpr *>(expression)->obj.get());
+                    case ExprType::Get: {
+                        const auto *node = static_cast<const GetExpr *>(expression);
+
+                        VisitExpr(node->obj.get());
                         break;
+                    }
 
                     case ExprType::Set: {
                         const auto *node = static_cast<const SetExpr *>(expression);
@@ -189,9 +260,12 @@ namespace IO::Package::Tools {
                         break;
                     }
 
-                    case ExprType::TypeCheck:
-                        VisitExpr(static_cast<const TypeCheckExpr *>(expression)->left.get());
+                    case ExprType::TypeCheck: {
+                        const auto *node = static_cast<const TypeCheckExpr *>(expression);
+
+                        VisitExpr(node->left.get());
                         break;
+                    }
 
                     case ExprType::Variable:
                     case ExprType::Update:
@@ -211,21 +285,33 @@ namespace IO::Package::Tools {
                 using namespace ObSL;
 
                 switch (statement->type()) {
-                    case StmtType::Expression:
-                        VisitExpr(static_cast<const ExpressionStmt *>(statement)->expression.get());
-                        break;
+                    case StmtType::Expression: {
+                        const auto *node = static_cast<const ExpressionStmt *>(statement);
 
-                    case StmtType::Print:
-                        VisitExpr(static_cast<const PrintStmt *>(statement)->expression.get());
+                        VisitExpr(node->expression.get());
                         break;
+                    }
 
-                    case StmtType::Println:
-                        VisitExpr(static_cast<const PrintlnStmt *>(statement)->expression.get());
-                        break;
+                    case StmtType::Print: {
+                        const auto *node = static_cast<const PrintStmt *>(statement);
 
-                    case StmtType::Var:
-                        VisitExpr(static_cast<const VarStmt *>(statement)->initializer.get());
+                        VisitExpr(node->expression.get());
                         break;
+                    }
+
+                    case StmtType::Println: {
+                        const auto *node = static_cast<const PrintlnStmt *>(statement);
+
+                        VisitExpr(node->expression.get());
+                        break;
+                    }
+
+                    case StmtType::Var: {
+                        const auto *node = static_cast<const VarStmt *>(statement);
+
+                        VisitExpr(node->initializer.get());
+                        break;
+                    }
 
                     case StmtType::Block: {
                         const auto *node = static_cast<const BlockStmt *>(statement);
@@ -242,6 +328,7 @@ namespace IO::Package::Tools {
                         for (const auto &parameter : node->params) {
                             VisitExpr(parameter.default_value.get());
                         }
+
                         VisitStmt(node->body.get());
                         break;
                     }
@@ -285,9 +372,12 @@ namespace IO::Package::Tools {
                         break;
                     }
 
-                    case StmtType::Return:
-                        VisitExpr(static_cast<const ReturnStmt *>(statement)->value.get());
+                    case StmtType::Return: {
+                        const auto *node = static_cast<const ReturnStmt *>(statement);
+
+                        VisitExpr(node->value.get());
                         break;
+                    }
 
                     case StmtType::TryCatch: {
                         const auto *node = static_cast<const TryCatchStmt *>(statement);
@@ -329,6 +419,4 @@ namespace IO::Package::Tools {
 
         return result;
     }
-
-
 } // namespace IO::Package::Tools

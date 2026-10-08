@@ -17,6 +17,8 @@ namespace IO::Package::Tools {
 
         std::set<std::string> files;
         std::set<std::string> scenes;
+        std::set<std::string> prefabs;
+        std::set<std::string> unresolvedFileCalls;
         // types requiring all of their assets
         std::set<std::string> dynamicAssets;
 
