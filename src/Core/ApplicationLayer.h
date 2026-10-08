@@ -1,5 +1,6 @@
 #pragma once
 #include "Core/EngineContext.h"
+#include <atomic>
 
 namespace Core {
     class ApplicationLayer {
