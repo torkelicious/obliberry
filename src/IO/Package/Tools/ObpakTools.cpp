@@ -1,25 +1,28 @@
-
 #include "ObpakTools.h"
+
+#include <cctype>
 #include <exception>
 #include <filesystem>
-#include "IO/AssetCatalog.h"
-#include "IO/AssetCatalogFile.h"
-#include "IO/AssetDependencies.h"
-#include "Logger/LoggerService.h"
 #include <iostream>
-#include "AssetPacking.h"
-#include "DependencyGraph.h"
-#include "FileIO.h"
-#include "IgnoreRules.h"
 #include <set>
 #include <stdexcept>
 #include <string>
-#include <cctype>
-#include <vector>
 #include <utility>
+#include <vector>
+
+#include "AssetPacking.h"
+#include "Core/Utils/OSFileUtils.h"
+#include "DependencyGraph.h"
+#include "FileIO.h"
+#include "IgnoreRules.h"
+
 #include "Core/Project.h"
-#include "IO/VFS/VFS.h"
+#include "IO/AssetCatalog.h"
+#include "IO/AssetCatalogFile.h"
+#include "IO/AssetDependencies.h"
 #include "IO/Package/Container.h"
+#include "IO/VFS/VFS.h"
+#include "Logger/LoggerService.h"
 #include "Rendering/Types/Shader/Preprocessor/ShaderPreprocessor.h"
 #include "nlohmann/json.hpp"
 #include "nlohmann/json_fwd.hpp"
@@ -28,10 +31,9 @@
 #define LOG_WHO "ObpakTools"
 
 namespace IO::Package::Tools {
-
     struct ExportManifest {
         nlohmann::json catalog;
-        std::set<std::string> files; // paths
+        std::set<std::string> files;
     };
 
     static bool BuildExportManifest(const std::vector<std::string> &scenePaths, ExportManifest &manifest) {
@@ -63,14 +65,57 @@ namespace IO::Package::Tools {
 
             addFile("project.json");
 
-            for (const auto &scenePath : scenePaths) {
-                addFile(scenePath);
-                const auto scene = VFS::ReadVirtualJson(VFS::ToRelative(scenePath));
-                if (!scene || !scene->is_object()) {
-                    throw std::runtime_error("Could not read export scene: " + scenePath);
+            std::vector<std::string> pendingScripts;
+            std::set<std::string> scannedScenes;
+            std::set<std::string> scannedPrefabs;
+
+            const auto projectPath = [&](const std::string &path) { return std::filesystem::relative(VFS::Resolve(VFS::ToRelative(path)), projRoot).generic_string(); };
+
+            const auto queueScript = [&](const std::string &path) {
+                if (path.empty()) {
+                    return;
                 }
 
-                auto refs = AssetDependencies::CollectDirectRefs(*scene);
+                addFile(path);
+                const auto relativePath = projectPath(path);
+
+                auto extension = std::filesystem::path(relativePath).extension().string();
+
+                for (char &c : extension) {
+                    c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+                }
+
+                if (extension == ".obsl") {
+                    pendingScripts.push_back(relativePath);
+                }
+            };
+
+            const auto scanDocument = [&](const std::string &path, bool prefab) {
+                if (path.empty()) {
+                    throw std::runtime_error("Empty export document path.");
+                }
+
+                addFile(path);
+                const auto relativePath = projectPath(path);
+                auto &scanned = prefab ? scannedPrefabs : scannedScenes;
+
+                if (!scanned.insert(relativePath).second) {
+                    return;
+                }
+
+                const auto source = VFS::ReadVirtualJson(relativePath);
+                if (!source || !source->is_object()) {
+                    throw std::runtime_error("Could not read export document: " + relativePath);
+                }
+
+                nlohmann::json document;
+                if (prefab) {
+                    document = {{"entities", nlohmann::json::array({*source})}};
+                } else {
+                    document = *source;
+                }
+
+                auto refs = AssetDependencies::CollectDirectRefs(document);
                 required.textures.merge(refs.textures);
                 required.shaders.merge(refs.shaders);
                 required.meshes.merge(refs.meshes);
@@ -78,17 +123,17 @@ namespace IO::Package::Tools {
                 required.fonts.merge(refs.fonts);
                 required.animationSets.merge(refs.animationSets);
 
-                if (const auto properties = scene->find("properties"); properties != scene->end() && properties->is_object()) {
+                if (const auto properties = document.find("properties"); properties != document.end() && properties->is_object()) {
                     addFile(properties->value("background_music", std::string{}));
                 }
 
-                if (const auto grid = scene->find("grid"); grid != scene->end() && grid->is_object()) {
+                if (const auto grid = document.find("grid"); grid != document.end() && grid->is_object()) {
                     addFile(grid->value("map_file", std::string{}));
                 }
 
-                const auto entities = scene->find("entities");
-                if (entities == scene->end() || !entities->is_array()) {
-                    continue;
+                const auto entities = document.find("entities");
+                if (entities == document.end() || !entities->is_array()) {
+                    return;
                 }
 
                 for (const auto &entity : *entities) {
@@ -107,30 +152,22 @@ namespace IO::Package::Tools {
                     }
 
                     if (script->contains("scriptPath")) {
-                        addFile(script->at("scriptPath").get<std::string>());
+                        queueScript(script->at("scriptPath").get<std::string>());
                     } else if (const auto paths = script->find("scriptPaths"); paths != script->end() && paths->is_array()) {
-                        for (const auto &path : *paths) {
-                            addFile(path.get<std::string>());
+                        for (const auto &scriptPath : *paths) {
+                            queueScript(scriptPath.get<std::string>());
                         }
                     }
                 }
+            };
+
+            for (const auto &scenePath : scenePaths) {
+                scanDocument(scenePath, false);
             }
 
             const auto *catalogAssets = AssetCatalog::GetAssets();
             if (!catalogAssets) {
                 throw std::runtime_error("No asset catalog loaded.");
-            }
-
-            std::vector<std::string> pendingScripts;
-            for (const auto &file : result.files) {
-                auto extension = std::filesystem::path(file).extension().string();
-                for (char &c : extension) {
-                    c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-                }
-
-                if (extension == ".obsl") {
-                    pendingScripts.push_back(file);
-                }
             }
 
             const auto scriptRoot = projRoot / "assets" / "scripts";
@@ -148,6 +185,26 @@ namespace IO::Package::Tools {
                 ScriptAssetAnalysis analysis;
                 const auto dependencies = CollectScriptDependencies(VFS::Resolve(scriptPath), projRoot, scriptRoot, *catalogAssets, analysis);
 
+                for (const auto &call : analysis.unrecognizedCalls) {
+                    LOG_INFO(LOG_WHO, "Keeping full asset catalog: " + scriptPath + " cointains unclassified call: " + call);
+                }
+
+                if (!analysis.unresolvedFileCalls.empty()) {
+                    throw std::runtime_error("Cannot determine the file path for " + *analysis.unresolvedFileCalls.begin() + " in script: " + scriptPath);
+                }
+
+                for (const auto &file : analysis.files) {
+                    addFile(file);
+                }
+
+                for (const auto &scenePath : analysis.scenes) {
+                    scanDocument(scenePath, false);
+                }
+
+                for (const auto &prefabPath : analysis.prefabs) {
+                    scanDocument(prefabPath, true);
+                }
+
                 required.textures.merge(analysis.required.textures);
                 required.shaders.merge(analysis.required.shaders);
                 required.meshes.merge(analysis.required.meshes);
@@ -159,11 +216,7 @@ namespace IO::Package::Tools {
                 keepEntireTypes.insert(analysis.dynamicAssets.begin(), analysis.dynamicAssets.end());
 
                 for (const auto &dependency : dependencies) {
-                    addFile(dependency);
-
-                    if (!scannedScripts.contains(dependency)) {
-                        pendingScripts.push_back(dependency);
-                    }
+                    queueScript(dependency);
                 }
             }
 
@@ -240,10 +293,8 @@ namespace IO::Package::Tools {
                 throw std::runtime_error("Required shader include is missing: " + path.generic_string());
             });
 
-
             for (const auto &shader : result.catalog.at("assets").at("shaders")) {
                 for (const char *type : {"vertex", "fragment"}) {
-
                     const auto path = shader.value(type, std::string{});
                     if (path.empty()) {
                         continue;
@@ -256,7 +307,6 @@ namespace IO::Package::Tools {
                     preprocessor.processSource(src, virtualPath, state);
                 }
             }
-
 
             manifest = std::move(result);
             return true;
@@ -278,11 +328,11 @@ namespace IO::Package::Tools {
                 lastWasUnderscore = true;
             }
         }
-        if (out.empty())
+        if (out.empty()) {
             out = "game";
+        }
         return out;
     }
-
 
     bool PackageCurrentProject(const std::string &output_dir) {
         namespace fs = std::filesystem;
@@ -343,7 +393,9 @@ namespace IO::Package::Tools {
 
                 for (auto directory = relativePath.parent_path(); !directory.empty(); directory = directory.parent_path()) {
                     if (ignoreRules.IsIgnored(projectDir / directory, true)) {
-                        throw std::runtime_error("Required export file is inside an ignored directory: " + path);
+                        throw std::runtime_error("Required export file is inside an ignored "
+                                                 "directory: " +
+                                                 path);
                     }
                 }
             };
@@ -433,7 +485,8 @@ namespace IO::Package::Tools {
                 LOG_INFO(LOG_WHO, "Export Successfully copied runtime binary to " + dest_exe.string());
             } else {
                 LOG_ERROR(LOG_WHO, "Error: Could not find runtime binary at " + runtime_src.string());
-                LOG_ERROR(LOG_WHO, "Ensure obliberry_runtime is built and located in the 'internal' folder next to the editor");
+                LOG_ERROR(LOG_WHO, "Ensure obliberry_runtime is built and located in "
+                                   "the 'internal' folder next to the editor");
             }
         } catch (const std::exception &e) {
             LOG_ERROR(LOG_WHO, "Exception while copying runtime: " + std::string(e.what()));
@@ -449,4 +502,5 @@ namespace IO::Package::Tools {
         }
     }
 } // namespace IO::Package::Tools
+
 #pragma pop_macro("LOG_WHO")

@@ -70,9 +70,75 @@ namespace IO::Package::Tools {
             }
         }
 
+        bool IsNonAssetNativeCall(const std::string &name) {
+            static const std::set<std::string> names{// Entities
+                    "GetEntity", "Find", "CreateEntity", "DestroyEntity",
+
+                    "Window_GetHeight", "Window_GetWidth", "Window_SetFullscreen", "CloseWindow",
+
+                    "get_dt", "GetRawDt", "GetFrameCount", "GetTimeScale", "SetTimeScale",
+
+                    "Input_IsKeyDown", "Input_IsKeyPressed", "Input_IsKeyReleased", "Input_IsMouseDown", "Input_IsMousePressed", "Input_IsMouseReleased", "Input_GetMouseX", "Input_GetMouseY", "Input_GetScrollX",
+                    "Input_GetScrollY", "Input_GetMouseWorldPos",
+
+                    "Camera_GetPosition", "Camera_SetPosition", "Camera_Move", "Camera_PanScreenSpace", "Camera_GetZoom", "Camera_SetZoom", "Camera_GetAngleX", "Camera_GetAngleZ", "Camera_SetAngle",
+
+                    "Math_WorldToHex", "GetSelectedHex", "SetSelectedHex", "SetPathToHex", "ClearSelectionOverlay", "ClearPathTarget", "Map_IsHexWalkable", "Map_GetMapEntity", "Hex_Distance", "Hex_GetNeighbors",
+                    "Hex_HexToWorld", "Map_SetHexWalkable", "Map_SetTileType",
+
+                    "StopMusic", "SetMasterVolume",
+
+                    "GetCurrentScenePath",
+
+                    "FindUI", "CreateUIButton", "CreateUIText", "CreateUIRect", "CreateUIImage", "DestroyUI",
+
+                    "save_set", "save_get", "save_has", "save_remove", "save_clear", "save_new", "save_create", "save_write", "save_load", "save_delete", "save_list",
+
+                    "contains"
+
+            };
+
+            return names.contains(name);
+        }
+
+        bool IsNonAssetMemberCall(const std::string &name) {
+            static const std::set<std::string> names{
+                    "SetName",
+                    "GetName",
+                    "GetComponent",
+                    "HasComponent",
+                    "GetComponents",
+                    "GetChildren",
+                    "GetParent",
+                    "SetParent",
+                    "GetChildCount",
+                    "Find",
+                    "Destroy",
+                    "SetPersistent",
+                    "IsPersistent",
+
+                    "SetPosition",
+                    "SetRotation",
+                    "SetScale",
+                    "GetPosition",
+                    "GetRotation",
+                    "GetScale",
+                    "IsMoving",
+
+                    "GetIsMoving",
+                    "WasClicked",
+                    "SetSize",
+                    "SetText",
+
+            };
+
+            return names.contains(name);
+        }
+
         struct LiteralCollector {
             const CatalogIndex &index;
             ScriptAssetAnalysis &result;
+            const std::set<std::string> &scriptFunctions;
 
             void Collect(const std::string &id) {
                 const auto found = index.find(id);
@@ -150,28 +216,56 @@ namespace IO::Package::Tools {
 
                         const Expr *argument = node->arguments.empty() ? nullptr : node->arguments.front().get();
 
+                        bool recognizedCall = false;
+
                         if (callee && callee->type() == ExprType::Get) {
                             const auto *member = static_cast<const GetExpr *>(callee);
 
                             if (member->name == "SetTexture") {
+                                recognizedCall = true;
                                 TrackAssetArgument("textures", argument);
                             } else if (member->name == "SetFont") {
+                                recognizedCall = true;
                                 TrackAssetArgument("fonts", argument);
+                            } else if (IsNonAssetMemberCall(member->name)) {
+                                recognizedCall = true;
                             }
                         } else if (callee && callee->type() == ExprType::Variable) {
                             const auto *func = static_cast<const VariableExpr *>(callee);
                             const auto &name = func->name;
 
                             if (name == "PlaySound2D" || name == "PlayMusic") {
+                                recognizedCall = true;
                                 TrackFileArgument(name, argument, result.files);
                             } else if (name == "LoadScene") {
+                                recognizedCall = true;
                                 TrackFileArgument(name, argument, result.scenes);
                             } else if (name == "Instantiate") {
+                                recognizedCall = true;
                                 TrackFileArgument(name, argument, result.prefabs);
+                            } else if (IsNonAssetNativeCall(name) || scriptFunctions.contains(name)) {
+                                recognizedCall = true;
                             }
                         }
 
-                        VisitExpr(node->callee.get());
+                        if (!recognizedCall) {
+                            result.includeAllCatalogAssets = true;
+
+                            if (callee && callee->type() == ExprType::Variable) {
+                                result.unrecognizedCalls.insert(static_cast<const VariableExpr *>(callee)->name);
+                            } else if (callee && callee->type() == ExprType::Get) {
+                                result.unrecognizedCalls.insert("." + static_cast<const GetExpr *>(callee)->name);
+                            } else {
+                                result.unrecognizedCalls.insert("<indirect call>");
+                            }
+                        }
+
+                        if (recognizedCall && callee && callee->type() == ExprType::Get) {
+                            VisitExpr(static_cast<const GetExpr *>(callee)->obj.get());
+                        } else if (!recognizedCall) {
+                            VisitExpr(node->callee.get());
+                        }
+
                         for (const auto &arg : node->arguments) {
                             VisitExpr(arg.get());
                         }
@@ -231,6 +325,8 @@ namespace IO::Package::Tools {
                     case ExprType::Index: {
                         const auto *node = static_cast<const IndexExpr *>(expression);
 
+                        result.includeAllCatalogAssets = true;
+
                         VisitExpr(node->callee.get());
                         VisitExpr(node->index.get());
                         break;
@@ -247,6 +343,10 @@ namespace IO::Package::Tools {
 
                     case ExprType::Get: {
                         const auto *node = static_cast<const GetExpr *>(expression);
+
+                        if (node->name == "SetTexture" || node->name == "SetFont") {
+                            result.includeAllCatalogAssets = true;
+                        }
 
                         VisitExpr(node->obj.get());
                         break;
@@ -267,7 +367,16 @@ namespace IO::Package::Tools {
                         break;
                     }
 
-                    case ExprType::Variable:
+                    case ExprType::Variable: {
+                        const auto *node = static_cast<const VariableExpr *>(expression);
+
+                        if (node->name == "PlaySound2D" || node->name == "PlayMusic" || node->name == "LoadScene" || node->name == "Instantiate") {
+                            result.unresolvedFileCalls.insert(node->name);
+                        }
+
+                        break;
+                    }
+
                     case ExprType::Update:
                         break;
 
@@ -346,6 +455,7 @@ namespace IO::Package::Tools {
                         const auto *node = static_cast<const SwitchStmt *>(statement);
 
                         VisitExpr(node->condition.get());
+
                         for (const auto &branch : node->cases) {
                             VisitExpr(branch.match_value.get());
 
@@ -411,7 +521,16 @@ namespace IO::Package::Tools {
     ScriptAssetAnalysis AnalyzeScriptAssets(const std::vector<std::unique_ptr<ObSL::Stmt>> &statements, const nlohmann::json &catalogAssets) {
         const auto index = BuildCatalogIndex(catalogAssets);
         ScriptAssetAnalysis result;
-        LiteralCollector collector{index, result};
+
+        std::set<std::string> scriptFunctions;
+
+        for (const auto &stmt : statements) {
+            if (stmt && stmt->type() == ObSL::StmtType::Function) {
+                scriptFunctions.insert(static_cast<const ObSL::FunctionStmt *>(stmt.get())->name);
+            }
+        }
+
+        LiteralCollector collector{index, result, scriptFunctions};
 
         for (const auto &statement : statements) {
             collector.VisitStmt(statement.get());

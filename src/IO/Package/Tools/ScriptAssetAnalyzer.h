@@ -22,7 +22,9 @@ namespace IO::Package::Tools {
         // types requiring all of their assets
         std::set<std::string> dynamicAssets;
 
-        bool includeAllCatalogAssets = true;
+        std::set<std::string> unrecognizedCalls;
+
+        bool includeAllCatalogAssets = false;
     };
 
     [[nodiscard]] ScriptAssetAnalysis AnalyzeScriptAssets(const std::vector<std::unique_ptr<ObSL::Stmt>> &statements, const nlohmann::json &catalogAssets);
