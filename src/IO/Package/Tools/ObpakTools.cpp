@@ -35,7 +35,7 @@ namespace IO::Package::Tools {
         std::set<std::string> files;
     };
 
-    static bool BuildExportManifest(const std::vector<std::string> &scenePaths, ExportManifest &manifest) {
+    static bool BuildExportManifest(const std::vector<std::string> &scenePaths, const std::filesystem::path &outputDirectory, ExportManifest &manifest) {
         try {
             const auto projRoot = VFS::GetProjectRoot();
             if (projRoot.empty() || scenePaths.empty()) {
@@ -173,6 +173,41 @@ namespace IO::Package::Tools {
             std::set<std::string> scannedScripts;
             std::set<std::string> keepEntireTypes;
             bool keepAllCatalogAssets = false;
+            bool includedProjectFiles = false;
+
+            const auto includeProjectFiles = [&]() {
+                if (includedProjectFiles) {
+                    return;
+                }
+                includedProjectFiles = true;
+                keepAllCatalogAssets = true;
+
+                const auto ignore = IgnoreRules::ForProject(projRoot);
+                const auto output = std::filesystem::weakly_canonical(outputDirectory);
+                const auto root = std::filesystem::weakly_canonical(projRoot);
+
+                for (auto it = std::filesystem::recursive_directory_iterator(projRoot); it != std::filesystem::recursive_directory_iterator(); ++it) {
+                    const auto &entry = *it;
+                    const auto path = entry.path();
+                    if (entry.is_directory()) {
+                        const auto name = path.filename();
+                        if (ignore.IsIgnored(path, true) || name == ".git" || name == ".hg" || name == ".svn" || (output != root && std::filesystem::weakly_canonical(path) == output)) {
+                            it.disable_recursion_pending();
+                        }
+                        continue;
+                    }
+                    if (!entry.is_regular_file() || ignore.IsIgnored(path, false)) {
+                        continue;
+                    }
+
+                    const auto relativePath = projectPath(path.generic_string());
+                    // The catalog is generated below; previous packages are never input assets.
+                    if (relativePath == "assets.json" || path.extension() == ".obpak") {
+                        continue;
+                    }
+                    queueScript(relativePath);
+                }
+            };
 
             for (std::size_t index = 0; index < pendingScripts.size(); ++index) {
                 const auto scriptPath = pendingScripts[index];
@@ -185,11 +220,14 @@ namespace IO::Package::Tools {
                 const auto dependencies = CollectScriptDependencies(VFS::Resolve(scriptPath), projRoot, scriptRoot, *catalogAssets, analysis);
 
                 for (const auto &call : analysis.unrecognizedCalls) {
-                    LOG_INFO(LOG_WHO, "Keeping full asset catalog: " + scriptPath + " cointains unclassified call: " + call);
+                    LOG_INFO(LOG_WHO, "Keeping full asset catalog: " + scriptPath + " contains unclassified call: " + call);
                 }
 
                 if (!analysis.unresolvedFileCalls.empty()) {
-                    throw std::runtime_error("Cannot determine the file path for " + *analysis.unresolvedFileCalls.begin() + " in script: " + scriptPath);
+                    for (const auto &call : analysis.unresolvedFileCalls) {
+                        LOG_INFO(LOG_WHO, "Keeping project files and full asset catalog: dynamic path for " + call + " in script: " + scriptPath);
+                    }
+                    includeProjectFiles();
                 }
 
                 for (const auto &file : analysis.files) {
@@ -376,7 +414,7 @@ namespace IO::Package::Tools {
 
             const std::vector<std::string> scenePaths(scenes.begin(), scenes.end());
             ExportManifest manifest;
-            if (!BuildExportManifest(scenePaths, manifest)) {
+            if (!BuildExportManifest(scenePaths, std::filesystem::absolute(output_dir), manifest)) {
                 return false;
             }
 

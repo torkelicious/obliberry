@@ -39,7 +39,8 @@ namespace IO {
             }
 
             const auto &prefabJson = it->second;
-            const nlohmann::json references = {{"entities", nlohmann::json::array({prefabJson})}};
+            nlohmann::json references = nlohmann::json::object();
+            references["entities"] = nlohmann::json::array({prefabJson});
 
             SceneAssetLoader::SceneAssetScope scope;
             if (!SceneAssetLoader::LoadReferenced(references, scope)) {

@@ -76,7 +76,7 @@ namespace IO::Package::Tools {
 
                     "Window_GetHeight", "Window_GetWidth", "Window_SetFullscreen", "CloseWindow",
 
-                    "get_dt", "GetRawDt", "GetFrameCount", "GetTimeScale", "SetTimeScale",
+                    "get_dt", "GetRawDt", "GetFrameCount", "GetTimeScale", "SetTimeScale", "SetTimeout",
 
                     "Input_IsKeyDown", "Input_IsKeyPressed", "Input_IsKeyReleased", "Input_IsMouseDown", "Input_IsMousePressed", "Input_IsMouseReleased", "Input_GetMouseX", "Input_GetMouseY", "Input_GetScrollX",
                     "Input_GetScrollY", "Input_GetMouseWorldPos",
@@ -94,7 +94,9 @@ namespace IO::Package::Tools {
 
                     "save_set", "save_get", "save_has", "save_remove", "save_clear", "save_new", "save_create", "save_write", "save_load", "save_delete", "save_list",
 
-                    "contains"
+                    "assert", "throw", "to_string", "to_fixed", "to_num", "sqrt", "pow", "random", "min", "max", "clamp", "floor", "ceil", "round", "abs", "sin", "cos", "tan", "atan2", "pi", "rad", "deg", "lerp",
+                    "map_value", "len", "to_lower", "to_upper", "starts_with", "contains", "substring", "trim", "replace", "regex_match", "regex_search", "regex_replace", "regex_find_all", "type_of", "has_field",
+                    "get_fields", "get_arity"
 
             };
 
@@ -129,6 +131,64 @@ namespace IO::Package::Tools {
                     "WasClicked",
                     "SetSize",
                     "SetText",
+
+                    // Entity/component methods registered by EngineLibRegistry and EngineLibFactories.
+                    "AddComponent",
+                    "RemoveComponent",
+                    "AddCustomComponent",
+                    "GetCustomComponent",
+                    "TryMoveTo",
+                    "SetIsMoving",
+                    "SetTimePerStep",
+                    "GetHasSelection",
+                    "GetSelectedHex",
+                    "GetPathToHex",
+                    "SetIndex",
+                    "SetIntensity",
+                    "SetRadius",
+                    "SetEmitRate",
+                    "SetActive",
+                    "GetActive",
+                    "GetAliveCount",
+                    "GetIsTrigger",
+                    "SetIsTrigger",
+                    "GetLayer",
+                    "SetLayer",
+                    "GetMask",
+                    "SetMask",
+                    "GetFrame",
+                    "GetColumns",
+                    "GetRows",
+                    "GetTexture",
+                    "SetFrame",
+                    "SetGrid",
+                    "Play",
+                    "Restart",
+                    "Pause",
+                    "Resume",
+                    "Stop",
+                    "IsPlaying",
+                    "GetClip",
+
+                    "GetSize",
+                    "GetText",
+                    "SetColor",
+                    "GetColor",
+                    "SetTextColor",
+                    "GetTextColor",
+                    "SetBackgroundColor",
+                    "GetBackgroundColor",
+                    "GetFont",
+                    "SetVisible",
+                    "IsVisible",
+                    "IsEnabled",
+                    "IsFocused",
+                    "IsHeld",
+                    "IsHovered",
+
+                    "push",
+                    "pop",
+                    "clear",
 
             };
 
@@ -324,9 +384,6 @@ namespace IO::Package::Tools {
 
                     case ExprType::Index: {
                         const auto *node = static_cast<const IndexExpr *>(expression);
-
-                        result.includeAllCatalogAssets = true;
-
                         VisitExpr(node->callee.get());
                         VisitExpr(node->index.get());
                         break;

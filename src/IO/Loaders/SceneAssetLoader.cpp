@@ -1,4 +1,5 @@
 #include "SceneAssetLoader.h"
+#include <algorithm>
 
 #include "Core/ResourceManager.h"
 #include "ECS/Systems/Animation/Types.h"
@@ -247,6 +248,32 @@ namespace IO::SceneAssetLoader {
     SceneAssetScope::~SceneAssetScope() = default;
     SceneAssetScope::SceneAssetScope(SceneAssetScope &&) noexcept = default;
     SceneAssetScope &SceneAssetScope::operator=(SceneAssetScope &&) noexcept = default;
+
+    void SceneAssetScope::Merge(SceneAssetScope scope) {
+        if (!scope.m_State) {
+            return;
+        }
+
+        if (!m_State) {
+            m_State = std::move(scope.m_State);
+            return;
+        }
+
+        auto &owned = m_State->assets;
+        auto &incoming = scope.m_State->assets;
+
+        for (auto it = incoming.begin(); it != incoming.end();) {
+            if (std::find(owned.begin(), owned.end(), *it) != owned.end()) {
+                ++it;
+                continue;
+            }
+
+            owned.push_back(std::move(*it));
+            it = incoming.erase(it);
+        }
+    }
+
+    std::size_t SceneAssetScope::GetAssetCount() const noexcept { return m_State ? m_State->assets.size() : 0; }
 
     bool LoadReferenced(const nlohmann::json &sceneData, SceneAssetScope &scope) {
         scope = SceneAssetScope{};
