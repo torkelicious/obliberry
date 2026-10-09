@@ -226,6 +226,20 @@ namespace ECS {
             return true;
         }
 
+        [[nodiscard]] EntityID FindEntityByUUID(const std::string &uuid) const {
+            if (uuid.empty()) {
+                return INVALID_ENTITY_ID;
+            }
+
+            for (const EntityID id : m_LivingEntities) {
+                if (GetEntityUUID(id) == uuid) {
+                    return id;
+                }
+            }
+
+            return INVALID_ENTITY_ID;
+        }
+
         void Reparent(const EntityID child, const EntityID newParent) {
             if (!IsValid(child) || child == newParent)
                 return;
