@@ -9,25 +9,25 @@ If you want to get started with the Obliberry editor, please see: [Editor Docs](
 
 ## Contents
 
-| Section                                                     | Description                                                                         |
-|-------------------------------------------------------------|-------------------------------------------------------------------------------------|
-| [Build](build.md)                                           | Prerequisites, CMake presets, build options, targets, tests, and CI.                |
-| [Editor Guide](editor/usage.md)                             | Using the editor: modes, camera controls, panels, and keybinds.                     |
-| [Post-Processing](editor/post-processing.md)                | Fullscreen effect chains per scene: built-ins, custom shaders, editing uniforms.    |
-| [Architecture](architecture.md)                             | How the engine is organized: modules, the main loop, and the threading model.       |
-| [Scripting : Getting Started](scripting/getting-started.md) | Write game logic in ObSL: the script lifecycle, hooks, and walkthroughs.            |
-| [Scripting : API Reference](scripting/api-reference.md)     | Every EngineLib function exposed to scripts.                                        |
-| [File Formats](formats/project-json.md)                     | `project.json`, `graphics.json`, scene files, `.obmap` maps, and `.obpak` packages. |
+| Section                                                     | Description                                                                           |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| [Build](build.md)                                           | Prerequisites, CMake presets, build options, targets, tests, and CI.                  |
+| [Editor Guide](editor/usage.md)                             | Using the editor: modes, camera controls, panels, and keybinds.                       |
+| [Post-Processing](editor/post-processing.md)                | Fullscreen effect chains per scene: built-ins, custom shaders, editing uniforms.      |
+| [Architecture](architecture.md)                             | How the engine is organized: modules, the main loop, and the threading model.         |
+| [Scripting : Getting Started](scripting/getting-started.md) | Write game logic in ObSL: the script lifecycle, hooks, and walkthroughs.              |
+| [Scripting : API Reference](scripting/api-reference.md)     | Every EngineLib function exposed to scripts.                                          |
+| [File Formats](formats/project-json.md)                     | `project.json`, `graphics.json`, scene files, `.obmap` maps, and `.obpak` packages.   |
 | [Asset Catalog Format](formats/assets-json.md)              | Project-wide asset definitions, lazy loading, export filtering, and legacy migration. |
-| [Save-game Format](formats/save-json.md)                    | Save locations, metadata, key/value data, and the ObSL save lifecycle.              |
-| [Third Party Licenses](THIRD_PARTY_LICENSES.md)             | License texts for every bundled and fetched dependency.                             |
-| [Sprite Animation](editor/sprite-animation.md)              | Creating, editing, previewing, and assigning sprite animation sets.                 |
-| [Sprite Animation Format](formats/sprite-animation-json.md) | Sheet layout, named clips, frame indices, and durations.                            |
+| [Save-game Format](formats/save-json.md)                    | Save locations, metadata, key/value data, and the ObSL save lifecycle.                |
+| [Third Party Licenses](THIRD_PARTY_LICENSES.md)             | License texts for every bundled and fetched dependency.                               |
+| [Sprite Animation](editor/sprite-animation.md)              | Creating, editing, previewing, and assigning sprite animation sets.                   |
+| [Sprite Animation Format](formats/sprite-animation-json.md) | Sheet layout, named clips, frame indices, and durations.                              |
 
 ## Where things live
 
 | Path                               | What it is                                                                      |
-|------------------------------------|---------------------------------------------------------------------------------|
+| ---------------------------------- | ------------------------------------------------------------------------------- |
 | `src/Core`                         | Application, main loop, engine context, project, resource manager               |
 | `src/Applications`                 | Editor, Runtime, and packaging tool executables                                 |
 | `src/Scripting/EngineLib`          | The ObSL ↔ engine binding (see the [API reference](scripting/api-reference.md)) |

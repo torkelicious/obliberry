@@ -21,7 +21,7 @@ Sections are packed consecutively with no alignment and no section headers. TOC 
 ## File header `Package::FileHeader` (44 bytes)
 
 | Field                 | Type       | Size | Meaning                                                                |
-|-----------------------|------------|------|------------------------------------------------------------------------|
+| --------------------- | ---------- | ---- | ---------------------------------------------------------------------- |
 | `magic[4]`            | `char[4]`  | 4 B  | ASCII `"OBPK"`.                                                        |
 | `version`             | `uint16_t` | 2 B  | Must be `1`; the reader rejects anything else.                         |
 | `flags`               | `uint16_t` | 2 B  | Written as `0`; not interpreted by the reader.                         |
@@ -34,7 +34,7 @@ Sections are packed consecutively with no alignment and no section headers. TOC 
 ## TOC entry `Package::TocEntry` (40 bytes)
 
 | Field               | Type         | Size | Meaning                                                               |
-|---------------------|--------------|------|-----------------------------------------------------------------------|
+| ------------------- | ------------ | ---- | --------------------------------------------------------------------- |
 | `name_offset`       | `uint32_t`   | 4 B  | Offset into the string table.                                         |
 | `name_length`       | `uint32_t`   | 4 B  | Path length (names are **not** NUL-terminated; offset + length only). |
 | `data_offset`       | `uint64_t`   | 8 B  | Blob-relative offset of the payload.                                  |
@@ -59,7 +59,7 @@ enum class EntryFlags : uint8_t { None = 0, Compressed = 1 << 0 };  // bit 0
 ### Per-type storage rules (from `AssetPacking`)
 
 | File type                               | Stored as                        | Compressed?                  |
-|-----------------------------------------|----------------------------------|------------------------------|
+| --------------------------------------- | -------------------------------- | ---------------------------- |
 | `.obsl` scripts                         | `SerializedAST` (pre-parsed AST) | yes (unless `--no-compress`) |
 | `.json`                                 | `BinaryJSON` (msgpack)           | yes                          |
 | `.png`, `.jpg`, `.jpeg`, `.mp3`, `.ogg` | `Media` (raw)                    | **never**                    |
@@ -108,7 +108,7 @@ ob_packer [options] <project_directory>
 ```
 
 | Option                         | Meaning                                                                        |
-|--------------------------------|--------------------------------------------------------------------------------|
+| ------------------------------ | ------------------------------------------------------------------------------ |
 | `-o, --output <file>`          | Output `.obpak` path (default: `<project_directory>.obpak`).                   |
 | `-q, --quiet`                  | Suppress non-error output.                                                     |
 | `--verbose`                    | Per-file detailed logging.                                                     |
@@ -125,7 +125,7 @@ ob_unpacker [options] <package.obpak> [output_directory]
 ```
 
 | Option           | Meaning                                                  |
-|------------------|----------------------------------------------------------|
+| ---------------- | -------------------------------------------------------- |
 | `-l, --list`     | List contents without extracting.                        |
 | `-r, --readable` | Decode `.json` entries from msgpack back to pretty JSON. |
 | `-q, --quiet`    | Suppress output.                                         |
@@ -198,15 +198,15 @@ Scripts are analysed from their parsed AST without executing them. String litera
 including literals in branches or function bodies. Parentheses and concatenations of string literals can also be
 resolved; variables and runtime expressions are not evaluated.
 
-| Script use | Export behavior |
-|------------|-----------------|
-| `image.SetTexture("player_sheet")` / `text.SetFont("dialogue_font")` | Retains the referenced catalog asset. |
-| `image.SetTexture(textureId)` / `text.SetFont(fontId)` | Retains all textures / fonts in the catalog. |
-| `LoadScene("assets/scenes/next.json")` | Includes and scans that scene. |
-| `Instantiate("assets/prefabs/enemy.json")` | Includes and scans that prefab. |
-| `PlaySound2D("assets/audio/hit.ogg", 1.0)` / `PlayMusic(...)` | Includes the referenced audio file. |
-| A file-loading call whose path cannot be resolved | Aborts export with the call name and script path. |
-| An unclassified or indirect call, indexed lookup, or unsupported syntax node | Keeps the full asset catalog. |
+| Script use                                                                   | Export behavior                                   |
+| ---------------------------------------------------------------------------- | ------------------------------------------------- |
+| `image.SetTexture("player_sheet")` / `text.SetFont("dialogue_font")`         | Retains the referenced catalog asset.             |
+| `image.SetTexture(textureId)` / `text.SetFont(fontId)`                       | Retains all textures / fonts in the catalog.      |
+| `LoadScene("assets/scenes/next.json")`                                       | Includes and scans that scene.                    |
+| `Instantiate("assets/prefabs/enemy.json")`                                   | Includes and scans that prefab.                   |
+| `PlaySound2D("assets/audio/hit.ogg", 1.0)` / `PlayMusic(...)`                | Includes the referenced audio file.               |
+| A file-loading call whose path cannot be resolved                            | Aborts export with the call name and script path. |
+| An unclassified or indirect call, indexed lookup, or unsupported syntax node | Keeps the full asset catalog.                     |
 
 For example, `LoadScene("assets/scenes/" + "next.json")` can be resolved, but `LoadScene(scenePath)` cannot, even
 when `scenePath` was assigned a string literal earlier. Use direct literal paths in the file-loading calls. Keeping

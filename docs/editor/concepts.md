@@ -32,7 +32,7 @@ A **component** is a plain data structure. Examples: `TransformComponent` (posit
 Some components are **tags** - empty structs that just mark an entity for a system:
 
 | Tag            | Meaning                                                     |
-|----------------|-------------------------------------------------------------|
+| -------------- | ----------------------------------------------------------- |
 | `BillboardTag` | Render this entity as a billboard (always faces camera)     |
 | `DestroyTag`   | Delete this entity at end of frame                          |
 | `Relationship` | Stores parent/child links (not shown in Add Component menu) |
@@ -47,7 +47,7 @@ Tags appear as **checkboxes/flags** in the Inspector, not as expandable componen
 specific set of components.
 
 | System                     | Required Components                                  | What It Does                                                             |
-|----------------------------|------------------------------------------------------|--------------------------------------------------------------------------|
+| -------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------ |
 | `RenderSystem`             | Transform + Mesh + Material                          | Draws the entity                                                         |
 | `MovementSystem`           | Transform + Movement                                 | Moves entity along hex path                                              |
 | `AISystem`                 | —                                                    | Randomly wanders entities with `autoMove` enabled on `MovementComponent` |
@@ -171,15 +171,15 @@ The `obliberry_runtime` loads `.obpak` files directly, that's your "game" execut
 
 ## Summary
 
-| Concept       | Key Point                                                         |
-|---------------|-------------------------------------------------------------------|
-| **Entity**    | an ID. Add components to give it behavior.                        |
-| **Component** | data. One per type per entity.                                    |
-| **System**    | Logic that runs on entities with matching components.             |
-| **Registry**  | The entity list (left panel). Shows hierarchy.                    |
-| **Asset**     | Referenced by ID. Materials link shaders + textures.              |
-| **Map**       | Hex grid painted in Map Edit mode. Saved as `.obmap`.             |
-| **Script**    | ObSL files attached via ScriptComponent. Run in Play mode.        |
-| **Save data** | Script-defined key/value data stored separately per project UUID. |
-| **Prefab**    | Reusable entity template. Instantiate from script.                |
+| Concept       | Key Point                                                             |
+| ------------- | --------------------------------------------------------------------- |
+| **Entity**    | an ID. Add components to give it behavior.                            |
+| **Component** | data. One per type per entity.                                        |
+| **System**    | Logic that runs on entities with matching components.                 |
+| **Registry**  | The entity list (left panel). Shows hierarchy.                        |
+| **Asset**     | Referenced by ID. Materials link shaders + textures.                  |
+| **Map**       | Hex grid painted in Map Edit mode. Saved as `.obmap`.                 |
+| **Script**    | ObSL files attached via ScriptComponent. Run in Play mode.            |
+| **Save data** | Script-defined key/value data stored separately per project UUID.     |
+| **Prefab**    | Reusable entity template. Instantiate from script.                    |
 | **Export**    | Packages scenes and their dependencies into `.obpak` for the runtime. |

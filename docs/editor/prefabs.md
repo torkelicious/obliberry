@@ -89,21 +89,9 @@ Example `assets/prefabs/enemy_basic.json`:
     "name": "Enemy",
     "components": {
         "TransformComponent": {
-            "position": [
-                0,
-                0,
-                0
-            ],
-            "rotation": [
-                0,
-                0,
-                0
-            ],
-            "scale": [
-                1,
-                1,
-                1
-            ]
+            "position": [0, 0, 0],
+            "rotation": [0, 0, 0],
+            "scale": [1, 1, 1]
         },
         "MeshComponent": {
             "mesh_id": "[Engine] Quad"
@@ -116,9 +104,7 @@ Example `assets/prefabs/enemy_basic.json`:
             "autoMove": true
         },
         "ScriptComponent": {
-            "scriptPaths": [
-                "assets/scripts/EnemyAI.obsl"
-            ]
+            "scriptPaths": ["assets/scripts/EnemyAI.obsl"]
         }
     }
 }

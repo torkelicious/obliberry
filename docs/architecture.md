@@ -60,7 +60,7 @@ flowchart TD
 ## Threading model
 
 | Thread              | Responsibility                                                                  |
-|---------------------|---------------------------------------------------------------------------------|
+| ------------------- | ------------------------------------------------------------------------------- |
 | Main                | Input, scene update (ECS systems), script dispatch, UI/ImGui, frame submission  |
 | Render              | All GL calls: command flush, framebuffer, present                               |
 | Thread pool workers | Parallel script execution and general tasks (`Platform::Threading::ThreadPool`) |
