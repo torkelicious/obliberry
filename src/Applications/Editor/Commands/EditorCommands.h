@@ -45,13 +45,16 @@ namespace Editor::Commands {
         // i could make this a unified transform command
         // but transforms are much larger than just the vec3's they hold sooo...
         // optimization ig :DDDD
-        TranslateEntityCommand(ECS::EntityID target, glm::vec3 oldPos, glm::vec3 newPos);
+        TranslateEntityCommand(std::string targetUUID, glm::vec3 oldPos, glm::vec3 newPos);
+
         void Execute(Core::EngineContext &ctx) override;
         void Undo(Core::EngineContext &ctx) override;
         [[nodiscard]] std::string_view Name() const noexcept override;
 
     private:
-        ECS::EntityID m_EntityID;
+        void SetPosition(Core::EngineContext &ctx, const glm::vec3 &position);
+
+        std::string m_EntityUUID;
         glm::vec3 m_OldPos;
         glm::vec3 m_NewPos;
     };

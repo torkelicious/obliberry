@@ -20,21 +20,26 @@ namespace Editor::Commands {
     //
 
     // Move Transform
-    TranslateEntityCommand::TranslateEntityCommand(const ECS::EntityID target, const glm::vec3 oldPos, const glm::vec3 newPos) : m_EntityID(target), m_OldPos(oldPos), m_NewPos(newPos) {}
+    TranslateEntityCommand::TranslateEntityCommand(std::string targetUUID, const glm::vec3 oldPos, const glm::vec3 newPos) : m_EntityUUID(std::move(targetUUID)), m_OldPos(oldPos), m_NewPos(newPos) {}
 
-    void TranslateEntityCommand::Execute(Core::EngineContext &ctx) {
-        const ECS::Entity ent(m_EntityID, &ctx.sceneManager->GetCurrentScene()->GetRegistry());
-        if (auto *transform = ent.GetComponent<ECS::Components::TransformComponent>()) {
-            transform->transform.SetPosition(m_NewPos);
+    void TranslateEntityCommand::SetPosition(Core::EngineContext &ctx, const glm::vec3 &position) {
+        auto *scene = ctx.sceneManager ? ctx.sceneManager->GetCurrentScene() : nullptr;
+
+        if (!scene) {
+            return;
+        }
+
+        auto &registry = scene->GetRegistry();
+        const auto id = registry.FindEntityByUUID(m_EntityUUID);
+
+        if (auto *transform = registry.GetComponent<ECS::Components::TransformComponent>(id)) {
+            transform->transform.SetPosition(position);
         }
     }
 
-    void TranslateEntityCommand::Undo(Core::EngineContext &ctx) {
-        const ECS::Entity ent(m_EntityID, &ctx.sceneManager->GetCurrentScene()->GetRegistry());
-        if (auto *transform = ent.GetComponent<ECS::Components::TransformComponent>()) {
-            transform->transform.SetPosition(m_OldPos);
-        }
-    }
+    void TranslateEntityCommand::Execute(Core::EngineContext &ctx) { SetPosition(ctx, m_NewPos); }
+
+    void TranslateEntityCommand::Undo(Core::EngineContext &ctx) { SetPosition(ctx, m_OldPos); }
 
     std::string_view TranslateEntityCommand::Name() const noexcept { return "Move entity"; }
 
