@@ -25,7 +25,7 @@ in [Migrating old projects](#migrating-old-projects).
 ```
 
 | Key       | Type    | Meaning                                             |
-|-----------|---------|-----------------------------------------------------|
+| --------- | ------- | --------------------------------------------------- |
 | `version` | integer | Catalog format version. The current version is `1`. |
 | `assets`  | object  | Contains the six supported asset-definition arrays. |
 
@@ -138,11 +138,18 @@ When a scene enters, `SceneAssetLoader` scans the scene for resource IDs used by
 - entity mesh, material, directional-texture, particle-material, sprite-sheet, and animation components;
 - UI fonts and textures.
 
-It resolves material and animation dependencies, builds the required catalog subset, and loads only that subset.
+`IO::AssetDependencies` collects those IDs and resolves material and animation dependencies. `SceneAssetLoader`
+builds the required catalog subset and loads only that subset.
 The scene retains a `SceneAssetScope`; destroying the scene releases its references and unloads resources that are no
-longer retained. Persistent entities reacquire their referenced assets for the destination scene.
+longer retained. Shared dependencies stay loaded while another scope references them. Persistent entities reacquire
+their referenced assets for the destination scene.
 
-Editor selections and supported script setters also acquire catalog assets on demand and attach their scopes to the
+Prefab instantiation uses the same dependency collection before creating the entity, then retains the acquired assets
+in the destination scene. The prefab's assets do not need to appear in that scene's saved JSON. Each scene retains
+each asset only once, so repeated spawning and destruction do not accumulate scopes or duplicate asset references.
+Assets remain retained until the scene is destroyed.
+
+Editor selections and supported script setters also acquire catalog assets on demand and merge their scopes into the
 current scene. Replacing or deleting a catalog entry marks the loaded resource stale; it is discarded safely during a
 scene transition after the old scene releases its scopes.
 
@@ -151,6 +158,15 @@ scene transition after the old scene releases its scopes.
 The Project Browser creates, updates, and removes definitions through `IO::AssetCatalog`. Catalog writes are atomic on
 Linux, macOS, and Windows. Saving a scene writes only its asset IDs. It does not rewrite asset definitions or save an
 unfinished sprite-animation draft.
+
+## Exported catalog
+
+Editor export builds a separate `assets.json` containing the required definitions and their material/animation
+dependencies. It preserves their IDs and definitions; the project's original catalog is not changed.
+
+Script analysis can retain an entire asset category, or the full catalog, when a narrower set cannot be determined.
+This affects package contents, not runtime loading: the retained assets are still loaded on demand. See
+[Editor export](obpak.md#editor-export) for the collection rules and script limitations.
 
 ## Migrating old projects
 

@@ -1,7 +1,9 @@
 #include "AssetPacking.h"
 #include "FileIO.h"
+#include "IO/Package/Tools/ScriptAssetAnalyzer.h"
 #include "IgnoreRules.h"
 #include "Logger/LoggerService.h"
+#include "nlohmann/json_fwd.hpp"
 #include <ObSL/Lexer.h>
 #include <ObSL/Parser.h>
 #include <ObSL/ASTSerializer.h>
@@ -9,6 +11,8 @@
 #include <filesystem>
 #include <nlohmann/json.hpp>
 #include <algorithm>
+#include <string>
+#include <vector>
 
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "AssetPacking"
@@ -73,8 +77,26 @@ namespace IO::Package::Tools {
                 break;
         }
     }
-
     // NOLINTEND (*-pro-type-static-cast-downcast)
+
+
+    std::vector<std::string> CollectScriptDependencies(
+            const std::filesystem::path &filepath, const std::filesystem::path &projectDir, const std::filesystem::path &scriptRoot, const nlohmann::json &catalogAssets, ScriptAssetAnalysis &analysis) {
+        const auto source = read_file_string(filepath);
+        ObSL::Lexer lexer(source);
+        ObSL::Parser parser(lexer.tokenize());
+        auto ast = parser.parse();
+
+        analysis = AnalyzeScriptAssets(ast, catalogAssets);
+
+        std::vector<std::string> dependencies;
+        for (auto &statement : ast) {
+            resolve_and_collect_using_paths(statement.get(), scriptRoot, projectDir, dependencies);
+        }
+
+        return dependencies;
+    }
+
 
     bool pack_one_file(
             const std::filesystem::path &filepath, const std::filesystem::path &project_dir, const std::filesystem::path &script_root, ContainerWriter &writer, DependencyGraph &dep_graph, const PackOptions &opts) {

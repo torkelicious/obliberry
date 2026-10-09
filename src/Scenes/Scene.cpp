@@ -26,7 +26,7 @@
 
 Scenes::Scene::Scene(Core::EngineContext *context, SceneProperties props) : m_Properties(std::move(props)), m_Context(context), m_UISystem(context->uiRenderer, context->input) {}
 
-void Scenes::Scene::AddAssetScope(IO::SceneAssetLoader::SceneAssetScope scope) { m_AssetScopes.push_back(std::move(scope)); }
+void Scenes::Scene::AddAssetScope(IO::SceneAssetLoader::SceneAssetScope scope) { m_AssetScope.Merge(std::move(scope)); }
 
 void Scenes::Scene::OnEnter() {
     m_CollisionWorld.Clear();

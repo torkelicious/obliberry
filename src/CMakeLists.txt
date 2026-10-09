@@ -40,6 +40,7 @@ add_library(obliberry_engine STATIC
         IO/VFS/VFS.cpp
         IO/AssetCatalog.cpp
         IO/AssetCatalog.h
+        IO/AssetDependencies.cpp
 
         # Sound
         Sound/AudioEngine.cpp
@@ -64,6 +65,7 @@ add_library(obliberry_engine STATIC
         IO/Package/Tools/AssetPacking.cpp
         IO/Package/Tools/DependencyGraph.cpp
         IO/Package/Tools/IgnoreRules.cpp
+        IO/Package/Tools/ScriptAssetAnalyzer.cpp
 
         # UI
         UI/Text/Font.cpp

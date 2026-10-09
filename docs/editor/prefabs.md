@@ -64,7 +64,12 @@ if (entity != null) {
 ```
 
 The `Instantiate` function returns an entity object (or `null` on failure). Set position via the Transform component
-after instantiating. The prefab's resources must already be loaded in the current scene.
+after instantiating. Before creating the entity, the loader acquires its referenced catalog assets and their
+dependencies, then retains them in the current scene. They do not need to be loaded beforehand. A missing prefab file
+or required asset causes instantiation to fail.
+
+For editor export, use a literal prefab path in `Instantiate(...)`; the exporter scans that prefab's components and
+scripts too. See [Script references](../formats/obpak.md#script-references) for supported path expressions.
 
 ---
 
@@ -84,21 +89,9 @@ Example `assets/prefabs/enemy_basic.json`:
     "name": "Enemy",
     "components": {
         "TransformComponent": {
-            "position": [
-                0,
-                0,
-                0
-            ],
-            "rotation": [
-                0,
-                0,
-                0
-            ],
-            "scale": [
-                1,
-                1,
-                1
-            ]
+            "position": [0, 0, 0],
+            "rotation": [0, 0, 0],
+            "scale": [1, 1, 1]
         },
         "MeshComponent": {
             "mesh_id": "[Engine] Quad"
@@ -111,9 +104,7 @@ Example `assets/prefabs/enemy_basic.json`:
             "autoMove": true
         },
         "ScriptComponent": {
-            "scriptPaths": [
-                "assets/scripts/EnemyAI.obsl"
-            ]
+            "scriptPaths": ["assets/scripts/EnemyAI.obsl"]
         }
     }
 }

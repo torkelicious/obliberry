@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <cstddef>
 #include <memory>
 #include <nlohmann/json_fwd.hpp>
 #include <string_view>
@@ -27,6 +28,9 @@ namespace IO::SceneAssetLoader {
 
         SceneAssetScope(SceneAssetScope &&) noexcept;
         SceneAssetScope &operator=(SceneAssetScope &&) noexcept;
+
+        void Merge(SceneAssetScope scope);
+        [[nodiscard]] std::size_t GetAssetCount() const noexcept;
 
     private:
         struct State;

@@ -8,8 +8,8 @@ and is read by both the editor and the runtime.
 - Loose projects read `graphics.json` from the project root.
 - Packaged builds first read text `graphics.json` beside the executable. If it is missing or invalid, the loader
   tries the packaged configuration, then uses defaults. Packaged JSON is stored as msgpack and decoded by the VFS.
-- Export copies a loose `graphics.json` beside the runtime. It is excluded from the package by default; add
-  `!graphics.json` to `.pakignore` to include a packaged fallback.
+- Editor export copies a loose `graphics.json` beside the runtime; it is not part of the export dependency set.
+  With the directory-based `ob_packer`, add `!graphics.json` to `.pakignore` to include a packaged fallback.
 - **Save** in the editor's Graphics Settings writes the project configuration.
 
 A valid loose configuration replaces the packaged configuration; omitted fields use the defaults below.
@@ -17,7 +17,7 @@ A valid loose configuration replaces the packaged configuration; omitted fields 
 ## Fields
 
 | Key                    | Type           | Default      | Meaning                                                                                                                                                               |
-|------------------------|----------------|--------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ---------------------- | -------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `window`               | object         | -            | Window settings container.                                                                                                                                            |
 | `window.width`         | int            | `1280`       | Initial window width in pixels.                                                                                                                                       |
 | `window.height`        | int            | `720`        | Initial window height in pixels.                                                                                                                                      |

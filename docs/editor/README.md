@@ -5,7 +5,7 @@
 ## Quick Start
 
 | If you want to...                             | Start here                              |
-|-----------------------------------------------|-----------------------------------------|
+| --------------------------------------------- | --------------------------------------- |
 | Learn the editor UI, modes, and keybinds      | [Editor Guide](usage.md)                |
 | The core concepts (ECS, entities, components) | [Core Concepts](concepts.md)            |
 | See all components / what they do             | [Component Reference](components.md)    |
@@ -19,7 +19,7 @@
 ## Related Documentation
 
 | Topic                   | Location                          |
-|-------------------------|-----------------------------------|
+| ----------------------- | --------------------------------- |
 | ObSL Scripting Language | `../scripting/getting-started.md` |
 | Save-game Format        | `../formats/save-json.md`         |
 | Project Structure       | `concepts.md#project-structure`   |

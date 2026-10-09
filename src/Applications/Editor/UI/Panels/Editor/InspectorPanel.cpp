@@ -67,11 +67,16 @@ void Editor::UI::InspectorPanel::OnImGuiRender() {
                     auto &registry = m_SceneContext->GetRegistry();
                     const auto entityId = static_cast<ECS::EntityID>(m_SelectedEntity);
                     const std::string prefabPath = psc->prefabPath;
-                    registry.DestroyEntity(entityId);
-                    const ECS::EntityID newId = IO::PrefabManager::Instantiate(registry, *m_EngineContext->resources, prefabPath);
-                    m_SelectedEntity = ECS::Entity(newId, &registry);
-                    MarkSceneChanged(m_EngineContext);
-                    return; // entity changed, skip rest of draw
+
+                    const ECS::EntityID newId = IO::PrefabManager::Instantiate(*m_SceneContext, prefabPath);
+
+                    if (newId != ECS::INVALID_ENTITY_ID) {
+                        registry.DestroyEntity(entityId);
+                        m_SelectedEntity = ECS::Entity(newId, &registry);
+                        MarkSceneChanged(m_EngineContext);
+                    }
+
+                    return;
                 }
                 ImGui::SameLine();
                 if (ImGui::Button("Break Prefab")) {

@@ -82,7 +82,7 @@ void Editor::UI::RegistryPanel::OnImGuiRender() {
         static std::string pendingPrefabPath;
         if (FileCombo("Spawn Prefab", std::string(Core::PREFAB_PATH), std::string(".json"), pendingPrefabPath)) {
             if (!pendingPrefabPath.empty() && m_EngineContext) {
-                if (const ECS::EntityID newId = IO::PrefabManager::Instantiate(registry, *m_EngineContext->resources, pendingPrefabPath); newId != ECS::INVALID_ENTITY_ID) {
+                if (const ECS::EntityID newId = IO::PrefabManager::Instantiate(*m_SceneContext, pendingPrefabPath); newId != ECS::INVALID_ENTITY_ID) {
                     m_SelectedEntity = ECS::Entity(newId, &registry);
                     MarkSceneChanged(m_EngineContext);
                 }

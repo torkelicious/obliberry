@@ -2,8 +2,9 @@
 
 ## Prerequisites
 
-* **CMake:** Version 3.23 or newer.
+* **CMake:** Version 3.25 or newer for the supplied presets (the project itself declares a 3.23 minimum).
 * **Compiler:** with C++20 and C11 support (GCC, Clang, or MSVC).
+* **Ninja:** Required by the Linux, macOS, and `windows-ninja-*` presets. On Windows, use an MSVC developer shell.
 * > *(Optional)* **Performance tools:** `ccache` and alternative linkers (`mold` or `lld`) are supported and recommended
   for faster builds on Linux.
 
@@ -36,13 +37,15 @@ cmake --preset <preset> [options]
 * `linux-debug`: Debug build without optimizations.
 * `linux-release`: Standard release build (includes LTO if supported).
 * `linux-profile`: Release build with debug info (`RelWithDebInfo`) for profiling.
+* `linux-sanitizers`: Debug build with AddressSanitizer and UndefinedBehaviorSanitizer.
 
 **macOS** (Requires macOS 11.0+)
 
 * `macos-debug`
 * `macos-release`
+* `macos-sanitizers`
 
-> **Note:** macOS is untested, but should work
+> **Note:** macOS is included in the build and test workflows. Rendering integration tests run on Linux.
 
 **Windows**
 
@@ -53,6 +56,9 @@ cmake --preset <preset> [options]
 * `windows-ninja-debug`: Debug build with Ninja and the MSVC `cl` compiler (used by CI).
 * `windows-ninja-release`: Release build with Ninja and the MSVC `cl` compiler (used by CI).
 
+For Visual Studio, configure with `windows-default` (2022) or `windows-default-2026` (2026), then build with the
+corresponding debug/release preset above. The Ninja presets use the same name for configuring and building.
+
 ### Build Options
 
 You can customize the build by passing standard CMake options (`-D<OPTION>=<VALUE>`) during the configuration step:
@@ -60,6 +66,12 @@ You can customize the build by passing standard CMake options (`-D<OPTION>=<VALU
 * **`-DBUILD_PACK_TOOLS=ON|OFF`** (Default: `ON`)
   Toggles the compilation of project/package tools (`ob_packer`, `ob_unpacker`, `obsl_pack_run`,
   `ob_asset_migrator`).
+
+* **`-DBUILD_TESTING=ON|OFF`** (Default: `ON`)
+  Toggles the `obliberry_tests` target and CTest discovery. Set `OFF` for an application-only build.
+
+* **`-DOBLIBERRY_TEST_RENDERING=ON|OFF`** (Default: `OFF`, requires `BUILD_TESTING=ON`)
+  Adds rendering integration tests that require an OpenGL 4.3 context.
 
 * **`-DENGINE_ARCH_LEVEL="<arch>"`** (Default: `"x86-64-v2"`)
   Sets the target CPU architecture baseline for GCC/Clang on x86 architectures. Common options include `x86-64-v2`,
@@ -103,6 +115,10 @@ cmake --build --preset <preset> --target <target_name>
 
 The tools are written to `<build>/bin/tools/`.
 
+**Tests** *(Requires `BUILD_TESTING=ON`)*
+
+* `obliberry_tests`: Google Test suite, with individual cases discovered by CTest.
+
 ### Migrating legacy asset definitions
 
 Older projects stored complete asset definitions in each scene file. Validate and migrate a project with:
@@ -122,6 +138,65 @@ On Windows:
 `--dry-run` performs validation without writing. The default migration merges definitions into `assets.json` and
 leaves legacy scene sections intact. `--strip-scenes` also removes those sections after creating backups. See the
 [`assets.json` format](formats/assets-json.md#migrating-old-projects) for details.
+
+## Tests
+
+Configure and build the test target, then run CTest from the project root.
+
+Linux:
+
+```bash
+cmake --preset linux-debug -DBUILD_TESTING=ON -DBUILD_PACK_TOOLS=OFF
+cmake --build --preset linux-debug --target obliberry_tests --parallel 2
+ctest --test-dir build/linux-debug --output-on-failure --no-tests=error
+```
+
+Windows, from an MSVC developer shell:
+
+```powershell
+cmake --preset windows-ninja-debug -DBUILD_TESTING=ON -DBUILD_PACK_TOOLS=OFF
+cmake --build --preset windows-ninja-debug --target obliberry_tests --parallel 2
+ctest --test-dir build/windows-ninja-debug --output-on-failure --no-tests=error
+```
+
+macOS:
+
+```bash
+cmake --preset macos-debug -DBUILD_TESTING=ON -DBUILD_PACK_TOOLS=OFF
+cmake --build --preset macos-debug --target obliberry_tests --parallel 2
+ctest --test-dir build/macos-debug --output-on-failure --no-tests=error
+```
+
+The suite covers ECS entities and hierarchy, scenes, maps, animation, ObSL and engine bindings, asset catalog/loading,
+VFS and package reads, configuration, editor command undo/redo, and missing/malformed audio. Rendering tests are
+optional locally: add `-DOBLIBERRY_TEST_RENDERING=ON` when configuring. They skip if a context cannot be created unless
+`OBLIBERRY_REQUIRE_RENDERING_TESTS=1` is set. Audio tests may skip if no backend initializes.
+
+On Linux, headless rendering tests need Xvfb, `xauth`, and Mesa OpenGL support. After configuring with rendering enabled,
+run:
+
+```bash
+LIBGL_ALWAYS_SOFTWARE=1 OBLIBERRY_REQUIRE_RENDERING_TESTS=1 xvfb-run -a ctest --test-dir build/linux-debug --output-on-failure --no-tests=error
+```
+
+### Continuous integration
+
+`.github/workflows/tests.yml` runs on pull requests, pushes to `main`/`master`, and manual dispatch:
+
+| Platform | Preset | Rendering tests |
+|----------|--------|-----------------|
+| Linux | `linux-debug` | Enabled under Xvfb with Mesa software rendering; unavailable contexts fail the job. |
+| Windows | `windows-ninja-debug` | Disabled. |
+| macOS | `macos-debug` | Disabled. |
+
+Both `tests.yml` and `build.yml` cache fetched dependencies under `.deps` using `FETCHCONTENT_BASE_DIR`, and cache
+compiler results with `sccache`. Dependency keys include the CMake definitions; compiler-cache keys include the commit
+and restore earlier entries for the same platform, architecture, and preset. Windows debug tests use embedded debug
+information (`/Z7`) for sccache compatibility.
+
+Test logs are uploaded even after a failed run when available, with seven-day retention. The build/release workflow
+uses release presets with `BUILD_TESTING=OFF`; it runs on `v*` tags or manual dispatch. Manual runs publish a release
+only when `publish_release` is enabled, and newly created release tags point to the built commit.
 
 ## Running
 

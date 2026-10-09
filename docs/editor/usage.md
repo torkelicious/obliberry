@@ -9,7 +9,7 @@ A tour of the Obliberry editor: the modes, camera controls, panels, and keybind 
 The editor has four states. You start in the Hub, and everything else hangs off it.
 
 | State        | What it is                                                                              |
-|--------------|-----------------------------------------------------------------------------------------|
+| ------------ | --------------------------------------------------------------------------------------- |
 | **Hub**      | The startup screen. Create or open a project.                                           |
 | **Edit**     | Build your scene: entities, transforms, materials, UI. Default after opening a project. |
 | **Play**     | Run the scene and its scripts, like a player would.                                     |
@@ -17,7 +17,7 @@ The editor has four states. You start in the Hub, and everything else hangs off 
 
 > [!NOTE]
 > **Switching modes:** Use the mode dropdown in the top toolbar to switch between **Edit** and **Map Edit**. The
-**Play/Stop** button next to it runs or stops the scene. Both are disabled while playing - stop Play first.
+> **Play/Stop** button next to it runs or stops the scene. Both are disabled while playing - stop Play first.
 
 ---
 
@@ -39,7 +39,7 @@ The Hub is a simple welcome screen with two buttons:
 Camera input only works while the mouse is over the **Scene View**.
 
 | Input                      | Action                                     |
-|----------------------------|--------------------------------------------|
+| -------------------------- | ------------------------------------------ |
 | `W` `A` `S` `D`            | Pan the camera                             |
 | `Shift` + `WASD`           | Pan faster (3×)                            |
 | Scroll wheel               | Zoom in and out                            |
@@ -154,7 +154,10 @@ saved with it.
 Save scene/map edits and asset drafts, then use **File → Export Project** and choose an output directory.
 Export reads files from disk without a save prompt. It writes `data.obpak`, copies the built `obliberry_runtime` under
 the sanitized project title, and copies `graphics.json`. The runtime must be available in the editor's `internal`
-directory. See [package export](../formats/obpak.md#editor-export) and
+directory. The package includes all scenes under `assets/scenes/` and their collected dependencies, with a generated
+asset catalog. Unresolved script file paths retain eligible project files and the full catalog. Missing or ignored
+required files still stop packaging. See
+[package export](../formats/obpak.md#editor-export) and
 [graphics loading](../formats/graphics-json.md#loading).
 
 ---
@@ -164,7 +167,7 @@ directory. See [package export](../formats/obpak.md#editor-export) and
 ### Global (any mode)
 
 | Key      | Action                                                         |
-|----------|----------------------------------------------------------------|
+| -------- | -------------------------------------------------------------- |
 | `Esc`    | Quit the editor (prompts to save if there are unsaved changes) |
 | `Ctrl+S` | Save the scene (or the map in Map Edit mode)                   |
 | `Ctrl+Z` | Undo                                                           |
@@ -179,7 +182,7 @@ directory. See [package export](../formats/obpak.md#editor-export) and
 ### Edit Mode
 
 | Key                       | Action                                                                    |
-|---------------------------|---------------------------------------------------------------------------|
+| ------------------------- | ------------------------------------------------------------------------- |
 | `V`                       | Toggle isometric / top-down camera                                        |
 | `T` `R` `E`               | Gizmo: translate / rotate / scale (`E` = scale, toolbar button shows `S`) |
 | `W` `A` `S` `D`           | Pan the camera (hold `Shift` for 3× speed)                                |
@@ -190,7 +193,7 @@ directory. See [package export](../formats/obpak.md#editor-export) and
 ### Map Edit Mode
 
 | Key                       | Action                                         |
-|---------------------------|------------------------------------------------|
+| ------------------------- | ---------------------------------------------- |
 | `V`                       | Toggle isometric / top-down camera             |
 | `W` `A` `S` `D`           | Pan the camera (hold `Shift` for 3× speed)     |
 | Scroll wheel              | Zoom                                           |

@@ -64,11 +64,12 @@ namespace Scenes {
         const std::vector<ECS::Collision::CollisionEvent> &GetCollisionEvents() const { return m_CollisionWorld.GetEvents(); }
 
         void AddAssetScope(IO::SceneAssetLoader::SceneAssetScope scope);
+        [[nodiscard]] std::size_t GetRetainedAssetCount() const noexcept { return m_AssetScope.GetAssetCount(); }
 
     private:
         SceneProperties m_Properties;
         Core::EngineContext *m_Context;
-        std::vector<IO::SceneAssetLoader::SceneAssetScope> m_AssetScopes;
+        IO::SceneAssetLoader::SceneAssetScope m_AssetScope;
         ECS::Registry m_Registry;
         bool m_HasUnsavedChanges = false;
         UI::UISystem m_UISystem;

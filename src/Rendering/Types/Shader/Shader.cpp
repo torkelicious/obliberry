@@ -206,7 +206,9 @@ namespace Rendering {
 
         BuiltinPPState state;
 
-        const std::string &filePath = m_FromSource ? m_DebugName : type == GL_VERTEX_SHADER ? m_vertPath : m_fragPath;
+        const std::string &sourcePath = type == GL_VERTEX_SHADER ? m_vertPath : m_fragPath;
+        const std::string &filePath = sourcePath.empty() ? m_DebugName : sourcePath;
+
         const std::string processedSrc = ShaderPreprocessor::Get().processSource(src, std::filesystem::path(filePath), state);
 
         const GLuint shader = glCreateShader(type);

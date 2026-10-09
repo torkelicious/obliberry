@@ -8,6 +8,11 @@ a [standard library reference](https://github.com/torkelicious/ObSL/blob/master/
 
 For a full list of engine functions available to scripts, see the [API Reference](api-reference.md).
 
+When exporting a game, attached scripts and their `using` imports are analysed for asset and file references. Use
+direct literal paths in `LoadScene`, `Instantiate`, `PlaySound2D`, and `PlayMusic` for smaller exports. Unresolved runtime
+paths retain eligible project files and the full catalog. See [Script references](../formats/obpak.md#script-references) for the supported expressions and
+catalog fallback rules.
+
 ## How scripts attach to a scene
 
 Scripts are stored as `.obsl` files, conventionally under `assets/scripts/` inside a project. They are attached to
