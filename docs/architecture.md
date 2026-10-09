@@ -224,17 +224,24 @@ See [Collider settings](editor/components.md#collider) and the [EngineLib API](s
 - **Asset catalog:** `AssetCatalog` parses the project-root `assets.json` once per mounted project and provides
   definition lookup plus atomic create/update/remove operations. Asset definitions are project-wide and are not
   embedded in scene files.
-- **Lazy loading:** `SceneAssetLoader` collects resource IDs from the grid, post-processing chain, entities, and UI,
-  then resolves material and sprite-animation dependencies. `AssetLoader` loads only the resulting catalog subset.
+- **Asset dependencies:** `IO::AssetDependencies` collects resource IDs from the grid, post-processing chain,
+  entities, and UI, then resolves material and sprite-animation dependencies. Scene loading, prefab loading, and
+  editor export use the same collection rules.
+- **Lazy loading:** `SceneAssetLoader` acquires the required catalog subset through `AssetLoader`.
   Each `Scene` retains a reference-counted `SceneAssetScope`; destroying the scene releases the scope and unloads
   resources that are no longer retained. Catalog entries replaced or deleted while loaded are marked stale and are
   discarded safely during scene switching.
 - **Other loaders:** `EntityFactory` handles component serialization and deserialization; `PrefabManager` and
-  `ParticleEmitterPrefabManager` handle prefab loading. Particle-preset materials and supported script/editor asset
+  `ParticleEmitterPrefabManager` handle prefab loading. Entity prefabs acquire their referenced assets before
+  deserialization and retain them in the destination scene. Particle-preset materials and supported script/editor asset
   assignments acquire catalog entries on demand and retain them in the current scene.
 - **Packaging** : `.obpak` container (header + TOC + string table + LZ4-compressed blob), plus the `ob_packer` /
   `ob_unpacker` / `obsl_pack_run` tools, `.pakignore` rules, and dependency graph validation. The separate
   `ob_asset_migrator` tool moves legacy per-scene asset definitions into `assets.json`.
+- **Editor export:** `ObpakTools` collects scene dependencies, scans attached/imported scripts with
+  `ScriptAssetAnalyzer`, and writes a filtered catalog into the package. Dynamic asset IDs can retain a whole category;
+  unclassified calls can retain the full catalog. Unresolved file-loading paths abort export. The directory-based
+  `ob_packer` remains a separate packaging path.
 
 → [`assets.json`](formats/assets-json.md) · [`.obmap`](formats/obmap.md) · [`.obpak`](formats/obpak.md) ·
 [scene JSON](formats/scene-json.md)

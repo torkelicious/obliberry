@@ -152,9 +152,13 @@ separate. See [Save-game format](../formats/save-json.md).
 
 When you're done, **File → Export Project** creates a single `.obpak` file containing:
 
-- All scenes (as msgpack-encoded JSON)
-- All assets (textures, shaders, fonts, maps, scripts)
+- The start scene and all scenes under `assets/scenes/` (as msgpack-encoded JSON)
+- Referenced assets, maps, scripts, prefabs, audio, and their dependencies
+- A generated `assets.json` containing the retained definitions
 - `project.json`
+
+Script analysis may keep a whole asset category or the full catalog when references cannot be narrowed down. See
+[Editor export](../formats/obpak.md#editor-export) for the collection rules and path limitations.
 
 Export also copies the built runtime binary, named from the sanitized project title, and a loose `graphics.json`.
 Save changes before exporting: the export command packages the files currently on disk. The packaged runtime reads
@@ -178,4 +182,4 @@ The `obliberry_runtime` loads `.obpak` files directly, that's your "game" execut
 | **Script**    | ObSL files attached via ScriptComponent. Run in Play mode.        |
 | **Save data** | Script-defined key/value data stored separately per project UUID. |
 | **Prefab**    | Reusable entity template. Instantiate from script.                |
-| **Export**    | Packages everything into `.obpak` for the runtime.                |
+| **Export**    | Packages scenes and their dependencies into `.obpak` for the runtime. |

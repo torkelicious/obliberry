@@ -127,6 +127,9 @@ Hex coordinates are **odd-r offset** (pointy-top hexes). See `src/Math/HexMath.h
 | `Instantiate(prefabPath)` | string            | entity or `null` | Instantiates a prefab (`assets/prefabs/*.json`). `null` on failure.                          |
 | `DestroyEntity(id)`       | number            | void             | Destroys the entity (deferred).                                                              |
 
+`Instantiate` acquires the prefab's catalog assets and their dependencies before creating the entity, and retains
+them in the current scene. They do not need to be loaded beforehand; missing required assets cause `null` to be returned.
+
 `DestroyEntity` and `entity.Destroy()` also remove children. To run `on_destroy` before deletion, use
 `entity.AddComponent("DestroyTag")` instead.
 

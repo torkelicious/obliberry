@@ -11,14 +11,14 @@ If you want to get started with the Obliberry editor, please see: [Editor Docs](
 
 | Section                                                     | Description                                                                         |
 |-------------------------------------------------------------|-------------------------------------------------------------------------------------|
-| [Build](build.md)                                           | Prerequisites, CMake presets, build options, and targets.                           |
+| [Build](build.md)                                           | Prerequisites, CMake presets, build options, targets, tests, and CI.                |
 | [Editor Guide](editor/usage.md)                             | Using the editor: modes, camera controls, panels, and keybinds.                     |
 | [Post-Processing](editor/post-processing.md)                | Fullscreen effect chains per scene: built-ins, custom shaders, editing uniforms.    |
 | [Architecture](architecture.md)                             | How the engine is organized: modules, the main loop, and the threading model.       |
 | [Scripting : Getting Started](scripting/getting-started.md) | Write game logic in ObSL: the script lifecycle, hooks, and walkthroughs.            |
 | [Scripting : API Reference](scripting/api-reference.md)     | Every EngineLib function exposed to scripts.                                        |
 | [File Formats](formats/project-json.md)                     | `project.json`, `graphics.json`, scene files, `.obmap` maps, and `.obpak` packages. |
-| [Asset Catalog Format](formats/assets-json.md)              | Project-wide asset definitions, lazy loading, and legacy migration.                 |
+| [Asset Catalog Format](formats/assets-json.md)              | Project-wide asset definitions, lazy loading, export filtering, and legacy migration. |
 | [Save-game Format](formats/save-json.md)                    | Save locations, metadata, key/value data, and the ObSL save lifecycle.              |
 | [Third Party Licenses](THIRD_PARTY_LICENSES.md)             | License texts for every bundled and fetched dependency.                             |
 | [Sprite Animation](editor/sprite-animation.md)              | Creating, editing, previewing, and assigning sprite animation sets.                 |
@@ -43,4 +43,5 @@ If you want to get started with the Obliberry editor, please see: [Editor Docs](
   submodule. It ships with its own docs: `external/obsl/docs/ARCHITECTURE.md` and
   `external/obsl/docs/STANDARD_LIBRARY.md`.
 - [Build instructions](build.md) start here to build the repo
+- [Tests and CI](build.md#tests) covers local test runs and the Linux, Windows, and macOS workflows
 - [`assets.json` format](formats/assets-json.md) describes asset registration, lazy loading, and project migration

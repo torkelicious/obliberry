@@ -1,6 +1,6 @@
 # `.obpak` Package Format
 
-`.obpak` is the engine's distribution container: it packs a whole project (scripts, scenes, maps, assets) into a single
+`.obpak` is the engine's distribution container: it packs project data (scripts, scenes, maps, assets) into a single
 file that the runtime can mount directly. Layout: **file header → TOC → string table → blob**. Implemented in
 `src/IO/Package/` (`Container.h`, `ContainerWriter.cpp`, `ContainerReader.cpp`).
 
@@ -63,15 +63,14 @@ enum class EntryFlags : uint8_t { None = 0, Compressed = 1 << 0 };  // bit 0
 | `.obsl` scripts                         | `SerializedAST` (pre-parsed AST) | yes (unless `--no-compress`) |
 | `.json`                                 | `BinaryJSON` (msgpack)           | yes                          |
 | `.png`, `.jpg`, `.jpeg`, `.mp3`, `.ogg` | `Media` (raw)                    | **never**                    |
-| `.vert`, `.frag`, `.glsl`               | `ShaderSource` (raw)             | yes                          |
+| `.vert`, `.frag`, `.glsl`, `.shader`    | `ShaderSource` (raw)             | yes                          |
 | `.obmap` / anything else                | `RawBinary`                      | yes                          |
 
 This means `project.json`, the project-root `assets.json`, scene files, prefab files, and sprite-animation definitions
 are all stored as `BinaryJSON` entries and decoded by `VFS::ReadVirtualJson()` at runtime.
 
-Additionally, the engine's built-in shader helper files from `resources/shaders/` are packed into every archive as
-`ShaderSource` entries under the `engine/shaders/` prefix, so shader `#include`s of engine helpers keep working in
-packaged games.
+Editor export also packs the engine's built-in shader helper files from `resources/shaders/` as `ShaderSource` entries
+under the `engine/shaders/` prefix, so shader `#include`s of engine helpers keep working in exported games.
 
 Script `using` imports are collected at pack time, rewritten to project-relative paths, and recorded in the dependency
 graph.
@@ -160,6 +159,10 @@ pattern without '/'   matched against the basename at any depth
 
 Rules are evaluated in order **last matching rule wins**.
 
+Editor export checks these rules against its required files. Ignoring a required file, or a directory containing one,
+aborts export. Re-including a file makes it eligible for export; it does not add an otherwise unused file to the
+dependency set.
+
 ## Dependency validation
 
 At pack time, every `using "..."` in a script must resolve to another packed script. `DependencyGraph::validate` checks:
@@ -167,12 +170,54 @@ At pack time, every `using "..."` in a script must resolve to another packed scr
 1. **Missing modules** `using` targets that aren't in the package.
 2. **Cycles** circular `using` dependency chains.
 
-Both are reported as errors; `--strict` turns them into hard failures.
+Both are reported as errors; `ob_packer --strict` turns them into hard failures. Editor export always aborts on these
+validation failures, missing required files, or unresolved catalog dependencies.
 
 ## Editor export
 
-The editor's export flow (`ObpakTools.cpp`) does the equivalent of `ob_packer` into `data.obpak` (with
-`BINARY_NAME = "obliberry exporter"`), then copies the runtime binary next to it, renamed to a sanitized version of the
-project title (e.g. `My Game` → `My_Game`), plus a loose `graphics.json`. `obliberry_runtime` must be built and
-located under the editor's `internal` directory for that copy to succeed. Export packages disk files without a save
-prompt; save scene/map edits and asset drafts beforehand.
+The editor's export flow (`ObpakTools.cpp`) builds a dependency set and writes it into `data.obpak` (with
+`BINARY_NAME = "obliberry exporter"`). Unlike the directory-based `ob_packer`, it excludes files and catalog entries
+that are not required by that set.
+
+Collection starts with `project.json`, its `start_scene`, and every JSON scene under `assets/scenes/`. It includes:
+
+- asset IDs used by the scenes' grid, post-processing, entity components, and UI;
+- the scenes' map files and background music;
+- attached scripts and their `using` imports;
+- additional scenes, prefabs, and audio files referenced by supported script calls;
+- material shaders/textures, animation JSON and sheet textures, and referenced shader `#include` files;
+- the engine shader helpers under `engine/shaders/`.
+
+Referenced scenes and prefabs are scanned for further dependencies. The package receives a generated `assets.json`
+containing the retained definitions; the project's catalog and source files are not rewritten. All scenes under
+`assets/scenes/` are included, even when they are not reachable from the start scene.
+
+### Script references
+
+Scripts are analysed from their parsed AST without executing them. String literals matching catalog IDs are retained,
+including literals in branches or function bodies. Parentheses and concatenations of string literals can also be
+resolved; variables and runtime expressions are not evaluated.
+
+| Script use | Export behavior |
+|------------|-----------------|
+| `image.SetTexture("player_sheet")` / `text.SetFont("dialogue_font")` | Retains the referenced catalog asset. |
+| `image.SetTexture(textureId)` / `text.SetFont(fontId)` | Retains all textures / fonts in the catalog. |
+| `LoadScene("assets/scenes/next.json")` | Includes and scans that scene. |
+| `Instantiate("assets/prefabs/enemy.json")` | Includes and scans that prefab. |
+| `PlaySound2D("assets/audio/hit.ogg", 1.0)` / `PlayMusic(...)` | Includes the referenced audio file. |
+| A file-loading call whose path cannot be resolved | Aborts export with the call name and script path. |
+| An unclassified or indirect call, indexed lookup, or unsupported syntax node | Keeps the full asset catalog. |
+
+For example, `LoadScene("assets/scenes/" + "next.json")` can be resolved, but `LoadScene(scenePath)` cannot, even
+when `scenePath` was assigned a string literal earlier. Use direct literal paths in the file-loading calls. Keeping
+the full catalog does not resolve unknown file paths, and export can still fail on a missing required file.
+
+An unclassified-call message explains why the catalog is being kept; it is not itself an export failure. Keeping a
+category or the full catalog includes those assets' files and dependencies, but does not eagerly load them at runtime.
+
+### Export output
+
+After packaging, the editor copies the runtime binary next to `data.obpak`, renamed to a sanitized version of the
+project title (e.g. `My Game` → `My_Game`), plus a loose `graphics.json` when present. `obliberry_runtime` must be built
+and located under the editor's `internal` directory for that copy to succeed. Export packages disk files without a
+save prompt; save scene/map edits and asset drafts beforehand.

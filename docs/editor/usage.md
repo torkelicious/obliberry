@@ -154,7 +154,9 @@ saved with it.
 Save scene/map edits and asset drafts, then use **File → Export Project** and choose an output directory.
 Export reads files from disk without a save prompt. It writes `data.obpak`, copies the built `obliberry_runtime` under
 the sanitized project title, and copies `graphics.json`. The runtime must be available in the editor's `internal`
-directory. See [package export](../formats/obpak.md#editor-export) and
+directory. The package includes all scenes under `assets/scenes/` and their collected dependencies, with a generated
+asset catalog. An unresolved script file path or an ignored required file stops packaging. See
+[package export](../formats/obpak.md#editor-export) and
 [graphics loading](../formats/graphics-json.md#loading).
 
 ---
