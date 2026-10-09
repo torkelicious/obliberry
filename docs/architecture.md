@@ -228,7 +228,8 @@ See [Collider settings](editor/components.md#collider) and the [EngineLib API](s
   entities, and UI, then resolves material and sprite-animation dependencies. Scene loading, prefab loading, and
   editor export use the same collection rules.
 - **Lazy loading:** `SceneAssetLoader` acquires the required catalog subset through `AssetLoader`.
-  Each `Scene` retains a reference-counted `SceneAssetScope`; destroying the scene releases the scope and unloads
+  Each `Scene` retains one reference per distinct asset in a merged `SceneAssetScope`; repeated prefab spawns and asset
+  assignments do not accumulate duplicate references. Destroying the scene releases the scope and unloads
   resources that are no longer retained. Catalog entries replaced or deleted while loaded are marked stale and are
   discarded safely during scene switching.
 - **Other loaders:** `EntityFactory` handles component serialization and deserialization; `PrefabManager` and
@@ -240,7 +241,8 @@ See [Collider settings](editor/components.md#collider) and the [EngineLib API](s
   `ob_asset_migrator` tool moves legacy per-scene asset definitions into `assets.json`.
 - **Editor export:** `ObpakTools` collects scene dependencies, scans attached/imported scripts with
   `ScriptAssetAnalyzer`, and writes a filtered catalog into the package. Dynamic asset IDs can retain a whole category;
-  unclassified calls can retain the full catalog. Unresolved file-loading paths abort export. The directory-based
+  unclassified calls can retain the full catalog. Unresolved file-loading paths retain eligible project files and the
+  full catalog, respecting ignore rules and excluding the current export directory. The directory-based
   `ob_packer` remains a separate packaging path.
 
 → [`assets.json`](formats/assets-json.md) · [`.obmap`](formats/obmap.md) · [`.obpak`](formats/obpak.md) ·

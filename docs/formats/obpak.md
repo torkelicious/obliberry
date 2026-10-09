@@ -198,19 +198,27 @@ Scripts are analysed from their parsed AST without executing them. String litera
 including literals in branches or function bodies. Parentheses and concatenations of string literals can also be
 resolved; variables and runtime expressions are not evaluated.
 
-| Script use                                                                   | Export behavior                                   |
-| ---------------------------------------------------------------------------- | ------------------------------------------------- |
-| `image.SetTexture("player_sheet")` / `text.SetFont("dialogue_font")`         | Retains the referenced catalog asset.             |
-| `image.SetTexture(textureId)` / `text.SetFont(fontId)`                       | Retains all textures / fonts in the catalog.      |
-| `LoadScene("assets/scenes/next.json")`                                       | Includes and scans that scene.                    |
-| `Instantiate("assets/prefabs/enemy.json")`                                   | Includes and scans that prefab.                   |
-| `PlaySound2D("assets/audio/hit.ogg", 1.0)` / `PlayMusic(...)`                | Includes the referenced audio file.               |
-| A file-loading call whose path cannot be resolved                            | Aborts export with the call name and script path. |
-| An unclassified or indirect call, indexed lookup, or unsupported syntax node | Keeps the full asset catalog.                     |
+| Script use                                                           | Export behavior                                                                              |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `image.SetTexture("player_sheet")` / `text.SetFont("dialogue_font")` | Retains the referenced catalog asset.                                                        |
+| `image.SetTexture(textureId)` / `text.SetFont(fontId)`               | Retains all textures / fonts in the catalog.                                                 |
+| `LoadScene("assets/scenes/next.json")`                               | Includes and scans that scene.                                                               |
+| `Instantiate("assets/prefabs/enemy.json")`                           | Includes and scans that prefab.                                                              |
+| `PlaySound2D("assets/audio/hit.ogg", 1.0)` / `PlayMusic(...)`        | Includes the referenced audio file.                                                          |
+| A file-loading call whose path cannot be resolved                    | Keeps eligible project files and the full asset catalog; logs the call name and script path. |
+| Ordinary array indexing or known non-asset UI/component operations   | Continues filtering dependencies.                                                            |
+| An indexed value passed to `SetTexture` / `SetFont`                  | Retains all textures / fonts in the catalog.                                                 |
+| An unclassified or indirect call, or unsupported syntax node         | Keeps the full asset catalog.                                                                |
 
 For example, `LoadScene("assets/scenes/" + "next.json")` can be resolved, but `LoadScene(scenePath)` cannot, even
-when `scenePath` was assigned a string literal earlier. Use direct literal paths in the file-loading calls. Keeping
-the full catalog does not resolve unknown file paths, and export can still fail on a missing required file.
+when `scenePath` was assigned a string literal earlier. The latter uses the project-file fallback instead of stopping
+export. Direct literal paths allow a smaller package. The fallback includes eligible files outside `assets/` too,
+compiles included scripts, and validates their imports. Ignore rules still apply; version-control directories, previous
+`.obpak` files, and the current export directory are excluded. When exporting directly into the project root, the root
+itself remains eligible and previous `.obpak` files are excluded.
+
+The fallback cannot create a file that does not exist or override an explicitly ignored dependency. Missing known
+dependencies, ignored required files, malformed included scripts/JSON, or invalid imports still stop export.
 
 An unclassified-call message explains why the catalog is being kept; it is not itself an export failure. Keeping a
 category or the full catalog includes those assets' files and dependencies, but does not eagerly load them at runtime.

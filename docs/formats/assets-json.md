@@ -145,9 +145,11 @@ longer retained. Shared dependencies stay loaded while another scope references 
 their referenced assets for the destination scene.
 
 Prefab instantiation uses the same dependency collection before creating the entity, then retains the acquired assets
-in the destination scene. The prefab's assets do not need to appear in that scene's saved JSON.
+in the destination scene. The prefab's assets do not need to appear in that scene's saved JSON. Each scene retains
+each asset only once, so repeated spawning and destruction do not accumulate scopes or duplicate asset references.
+Assets remain retained until the scene is destroyed.
 
-Editor selections and supported script setters also acquire catalog assets on demand and attach their scopes to the
+Editor selections and supported script setters also acquire catalog assets on demand and merge their scopes into the
 current scene. Replacing or deleting a catalog entry marks the loaded resource stale; it is discarded safely during a
 scene transition after the old scene releases its scopes.
 
