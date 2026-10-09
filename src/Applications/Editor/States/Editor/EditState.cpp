@@ -347,7 +347,8 @@ void Editor::States::EditState::EntityGizmoTranslate(Rendering::Transform &local
                 const auto entId = static_cast<ECS::EntityID>(selectedEntity);
                 if (mCurrentGizmoOperation == ImGuizmo::TRANSLATE) {
                     if (m_GizmoStartPos != localTransform.GetPosition()) {
-                        m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::TranslateEntityCommand>(entId, m_GizmoStartPos, localTransform.GetPosition()), *m_EditorLayer->m_Context);
+                        m_EditorLayer->m_UndoManager.Execute(
+                                std::make_unique<Commands::TranslateEntityCommand>(selectedEntity.GetRegistry()->GetEntityUUID(entId), m_GizmoStartPos, localTransform.GetPosition()), *m_EditorLayer->m_Context);
                     }
                 } else if (mCurrentGizmoOperation == ImGuizmo::ROTATE) {
                     if (m_GizmoStartRot != localTransform.GetRotation()) {

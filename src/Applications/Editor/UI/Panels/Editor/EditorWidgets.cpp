@@ -55,7 +55,7 @@ void Editor::UI::TransformWidget::DrawExtras(const ECS::Entity entity, ECS::Comp
     if (ImGui::IsItemActivated())
         s_DragStartPos = component->transform.GetPosition();
     if (ImGui::IsItemDeactivatedAfterEdit()) {
-        undoManager->Execute(std::make_unique<Commands::TranslateEntityCommand>(static_cast<ECS::EntityID>(entity), s_DragStartPos, pos), *engineContext);
+        undoManager->Execute(std::make_unique<Commands::TranslateEntityCommand>(entity.GetRegistry()->GetEntityUUID(static_cast<ECS::EntityID>(entity)), s_DragStartPos, pos), *engineContext);
         MarkSceneChanged(engineContext);
     }
 
