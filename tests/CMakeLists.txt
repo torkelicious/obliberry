@@ -30,12 +30,16 @@ add_executable(obliberry_tests
     ObSLTests.cpp
     ObSLBindingTests.cpp
     AssetTests.cpp
+    ScriptAssetAnalyzerTests.cpp
+    ExportDependencyTests.cpp
+    PrefabAssetScopeTests.cpp
     VFSPackageTests.cpp
     ConfigurationTests.cpp
     EditorCommandTests.cpp
     AudioIntegrationTests.cpp
     ../src/Applications/Editor/Commands/UndoManager.cpp
     ../src/Applications/Editor/Commands/EditorCommands.cpp
+    ../src/IO/Package/Tools/ObpakTools.cpp
 )
 
 target_compile_features(obliberry_tests PRIVATE cxx_std_20)
