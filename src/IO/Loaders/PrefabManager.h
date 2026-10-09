@@ -5,39 +5,55 @@
 #include <nlohmann/json.hpp>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
+#include "Core/ResourceManager.h"
 #include "ECS/Types.h"
+#include "IO/Loaders/SceneAssetLoader.h"
 #include "Logger/LoggerService.h"
 #include "EntityFactory.h"
 #include "IO/VFS/VFS.h"
 #include "ECS/Registry.h"
 #include "ECS/Components/PrefabSourceComponent.h"
+#include "Scenes/Scene.h"
+#include "nlohmann/json_fwd.hpp"
 
 namespace IO {
     class PrefabManager {
     public:
-        static ECS::EntityID Instantiate(ECS::Registry &registry, Core::ResourceManager &resources, const std::string &filepath) {
-            if (const auto it = s_prefab_cache.find(filepath); it != s_prefab_cache.end()) {
-                const ECS::EntityID newId = registry.CreateEntity();
-                ECS::Entity newEntity(newId, &registry);
-                EntityFactory::DeserializeEntity(newEntity, it->second, resources);
-                newEntity.AddComponent<ECS::Components::PrefabSourceComponent>(filepath, it->second);
-                return newId;
-            }
+        static ECS::EntityID Instantiate(Scenes::Scene &scene, const std::string &filepath) {
 
-            const auto &read = VFS::ReadVirtualJson(filepath);
-            if (!read.has_value()) {
+            auto *resources = scene.GetContext().resources;
+
+            if (!resources) {
                 return ECS::INVALID_ENTITY_ID;
             }
 
-            nlohmann::json prefabJson = read.value();
+            auto it = s_prefab_cache.find(filepath);
+            if (it == s_prefab_cache.end()) {
+                auto read = VFS::ReadVirtualJson(filepath);
+                if (!read.has_value() || !read->is_object()) {
+                    return ECS::INVALID_ENTITY_ID;
+                }
+                it = s_prefab_cache.emplace(filepath, std::move(*read)).first;
+            }
 
-            s_prefab_cache[filepath] = prefabJson;
+            const auto &prefabJson = it->second;
+            const nlohmann::json references = {"entities", nlohmann::json::array({prefabJson})};
 
+            SceneAssetLoader::SceneAssetScope scope;
+            if (!SceneAssetLoader::LoadReferenced(references, scope)) {
+                return ECS::INVALID_ENTITY_ID;
+            }
+
+            auto &registry = scene.GetRegistry();
             const ECS::EntityID newId = registry.CreateEntity();
             ECS::Entity newEntity(newId, &registry);
-            EntityFactory::DeserializeEntity(newEntity, prefabJson, resources);
+
+            EntityFactory::DeserializeEntity(newEntity, prefabJson, *resources);
             newEntity.AddComponent<ECS::Components::PrefabSourceComponent>(filepath, prefabJson);
+            scene.AddAssetScope(std::move(scope));
+
             return newId;
         }
 

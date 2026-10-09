@@ -707,7 +707,16 @@ void Scripting::EngineLib::register_registry_modules(ObSL::Interpreter &interpre
         const auto &path = std::get<std::string>(args[0]);
         std::unique_lock lock(g_RegistryMutex);
 
-        const ECS::EntityID id = IO::PrefabManager::Instantiate(*reg, *ctx->resources, path);
+        if (!ctx || !ctx->sceneManager || !ctx->resources) {
+            return std::monostate{};
+        }
+
+        auto *scene = ctx->sceneManager->GetCurrentScene();
+        if (!scene || &scene->GetRegistry() != reg) {
+            return std::monostate{};
+        }
+
+        const ECS::EntityID id = IO::PrefabManager::Instantiate(*scene, path);
 
         if (!reg->IsValid(id)) {
             return std::monostate{};
