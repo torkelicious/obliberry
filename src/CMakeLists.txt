@@ -152,6 +152,7 @@ add_executable(obliberry_editor
         # undo-redo stack
         Applications/Editor/Commands/UndoManager.cpp
         Applications/Editor/Commands/EditorCommands.cpp
+        Applications/Editor/Commands/CustomDataSnapshot.cpp
 )
 
 target_link_libraries(obliberry_editor PRIVATE obliberry_engine)
