@@ -169,6 +169,7 @@ void Editor::EditorLayer::Render() {
     }
     m_SaveChangesDialog.Update();
     m_SaveMapDialog.Update();
+    m_ExportResultDialog.Update();
 
     DrawProjectLoadErrorPopup();
 }
@@ -889,7 +890,9 @@ void Editor::EditorLayer::DrawToolbar() {
 
             if (ImGui::MenuItem("Export Project")) {
                 if (auto path = Platform::FileDialogs::PickFolder(*m_Context, nullptr, "Pick export directory")) {
-                    IO::Package::Tools::ExportGame(path.value());
+                    const bool success = IO::Package::Tools::ExportGame(path.value());
+                    m_ExportResultDialog.SetMessage(success ? "Export completed successfully\n\nOutput: " + path.value() : "Export failed.\n");
+                    m_ExportResultDialog.Open();
                 }
             }
             ImGui::Separator();

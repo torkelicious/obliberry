@@ -134,6 +134,7 @@ namespace Editor {
         UI::GraphicsConfigEditor m_GraphicsConfigEditor;
         UI::ThemeConfigEditor m_ThemeConfigEditor;
         UI::PostProcEditor m_PostProcConfigEditor;
+        UI::MessageDialog m_ExportResultDialog{"Export Project"};
         bool m_ShowPostProcConfig = false;
         bool m_ShowSceneConfig = false;
         bool m_ShowProjectConfig = false;
