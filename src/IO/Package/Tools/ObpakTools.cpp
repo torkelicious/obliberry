@@ -535,12 +535,12 @@ namespace IO::Package::Tools {
             if (std::filesystem::exists(project_dir / "graphics.json")) {
                 std::filesystem::copy_file(project_dir / "graphics.json", outPath / "graphics.json", std::filesystem::copy_options::overwrite_existing);
                 LOG_INFO(LOG_WHO, "Copied graphics.json to export directory");
-                return true;
             }
         } catch (const std::exception &e) {
             LOG_ERROR(LOG_WHO, "Failed to copy graphics.json: " + std::string(e.what()));
             return false;
         }
+        return true;
     }
 } // namespace IO::Package::Tools
 
