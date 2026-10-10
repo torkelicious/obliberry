@@ -492,16 +492,16 @@ namespace IO::Package::Tools {
         }
     }
 
-    void ExportGame(const std::string &output_dir) {
+    bool ExportGame(const std::string &output_dir) {
         std::cout << "Exporting game to: " << output_dir << "\n";
 
         if (!Core::Project::GetActive()) {
             LOG_ERROR(LOG_WHO, "No active project.");
-            return;
+            return false;
         }
 
         if (!PackageCurrentProject(output_dir)) {
-            return;
+            return false;
         }
 
         const std::string clean_project_name = SanitizeExecutableName(Core::Project::GetActive()->GetConfig().Title);
@@ -524,18 +524,22 @@ namespace IO::Package::Tools {
                 LOG_ERROR(LOG_WHO, "Error: Could not find runtime binary at " + runtime_src.string());
                 LOG_ERROR(LOG_WHO, "Ensure obliberry_runtime is built and located in "
                                    "the 'internal' folder next to the editor");
+                return false;
             }
         } catch (const std::exception &e) {
             LOG_ERROR(LOG_WHO, "Exception while copying runtime: " + std::string(e.what()));
+            return false;
         }
         const std::filesystem::path outPath(output_dir);
         try {
             if (std::filesystem::exists(project_dir / "graphics.json")) {
                 std::filesystem::copy_file(project_dir / "graphics.json", outPath / "graphics.json", std::filesystem::copy_options::overwrite_existing);
                 LOG_INFO(LOG_WHO, "Copied graphics.json to export directory");
+                return true;
             }
         } catch (const std::exception &e) {
             LOG_ERROR(LOG_WHO, "Failed to copy graphics.json: " + std::string(e.what()));
+            return false;
         }
     }
 } // namespace IO::Package::Tools

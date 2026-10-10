@@ -10,5 +10,5 @@ namespace IO::Package::Tools {
 
     bool PackageCurrentProject(const std::string &output_dir);
 
-    void ExportGame(const std::string &output_dir);
+    bool ExportGame(const std::string &output_dir);
 } // namespace IO::Package::Tools
