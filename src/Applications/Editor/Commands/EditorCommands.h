@@ -439,13 +439,9 @@ namespace Editor::Commands {
             m_NewData.assign(src, src + fieldSize);
         }
 
-        void Execute(Core::EngineContext &ctx) override {
-            Apply(ctx, m_NewData);
-        }
+        void Execute(Core::EngineContext &ctx) override { Apply(ctx, m_NewData); }
 
-        void Undo(Core::EngineContext &ctx) override {
-            Apply(ctx, m_OldData);
-        }
+        void Undo(Core::EngineContext &ctx) override { Apply(ctx, m_OldData); }
 
         [[nodiscard]] std::string_view Name() const noexcept override { return m_FieldName; }
 

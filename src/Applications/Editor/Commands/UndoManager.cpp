@@ -22,7 +22,7 @@ namespace Editor::Commands {
                 return false;
             }
         }
-    }
+    } // namespace
     UndoManager::UndoManager(const size_t maxHistory) : m_maxHistory(maxHistory) {}
 
     UndoManager::~UndoManager() = default;

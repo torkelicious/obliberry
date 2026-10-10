@@ -57,22 +57,11 @@ namespace Editor::Commands {
         };
 
         // Copy editor state and resource ownership, without retaining script runtime pointers.
-        using ComponentSnapshots = std::tuple<
-            std::optional<ECS::Components::TransformComponent>,
-            std::optional<ECS::Components::MovementComponent>,
-            std::optional<ECS::Components::MeshComponent>,
-            std::optional<ECS::Components::MaterialComponent>,
-            std::optional<ECS::Components::DirectionalTextureComponent>,
-            std::optional<ECS::Components::BillboardTagComponent>,
-            std::optional<ECS::Components::PointLightComponent>,
-            std::optional<ECS::Components::ColliderComponent>,
-            std::optional<ECS::Components::SpriteSheetComponent>,
-            std::optional<ECS::Components::SpriteAnimatorComponent>,
-            std::optional<ECS::Components::ParticleEmitterComponent>,
-            std::optional<ECS::Components::MapComponent>,
-            std::optional<ECS::Components::MapStateComponent>,
-            std::optional<ECS::Components::PersistentTagComponent>,
-            std::optional<ECS::Components::PrefabSourceComponent>>;
+        using ComponentSnapshots = std::tuple<std::optional<ECS::Components::TransformComponent>, std::optional<ECS::Components::MovementComponent>, std::optional<ECS::Components::MeshComponent>,
+                std::optional<ECS::Components::MaterialComponent>, std::optional<ECS::Components::DirectionalTextureComponent>, std::optional<ECS::Components::BillboardTagComponent>,
+                std::optional<ECS::Components::PointLightComponent>, std::optional<ECS::Components::ColliderComponent>, std::optional<ECS::Components::SpriteSheetComponent>,
+                std::optional<ECS::Components::SpriteAnimatorComponent>, std::optional<ECS::Components::ParticleEmitterComponent>, std::optional<ECS::Components::MapComponent>,
+                std::optional<ECS::Components::MapStateComponent>, std::optional<ECS::Components::PersistentTagComponent>, std::optional<ECS::Components::PrefabSourceComponent>>;
 
         template <typename T> void CaptureComponent(ECS::Registry &registry, const ECS::EntityID id, std::optional<T> &saved) {
             if (const auto *component = registry.GetComponent<T>(id)) {
@@ -97,7 +86,7 @@ namespace Editor::Commands {
             std::optional<std::vector<ScriptSlotSnapshot>> scripts;
             nlohmann::json assetReferences;
         };
-    }
+    } // namespace
 
     struct EntitySubtreeSnapshot {
         std::vector<SavedEntity> entities;
@@ -251,7 +240,7 @@ namespace Editor::Commands {
             }
             return created.front();
         }
-    }
+    } // namespace
 
     ECS::Entity EntityCommand::ResolveEntity(Core::EngineContext &ctx) {
         m_Succeeded = false;
@@ -274,8 +263,7 @@ namespace Editor::Commands {
     //
 
     // Move Transform
-    TranslateEntityCommand::TranslateEntityCommand(std::string targetUUID, const glm::vec3 oldPos, const glm::vec3 newPos)
-        : EntityCommand(std::move(targetUUID)), m_OldPos(oldPos), m_NewPos(newPos) {}
+    TranslateEntityCommand::TranslateEntityCommand(std::string targetUUID, const glm::vec3 oldPos, const glm::vec3 newPos) : EntityCommand(std::move(targetUUID)), m_OldPos(oldPos), m_NewPos(newPos) {}
 
     void TranslateEntityCommand::Execute(Core::EngineContext &ctx) {
         const auto entity = ResolveEntity(ctx);
@@ -302,8 +290,7 @@ namespace Editor::Commands {
     std::string_view TranslateEntityCommand::Name() const noexcept { return "Move entity"; }
 
     // Rotate Transform
-    RotateEntityCommand::RotateEntityCommand(std::string targetUUID, const glm::vec3 oldRot, const glm::vec3 newRot)
-        : EntityCommand(std::move(targetUUID)), m_OldRot(oldRot), m_NewRot(newRot) {}
+    RotateEntityCommand::RotateEntityCommand(std::string targetUUID, const glm::vec3 oldRot, const glm::vec3 newRot) : EntityCommand(std::move(targetUUID)), m_OldRot(oldRot), m_NewRot(newRot) {}
 
     void RotateEntityCommand::Execute(Core::EngineContext &ctx) {
         const auto entity = ResolveEntity(ctx);
@@ -330,8 +317,7 @@ namespace Editor::Commands {
     std::string_view RotateEntityCommand::Name() const noexcept { return "Rotate entity"; }
 
     // Scale Transform
-    ScaleEntityCommand::ScaleEntityCommand(std::string targetUUID, const glm::vec3 oldScale, const glm::vec3 newScale)
-        : EntityCommand(std::move(targetUUID)), m_OldScale(oldScale), m_NewScale(newScale) {}
+    ScaleEntityCommand::ScaleEntityCommand(std::string targetUUID, const glm::vec3 oldScale, const glm::vec3 newScale) : EntityCommand(std::move(targetUUID)), m_OldScale(oldScale), m_NewScale(newScale) {}
 
     void ScaleEntityCommand::Execute(Core::EngineContext &ctx) {
         const auto entity = ResolveEntity(ctx);
@@ -361,8 +347,7 @@ namespace Editor::Commands {
     // Rename Entity
     //
 
-    SetNameCommand::SetNameCommand(std::string targetUUID, std::string oldName, std::string newName)
-        : EntityCommand(std::move(targetUUID)), m_OldName(std::move(oldName)), m_NewName(std::move(newName)) {}
+    SetNameCommand::SetNameCommand(std::string targetUUID, std::string oldName, std::string newName) : EntityCommand(std::move(targetUUID)), m_OldName(std::move(oldName)), m_NewName(std::move(newName)) {}
 
     void SetNameCommand::Execute(Core::EngineContext &ctx) {
         const auto entity = ResolveEntity(ctx);
@@ -389,8 +374,7 @@ namespace Editor::Commands {
     //
 
     // Remove script
-    RemoveScriptCommand::RemoveScriptCommand(std::string targetUUID, const int index)
-        : EntityCommand(std::move(targetUUID)), m_Index(index) {}
+    RemoveScriptCommand::RemoveScriptCommand(std::string targetUUID, const int index) : EntityCommand(std::move(targetUUID)), m_Index(index) {}
 
     void RemoveScriptCommand::Execute(Core::EngineContext &ctx) {
         const auto entity = ResolveEntity(ctx);
@@ -442,8 +426,7 @@ namespace Editor::Commands {
     std::string_view RemoveScriptCommand::Name() const noexcept { return "Remove Script"; }
 
     // Add script
-    AddScriptCommand::AddScriptCommand(std::string targetUUID, const std::string &script_path)
-        : EntityCommand(std::move(targetUUID)), m_PendingPath(script_path) {}
+    AddScriptCommand::AddScriptCommand(std::string targetUUID, const std::string &script_path) : EntityCommand(std::move(targetUUID)), m_PendingPath(script_path) {}
 
     void AddScriptCommand::Execute(Core::EngineContext &ctx) {
         auto entity = ResolveEntity(ctx);
@@ -575,8 +558,7 @@ namespace Editor::Commands {
     //
 
     // Paint / Erase
-    MapChangeTileCommand::MapChangeTileCommand(StateMap oldState, StateMap newState, std::string targetUUID)
-        : EntityCommand(std::move(targetUUID)), m_OldState(std::move(oldState)), m_NewState(std::move(newState)) {}
+    MapChangeTileCommand::MapChangeTileCommand(StateMap oldState, StateMap newState, std::string targetUUID) : EntityCommand(std::move(targetUUID)), m_OldState(std::move(oldState)), m_NewState(std::move(newState)) {}
 
     void MapChangeTileCommand::ApplyStates(Core::EngineContext &ctx, const StateMap &states) {
         const auto entity = ResolveEntity(ctx);
@@ -598,13 +580,9 @@ namespace Editor::Commands {
         Complete(ctx);
     }
 
-    void MapChangeTileCommand::Execute(Core::EngineContext &ctx) {
-        ApplyStates(ctx, m_NewState);
-    }
+    void MapChangeTileCommand::Execute(Core::EngineContext &ctx) { ApplyStates(ctx, m_NewState); }
 
-    void MapChangeTileCommand::Undo(Core::EngineContext &ctx) {
-        ApplyStates(ctx, m_OldState);
-    }
+    void MapChangeTileCommand::Undo(Core::EngineContext &ctx) { ApplyStates(ctx, m_OldState); }
 
     std::string_view MapChangeTileCommand::Name() const noexcept { return "Map paint / erase"; }
 
@@ -824,8 +802,7 @@ namespace Editor::Commands {
     // Clipboard
     //
 
-    PasteEntityCommand::PasteEntityCommand(nlohmann::json data, std::string parentUUID)
-        : EntityCommand(Core::Utils::UUID::UUIDGenerator::Generate()), m_Data(std::move(data)), m_ParentUUID(std::move(parentUUID)) {}
+    PasteEntityCommand::PasteEntityCommand(nlohmann::json data, std::string parentUUID) : EntityCommand(Core::Utils::UUID::UUIDGenerator::Generate()), m_Data(std::move(data)), m_ParentUUID(std::move(parentUUID)) {}
     PasteEntityCommand::~PasteEntityCommand() = default;
 
     void PasteEntityCommand::Execute(Core::EngineContext &ctx) {

@@ -118,7 +118,9 @@ namespace Editor::UI {
                     }
                     if (ImGui::IsItemDeactivatedAfterEdit()) {
                         if (undoManager && engineContext) {
-                            undoManager->Execute(std::make_unique<Commands::ModifyComponentFieldCommand<T>>(entity.GetRegistry()->GetEntityUUID(entId), Offset, fieldSize, m_CapturedOldValues[i].data(), fieldAddress, Name), *engineContext);
+                            undoManager->Execute(
+                                    std::make_unique<Commands::ModifyComponentFieldCommand<T>>(entity.GetRegistry()->GetEntityUUID(entId), Offset, fieldSize, m_CapturedOldValues[i].data(), fieldAddress, Name),
+                                    *engineContext);
                         }
                         MarkSceneChanged(engineContext);
                     }
