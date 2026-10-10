@@ -347,16 +347,15 @@ void Editor::States::EditState::EntityGizmoTranslate(Rendering::Transform &local
                 const auto entId = static_cast<ECS::EntityID>(selectedEntity);
                 if (mCurrentGizmoOperation == ImGuizmo::TRANSLATE) {
                     if (m_GizmoStartPos != localTransform.GetPosition()) {
-                        m_EditorLayer->m_UndoManager.Execute(
-                                std::make_unique<Commands::TranslateEntityCommand>(selectedEntity.GetRegistry()->GetEntityUUID(entId), m_GizmoStartPos, localTransform.GetPosition()), *m_EditorLayer->m_Context);
+                        m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::TranslateEntityCommand>(m_EditorLayer->m_Registry->GetEntityUUID(entId), m_GizmoStartPos, localTransform.GetPosition()), *m_EditorLayer->m_Context);
                     }
                 } else if (mCurrentGizmoOperation == ImGuizmo::ROTATE) {
                     if (m_GizmoStartRot != localTransform.GetRotation()) {
-                        m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::RotateEntityCommand>(entId, m_GizmoStartRot, localTransform.GetRotation()), *m_EditorLayer->m_Context);
+                        m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::RotateEntityCommand>(m_EditorLayer->m_Registry->GetEntityUUID(entId), m_GizmoStartRot, localTransform.GetRotation()), *m_EditorLayer->m_Context);
                     }
                 } else if (mCurrentGizmoOperation == ImGuizmo::SCALE) {
                     if (m_GizmoStartScale != localTransform.GetScale()) {
-                        m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::ScaleEntityCommand>(entId, m_GizmoStartScale, localTransform.GetScale()), *m_EditorLayer->m_Context);
+                        m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::ScaleEntityCommand>(m_EditorLayer->m_Registry->GetEntityUUID(entId), m_GizmoStartScale, localTransform.GetScale()), *m_EditorLayer->m_Context);
                     }
                 }
             }
@@ -570,7 +569,7 @@ void Editor::States::EditState::Collider_DrawGizmoForSelected() {
         } else {
             if (*collider != m_ColliderDragStart) {
                 m_EditorLayer->m_UndoManager.Execute(
-                        std::make_unique<Commands::ModifyComponentFieldCommand<Collider>>(m_ColliderDragEntity, 0, sizeof(Collider), &m_ColliderDragStart, collider, "Edit Collider"), *m_EditorLayer->m_Context);
+                        std::make_unique<Commands::ModifyComponentFieldCommand<Collider>>(m_EditorLayer->m_Registry->GetEntityUUID(m_ColliderDragEntity), 0, sizeof(Collider), &m_ColliderDragStart, collider, "Edit Collider"), *m_EditorLayer->m_Context);
             }
 
             m_ColliderDragHandle = -1;

@@ -1,5 +1,4 @@
 #pragma once
-#include "Core/EngineContext.h"
 #include "ICommand.h"
 #include "Applications/Editor/EditorContext.h"
 #include "Config/ProjectConfig.h"
@@ -8,9 +7,12 @@
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <cstring>
-#include <string>
-#include <string_view>
 #include <vector>
+#include <cstddef>
+#include <string>
+#include <utility>
+#include <stdexcept>
+#include "ECS/Registry.h"
 #include "ECS/Types.h"
 #include "ECS/Components/ScriptComponent.h"
 #include "Map/Hex.h"
@@ -21,17 +23,23 @@
 #include "UI/Rendering/UISystem.h"
 #include "Rendering/Types/Texture/Texture.h"
 #include "UI/Text/Font.h"
-#include "nlohmann/json_fwd.hpp"
 
 namespace Editor::Commands {
 
-    struct DeletedEntitySnapshot {
-        std::string uuid;
-        std::string parentUUID;
-        std::size_t siblingIndex = 0;
-        nlohmann::json entityData;
+    // Entity IDs change when deletion is undone; commands retain the UUID instead.
+    class EntityCommand : public ICommand {
+    public:
+        explicit EntityCommand(std::string targetUUID) : m_EntityUUID(std::move(targetUUID)) {}
+        [[nodiscard]] bool Succeeded() const noexcept override { return m_Succeeded; }
+
+    protected:
+        [[nodiscard]] ECS::Entity ResolveEntity(Core::EngineContext &ctx);
+        void Complete(Core::EngineContext &ctx);
+        std::string m_EntityUUID;
+        bool m_Succeeded = false;
     };
 
+    struct EntitySubtreeSnapshot;
 
     // hack but whatever
     static void RefreshWindowTitle(const Core::EngineContext &ctx) {
@@ -52,21 +60,17 @@ namespace Editor::Commands {
     // Move
     //
 
-    class TranslateEntityCommand final : public ICommand {
+    class TranslateEntityCommand final : public EntityCommand {
     public:
         // i could make this a unified transform command
         // but transforms are much larger than just the vec3's they hold sooo...
         // optimization ig :DDDD
         TranslateEntityCommand(std::string targetUUID, glm::vec3 oldPos, glm::vec3 newPos);
-
         void Execute(Core::EngineContext &ctx) override;
         void Undo(Core::EngineContext &ctx) override;
         [[nodiscard]] std::string_view Name() const noexcept override;
 
     private:
-        void SetPosition(Core::EngineContext &ctx, const glm::vec3 &position);
-
-        std::string m_EntityUUID;
         glm::vec3 m_OldPos;
         glm::vec3 m_NewPos;
     };
@@ -75,15 +79,14 @@ namespace Editor::Commands {
     // Rotate
     //
 
-    class RotateEntityCommand final : public ICommand {
+    class RotateEntityCommand final : public EntityCommand {
     public:
-        RotateEntityCommand(ECS::EntityID target, glm::vec3 oldRot, glm::vec3 newRot);
+        RotateEntityCommand(std::string targetUUID, glm::vec3 oldRot, glm::vec3 newRot);
         void Execute(Core::EngineContext &ctx) override;
         void Undo(Core::EngineContext &ctx) override;
         [[nodiscard]] std::string_view Name() const noexcept override;
 
     private:
-        ECS::EntityID m_EntityID;
         glm::vec3 m_OldRot;
         glm::vec3 m_NewRot;
     };
@@ -92,15 +95,14 @@ namespace Editor::Commands {
     // Scale
     //
 
-    class ScaleEntityCommand final : public ICommand {
+    class ScaleEntityCommand final : public EntityCommand {
     public:
-        ScaleEntityCommand(ECS::EntityID target, glm::vec3 oldScale, glm::vec3 newScale);
+        ScaleEntityCommand(std::string targetUUID, glm::vec3 oldScale, glm::vec3 newScale);
         void Execute(Core::EngineContext &ctx) override;
         void Undo(Core::EngineContext &ctx) override;
         [[nodiscard]] std::string_view Name() const noexcept override;
 
     private:
-        ECS::EntityID m_EntityID;
         glm::vec3 m_OldScale;
         glm::vec3 m_NewScale;
     };
@@ -110,15 +112,14 @@ namespace Editor::Commands {
     // = = = = = //
 
     // Rename Entity
-    class SetNameCommand final : public ICommand {
+    class SetNameCommand final : public EntityCommand {
     public:
-        SetNameCommand(ECS::EntityID target, std::string oldName, std::string newName);
+        SetNameCommand(std::string targetUUID, std::string oldName, std::string newName);
         void Execute(Core::EngineContext &ctx) override;
         void Undo(Core::EngineContext &ctx) override;
         [[nodiscard]] std::string_view Name() const noexcept override;
 
     private:
-        ECS::EntityID m_EntityID;
         std::string m_OldName;
         std::string m_NewName;
     };
@@ -129,73 +130,89 @@ namespace Editor::Commands {
     /* ( or scene in general ) */
 
     // Remove Component
-    template <typename T> class RemoveComponentCommand final : public ICommand {
+    template <typename T> class RemoveComponentCommand final : public EntityCommand {
     public:
-        RemoveComponentCommand(const ECS::EntityID target, const T &componentData) : m_EntityID(target), m_OldData(componentData) {}
-        void Execute(Core::EngineContext &ctx) override { ctx.sceneManager->GetCurrentScene()->GetRegistry().RemoveComponent<T>(m_EntityID); }
+        RemoveComponentCommand(std::string targetUUID, const T &componentData) : EntityCommand(std::move(targetUUID)), m_OldData(componentData) {}
+        void Execute(Core::EngineContext &ctx) override {
+            const auto entity = ResolveEntity(ctx);
+            if (!entity || !entity.HasComponent<T>()) {
+                return;
+            }
+            entity.RemoveComponent<T>();
+            Complete(ctx);
+        }
         void Undo(Core::EngineContext &ctx) override {
-            auto &registry = ctx.sceneManager->GetCurrentScene()->GetRegistry();
-            if (registry.IsValid(m_EntityID))
-                registry.AddComponent<T>(m_EntityID, m_OldData);
+            auto entity = ResolveEntity(ctx);
+            if (!entity || entity.HasComponent<T>()) {
+                return;
+            }
+            entity.AddComponent<T>(m_OldData);
+            Complete(ctx);
         }
         [[nodiscard]] std::string_view Name() const noexcept override { return "Remove Component"; }
 
     private:
-        ECS::EntityID m_EntityID;
         T m_OldData;
     };
 
     // Add Component
-    template <typename T> class AddComponentCommand final : public ICommand {
+    template <typename T> class AddComponentCommand final : public EntityCommand {
     public:
-        AddComponentCommand(const ECS::EntityID target, const T &componentData) : m_EntityID(target), m_Data(componentData) {}
+        AddComponentCommand(std::string targetUUID, const T &componentData) : EntityCommand(std::move(targetUUID)), m_Data(componentData) {}
         void Execute(Core::EngineContext &ctx) override {
-            auto &registry = ctx.sceneManager->GetCurrentScene()->GetRegistry();
-            if (registry.IsValid(m_EntityID))
-                registry.AddComponent<T>(m_EntityID, m_Data);
+            auto entity = ResolveEntity(ctx);
+            if (!entity || entity.HasComponent<T>()) {
+                return;
+            }
+            entity.AddComponent<T>(m_Data);
+            Complete(ctx);
         }
-        void Undo(Core::EngineContext &ctx) override { ctx.sceneManager->GetCurrentScene()->GetRegistry().RemoveComponent<T>(m_EntityID); }
+        void Undo(Core::EngineContext &ctx) override {
+            const auto entity = ResolveEntity(ctx);
+            if (!entity || !entity.HasComponent<T>()) {
+                return;
+            }
+            entity.RemoveComponent<T>();
+            Complete(ctx);
+        }
         [[nodiscard]] std::string_view Name() const noexcept override { return "Add Component"; }
 
     private:
-        ECS::EntityID m_EntityID;
         T m_Data;
     };
 
 
     // SCRIPT COMPONENT HAS ITS OWN HANDLER:
-    class RemoveScriptCommand : public ICommand {
+    class RemoveScriptCommand : public EntityCommand {
     public:
-        RemoveScriptCommand(ECS::EntityID target, ECS::Components::ScriptComponent &component, int index);
+        RemoveScriptCommand(std::string targetUUID, int index);
         void Execute(Core::EngineContext &ctx) override;
         void Undo(Core::EngineContext &ctx) override;
         [[nodiscard]] std::string_view Name() const noexcept override;
 
     private:
-        ECS::EntityID m_EntityID;
-        ECS::Components::ScriptComponent *m_scriptComp = nullptr;
         int m_Index;
         bool m_ComponentRemoved = false;
         // per-entry data
         std::string m_SavedPath;
-        std::vector<std::shared_ptr<ObSL::Environment>> m_SavedInstanceEnvs;
-        bool m_IsInitialized = false;
+        std::filesystem::path m_SavedResolvedPath;
         std::string m_SavedSourceCode;
         std::filesystem::file_time_type m_SavedLastModified;
     };
 
 
-    class AddScriptCommand : public ICommand {
+    class AddScriptCommand : public EntityCommand {
     public:
-        AddScriptCommand(ECS::EntityID target, const std::string &script_path);
+        AddScriptCommand(std::string targetUUID, const std::string &script_path);
         void Execute(Core::EngineContext &ctx) override;
         void Undo(Core::EngineContext &ctx) override;
         [[nodiscard]] std::string_view Name() const noexcept override;
 
     private:
-        ECS::EntityID m_EntityID;
-        ECS::Components::ScriptComponent *m_Comp = nullptr;
         std::string m_PendingPath;
+        std::size_t m_Index = 0;
+        bool m_Captured = false;
+        bool m_ComponentCreated = false;
     };
 
     // Scene Config
@@ -211,18 +228,21 @@ namespace Editor::Commands {
         Scenes::SceneProperties m_NewData;
     };
 
-    class DeleteEntityCommand final : public ICommand {
+
+    // TODO:
+    //  Entity Deletion
+    //  veri hard because ecs purges dead entities -.-
+    //  Maybe use some sort of "shadow delete" idk
+    class DeleteEntityCommand final : public EntityCommand {
     public:
         explicit DeleteEntityCommand(std::string targetUUID);
+        ~DeleteEntityCommand() override;
         void Execute(Core::EngineContext &ctx) override;
         void Undo(Core::EngineContext &ctx) override;
-        [[nodiscard]] std::string_view Name() const noexcept override;
-        [[nodiscard]] bool Succeeded() const noexcept override { return m_Succeeded; }
+        [[nodiscard]] std::string_view Name() const noexcept override { return "Delete entity"; }
 
     private:
-        std::string m_RootUUID;
-        std::vector<DeletedEntitySnapshot> m_Snapshot;
-        bool m_Succeeded = false;
+        std::unique_ptr<EntitySubtreeSnapshot> m_Snapshot;
     };
 
     // = = = = //
@@ -249,22 +269,20 @@ namespace Editor::Commands {
     // = = //
 
     // Paint / Erase
-    class MapChangeTileCommand : public ICommand {
+    class MapChangeTileCommand : public EntityCommand {
     public:
         using TileState = std::pair<uint8_t, bool>; // {type, walkable}
         using StateMap = std::unordered_map<Map::HexCoords, std::optional<TileState>, Map::HexCoordsHash>;
 
-        MapChangeTileCommand(StateMap oldState, StateMap newState, Map::HexGrid *grid, bool *meshDirty = nullptr);
+        MapChangeTileCommand(StateMap oldState, StateMap newState, std::string targetUUID);
         void Execute(Core::EngineContext &ctx) override;
         void Undo(Core::EngineContext &ctx) override;
         [[nodiscard]] std::string_view Name() const noexcept override;
 
     private:
-        void ApplyStates(const StateMap &states) const;
+        void ApplyStates(Core::EngineContext &ctx, const StateMap &states);
         StateMap m_OldState;
         StateMap m_NewState;
-        Map::HexGrid *m_Grid;
-        bool *m_MeshDirty;
     };
 
     // = = = = = //
@@ -408,10 +426,13 @@ namespace Editor::Commands {
 
     // A type-erased command that stores old/new bytes at a given offset inside a component.
     // Used by AutoComponentWidget to make generic field edits (DragFloat, DragInt, etc.) undoable.
-    template <typename T> class ModifyComponentFieldCommand final : public ICommand {
+    template <typename T> class ModifyComponentFieldCommand final : public EntityCommand {
     public:
-        ModifyComponentFieldCommand(const ECS::EntityID target, const size_t offset, const size_t fieldSize, const void *oldData, const void *newData, std::string fieldName)
-            : m_EntityID(target), m_Offset(offset), m_FieldSize(fieldSize), m_FieldName(std::move(fieldName)) {
+        ModifyComponentFieldCommand(std::string targetUUID, const size_t offset, const size_t fieldSize, const void *oldData, const void *newData, std::string fieldName)
+            : EntityCommand(std::move(targetUUID)), m_Offset(offset), m_FieldSize(fieldSize), m_FieldName(std::move(fieldName)) {
+            if (!oldData || !newData || offset > sizeof(T) || fieldSize > sizeof(T) - offset) {
+                throw std::invalid_argument("Invalid component field range");
+            }
             const auto *src = static_cast<const uint8_t *>(oldData);
             m_OldData.assign(src, src + fieldSize);
             src = static_cast<const uint8_t *>(newData);
@@ -419,21 +440,26 @@ namespace Editor::Commands {
         }
 
         void Execute(Core::EngineContext &ctx) override {
-            auto *comp = ctx.sceneManager->GetCurrentScene()->GetRegistry().GetComponent<T>(m_EntityID);
-            if (comp)
-                std::memcpy(reinterpret_cast<uint8_t *>(comp) + m_Offset, m_NewData.data(), m_FieldSize);
+            Apply(ctx, m_NewData);
         }
 
         void Undo(Core::EngineContext &ctx) override {
-            auto *comp = ctx.sceneManager->GetCurrentScene()->GetRegistry().GetComponent<T>(m_EntityID);
-            if (comp)
-                std::memcpy(reinterpret_cast<uint8_t *>(comp) + m_Offset, m_OldData.data(), m_FieldSize);
+            Apply(ctx, m_OldData);
         }
 
         [[nodiscard]] std::string_view Name() const noexcept override { return m_FieldName; }
 
     private:
-        ECS::EntityID m_EntityID;
+        void Apply(Core::EngineContext &ctx, const std::vector<uint8_t> &data) {
+            const auto entity = ResolveEntity(ctx);
+            if (!entity) {
+                return;
+            }
+            if (auto *comp = entity.GetComponent<T>()) {
+                std::memcpy(reinterpret_cast<uint8_t *>(comp) + m_Offset, data.data(), m_FieldSize);
+                Complete(ctx);
+            }
+        }
         size_t m_Offset;
         size_t m_FieldSize;
         std::string m_FieldName;
@@ -481,20 +507,23 @@ namespace Editor::Commands {
     //  Clipboard  //
     // = = = = = = //
 
-    class PasteEntityCommand final : public ICommand {
+    class PasteEntityCommand final : public EntityCommand {
     public:
-        explicit PasteEntityCommand(nlohmann::json data, const ECS::EntityID parentOverride = ECS::INVALID_ENTITY_ID) : m_Data(std::move(data)), m_ParentOverride(parentOverride) {}
+        explicit PasteEntityCommand(nlohmann::json data, std::string parentUUID = {});
+        ~PasteEntityCommand() override;
 
         void Execute(Core::EngineContext &ctx) override;
         void Undo(Core::EngineContext &ctx) override;
         [[nodiscard]] std::string_view Name() const noexcept override { return "Paste entity"; }
 
         [[nodiscard]] ECS::EntityID GetCreated() const { return m_Created; }
+        [[nodiscard]] const std::string &GetCreatedUUID() const { return m_EntityUUID; }
 
     private:
         nlohmann::json m_Data;
-        ECS::EntityID m_ParentOverride = ECS::INVALID_ENTITY_ID;
+        std::string m_ParentUUID;
         ECS::EntityID m_Created = ECS::INVALID_ENTITY_ID;
+        std::unique_ptr<EntitySubtreeSnapshot> m_Snapshot;
     };
 
     class PasteUIElementCommand final : public ICommand {

@@ -346,7 +346,17 @@ void Editor::States::MapEditState::CommitMapChanges() {
         return;
     if (m_PreDragState.empty())
         return;
-    m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::MapChangeTileCommand>(m_PreDragState, m_AccumulatedNew, m_CurrentGrid, &m_MapComp->needsMeshUpdate), *m_EditorLayer->m_Context);
+    std::string mapUUID;
+    for (const auto id : m_EditorLayer->m_Registry->GetLivingEntities()) {
+        if (m_EditorLayer->m_Registry->GetComponent<ECS::Components::MapComponent>(id) == m_MapComp) {
+            mapUUID = m_EditorLayer->m_Registry->GetEntityUUID(id);
+            break;
+        }
+    }
+    if (mapUUID.empty()) {
+        return;
+    }
+    m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::MapChangeTileCommand>(m_PreDragState, m_AccumulatedNew, std::move(mapUUID)), *m_EditorLayer->m_Context);
     m_MapComp->needsMeshUpdate = true;
     m_MapComp->mapDirty = true;
     if (m_EditorLayer->m_Scene)

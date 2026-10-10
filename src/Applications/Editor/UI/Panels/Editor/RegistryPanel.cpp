@@ -71,9 +71,13 @@ void Editor::UI::RegistryPanel::OnImGuiRender() {
         ImGui::SameLine();
         if (m_SelectedEntity) {
             if (ImGui::Button("-")) {
-                registry.DestroyEntity(static_cast<ECS::EntityID>(m_SelectedEntity));
-                m_SelectedEntity = ECS::Entity{};
-                MarkSceneChanged(m_EngineContext);
+                if (m_UndoManager && m_EngineContext) {
+                    const auto selectedID = static_cast<ECS::EntityID>(m_SelectedEntity);
+                    m_UndoManager->Execute(std::make_unique<Commands::DeleteEntityCommand>(registry.GetEntityUUID(selectedID)), *m_EngineContext);
+                    if (!registry.IsValid(selectedID)) {
+                        m_SelectedEntity = ECS::Entity{};
+                    }
+                }
             }
         }
 
@@ -275,15 +279,23 @@ bool Editor::UI::RegistryPanel::OnPaste(const Clipboard &clipboard) {
             parent = rel->parent;
     }
 
-    auto cmd = std::make_unique<Commands::PasteEntityCommand>(clipboard.payload, parent);
-    const Commands::PasteEntityCommand *cmdPtr = cmd.get();
+    const auto parentUUID = m_SceneContext ? m_SceneContext->GetRegistry().GetEntityUUID(parent) : std::string{};
+    auto cmd = std::make_unique<Commands::PasteEntityCommand>(clipboard.payload, parentUUID);
+    const std::string createdUUID = cmd->GetCreatedUUID();
     if (m_UndoManager) {
         m_UndoManager->Execute(std::move(cmd), *m_EngineContext);
     } else {
         cmd->Execute(*m_EngineContext);
     }
 
-    if (m_SceneContext && cmdPtr->GetCreated() != ECS::INVALID_ENTITY_ID)
-        m_SelectedEntity = ECS::Entity(cmdPtr->GetCreated(), &m_SceneContext->GetRegistry());
-    return true;
+    if (m_SceneContext) {
+        auto &registry = m_SceneContext->GetRegistry();
+        for (const auto id : registry.GetLivingEntities()) {
+            if (registry.GetEntityUUID(id) == createdUUID) {
+                m_SelectedEntity = ECS::Entity(id, &registry);
+                return true;
+            }
+        }
+    }
+    return false;
 }

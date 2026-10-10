@@ -13,6 +13,6 @@ namespace Editor::Commands {
         virtual void Execute(Core::EngineContext &ctx) = 0;
         virtual void Undo(Core::EngineContext &ctx) = 0;
         virtual std::string_view Name() const noexcept = 0;
-        virtual bool Succeeded() const noexcept { return true; }
+        [[nodiscard]] virtual bool Succeeded() const noexcept { return true; }
     };
 } // namespace Editor::Commands

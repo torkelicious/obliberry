@@ -1,30 +1,28 @@
 #include "UndoManager.h"
-#include "Core/EngineContext.h"
 #include "ICommand.h"
-#include "Logger/LoggerService.h"
 #include <deque>
-#include <exception>
 #include <memory>
+#include "Logger/LoggerService.h"
+#include <exception>
+#include <string>
+#include <utility>
 
 namespace Editor::Commands {
-
     namespace {
-        bool ApplyCommand(ICommand &cmd, Core::EngineContext &ctx, const bool undo) {
+        bool ApplyCommand(ICommand &command, Core::EngineContext &ctx, const bool undo) {
             try {
                 if (undo) {
-                    cmd.Undo(ctx);
+                    command.Undo(ctx);
                 } else {
-                    cmd.Execute(ctx);
+                    command.Execute(ctx);
                 }
-                return cmd.Succeeded();
-            } catch (const std::exception &e) {
-                LOG_ERROR("UndoManager", std::string(cmd.Name()) + ": " + e.what());
+                return command.Succeeded();
+            } catch (const std::exception &error) {
+                LOG_ERROR("UndoManager", std::string(command.Name()) + ": " + error.what());
                 return false;
             }
         }
-
-    } // namespace
-
+    }
     UndoManager::UndoManager(const size_t maxHistory) : m_maxHistory(maxHistory) {}
 
     UndoManager::~UndoManager() = default;
@@ -33,7 +31,6 @@ namespace Editor::Commands {
         if (!command || !ApplyCommand(*command, ctx, false)) {
             return;
         }
-
         PushUndo(std::move(command));
         m_redo.clear();
     }
@@ -60,8 +57,12 @@ namespace Editor::Commands {
     }
 
     void UndoManager::PushUndo(std::unique_ptr<ICommand> command) {
-        if (m_undo.size() >= m_maxHistory)
+        if (m_maxHistory == 0) {
+            return;
+        }
+        if (m_undo.size() >= m_maxHistory) {
             m_undo.pop_front();
+        }
         m_undo.push_back(std::move(command));
     }
 } // namespace Editor::Commands
