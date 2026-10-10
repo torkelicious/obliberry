@@ -432,7 +432,7 @@ void Editor::UI::ScriptWidget::Draw(const ECS::Entity entity, Core::EngineContex
     if (!entity.HasComponent<ECS::Components::ScriptComponent>())
         return;
     if (ImGui::CollapsingHeader(GetName())) {
-        auto *comp = entity.GetComponent<ECS::Components::ScriptComponent>();
+        const auto *comp = entity.GetComponent<ECS::Components::ScriptComponent>();
 
         for (size_t i = 0; i < comp->slots.size(); i++) {
             ImGui::PushID(static_cast<int>(i));

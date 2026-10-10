@@ -459,7 +459,7 @@ namespace Scripting {
                 return std::monostate{};
             }
 
-            if (auto *comp = registry.GetComponent<ECS::Components::CustomDataComponent>(id)) {
+            if (const auto *comp = registry.GetComponent<ECS::Components::CustomDataComponent>(id)) {
                 return comp->Get(std::get<std::string>(args[0]));
             }
 

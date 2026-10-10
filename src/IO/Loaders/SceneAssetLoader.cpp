@@ -263,7 +263,7 @@ namespace IO::SceneAssetLoader {
         auto &incoming = scope.m_State->assets;
 
         for (auto it = incoming.begin(); it != incoming.end();) {
-            if (std::find(owned.begin(), owned.end(), *it) != owned.end()) {
+            if (std::ranges::find(owned, *it) != owned.end()) {
                 ++it;
                 continue;
             }

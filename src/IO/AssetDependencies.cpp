@@ -169,7 +169,7 @@ namespace IO::AssetDependencies {
     bool ResolveDependencies(RequiredAssets &req) {
 
         for (const std::string &material_id : req.materials) {
-            const json *mat = IO::AssetCatalog::Find("materials", material_id);
+            const json *mat = AssetCatalog::Find("materials", material_id);
             if (!mat) {
                 LOG_ERROR("SceneAssetLoader", "Material '" + material_id + "' is missing from assets.json");
                 return false;
@@ -180,7 +180,7 @@ namespace IO::AssetDependencies {
 
         // animations need texture !
         for (const std::string &anim_id : req.animationSets) {
-            const json *anim = IO::AssetCatalog::Find("animation_sets", anim_id);
+            const json *anim = AssetCatalog::Find("animation_sets", anim_id);
 
             if (!anim) {
                 LOG_ERROR("SceneAssetLoader", "Animation set '" + anim_id + "' is missing from assets.json");
@@ -191,7 +191,7 @@ namespace IO::AssetDependencies {
                 LOG_ERROR("SceneAssetLoader", "Animation set '" + anim_id + "' has no valid path");
                 return false;
             }
-            const auto animationJson = IO::VFS::ReadVirtualJson(path->get<std::string>());
+            const auto animationJson = VFS::ReadVirtualJson(path->get<std::string>());
             if (!animationJson) {
                 LOG_ERROR("SceneAssetLoader", "Could not read animation set '" + anim_id + "'");
                 return false;
@@ -207,7 +207,7 @@ namespace IO::AssetDependencies {
     bool AppendAssets(json &destination, const char *type, const std::set<std::string> &ids) {
         destination[type] = json::array();
         for (const auto &id : ids) {
-            const json *asset = IO::AssetCatalog::Find(type, id);
+            const json *asset = AssetCatalog::Find(type, id);
             if (!asset) {
                 LOG_ERROR("SceneAssetLoader", "Could not find: " + id + " in catalog");
                 return false;

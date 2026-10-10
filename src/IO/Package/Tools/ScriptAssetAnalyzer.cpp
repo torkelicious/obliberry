@@ -200,7 +200,7 @@ namespace IO::Package::Tools {
             ScriptAssetAnalysis &result;
             const std::set<std::string> &scriptFunctions;
 
-            void Collect(const std::string &id) {
+            void Collect(const std::string &id) const {
                 const auto found = index.find(id);
                 if (found == index.end()) {
                     return;
@@ -235,7 +235,7 @@ namespace IO::Package::Tools {
                 }
             }
 
-            void TrackFileArgument(const std::string &callName, const ObSL::Expr *arg, std::set<std::string> &out) {
+            void TrackFileArgument(const std::string &callName, const ObSL::Expr *arg, std::set<std::string> &out) const {
                 if (!arg) {
                     return;
                 }
@@ -587,7 +587,7 @@ namespace IO::Package::Tools {
             }
         }
 
-        LiteralCollector collector{index, result, scriptFunctions};
+        LiteralCollector collector{.index = index, .result = result, .scriptFunctions = scriptFunctions};
 
         for (const auto &statement : statements) {
             collector.VisitStmt(statement.get());

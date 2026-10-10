@@ -287,7 +287,7 @@ namespace IO::Package::Tools {
                 return false;
             }
 
-            result.catalog = IO::CatalogFile::Empty();
+            result.catalog = CatalogFile::Empty();
             result.catalog["assets"] = std::move(subset);
 
             for (const auto &[type, entries] : result.catalog.at("assets").items()) {

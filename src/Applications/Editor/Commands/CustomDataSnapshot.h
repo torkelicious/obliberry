@@ -41,7 +41,7 @@ namespace Editor::Commands {
 
     [[nodiscard]] CustomDataSnapshot CaptureCustomDataSnapshot(const std::unordered_map<std::string, ObSL::Value> &components);
 
-    [[nodiscard]] std::unordered_map<std::string, ObSL::Value> RestoreCustomDataSnapshot(const CustomDataSnapshot &snapshot, ObSL::Interpreter &interpreter, ObSL::GCProtectScope &scope);
+    [[nodiscard]] std::unordered_map<std::string, ObSL::Value> RestoreCustomDataSnapshot(const CustomDataSnapshot &snapshot, ObSL::Interpreter &interpreter, const ObSL::GCProtectScope &scope);
 
 
 } // namespace Editor::Commands

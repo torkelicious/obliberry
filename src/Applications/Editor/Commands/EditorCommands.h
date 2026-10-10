@@ -33,8 +33,8 @@ namespace Editor::Commands {
         [[nodiscard]] bool Succeeded() const noexcept override { return m_Succeeded; }
 
     protected:
-        [[nodiscard]] ECS::Entity ResolveEntity(Core::EngineContext &ctx);
-        void Complete(Core::EngineContext &ctx);
+        [[nodiscard]] ECS::Entity ResolveEntity(const Core::EngineContext &ctx);
+        void Complete(const Core::EngineContext &ctx);
         std::string m_EntityUUID;
         bool m_Succeeded = false;
     };

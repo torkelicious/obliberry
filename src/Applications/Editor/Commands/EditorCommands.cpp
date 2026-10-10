@@ -118,7 +118,7 @@ namespace Editor::Commands {
                 if (const auto *scripts = registry.GetComponent<ECS::Components::ScriptComponent>(id)) {
                     saved.scripts.emplace();
                     for (const auto &slot : scripts->slots) {
-                        saved.scripts->push_back({slot.scriptPath, slot.resolvedPath, slot.source_code, slot.lastModified});
+                        saved.scripts->push_back({.path = slot.scriptPath, .resolvedPath = slot.resolvedPath, .source = slot.source_code, .lastModified = slot.lastModified});
                     }
                 }
 
@@ -132,7 +132,7 @@ namespace Editor::Commands {
                         if (saved.parentUUID.empty() || !parent) {
                             throw std::runtime_error("Entity has an invalid parent");
                         }
-                        const auto it = std::find(parent->children.begin(), parent->children.end(), id);
+                        const auto it = std::ranges::find(parent->children, id);
                         if (it == parent->children.end()) {
                             throw std::runtime_error("Entity is missing from its parent's children");
                         }
@@ -261,7 +261,7 @@ namespace Editor::Commands {
         }
     } // namespace
 
-    ECS::Entity EntityCommand::ResolveEntity(Core::EngineContext &ctx) {
+    ECS::Entity EntityCommand::ResolveEntity(const Core::EngineContext &ctx) {
         m_Succeeded = false;
         auto *scene = ctx.sceneManager ? ctx.sceneManager->GetCurrentScene() : nullptr;
         if (!scene) {
@@ -272,7 +272,7 @@ namespace Editor::Commands {
         return id != ECS::INVALID_ENTITY_ID ? ECS::Entity(id, &registry) : ECS::Entity{};
     }
 
-    void EntityCommand::Complete(Core::EngineContext &ctx) {
+    void EntityCommand::Complete(const Core::EngineContext &ctx) {
         MarkSceneChanged(&ctx);
         m_Succeeded = true;
     }

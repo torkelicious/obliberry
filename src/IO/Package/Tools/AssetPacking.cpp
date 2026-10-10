@@ -85,7 +85,7 @@ namespace IO::Package::Tools {
         const auto source = read_file_string(filepath);
         ObSL::Lexer lexer(source);
         ObSL::Parser parser(lexer.tokenize());
-        auto ast = parser.parse();
+        const auto ast = parser.parse();
 
         analysis = AnalyzeScriptAssets(ast, catalogAssets);
 

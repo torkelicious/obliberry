@@ -84,7 +84,7 @@ namespace Editor::Commands {
     }
 
 
-    std::unordered_map<std::string, ObSL::Value> RestoreCustomDataSnapshot(const CustomDataSnapshot &snapshot, ObSL::Interpreter &interpreter, ObSL::GCProtectScope &scope) {
+    std::unordered_map<std::string, ObSL::Value> RestoreCustomDataSnapshot(const CustomDataSnapshot &snapshot, ObSL::Interpreter &interpreter, const ObSL::GCProtectScope &scope) {
         if (scope.interpreter != &interpreter) {
             throw std::invalid_argument("Custom data protect scope belongs to another interpreter.");
         }
