@@ -697,7 +697,7 @@ void Rendering::Renderer::ProcessDeleteQ() {
 void Rendering::Renderer::ClearInitQ() {
     std::vector<InitTask> discarded;
     {
-        std::lock_guard lock(s_InitQueue);
+        std::lock_guard lock(s_InitQueueMutex);
         discarded.swap(s_InitQueue);
         s_HasInitTasks.store(false, std::memory_order_release);
     }
