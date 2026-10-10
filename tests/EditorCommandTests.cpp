@@ -28,11 +28,7 @@ protected:
         context.sceneManager = &scenes;
         context.isEditorMode = true;
         scenes.SetContext(context);
-        ASSERT_NO_FATAL_FAILURE(WriteJson("scene.json", {
-            {"properties", {{"lighting", false}}},
-            {"entities", nlohmann::json::array()},
-            {"PostProcessing", nlohmann::json::array()}
-        }));
+        ASSERT_NO_FATAL_FAILURE(WriteJson("scene.json", {{"properties", {{"lighting", false}}}, {"entities", nlohmann::json::array()}, {"PostProcessing", nlohmann::json::array()}}));
         scenes.LoadSceneByPath("scene.json");
         ASSERT_NE(scenes.GetCurrentScene(), nullptr);
     }
@@ -215,7 +211,8 @@ TEST_F(EditorCommandTests, EarlierEditsResolveRestoredEntity) {
     undo.Execute(std::make_unique<Editor::Commands::ScaleEntityCommand>(uuid, glm::vec3(1), glm::vec3(4)), context);
     undo.Execute(std::make_unique<Editor::Commands::SetNameCommand>(uuid, "", "Changed"), context);
     undo.Execute(std::make_unique<Editor::Commands::ModifyComponentFieldCommand<ECS::Components::MovementComponent>>(
-        uuid, offsetof(ECS::Components::MovementComponent, timePerStep), sizeof(float), &oldSpeed, &newSpeed, "Speed"), context);
+                         uuid, offsetof(ECS::Components::MovementComponent, timePerStep), sizeof(float), &oldSpeed, &newSpeed, "Speed"),
+            context);
     undo.Execute(std::make_unique<Editor::Commands::DeleteEntityCommand>(uuid), context);
     undo.Undo(context);
     const auto restored = Find(uuid);
@@ -436,17 +433,24 @@ TEST_F(EditorCommandTests, FailedNewCommandPreservesRedo) {
     TestUtils::GLM_VecExpectFloat(Registry().GetComponent<ECS::Components::TransformComponent>(id)->transform.GetPosition(), glm::vec3(2));
 }
 
-TEST_F(EditorCommandTests, UnsupportedLiveCustomDataLeavesEntityAndHistoryUntouched) {
+TEST_F(EditorCommandTests, UnsupportedCustomFunctionsLeaveEntityAndHistoryUntouched) {
+    ObSL::Interpreter interpreter(".");
     const auto id = Registry().CreateEntity();
     const auto uuid = Registry().GetEntityUUID(id);
-    Registry().AddComponent<ECS::Components::CustomDataComponent>(id).script_components["runtime"] = ObSL::Value{};
+    const auto function = interpreter.get_global_environment()->get("Object");
+    ASSERT_TRUE(std::holds_alternative<ObSL::ObSLCallable *>(function));
+    auto &custom = Registry().AddComponent<ECS::Components::CustomDataComponent>(id);
+    custom.Set("runtime", function, interpreter);
     undo.Execute(std::make_unique<Editor::Commands::DeleteEntityCommand>(uuid), context);
     EXPECT_TRUE(Registry().IsValid(id));
     EXPECT_FALSE(undo.CanUndo());
+    ASSERT_TRUE(Registry().HasComponent<ECS::Components::CustomDataComponent>(id));
+    EXPECT_EQ(std::get<ObSL::ObSLCallable *>(Registry().GetComponent<ECS::Components::CustomDataComponent>(id)->Get("runtime")), std::get<ObSL::ObSLCallable *>(function));
     Registry().RemoveComponent<ECS::Components::CustomDataComponent>(id);
     Registry().AddComponent<ECS::Components::DestroyTagComponent>(id);
     undo.Execute(std::make_unique<Editor::Commands::DeleteEntityCommand>(uuid), context);
     EXPECT_TRUE(Registry().IsValid(id));
+    EXPECT_TRUE(Registry().HasComponent<ECS::Components::DestroyTagComponent>(id));
     EXPECT_FALSE(undo.CanUndo());
 }
 

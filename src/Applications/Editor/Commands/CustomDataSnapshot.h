@@ -6,10 +6,13 @@
 #include <unordered_map>
 #include <variant>
 #include <vector>
+#include <memory>
+#include <stdexcept>
+#include <utility>
 
 namespace ObSL {
     class Interpreter;
-    class GCProtectScope;
+    struct GCProtectScope;
 
 } // namespace ObSL
 

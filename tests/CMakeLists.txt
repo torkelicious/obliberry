@@ -39,6 +39,7 @@ add_executable(obliberry_tests
     AudioIntegrationTests.cpp
     ../src/Applications/Editor/Commands/UndoManager.cpp
     ../src/Applications/Editor/Commands/EditorCommands.cpp
+    ../src/Applications/Editor/Commands/CustomDataSnapshot.cpp
     ../src/IO/Package/Tools/ObpakTools.cpp
 )
 
