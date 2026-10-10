@@ -106,6 +106,9 @@ namespace Rendering {
         static void SubmitInitTask(std::function<void()> task);
         static void ProcessInitQ();
 
+        static void SubmitDeleteTask(Platform::Threading::SmallTask task);
+        static void ProcessDeleteQ();
+
         void SetFallbackShader(Shader *shader) { m_FallbackShader = shader; }
 
         void RequestPixelRead(const int x, const int y) {
@@ -140,6 +143,9 @@ namespace Rendering {
         static std::vector<InitTask> s_InitQueue;
         static std::mutex s_InitQueueMutex;
         static std::atomic<bool> s_HasInitTasks;
+
+        static std::vector<Platform::Threading::SmallTask> s_DeleteQueue;
+        static std::mutex s_DeleteQueueMutex;
 
         size_t m_SubmitIndex = 0;
         size_t m_RenderIndex = 1;

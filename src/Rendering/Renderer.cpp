@@ -1,10 +1,14 @@
 #include "Renderer.h"
 
+#include "Platform/Threading/SmallTask.h"
 #include "Rendering/Types/Lightmap.h"
 #include "Rendering/Types/Transform.h"
 #include <algorithm>
 #include <glm/gtc/type_ptr.hpp>
 #include <memory>
+#include <mutex>
+#include <utility>
+#include <vector>
 
 constexpr unsigned int MAX_INSTANCES = 100000;
 constexpr size_t INSTANCE_BUFFER_SIZE = MAX_INSTANCES * sizeof(glm::mat4);
@@ -15,6 +19,9 @@ using InitTask = std::variant<Platform::Threading::SmallTask, std::function<void
 std::vector<InitTask> Rendering::Renderer::s_InitQueue;
 std::mutex Rendering::Renderer::s_InitQueueMutex;
 std::atomic<bool> Rendering::Renderer::s_HasInitTasks{false};
+
+std::vector<Platform::Threading::SmallTask> Rendering::Renderer::s_DeleteQueue;
+std::mutex Rendering::Renderer::s_DeleteQueueMutex;
 
 static glm::vec4 s_ClearColorStaging = {0.0f, 0.0f, 0.0f, 1.0f};
 
@@ -664,5 +671,22 @@ void Rendering::Renderer::ProcessInitQ() {
     glBindVertexArray(0);
     for (auto &task : queueCopy) {
         std::visit([](auto &t) { t(); }, task);
+    }
+}
+
+void Rendering::Renderer::SubmitDeleteTask(Platform::Threading::SmallTask task) {
+    std::lock_guard lock(s_DeleteQueueMutex);
+    s_DeleteQueue.push_back(std::move(task));
+}
+
+void Rendering::Renderer::ProcessDeleteQ() {
+    std::vector<Platform::Threading::SmallTask> tasks;
+    {
+        std::lock_guard lock(s_DeleteQueueMutex);
+        tasks.swap(s_DeleteQueue);
+    }
+
+    for (auto &task : tasks) {
+        task();
     }
 }
