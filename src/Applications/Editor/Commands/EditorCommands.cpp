@@ -1,10 +1,12 @@
 #include "EditorCommands.h"
+#include "Applications/Editor/Commands/CustomDataSnapshot.h"
 #include "Core/Project.h"
 #include "ECS/Entity.h"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Components/MapComponent.h"
 #include "Applications/Editor/UI/Panels/Editor/EditorWidgets.h"
 #include "Applications/Editor/UI/Themeing/ThemeSerializer.h"
+#include "ObSL/ScriptRuntime.h"
 #include "Rendering/Renderer.h"
 #include "Scenes/SceneManager.h"
 #include "Core/Utils/ECSUtils.h"
@@ -81,7 +83,7 @@ namespace Editor::Commands {
             std::string parentUUID;
             std::size_t siblingIndex = 0;
             bool hadRelationship = false;
-            bool hadCustomData = false;
+            std::optional<CustomDataSnapshot> customData;
             ComponentSnapshots components;
             std::optional<std::vector<ScriptSlotSnapshot>> scripts;
             nlohmann::json assetReferences;
@@ -105,16 +107,14 @@ namespace Editor::Commands {
                     throw std::runtime_error("Entity is already scheduled for destruction");
                 }
                 const auto *custom = registry.GetComponent<ECS::Components::CustomDataComponent>(id);
-                if (custom && !custom->script_components.empty()) {
-                    throw std::runtime_error("Undo cannot snapshot live custom script data");
-                }
 
                 SavedEntity saved;
                 saved.uuid = registry.GetEntityUUID(id);
                 saved.name = registry.GetEntityName(id);
-                saved.hadCustomData = custom != nullptr;
+                if (custom) {
+                    saved.customData = CaptureCustomDataSnapshot(custom->script_components);
+                }
                 std::apply([&](auto &...component) { (CaptureComponent(registry, id, component), ...); }, saved.components);
-
                 if (const auto *scripts = registry.GetComponent<ECS::Components::ScriptComponent>(id)) {
                     saved.scripts.emplace();
                     for (const auto &slot : scripts->slots) {
@@ -196,9 +196,28 @@ namespace Editor::Commands {
                     if (saved.hadRelationship) {
                         registry.AddComponent<ECS::Components::RelationshipComponent>(id);
                     }
-                    if (saved.hadCustomData) {
-                        registry.AddComponent<ECS::Components::CustomDataComponent>(id);
+
+                    if (saved.customData) {
+                        auto &custom = registry.AddComponent<ECS::Components::CustomDataComponent>(id);
+
+                        if (!saved.customData->components.empty()) {
+                            auto *runtime = scene.GetContext().scriptPool;
+                            if (!runtime || runtime->worker_count() == 0) {
+                                throw std::runtime_error("Cannot restore custom data without a script interpreter");
+                            }
+
+                            auto &interpreter = runtime->get_worker(0)->GetInterpreter();
+
+                            ObSL::GCProtectScope protection(&interpreter);
+
+                            const auto values = RestoreCustomDataSnapshot(*saved.customData, interpreter, protection);
+
+                            for (const auto &[name, value] : values) {
+                                custom.Set(name, value, interpreter);
+                            }
+                        }
                     }
+
                     if (saved.scripts) {
                         auto &scripts = registry.AddComponent<ECS::Components::ScriptComponent>(id);
                         for (const auto &slot : *saved.scripts) {
