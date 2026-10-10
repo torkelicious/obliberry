@@ -3,6 +3,8 @@
 #include <stb_image.h>
 #include "Logger/LoggerService.h"
 #include "IO/VFS/VFS.h"
+#include "Platform/Threading/SmallTask.h"
+#include "Rendering/GLDelete.h"
 
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "Texture"
@@ -46,12 +48,7 @@ namespace Rendering {
         }
     }
 
-    Texture::~Texture() {
-        if (m_ID != 0) {
-            glDeleteTextures(1, &m_ID);
-            m_ID = 0;
-        }
-    }
+    Texture::~Texture() { QDeleteTexture(std::exchange(m_ID, 0)); }
 
     void Texture::InitGL() {
         if (m_ID != 0)

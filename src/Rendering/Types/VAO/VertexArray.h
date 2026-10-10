@@ -1,9 +1,11 @@
 #pragma once
 
+#include "Rendering/GLDelete.h"
 #include "Rendering/Types/IBO/IndexBuffer.h"
 #include "Rendering/Types/VBO/VertexBuffer.h"
 #include "Rendering/Types/VBO/VertexBufferLayout.h"
 #include "glad/glad.h"
+#include <utility>
 
 namespace Rendering {
     class VertexArray {
@@ -18,8 +20,8 @@ namespace Rendering {
 
         VertexArray &operator=(VertexArray &&other) noexcept {
             if (this != &other) {
-                if (m_ID != 0)
-                    glDeleteVertexArrays(1, &m_ID);
+                QDeleteVertexArray(std::exchange(m_ID, 0));
+
                 m_ID = other.m_ID;
                 other.m_ID = 0;
             }

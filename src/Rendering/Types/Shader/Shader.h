@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Rendering/GLDelete.h"
 #include <string>
 #include <string_view>
 #include <utility>
@@ -30,9 +31,8 @@ namespace Rendering {
         }
         Shader &operator=(Shader &&other) noexcept {
             if (this != &other) {
-                if (m_ID != 0) {
-                    glDeleteProgram(m_ID);
-                }
+                QDeleteProgram(std::exchange(m_ID, 0));
+
                 m_ID = other.m_ID;
                 other.m_ID = 0;
                 m_vertPath = std::move(other.m_vertPath);

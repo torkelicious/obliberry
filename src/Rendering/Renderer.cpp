@@ -2,7 +2,9 @@
 
 #include "Platform/Threading/SmallTask.h"
 #include "Rendering/Types/Lightmap.h"
+#include "Rendering/Types/Shader/Shader.h"
 #include "Rendering/Types/Transform.h"
+#include "Rendering/GLDelete.h"
 #include <algorithm>
 #include <glm/gtc/type_ptr.hpp>
 #include <memory>
@@ -689,4 +691,46 @@ void Rendering::Renderer::ProcessDeleteQ() {
     for (auto &task : tasks) {
         task();
     }
+}
+
+void Rendering::QDeleteTexture(const GLuint textureID) {
+    if (textureID != 0) {
+        Renderer::SubmitDeleteTask(Platform::Threading::SmallTask([textureID] { glDeleteTextures(1, &textureID); }));
+    }
+}
+
+void Rendering::QDeleteProgram(const GLuint programID) {
+    if (programID != 0) {
+        Renderer::SubmitDeleteTask(Platform::Threading::SmallTask([programID] { glDeleteProgram(programID); }));
+    }
+}
+
+void Rendering::QDeleteBuffer(GLuint buffID) {
+    if (buffID != 0) {
+        Renderer::SubmitDeleteTask(Platform::Threading::SmallTask([buffID] { glDeleteBuffers(1, &buffID); }));
+    }
+}
+
+void Rendering::QDeleteVertexArray(GLuint arrID) {
+    if (arrID != 0) {
+        Renderer::SubmitDeleteTask(Platform::Threading::SmallTask([arrID] { glDeleteVertexArrays(1, &arrID); }));
+    }
+}
+
+void Rendering::QDeleteFrameBuffer(const GLuint framebufferID, const GLuint colorTextureID, const GLuint entityTextureID) {
+    if (framebufferID == 0 && colorTextureID == 0 && entityTextureID == 0) {
+        return;
+    }
+
+    Renderer::SubmitDeleteTask(Platform::Threading::SmallTask([framebufferID, colorTextureID, entityTextureID] {
+        if (framebufferID != 0) {
+            glDeleteFramebuffers(1, &framebufferID);
+        }
+        if (colorTextureID != 0) {
+            glDeleteTextures(1, &colorTextureID);
+        }
+        if (entityTextureID != 0) {
+            glDeleteTextures(1, &entityTextureID);
+        }
+    }));
 }
