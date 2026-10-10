@@ -108,6 +108,7 @@ namespace Rendering {
 
         static void SubmitDeleteTask(Platform::Threading::SmallTask task);
         static void ProcessDeleteQ();
+        static void ClearInitQ();
 
         void SetFallbackShader(Shader *shader) { m_FallbackShader = shader; }
 
@@ -131,6 +132,8 @@ namespace Rendering {
 
         void RunPostProc(size_t renderIndex) const;
         void PresentToScreen(uint32_t width, uint32_t height) const;
+
+        void Shutdown();
 
     private:
         void BindLightmap(Shader *shader, size_t renderIndex) const;

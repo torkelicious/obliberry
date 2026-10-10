@@ -103,8 +103,8 @@ namespace UI {
 
     void UIRenderer::SubmitRect(const glm::vec2 pos, const glm::vec2 size, const glm::vec4 color) { SubmitQuad(pos, size, {0.0f, 0.0f}, {1.0f, 1.0f}, nullptr, color); }
 
-    void UIRenderer::SubmitSDFQuad(
-            const glm::vec2 pos, const glm::vec2 size, const glm::vec2 uvMin, const glm::vec2 uvMax, const std::shared_ptr<Rendering::Texture> &texture, const glm::vec4 color, const float sdfScale, const float sdfSpread) {
+    void UIRenderer::SubmitSDFQuad(const glm::vec2 pos, const glm::vec2 size, const glm::vec2 uvMin, const glm::vec2 uvMax, const std::shared_ptr<Rendering::Texture> &texture, const glm::vec4 color, const float sdfScale,
+            const float sdfSpread) {
         if (!HasQuadCapacity())
             return;
 
@@ -258,6 +258,27 @@ namespace UI {
 
         return {gameX, gameY};
     }
+
+    void UI::UIRenderer::Shutdown() {
+        m_Batches.clear();
+
+        for (size_t i = 0; i < 2; ++i) {
+            m_Vertices[i].clear();
+            m_QuadTextures[i].clear();
+            m_QuadShader[i].clear();
+            m_QuadSDFScale[i].clear();
+            m_QuadSDFSpread[i].clear();
+        }
+
+        m_VAO.reset();
+        m_VBO.reset();
+        m_IBO.reset();
+        m_Shader.reset();
+        m_SDFShader.reset();
+
+        m_GLInitialized = false;
+    }
+
 
 } // namespace UI
 #pragma pop_macro("LOG_WHO")

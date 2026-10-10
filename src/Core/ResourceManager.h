@@ -117,6 +117,14 @@ namespace Core {
                 cache->ClearProjectResources();
         }
 
+        void ClearAll() {
+            decltype(m_Caches) discarded;
+            {
+                std::lock_guard lock(m_Mutex);
+                discarded.swap(m_Caches);
+            }
+        }
+
     private:
         ResourceManager() = default;
         ~ResourceManager() = default;

@@ -6,6 +6,7 @@
 #include "Rendering/Types/Transform.h"
 #include "Rendering/GLDelete.h"
 #include <algorithm>
+#include <atomic>
 #include <glm/gtc/type_ptr.hpp>
 #include <memory>
 #include <mutex>
@@ -691,6 +692,37 @@ void Rendering::Renderer::ProcessDeleteQ() {
     for (auto &task : tasks) {
         task();
     }
+}
+
+void Rendering::Renderer::ClearInitQ() {
+    std::vector<InitTask> discarded;
+    {
+        std::lock_guard lock(s_InitQueue);
+        discarded.swap(s_InitQueue);
+        s_HasInitTasks.store(false, std::memory_order_release);
+    }
+}
+void Rendering::Renderer::Shutdown() {
+    Clean();
+
+    for (size_t i = 0; i < 2; ++i) {
+        m_ResourcePins[i].clear();
+        m_FramePostProcessors[i].Effects().clear();
+        m_PingPong[i].reset();
+    }
+
+    m_PostProcessor.Effects().clear();
+    m_SceneFrameBuffer.reset();
+    m_PassthroughShader.reset();
+
+    m_DynamicInstanceBuffer.reset();
+    m_DynamicEntityIDBuffer.reset();
+    m_DynamicColorBuffer.reset();
+
+    m_FallbackShader = nullptr;
+    m_Camera = nullptr;
+    m_PPWidth = 0;
+    m_PPHeight = 0;
 }
 
 void Rendering::QDeleteTexture(const GLuint textureID) {
