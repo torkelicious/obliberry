@@ -26,7 +26,7 @@ namespace Rendering {
     };
 
     struct RenderCommand {
-        const Mesh *mesh;
+        std::shared_ptr<Mesh> mesh;
         const Material *material;
         Shader *shader = nullptr;
         const Texture *effectiveTexture;
@@ -38,7 +38,7 @@ namespace Rendering {
     };
 
     struct InstancedRenderCommand {
-        const Mesh *mesh;
+        std::shared_ptr<Mesh> mesh;
         const Material *material;
         Shader *shader = nullptr;
         const Texture *effectiveTexture;
@@ -62,17 +62,19 @@ namespace Rendering {
     };
 
     struct BatchKey {
-        const Mesh *mesh;
+        std::shared_ptr<Mesh> mesh;
         const Material *material;
         Shader *shader = nullptr;
         const Texture *texture;
         glm::vec4 color;
         glm::vec4 uvRect{0.0f, 0.0f, 1.0f, 1.0f};
         int32_t shape = 0;
+
         bool operator==(const BatchKey &other) const noexcept {
             return mesh == other.mesh && material == other.material && shader == other.shader && texture == other.texture && color == other.color && uvRect == other.uvRect && shape == other.shape;
         }
     };
+    ;
 
     class Renderer {
     public:
@@ -180,7 +182,7 @@ namespace Rendering {
             size_t count;
         };
 
-        std::vector<std::pair<const Mesh *, MeshVAO>> m_MeshVAOs;
+        std::vector<std::pair<std::weak_ptr<Mesh>, MeshVAO>> m_MeshVAOs;
         std::unique_ptr<VertexBuffer> m_DynamicInstanceBuffer;
         std::unique_ptr<VertexBuffer> m_DynamicEntityIDBuffer;
         std::unique_ptr<VertexBuffer> m_DynamicColorBuffer;

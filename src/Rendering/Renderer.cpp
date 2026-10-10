@@ -71,7 +71,7 @@ void Rendering::Renderer::Submit(
     const Texture *effectiveTex = textureOverride ? textureOverride : texture.get();
     const glm::vec4 col = material ? material->color : glm::vec4(1.0f);
 
-    m_Commands[m_SubmitIndex].push_back({.mesh = mesh.get(),
+    m_Commands[m_SubmitIndex].push_back({.mesh = mesh,
             .material = material.get(),
             .shader = shader.get(),
             .effectiveTexture = effectiveTex,
@@ -106,7 +106,7 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::s
         m_InstancedEntityIDsStaging[m_SubmitIndex].resize(entityIDOffset + transforms.size(), -1);
     }
 
-    m_InstancedCommands[m_SubmitIndex].push_back({.mesh = mesh.get(),
+    m_InstancedCommands[m_SubmitIndex].push_back({.mesh = mesh,
             .material = material.get(),
             .shader = shader.get(),
             .effectiveTexture = tex,
@@ -144,7 +144,7 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::s
         m_InstancedColorsStaging[m_SubmitIndex].resize(colorOffset + transforms.size(), glm::vec4(1.0f));
     }
 
-    m_InstancedCommands[m_SubmitIndex].push_back({.mesh = mesh.get(),
+    m_InstancedCommands[m_SubmitIndex].push_back({.mesh = mesh,
             .material = material.get(),
             .shader = shader.get(),
             .effectiveTexture = tex,
@@ -190,7 +190,7 @@ void Rendering::Renderer::SubmitPersistent(const std::shared_ptr<Mesh> &mesh, co
         m_InstancedEntityIDsStaging[m_SubmitIndex].resize(entityIDOffset + transforms->size(), -1);
     }
 
-    m_InstancedCommands[m_SubmitIndex].push_back({.mesh = mesh.get(),
+    m_InstancedCommands[m_SubmitIndex].push_back({.mesh = mesh,
             .material = material.get(),
             .shader = shader.get(),
             .effectiveTexture = tex,
@@ -207,6 +207,9 @@ void Rendering::Renderer::SubmitPersistent(const std::shared_ptr<Mesh> &mesh, co
 }
 
 void Rendering::Renderer::Flush(const size_t renderIndex) {
+
+    std::erase_if(m_MeshVAOs, [](const auto &cached) { return cached.first.expired(); });
+
     if (m_SceneFrameBuffer) {
         constexpr int32_t kEmptyEntityID = -1;
         glClearBufferiv(GL_COLOR, 1, &kEmptyEntityID);
@@ -419,6 +422,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
 
     m_Commands[renderIndex].clear();
     m_InstancedCommands[renderIndex].clear();
+    m_BatchRanges.clear();
 }
 
 void Rendering::Renderer::RenderBatch(const BatchKey &key, const glm::mat4 *transforms, const int32_t *entityIDs, const size_t count, const size_t renderIndex, const glm::vec4 *perInstanceColors) {
@@ -472,12 +476,14 @@ void Rendering::Renderer::RenderBatch(const BatchKey &key, const glm::mat4 *tran
 
         // find or create VAO for this mesh
         MeshVAO *meshVAOEntry = nullptr;
+
         for (auto &[mesh, entry] : m_MeshVAOs) {
-            if (mesh == key.mesh) {
+            if (mesh.lock() == key.mesh) {
                 meshVAOEntry = &entry;
                 break;
             }
         }
+
         if (!meshVAOEntry) {
             auto vao = std::make_shared<VertexArray>();
             vao->Init();
