@@ -37,7 +37,7 @@ A sprite animation set contains one sheet, and a collection of named "clips".
 ## Sheet
 
 | Field            | Meaning                                       |
-| ---------------- | --------------------------------------------- |
+|------------------|-----------------------------------------------|
 | `texture_id`     | Registered Texture Resource ID                |
 | `columns`        | Number of columns; must be greater than zero. |
 | `rows`           | Number of rows; must be greater than zero.    |
@@ -61,7 +61,7 @@ texture before deserializing the animation set.
 Each key in `clips` is a non empty clip name.
 
 | Field               | Meaning                                        |
-| ------------------- | ---------------------------------------------- |
+|---------------------|------------------------------------------------|
 | `loop`              | Whether playback repeats after the last frame. |
 | `frames`            | Non-empty array defining playback order.       |
 | `frames[].index`    | Zero-based sheet frame index.                  |

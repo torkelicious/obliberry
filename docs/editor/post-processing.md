@@ -46,7 +46,7 @@ Committing marks the scene as changed remember to save the scene (Ctrl+S) afterw
 ## Built-in Effects
 
 | Effect             | does                                                                | uniforms                                                                                              |
-| ------------------ | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+|--------------------|---------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
 | **Passthrough**    | Copies the input unchanged                                          | –                                                                                                     |
 | **Grayscale**      | Desaturates the image                                               | `u_Strength` (0–1)                                                                                    |
 | **BrightPass**     | Extracts pixels brighter than a threshold                           | `u_Threshold`, `u_SoftKnee` (soft cutoff)                                                             |
@@ -66,7 +66,7 @@ retain their own order. Resource IDs are `[Engine_PP] <name>`.
 ColorGrading applies exposure, contrast, lift/gamma/gain, tonal wheels, color balance, then saturation.
 
 | Uniform                                                 | Default               | Meaning                                                                                 |
-| ------------------------------------------------------- | --------------------- | --------------------------------------------------------------------------------------- |
+|---------------------------------------------------------|-----------------------|-----------------------------------------------------------------------------------------|
 | `u_Exposure`                                            | `0`                   | Exposure in stops; RGB is multiplied by `2^value`.                                      |
 | `u_Contrast` / `u_Pivot`                                | `1` / `0.5`           | Contrast strength and pivot.                                                            |
 | `u_Saturation`                                          | `1`                   | Saturation multiplier.                                                                  |
@@ -111,7 +111,7 @@ The engine sets these for every effect when the shader declares them. don't decl
 effect config, they are set automatically per frame:
 
 | Uniform        | Type        | Meaning                                             |
-| -------------- | ----------- | --------------------------------------------------- |
+|----------------|-------------|-----------------------------------------------------|
 | `u_Texture`    | `sampler2D` | Previous pass output (texture unit 0).              |
 | `u_Resolution` | `vec2`      | Render target size in pixels.                       |
 | `u_TexelSize`  | `vec2`      | `1.0 / u_Resolution`.                               |
@@ -136,7 +136,7 @@ the engine (e.g.
 ### Engine shader helpers (`resources/shaders/`)
 
 | File             | Provides                                                                                                                           |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+|------------------|------------------------------------------------------------------------------------------------------------------------------------|
 | `rand.glsl`      | `hash(uint)` + `rand(vec2)` — deterministic, per-seed pseudo-random.                                                               |
 | `auto_rand.glsl` | `auto_rand(vec2)` — `rand` seeded per-frame from `u_Time`; includes `rand.glsl`.                                                   |
 | `commons.glsl`   | Declarations for the engine-provided uniforms (`u_Texture`, `u_Resolution`, `u_TexelSize`, `u_Time`, `u_Scene`). Includes nothing. |

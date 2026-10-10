@@ -172,7 +172,8 @@ VFS and package reads, configuration, editor command undo/redo, and missing/malf
 optional locally: add `-DOBLIBERRY_TEST_RENDERING=ON` when configuring. They skip if a context cannot be created unless
 `OBLIBERRY_REQUIRE_RENDERING_TESTS=1` is set. Audio tests may skip if no backend initializes.
 
-On Linux, headless rendering tests need Xvfb, `xauth`, and Mesa OpenGL support. After configuring with rendering enabled,
+On Linux, headless rendering tests need Xvfb, `xauth`, and Mesa OpenGL support. After configuring with rendering
+enabled,
 run:
 
 ```bash
@@ -183,11 +184,11 @@ LIBGL_ALWAYS_SOFTWARE=1 OBLIBERRY_REQUIRE_RENDERING_TESTS=1 xvfb-run -a ctest --
 
 `.github/workflows/tests.yml` runs on pull requests, pushes to `main`/`master`, and manual dispatch:
 
-| Platform | Preset | Rendering tests |
-|----------|--------|-----------------|
-| Linux | `linux-debug` | Enabled under Xvfb with Mesa software rendering; unavailable contexts fail the job. |
-| Windows | `windows-ninja-debug` | Disabled. |
-| macOS | `macos-debug` | Disabled. |
+| Platform | Preset                | Rendering tests                                                                     |
+|----------|-----------------------|-------------------------------------------------------------------------------------|
+| Linux    | `linux-debug`         | Enabled under Xvfb with Mesa software rendering; unavailable contexts fail the job. |
+| Windows  | `windows-ninja-debug` | Disabled.                                                                           |
+| macOS    | `macos-debug`         | Disabled.                                                                           |
 
 Both `tests.yml` and `build.yml` cache fetched dependencies under `.deps` using `FETCHCONTENT_BASE_DIR`, and cache
 compiler results with `sccache`. Dependency keys include the CMake definitions; compiler-cache keys include the commit

@@ -52,7 +52,7 @@ containing parent directories are rejected.
 ## Fields
 
 | Key          | Type    | Meaning                                                              |
-| ------------ | ------- | -------------------------------------------------------------------- |
+|--------------|---------|----------------------------------------------------------------------|
 | `version`    | integer | Save-format version. The current and supported version is `1`.       |
 | `name`       | string  | User-facing display name supplied to `save_create`.                  |
 | `created_at` | integer | Creation time in UTC milliseconds since the Unix epoch.              |

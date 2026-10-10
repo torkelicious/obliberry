@@ -10,7 +10,7 @@ If you want to get started with the Obliberry editor, please see: [Editor Docs](
 ## Contents
 
 | Section                                                     | Description                                                                           |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+|-------------------------------------------------------------|---------------------------------------------------------------------------------------|
 | [Build](build.md)                                           | Prerequisites, CMake presets, build options, targets, tests, and CI.                  |
 | [Editor Guide](editor/usage.md)                             | Using the editor: modes, camera controls, panels, and keybinds.                       |
 | [Post-Processing](editor/post-processing.md)                | Fullscreen effect chains per scene: built-ins, custom shaders, editing uniforms.      |
@@ -27,7 +27,7 @@ If you want to get started with the Obliberry editor, please see: [Editor Docs](
 ## Where things live
 
 | Path                               | What it is                                                                      |
-| ---------------------------------- | ------------------------------------------------------------------------------- |
+|------------------------------------|---------------------------------------------------------------------------------|
 | `src/Core`                         | Application, main loop, engine context, project, resource manager               |
 | `src/Applications`                 | Editor, Runtime, and packaging tool executables                                 |
 | `src/Scripting/EngineLib`          | The ObSL ↔ engine binding (see the [API reference](scripting/api-reference.md)) |

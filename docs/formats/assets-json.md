@@ -25,7 +25,7 @@ in [Migrating old projects](#migrating-old-projects).
 ```
 
 | Key       | Type    | Meaning                                             |
-| --------- | ------- | --------------------------------------------------- |
+|-----------|---------|-----------------------------------------------------|
 | `version` | integer | Catalog format version. The current version is `1`. |
 | `assets`  | object  | Contains the six supported asset-definition arrays. |
 

@@ -16,7 +16,7 @@ rounded to 3 decimals (`RoundJsonFloats`), and the file is written with 4-space 
 ## Top-level keys
 
 | Key              | Type   | Meaning                                                                                       |
-| ---------------- | ------ | --------------------------------------------------------------------------------------------- |
+|------------------|--------|-----------------------------------------------------------------------------------------------|
 | `properties`     | object | Scene metadata (name, clear color, music, ambient light).                                     |
 | `grid`           | object | Hex-grid map section; present iff the scene has a map entity with a non-empty `map_file`.     |
 | `PostProcessing` | array  | Post-processing effect chain; absent means the default built-in chain (all effects disabled). |
@@ -26,7 +26,7 @@ rounded to 3 decimals (`RoundJsonFloats`), and the file is written with 4-space 
 ## `properties`
 
 | Key                | Type                  | Default        | Meaning                                                           |
-| ------------------ | --------------------- | -------------- | ----------------------------------------------------------------- |
+|--------------------|-----------------------|----------------|-------------------------------------------------------------------|
 | `name`             | string                | `""`           | Scene display name.                                               |
 | `clear_color`      | `[r, g, b, a]` floats | `[0, 0, 0, 1]` | Background clear color.                                           |
 | `background_music` | string                | `""`           | VFS-relative path to background music.                            |
@@ -69,7 +69,7 @@ Processing** window; see [Post-Processing](../editor/post-processing.md).
 Each entry is an object:
 
 | Key                 | Type   | Default  | Meaning                                                                                   |
-| ------------------- | ------ | -------- | ----------------------------------------------------------------------------------------- |
+|---------------------|--------|----------|-------------------------------------------------------------------------------------------|
 | `shader`            | string | required | Shader resource id. Built-ins are `[Engine_PP] <name>`; custom effects are `[PP] <name>`. |
 | `enabled`           | bool   | `true`   | Disabled effects are skipped.                                                             |
 | `uniforms`          | object | `{}`     | Tunable uniforms. Values: number (float/int), bool, or `[x,y(,z,w)]` arrays.              |
@@ -118,7 +118,7 @@ Example (bloom chain):
 ## `grid`
 
 | Key        | Type   | Default          | Meaning                                                                                                                                                                                         |
-| ---------- | ------ | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|------------|--------|------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `map_file` | string | -                | Path to the binary hex map (`.obmap`); see [the `.obmap` format](obmap.md).                                                                                                                     |
 | `mesh_id`  | string | `"[Engine] Hex"` | Mesh resource id used for hex cells.                                                                                                                                                            |
 | `types`    | array  | -                | Material mapping per tile type id. Each entry: `id` (uint, default 1), `texture` (texture resource id, default `"hex_tex"`), `color` (`[r,g,b,a]`, default white; only written when not white). |
@@ -131,7 +131,7 @@ overlays are built from the same shader.
 Each entity is an object:
 
 | Key          | Type             | Meaning                                                                                                                                                     |
-| ------------ | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|--------------|------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `uuid`       | string, optional | Stable entity identity. Written on save; preserved by scene loading and persistent migration, regenerated for entity copies and prefab instances.           |
 | `name`       | string, optional | Entity name (written only if non-empty).                                                                                                                    |
 | `parent`     | int, optional    | **Index** into the same `entities` array identifying the parent (hierarchy is rebuilt after all entities load). Written only if the parent is in the scene. |
@@ -146,7 +146,7 @@ Unknown components and components that fail deserialization are logged and skipp
 ### Component keys
 
 | Component key                 | Fields                                                                                                                                                                                                                                                                                                                                                                                                        |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|-------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `TransformComponent`          | `position`, `rotation`, `scale` - `[x, y, z]` float arrays (local coordinates; Euler rotation in radians).                                                                                                                                                                                                                                                                                                    |
 | `MovementComponent`           | `timePerStep` - float; `autoMove` - bool (default `false`). (Runtime movement state is intentionally not saved.)                                                                                                                                                                                                                                                                                              |
 | `MeshComponent`               | `mesh_id` - mesh resource id.                                                                                                                                                                                                                                                                                                                                                                                 |
@@ -179,7 +179,7 @@ Place this entry inside an entity's `components` object. This static example fit
 270 × 134 texture containing 32 × 32 frames separated by two-pixel gaps.
 
 | Field                           | Default      | Meaning                                                              |
-| ------------------------------- | ------------ | -------------------------------------------------------------------- |
+|---------------------------------|--------------|----------------------------------------------------------------------|
 | `texture_id`                    | Empty string | Registered texture resource ID.                                      |
 | `columns`, `rows`               | 1 each       | Positive grid dimensions.                                            |
 | `column_spacing`, `row_spacing` | 0 each       | Non-negative pixel gaps between cells, with no outer margin.         |
@@ -205,7 +205,7 @@ are reconstructed from the animator after loading.
 ```
 
 | Field          | Default      | Meaning                                                                   |
-| -------------- | ------------ | ------------------------------------------------------------------------- |
+|----------------|--------------|---------------------------------------------------------------------------|
 | `animation_id` | Empty string | Resource ID from `assets.json`'s `animation_sets` array, not a file path. |
 | `initial_clip` | Empty string | Named clip selected during initialization.                                |
 | `autoplay`     | `true`       | Whether the initial clip starts playing.                                  |
@@ -247,7 +247,7 @@ radius and full height along local Y. Rectangle/Circle occupy the local XY plane
 Offset must be finite. Dimension validation depends on the selected shape:
 
 | Shape           | Required finite, positive dimensions |
-| --------------- | ------------------------------------ |
+|-----------------|--------------------------------------|
 | Box             | `size.x`, `size.y`, `size.z`         |
 | Rectangle       | `size.x`, `size.y`                   |
 | Sphere / Circle | `radius`                             |
@@ -270,7 +270,7 @@ events or solid blocking. See [Collider settings](../editor/components.md#collid
 `ui.elements` is an array of element objects. Shared fields:
 
 | Key             | Type            | Meaning                                                              |
-| --------------- | --------------- | -------------------------------------------------------------------- |
+|-----------------|-----------------|----------------------------------------------------------------------|
 | `name`          | string          | Element name (load default `"Unnamed"`).                             |
 | `type`          | string          | `"Text"`, `"Button"`, `"Image"`, `"Rect"`, or `"Element"` (default). |
 | `rect.position` | `[x, y]` floats | UI-space position.                                                   |
