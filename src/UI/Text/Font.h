@@ -7,6 +7,7 @@
 #include <glad/glad.h>
 #include <freetype/freetype.h>
 #include <glm/vec2.hpp>
+#include <atomic>
 
 namespace Rendering {
     class Texture;
@@ -37,13 +38,20 @@ namespace UI {
 
         void InitGL() const;
 
-        [[nodiscard]] bool IsValid() const { return m_Valid; }
+        [[nodiscard]] bool IsValid() const { return m_Valid.load(std::memory_order_acquire); }
+        [[nodiscard]] bool IsReady() const { return m_Ready.load(std::memory_order_acquire); }
         [[nodiscard]] const Glyph &GetGlyph(char c) const;
-        [[nodiscard]] std::shared_ptr<Rendering::Texture> GetAtlasTexture() const { return m_AtlasTexture; }
         [[nodiscard]] unsigned int GetFontSize() const { return m_FontSize; }
         [[nodiscard]] bool IsSDF() const { return m_IsSDF; }
         [[nodiscard]] unsigned int GetSDFSpread() const { return m_SDFSpread; }
         [[nodiscard]] const std::string &GetPath() const { return m_FilePath; }
+
+        [[nodiscard]] std::shared_ptr<Rendering::Texture> GetAtlasTexture() const {
+            if (!IsReady()) {
+                return nullptr;
+            }
+            return m_AtlasTexture;
+        }
 
     private:
         void BuildSDFAtlas(const std::string &filepath, unsigned int fontSize, unsigned int spread);
@@ -52,7 +60,8 @@ namespace UI {
         FT_Library FTLibrary = FreeType::library();
         FT_Face m_Face = nullptr;
         std::string m_FilePath;
-        bool m_Valid = false;
+        std::atomic<bool> m_Valid{false};
+        mutable std::atomic<bool> m_Ready{false};
         unsigned int m_FontSize = 0;
         bool m_IsSDF = false;
         unsigned int m_SDFSpread = 0;

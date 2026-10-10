@@ -100,10 +100,11 @@ namespace UI {
     Font::Font(std::string filepath, const unsigned int fontSize, const bool useSDF, const unsigned int sdfSpread) : m_FilePath(std::move(filepath)), m_FontSize(fontSize), m_IsSDF(useSDF), m_SDFSpread(sdfSpread) {}
 
     void Font::LoadCPU() {
-        if (m_Valid)
-            return;
-
         std::lock_guard ftLock(FreeType::mutex());
+
+        if (IsValid()) {
+            return;
+        }
 
         bool faceLoaded = false;
         if (auto data = IO::VFS::ReadVirtual(m_FilePath)) {
@@ -259,7 +260,7 @@ namespace UI {
         m_Face = nullptr;
         m_FontData.clear();
         m_FontData.shrink_to_fit();
-        m_Valid = true;
+        m_Valid.store(true, std::memory_order_release);
         LOG_INFO(LOG_WHO, "Font loaded: " + filepath + " (" + std::to_string(m_Glyphs.size()) + " glyphs, " + std::to_string(atlasWidth) + "x" + std::to_string(atlasHeight) + " atlas)");
     }
 
@@ -401,7 +402,7 @@ namespace UI {
         m_FontData.clear();
         m_FontData.shrink_to_fit();
 
-        m_Valid = true;
+        m_Valid.store(true, std::memory_order_release);
         LOG_INFO(LOG_WHO, "Font loaded (SDF): " + filepath + " (" + std::to_string(m_Glyphs.size()) + " glyphs, spread=" + std::to_string(spread) + ", " + std::to_string(atlasWidth) + "x" + std::to_string(atlasHeight) +
                                   " atlas)");
     }
@@ -417,12 +418,21 @@ namespace UI {
 
     // GPU upload
     void Font::InitGL() const {
+        if (!IsValid() || IsReady()) {
+            return;
+        }
+
         if (m_AtlasTexture) {
             m_AtlasTexture->InitGL();
+            m_Ready.store(m_AtlasTexture->GetID() != 0, std::memory_order_release);
         }
     }
 
     const Glyph &Font::GetGlyph(const char c) const {
+        static constexpr Glyph fallback{};
+        if (!IsValid()) {
+            return fallback;
+        }
         if (const auto it = m_Glyphs.find(c); it != m_Glyphs.end()) {
             return it->second;
         }
@@ -433,7 +443,6 @@ namespace UI {
         if (!m_Glyphs.empty()) {
             return m_Glyphs.begin()->second;
         }
-        static constexpr Glyph fallback{};
         return fallback;
     }
 

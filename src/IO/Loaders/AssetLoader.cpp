@@ -179,8 +179,9 @@ void IO::AssetLoader::LoadFonts(const json &fonts, Core::ResourceManager &resour
                 std::lock_guard lock(s_FontThreadsMutex);
                 s_FontThreads.emplace_back([f] {
                     try {
+                        f->LoadCPU();
                         Rendering::Renderer::SubmitInitTask(Platform::Threading::SmallTask([f] { f->InitGL(); }));
-                    } catch (std::exception &e) {
+                    } catch (const std::exception &e) {
                         LOG_ERROR(LOG_WHO, std::string("Font loading failed: ") + e.what());
                     }
                 });
