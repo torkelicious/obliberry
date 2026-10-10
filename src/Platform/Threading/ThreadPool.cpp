@@ -66,11 +66,11 @@ namespace Platform::Threading {
         // Note: threads join in destructor
     }
 
-    void ThreadPool::shutdown(){
+    void ThreadPool::shutdown() {
         stop();
-        
-        for(auto& thread : m_Threads){
-            if(thread.joinable()){
+
+        for (auto &thread : m_Threads) {
+            if (thread.joinable()) {
                 thread.join();
             }
         }

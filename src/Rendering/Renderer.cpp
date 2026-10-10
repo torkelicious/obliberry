@@ -27,6 +27,7 @@ std::vector<Platform::Threading::SmallTask> Rendering::Renderer::s_DeleteQueue;
 std::mutex Rendering::Renderer::s_DeleteQueueMutex;
 
 static glm::vec4 s_ClearColorStaging = {0.0f, 0.0f, 0.0f, 1.0f};
+static std::mutex s_ClearColorMutex;
 
 void Rendering::Renderer::SetCamera(const Camera &camera, const float aspect) {
     m_Camera = &camera;
@@ -210,7 +211,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
 
     std::erase_if(m_MeshVAOs, [](const auto &cached) { return cached.first.expired(); });
 
-    if (m_SceneFrameBuffer) {
+    if (const auto sceneFbo = GetSceneFrameBuffer()) {
         constexpr int32_t kEmptyEntityID = -1;
         glClearBufferiv(GL_COLOR, 1, &kEmptyEntityID);
     }
@@ -580,8 +581,7 @@ void Rendering::Renderer::InvalidateGLCache() {
         m_LastBoundTexture = nullptr;
         m_LastBoundColor = glm::vec4(0.0f);
         m_LastBoundUVRect = glm::vec4(-1.0f);
-        m_Lightmap[0] = {};
-        m_Lightmap[1] = {};
+        // BeginFrame resets only the free submit slot; queued lightmaps stay alive.
     }));
 }
 
@@ -594,34 +594,49 @@ void Rendering::Renderer::SetLightmap(const Lightmap *lightmap) {
 }
 
 void Rendering::Renderer::EnsureSceneFramebufferSize(uint32_t width, uint32_t height) {
-    if (m_PPWidth == width && m_PPHeight == height)
+    if (width == 0 || height == 0) {
         return;
-    m_PPWidth = width;
-    m_PPHeight = height;
-    SubmitInitTask(Platform::Threading::SmallTask([this, width, height] {
-        if (!m_SceneFrameBuffer) {
-            m_SceneFrameBuffer = std::make_shared<FrameBuffer>(width, height, true);
-            m_PingPong[0] = std::make_shared<FrameBuffer>(width, height, false);
-            m_PingPong[1] = std::make_shared<FrameBuffer>(width, height, false);
-        } else {
-            m_SceneFrameBuffer->Invalidate(width, height);
-            m_PingPong[0]->Invalidate(width, height);
-            m_PingPong[1]->Invalidate(width, height);
+    }
+
+    {
+        std::lock_guard lock(m_SceneFramebufferMutex);
+
+        if (m_PPWidth == width && m_PPHeight == height) {
+            return;
         }
+
+        m_PPWidth = width;
+        m_PPHeight = height;
+    }
+
+    SubmitInitTask(Platform::Threading::SmallTask([this, width, height] {
+        auto scene = std::make_shared<FrameBuffer>(width, height, true);
+        auto pingA = std::make_shared<FrameBuffer>(width, height, false);
+        auto pingB = std::make_shared<FrameBuffer>(width, height, false);
+
+        m_PingPong[0] = std::move(pingA);
+        m_PingPong[1] = std::move(pingB);
+
+        std::lock_guard lock(m_SceneFramebufferMutex);
+        m_SceneFrameBuffer = std::move(scene);
     }));
 }
 
 void Rendering::Renderer::RunPostProc(const size_t renderIndex) const {
-    if (!m_SceneFrameBuffer || !m_PingPong[0] || !m_PingPong[1]) {
+    const auto scene = GetSceneFrameBuffer();
+    if (!scene || !m_PingPong[0] || !m_PingPong[1]) {
         return;
     }
-    FrameBuffer *result = m_FramePostProcessors[renderIndex].Execute(m_SceneFrameBuffer.get(), m_PingPong[0].get(), m_PingPong[1].get());
+    FrameBuffer *result = m_FramePostProcessors[renderIndex].Execute(scene.get(), m_PingPong[0].get(), m_PingPong[1].get());
     if (result) {
-        DrawFullscreenPassthrough(result->GetColorAttID(), m_SceneFrameBuffer->GetWidth(), m_SceneFrameBuffer->GetHeight(), m_SceneFrameBuffer.get());
+        DrawFullscreenPassthrough(result->GetColorAttID(), scene->GetWidth(), scene->GetHeight(), scene.get());
     }
 }
-
-void Rendering::Renderer::PresentToScreen(const uint32_t width, const uint32_t height) const { DrawFullscreenPassthrough(m_SceneFrameBuffer->GetColorAttID(), width, height, nullptr); }
+void Rendering::Renderer::PresentToScreen(const uint32_t width, const uint32_t height) const {
+    if (const auto scene = GetSceneFrameBuffer()) {
+        DrawFullscreenPassthrough(scene->GetColorAttID(), width, height, nullptr);
+    }
+}
 
 void Rendering::Renderer::DrawFullscreenPassthrough(const uint32_t coltex, const uint32_t width, const uint32_t height, const FrameBuffer *target) const {
     if (!m_PassthroughShader || !m_PassthroughShader->IsValid())
@@ -663,12 +678,22 @@ void Rendering::Renderer::BindLightmap(Shader *shader, const size_t renderIndex)
     }
 }
 
-void Rendering::Renderer::SetClearColor(const glm::vec4 color) { s_ClearColorStaging = color; }
+void Rendering::Renderer::SetClearColor(const glm::vec4 color) {
+    std::lock_guard lock(s_ClearColorMutex);
+    s_ClearColorStaging = color;
+}
 
-void Rendering::Renderer::ApplyClearColor() { glClearColor(s_ClearColorStaging[0], s_ClearColorStaging[1], s_ClearColorStaging[2], s_ClearColorStaging[3]); }
+void Rendering::Renderer::ApplyClearColor(const size_t renderIndex) const {
+    const auto &color = m_FrameClearColor[renderIndex];
+    glClearColor(color[0], color[1], color[2], color[3]);
+}
 
 void Rendering::Renderer::SwapBuffers() {
     m_FramePostProcessors[m_SubmitIndex].Effects() = m_PostProcessor.Effects();
+    {
+        std::lock_guard lock(s_ClearColorMutex);
+        m_FrameClearColor[m_SubmitIndex] = s_ClearColorStaging;
+    }
 
     m_RenderIndex = m_SubmitIndex;
     m_SubmitIndex = (m_SubmitIndex + 1) % 2;
@@ -735,6 +760,8 @@ void Rendering::Renderer::ClearInitQ() {
 void Rendering::Renderer::Shutdown() {
     Clean();
 
+    m_ImGuiResourcePins.clear();
+
     for (size_t i = 0; i < 2; ++i) {
         m_ResourcePins[i].clear();
         m_FramePostProcessors[i].Effects().clear();
@@ -742,7 +769,10 @@ void Rendering::Renderer::Shutdown() {
     }
 
     m_PostProcessor.Effects().clear();
-    m_SceneFrameBuffer.reset();
+    {
+        std::lock_guard lock(m_SceneFramebufferMutex);
+        m_SceneFrameBuffer.reset();
+    }
     m_PassthroughShader.reset();
 
     m_DynamicInstanceBuffer.reset();

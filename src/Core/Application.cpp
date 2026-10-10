@@ -181,6 +181,7 @@ void Core::Application::Run() {
 
         const int writeIdx = m_MainFrameIndex;
         m_FrameImGuiData[writeIdx]->SnapUsingSwap(ImGui::GetDrawData(), ImGui::GetTime());
+        m_FrameImGuiResourcePins[writeIdx] = renderer.TakeImGuiResourcePins();
 
         // hand off frame to render thread
         {
@@ -267,6 +268,9 @@ void Core::Application::Shutdown() {
         m_Layer.reset();
     }
 
+    m_FrameImGuiResourcePins[0].clear();
+    m_FrameImGuiResourcePins[1].clear();
+
     m_FrameImGuiData[0].reset();
     m_FrameImGuiData[1].reset();
 
@@ -323,7 +327,7 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer, UI::UI
             if (const auto sceneFbo = renderer->GetSceneFrameBuffer()) {
                 sceneFbo->Bind();
                 sceneFbo->BindDrawBuffers();
-                Rendering::Renderer::ApplyClearColor();
+                renderer->ApplyClearColor(static_cast<size_t>(frameIdx));
                 glClear(GL_COLOR_BUFFER_BIT);
 
                 renderer->Flush(static_cast<size_t>(frameIdx));
@@ -337,7 +341,7 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer, UI::UI
                 glClear(GL_COLOR_BUFFER_BIT);
             } else {
                 glViewport(0, 0, m_Window.GetWidth(), m_Window.GetHeight());
-                Rendering::Renderer::ApplyClearColor();
+                renderer->ApplyClearColor(static_cast<size_t>(frameIdx));
                 glClear(GL_COLOR_BUFFER_BIT);
 
                 renderer->Flush(static_cast<size_t>(frameIdx));
@@ -348,7 +352,7 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer, UI::UI
             if (const auto sceneFbo = renderer->GetSceneFrameBuffer()) {
                 sceneFbo->Bind();
                 sceneFbo->BindDrawBuffers();
-                Rendering::Renderer::ApplyClearColor();
+                renderer->ApplyClearColor(static_cast<size_t>(frameIdx));
                 glClear(GL_COLOR_BUFFER_BIT);
 
                 renderer->Flush(static_cast<size_t>(frameIdx));
@@ -359,7 +363,7 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer, UI::UI
             } else {
                 // first frame before the scene framebuffer is created
                 glViewport(0, 0, m_Window.GetWidth(), m_Window.GetHeight());
-                Rendering::Renderer::ApplyClearColor();
+                renderer->ApplyClearColor(static_cast<size_t>(frameIdx));
                 glClear(GL_COLOR_BUFFER_BIT);
 
                 renderer->Flush(static_cast<size_t>(frameIdx));
