@@ -78,6 +78,8 @@ namespace UI {
         // explicit
         [[nodiscard]] glm::vec2 WindowToGameCoords(float winX, float winY, float viewWidth, float viewHeight) const;
 
+        void Shutdown();
+
     private:
         static constexpr uint32_t MAX_QUADS = 10000;
 
@@ -88,7 +90,7 @@ namespace UI {
         glm::mat4 m_Projection[2] = {glm::mat4(1.0f), glm::mat4(1.0f)};
         glm::vec2 m_GameResolution = {0.0f, 0.0f};
         glm::vec2 m_FrameGameResolution[2] = {};
-        glm::uvec2 m_ActualWindowSize[2] = {};     // framebuffer/window size for letterboxing
+        glm::uvec2 m_ActualWindowSize[2] = {};      // framebuffer/window size for letterboxing
         glm::uvec2 m_LastRenderTargetSize = {0, 0}; // render target used in last Flush
         mutable std::mutex m_RenderTargetMutex;
 

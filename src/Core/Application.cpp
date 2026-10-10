@@ -1,7 +1,10 @@
 #include "Application.h"
 #include "Core/EngineContext.h"
 #include "Core/Utils/PathUtils.h"
+#include "ECS/Systems/ParticleSystem.h"
+#include "IO/Loaders/AssetLoader.h"
 #include "Logger/LoggerService.h"
+#include "Platform/Timeout.h"
 #include "Rendering/Types/Mesh/MeshFactory.h"
 #include "Rendering/Types/Shader/InternalShaders.h"
 #include "Rendering/Renderer.h"
@@ -178,6 +181,7 @@ void Core::Application::Run() {
 
         const int writeIdx = m_MainFrameIndex;
         m_FrameImGuiData[writeIdx]->SnapUsingSwap(ImGui::GetDrawData(), ImGui::GetTime());
+        m_FrameImGuiResourcePins[writeIdx] = renderer.TakeImGuiResourcePins();
 
         // hand off frame to render thread
         {
@@ -221,14 +225,59 @@ void Core::Application::Run() {
         m_RenderThread.join();
     }
     glfwMakeContextCurrent(m_Window.GetNativeWindow());
+
+    if (m_Layer) {
+        m_Layer->Shutdown();
+    }
+
+    if (context.sceneManager) {
+        context.sceneManager->ClearCurrentScene();
+    }
+
+    m_ThreadPool.shutdown();
+    IO::AssetLoader::WaitForBackgroundLoads();
+
+    Platform::Time::invalidateGeneration();
+    Platform::Time::timers.clear();
+
+    m_ScriptPool.shutdown();
+
+    m_Layer.reset();
+    context.sceneManager = nullptr;
+
+    m_AudioEngine.reset();
+    context.audioEngine = nullptr;
+
+    Rendering::Renderer::ClearInitQ();
+    renderer.Shutdown();
+    m_UIRenderer.Shutdown();
+
+    ECS::Systems::ParticleSystem::GetEmitters().clear();
+    ECS::Systems::ParticleSystem::GetQuadMesh().reset();
+
+    ResourceManager::GetInstance().ClearAll();
+
+    Shutdown();
+
+    Rendering::Renderer::ProcessDeleteQ();
 }
 
 void Core::Application::Shutdown() {
-    m_Layer->Shutdown();
-    ImGui_ImplGlfw_Shutdown();
+    if (m_Layer) {
+        m_Layer->Shutdown();
+        m_Layer.reset();
+    }
+
+    m_FrameImGuiResourcePins[0].clear();
+    m_FrameImGuiResourcePins[1].clear();
+
     m_FrameImGuiData[0].reset();
     m_FrameImGuiData[1].reset();
-    ImGui::DestroyContext();
+
+    if (ImGui::GetCurrentContext() != nullptr) {
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
+    }
 }
 
 void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer, UI::UIRenderer *uiRenderer) {
@@ -278,7 +327,7 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer, UI::UI
             if (const auto sceneFbo = renderer->GetSceneFrameBuffer()) {
                 sceneFbo->Bind();
                 sceneFbo->BindDrawBuffers();
-                Rendering::Renderer::ApplyClearColor();
+                renderer->ApplyClearColor(static_cast<size_t>(frameIdx));
                 glClear(GL_COLOR_BUFFER_BIT);
 
                 renderer->Flush(static_cast<size_t>(frameIdx));
@@ -292,7 +341,7 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer, UI::UI
                 glClear(GL_COLOR_BUFFER_BIT);
             } else {
                 glViewport(0, 0, m_Window.GetWidth(), m_Window.GetHeight());
-                Rendering::Renderer::ApplyClearColor();
+                renderer->ApplyClearColor(static_cast<size_t>(frameIdx));
                 glClear(GL_COLOR_BUFFER_BIT);
 
                 renderer->Flush(static_cast<size_t>(frameIdx));
@@ -303,7 +352,7 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer, UI::UI
             if (const auto sceneFbo = renderer->GetSceneFrameBuffer()) {
                 sceneFbo->Bind();
                 sceneFbo->BindDrawBuffers();
-                Rendering::Renderer::ApplyClearColor();
+                renderer->ApplyClearColor(static_cast<size_t>(frameIdx));
                 glClear(GL_COLOR_BUFFER_BIT);
 
                 renderer->Flush(static_cast<size_t>(frameIdx));
@@ -314,7 +363,7 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer, UI::UI
             } else {
                 // first frame before the scene framebuffer is created
                 glViewport(0, 0, m_Window.GetWidth(), m_Window.GetHeight());
-                Rendering::Renderer::ApplyClearColor();
+                renderer->ApplyClearColor(static_cast<size_t>(frameIdx));
                 glClear(GL_COLOR_BUFFER_BIT);
 
                 renderer->Flush(static_cast<size_t>(frameIdx));
@@ -336,6 +385,7 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer, UI::UI
         }
 
         m_Window.SwapBuffers();
+        Rendering::Renderer::ProcessDeleteQ();
 
         // frame limiter only when VSync is off to avoid burning CPU for invisible frames
         if (frameLimit) {
@@ -360,5 +410,6 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer, UI::UI
         }
     }
     ImGui_ImplOpenGL3_Shutdown();
+    Rendering::Renderer::ProcessDeleteQ();
     glfwMakeContextCurrent(nullptr);
 }

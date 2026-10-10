@@ -26,8 +26,9 @@ namespace Rendering {
     };
 
     struct RenderCommand {
-        const Mesh *mesh;
+        std::shared_ptr<Mesh> mesh;
         const Material *material;
+        Shader *shader = nullptr;
         const Texture *effectiveTexture;
         glm::vec4 color;
         glm::vec4 uvRect{0.0f, 0.0f, 1.0f, 1.0f};
@@ -37,8 +38,9 @@ namespace Rendering {
     };
 
     struct InstancedRenderCommand {
-        const Mesh *mesh;
+        std::shared_ptr<Mesh> mesh;
         const Material *material;
+        Shader *shader = nullptr;
         const Texture *effectiveTexture;
         glm::vec4 color;
         glm::vec4 uvRect{0.0f, 0.0f, 1.0f, 1.0f};
@@ -60,16 +62,19 @@ namespace Rendering {
     };
 
     struct BatchKey {
-        const Mesh *mesh;
+        std::shared_ptr<Mesh> mesh;
         const Material *material;
+        Shader *shader = nullptr;
         const Texture *texture;
         glm::vec4 color;
         glm::vec4 uvRect{0.0f, 0.0f, 1.0f, 1.0f};
         int32_t shape = 0;
+
         bool operator==(const BatchKey &other) const noexcept {
-            return mesh == other.mesh && material == other.material && texture == other.texture && color == other.color && uvRect == other.uvRect && shape == other.shape;
+            return mesh == other.mesh && material == other.material && shader == other.shader && texture == other.texture && color == other.color && uvRect == other.uvRect && shape == other.shape;
         }
     };
+    ;
 
     class Renderer {
     public:
@@ -92,6 +97,18 @@ namespace Rendering {
                 m_ResourcePins[m_SubmitIndex].push_back(resource);
         }
 
+        template <typename T> void PinImGuiResource(const std::shared_ptr<T> &resource) {
+            if (resource) {
+                m_ImGuiResourcePins.push_back(resource);
+            }
+        }
+
+        std::vector<std::shared_ptr<void>> TakeImGuiResourcePins() {
+            std::vector<std::shared_ptr<void>> pins;
+            pins.swap(m_ImGuiResourcePins);
+            return pins;
+        }
+
         void Flush(size_t renderIndex);
         void Clean();
         void InvalidateGLCache();
@@ -100,11 +117,15 @@ namespace Rendering {
         void SetLightmap(const Lightmap *lightmap);
 
         static void SetClearColor(glm::vec4 color);
-        static void ApplyClearColor();
+        void ApplyClearColor(size_t renderIndex) const;
 
         static void SubmitInitTask(Platform::Threading::SmallTask task);
         static void SubmitInitTask(std::function<void()> task);
         static void ProcessInitQ();
+
+        static void SubmitDeleteTask(Platform::Threading::SmallTask task);
+        static void ProcessDeleteQ();
+        static void ClearInitQ();
 
         void SetFallbackShader(Shader *shader) { m_FallbackShader = shader; }
 
@@ -122,12 +143,17 @@ namespace Rendering {
         [[nodiscard]] bool IsEditorMode() const { return m_EditorMode; }
 
         void EnsureSceneFramebufferSize(uint32_t width, uint32_t height);
-        [[nodiscard]] std::shared_ptr<FrameBuffer> GetSceneFrameBuffer() const { return m_SceneFrameBuffer; }
+        [[nodiscard]] std::shared_ptr<FrameBuffer> GetSceneFrameBuffer() const {
+            std::lock_guard lock(m_SceneFramebufferMutex);
+            return m_SceneFrameBuffer;
+        }
         [[nodiscard]] PostProcessing::PostProcessor &GetPostProcessor() { return m_PostProcessor; }
         void SetPassthroughShader(std::shared_ptr<Shader> s) { m_PassthroughShader = std::move(s); }
 
         void RunPostProc(size_t renderIndex) const;
         void PresentToScreen(uint32_t width, uint32_t height) const;
+
+        void Shutdown();
 
     private:
         void BindLightmap(Shader *shader, size_t renderIndex) const;
@@ -135,11 +161,15 @@ namespace Rendering {
         void RenderBatch(const BatchKey &key, const glm::mat4 *transforms, const int32_t *entityIDs, size_t count, size_t renderIndex, const glm::vec4 *perInstanceColors = nullptr);
 
         std::vector<std::shared_ptr<void>> m_ResourcePins[2];
+        std::vector<std::shared_ptr<void>> m_ImGuiResourcePins;
 
         using InitTask = std::variant<Platform::Threading::SmallTask, std::function<void()>>;
         static std::vector<InitTask> s_InitQueue;
         static std::mutex s_InitQueueMutex;
         static std::atomic<bool> s_HasInitTasks;
+
+        static std::vector<Platform::Threading::SmallTask> s_DeleteQueue;
+        static std::mutex s_DeleteQueueMutex;
 
         size_t m_SubmitIndex = 0;
         size_t m_RenderIndex = 1;
@@ -153,6 +183,7 @@ namespace Rendering {
 
         const Camera *m_Camera = nullptr;
         LightmapData m_Lightmap[2];
+        glm::vec4 m_FrameClearColor[2] = {glm::vec4(0.0f, 0.0f, 0.0f, 1.0f), glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)};
 
         float m_Aspect = 1.7777777f;
         glm::mat4 m_VP[2] = {glm::mat4(1.0f), glm::mat4(1.0f)};
@@ -168,7 +199,7 @@ namespace Rendering {
             size_t count;
         };
 
-        std::vector<std::pair<const Mesh *, MeshVAO>> m_MeshVAOs;
+        std::vector<std::pair<std::weak_ptr<Mesh>, MeshVAO>> m_MeshVAOs;
         std::unique_ptr<VertexBuffer> m_DynamicInstanceBuffer;
         std::unique_ptr<VertexBuffer> m_DynamicEntityIDBuffer;
         std::unique_ptr<VertexBuffer> m_DynamicColorBuffer;
@@ -193,6 +224,7 @@ namespace Rendering {
 
         // post-proc
         std::shared_ptr<FrameBuffer> m_SceneFrameBuffer;
+        mutable std::mutex m_SceneFramebufferMutex;
         std::shared_ptr<FrameBuffer> m_PingPong[2]; // multi pass effects
         PostProcessing::PostProcessor m_PostProcessor;
         PostProcessing::PostProcessor m_FramePostProcessors[2];

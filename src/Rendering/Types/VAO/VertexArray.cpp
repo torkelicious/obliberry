@@ -1,13 +1,10 @@
 #include "VertexArray.h"
+#include "Rendering/GLDelete.h"
 #include <glm/glm.hpp>
+#include <utility>
 
 namespace Rendering {
-    VertexArray::~VertexArray() {
-        if (m_ID != 0) {
-            glDeleteVertexArrays(1, &m_ID);
-            m_ID = 0;
-        }
-    }
+    VertexArray::~VertexArray() { QDeleteVertexArray(std::exchange(m_ID, 0)); }
 
     void VertexArray::Init() { glGenVertexArrays(1, &m_ID); }
 

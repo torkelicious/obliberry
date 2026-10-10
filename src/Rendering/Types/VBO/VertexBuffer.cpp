@@ -1,4 +1,6 @@
 #include "VertexBuffer.h"
+#include "Rendering/GLDelete.h"
+#include <utility>
 
 void Rendering::VertexBuffer::Init(const void *data, const unsigned int size, const GLenum usage) {
     glGenBuffers(1, &m_ID);
@@ -6,12 +8,7 @@ void Rendering::VertexBuffer::Init(const void *data, const unsigned int size, co
     glBufferData(GL_ARRAY_BUFFER, size, data, usage);
 }
 
-Rendering::VertexBuffer::~VertexBuffer() {
-    if (m_ID != 0) {
-        glDeleteBuffers(1, &m_ID);
-        m_ID = 0;
-    }
-}
+Rendering::VertexBuffer::~VertexBuffer() { QDeleteBuffer(std::exchange(m_ID, 0)); }
 
 void Rendering::VertexBuffer::Bind() const { glBindBuffer(GL_ARRAY_BUFFER, m_ID); }
 

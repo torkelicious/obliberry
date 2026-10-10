@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "Rendering/GLDelete.h"
 #include "glad/glad.h"
 
 namespace Rendering {
@@ -23,8 +24,8 @@ namespace Rendering {
 
         Texture &operator=(Texture &&other) noexcept {
             if (this != &other) {
-                if (m_ID != 0)
-                    glDeleteTextures(1, &m_ID);
+                QDeleteTexture(std::exchange(m_ID, 0));
+
                 m_ID = other.m_ID;
                 other.m_ID = 0;
                 m_FilePath = std::move(other.m_FilePath);

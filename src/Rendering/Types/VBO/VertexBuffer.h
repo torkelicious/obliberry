@@ -1,6 +1,8 @@
 #pragma once
 
+#include "Rendering/GLDelete.h"
 #include "glad/glad.h"
+#include <utility>
 
 
 namespace Rendering {
@@ -16,8 +18,8 @@ namespace Rendering {
 
         VertexBuffer &operator=(VertexBuffer &&other) noexcept {
             if (this != &other) {
-                if (m_ID != 0)
-                    glDeleteBuffers(1, &m_ID);
+                QDeleteBuffer(std::exchange(m_ID, 0));
+
                 m_ID = other.m_ID;
                 other.m_ID = 0;
             }

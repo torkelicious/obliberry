@@ -65,6 +65,7 @@ void Editor::UI::ViewportPanel::OnImGuiRender() {
             m_EngineContext->renderer->EnsureSceneFramebufferSize(static_cast<uint32_t>(viewportSize.x), static_cast<uint32_t>(viewportSize.y));
 
             if (const auto fbo = m_EngineContext->renderer->GetSceneFrameBuffer()) {
+                m_EngineContext->renderer->PinImGuiResource(fbo);
                 const uint32_t texId = fbo->GetColorAttID();
 
                 ImGui::Image(texId, viewportSize, ImVec2{0, 1}, ImVec2{1, 0});

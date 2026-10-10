@@ -58,6 +58,8 @@ namespace Platform::Threading {
 
         void stop();
 
+        void shutdown();
+
     private:
         std::vector<std::thread> m_Threads;
         std::queue<Task> m_Tasks;

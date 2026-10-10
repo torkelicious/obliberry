@@ -1,7 +1,9 @@
 #pragma once
 #include <cstdint>
 #include <glad/glad.h>
+#include <utility>
 #include "Logger/LoggerService.h"
+#include "Rendering/GLDelete.h"
 
 namespace Rendering {
     class FrameBuffer {
@@ -27,12 +29,7 @@ namespace Rendering {
 
         FrameBuffer &operator=(FrameBuffer &&other) noexcept {
             if (this != &other) {
-                if (m_RendererID) {
-                    glDeleteFramebuffers(1, &m_RendererID);
-                    glDeleteTextures(1, &m_ColorAtt);
-                    if (m_EntityIDAtt)
-                        glDeleteTextures(1, &m_EntityIDAtt);
-                }
+                QDeleteFrameBuffer(std::exchange(m_RendererID, 0), std::exchange(m_ColorAtt, 0), std::exchange(m_EntityIDAtt, 0));
 
                 m_RendererID = other.m_RendererID;
                 m_ColorAtt = other.m_ColorAtt;
@@ -51,14 +48,7 @@ namespace Rendering {
             return *this;
         }
 
-        ~FrameBuffer() {
-            if (m_RendererID) {
-                glDeleteFramebuffers(1, &m_RendererID);
-                glDeleteTextures(1, &m_ColorAtt);
-                if (m_EntityIDAtt)
-                    glDeleteTextures(1, &m_EntityIDAtt);
-            }
-        }
+        ~FrameBuffer() { QDeleteFrameBuffer(std::exchange(m_RendererID, 0), std::exchange(m_ColorAtt, 0), std::exchange(m_EntityIDAtt, 0)); }
 
         [[nodiscard]] uint32_t GetWidth() const { return m_Width; }
         [[nodiscard]] uint32_t GetHeight() const { return m_Height; }

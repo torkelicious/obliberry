@@ -1,11 +1,14 @@
 #include "Shader.h"
+#include <exception>
 #include <filesystem>
 #include <fstream>
 #include <sstream>
+#include <utility>
 #include "Core/Constants.h"
 #include "Logger/LoggerService.h"
 #include "IO/VFS/VFS.h"
 #include "Preprocessor/ShaderPreprocessor.h"
+#include "Rendering/GLDelete.h"
 
 
 #pragma push_macro("LOG_WHO")
@@ -48,12 +51,7 @@ namespace Rendering {
 
     Shader::Shader(std::string vertSrc, std::string fragSrc, std::string debugName) : m_VertexSrc(std::move(vertSrc)), m_FragmentSrc(std::move(fragSrc)), m_FromSource(true), m_DebugName(std::move(debugName)) {}
 
-    Shader::~Shader() {
-        if (m_ID != 0) {
-            glDeleteProgram(m_ID);
-            m_ID = 0;
-        }
-    }
+    Shader::~Shader() { QDeleteProgram(std::exchange(m_ID, 0)); }
 
     void Shader::InitGL() {
         if (m_ID != 0)

@@ -6,6 +6,7 @@
 #include <atomic>
 #include <deque>
 #include <memory>
+#include <vector>
 #include <imgui_threaded_rendering.h>
 #include "Config/ProjectConfig.h"
 #include "Platform/Window/Window.h"
@@ -69,5 +70,7 @@ namespace Core {
 
         std::unique_ptr<ImDrawDataSnapshot> m_FrameImGuiData[2] = {nullptr, nullptr};
         std::mutex m_ImGuiTextureMutex;
+
+        std::vector<std::shared_ptr<void>> m_FrameImGuiResourcePins[2];
     };
 } // namespace Core

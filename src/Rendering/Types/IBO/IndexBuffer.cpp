@@ -1,12 +1,9 @@
 #include "IndexBuffer.h"
+#include "Rendering/GLDelete.h"
+#include <utility>
 
 namespace Rendering {
-    IndexBuffer::~IndexBuffer() {
-        if (m_ID != 0) {
-            glDeleteBuffers(1, &m_ID);
-            m_ID = 0;
-        }
-    }
+    IndexBuffer::~IndexBuffer() { QDeleteBuffer(std::exchange(m_ID, 0)); }
 
     void IndexBuffer::Init(const unsigned int *data, const unsigned int count) {
         m_Count = count;

@@ -1,10 +1,17 @@
 #include "Renderer.h"
 
+#include "Platform/Threading/SmallTask.h"
 #include "Rendering/Types/Lightmap.h"
+#include "Rendering/Types/Shader/Shader.h"
 #include "Rendering/Types/Transform.h"
+#include "Rendering/GLDelete.h"
 #include <algorithm>
+#include <atomic>
 #include <glm/gtc/type_ptr.hpp>
 #include <memory>
+#include <mutex>
+#include <utility>
+#include <vector>
 
 constexpr unsigned int MAX_INSTANCES = 100000;
 constexpr size_t INSTANCE_BUFFER_SIZE = MAX_INSTANCES * sizeof(glm::mat4);
@@ -16,7 +23,11 @@ std::vector<InitTask> Rendering::Renderer::s_InitQueue;
 std::mutex Rendering::Renderer::s_InitQueueMutex;
 std::atomic<bool> Rendering::Renderer::s_HasInitTasks{false};
 
+std::vector<Platform::Threading::SmallTask> Rendering::Renderer::s_DeleteQueue;
+std::mutex Rendering::Renderer::s_DeleteQueueMutex;
+
 static glm::vec4 s_ClearColorStaging = {0.0f, 0.0f, 0.0f, 1.0f};
+static std::mutex s_ClearColorMutex;
 
 void Rendering::Renderer::SetCamera(const Camera &camera, const float aspect) {
     m_Camera = &camera;
@@ -40,9 +51,13 @@ void Rendering::Renderer::BeginFrame() {
 void Rendering::Renderer::Submit(
         const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const Transform &transform, const Texture *textureOverride, const int32_t entityID, const glm::vec4 &uvRect) {
 
-    m_ResourcePins[m_SubmitIndex].push_back(mesh);
-    if (material)
-        m_ResourcePins[m_SubmitIndex].push_back(material);
+    Pin(mesh);
+    Pin(material);
+
+    const auto shader = material ? material->shader : nullptr;
+    const auto texture = material ? material->texture : nullptr;
+    Pin(shader);
+    Pin(texture);
 
     const glm::vec3 &pos = transform.GetPosition();
 
@@ -54,11 +69,12 @@ void Rendering::Renderer::Submit(
         return static_cast<int32_t>(static_cast<uint32_t>(static_cast<int16_t>(d)) << 16 | static_cast<uint32_t>(static_cast<int16_t>(z)));
     };
 
-    const Texture *effectiveTex = textureOverride ? textureOverride : material && material->texture ? material->texture.get() : nullptr;
+    const Texture *effectiveTex = textureOverride ? textureOverride : texture.get();
     const glm::vec4 col = material ? material->color : glm::vec4(1.0f);
 
-    m_Commands[m_SubmitIndex].push_back({.mesh = mesh.get(),
+    m_Commands[m_SubmitIndex].push_back({.mesh = mesh,
             .material = material.get(),
+            .shader = shader.get(),
             .effectiveTexture = effectiveTex,
             .color = col,
             .uvRect = uvRect,
@@ -71,11 +87,15 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::s
     if (transforms.empty())
         return;
 
-    m_ResourcePins[m_SubmitIndex].push_back(mesh);
-    if (material)
-        m_ResourcePins[m_SubmitIndex].push_back(material);
+    Pin(mesh);
+    Pin(material);
 
-    const Texture *tex = material && material->texture ? material->texture.get() : nullptr;
+    const auto shader = material ? material->shader : nullptr;
+    const auto texture = material ? material->texture : nullptr;
+    Pin(shader);
+    Pin(texture);
+
+    const Texture *tex = texture.get();
     const glm::vec4 col = material ? material->color : glm::vec4(1.0f);
 
     const size_t transformOffset = m_InstancedTransformsStaging[m_SubmitIndex].size();
@@ -87,8 +107,9 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::s
         m_InstancedEntityIDsStaging[m_SubmitIndex].resize(entityIDOffset + transforms.size(), -1);
     }
 
-    m_InstancedCommands[m_SubmitIndex].push_back({.mesh = mesh.get(),
+    m_InstancedCommands[m_SubmitIndex].push_back({.mesh = mesh,
             .material = material.get(),
+            .shader = shader.get(),
             .effectiveTexture = tex,
             .color = col,
             .transformPtr = nullptr,
@@ -104,11 +125,15 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::s
     if (transforms.empty())
         return;
 
-    m_ResourcePins[m_SubmitIndex].push_back(mesh);
-    if (material)
-        m_ResourcePins[m_SubmitIndex].push_back(material);
+    Pin(mesh);
+    Pin(material);
 
-    const Texture *tex = material && material->texture ? material->texture.get() : nullptr;
+    const auto shader = material ? material->shader : nullptr;
+    const auto texture = material ? material->texture : nullptr;
+    Pin(shader);
+    Pin(texture);
+
+    const Texture *tex = texture.get();
     const glm::vec4 col = material ? material->color : glm::vec4(1.0f);
 
     const size_t transformOffset = m_InstancedTransformsStaging[m_SubmitIndex].size();
@@ -120,8 +145,9 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::s
         m_InstancedColorsStaging[m_SubmitIndex].resize(colorOffset + transforms.size(), glm::vec4(1.0f));
     }
 
-    m_InstancedCommands[m_SubmitIndex].push_back({.mesh = mesh.get(),
+    m_InstancedCommands[m_SubmitIndex].push_back({.mesh = mesh,
             .material = material.get(),
+            .shader = shader.get(),
             .effectiveTexture = tex,
             .color = col,
             .blendMode = static_cast<int8_t>(blendMode),
@@ -142,11 +168,15 @@ void Rendering::Renderer::SubmitPersistent(const std::shared_ptr<Mesh> &mesh, co
     if (!transforms || transforms->empty())
         return;
 
-    m_ResourcePins[m_SubmitIndex].push_back(mesh);
-    if (material)
-        m_ResourcePins[m_SubmitIndex].push_back(material);
+    Pin(mesh);
+    Pin(material);
 
-    const Texture *tex = material && material->texture ? material->texture.get() : nullptr;
+    const auto shader = material ? material->shader : nullptr;
+    const auto texture = material ? material->texture : nullptr;
+    Pin(shader);
+    Pin(texture);
+
+    const Texture *tex = texture.get();
     const glm::vec4 col = material ? material->color : glm::vec4(1.0f);
 
     // copy transforms into staging mem
@@ -161,8 +191,9 @@ void Rendering::Renderer::SubmitPersistent(const std::shared_ptr<Mesh> &mesh, co
         m_InstancedEntityIDsStaging[m_SubmitIndex].resize(entityIDOffset + transforms->size(), -1);
     }
 
-    m_InstancedCommands[m_SubmitIndex].push_back({.mesh = mesh.get(),
+    m_InstancedCommands[m_SubmitIndex].push_back({.mesh = mesh,
             .material = material.get(),
+            .shader = shader.get(),
             .effectiveTexture = tex,
             .color = col,
             .transformPtr = nullptr,
@@ -177,7 +208,10 @@ void Rendering::Renderer::SubmitPersistent(const std::shared_ptr<Mesh> &mesh, co
 }
 
 void Rendering::Renderer::Flush(const size_t renderIndex) {
-    if (m_SceneFrameBuffer) {
+
+    std::erase_if(m_MeshVAOs, [](const auto &cached) { return cached.first.expired(); });
+
+    if (const auto sceneFbo = GetSceneFrameBuffer()) {
         constexpr int32_t kEmptyEntityID = -1;
         glClearBufferiv(GL_COLOR, 1, &kEmptyEntityID);
     }
@@ -259,7 +293,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
                     }
                 }
 
-                BatchKey key{.mesh = instCmd.mesh, .material = instCmd.material, .texture = instCmd.effectiveTexture, .color = instCmd.color, .uvRect = instCmd.uvRect, .shape = instCmd.shape};
+                BatchKey key{.mesh = instCmd.mesh, .material = instCmd.material, .shader = instCmd.shader, .texture = instCmd.effectiveTexture, .color = instCmd.color, .uvRect = instCmd.uvRect, .shape = instCmd.shape};
                 const glm::mat4 *transformsPtr = instCmd.transformPtr ? instCmd.transformPtr : m_InstancedTransformsStaging[renderIndex].data() + instCmd.transformOffset;
                 const glm::vec4 *colorsPtr = instCmd.colorPtr ? instCmd.colorPtr : instCmd.colorCount > 0 ? m_InstancedColorsStaging[renderIndex].data() + instCmd.colorOffset : nullptr;
 
@@ -302,7 +336,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
             if (!cmd.mesh || !cmd.material)
                 continue;
 
-            if (BatchKey key{.mesh = cmd.mesh, .material = cmd.material, .texture = cmd.effectiveTexture, .color = cmd.color, .uvRect = cmd.uvRect, .shape = 0}; !hasCurrent || currentKey != key) {
+            if (BatchKey key{.mesh = cmd.mesh, .material = cmd.material, .shader = cmd.shader, .texture = cmd.effectiveTexture, .color = cmd.color, .uvRect = cmd.uvRect, .shape = 0}; !hasCurrent || currentKey != key) {
                 if (hasCurrent)
                     m_BatchRanges.push_back({.key = currentKey, .offset = batchStart, .count = m_MergedTransforms.size() - batchStart});
                 currentKey = key;
@@ -351,7 +385,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
                     }
                 }
 
-                BatchKey key{.mesh = instCmd.mesh, .material = instCmd.material, .texture = instCmd.effectiveTexture, .color = instCmd.color, .uvRect = instCmd.uvRect, .shape = instCmd.shape};
+                BatchKey key{.mesh = instCmd.mesh, .material = instCmd.material, .shader = instCmd.shader, .texture = instCmd.effectiveTexture, .color = instCmd.color, .uvRect = instCmd.uvRect, .shape = instCmd.shape};
                 const glm::mat4 *transformsPtr = instCmd.transformPtr ? instCmd.transformPtr : m_InstancedTransformsStaging[renderIndex].data() + instCmd.transformOffset;
                 const glm::vec4 *colorsPtr = instCmd.colorPtr ? instCmd.colorPtr : instCmd.colorCount > 0 ? m_InstancedColorsStaging[renderIndex].data() + instCmd.colorOffset : nullptr;
 
@@ -389,6 +423,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
 
     m_Commands[renderIndex].clear();
     m_InstancedCommands[renderIndex].clear();
+    m_BatchRanges.clear();
 }
 
 void Rendering::Renderer::RenderBatch(const BatchKey &key, const glm::mat4 *transforms, const int32_t *entityIDs, const size_t count, const size_t renderIndex, const glm::vec4 *perInstanceColors) {
@@ -401,9 +436,13 @@ void Rendering::Renderer::RenderBatch(const BatchKey &key, const glm::mat4 *tran
         const int32_t *chunkEntityIDs = entityIDs ? entityIDs + offset : nullptr;
         const glm::vec4 *chunkColors = perInstanceColors ? perInstanceColors + offset : nullptr;
 
-        Shader *shader = key.material ? key.material->shader.get() : nullptr;
-        if (!shader || !shader->IsValid())
+        Shader *shader = key.shader;
+        if (!shader || !shader->IsValid()) {
             shader = m_FallbackShader;
+        }
+        if (!shader || !shader->IsValid()) {
+            return;
+        }
 
         if (m_LastBoundShader != shader) {
             shader->Bind();
@@ -438,12 +477,14 @@ void Rendering::Renderer::RenderBatch(const BatchKey &key, const glm::mat4 *tran
 
         // find or create VAO for this mesh
         MeshVAO *meshVAOEntry = nullptr;
+
         for (auto &[mesh, entry] : m_MeshVAOs) {
-            if (mesh == key.mesh) {
+            if (mesh.lock() == key.mesh) {
                 meshVAOEntry = &entry;
                 break;
             }
         }
+
         if (!meshVAOEntry) {
             auto vao = std::make_shared<VertexArray>();
             vao->Init();
@@ -540,8 +581,7 @@ void Rendering::Renderer::InvalidateGLCache() {
         m_LastBoundTexture = nullptr;
         m_LastBoundColor = glm::vec4(0.0f);
         m_LastBoundUVRect = glm::vec4(-1.0f);
-        m_Lightmap[0] = {};
-        m_Lightmap[1] = {};
+        // BeginFrame resets only the free submit slot; queued lightmaps stay alive.
     }));
 }
 
@@ -554,34 +594,49 @@ void Rendering::Renderer::SetLightmap(const Lightmap *lightmap) {
 }
 
 void Rendering::Renderer::EnsureSceneFramebufferSize(uint32_t width, uint32_t height) {
-    if (m_PPWidth == width && m_PPHeight == height)
+    if (width == 0 || height == 0) {
         return;
-    m_PPWidth = width;
-    m_PPHeight = height;
-    SubmitInitTask(Platform::Threading::SmallTask([this, width, height] {
-        if (!m_SceneFrameBuffer) {
-            m_SceneFrameBuffer = std::make_shared<FrameBuffer>(width, height, true);
-            m_PingPong[0] = std::make_shared<FrameBuffer>(width, height, false);
-            m_PingPong[1] = std::make_shared<FrameBuffer>(width, height, false);
-        } else {
-            m_SceneFrameBuffer->Invalidate(width, height);
-            m_PingPong[0]->Invalidate(width, height);
-            m_PingPong[1]->Invalidate(width, height);
+    }
+
+    {
+        std::lock_guard lock(m_SceneFramebufferMutex);
+
+        if (m_PPWidth == width && m_PPHeight == height) {
+            return;
         }
+
+        m_PPWidth = width;
+        m_PPHeight = height;
+    }
+
+    SubmitInitTask(Platform::Threading::SmallTask([this, width, height] {
+        auto scene = std::make_shared<FrameBuffer>(width, height, true);
+        auto pingA = std::make_shared<FrameBuffer>(width, height, false);
+        auto pingB = std::make_shared<FrameBuffer>(width, height, false);
+
+        m_PingPong[0] = std::move(pingA);
+        m_PingPong[1] = std::move(pingB);
+
+        std::lock_guard lock(m_SceneFramebufferMutex);
+        m_SceneFrameBuffer = std::move(scene);
     }));
 }
 
 void Rendering::Renderer::RunPostProc(const size_t renderIndex) const {
-    if (!m_SceneFrameBuffer || !m_PingPong[0] || !m_PingPong[1]) {
+    const auto scene = GetSceneFrameBuffer();
+    if (!scene || !m_PingPong[0] || !m_PingPong[1]) {
         return;
     }
-    FrameBuffer *result = m_FramePostProcessors[renderIndex].Execute(m_SceneFrameBuffer.get(), m_PingPong[0].get(), m_PingPong[1].get());
+    FrameBuffer *result = m_FramePostProcessors[renderIndex].Execute(scene.get(), m_PingPong[0].get(), m_PingPong[1].get());
     if (result) {
-        DrawFullscreenPassthrough(result->GetColorAttID(), m_SceneFrameBuffer->GetWidth(), m_SceneFrameBuffer->GetHeight(), m_SceneFrameBuffer.get());
+        DrawFullscreenPassthrough(result->GetColorAttID(), scene->GetWidth(), scene->GetHeight(), scene.get());
     }
 }
-
-void Rendering::Renderer::PresentToScreen(const uint32_t width, const uint32_t height) const { DrawFullscreenPassthrough(m_SceneFrameBuffer->GetColorAttID(), width, height, nullptr); }
+void Rendering::Renderer::PresentToScreen(const uint32_t width, const uint32_t height) const {
+    if (const auto scene = GetSceneFrameBuffer()) {
+        DrawFullscreenPassthrough(scene->GetColorAttID(), width, height, nullptr);
+    }
+}
 
 void Rendering::Renderer::DrawFullscreenPassthrough(const uint32_t coltex, const uint32_t width, const uint32_t height, const FrameBuffer *target) const {
     if (!m_PassthroughShader || !m_PassthroughShader->IsValid())
@@ -623,12 +678,22 @@ void Rendering::Renderer::BindLightmap(Shader *shader, const size_t renderIndex)
     }
 }
 
-void Rendering::Renderer::SetClearColor(const glm::vec4 color) { s_ClearColorStaging = color; }
+void Rendering::Renderer::SetClearColor(const glm::vec4 color) {
+    std::lock_guard lock(s_ClearColorMutex);
+    s_ClearColorStaging = color;
+}
 
-void Rendering::Renderer::ApplyClearColor() { glClearColor(s_ClearColorStaging[0], s_ClearColorStaging[1], s_ClearColorStaging[2], s_ClearColorStaging[3]); }
+void Rendering::Renderer::ApplyClearColor(const size_t renderIndex) const {
+    const auto &color = m_FrameClearColor[renderIndex];
+    glClearColor(color[0], color[1], color[2], color[3]);
+}
 
 void Rendering::Renderer::SwapBuffers() {
     m_FramePostProcessors[m_SubmitIndex].Effects() = m_PostProcessor.Effects();
+    {
+        std::lock_guard lock(s_ClearColorMutex);
+        m_FrameClearColor[m_SubmitIndex] = s_ClearColorStaging;
+    }
 
     m_RenderIndex = m_SubmitIndex;
     m_SubmitIndex = (m_SubmitIndex + 1) % 2;
@@ -665,4 +730,99 @@ void Rendering::Renderer::ProcessInitQ() {
     for (auto &task : queueCopy) {
         std::visit([](auto &t) { t(); }, task);
     }
+}
+
+void Rendering::Renderer::SubmitDeleteTask(Platform::Threading::SmallTask task) {
+    std::lock_guard lock(s_DeleteQueueMutex);
+    s_DeleteQueue.push_back(std::move(task));
+}
+
+void Rendering::Renderer::ProcessDeleteQ() {
+    std::vector<Platform::Threading::SmallTask> tasks;
+    {
+        std::lock_guard lock(s_DeleteQueueMutex);
+        tasks.swap(s_DeleteQueue);
+    }
+
+    for (auto &task : tasks) {
+        task();
+    }
+}
+
+void Rendering::Renderer::ClearInitQ() {
+    std::vector<InitTask> discarded;
+    {
+        std::lock_guard lock(s_InitQueueMutex);
+        discarded.swap(s_InitQueue);
+        s_HasInitTasks.store(false, std::memory_order_release);
+    }
+}
+void Rendering::Renderer::Shutdown() {
+    Clean();
+
+    m_ImGuiResourcePins.clear();
+
+    for (size_t i = 0; i < 2; ++i) {
+        m_ResourcePins[i].clear();
+        m_FramePostProcessors[i].Effects().clear();
+        m_PingPong[i].reset();
+    }
+
+    m_PostProcessor.Effects().clear();
+    {
+        std::lock_guard lock(m_SceneFramebufferMutex);
+        m_SceneFrameBuffer.reset();
+    }
+    m_PassthroughShader.reset();
+
+    m_DynamicInstanceBuffer.reset();
+    m_DynamicEntityIDBuffer.reset();
+    m_DynamicColorBuffer.reset();
+
+    m_FallbackShader = nullptr;
+    m_Camera = nullptr;
+    m_PPWidth = 0;
+    m_PPHeight = 0;
+}
+
+void Rendering::QDeleteTexture(const GLuint textureID) {
+    if (textureID != 0) {
+        Renderer::SubmitDeleteTask(Platform::Threading::SmallTask([textureID] { glDeleteTextures(1, &textureID); }));
+    }
+}
+
+void Rendering::QDeleteProgram(const GLuint programID) {
+    if (programID != 0) {
+        Renderer::SubmitDeleteTask(Platform::Threading::SmallTask([programID] { glDeleteProgram(programID); }));
+    }
+}
+
+void Rendering::QDeleteBuffer(GLuint buffID) {
+    if (buffID != 0) {
+        Renderer::SubmitDeleteTask(Platform::Threading::SmallTask([buffID] { glDeleteBuffers(1, &buffID); }));
+    }
+}
+
+void Rendering::QDeleteVertexArray(GLuint arrID) {
+    if (arrID != 0) {
+        Renderer::SubmitDeleteTask(Platform::Threading::SmallTask([arrID] { glDeleteVertexArrays(1, &arrID); }));
+    }
+}
+
+void Rendering::QDeleteFrameBuffer(const GLuint framebufferID, const GLuint colorTextureID, const GLuint entityTextureID) {
+    if (framebufferID == 0 && colorTextureID == 0 && entityTextureID == 0) {
+        return;
+    }
+
+    Renderer::SubmitDeleteTask(Platform::Threading::SmallTask([framebufferID, colorTextureID, entityTextureID] {
+        if (framebufferID != 0) {
+            glDeleteFramebuffers(1, &framebufferID);
+        }
+        if (colorTextureID != 0) {
+            glDeleteTextures(1, &colorTextureID);
+        }
+        if (entityTextureID != 0) {
+            glDeleteTextures(1, &entityTextureID);
+        }
+    }));
 }

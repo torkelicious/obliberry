@@ -37,14 +37,7 @@ namespace Platform::Threading {
         }
     }
 
-    ThreadPool::~ThreadPool() {
-        stop();
-        for (auto &thread : m_Threads) {
-            if (thread.joinable()) {
-                thread.join();
-            }
-        }
-    }
+    ThreadPool::~ThreadPool() { shutdown(); }
 
     void ThreadPool::enqueue(Task task) {
         {
@@ -72,5 +65,16 @@ namespace Platform::Threading {
         m_CV.notify_all();
         // Note: threads join in destructor
     }
+
+    void ThreadPool::shutdown() {
+        stop();
+
+        for (auto &thread : m_Threads) {
+            if (thread.joinable()) {
+                thread.join();
+            }
+        }
+    }
+
 } // namespace Platform::Threading
 #pragma pop_macro("LOG_WHO")
