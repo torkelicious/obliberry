@@ -38,7 +38,7 @@ TEST_F(EditorCommandTests, TransformExecuteUndoRedoRestoresValues) {
     Registry().AddComponent<ECS::Components::TransformComponent>(id);
     const glm::vec3 before{0.0f};
     const glm::vec3 after{3.0f, 4.0f, 5.0f};
-    undo.Execute(std::make_unique<Editor::Commands::TranslateEntityCommand>(id, before, after), context);
+    undo.Execute(std::make_unique<Editor::Commands::TranslateEntityCommand>(Registry().GetEntityUUID(id), before, after), context);
     const auto position = [&] { return Registry().GetComponent<ECS::Components::TransformComponent>(id)->transform.GetPosition(); };
     TestUtils::GLM_VecExpectFloat(position(), after);
     undo.Undo(context);
@@ -84,7 +84,7 @@ TEST_F(EditorCommandTests, AddRemoveComponentUndoRedoRestoresData) {
 TEST_F(EditorCommandTests, DestroyedTransformTargetDoesNotModifyReusedEntity) {
     const auto id = Registry().CreateEntity();
     Registry().AddComponent<ECS::Components::TransformComponent>(id);
-    undo.Execute(std::make_unique<Editor::Commands::TranslateEntityCommand>(id, glm::vec3{0}, glm::vec3{3}), context);
+    undo.Execute(std::make_unique<Editor::Commands::TranslateEntityCommand>(Registry().GetEntityUUID(id), glm::vec3{0}, glm::vec3{3}), context);
     Registry().DestroyEntity(id);
     const auto replacement = Registry().CreateEntity();
     auto &transform = Registry().AddComponent<ECS::Components::TransformComponent>(replacement);
@@ -99,10 +99,10 @@ TEST_F(EditorCommandTests, NewCommandClearsRedoAndEmptyHistoryIsSafe) {
     EXPECT_NO_THROW(undo.Redo(context));
     const auto id = Registry().CreateEntity();
     Registry().AddComponent<ECS::Components::TransformComponent>(id);
-    undo.Execute(std::make_unique<Editor::Commands::TranslateEntityCommand>(id, glm::vec3{0}, glm::vec3{1}), context);
+    undo.Execute(std::make_unique<Editor::Commands::TranslateEntityCommand>(Registry().GetEntityUUID(id), glm::vec3{0}, glm::vec3{1}), context);
     undo.Undo(context);
     ASSERT_TRUE(undo.CanRedo());
-    undo.Execute(std::make_unique<Editor::Commands::TranslateEntityCommand>(id, glm::vec3{0}, glm::vec3{2}), context);
+    undo.Execute(std::make_unique<Editor::Commands::TranslateEntityCommand>(Registry().GetEntityUUID(id), glm::vec3{0}, glm::vec3{2}), context);
     EXPECT_FALSE(undo.CanRedo());
     undo.Clear();
     EXPECT_FALSE(undo.CanUndo());

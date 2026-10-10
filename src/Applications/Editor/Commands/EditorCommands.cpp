@@ -1,10 +1,20 @@
 #include "EditorCommands.h"
+#include "Core/EngineContext.h"
 #include "Core/Project.h"
+#include "Core/ResourceManager.h"
+#include "ECS/Components/CustomDataComponent.h"
+#include "ECS/Components/DestroyTagComponent.h"
+#include "ECS/Components/MapStateComponent.h"
+#include "ECS/Components/PersistentTagComponent.h"
+#include "ECS/Components/PrefabSourceComponent.h"
+#include "ECS/Components/RelationshipComponent.h"
 #include "ECS/Entity.h"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Components/MapComponent.h"
 #include "Applications/Editor/UI/Panels/Editor/EditorWidgets.h"
 #include "Applications/Editor/UI/Themeing/ThemeSerializer.h"
+#include "ECS/Types.h"
+#include "IO/Loaders/EntityFactory.h"
 #include "Rendering/Renderer.h"
 #include "Scenes/SceneManager.h"
 #include "Core/Utils/ECSUtils.h"
@@ -12,8 +22,67 @@
 #include "UI/Elements/UIRect.h"
 #include "UI/Elements/UIText.h"
 #include "UI/Elements/UIImage.h"
+#include <cstddef>
+#include <unordered_set>
+#include <vector>
 
 namespace Editor::Commands {
+
+    namespace {
+        std::vector<DeletedEntitySnapshot> CaptureSubtree(ECS::Registry &registry, const ECS::EntityID root) {
+            IO::EntityFactory::RegisterSerializers();
+            std::vector<DeletedEntitySnapshot> snapshots;
+            std::unordered_set<ECS::EntityID> visited;
+
+            const auto capture = [&](auto &self, const ECS::EntityID id) -> void {
+                if (!registry.IsValid(id) || !visited.insert(id).second) {
+                    return;
+                }
+                DeletedEntitySnapshot snapshot;
+                snapshot.uuid = registry.GetEntityUUID(id);
+                snapshot.entityData = {{"components", nlohmann::json::object()}};
+
+                ECS::Entity entity(id, &registry);
+                IO::EntityFactory::SerializeEntity(entity, snapshot.entityData, Core::ResourceManager::GetInstance());
+                snapshot.entityData["name"] = entity.GetName();
+
+                auto &metadata = snapshot.entityData["editor_metadata"];
+                metadata["persistent"] = registry.HasComponent<ECS::Components::PersistentTagComponent>(id);
+
+                if (const auto *prefab = registry.GetComponent<ECS::Components::PrefabSourceComponent>(id)) {
+                    metadata["prefab_source"] = {{"prefabPath", prefab->prefabPath}, {"originalData", prefab->originalData}};
+                }
+
+                std::vector<ECS::EntityID> children;
+
+                if (const auto *relationship = registry.GetComponent<ECS::Components::RelationshipComponent>(id)) {
+                    children = relationship->children;
+
+                    const auto parent = relationship->parent;
+                    if (registry.IsValid(parent)) {
+                        snapshot.parentUUID = registry.GetEntityUUID(parent);
+
+                        if (const auto *parentRelationship = registry.GetComponent<ECS::Components::RelationshipComponent>(parent)) {
+                            const auto &siblings = parentRelationship->children;
+                            const auto found = std::find(siblings.begin(), siblings.end(), id);
+                            if (found != siblings.end()) {
+                                snapshot.siblingIndex = static_cast<std::size_t>(found - siblings.begin());
+                            }
+                        }
+                    }
+                }
+                snapshots.push_back(std::move(snapshot));
+
+                for (const auto child : children) {
+                    self(self, child);
+                }
+            };
+            capture(capture, root);
+            return snapshots;
+        }
+
+    } // namespace
+
 
     //
     // Transforms
@@ -197,6 +266,153 @@ namespace Editor::Commands {
     }
 
     std::string_view UpdateScenePropertiesCommand::Name() const noexcept { return "Scene properties change"; }
+
+    //
+    // Delete
+    //
+    DeleteEntityCommand::DeleteEntityCommand(std::string targetUUID) : m_RootUUID(std::move(targetUUID)) {}
+
+    void DeleteEntityCommand::Execute(Core::EngineContext &ctx) {
+        auto *scene = ctx.sceneManager->GetCurrentScene();
+
+        if (!scene || !ctx.resources) {
+            return;
+        }
+
+        auto &registry = scene->GetRegistry();
+        const auto root = registry.FindEntityByUUID(m_RootUUID);
+
+        if (!registry.IsValid(root)) {
+            return;
+        }
+
+        if (m_Snapshot.empty()) {
+            auto snapshot = CaptureSubtree(registry, root);
+
+            for (const auto &saved : snapshot) {
+                const auto id = registry.FindEntityByUUID(saved.uuid);
+                if (registry.HasComponent<ECS::Components::MapComponent>(id) || registry.HasComponent<ECS::Components::MapStateComponent>(id) || registry.HasComponent<ECS::Components::CustomDataComponent>(id) ||
+                        registry.HasComponent<ECS::Components::DestroyTagComponent>(id)) {
+                    LOG_ERROR("EditorCommands", "Cannot delete subtree, unsupported snapshot component.");
+                    return;
+                }
+            }
+
+            if (snapshot.empty()) {
+                return;
+            }
+            m_Snapshot = std::move(snapshot);
+        }
+
+        registry.DestroyEntity(root);
+        MarkSceneChanged(&ctx);
+        m_Succeeded = true;
+    }
+
+    void DeleteEntityCommand::Undo(Core::EngineContext &ctx) {
+        auto *scene = ctx.sceneManager->GetCurrentScene();
+
+        if (!scene || !ctx.resources || m_Snapshot.empty()) {
+            return;
+        }
+
+        auto &registry = scene->GetRegistry();
+
+        // deduplicate
+        for (const auto &saved : m_Snapshot) {
+            if (registry.IsValid(registry.FindEntityByUUID(saved.uuid))) {
+                LOG_ERROR("EditorCommands", "Cannot restore subtree: an entity UUID already exists.");
+                return;
+            }
+        }
+
+        nlohmann::json references = nlohmann::json::object();
+        references["entities"] = nlohmann::json::array();
+
+        for (const auto &saved : m_Snapshot) {
+            references["entities"].push_back(saved.entityData);
+        }
+
+        IO::SceneAssetLoader::SceneAssetScope assets;
+        if (!IO::SceneAssetLoader::LoadReferenced(references, assets)) {
+            LOG_ERROR("EditorCommands", "Cannot restore subtree: referenced assets could not be acquired.");
+            return;
+        }
+
+        IO::EntityFactory::RegisterDeserializers();
+
+        std::vector<ECS::EntityID> created;
+        created.reserve(m_Snapshot.size());
+
+        try {
+            for (const auto &saved : m_Snapshot) {
+                const auto id = registry.CreateEntity();
+
+                if (!registry.IsValid(id)) {
+                    throw std::runtime_error("Could not create restored entity.");
+                }
+
+                created.push_back(id);
+                ECS::Entity entity(id, &registry);
+
+                IO::EntityFactory::DeserializeEntity(entity, saved.entityData, *ctx.resources, true);
+
+                if (registry.GetEntityUUID(id) != saved.uuid) {
+                    throw std::runtime_error("Could not restore entity UUID.");
+                }
+
+                entity.SetName(saved.entityData.value("name", std::string{}));
+                const auto metadata = saved.entityData.find("editor_metadata");
+
+                if (metadata != saved.entityData.end()) {
+                    if (metadata->value("persistent", false)) {
+                        registry.AddComponent<ECS::Components::PersistentTagComponent>(id);
+                    }
+                    const auto prefab = metadata->find("prefab_source");
+                    if (prefab != metadata->end()) {
+                        registry.AddComponent<ECS::Components::PrefabSourceComponent>(id, prefab->at("prefabPath").get<std::string>(), prefab->at("originalData"));
+                    }
+                }
+            }
+
+            for (std::size_t i = 0; i < m_Snapshot.size(); ++i) {
+                const auto &saved = m_Snapshot[i];
+
+                if (saved.parentUUID.empty()) {
+                    continue;
+                }
+
+                const auto parent = registry.FindEntityByUUID(saved.parentUUID);
+
+                if (!registry.IsValid(parent)) {
+                    throw std::runtime_error("Could not find the restored entity's parent.");
+                }
+
+                const auto id = created[i];
+                registry.SetParentDirect(id, parent);
+
+                auto &siblings = registry.GetComponent<ECS::Components::RelationshipComponent>(parent)->children;
+
+                std::erase(siblings, id);
+
+                const auto position = std::min(saved.siblingIndex, siblings.size());
+
+                siblings.insert(siblings.begin() + position, id);
+            }
+
+            scene->AddAssetScope(std::move(assets));
+        } catch (const std::exception &error) {
+            for (auto it = created.rbegin(); it != created.rend(); ++it) {
+                registry.DestroyEntity(*it);
+            }
+            LOG_ERROR("EditorCommands", std::string("Could not restore deleted subtree: ") + error.what());
+            return;
+        }
+        MarkSceneChanged(&ctx);
+        m_Succeeded = true;
+    }
+
+    std::string_view DeleteEntityCommand::Name() const noexcept { return "Delete entity"; }
 
 
     //

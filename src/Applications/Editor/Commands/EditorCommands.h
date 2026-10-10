@@ -1,4 +1,5 @@
 #pragma once
+#include "Core/EngineContext.h"
 #include "ICommand.h"
 #include "Applications/Editor/EditorContext.h"
 #include "Config/ProjectConfig.h"
@@ -7,6 +8,8 @@
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <cstring>
+#include <string>
+#include <string_view>
 #include <vector>
 #include "ECS/Types.h"
 #include "ECS/Components/ScriptComponent.h"
@@ -18,8 +21,17 @@
 #include "UI/Rendering/UISystem.h"
 #include "Rendering/Types/Texture/Texture.h"
 #include "UI/Text/Font.h"
+#include "nlohmann/json_fwd.hpp"
 
 namespace Editor::Commands {
+
+    struct DeletedEntitySnapshot {
+        std::string uuid;
+        std::string parentUUID;
+        std::size_t siblingIndex = 0;
+        nlohmann::json entityData;
+    };
+
 
     // hack but whatever
     static void RefreshWindowTitle(const Core::EngineContext &ctx) {
@@ -199,11 +211,19 @@ namespace Editor::Commands {
         Scenes::SceneProperties m_NewData;
     };
 
+    class DeleteEntityCommand final : public ICommand {
+    public:
+        explicit DeleteEntityCommand(std::string targetUUID);
+        void Execute(Core::EngineContext &ctx) override;
+        void Undo(Core::EngineContext &ctx) override;
+        [[nodiscard]] std::string_view Name() const noexcept override;
+        [[nodiscard]] bool Succeeded() const noexcept override { return m_Succeeded; }
 
-    // TODO:
-    //  Entity Deletion
-    //  veri hard because ecs purges dead entities -.-
-    //  Maybe use some sort of "shadow delete" idk
+    private:
+        std::string m_RootUUID;
+        std::vector<DeletedEntitySnapshot> m_Snapshot;
+        bool m_Succeeded = false;
+    };
 
     // = = = = //
     // Project //
