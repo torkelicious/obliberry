@@ -198,4 +198,24 @@ namespace Editor::UI {
                                 "its current UUID. The existing save files will not be deleted.";
     };
 
+    class MessageDialog : public EditorDialog {
+    public:
+        explicit MessageDialog(std::string title) : EditorDialog(std::move(title)) {}
+        void SetMessage(const std::string &message) { m_Message = message; }
+
+    protected:
+        void DrawContent() override {
+            ImGui::TextWrapped("%s", m_Message.c_str());
+            ImGui::Separator();
+            if (ImGui::Button("OK")) {
+                ImGui::CloseCurrentPopup();
+                Close();
+            }
+        }
+
+    private:
+        std::string m_Message;
+    };
+
+
 } // namespace Editor::UI
