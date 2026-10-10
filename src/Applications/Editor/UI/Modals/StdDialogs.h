@@ -205,7 +205,10 @@ namespace Editor::UI {
 
     protected:
         void DrawContent() override {
-            ImGui::TextWrapped("%s", m_Message.c_str());
+            const float textWidth = ImGui::GetFontSize() * 30.0f;
+            ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + textWidth);
+            ImGui::TextUnformatted(m_Message.c_str());
+            ImGui::PopTextWrapPos();
             ImGui::Separator();
             if (ImGui::Button("OK")) {
                 ImGui::CloseCurrentPopup();
