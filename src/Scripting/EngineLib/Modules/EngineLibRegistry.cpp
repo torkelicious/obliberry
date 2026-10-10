@@ -413,15 +413,15 @@ namespace Scripting {
             return std::monostate{};
         };
 
-        auto add_custom_comp = [id, reg_ptr = &registry](const ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        auto add_custom_comp = [id, reg_ptr = &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
             if (args.size() != 2 || !std::holds_alternative<std::string>(args[0])) {
                 return false;
             }
 
             auto compName = std::get<std::string>(args[0]);
-            ObSL::Value value = args[1];
+            auto root = ECS::Components::CustomDataComponent::ProtectValue(*interp, args[1]);
 
-            auto apply = [id, compName = std::move(compName), value = std::move(value)](ECS::Registry &reg) {
+            auto apply = [id, compName = std::move(compName), root = std::move(root)](ECS::Registry &reg) {
                 if (!reg.IsValid(id)) {
                     return;
                 }
@@ -431,7 +431,7 @@ namespace Scripting {
                 }
 
                 if (auto *comp = reg.GetComponent<ECS::Components::CustomDataComponent>(id)) {
-                    comp->script_components[compName] = value;
+                    comp->SetRooted(compName, root);
                 }
             };
 
@@ -460,12 +460,7 @@ namespace Scripting {
             }
 
             if (auto *comp = registry.GetComponent<ECS::Components::CustomDataComponent>(id)) {
-                const auto &name = std::get<std::string>(args[0]);
-                const auto it = comp->script_components.find(name);
-
-                if (it != comp->script_components.end()) {
-                    return it->second;
-                }
+                return comp->Get(std::get<std::string>(args[0]));
             }
 
             return std::monostate{};

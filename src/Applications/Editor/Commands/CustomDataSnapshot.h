@@ -6,6 +6,13 @@
 #include <unordered_map>
 #include <variant>
 #include <vector>
+
+namespace ObSL {
+    class Interpreter;
+    class GCProtectScope;
+
+} // namespace ObSL
+
 namespace Editor::Commands {
 
     struct CustomDataReference {
@@ -30,6 +37,8 @@ namespace Editor::Commands {
     };
 
     [[nodiscard]] CustomDataSnapshot CaptureCustomDataSnapshot(const std::unordered_map<std::string, ObSL::Value> &components);
+
+    [[nodiscard]] std::unordered_map<std::string, ObSL::Value> RestoreCustomDataSnapshot(const CustomDataSnapshot &snapshot, ObSL::Interpreter &interpreter, ObSL::GCProtectScope &scope);
 
 
 } // namespace Editor::Commands
