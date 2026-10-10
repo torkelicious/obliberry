@@ -135,18 +135,18 @@ namespace Editor::Commands {
         RemoveComponentCommand(std::string targetUUID, const T &componentData) : EntityCommand(std::move(targetUUID)), m_OldData(componentData) {}
         void Execute(Core::EngineContext &ctx) override {
             const auto entity = ResolveEntity(ctx);
-            if (!entity || !entity.HasComponent<T>()) {
+            if (!entity || !entity.template HasComponent<T>()) {
                 return;
             }
-            entity.RemoveComponent<T>();
+            entity.template RemoveComponent<T>();
             Complete(ctx);
         }
         void Undo(Core::EngineContext &ctx) override {
             auto entity = ResolveEntity(ctx);
-            if (!entity || entity.HasComponent<T>()) {
+            if (!entity || entity.template HasComponent<T>()) {
                 return;
             }
-            entity.AddComponent<T>(m_OldData);
+            entity.template AddComponent<T>(m_OldData);
             Complete(ctx);
         }
         [[nodiscard]] std::string_view Name() const noexcept override { return "Remove Component"; }
@@ -161,18 +161,18 @@ namespace Editor::Commands {
         AddComponentCommand(std::string targetUUID, const T &componentData) : EntityCommand(std::move(targetUUID)), m_Data(componentData) {}
         void Execute(Core::EngineContext &ctx) override {
             auto entity = ResolveEntity(ctx);
-            if (!entity || entity.HasComponent<T>()) {
+            if (!entity || entity.template HasComponent<T>()) {
                 return;
             }
-            entity.AddComponent<T>(m_Data);
+            entity.template AddComponent<T>(m_Data);
             Complete(ctx);
         }
         void Undo(Core::EngineContext &ctx) override {
             const auto entity = ResolveEntity(ctx);
-            if (!entity || !entity.HasComponent<T>()) {
+            if (!entity || !entity.template HasComponent<T>()) {
                 return;
             }
-            entity.RemoveComponent<T>();
+            entity.template RemoveComponent<T>();
             Complete(ctx);
         }
         [[nodiscard]] std::string_view Name() const noexcept override { return "Add Component"; }
@@ -451,7 +451,7 @@ namespace Editor::Commands {
             if (!entity) {
                 return;
             }
-            if (auto *comp = entity.GetComponent<T>()) {
+            if (auto *comp = entity.template GetComponent<T>()) {
                 std::memcpy(reinterpret_cast<uint8_t *>(comp) + m_Offset, data.data(), m_FieldSize);
                 Complete(ctx);
             }
