@@ -58,7 +58,8 @@ namespace UI {
     }
 
     void UIRenderer::BeginFrame(const uint32_t viewWidth, const uint32_t viewHeight) {
-        m_ActualWindowSize = {viewWidth, viewHeight};
+        m_ActualWindowSize[m_SubmitIndex] = {viewWidth, viewHeight};
+        m_FrameGameResolution[m_SubmitIndex] = m_GameResolution;
         if (m_GameResolution.x > 0 && m_GameResolution.y > 0) {
             m_Projection[m_SubmitIndex] = glm::ortho(0.0f, m_GameResolution.x, m_GameResolution.y, 0.0f, -1.0f, 1.0f);
         } else {
@@ -83,7 +84,7 @@ namespace UI {
         return false;
     }
 
-    void UIRenderer::SubmitQuad(const glm::vec2 pos, const glm::vec2 size, const glm::vec2 uvMin, const glm::vec2 uvMax, const Rendering::Texture *texture, const glm::vec4 color) {
+    void UIRenderer::SubmitQuad(const glm::vec2 pos, const glm::vec2 size, const glm::vec2 uvMin, const glm::vec2 uvMax, const std::shared_ptr<Rendering::Texture> &texture, const glm::vec4 color) {
         if (!HasQuadCapacity())
             return;
 
@@ -100,10 +101,10 @@ namespace UI {
         m_QuadSDFSpread[m_SubmitIndex].push_back(8.0f);
     }
 
-    void UIRenderer::SubmitRect(const glm::vec2 pos, const glm::vec2 size, const glm::vec4 color) { SubmitQuad(pos, size, {0.0f, 0.0f}, {1.0f, 1.0f}, Rendering::Texture::White(), color); }
+    void UIRenderer::SubmitRect(const glm::vec2 pos, const glm::vec2 size, const glm::vec4 color) { SubmitQuad(pos, size, {0.0f, 0.0f}, {1.0f, 1.0f}, nullptr, color); }
 
     void UIRenderer::SubmitSDFQuad(
-            const glm::vec2 pos, const glm::vec2 size, const glm::vec2 uvMin, const glm::vec2 uvMax, const Rendering::Texture *texture, const glm::vec4 color, const float sdfScale, const float sdfSpread) {
+            const glm::vec2 pos, const glm::vec2 size, const glm::vec2 uvMin, const glm::vec2 uvMax, const std::shared_ptr<Rendering::Texture> &texture, const glm::vec4 color, const float sdfScale, const float sdfSpread) {
         if (!HasQuadCapacity())
             return;
 
@@ -119,18 +120,22 @@ namespace UI {
         m_QuadSDFSpread[m_SubmitIndex].push_back(sdfSpread);
     }
 
-    void UIRenderer::Flush(const uint32_t renderTargetWidth, const uint32_t renderTargetHeight) {
-        const auto &verts = m_Vertices[m_RenderIndex];
-        const auto &texs = m_QuadTextures[m_RenderIndex];
+    void UIRenderer::Flush(const size_t renderIndex, const uint32_t renderTargetWidth, const uint32_t renderTargetHeight) {
+        auto &verts = m_Vertices[renderIndex];
+        auto &texs = m_QuadTextures[renderIndex];
 
         if (verts.empty())
             return;
 
-        const glm::uvec2 targetSize = renderTargetWidth > 0 && renderTargetHeight > 0 ? glm::uvec2{renderTargetWidth, renderTargetHeight} : m_ActualWindowSize;
-        m_LastRenderTargetSize = targetSize;
+        const glm::uvec2 targetSize = renderTargetWidth > 0 && renderTargetHeight > 0 ? glm::uvec2{renderTargetWidth, renderTargetHeight} : m_ActualWindowSize[renderIndex];
+        {
+            std::lock_guard lock(m_RenderTargetMutex);
+            m_LastRenderTargetSize = targetSize;
+        }
+        const glm::vec2 gameResolution = m_FrameGameResolution[renderIndex];
 
-        if (m_GameResolution.x > 0 && m_GameResolution.y > 0 && targetSize.x > 0 && targetSize.y > 0) {
-            const float gameAspect = m_GameResolution.x / m_GameResolution.y;
+        if (gameResolution.x > 0 && gameResolution.y > 0 && targetSize.x > 0 && targetSize.y > 0) {
+            const float gameAspect = gameResolution.x / gameResolution.y;
             const float targetAspect = static_cast<float>(targetSize.x) / static_cast<float>(targetSize.y);
 
             uint32_t vpX = 0, vpY = 0, vpW, vpH;
@@ -157,19 +162,19 @@ namespace UI {
         // Build batches
         m_Batches.clear();
         m_Batches.reserve(texs.size());
-        const Rendering::Texture *currentTex = texs[0];
-        BatchShader currentShader = m_QuadShader[m_RenderIndex][0];
-        float currentSDFScale = m_QuadSDFScale[m_RenderIndex][0];
-        float currentSDFSpread = m_QuadSDFSpread[m_RenderIndex][0];
+        const Rendering::Texture *currentTex = texs[0].get();
+        BatchShader currentShader = m_QuadShader[renderIndex][0];
+        float currentSDFScale = m_QuadSDFScale[renderIndex][0];
+        float currentSDFSpread = m_QuadSDFSpread[renderIndex][0];
         uint32_t batchStart = 0;
 
         for (uint32_t i = 1; i < static_cast<uint32_t>(texs.size()); i++) {
-            if (texs[i] != currentTex || m_QuadShader[m_RenderIndex][i] != currentShader || m_QuadSDFScale[m_RenderIndex][i] != currentSDFScale || m_QuadSDFSpread[m_RenderIndex][i] != currentSDFSpread) {
+            if (texs[i].get() != currentTex || m_QuadShader[renderIndex][i] != currentShader || m_QuadSDFScale[renderIndex][i] != currentSDFScale || m_QuadSDFSpread[renderIndex][i] != currentSDFSpread) {
                 m_Batches.push_back({.texture = currentTex, .indexOffset = batchStart * 6, .indexCount = (i - batchStart) * 6, .shader = currentShader, .sdfScale = currentSDFScale, .sdfSpread = currentSDFSpread});
-                currentTex = texs[i];
-                currentShader = m_QuadShader[m_RenderIndex][i];
-                currentSDFScale = m_QuadSDFScale[m_RenderIndex][i];
-                currentSDFSpread = m_QuadSDFSpread[m_RenderIndex][i];
+                currentTex = texs[i].get();
+                currentShader = m_QuadShader[renderIndex][i];
+                currentSDFScale = m_QuadSDFScale[renderIndex][i];
+                currentSDFSpread = m_QuadSDFSpread[renderIndex][i];
                 batchStart = i;
             }
         }
@@ -186,9 +191,9 @@ namespace UI {
         // Draw
         m_VAO->Bind();
         m_Shader->Bind();
-        m_Shader->SetUniformMat4("u_Projection", m_Projection[m_RenderIndex]);
+        m_Shader->SetUniformMat4("u_Projection", m_Projection[renderIndex]);
         m_SDFShader->Bind();
-        m_SDFShader->SetUniformMat4("u_Projection", m_Projection[m_RenderIndex]);
+        m_SDFShader->SetUniformMat4("u_Projection", m_Projection[renderIndex]);
 
         for (const auto &batch : m_Batches) {
             if (batch.shader == BatchShader::SDF) {
@@ -198,29 +203,36 @@ namespace UI {
             } else {
                 m_Shader->Bind();
             }
-            if (batch.texture) {
-                batch.texture->Bind(0);
-            }
+            const Rendering::Texture *texture = batch.texture ? batch.texture : Rendering::Texture::White();
+            texture->Bind(0);
             glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(batch.indexCount), GL_UNSIGNED_INT, reinterpret_cast<const void *>(batch.indexOffset * sizeof(unsigned int)));
         }
 
         m_Shader->Unbind();
         Rendering::VertexArray::Unbind();
 
-        if (m_GameResolution.x > 0 && m_GameResolution.y > 0 && targetSize.x > 0 && targetSize.y > 0) {
+        if (gameResolution.x > 0 && gameResolution.y > 0 && targetSize.x > 0 && targetSize.y > 0) {
             glDisable(GL_SCISSOR_TEST);
             glViewport(0, 0, static_cast<GLsizei>(targetSize.x), static_cast<GLsizei>(targetSize.y));
         }
+        m_Batches.clear();
+        verts.clear();
+        texs.clear();
     }
 
-    void UIRenderer::SwapBuffers() { std::swap(m_SubmitIndex, m_RenderIndex); }
+    void UIRenderer::SwapBuffers() { m_SubmitIndex = (m_SubmitIndex + 1) % 2; }
 
     void UIRenderer::SetGameResolution(const uint32_t width, const uint32_t height) { m_GameResolution = {static_cast<float>(width), static_cast<float>(height)}; }
 
     glm::vec2 UIRenderer::WindowToGameCoords(const float winX, const float winY) const {
         // legacy
         // prefer the explicit overload when possible.
-        return WindowToGameCoords(winX, winY, static_cast<float>(m_LastRenderTargetSize.x), static_cast<float>(m_LastRenderTargetSize.y));
+        glm::uvec2 targetSize;
+        {
+            std::lock_guard lock(m_RenderTargetMutex);
+            targetSize = m_LastRenderTargetSize;
+        }
+        return WindowToGameCoords(winX, winY, static_cast<float>(targetSize.x), static_cast<float>(targetSize.y));
     }
 
     glm::vec2 UIRenderer::WindowToGameCoords(const float winX, const float winY, const float viewWidth, const float viewHeight) const {

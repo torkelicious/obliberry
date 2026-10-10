@@ -8,7 +8,6 @@
 #include "PostProcessing/PostProcessing.h"
 
 #include <atomic>
-#include <cstddef>
 #include <functional>
 #include <memory>
 #include <mutex>

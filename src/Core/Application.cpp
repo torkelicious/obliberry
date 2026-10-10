@@ -9,7 +9,6 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
-#include <cstddef>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <chrono>
@@ -285,7 +284,7 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer, UI::UI
                 renderer->Flush(static_cast<size_t>(frameIdx));
                 renderer->RunPostProc(static_cast<size_t>(frameIdx));
 
-                uiRenderer->Flush(sceneFbo->GetWidth(), sceneFbo->GetHeight());
+                uiRenderer->Flush(static_cast<size_t>(frameIdx), sceneFbo->GetWidth(), sceneFbo->GetHeight());
                 sceneFbo->Unbind();
 
                 glViewport(0, 0, m_Window.GetWidth(), m_Window.GetHeight());
@@ -333,7 +332,7 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer, UI::UI
         }
 
         if (!renderer->IsEditorMode()) {
-            uiRenderer->Flush();
+            uiRenderer->Flush(static_cast<size_t>(frameIdx));
         }
 
         m_Window.SwapBuffers();

@@ -33,7 +33,7 @@ namespace UI {
         if (Rect.Scale.x > 0.0f && Rect.Scale.y > 0.0f) {
             const glm::vec4 &bgCol = m_ButtonState == ButtonState::HOVERED || m_ButtonState == ButtonState::HELD ? m_HoveredBackgroundColor : m_BackgroundColor;
             if (m_BackgroundTexture) {
-                renderer->SubmitQuad(finalPos, Rect.Scale, {0.0f, 0.0f}, {1.0f, 1.0f}, m_BackgroundTexture.get(), bgCol);
+                renderer->SubmitQuad(finalPos, Rect.Scale, {0.0f, 0.0f}, {1.0f, 1.0f}, m_BackgroundTexture, bgCol);
             } else {
                 renderer->SubmitRect(finalPos, Rect.Scale, bgCol);
             }
@@ -100,9 +100,9 @@ namespace UI {
                     const glm::vec2 uvMax = UVOffset + UVSize - halfTexel;
 
                     if (isSDF) {
-                        renderer->SubmitSDFQuad({x, y}, {w, h}, uvMin, uvMax, atlas.get(), m_Color, sdfRenderScale, static_cast<float>(spread));
+                        renderer->SubmitSDFQuad({x, y}, {w, h}, uvMin, uvMax, atlas, m_Color, sdfRenderScale, static_cast<float>(spread));
                     } else {
-                        renderer->SubmitQuad({x, y}, {w, h}, uvMin, uvMax, atlas.get(), m_Color);
+                        renderer->SubmitQuad({x, y}, {w, h}, uvMin, uvMax, atlas, m_Color);
                     }
                 }
 

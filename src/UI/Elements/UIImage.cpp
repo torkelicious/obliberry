@@ -15,7 +15,7 @@ namespace UI {
             return;
 
         if (m_Image) {
-            renderer->SubmitQuad(finalPos, Rect.Scale, {0.0f, 0.0f}, {1.0f, 1.0f}, m_Image.get(), m_Color);
+            renderer->SubmitQuad(finalPos, Rect.Scale, {0.0f, 0.0f}, {1.0f, 1.0f}, m_Image, m_Color);
         } else {
             renderer->SubmitRect(finalPos, Rect.Scale, m_Color);
         }

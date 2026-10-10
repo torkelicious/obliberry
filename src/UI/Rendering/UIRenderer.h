@@ -6,8 +6,10 @@
 #include "Rendering/Types/VAO/VertexArray.h"
 #include "Rendering/Types/IBO/IndexBuffer.h"
 
+#include <cstddef>
 #include <glm/glm.hpp>
 #include <memory>
+#include <mutex>
 #include <vector>
 
 namespace Rendering {
@@ -49,22 +51,22 @@ namespace UI {
         void BeginFrame(uint32_t viewWidth, uint32_t viewHeight);
 
         //  textured quad
-        void SubmitQuad(glm::vec2 pos, glm::vec2 size, glm::vec2 uvMin, glm::vec2 uvMax, const Rendering::Texture *texture, glm::vec4 color);
+        void SubmitQuad(glm::vec2 pos, glm::vec2 size, glm::vec2 uvMin, glm::vec2 uvMax, const std::shared_ptr<Rendering::Texture> &texture, glm::vec4 color);
 
         // colored rectangle
         void SubmitRect(glm::vec2 pos, glm::vec2 size, glm::vec4 color);
 
-        void SubmitSDFQuad(glm::vec2 pos, glm::vec2 size, glm::vec2 uvMin, glm::vec2 uvMax, const Rendering::Texture *texture, glm::vec4 color, float sdfScale, float sdfSpread = 8.0f);
+        void SubmitSDFQuad(glm::vec2 pos, glm::vec2 size, glm::vec2 uvMin, glm::vec2 uvMax, const std::shared_ptr<Rendering::Texture> &texture, glm::vec4 color, float sdfScale, float sdfSpread = 8.0f);
 
         // convenience
         void SubmitRect(const RectTransform &rect, const glm::vec4 color) { SubmitRect(rect.Position, rect.Scale, color); }
 
-        void SubmitQuad(const RectTransform &rect, const glm::vec2 uvMin, const glm::vec2 uvMax, const Rendering::Texture *texture, const glm::vec4 color) {
+        void SubmitQuad(const RectTransform &rect, const glm::vec2 uvMin, const glm::vec2 uvMax, const std::shared_ptr<Rendering::Texture> &texture, const glm::vec4 color) {
             SubmitQuad(rect.Position, rect.Scale, uvMin, uvMax, texture, color);
         }
 
         // call on render thread.
-        void Flush(uint32_t renderTargetWidth = 0, uint32_t renderTargetHeight = 0);
+        void Flush(size_t renderIndex, uint32_t renderTargetWidth = 0, uint32_t renderTargetHeight = 0);
 
         void SwapBuffers();
 
@@ -82,16 +84,17 @@ namespace UI {
         bool HasQuadCapacity();
 
         size_t m_SubmitIndex = 0;
-        size_t m_RenderIndex = 1;
 
         glm::mat4 m_Projection[2] = {glm::mat4(1.0f), glm::mat4(1.0f)};
         glm::vec2 m_GameResolution = {0.0f, 0.0f};
-        glm::uvec2 m_ActualWindowSize = {0, 0};     // framebuffer/window size for letterboxing
+        glm::vec2 m_FrameGameResolution[2] = {};
+        glm::uvec2 m_ActualWindowSize[2] = {};     // framebuffer/window size for letterboxing
         glm::uvec2 m_LastRenderTargetSize = {0, 0}; // render target used in last Flush
+        mutable std::mutex m_RenderTargetMutex;
 
         std::vector<UIVertex> m_Vertices[2];
         std::vector<UIBatch> m_Batches;
-        std::vector<const Rendering::Texture *> m_QuadTextures[2];
+        std::vector<std::shared_ptr<Rendering::Texture>> m_QuadTextures[2];
         std::vector<BatchShader> m_QuadShader[2];
         std::vector<float> m_QuadSDFScale[2];
         std::vector<float> m_QuadSDFSpread[2];

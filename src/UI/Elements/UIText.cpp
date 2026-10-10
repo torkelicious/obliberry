@@ -112,9 +112,9 @@ namespace UI {
                 const glm::vec2 uvMax = glyph.UVOffset + glyph.UVSize - halfTexel;
 
                 if (isSDF) {
-                    renderer->SubmitSDFQuad({x, y}, {w, h}, uvMin, uvMax, atlas.get(), m_Color, sdfRenderScale, static_cast<float>(spread));
+                    renderer->SubmitSDFQuad({x, y}, {w, h}, uvMin, uvMax, atlas, m_Color, sdfRenderScale, static_cast<float>(spread));
                 } else {
-                    renderer->SubmitQuad({x, y}, {w, h}, uvMin, uvMax, atlas.get(), m_Color);
+                    renderer->SubmitQuad({x, y}, {w, h}, uvMin, uvMax, atlas, m_Color);
                 }
             }
 
