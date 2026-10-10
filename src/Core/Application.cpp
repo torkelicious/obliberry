@@ -336,6 +336,7 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer, UI::UI
         }
 
         m_Window.SwapBuffers();
+        Rendering::Renderer::ProcessDeleteQ();
 
         // frame limiter only when VSync is off to avoid burning CPU for invisible frames
         if (frameLimit) {
@@ -360,5 +361,6 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer, UI::UI
         }
     }
     ImGui_ImplOpenGL3_Shutdown();
+    Rendering::Renderer::ProcessDeleteQ();
     glfwMakeContextCurrent(nullptr);
 }
