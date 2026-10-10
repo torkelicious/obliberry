@@ -9,6 +9,7 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include <cstddef>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <chrono>
@@ -282,7 +283,7 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer, UI::UI
                 glClear(GL_COLOR_BUFFER_BIT);
 
                 renderer->Flush(static_cast<size_t>(frameIdx));
-                renderer->RunPostProc();
+                renderer->RunPostProc(static_cast<size_t>(frameIdx));
 
                 uiRenderer->Flush(sceneFbo->GetWidth(), sceneFbo->GetHeight());
                 sceneFbo->Unbind();
@@ -307,7 +308,7 @@ void Core::Application::RenderThreadWorker(Rendering::Renderer *renderer, UI::UI
                 glClear(GL_COLOR_BUFFER_BIT);
 
                 renderer->Flush(static_cast<size_t>(frameIdx));
-                renderer->RunPostProc();
+                renderer->RunPostProc(static_cast<size_t>(frameIdx));
                 sceneFbo->Unbind();
 
                 renderer->PresentToScreen(m_Window.GetWidth(), m_Window.GetHeight());

@@ -571,10 +571,11 @@ void Rendering::Renderer::EnsureSceneFramebufferSize(uint32_t width, uint32_t he
     }));
 }
 
-void Rendering::Renderer::RunPostProc() const {
-    if (!m_SceneFrameBuffer || !m_PingPong[0] || !m_PingPong[1])
+void Rendering::Renderer::RunPostProc(const size_t renderIndex) const {
+    if (!m_SceneFrameBuffer || !m_PingPong[0] || !m_PingPong[1]) {
         return;
-    FrameBuffer *result = m_PostProcessor.Execute(m_SceneFrameBuffer.get(), m_PingPong[0].get(), m_PingPong[1].get());
+    }
+    FrameBuffer *result = m_FramePostProcessors[renderIndex].Execute(m_SceneFrameBuffer.get(), m_PingPong[0].get(), m_PingPong[1].get());
     if (result) {
         DrawFullscreenPassthrough(result->GetColorAttID(), m_SceneFrameBuffer->GetWidth(), m_SceneFrameBuffer->GetHeight(), m_SceneFrameBuffer.get());
     }
@@ -627,6 +628,8 @@ void Rendering::Renderer::SetClearColor(const glm::vec4 color) { s_ClearColorSta
 void Rendering::Renderer::ApplyClearColor() { glClearColor(s_ClearColorStaging[0], s_ClearColorStaging[1], s_ClearColorStaging[2], s_ClearColorStaging[3]); }
 
 void Rendering::Renderer::SwapBuffers() {
+    m_FramePostProcessors[m_SubmitIndex].Effects() = m_PostProcessor.Effects();
+
     m_RenderIndex = m_SubmitIndex;
     m_SubmitIndex = (m_SubmitIndex + 1) % 2;
 }

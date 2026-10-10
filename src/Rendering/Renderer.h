@@ -8,6 +8,7 @@
 #include "PostProcessing/PostProcessing.h"
 
 #include <atomic>
+#include <cstddef>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -126,7 +127,7 @@ namespace Rendering {
         [[nodiscard]] PostProcessing::PostProcessor &GetPostProcessor() { return m_PostProcessor; }
         void SetPassthroughShader(std::shared_ptr<Shader> s) { m_PassthroughShader = std::move(s); }
 
-        void RunPostProc() const;
+        void RunPostProc(size_t renderIndex) const;
         void PresentToScreen(uint32_t width, uint32_t height) const;
 
     private:
@@ -195,6 +196,7 @@ namespace Rendering {
         std::shared_ptr<FrameBuffer> m_SceneFrameBuffer;
         std::shared_ptr<FrameBuffer> m_PingPong[2]; // multi pass effects
         PostProcessing::PostProcessor m_PostProcessor;
+        PostProcessing::PostProcessor m_FramePostProcessors[2];
         std::shared_ptr<Shader> m_PassthroughShader;
         uint32_t m_PPWidth = 0;
         uint32_t m_PPHeight = 0;
