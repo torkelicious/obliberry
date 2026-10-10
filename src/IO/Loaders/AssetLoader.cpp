@@ -6,8 +6,10 @@
 
 #include <exception>
 #include <memory>
+#include <mutex>
 #include <stdexcept>
 #include <thread>
+#include <vector>
 #include "Logger/LoggerService.h"
 #include "IO/VFS/VFS.h"
 #include "Rendering/Types/Mesh/Mesh.h"
@@ -22,6 +24,8 @@
 #define LOG_WHO "AssetLoader"
 
 std::unordered_map<std::string, IO::AssetLoader::MeshFactory> IO::AssetLoader::s_MeshFactories;
+std::mutex IO::AssetLoader::s_FontThreadsMutex;
+std::vector<std::jthread> IO::AssetLoader::s_FontThreads;
 
 std::optional<std::string> IO::AssetLoader::ImportAsset(const std::string &AbsoultePath, const std::string &TargetSubDir) {
     const std::filesystem::path srcpath(AbsoultePath);
@@ -171,10 +175,16 @@ void IO::AssetLoader::LoadFonts(const json &fonts, Core::ResourceManager &resour
 
             auto f = resources.Load<UI::Font>(id, path, size, useSDF, spread);
             // defer font atlas generation to a background thread to avoid blocking the main thread
-            std::thread([f] {
-                f->LoadCPU();
-                Rendering::Renderer::SubmitInitTask(Platform::Threading::SmallTask([f] { f->InitGL(); }));
-            }).detach();
+            {
+                std::lock_guard lock(s_FontThreadsMutex);
+                s_FontThreads.emplace_back([f] {
+                    try {
+                        Rendering::Renderer::SubmitInitTask(Platform::Threading::SmallTask([f] { f->InitGL(); }));
+                    } catch (std::exception &e) {
+                        LOG_ERROR(LOG_WHO, std::string("Font loading failed: ") + e.what());
+                    }
+                });
+            }
         } catch (const std::exception &e) {
             LOG_ERROR(LOG_WHO, std::string("Skipping font asset: ") + e.what());
         }
@@ -281,6 +291,20 @@ void IO::AssetLoader::LoadAnimations(const json &animations, Core::ResourceManag
             resources.Register<Animation::SpriteAnimationSet>(id, std::make_shared<Animation::SpriteAnimationSet>(std::move(animaiton)));
         } catch (const std::exception &e) {
             LOG_ERROR(LOG_WHO, std::string("Skipping animation asset: ") + e.what());
+        }
+    }
+}
+
+void IO::AssetLoader::WaitForBackgroundLoads() {
+    std::vector<std::jthread> threads;
+    {
+        std::lock_guard lock(s_FontThreadsMutex);
+        threads.swap(s_FontThreads);
+    }
+
+    for (auto &thread : threads) {
+        if (thread.joinable()) {
+            thread.join();
         }
     }
 }

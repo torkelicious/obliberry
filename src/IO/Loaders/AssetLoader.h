@@ -1,11 +1,14 @@
 #pragma once
 
+#include <mutex>
 #include <nlohmann/json.hpp>
 #include "Core/ResourceManager.h"
 #include <functional>
 #include <memory>
 #include <string>
+#include <thread>
 #include <unordered_map>
+#include <vector>
 
 #include "Rendering/Types/Material.h"
 #include "Rendering/Types/Mesh/Mesh.h"
@@ -26,6 +29,8 @@ namespace IO {
 
         static std::optional<std::string> ImportAsset(const std::string &AbsoultePath, const std::string &TargetSubDir = "");
 
+        static void WaitForBackgroundLoads();
+
     private:
         static void LoadTextures(const json &textures, Core::ResourceManager &resources);
 
@@ -38,5 +43,8 @@ namespace IO {
         static void LoadAnimations(const json &animations, Core::ResourceManager &resources);
 
         static std::unordered_map<std::string, MeshFactory> s_MeshFactories;
+
+        static std::mutex s_FontThreadsMutex;
+        static std::vector<std::jthread> s_FontThreads;
     };
 } // namespace IO
