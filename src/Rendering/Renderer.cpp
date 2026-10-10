@@ -50,9 +50,13 @@ void Rendering::Renderer::BeginFrame() {
 void Rendering::Renderer::Submit(
         const std::shared_ptr<Mesh> &mesh, const std::shared_ptr<Material> &material, const Transform &transform, const Texture *textureOverride, const int32_t entityID, const glm::vec4 &uvRect) {
 
-    m_ResourcePins[m_SubmitIndex].push_back(mesh);
-    if (material)
-        m_ResourcePins[m_SubmitIndex].push_back(material);
+    Pin(mesh);
+    Pin(material);
+
+    const auto shader = material ? material->shader : nullptr;
+    const auto texture = material ? material->texture : nullptr;
+    Pin(shader);
+    Pin(texture);
 
     const glm::vec3 &pos = transform.GetPosition();
 
@@ -64,11 +68,12 @@ void Rendering::Renderer::Submit(
         return static_cast<int32_t>(static_cast<uint32_t>(static_cast<int16_t>(d)) << 16 | static_cast<uint32_t>(static_cast<int16_t>(z)));
     };
 
-    const Texture *effectiveTex = textureOverride ? textureOverride : material && material->texture ? material->texture.get() : nullptr;
+    const Texture *effectiveTex = textureOverride ? textureOverride : texture.get();
     const glm::vec4 col = material ? material->color : glm::vec4(1.0f);
 
     m_Commands[m_SubmitIndex].push_back({.mesh = mesh.get(),
             .material = material.get(),
+            .shader = shader.get(),
             .effectiveTexture = effectiveTex,
             .color = col,
             .uvRect = uvRect,
@@ -81,11 +86,15 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::s
     if (transforms.empty())
         return;
 
-    m_ResourcePins[m_SubmitIndex].push_back(mesh);
-    if (material)
-        m_ResourcePins[m_SubmitIndex].push_back(material);
+    Pin(mesh);
+    Pin(material);
 
-    const Texture *tex = material && material->texture ? material->texture.get() : nullptr;
+    const auto shader = material ? material->shader : nullptr;
+    const auto texture = material ? material->texture : nullptr;
+    Pin(shader);
+    Pin(texture);
+
+    const Texture *tex = texture.get();
     const glm::vec4 col = material ? material->color : glm::vec4(1.0f);
 
     const size_t transformOffset = m_InstancedTransformsStaging[m_SubmitIndex].size();
@@ -99,6 +108,7 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::s
 
     m_InstancedCommands[m_SubmitIndex].push_back({.mesh = mesh.get(),
             .material = material.get(),
+            .shader = shader.get(),
             .effectiveTexture = tex,
             .color = col,
             .transformPtr = nullptr,
@@ -114,11 +124,15 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::s
     if (transforms.empty())
         return;
 
-    m_ResourcePins[m_SubmitIndex].push_back(mesh);
-    if (material)
-        m_ResourcePins[m_SubmitIndex].push_back(material);
+    Pin(mesh);
+    Pin(material);
 
-    const Texture *tex = material && material->texture ? material->texture.get() : nullptr;
+    const auto shader = material ? material->shader : nullptr;
+    const auto texture = material ? material->texture : nullptr;
+    Pin(shader);
+    Pin(texture);
+
+    const Texture *tex = texture.get();
     const glm::vec4 col = material ? material->color : glm::vec4(1.0f);
 
     const size_t transformOffset = m_InstancedTransformsStaging[m_SubmitIndex].size();
@@ -132,6 +146,7 @@ void Rendering::Renderer::Submit(const std::shared_ptr<Mesh> &mesh, const std::s
 
     m_InstancedCommands[m_SubmitIndex].push_back({.mesh = mesh.get(),
             .material = material.get(),
+            .shader = shader.get(),
             .effectiveTexture = tex,
             .color = col,
             .blendMode = static_cast<int8_t>(blendMode),
@@ -152,11 +167,15 @@ void Rendering::Renderer::SubmitPersistent(const std::shared_ptr<Mesh> &mesh, co
     if (!transforms || transforms->empty())
         return;
 
-    m_ResourcePins[m_SubmitIndex].push_back(mesh);
-    if (material)
-        m_ResourcePins[m_SubmitIndex].push_back(material);
+    Pin(mesh);
+    Pin(material);
 
-    const Texture *tex = material && material->texture ? material->texture.get() : nullptr;
+    const auto shader = material ? material->shader : nullptr;
+    const auto texture = material ? material->texture : nullptr;
+    Pin(shader);
+    Pin(texture);
+
+    const Texture *tex = texture.get();
     const glm::vec4 col = material ? material->color : glm::vec4(1.0f);
 
     // copy transforms into staging mem
@@ -173,6 +192,7 @@ void Rendering::Renderer::SubmitPersistent(const std::shared_ptr<Mesh> &mesh, co
 
     m_InstancedCommands[m_SubmitIndex].push_back({.mesh = mesh.get(),
             .material = material.get(),
+            .shader = shader.get(),
             .effectiveTexture = tex,
             .color = col,
             .transformPtr = nullptr,
@@ -269,7 +289,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
                     }
                 }
 
-                BatchKey key{.mesh = instCmd.mesh, .material = instCmd.material, .texture = instCmd.effectiveTexture, .color = instCmd.color, .uvRect = instCmd.uvRect, .shape = instCmd.shape};
+                BatchKey key{.mesh = instCmd.mesh, .material = instCmd.material, .shader = instCmd.shader, .texture = instCmd.effectiveTexture, .color = instCmd.color, .uvRect = instCmd.uvRect, .shape = instCmd.shape};
                 const glm::mat4 *transformsPtr = instCmd.transformPtr ? instCmd.transformPtr : m_InstancedTransformsStaging[renderIndex].data() + instCmd.transformOffset;
                 const glm::vec4 *colorsPtr = instCmd.colorPtr ? instCmd.colorPtr : instCmd.colorCount > 0 ? m_InstancedColorsStaging[renderIndex].data() + instCmd.colorOffset : nullptr;
 
@@ -312,7 +332,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
             if (!cmd.mesh || !cmd.material)
                 continue;
 
-            if (BatchKey key{.mesh = cmd.mesh, .material = cmd.material, .texture = cmd.effectiveTexture, .color = cmd.color, .uvRect = cmd.uvRect, .shape = 0}; !hasCurrent || currentKey != key) {
+            if (BatchKey key{.mesh = cmd.mesh, .material = cmd.material, .shader = cmd.shader, .texture = cmd.effectiveTexture, .color = cmd.color, .uvRect = cmd.uvRect, .shape = 0}; !hasCurrent || currentKey != key) {
                 if (hasCurrent)
                     m_BatchRanges.push_back({.key = currentKey, .offset = batchStart, .count = m_MergedTransforms.size() - batchStart});
                 currentKey = key;
@@ -361,7 +381,7 @@ void Rendering::Renderer::Flush(const size_t renderIndex) {
                     }
                 }
 
-                BatchKey key{.mesh = instCmd.mesh, .material = instCmd.material, .texture = instCmd.effectiveTexture, .color = instCmd.color, .uvRect = instCmd.uvRect, .shape = instCmd.shape};
+                BatchKey key{.mesh = instCmd.mesh, .material = instCmd.material, .shader = instCmd.shader, .texture = instCmd.effectiveTexture, .color = instCmd.color, .uvRect = instCmd.uvRect, .shape = instCmd.shape};
                 const glm::mat4 *transformsPtr = instCmd.transformPtr ? instCmd.transformPtr : m_InstancedTransformsStaging[renderIndex].data() + instCmd.transformOffset;
                 const glm::vec4 *colorsPtr = instCmd.colorPtr ? instCmd.colorPtr : instCmd.colorCount > 0 ? m_InstancedColorsStaging[renderIndex].data() + instCmd.colorOffset : nullptr;
 
@@ -411,9 +431,13 @@ void Rendering::Renderer::RenderBatch(const BatchKey &key, const glm::mat4 *tran
         const int32_t *chunkEntityIDs = entityIDs ? entityIDs + offset : nullptr;
         const glm::vec4 *chunkColors = perInstanceColors ? perInstanceColors + offset : nullptr;
 
-        Shader *shader = key.material ? key.material->shader.get() : nullptr;
-        if (!shader || !shader->IsValid())
+        Shader *shader = key.shader;
+        if (!shader || !shader->IsValid()) {
             shader = m_FallbackShader;
+        }
+        if (!shader || !shader->IsValid()) {
+            return;
+        }
 
         if (m_LastBoundShader != shader) {
             shader->Bind();

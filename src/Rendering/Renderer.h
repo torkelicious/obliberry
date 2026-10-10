@@ -28,6 +28,7 @@ namespace Rendering {
     struct RenderCommand {
         const Mesh *mesh;
         const Material *material;
+        Shader *shader = nullptr;
         const Texture *effectiveTexture;
         glm::vec4 color;
         glm::vec4 uvRect{0.0f, 0.0f, 1.0f, 1.0f};
@@ -39,6 +40,7 @@ namespace Rendering {
     struct InstancedRenderCommand {
         const Mesh *mesh;
         const Material *material;
+        Shader *shader = nullptr;
         const Texture *effectiveTexture;
         glm::vec4 color;
         glm::vec4 uvRect{0.0f, 0.0f, 1.0f, 1.0f};
@@ -62,12 +64,13 @@ namespace Rendering {
     struct BatchKey {
         const Mesh *mesh;
         const Material *material;
+        Shader *shader = nullptr;
         const Texture *texture;
         glm::vec4 color;
         glm::vec4 uvRect{0.0f, 0.0f, 1.0f, 1.0f};
         int32_t shape = 0;
         bool operator==(const BatchKey &other) const noexcept {
-            return mesh == other.mesh && material == other.material && texture == other.texture && color == other.color && uvRect == other.uvRect && shape == other.shape;
+            return mesh == other.mesh && material == other.material && shader == other.shader && texture == other.texture && color == other.color && uvRect == other.uvRect && shape == other.shape;
         }
     };
 
