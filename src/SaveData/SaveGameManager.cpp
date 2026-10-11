@@ -30,6 +30,8 @@ namespace Saves {
             throw std::invalid_argument("Save directory cannot be empty");
         }
 
+        std::lock_guard operationLock(m_OperationMutex);
+
         std::error_code error;
         std::filesystem::create_directories(saveDirectory, error);
         if (error) {
@@ -43,6 +45,7 @@ namespace Saves {
     }
 
     void SaveGameManager::Reset() {
+        std::lock_guard operationLock(m_OperationMutex);
         std::unique_lock lock(m_DataMutex);
         m_ActiveSave = SaveData{};
         m_ActiveFilename.reset();
@@ -55,6 +58,7 @@ namespace Saves {
     }
 
     void SaveGameManager::BeginNewGame() {
+        std::lock_guard operationLock(m_OperationMutex);
         std::unique_lock lock(m_DataMutex);
         m_ActiveSave = SaveData{};
         m_ActiveFilename.reset();
@@ -101,6 +105,7 @@ namespace Saves {
     }
 
     std::optional<std::filesystem::path> SaveGameManager::CreateSave(std::string displayName) {
+        std::lock_guard operationLock(m_OperationMutex);
         const std::filesystem::path filename = GenerateFilename();
         if (filename.empty()) {
             LOG_ERROR(LOG_WHO, "Could not generate a save filename");
@@ -135,6 +140,7 @@ namespace Saves {
     }
 
     bool SaveGameManager::SaveActive() {
+        std::lock_guard operationLock(m_OperationMutex);
         std::optional<std::filesystem::path> filename;
         SaveData snapshot;
         {
@@ -166,6 +172,8 @@ namespace Saves {
     }
 
     bool SaveGameManager::LoadSave(const std::filesystem::path &filename) {
+        std::lock_guard operationLock(m_OperationMutex);
+
         const auto resolved = ResolveFilename(filename);
 
         if (!resolved) {
@@ -187,6 +195,8 @@ namespace Saves {
     }
 
     bool SaveGameManager::DeleteSave(const std::filesystem::path &filename) {
+        std::lock_guard operationLock(m_OperationMutex);
+
         const auto resolved = ResolveFilename(filename);
 
         if (!resolved) {

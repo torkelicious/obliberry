@@ -8,6 +8,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <mutex>
 
 namespace Saves {
 
@@ -61,6 +62,7 @@ namespace Saves {
         std::optional<std::filesystem::path> m_ActiveFilename;
         std::filesystem::path m_SaveDirectory;
         mutable std::shared_mutex m_DataMutex;
+        mutable std::mutex m_OperationMutex;
     };
 
 } // namespace Saves
