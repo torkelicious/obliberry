@@ -30,11 +30,14 @@ namespace IO::MapIO {
             // byte
             file.write(reinterpret_cast<const char *>(&sTile), sizeof(SerializedTile));
         }
+
+        file.close();
+
         if (!file) {
             LOG_ERROR(LOG_WHO, "Write failure while saving map to " + path);
             return false;
         }
-        file.close();
+
         LOG_INFO(LOG_WHO, "Saved " + std::to_string(grid.tiles.size()) + " tiles to " + path);
         return true;
     }
