@@ -5,6 +5,7 @@
 #include "UI/Elements/UIButton.h"
 #include "Platform/Input/InputManager.h"
 #include <glm/vec2.hpp>
+#include <limits>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -22,18 +23,20 @@ namespace UI {
             m_Root = std::make_unique<UIElement>();
             m_Root->Name = "Canvas";
             m_Root->SetInputMgr(m_Input);
-            m_NameIndex[m_Root->Name] = m_Root.get();
+            IndexSubtreeRecursive(m_Root.get());
         }
 
         void SetRoot(std::unique_ptr<UIElement> el) {
+            Clear();
             m_Root = std::move(el);
             SetInputMgrRecursive(m_Root.get(), m_Input);
-            RebuildNameIndex();
+            RebuildIndices();
         }
+
         [[nodiscard]] UIElement *GetRoot() { return m_Root.get(); }
         [[nodiscard]] const UIElement *GetRoot() const { return m_Root.get(); }
 
-        UIElement *AddChild(UIElement *parent, std::unique_ptr<UIElement> element);
+        UIElement *AddChild(UIElement *parent, std::unique_ptr<UIElement> element, std::string uuid = {}, size_t insertIndex = std::numeric_limits<size_t>::max());
 
         void RemoveChild(UIElement *parent, UIElement *child);
 
@@ -47,6 +50,8 @@ namespace UI {
 
         [[nodiscard]] UIElement *FindByName(const std::string &name);
         [[nodiscard]] const UIElement *FindByName(const std::string &name) const;
+        [[nodiscard]] UIElement *FindByUUID(const std::string &uuid);
+        [[nodiscard]] const UIElement *FindByUUID(const std::string &uuid) const;
 
         void OnElementRenamed(UIElement *element, const std::string &oldName);
 
@@ -57,7 +62,7 @@ namespace UI {
         void RenderRecursive(UIElement *element, glm::vec2 accumulatedPos);
         static UIElement *HitTestRecursive(UIElement *element, glm::vec2 point, glm::vec2 accumulatedPos);
 
-        void RebuildNameIndex();
+        void RebuildIndices();
         void IndexSubtreeRecursive(UIElement *element);
         static void SetInputMgrRecursive(UIElement *element, Platform::Input::InputManager *mgr) {
             if (!element)
@@ -76,6 +81,7 @@ namespace UI {
 
         // name -> element
         std::unordered_map<std::string, UIElement *> m_NameIndex;
+        std::unordered_map<std::string, UIElement *> m_UUIDIndex;
     };
 
 } // namespace UI

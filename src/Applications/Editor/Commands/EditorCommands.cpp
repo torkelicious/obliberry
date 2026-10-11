@@ -632,6 +632,7 @@ namespace Editor::Commands {
         if (!element)
             return snap;
 
+        snap.uuid = element->GetUUID();
         snap.name = element->Name;
         snap.position = element->Rect.Position;
         snap.scale = element->Rect.Scale;
@@ -658,6 +659,11 @@ namespace Editor::Commands {
             snap.type = UIElementSnapshot::IMAGE;
             snap.color = img->GetColor();
             snap.image = const_cast<::UI::UIImage *>(img)->GetImage();
+        }
+
+        snap.children.reserve(element->Children.size());
+        for (const auto *child : element->Children) {
+            snap.children.push_back(SnapshotUIElement(child));
         }
 
         return snap;
@@ -722,51 +728,103 @@ namespace Editor::Commands {
         return el;
     }
 
+
+    ::UI::UIElement *UIElementCommand::ResolveElement(const Core::EngineContext &ctx) {
+        m_Succeeded = false;
+        return ctx.uiSystem ? ctx.uiSystem->FindByUUID(m_ElementUUID) : nullptr;
+    }
+
+    void UIElementCommand::Complete(const Core::EngineContext &ctx) {
+        MarkSceneChanged(&ctx);
+        m_Succeeded = true;
+    }
+
+
     // AddUIElementCommand
-    AddUIElementCommand::AddUIElementCommand(::UI::UISystem *sys, ::UI::UIElement *parent, UIElementSnapshot snapshot) : m_UISystem(sys), m_Parent(parent), m_Snapshot(std::move(snapshot)) {}
+    AddUIElementCommand::AddUIElementCommand(::UI::UISystem *sys, ::UI::UIElement *parent, UIElementSnapshot snapshot)
+        : UIElementCommand(snapshot.uuid.empty() ? Core::Utils::UUID::UUIDGenerator::Generate() : snapshot.uuid), m_ParentUUID(sys && sys->Contains(parent) ? parent->GetUUID() : std::string{}),
+          m_Snapshot(std::move(snapshot)) {
+        m_Snapshot.uuid = m_ElementUUID;
+    }
 
     void AddUIElementCommand::Execute(Core::EngineContext &ctx) {
-        if (auto el = CreateUIElementFromSnapshot(m_Snapshot); el && m_UISystem && m_Parent) {
-            m_Created = m_UISystem->AddChild(m_Parent, std::move(el));
+        m_Succeeded = false;
+
+        auto *ui = ctx.uiSystem;
+        auto *parent = ui ? ui->FindByUUID(m_ParentUUID) : nullptr;
+        if (!parent || ui->FindByUUID(m_ElementUUID)) {
+            return;
         }
+
+        auto element = CreateUIElementFromSnapshot(m_Snapshot);
+        if (!element || !ui->AddChild(parent, std::move(element), m_ElementUUID)) {
+            return;
+        }
+
+        Complete(ctx);
     }
 
     void AddUIElementCommand::Undo(Core::EngineContext &ctx) {
-        if (m_Created && m_UISystem && m_Parent) {
-            m_UISystem->RemoveChild(m_Parent, m_Created);
-            m_Created = nullptr;
+        auto *element = ResolveElement(ctx);
+        if (!element || !ctx.uiSystem->Contains(element->Parent)) {
+            return;
         }
+
+        ctx.uiSystem->RemoveChild(element->Parent, element);
+        Complete(ctx);
     }
 
     // RemoveUIElementCommand
     RemoveUIElementCommand::RemoveUIElementCommand(::UI::UISystem *sys, ::UI::UIElement *parent, const ::UI::UIElement *child)
-        : m_UISystem(sys), m_Parent(parent), m_Snapshot(SnapshotUIElement(child)), m_RemovedChild(const_cast<::UI::UIElement *>(child)) {}
-
-    void RemoveUIElementCommand::Execute(Core::EngineContext &ctx) {
-        if (m_Restored && m_UISystem && m_Parent) {
-            // Re-remove on redo
-            m_UISystem->RemoveChild(m_Parent, m_Restored);
-            m_Restored = nullptr;
-        } else if (!m_Snapshot.name.empty() && m_UISystem && m_Parent) {
-            for (auto *child : m_Parent->Children) {
-                if (child == m_RemovedChild) {
-                    m_UISystem->RemoveChild(m_Parent, child);
-                    return;
-                }
-            }
-            for (auto *child : m_Parent->Children) {
-                if (child->Name == m_Snapshot.name && child->Rect.Position == m_Snapshot.position && child->Rect.Scale == m_Snapshot.scale) {
-                    m_UISystem->RemoveChild(m_Parent, child);
-                    break;
-                }
+        : m_ParentUUID(sys && parent && sys->Contains(parent) ? parent->GetUUID() : std::string{}), m_Snapshot(SnapshotUIElement(child)) {
+        if (parent && child) {
+            const auto &siblings = parent->Children;
+            const auto it = std::find(siblings.begin(), siblings.end(), child);
+            if (it != siblings.end()) {
+                m_SiblingIndex = static_cast<size_t>(std::distance(siblings.begin(), it));
             }
         }
     }
 
-    void RemoveUIElementCommand::Undo(Core::EngineContext &ctx) {
-        if (auto el = CreateUIElementFromSnapshot(m_Snapshot); el && m_UISystem && m_Parent) {
-            m_Restored = m_UISystem->AddChild(m_Parent, std::move(el));
+    void RemoveUIElementCommand::Execute(Core::EngineContext &ctx) {
+        auto *ui = ctx.uiSystem;
+        auto *parent = ui ? ui->FindByUUID(m_ParentUUID) : nullptr;
+        if (!parent) {
+            return;
         }
+
+        auto *child = ui->FindByUUID(m_Snapshot.uuid);
+        if (!child || child->Parent != parent) {
+            return;
+        }
+
+        ui->RemoveChild(parent, child);
+    }
+
+    void RemoveUIElementCommand::RestoreSubtree(::UI::UISystem *ui, ::UI::UIElement *parent, const UIElementSnapshot &snap, const size_t insertIndex) {
+        auto element = CreateUIElementFromSnapshot(snap);
+        if (!element) {
+            return;
+        }
+
+        auto *added = ui->AddChild(parent, std::move(element), snap.uuid, insertIndex);
+        if (!added) {
+            return;
+        }
+
+        for (const auto &childSnap : snap.children) {
+            RestoreSubtree(ui, added, childSnap, std::numeric_limits<size_t>::max());
+        }
+    }
+
+    void RemoveUIElementCommand::Undo(Core::EngineContext &ctx) {
+        auto *ui = ctx.uiSystem;
+        auto *parent = ui ? ui->FindByUUID(m_ParentUUID) : nullptr;
+        if (!parent || ui->FindByUUID(m_Snapshot.uuid)) {
+            return;
+        }
+
+        RestoreSubtree(ui, parent, m_Snapshot, m_SiblingIndex);
     }
 
     //

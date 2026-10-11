@@ -1,7 +1,6 @@
 #include "UISystem.h"
-
-#include <algorithm>
 #include <functional>
+#include <iterator>
 #include <ranges>
 
 namespace UI {
@@ -64,13 +63,27 @@ namespace UI {
         return nullptr;
     }
 
-    UIElement *UISystem::AddChild(UIElement *parent, std::unique_ptr<UIElement> element) {
-        if (!parent || !element)
+    UIElement *UISystem::AddChild(UIElement *parent, std::unique_ptr<UIElement> element, std::string uuid, const size_t insertIndex) {
+        if (!Contains(parent) || !element) {
             return nullptr;
+        }
+
+        if (!uuid.empty()) {
+            element->m_UUID = std::move(uuid);
+        }
+
+        if (m_UUIDIndex.contains(element->GetUUID())) {
+            return nullptr;
+        }
+
         UIElement *raw = element.get();
         raw->Parent = parent;
         raw->SetInputMgr(m_Input);
-        parent->Children.push_back(raw);
+        if (insertIndex < parent->Children.size()) {
+            parent->Children.insert(parent->Children.begin() + static_cast<std::ptrdiff_t>(insertIndex), raw);
+        } else {
+            parent->Children.push_back(raw);
+        }
         IndexSubtreeRecursive(raw);
         m_OwnedElements.push_back(std::move(element));
         return raw;
@@ -96,7 +109,8 @@ namespace UI {
         std::erase(children, child);
         child->Parent = nullptr;
 
-        // Remove from owned elements
+        // Remove
+        m_UUIDIndex.erase(child->GetUUID());
         std::erase_if(m_OwnedElements, [child](const std::unique_ptr<UIElement> &ptr) { return ptr.get() == child; });
     }
 
@@ -119,31 +133,36 @@ namespace UI {
 
     void UISystem::Clear() {
         // remove all children from root
-        for (auto *child : m_Root->Children) {
-            child->Parent = nullptr;
+        if (m_Root) {
+            for (auto *child : m_Root->Children) {
+                child->Parent = nullptr;
+            }
+            m_Root->Children.clear();
         }
-        m_Root->Children.clear();
         m_OwnedElements.clear();
-
-        m_NameIndex.clear();
-        if (m_Root && !m_Root->Name.empty()) {
-            m_NameIndex[m_Root->Name] = m_Root.get();
-        }
+        m_ButtonSnapshots.clear();
+        RebuildIndices();
     }
 
     void UISystem::IndexSubtreeRecursive(UIElement *element) {
-        if (!element)
+        if (!element) {
             return;
+        }
+
+        m_UUIDIndex[element->GetUUID()] = element;
+
         if (!element->Name.empty()) {
             m_NameIndex[element->Name] = element;
         }
+
         for (auto *child : element->Children) {
             IndexSubtreeRecursive(child);
         }
     }
 
-    void UISystem::RebuildNameIndex() {
+    void UISystem::RebuildIndices() {
         m_NameIndex.clear();
+        m_UUIDIndex.clear();
         IndexSubtreeRecursive(m_Root.get());
     }
 
@@ -169,6 +188,16 @@ namespace UI {
     const UIElement *UISystem::FindByName(const std::string &name) const {
         const auto it = m_NameIndex.find(name);
         return it != m_NameIndex.end() ? it->second : nullptr;
+    }
+
+    UIElement *UISystem::FindByUUID(const std::string &uuid) {
+        const auto it = m_UUIDIndex.find(uuid);
+        return it != m_UUIDIndex.end() ? it->second : nullptr;
+    }
+
+    const UIElement *UISystem::FindByUUID(const std::string &uuid) const {
+        const auto it = m_UUIDIndex.find(uuid);
+        return it != m_UUIDIndex.end() ? it->second : nullptr;
     }
 
     static void SnapshotButtonsRecursive(UIElement *element, std::unordered_map<std::string, ButtonState> &out) {

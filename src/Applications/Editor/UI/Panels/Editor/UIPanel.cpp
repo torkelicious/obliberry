@@ -276,13 +276,19 @@ namespace Editor::UI {
 
             char nameBuf[128] = {};
             std::strncpy(nameBuf, m_SelectedElement->Name.c_str(), sizeof(nameBuf) - 1);
+
+            const std::string nameBeforeInput = m_SelectedElement->Name;
+
             if (ImGui::InputText("Name", nameBuf, sizeof(nameBuf))) {
                 m_SelectedElement->Name = nameBuf;
+                uiSys->OnElementRenamed(m_SelectedElement, nameBeforeInput);
             }
+
             if (ImGui::IsItemActivated()) {
-                m_EditibNameStart = m_SelectedElement->Name;
+                m_EditibNameStart = nameBeforeInput;
                 m_EditingName = true;
             }
+
             if (ImGui::IsItemDeactivatedAfterEdit() && m_EditingName) {
                 if (m_EditibNameStart != m_SelectedElement->Name && m_UndoManager) {
                     auto cmd = std::make_unique<Commands::SetUIElementNameCommand>(m_SelectedElement, m_EditibNameStart, m_SelectedElement->Name);

@@ -23,6 +23,7 @@
 #include "UI/Rendering/UISystem.h"
 #include "Rendering/Types/Texture/Texture.h"
 #include "UI/Text/Font.h"
+#include "Core/Utils/UUID.h"
 
 namespace Editor::Commands {
 
@@ -309,6 +310,7 @@ namespace Editor::Commands {
     struct UIElementSnapshot {
         enum Type : uint8_t { RECT, TEXT, BUTTON, IMAGE };
         Type type = RECT;
+        std::string uuid = Core::Utils::UUID::UUIDGenerator::Generate();
         std::string name;
         glm::vec2 position{0.0f};
         glm::vec2 scale{0.0f};
@@ -323,25 +325,42 @@ namespace Editor::Commands {
         std::shared_ptr<Rendering::Texture> bgTexture;
         // UIImage
         std::shared_ptr<Rendering::Texture> image;
+        std::vector<UIElementSnapshot> children;
     };
 
     std::unique_ptr<::UI::UIElement> CreateUIElementFromSnapshot(const UIElementSnapshot &snap);
 
-    UIElementSnapshot SnapshotUIElement(const ::UI::UIElement *element);
+    UIElementSnapshot SnapshotUIElement(const ::UI::UIElement *element); // captures the full subtree recursively
 
-    class AddUIElementCommand final : public ICommand {
+    class UIElementCommand : public ICommand {
+    public:
+        explicit UIElementCommand(std::string targetUUID) : m_ElementUUID(std::move(targetUUID)) {}
+
+        [[nodiscard]] bool Succeeded() const noexcept override { return m_Succeeded; }
+
+    protected:
+        [[nodiscard]] ::UI::UIElement *ResolveElement(const Core::EngineContext &ctx);
+        void Complete(const Core::EngineContext &ctx);
+
+        std::string m_ElementUUID;
+        bool m_Succeeded = false;
+    };
+
+
+    class AddUIElementCommand final : public UIElementCommand {
     public:
         AddUIElementCommand(::UI::UISystem *sys, ::UI::UIElement *parent, UIElementSnapshot snapshot);
+
         void Execute(Core::EngineContext &ctx) override;
         void Undo(Core::EngineContext &ctx) override;
+
         [[nodiscard]] std::string_view Name() const noexcept override { return "Add UI Element"; }
-        [[nodiscard]] ::UI::UIElement *GetCreated() const { return m_Created; }
+
+        [[nodiscard]] ::UI::UIElement *GetCreated(const Core::EngineContext &ctx) const { return ctx.uiSystem ? ctx.uiSystem->FindByUUID(m_ElementUUID) : nullptr; }
 
     private:
-        ::UI::UISystem *m_UISystem;
-        ::UI::UIElement *m_Parent;
+        std::string m_ParentUUID;
         UIElementSnapshot m_Snapshot;
-        ::UI::UIElement *m_Created = nullptr;
     };
 
     class RemoveUIElementCommand final : public ICommand {
@@ -352,68 +371,110 @@ namespace Editor::Commands {
         [[nodiscard]] std::string_view Name() const noexcept override { return "Remove UI Element"; }
 
     private:
-        ::UI::UISystem *m_UISystem;
-        ::UI::UIElement *m_Parent;
+        static void RestoreSubtree(::UI::UISystem *ui, ::UI::UIElement *parent, const UIElementSnapshot &snap, size_t insertIndex);
+
+        std::string m_ParentUUID;
         UIElementSnapshot m_Snapshot;
-        ::UI::UIElement *m_Restored = nullptr;
-        ::UI::UIElement *m_RemovedChild = nullptr;
+        size_t m_SiblingIndex = 0;
     };
 
-    class SetUIElementNameCommand final : public ICommand {
+    class SetUIElementNameCommand final : public UIElementCommand {
     public:
-        SetUIElementNameCommand(::UI::UIElement *target, std::string oldName, std::string newName) : m_Target(target), m_OldName(std::move(oldName)), m_NewName(std::move(newName)) {}
-        void Execute(Core::EngineContext &ctx) override { m_Target->Name = m_NewName; }
-        void Undo(Core::EngineContext &ctx) override { m_Target->Name = m_OldName; }
+        SetUIElementNameCommand(::UI::UIElement *target, std::string oldName, std::string newName)
+            : UIElementCommand(target ? target->GetUUID() : std::string{}), m_OldName(std::move(oldName)), m_NewName(std::move(newName)) {}
+
+        void Execute(Core::EngineContext &ctx) override { Apply(ctx, m_NewName); }
+        void Undo(Core::EngineContext &ctx) override { Apply(ctx, m_OldName); }
         [[nodiscard]] std::string_view Name() const noexcept override { return "Rename UI Element"; }
 
     private:
-        ::UI::UIElement *m_Target;
+        void Apply(Core::EngineContext &ctx, const std::string &name) {
+            auto *element = ResolveElement(ctx);
+            if (!element) {
+                return;
+            }
+
+            const std::string oldName = element->Name;
+            element->Name = name;
+            ctx.uiSystem->OnElementRenamed(element, oldName);
+            Complete(ctx);
+        }
+
         std::string m_OldName;
         std::string m_NewName;
     };
 
-    class SetUIElementPositionCommand final : public ICommand {
+    class SetUIElementPositionCommand final : public UIElementCommand {
     public:
-        SetUIElementPositionCommand(::UI::UIElement *target, const glm::vec2 oldPos, const glm::vec2 newPos) : m_Target(target), m_OldPos(oldPos), m_NewPos(newPos) {}
-        void Execute(Core::EngineContext &ctx) override { m_Target->Rect.Position = m_NewPos; }
-        void Undo(Core::EngineContext &ctx) override { m_Target->Rect.Position = m_OldPos; }
+        SetUIElementPositionCommand(::UI::UIElement *target, const glm::vec2 oldPos, const glm::vec2 newPos) : UIElementCommand(target ? target->GetUUID() : std::string{}), m_OldPos(oldPos), m_NewPos(newPos) {}
+
+        void Execute(Core::EngineContext &ctx) override { Apply(ctx, m_NewPos); }
+
+        void Undo(Core::EngineContext &ctx) override { Apply(ctx, m_OldPos); }
+
         [[nodiscard]] std::string_view Name() const noexcept override { return "Move UI Element"; }
 
     private:
-        ::UI::UIElement *m_Target;
+        void Apply(Core::EngineContext &ctx, const glm::vec2 position) {
+            auto *element = ResolveElement(ctx);
+            if (!element) {
+                return;
+            }
+
+            element->Rect.Position = position;
+            Complete(ctx);
+        }
+
         glm::vec2 m_OldPos;
         glm::vec2 m_NewPos;
     };
 
-    class SetUIElementScaleCommand final : public ICommand {
+    class SetUIElementScaleCommand final : public UIElementCommand {
     public:
-        SetUIElementScaleCommand(::UI::UIElement *target, const glm::vec2 oldScale, const glm::vec2 newScale) : m_Target(target), m_OldScale(oldScale), m_NewScale(newScale) {}
-        void Execute(Core::EngineContext &ctx) override { m_Target->Rect.Scale = m_NewScale; }
-        void Undo(Core::EngineContext &ctx) override { m_Target->Rect.Scale = m_OldScale; }
+        SetUIElementScaleCommand(::UI::UIElement *target, const glm::vec2 oldScale, const glm::vec2 newScale) : UIElementCommand(target ? target->GetUUID() : std::string{}), m_OldScale(oldScale), m_NewScale(newScale) {}
+
+        void Execute(Core::EngineContext &ctx) override { Apply(ctx, m_NewScale); }
+        void Undo(Core::EngineContext &ctx) override { Apply(ctx, m_OldScale); }
         [[nodiscard]] std::string_view Name() const noexcept override { return "Resize UI Element"; }
 
     private:
-        ::UI::UIElement *m_Target;
+        void Apply(Core::EngineContext &ctx, const glm::vec2 scale) {
+            auto *element = ResolveElement(ctx);
+            if (!element) {
+                return;
+            }
+
+            element->Rect.Scale = scale;
+            Complete(ctx);
+        }
+
         glm::vec2 m_OldScale;
         glm::vec2 m_NewScale;
     };
 
-    class TransformUIElementCommand final : public ICommand {
+    class TransformUIElementCommand final : public UIElementCommand {
     public:
         TransformUIElementCommand(::UI::UIElement *target, const glm::vec2 oldPos, const glm::vec2 newPos, const glm::vec2 oldScale, const glm::vec2 newScale)
-            : m_Target(target), m_OldPos(oldPos), m_NewPos(newPos), m_OldScale(oldScale), m_NewScale(newScale) {}
-        void Execute(Core::EngineContext &ctx) override {
-            m_Target->Rect.Position = m_NewPos;
-            m_Target->Rect.Scale = m_NewScale;
-        }
-        void Undo(Core::EngineContext &ctx) override {
-            m_Target->Rect.Position = m_OldPos;
-            m_Target->Rect.Scale = m_OldScale;
-        }
+            : UIElementCommand(target ? target->GetUUID() : std::string{}), m_OldPos(oldPos), m_NewPos(newPos), m_OldScale(oldScale), m_NewScale(newScale) {}
+
+        void Execute(Core::EngineContext &ctx) override { Apply(ctx, m_NewPos, m_NewScale); }
+
+        void Undo(Core::EngineContext &ctx) override { Apply(ctx, m_OldPos, m_OldScale); }
+
         [[nodiscard]] std::string_view Name() const noexcept override { return "Transform UI Element"; }
 
     private:
-        ::UI::UIElement *m_Target;
+        void Apply(Core::EngineContext &ctx, const glm::vec2 position, const glm::vec2 scale) {
+            auto *element = ResolveElement(ctx);
+            if (!element) {
+                return;
+            }
+
+            element->Rect.Position = position;
+            element->Rect.Scale = scale;
+            Complete(ctx);
+        }
+
         glm::vec2 m_OldPos;
         glm::vec2 m_NewPos;
         glm::vec2 m_OldScale;
