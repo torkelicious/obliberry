@@ -3,6 +3,7 @@
 #include "Config/ProjectConfig.h"
 #include "Core/Utils/PathUtils.h"
 #include "IO/AssetCatalogFile.h"
+#include "IO/Loaders/AssetLoader.h"
 #include "Logger/LoggerService.h"
 #include "IO/VFS/VFS.h"
 #include "Utils/UUID.h"
@@ -63,6 +64,9 @@ namespace Core {
     }
 
     std::shared_ptr<Project> Project::NewProject(const std::filesystem::path &baseDir, const std::string &name, const std::string &templateId) {
+
+        IO::AssetLoader::WaitForBackgroundLoads();
+
         auto project = std::make_shared<Project>();
         const std::filesystem::path projectDir = baseDir / name;
         project->m_ProjectFilepath = projectDir / "project.json";
@@ -106,6 +110,9 @@ namespace Core {
     }
 
     std::shared_ptr<Project> Project::Load(const std::filesystem::path &projectFilePath) {
+
+        IO::AssetLoader::WaitForBackgroundLoads();
+
         auto project = std::make_shared<Project>();
         project->m_ProjectFilepath = std::filesystem::absolute(projectFilePath);
         IO::VFS::MountProject(project->m_ProjectFilepath.string());

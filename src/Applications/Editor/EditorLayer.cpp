@@ -3,6 +3,7 @@
 #include "Core/ResourceManager.h"
 #include "Config/ProjectConfig.h"
 #include "IO/AssetCatalog.h"
+#include "IO/Loaders/AssetLoader.h"
 #include "Logger/LoggerService.h"
 #include "ECS/Entity.h"
 #include "Platform/Error.h"
@@ -359,6 +360,9 @@ void Editor::EditorLayer::LoadScene(std::string path) {
 }
 
 void Editor::EditorLayer::ClearCurrentProject() {
+
+    IO::AssetLoader::WaitForBackgroundLoads();
+
     m_SceneManager.ClearCurrentScene();
     m_Scene = nullptr;
     m_Registry = nullptr;
