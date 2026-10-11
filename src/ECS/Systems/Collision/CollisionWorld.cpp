@@ -54,7 +54,7 @@ namespace ECS::Collision {
             const auto cellOf = [&cellSize](const double v) { return static_cast<int64_t>(std::floor(v / cellSize)); };
 
             for (size_t i = 0; i < count; ++i) {
-                const ColliderAABB aabb = aabbs[i];
+                ColliderAABB aabb = aabbs[i];
                 // degenerate geometry
                 for (int axis = 0; axis < 3; ++axis) {
                     if (!std::isfinite(aabb.min[axis]) || !std::isfinite(aabb.max[axis])) {
