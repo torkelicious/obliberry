@@ -205,7 +205,7 @@ namespace IO::SceneIO {
                 const auto child = deserializedIds[i];
                 const auto parent = deserializedIds[parentIndex];
 
-                if (!registry.CanSetParent(child, parent)) {
+                if (!registry.IsValid(child) || !registry.IsValid(parent) || !registry.CanSetParent(child, parent)) {
                     LOG_ERROR(LOG_WHO, "Invalid or cyclic parent link " + std::to_string(i) + " -> " + std::to_string(parentIndex) + " in: " + path);
                     return false;
                 }

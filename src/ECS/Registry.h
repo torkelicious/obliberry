@@ -114,53 +114,79 @@ namespace ECS {
         }
 
         void DestroyEntity(const EntityID id) {
-            if (!IsValid(id))
+            if (!IsValid(id)) {
                 return;
-
-            // destroy all children first
-            if (const auto *rel = GetComponent<Components::RelationshipComponent>(id)) {
-                for (const std::vector<EntityID> childrenCopy = rel->children; const EntityID childId : childrenCopy) {
-                    DestroyEntity(childId);
-                }
             }
 
-            // remove self from parent children list
-            if (const auto *rel = GetComponent<Components::RelationshipComponent>(id)) {
-                if (rel->parent != INVALID_ENTITY_ID && IsValid(rel->parent)) {
-                    if (auto *parentRel = GetComponent<Components::RelationshipComponent>(rel->parent)) {
-                        std::erase(parentRel->children, id);
+            std::vector<std::pair<EntityID, bool>> pending{{id, false}};
+            std::unordered_set<EntityID> visited;
+
+            while (!pending.empty()) {
+                const auto [current, childrenVisited] = pending.back();
+                pending.pop_back();
+
+                if (!IsValid(current)) {
+                    continue;
+                }
+
+                if (!childrenVisited) {
+                    if (!visited.insert(current).second) {
+                        continue;
+                    }
+
+                    // destroy all children first
+                    pending.emplace_back(current, true);
+
+                    if (const auto *rel = GetComponent<Components::RelationshipComponent>(current)) {
+                        for (auto child = rel->children.rbegin(); child != rel->children.rend(); ++child) {
+                            pending.emplace_back(*child, false);
+                        }
+                    }
+
+                    continue;
+                }
+
+                // remove self from parent children list
+                if (const auto *rel = GetComponent<Components::RelationshipComponent>(current)) {
+                    if (rel->parent != INVALID_ENTITY_ID && IsValid(rel->parent)) {
+                        if (auto *parentRel = GetComponent<Components::RelationshipComponent>(rel->parent)) {
+                            std::erase(parentRel->children, current);
+                        }
                     }
                 }
-            }
 
-            const uint32_t index = GetEntityIndex(id);
+                const uint32_t index = GetEntityIndex(current);
 
-            // targeted pool destruction via bitmask
-            uint64_t signature = m_EntitySignatures[index];
-            uint32_t poolIndex = 0;
-            while (signature) {
-                if (signature & 1) {
-                    if (m_ComponentPools[poolIndex]) {
-                        m_ComponentPools[poolIndex]->EntityDestroyed(id);
+                uint64_t signature = m_EntitySignatures[index];
+                uint32_t poolIndex = 0;
+
+                while (signature) {
+                    if (signature & 1) {
+                        if (m_ComponentPools[poolIndex]) {
+                            m_ComponentPools[poolIndex]->EntityDestroyed(current);
+                        }
                     }
+
+                    signature >>= 1;
+                    poolIndex++;
                 }
-                signature >>= 1;
-                poolIndex++;
+
+                m_EntitySignatures[index] = 0;
+
+                // increment gen & recycle
+                m_EntityVersions[index] = (m_EntityVersions[index] + 1) & (ENTITY_VERSION_MASK >> ENTITY_VERSION_SHIFT);
+
+                m_EntityStatus[index] = false;
+                m_AvailableEntities.push(index);
+
+                // swap-and-pop
+                const uint32_t livingIdx = m_LivingEntityIndices[index];
+                const EntityID backId = m_LivingEntities.back();
+
+                m_LivingEntities[livingIdx] = backId;
+                m_LivingEntityIndices[GetEntityIndex(backId)] = livingIdx;
+                m_LivingEntities.pop_back();
             }
-            m_EntitySignatures[index] = 0;
-
-            // increment gen & recycle
-            m_EntityVersions[index] = m_EntityVersions[index] + 1 & (ENTITY_VERSION_MASK >> ENTITY_VERSION_SHIFT);
-            m_EntityStatus[index] = false;
-            m_AvailableEntities.push(index);
-
-            // swap-and-pop
-            const uint32_t livingIdx = m_LivingEntityIndices[index];
-            const EntityID backId = m_LivingEntities.back();
-
-            m_LivingEntities[livingIdx] = backId;
-            m_LivingEntityIndices[GetEntityIndex(backId)] = livingIdx;
-            m_LivingEntities.pop_back();
         }
 
 
@@ -279,7 +305,7 @@ namespace ECS {
                 const auto *rel = GetComponent<Components::RelationshipComponent>(ancestor);
                 ancestor = rel ? rel->parent : INVALID_ENTITY_ID;
             }
-            return false;
+            return true;
         }
 
         void Reparent(const EntityID child, const EntityID newParent) {
