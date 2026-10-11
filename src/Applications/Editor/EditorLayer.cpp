@@ -300,20 +300,23 @@ void Editor::EditorLayer::HandleClipboardInput() {
 void Editor::EditorLayer::LoadScene(std::string path) {
     LOG_INFO("LoadScene", "Loading scene: " + path);
 
-    if (m_Context->audioEngine)
-        m_Context->audioEngine->StopMusic();
-
-    m_UndoManager.Clear();
-
-    if (m_Context->isEditorMode)
-        ClearCurrentProject();
-
-    if (m_Context->renderer) {
-        m_Context->renderer->InvalidateGLCache();
-    }
-
     try {
-        m_SceneManager.LoadSceneByPath(path);
+        if (!m_SceneManager.LoadSceneByPath(path)) {
+            LOG_ERROR("LoadScene", "Failed to load scene: " + path);
+            return;
+        }
+
+        m_UndoManager.Clear();
+        m_ViewportPanel.ClearSelectedEntityID();
+
+        if (m_Context->audioEngine && m_Context->isEditorMode) {
+            m_Context->audioEngine->StopMusic();
+        }
+
+        if (m_Context->renderer) {
+            m_Context->renderer->InvalidateGLCache();
+        }
+
         m_Scene = m_SceneManager.GetCurrentScene();
 
         if (m_Scene) {
@@ -354,15 +357,14 @@ void Editor::EditorLayer::LoadScene(std::string path) {
         }
     } catch (const std::exception &e) {
         LOG_ERROR("LoadScene", "Exception while loading scene: " + std::string(e.what()));
-        m_Registry = nullptr;
-        m_CurrentScenePath.clear();
+        m_Scene = m_SceneManager.GetCurrentScene();
+        m_Registry = m_Scene ? &m_Scene->GetRegistry() : nullptr;
+        m_CurrentScenePath = m_Scene ? m_Scene->GetScenePath() : std::string{};
     }
 }
 
 void Editor::EditorLayer::ClearCurrentProject() {
-
     IO::AssetLoader::WaitForBackgroundLoads();
-
     m_SceneManager.ClearCurrentScene();
     m_Scene = nullptr;
     m_Registry = nullptr;

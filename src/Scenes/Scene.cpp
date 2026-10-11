@@ -43,17 +43,6 @@ void Scenes::Scene::OnEnter() {
         }
     }
 
-    IO::EntityFactory::RegisterDeserializers();
-    IO::EntityFactory::RegisterSerializers();
-
-    LOG_INFO(LOG_WHO, "Attempting to deserialize scene from: " + m_Properties.ScenePath);
-    if (!IO::SceneIO::Deserialize(m_Properties.ScenePath, *this)) {
-        LOG_ERROR(LOG_WHO, "Failed to load scene file: " + m_Properties.ScenePath);
-        LOG_ERROR(LOG_WHO, "Scene will be empty!");
-    } else {
-        LOG_INFO(LOG_WHO, "Successfully deserialized scene");
-    }
-
     if (m_Context->audioEngine && !m_Context->isEditorMode) {
         if (!m_Properties.BackgroundMusicPath.empty()) {
             m_Context->audioEngine->PlayMusic(m_Properties.BackgroundMusicPath);

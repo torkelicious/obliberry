@@ -1,6 +1,6 @@
 #include "SceneManager.h"
-#include "ECS/Systems/ScriptSystem.h"
 #include "ECS/Types.h"
+#include "ECS/Systems/ScriptSystem.h"
 #include "Logger/LoggerService.h"
 #include "Core/Constants.h"
 #include "Core/EngineContext.h"
@@ -216,15 +216,15 @@ namespace Scenes {
 
     void SceneManager::SwitchScene(const std::string &newScenePath) { LoadSceneByPath(newScenePath); }
 
-    void SceneManager::LoadSceneByPath(const std::string &scenePath) {
+    bool SceneManager::LoadSceneByPath(const std::string &scenePath) {
         if (!ValidateScenePath(scenePath)) {
             LOG_ERROR(LOG_WHO, "Invalid scene path: " + scenePath);
-            return;
+            return false;
         }
 
         auto newScene = std::make_unique<Scene>(m_Context, SceneProperties{.ScenePath = scenePath});
 
-        LoadScene(std::move(newScene));
+        return LoadScene(std::move(newScene));
     }
 
     bool SceneManager::SaveCurrentScene() const {
@@ -277,13 +277,35 @@ namespace Scenes {
         }
     }
 
-    void SceneManager::LoadScene(std::unique_ptr<Scene> newScene) {
+    bool SceneManager::LoadScene(std::unique_ptr<Scene> newScene) {
+        if (!newScene || !m_Context || !m_Context->resources) {
+            return false;
+        }
+
         std::vector<MigratedEntity> migrationBatch;
+
+        try {
+            IO::EntityFactory::RegisterDeserializers();
+            IO::EntityFactory::RegisterSerializers();
+
+            if (!IO::SceneIO::Deserialize(newScene->GetScenePath(), *newScene)) {
+                LOG_ERROR(LOG_WHO, "Failed to load scene: " + newScene->GetScenePath());
+                return false;
+            }
+
+            migrationBatch = ExtractPersistentEntities(m_CurrentScene.get(), m_Context);
+            if (!AcquirePersistentAssets(newScene.get(), migrationBatch)) {
+                return false;
+            }
+            InjectPersistentEntities(newScene.get(), m_Context, migrationBatch);
+        } catch (const std::exception &e) {
+            LOG_ERROR(LOG_WHO, "Failed to prepare scene: " + std::string(e.what()));
+            return false;
+        }
 
         auto previousScene = std::move(m_CurrentScene);
 
         if (previousScene) {
-            migrationBatch = ExtractPersistentEntities(previousScene.get(), m_Context);
             previousScene->OnExit();
         }
 
@@ -300,11 +322,8 @@ namespace Scenes {
 
         m_CurrentScene = std::move(newScene);
 
-        if (m_CurrentScene) {
-            m_CurrentScene->OnEnter();
-            if (AcquirePersistentAssets(m_CurrentScene.get(), migrationBatch))
-                InjectPersistentEntities(m_CurrentScene.get(), m_Context, migrationBatch);
-        }
+        m_CurrentScene->OnEnter();
+        return true;
     }
 
     void SceneManager::Update(const float dt) const {

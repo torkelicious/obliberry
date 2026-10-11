@@ -100,6 +100,7 @@ namespace IO::SceneIO {
 
             if (!MapIO::Deserialize(mapPath, mapComp.grid)) {
                 LOG_ERROR(LOG_WHO, "Failed to load map file: " + mapPath);
+                return false;
             }
 
             // bind visual resources from scene json grid section
@@ -199,8 +200,8 @@ namespace IO::SceneIO {
 
         // UI
         if (j.contains("ui")) {
-            if (auto *uiSys = scene.GetContext().uiSystem) {
-                UISerializer::Deserialize(j["ui"], *uiSys, resources);
+            if (!UISerializer::Deserialize(j["ui"], scene.GetUISystem(), resources)) {
+                return false;
             }
         }
 
@@ -227,14 +228,11 @@ namespace IO::SceneIO {
         j["properties"]["lighting"] = sceneProps.EnableLightingSystem;
         j["properties"]["ambient_light"] = sceneProps.AmbientLight;
 
-        bool mapsSaved = true;
-
         // ecs query to save grid
+        bool mapsSaved = true;
         scene.GetRegistry().ForEach<ECS::Components::MapComponent>([&](ECS::Entity, const ECS::Components::MapComponent *mapComp) {
             if (mapComp->mapFilePath.empty()) {
                 LOG_WARN(LOG_WHO, "Map has no file path, skipping grid serialization. Use Save As to assign a path.");
-                // mapsSaved = false;
-                // allow scene to be serialized even if no map exists, crash should only be quitter on malformed / invalid data
                 return;
             }
 
@@ -321,21 +319,16 @@ namespace IO::SceneIO {
 
         RoundJsonFloats(j, 3);
         std::filesystem::path resolvedPath = VFS::Resolve(path);
-
         std::ofstream file(resolvedPath);
-
         if (!file.is_open()) {
             return false;
         }
-
         file << j.dump(4);
         file.close();
-
         if (!file) {
             LOG_ERROR(LOG_WHO, "Failed to write scene file: " + path);
             return false;
         }
-
         scene.OnSaved();
         return true;
     }

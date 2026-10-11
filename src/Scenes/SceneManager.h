@@ -19,7 +19,7 @@ namespace Scenes {
 
         void SwitchScene(const std::string &newScenePath);
 
-        void LoadSceneByPath(const std::string &scenePath);
+        bool LoadSceneByPath(const std::string &scenePath);
 
         [[nodiscard]] bool SaveCurrentScene() const;
 
@@ -29,7 +29,7 @@ namespace Scenes {
 
         void ClearCurrentScene();
 
-        void LoadScene(std::unique_ptr<Scene> newScene);
+        bool LoadScene(std::unique_ptr<Scene> newScene);
 
         void Update(float dt) const;
 
