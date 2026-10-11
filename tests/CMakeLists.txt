@@ -44,6 +44,8 @@ add_executable(obliberry_tests
         VFSPackageTests.cpp
         ConfigurationTests.cpp
         EditorCommandTests.cpp
+        SmallTaskTests.cpp
+        EntityWrapperCacheTests.cpp
         AudioIntegrationTests.cpp
         ../src/Applications/Editor/Commands/UndoManager.cpp
         ../src/Applications/Editor/Commands/EditorCommands.cpp
