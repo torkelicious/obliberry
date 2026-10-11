@@ -645,6 +645,9 @@ namespace Scripting {
 } // namespace Scripting
 
 void Scripting::EngineLib::register_registry_modules(ObSL::Interpreter &interpreter) {
+    // evict as soon as an entity is deleted
+    ECS::Registry::SetEntityDestroyedCallback([](const ECS::EntityID id) { EntityWrapperCache::EvictAll(id); });
+
     interpreter.get_global_environment()->define("GetEntity", interpreter.gc.allocate<ObSL::NativeFunction>(1, [reg = m_registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
         if (args.empty() || !std::holds_alternative<double>(args[0])) {
             return std::monostate{};

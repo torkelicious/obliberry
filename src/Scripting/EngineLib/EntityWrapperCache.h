@@ -66,6 +66,18 @@ namespace Scripting {
                 m_Entries.clear();
             }
 
+            void Evict(const ECS::EntityID id) {
+                for (auto it = m_Entries.begin(); it != m_Entries.end();) {
+                    if (it->first.id != id) {
+                        ++it;
+                        continue;
+                    }
+                    if (it->second.wrapper)
+                        m_Interp->gc.remove_root(it->second.wrapper);
+                    it = m_Entries.erase(it);
+                }
+            }
+
         private:
             struct Entry {
                 ObSL::ObSLObject *wrapper = nullptr;
@@ -99,6 +111,12 @@ namespace Scripting {
             ++s_Generation;
             for (auto &cache : g_Caches | std::views::values)
                 cache.Clear();
+        }
+
+        static void EvictAll(const ECS::EntityID id) {
+            std::unique_lock lock(g_MapMutex);
+            for (auto &cache : g_Caches | std::views::values)
+                cache.Evict(id);
         }
 
     private:
