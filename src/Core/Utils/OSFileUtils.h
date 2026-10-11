@@ -1,11 +1,13 @@
 #pragma once
 
+#include <algorithm>
 #include <exception>
 #include <filesystem>
 #include <fstream>
 #include <string_view>
 #include <system_error>
 
+#include "Core/Utils/UUID.h"
 #include "Logger/LoggerService.h"
 
 #ifdef _WIN32
@@ -20,14 +22,12 @@ namespace Core::Utils::OSFile {
     inline bool WriteAtomic(const std::filesystem::path &path, std::string_view data, const std::filesystem::path &tempDir = {}) {
         std::filesystem::path temp;
 
-        if (!tempDir.empty()) {
-            temp = tempDir / path.filename();
-        } else {
-            temp = path;
-        }
-        temp += ".tmp";
-
         try {
+
+            std::filesystem::path candidate = tempDir.empty() ? path : tempDir / path.filename();
+            candidate += "." + UUID::UUIDGenerator::Generate() + ".tmp";
+            temp = std::move(candidate);
+
             std::ofstream file;
             file.exceptions(std::ios::failbit | std::ios::badbit);
             file.open(temp, std::ios::binary | std::ios::trunc);
@@ -48,7 +48,9 @@ namespace Core::Utils::OSFile {
             return true;
         } catch (const std::exception &e) {
             std::error_code removeError;
-            std::filesystem::remove(temp, removeError);
+            if (!temp.empty()) {
+                std::filesystem::remove(temp, removeError);
+            }
             LOG_ERROR(LOG_WHO, "Failed to write file '" + path.string() + "': " + e.what());
             return false;
         }
