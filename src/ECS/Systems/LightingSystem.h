@@ -9,6 +9,7 @@
 #include "Rendering/Types/Shader/InternalShaders.h"
 #include "Rendering/Types/Mesh/MeshFactory.h"
 #include <algorithm>
+#include <cmath>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <memory>
@@ -16,25 +17,37 @@
 #include <ranges>
 
 namespace ECS::Systems::LightingSystem {
+    inline float g_LastBakedAmbient = std::numeric_limits<float>::quiet_NaN();
 
     inline void GenerateLightmap(Components::MapComponent &map, Core::ResourceManager *resources) {
         auto &lm = map.lightmap;
 
-        // compute map bounds from tiles
-        glm::vec2 minWorld(std::numeric_limits<float>::max());
-        glm::vec2 maxWorld(std::numeric_limits<float>::lowest());
+        if (map.grid.tiles.empty()) {
+            lm.mapOffset = glm::vec2(0.0f);
+            lm.mapSize = glm::vec2(0.0f);
+        } else {
+            glm::vec2 minWorld(std::numeric_limits<float>::max());
+            glm::vec2 maxWorld(std::numeric_limits<float>::lowest());
 
-        for (const auto &tile : map.grid.tiles | std::views::values) {
-            const glm::vec2 wp = tile.worldPos;
-            minWorld = glm::min(minWorld, wp);
-            maxWorld = glm::max(maxWorld, wp);
+            for (const auto &tile : map.grid.tiles | std::views::values) {
+                const glm::vec2 wp = tile.worldPos;
+                minWorld = glm::min(minWorld, wp);
+                maxWorld = glm::max(maxWorld, wp);
+            }
+
+            minWorld -= glm::vec2(Core::HEX_SIZE);
+            maxWorld += glm::vec2(Core::HEX_SIZE);
+
+            lm.mapOffset = minWorld;
+            lm.mapSize = maxWorld - minWorld;
         }
 
-        minWorld -= glm::vec2(Core::HEX_SIZE);
-        maxWorld += glm::vec2(Core::HEX_SIZE);
-
-        lm.mapOffset = minWorld;
-        lm.mapSize = maxWorld - minWorld;
+        if (!std::isfinite(lm.mapSize.x) || lm.mapSize.x < 0.0f) {
+            lm.mapSize.x = 0.0f;
+        }
+        if (!std::isfinite(lm.mapSize.y) || lm.mapSize.y < 0.0f) {
+            lm.mapSize.y = 0.0f;
+        }
 
         const int texW = std::max(1, static_cast<int>(lm.mapSize.x / Core::HEX_SIZE) * Core::LIGHTMAP_TEXELS_PER_HEX);
         const int texH = std::max(1, static_cast<int>(lm.mapSize.y / Core::HEX_SIZE) * Core::LIGHTMAP_TEXELS_PER_HEX);
@@ -56,6 +69,7 @@ namespace ECS::Systems::LightingSystem {
         lm.lightQuadVAO = vao;
         lm.framebuffer = fbo;
         lm.lastLightCount = std::numeric_limits<size_t>::max();
+        g_LastBakedAmbient = std::numeric_limits<float>::quiet_NaN();
 
         Rendering::Renderer::SubmitInitTask([fbo, vao, lightQuad, texW, texH] {
             lightQuad->InitGL();
@@ -115,13 +129,14 @@ namespace ECS::Systems::LightingSystem {
         }
 
         // skip when unchanged
-        if (lightCount == lm.lastLightCount && packedLights == lm.lastPackedLights) {
+        if (lightCount == lm.lastLightCount && packedLights == lm.lastPackedLights && ambient == g_LastBakedAmbient) {
             return;
         }
 
         if (packedLights.empty()) {
             lm.lastLightCount = lightCount;
             lm.lastPackedLights.clear();
+            g_LastBakedAmbient = ambient;
 
             Rendering::Renderer::SubmitInitTask([fbo, ambient] {
                 GLint prevFbo;
@@ -197,5 +212,6 @@ namespace ECS::Systems::LightingSystem {
 
         lm.lastLightCount = lightCount;
         std::swap(lm.lastPackedLights, packedLights);
+        g_LastBakedAmbient = ambient;
     }
 } // namespace ECS::Systems::LightingSystem
