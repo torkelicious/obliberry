@@ -109,7 +109,7 @@ namespace IO::VFS {
         std::filesystem::path canonicalBase = std::filesystem::weakly_canonical(basePath);
 
         // verify
-        auto [baseIt, resIt] = std::mismatch(canonicalBase.begin(), canonicalBase.end(), resolvedPath.begin());
+        auto [baseIt, resIt] = std::mismatch(canonicalBase.begin(), canonicalBase.end(), resolvedPath.begin(), resolvedPath.end());
         if (baseIt != canonicalBase.end()) {
             // path escapes base dir
             LOG_ERROR(LOG_WHO, "path traversal blocked for: " + virtualPath.string() + " (escapes base dir)");
