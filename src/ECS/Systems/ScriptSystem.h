@@ -237,9 +237,9 @@ namespace ECS::Systems::ScriptSystem {
         // it is captured once and reused
         struct ScriptSlotRef {
             EntityID entityId;
-            Components::ScriptComponent *script;
             size_t slotIndex;
         };
+
         static std::vector<ScriptSlotRef> s_AllSlots;
         s_AllSlots.clear();
 
@@ -247,7 +247,7 @@ namespace ECS::Systems::ScriptSystem {
             const auto raw_id = static_cast<EntityID>(entity);
             for (size_t i = 0; i < script->slots.size(); i++) {
                 auto &slot = script->slots[i];
-                s_AllSlots.push_back({.entityId = raw_id, .script = script, .slotIndex = i});
+                s_AllSlots.push_back({.entityId = raw_id, .slotIndex = i});
 
                 if (!slot.isInitialized) {
                     pendingInits.push_back({.entityId = raw_id, .script = script, .scriptIndex = i, .isReload = false});
@@ -284,10 +284,11 @@ namespace ECS::Systems::ScriptSystem {
             if (!script->slots[entry.scriptIndex].isInitialized) {
                 InitializeScript(registry, entry.entityId, script, *ctx.scriptPool, entry.scriptIndex);
             } else if (entry.isReload) {
+                const std::string path = script->slots[entry.scriptIndex].scriptPath;
                 script->slots[entry.scriptIndex].isInitialized = false;
                 InitializeScript(registry, entry.entityId, script, *ctx.scriptPool, entry.scriptIndex);
                 if (auto *logger = Logging::LoggerService::Get()) {
-                    logger->log("ScriptSystem", "Hot-reloaded script: " + script->slots[entry.scriptIndex].scriptPath, Logging::LogSeverity::Info);
+                    logger->log("ScriptSystem", "Hot-reloaded script: " + path, Logging::LogSeverity::Info);
                 }
             }
         }
@@ -306,12 +307,25 @@ namespace ECS::Systems::ScriptSystem {
         size_t totalWork = 0;
 
         for (const auto &ref : s_AllSlots) {
-            if (!registry.IsValid(ref.entityId)) // do not assume even though i prolly can?
+            if (!registry.IsValid(ref.entityId)) {
                 continue;
-            auto &slot = ref.script->slots[ref.slotIndex];
+            }
+
+            auto *script = registry.GetComponent<Components::ScriptComponent>(ref.entityId);
+
+            if (!script || ref.slotIndex >= script->slots.size()) {
+                continue;
+            }
+
+            auto &slot = script->slots[ref.slotIndex];
             if (slot.isInitialized && !slot.on_update_functions.empty() && slot.on_update_functions[0]) {
                 const size_t w = (ref.entityId + ref.slotIndex) % num_workers;
-                s_Buckets[w].push_back({.func = slot.on_update_functions[w], .env = slot.instance_envs[w], .scriptPath = slot.scriptPath, .hookName = "on_update"});
+                s_Buckets[w].push_back({
+                        .func = slot.on_update_functions[w],
+                        .env = slot.instance_envs[w],
+                        .scriptPath = slot.scriptPath,
+                        .hookName = "on_update",
+                });
                 ++totalWork;
             }
         }
