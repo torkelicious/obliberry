@@ -1,4 +1,5 @@
 #pragma once
+#include <new>
 #include <cstddef>
 #include <cstring>
 #include <type_traits>
@@ -12,7 +13,9 @@ namespace Platform::Threading {
     // It will fall back to heap if lambda exceeds storage.
     class SmallTask {
         static constexpr size_t StorageSize = 24;
-        alignas(8) std::byte m_Storage[StorageSize];
+        // inline storage alignment
+        static constexpr size_t StorageAlign = 8;
+        alignas(StorageAlign) std::byte m_Storage[StorageSize];
         void (*m_Invoke)(std::byte *) = nullptr;
         bool m_UsesHeap = false;
         void (*m_Destroy)(std::byte *) = nullptr;
@@ -22,7 +25,7 @@ namespace Platform::Threading {
 
         template <typename F, typename = std::enable_if_t<!std::is_same_v<std::decay_t<F>, SmallTask>>> explicit SmallTask(F &&f) {
             using FuncType = std::decay_t<F>;
-            if constexpr (sizeof(FuncType) <= StorageSize && alignof(FuncType) <= alignof(decltype(m_Storage)) && std::is_trivially_move_constructible_v<FuncType> && std::is_trivially_destructible_v<FuncType>) {
+            if constexpr (sizeof(FuncType) <= StorageSize && alignof(FuncType) <= StorageAlign && std::is_trivially_move_constructible_v<FuncType> && std::is_trivially_destructible_v<FuncType>) {
                 new (m_Storage) FuncType(std::forward<F>(f));
                 m_Invoke = [](std::byte *ptr) { (*reinterpret_cast<FuncType *>(ptr))(); };
                 m_UsesHeap = false;
