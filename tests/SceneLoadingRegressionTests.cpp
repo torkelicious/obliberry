@@ -26,8 +26,7 @@ protected:
     std::string originalUuid;
 
     static nlohmann::json Document(const nlohmann::json &entities = nlohmann::json::array()) {
-        return {{"properties", {{"lighting", false}}}, {"entities", entities}, {"PostProcessing", nlohmann::json::array()},
-                {"ui", {{"elements", {{{"type", "Rect"}, {"name", "Original UI"}}}}}}};
+        return {{"properties", {{"lighting", false}}}, {"entities", entities}, {"PostProcessing", nlohmann::json::array()}, {"ui", {{"elements", {{{"type", "Rect"}, {"name", "Original UI"}}}}}}};
     }
 
     void SetUp() override {
@@ -91,8 +90,8 @@ TEST_F(SceneLoadingRegressionTests, MissingMapAndAssetPreserveActiveScene) {
 }
 
 TEST_F(SceneLoadingRegressionTests, InvalidParentValuesPreserveActiveScene) {
-    for (const nlohmann::json value : {nlohmann::json(-1), nlohmann::json(99), nlohmann::json(0.5), nlohmann::json("0"), nlohmann::json(nullptr), nlohmann::json(true),
-                                     nlohmann::json(std::numeric_limits<uint64_t>::max())}) {
+    for (const nlohmann::json value :
+            {nlohmann::json(-1), nlohmann::json(99), nlohmann::json(0.5), nlohmann::json("0"), nlohmann::json(nullptr), nlohmann::json(true), nlohmann::json(std::numeric_limits<uint64_t>::max())}) {
         SCOPED_TRACE(value.dump());
         ASSERT_NO_FATAL_FAILURE(WriteJson("invalid-parent.json", Document(nlohmann::json::array({{{"parent", value}}}))));
         EXPECT_FALSE(manager.LoadSceneByPath("invalid-parent.json"));
@@ -101,11 +100,7 @@ TEST_F(SceneLoadingRegressionTests, InvalidParentValuesPreserveActiveScene) {
 }
 
 TEST_F(SceneLoadingRegressionTests, SelfAndAncestorCyclesPreserveActiveScene) {
-    const nlohmann::json cycles[] = {
-        nlohmann::json::array({{{"parent", 0}}}),
-        nlohmann::json::array({{{"parent", 1}}, {{"parent", 0}}}),
-        nlohmann::json::array({{{"parent", 1}}, {{"parent", 2}}, {{"parent", 0}}})
-    };
+    const nlohmann::json cycles[] = {nlohmann::json::array({{{"parent", 0}}}), nlohmann::json::array({{{"parent", 1}}, {{"parent", 0}}}), nlohmann::json::array({{{"parent", 1}}, {{"parent", 2}}, {{"parent", 0}}})};
     for (const auto &entities : cycles) {
         SCOPED_TRACE(entities.dump());
         ASSERT_NO_FATAL_FAILURE(WriteJson("cycle.json", Document(entities)));

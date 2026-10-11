@@ -7,9 +7,7 @@
 
 class TimeoutTests : public testing::Test {
 protected:
-    template <typename F> static void Schedule(F &&callback) {
-        Platform::Time::setTimeout(std::chrono::milliseconds{0}, Platform::Threading::SmallTask{std::forward<F>(callback)});
-    }
+    template <typename F> static void Schedule(F &&callback) { Platform::Time::setTimeout(std::chrono::milliseconds{0}, Platform::Threading::SmallTask{std::forward<F>(callback)}); }
     void SetUp() override { Clear(); }
     void TearDown() override { Clear(); }
     static void Clear() {

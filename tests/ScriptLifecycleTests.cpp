@@ -31,7 +31,7 @@ namespace {
             : NativeFunction(1, [](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value { return std::monostate{}; }, "tracked_destroy"), m_Destroyed(destroyed) {}
         ~TrackedHook() override { ++*m_Destroyed; }
     };
-}
+} // namespace
 
 class ScriptLifecycleTests : public TemporaryProject, public testing::WithParamInterface<size_t> {
 protected:
@@ -114,7 +114,10 @@ protected:
 TEST_P(ScriptLifecycleTests, EmptyDestructionQueueReturnsWithoutUpdatingScripts) {
     const auto id = Registry().CreateEntity();
     std::atomic<int> updates{0};
-    Attach(id, [&](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value { ++updates; return std::monostate{}; });
+    Attach(id, [&](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+        ++updates;
+        return std::monostate{};
+    });
     ECS::Systems::ScriptSystem::ProcessPendingDestruction(Registry(), context, {});
     EXPECT_TRUE(Registry().IsValid(id));
     EXPECT_EQ(updates, 0);
@@ -126,7 +129,10 @@ TEST_P(ScriptLifecycleTests, DestroyBindingsDeferDeletionAndCallEachSlotOnce) {
     Registry().SetParentDirect(child, parent);
     std::atomic<int> updates{0};
     std::atomic<int> destroys{0};
-    const Hook onDestroy = [&](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value { ++destroys; return std::monostate{}; };
+    const Hook onDestroy = [&](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+        ++destroys;
+        return std::monostate{};
+    };
     Attach(parent, [&](ObSL::Interpreter *interpreter, const std::vector<ObSL::Value> &) -> ObSL::Value {
         ++updates;
         DestroyById(interpreter, parent);
@@ -134,7 +140,10 @@ TEST_P(ScriptLifecycleTests, DestroyBindingsDeferDeletionAndCallEachSlotOnce) {
         std::get<ObSL::ObSLCallable *>(object->fields.at("Destroy"))->call(interpreter, {}, CallToken);
         return std::monostate{};
     }, onDestroy);
-    Attach(child, [&](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value { ++updates; return std::monostate{}; }, onDestroy);
+    Attach(child, [&](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+        ++updates;
+        return std::monostate{};
+    }, onDestroy);
     Attach(child, {}, onDestroy, {}, 1);
     Update();
     EXPECT_EQ(updates, 2);
@@ -154,7 +163,10 @@ TEST_P(ScriptLifecycleTests, DestroyBindingsDeferDeletionAndCallEachSlotOnce) {
 TEST_P(ScriptLifecycleTests, DestroyBindingWithoutFrameContextStillRequestsDeletion) {
     const auto id = Registry().CreateEntity();
     std::atomic<int> destroys{0};
-    Attach(id, {}, [&](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value { ++destroys; return std::monostate{}; });
+    Attach(id, {}, [&](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+        ++destroys;
+        return std::monostate{};
+    });
     DestroyById(&runtime.get_worker(0)->GetInterpreter(), id);
     ASSERT_TRUE(Registry().IsValid(id));
     EXPECT_TRUE(Registry().HasComponent<ECS::Components::DestroyTagComponent>(id));
@@ -210,7 +222,10 @@ TEST_P(ScriptLifecycleTests, ChildCreatedByDestroyCallbackGetsItsOwnCallback) {
         worker->frame_context<Scripting::ScriptCommandBuffer>()->push([&](ECS::Registry &registry) {
             child = registry.CreateEntity();
             registry.SetParentDirect(child, parent);
-            Attach(child, {}, [&](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value { ++childDestroys; return std::monostate{}; });
+            Attach(child, {}, [&](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+                ++childDestroys;
+                return std::monostate{};
+            });
         });
         return std::monostate{};
     });
@@ -234,12 +249,24 @@ TEST_P(ScriptLifecycleTests, SceneExitDrainsTaggedEntitiesAndKeepsOrdinaryExitDi
     std::atomic<int> destroys{0};
     std::atomic<int> taggedExits{0};
     std::atomic<int> survivorExits{0};
-    const Hook update = [&](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value { ++updates; return std::monostate{}; };
-    const Hook destroy = [&](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value { ++destroys; return std::monostate{}; };
-    const Hook taggedExit = [&](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value { ++taggedExits; return std::monostate{}; };
+    const Hook update = [&](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+        ++updates;
+        return std::monostate{};
+    };
+    const Hook destroy = [&](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+        ++destroys;
+        return std::monostate{};
+    };
+    const Hook taggedExit = [&](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+        ++taggedExits;
+        return std::monostate{};
+    };
     Attach(parent, update, destroy, taggedExit);
     Attach(child, update, destroy, taggedExit);
-    Attach(survivor, update, destroy, [&](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value { ++survivorExits; return std::monostate{}; });
+    Attach(survivor, update, destroy, [&](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+        ++survivorExits;
+        return std::monostate{};
+    });
     Registry().AddComponent<ECS::Components::DestroyTagComponent>(parent);
     scene->OnExit();
     EXPECT_EQ(updates, 0);
@@ -285,7 +312,10 @@ TEST_P(ScriptLifecycleTests, SceneExitDrainsChildrenCreatedDuringDestruction) {
         worker->frame_context<Scripting::ScriptCommandBuffer>()->push([&](ECS::Registry &registry) {
             child = registry.CreateEntity();
             registry.SetParentDirect(child, parent);
-            Attach(child, {}, [&](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value { ++destroys; return std::monostate{}; });
+            Attach(child, {}, [&](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+                ++destroys;
+                return std::monostate{};
+            });
         });
         return std::monostate{};
     });
@@ -383,5 +413,4 @@ TEST_P(ScriptLifecycleTests, PackagedAstRetainsStringsUntilDestroyCallbackComple
     EXPECT_FALSE(ECS::Systems::ScriptSystem::s_PackagedStringPools.contains({id, 0}));
 }
 
-INSTANTIATE_TEST_SUITE_P(WorkerCounts, ScriptLifecycleTests, testing::Values(size_t{1}, size_t{2}),
-    [](const testing::TestParamInfo<size_t> &info) { return "Workers" + std::to_string(info.param); });
+INSTANTIATE_TEST_SUITE_P(WorkerCounts, ScriptLifecycleTests, testing::Values(size_t{1}, size_t{2}), [](const testing::TestParamInfo<size_t> &info) { return "Workers" + std::to_string(info.param); });

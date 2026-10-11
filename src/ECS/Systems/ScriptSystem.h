@@ -120,8 +120,8 @@ namespace ECS::Systems::ScriptSystem {
             };
 
             {
-                const std::vector hooks = {slot.on_update_functions, slot.on_destroy_functions, slot.on_exit_functions, slot.on_collision_enter_functions, slot.on_collision_stay_functions, slot.on_collision_exit_functions,
-                        slot.on_trigger_enter_functions, slot.on_trigger_stay_functions, slot.on_trigger_exit_functions};
+                const std::vector hooks = {slot.on_update_functions, slot.on_destroy_functions, slot.on_exit_functions, slot.on_collision_enter_functions, slot.on_collision_stay_functions,
+                        slot.on_collision_exit_functions, slot.on_trigger_enter_functions, slot.on_trigger_stay_functions, slot.on_trigger_exit_functions};
 
                 for (const auto &hook : hooks) {
                     remove_roots(hook);
