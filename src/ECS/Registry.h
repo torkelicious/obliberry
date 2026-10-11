@@ -14,6 +14,7 @@
 #include <glm/gtx/matrix_decompose.hpp>
 #include <array>
 #include <cassert>
+#include <functional>
 #include <memory>
 #include <queue>
 #include <string>
@@ -70,6 +71,8 @@ namespace ECS {
                 m_AvailableEntities.push(i);
             }
         }
+
+        static void SetEntityDestroyedCallback(std::function<void(EntityID)> callback) { s_EntityDestroyedCallback = std::move(callback); }
 
         EntityID CreateEntity() {
             if (m_AvailableEntities.empty()) {
@@ -178,6 +181,10 @@ namespace ECS {
 
                 m_EntityStatus[index] = false;
                 m_AvailableEntities.push(index);
+
+                if (s_EntityDestroyedCallback) {
+                    s_EntityDestroyedCallback(current);
+                }
 
                 // swap-and-pop
                 const uint32_t livingIdx = m_LivingEntityIndices[index];
@@ -457,6 +464,9 @@ namespace ECS {
             }
             return nullptr;
         }
+
+    private:
+        inline static std::function<void(EntityID)> s_EntityDestroyedCallback;
     };
 
     template <typename T, typename... Args> T &Entity::AddComponent(Args &&...args) {
