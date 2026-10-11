@@ -188,14 +188,17 @@ void Sound::AudioEngine::PlayMusic(const std::string &filepath, const float volu
         return;
     }
 
+    ma_sound_set_looping(music, MA_TRUE);
+    ma_sound_set_volume(music, volume);
+
     {
         std::lock_guard lock(m_Mutex);
+
+        StopMusicUnlocked();
 
         m_CurrentMusic = music;
         m_CurrentMusicContext = MemoryAudioContext{.buffer = std::move(localBuffer), .decoder = decoder};
 
-        ma_sound_set_looping(music, MA_TRUE);
-        ma_sound_set_volume(music, volume);
         ma_sound_start(music);
     }
 }
