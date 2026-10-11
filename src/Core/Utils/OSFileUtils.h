@@ -40,6 +40,9 @@ namespace Core::Utils::OSFile {
 #ifdef _WIN32
             if (!MoveFileExW(temp.c_str(), path.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
                 const DWORD err = GetLastError();
+
+                LOG_ERROR(LOG_WHO, "MoveFileExW failed with Windows error " + std::to_string(err) + ": " + std::system_category().message(static_cast<int>(err)));
+
                 throw std::system_error(static_cast<int>(err), std::system_category(), "Failed to replace file");
             }
 #else
