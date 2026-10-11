@@ -181,20 +181,36 @@ namespace IO::SceneIO {
                     deserializedIds.push_back(ECS::INVALID_ENTITY_ID);
                 }
             }
+            auto &registry = scene.GetRegistry();
 
             for (size_t i = 0; i < deserializedIds.size(); ++i) {
-                if (const auto &entityData = j["entities"][i]; entityData.contains("parent")) {
-                    size_t parentIndex = 0;
-                    try {
-                        parentIndex = entityData["parent"].get<size_t>();
-                    } catch (const std::exception &e) {
-                        LOG_WARN(LOG_WHO, std::string("Invalid 'parent' field for entity ") + std::to_string(i) + ": " + e.what());
-                        continue;
-                    }
-                    if (parentIndex < deserializedIds.size() && parentIndex != i && deserializedIds[i] != ECS::INVALID_ENTITY_ID && deserializedIds[parentIndex] != ECS::INVALID_ENTITY_ID) {
-                        scene.GetRegistry().SetParentDirect(deserializedIds[i], deserializedIds[parentIndex]);
-                    }
+                const auto &entityData = j["entities"][i];
+                if (!entityData.contains("parent")) {
+                    continue;
                 }
+
+                const auto &parentValue = entityData["parent"];
+                if (!parentValue.is_number_integer() || parentValue < 0) {
+                    LOG_ERROR(LOG_WHO, "Invalid 'parent' field for entity " + std::to_string(i) + " in: " + path);
+                    return false;
+                }
+
+                const auto parentIndex = parentValue.get<json::number_unsigned_t>();
+
+                if (parentIndex >= deserializedIds.size()) {
+                    LOG_ERROR(LOG_WHO, "Parent index out of range for entity " + std::to_string(i) + " in: " + path);
+                    return false;
+                }
+
+                const auto child = deserializedIds[i];
+                const auto parent = deserializedIds[parentIndex];
+
+                if (!registry.CanSetParent(child, parent)) {
+                    LOG_ERROR(LOG_WHO, "Invalid or cyclic parent link " + std::to_string(i) + " -> " + std::to_string(parentIndex) + " in: " + path);
+                    return false;
+                }
+
+                registry.SetParentDirect(child, parent);
             }
         }
 
