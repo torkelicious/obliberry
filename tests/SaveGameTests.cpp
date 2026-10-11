@@ -7,6 +7,7 @@
 #include <nlohmann/json.hpp>
 
 #include <limits>
+#include <cmath>
 #include <optional>
 #include <array>
 #include <iterator>
@@ -677,9 +678,7 @@ TEST_F(SaveGameTests, FailedWritePreservesFileAndUnsavedValues) {
     const auto changed = MakeChangedValues();
     SetValues(changed);
 
-    auto temporaryPath = path;
-    temporaryPath += ".tmp";
-    ASSERT_TRUE(std::filesystem::create_directory(temporaryPath));
+    manager.Set("InvalidNumber", std::numeric_limits<double>::quiet_NaN());
 
     ASSERT_FALSE(manager.SaveActive());
 
@@ -687,10 +686,15 @@ TEST_F(SaveGameTests, FailedWritePreservesFileAndUnsavedValues) {
     EXPECT_EQ(manager.GetActiveFilename(), filename);
     EXPECT_TRUE(manager.HasActiveFile());
     ASSERT_NO_FATAL_FAILURE(ExpectValues(changed));
+    const auto invalidNumber = manager.Get("InvalidNumber");
+    ASSERT_TRUE(invalidNumber.has_value());
+    ASSERT_TRUE(std::holds_alternative<double>(*invalidNumber));
+    EXPECT_TRUE(std::isnan(std::get<double>(*invalidNumber)));
 
     ASSERT_TRUE(manager.LoadSave(*filename));
     ASSERT_NO_FATAL_FAILURE(ExpectValues(expectedValues));
     EXPECT_FALSE(manager.Contains("ExtraValue"));
+    EXPECT_FALSE(manager.Contains("InvalidNumber"));
 }
 
 namespace {

@@ -8,6 +8,13 @@
 
 class VFSPackageTests : public TemporaryProject {};
 
+TEST_F(VFSPackageTests, ResolvingAnAncestorOfTheProjectRootRejectsTraversalSafely) {
+    EXPECT_TRUE(IO::VFS::Resolve("..").empty());
+    EXPECT_TRUE(IO::VFS::Resolve("../../../../../../").empty());
+    ASSERT_NO_FATAL_FAILURE(Write("inside.txt", "inside"));
+    EXPECT_EQ(IO::VFS::ReadVirtual("assets/../inside.txt"), "inside");
+}
+
 TEST_F(VFSPackageTests, MountedFilesPreserveBinaryContentsAndRejectInvalidPaths) {
     const std::string contents{"abc\0def", 7};
     ASSERT_NO_FATAL_FAILURE(Write("assets/data.bin", contents));

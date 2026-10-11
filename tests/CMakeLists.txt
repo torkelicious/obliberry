@@ -24,9 +24,17 @@ add_executable(obliberry_tests
         EntitySerializationTests.cpp
         SaveGameTests.cpp
         HierarchyTests.cpp
+        HierarchySafetyTests.cpp
         MapTests.cpp
+        MapSerializationTests.cpp
         AnimationTests.cpp
         SceneTests.cpp
+        SceneLoadingRegressionTests.cpp
+        ScriptLifecycleTests.cpp
+        ScriptModuleTests.cpp
+        TimeoutTests.cpp
+        SaveConcurrencyTests.cpp
+        AtomicFileWriteTests.cpp
         ObSLTests.cpp
         ObSLBindingTests.cpp
         AssetTests.cpp
