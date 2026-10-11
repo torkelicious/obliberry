@@ -36,7 +36,7 @@ namespace ECS::Collision {
                 }
             }
             if (!std::isfinite(cellSize) || cellSize <= 0.0) {
-                cellSize = 1.0; 
+                cellSize = 1.0;
             }
 
             struct CellHash {
