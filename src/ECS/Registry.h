@@ -264,20 +264,29 @@ namespace ECS {
             return INVALID_ENTITY_ID;
         }
 
+        [[nodiscard]] bool CanSetParent(const EntityID child, const EntityID newParent) {
+            if (!IsValid(child) || child == newParent) {
+                return false;
+            }
+
+            std::unordered_set<EntityID> visited;
+            EntityID ancestor = newParent;
+
+            while (ancestor != INVALID_ENTITY_ID) {
+                if (!IsValid(ancestor) || ancestor == child || !visited.insert(ancestor).second) {
+                    return false;
+                }
+                const auto *rel = GetComponent<Components::RelationshipComponent>(ancestor);
+                ancestor = rel ? rel->parent : INVALID_ENTITY_ID;
+            }
+            return false;
+        }
+
         void Reparent(const EntityID child, const EntityID newParent) {
-            if (!IsValid(child) || child == newParent)
-                return;
 
             // must not be descenednt of child either
-            if (newParent != INVALID_ENTITY_ID && IsValid(newParent)) {
-                EntityID ancestor = newParent;
-                while (ancestor != INVALID_ENTITY_ID) {
-                    if (ancestor == child) {
-                        return;
-                    }
-                    const auto *rel = GetComponent<Components::RelationshipComponent>(ancestor);
-                    ancestor = rel && IsValid(rel->parent) ? rel->parent : INVALID_ENTITY_ID;
-                }
+            if (!CanSetParent(child, newParent)) {
+                return;
             }
 
             // preserve world transform before changing hierarchy
@@ -348,8 +357,9 @@ namespace ECS {
         }
 
         void SetParentDirect(const EntityID child, const EntityID newParent) {
-            if (!IsValid(child) || child == newParent)
+            if (!CanSetParent(child, newParent)) {
                 return;
+            }
 
             auto *childRel = GetComponent<Components::RelationshipComponent>(child);
 
