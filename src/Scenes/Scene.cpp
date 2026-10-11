@@ -10,7 +10,6 @@
 #include "ECS/Systems/RenderSystem.h"
 #include "ECS/Systems/LightingSystem.h"
 #include "ECS/Systems/ParticleSystem.h"
-#include "IO/Loaders/EntityFactory.h"
 #include "IO/SceneSerialization.h"
 #include <utility>
 #include "ECS/Systems/ScriptSystem.h"
@@ -127,14 +126,7 @@ void Scenes::Scene::Render() {
 
 void Scenes::Scene::OnExit() {
     m_CollisionWorld.Clear();
-    std::vector<ECS::EntityID> deadEntities;
-    m_Registry.ForEach<ECS::Components::DestroyTagComponent>([&](const ECS::Entity entity, ECS::Components::DestroyTagComponent *) { deadEntities.push_back(static_cast<ECS::EntityID>(entity)); });
 
-    for (const ECS::EntityID id : deadEntities) {
-        if (m_Registry.IsValid(id)) {
-            m_Registry.DestroyEntity(id);
-        }
-    }
     ECS::Collision::BillboardBasis basis{};
     if (m_Context->camera) {
         basis.right = m_Context->camera->GetRightVector();
@@ -142,13 +134,18 @@ void Scenes::Scene::OnExit() {
     }
 
     ECS::Systems::ScriptSystem::OnSceneExit(m_Registry, *m_Context, basis);
+
     IO::PrefabManager::ClearCache();
     ECS::Systems::ParticleSystem::OnSceneExit(m_Registry);
     m_UISystem.Clear();
-    if (m_Context->renderer)
+
+    if (m_Context->renderer) {
         m_Context->renderer->GetPostProcessor().Effects().clear();
+    }
+
     m_Context->uiSystem = nullptr;
     m_Context->uiCmdBuf = nullptr;
+
     LOG_INFO(LOG_WHO, "Exiting Scene " + m_Properties.ScenePath);
 }
 

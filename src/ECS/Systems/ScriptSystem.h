@@ -4,6 +4,7 @@
 #include <variant>
 #include <vector>
 #include <map>
+#include "ECS/Entity.h"
 #include "ECS/Systems/Collision/ColliderGeometry.h"
 #include "ECS/Systems/Collision/CollisionWorld.h"
 #include "ECS/Types.h"
@@ -211,9 +212,10 @@ namespace ECS::Systems::ScriptSystem {
         }
     }
 
-    inline void Update(Registry &registry, const Core::EngineContext &ctx, const Collision::BillboardBasis &basis) {
-        if (!ctx.scriptPool || !ctx.threadPool)
+    inline void Update(Registry &registry, const Core::EngineContext &ctx, const Collision::BillboardBasis &basis, const bool destructionOnly = false) {
+        if (!ctx.scriptPool || !ctx.threadPool || ctx.scriptPool->worker_count() == 0) {
             return;
+        }
 
         std::vector<EntityID> destroyRoots;
         registry.ForEach<Components::DestroyTagComponent>([&](const Entity entity, Components::DestroyTagComponent *) { destroyRoots.push_back(static_cast<EntityID>(entity)); });
@@ -250,9 +252,11 @@ namespace ECS::Systems::ScriptSystem {
 
         registry.ForEach<Components::ScriptComponent>([&](const Entity entity, Components::ScriptComponent *script) {
             const auto raw_id = static_cast<EntityID>(entity);
-            if (registry.HasComponent<Components::DestroyTagComponent>(raw_id)) {
+
+            if (destructionOnly || registry.HasComponent<Components::DestroyTagComponent>(raw_id)) {
                 return;
             }
+
             for (size_t i = 0; i < script->slots.size(); i++) {
                 auto &slot = script->slots[i];
                 s_AllSlots.push_back({.entityId = raw_id, .slotIndex = i});
@@ -419,9 +423,29 @@ namespace ECS::Systems::ScriptSystem {
             ctx.scriptPool->get_worker(w)->clear_frame_context();
     }
 
-    inline void OnSceneExit(Registry &registry, const Core::EngineContext &ctx, const Collision::BillboardBasis &basis) {
-        if (!ctx.scriptPool || !ctx.threadPool)
+    inline void ProcessPendingDestruction(Registry &registry, const Core::EngineContext &ctx, const Collision::BillboardBasis &basis) {
+        if (!ctx.scriptPool || !ctx.threadPool || ctx.scriptPool->worker_count() == 0) {
             return;
+        }
+
+        while (true) {
+            bool hasPending = true;
+            registry.ForEach<Components::DestroyTagComponent>([&](const Entity, Components::DestroyTagComponent *) { hasPending = true; });
+            if (!hasPending) {
+                break;
+            }
+
+            Update(registry, ctx, basis, true);
+        }
+    }
+
+    inline void OnSceneExit(Registry &registry, const Core::EngineContext &ctx, const Collision::BillboardBasis &basis) {
+        if (!ctx.scriptPool || !ctx.threadPool || ctx.scriptPool->worker_count() == 0) {
+            return;
+        }
+
+        ProcessPendingDestruction(registry, ctx, basis);
+
         constexpr ObSL::Token call_token{.type = ObSL::TokenType::LEFT_PAREN, .lexeme = "(", .line = 0, .column = 0, .start_pos = 0, .end_pos = 0};
 
         // Static reuse
@@ -499,6 +523,7 @@ namespace ECS::Systems::ScriptSystem {
             exitGroup.Wait();
 
         cmd_buf.flush(registry);
+        ProcessPendingDestruction(registry, ctx, basis);
         s_PackagedStringPools.clear();
         Scripting::EntityWrapperCache::ClearAll();
         for (size_t w = 0; w < num_workers; ++w)
