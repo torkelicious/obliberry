@@ -1,4 +1,5 @@
 #include "SceneManager.h"
+#include "ECS/Systems/ScriptSystem.h"
 #include "ECS/Types.h"
 #include "Logger/LoggerService.h"
 #include "Core/Constants.h"
@@ -290,7 +291,8 @@ namespace Scenes {
             Platform::Time::invalidateGeneration();
 
             m_Context->scriptPool->shutdown();
-            m_Context->scriptPool->init(IO::VFS::GetAssetsDirectory().string() + "/scripts");
+            m_Context->scriptPool->init("assets/scripts");
+            ECS::Systems::ScriptSystem::SetupScriptRuntime(*m_Context->scriptPool);
         }
 
         previousScene.reset();

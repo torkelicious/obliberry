@@ -1,4 +1,5 @@
 #include "GameLayer.h"
+#include "ECS/Systems/ScriptSystem.h"
 #include "IO/AssetCatalog.h"
 #include "IO/VFS/VFS.h"
 #include <exception>
@@ -28,7 +29,8 @@ void Game::GameLayer::Init(Core::EngineContext &ctx) {
 
     if (m_Context->scriptPool) {
         m_Context->scriptPool->shutdown();
-        m_Context->scriptPool->init(IO::VFS::GetAssetsDirectory().string() + "/scripts");
+        m_Context->scriptPool->init("assets/scripts");
+        ECS::Systems::ScriptSystem::SetupScriptRuntime(*m_Context->scriptPool);
     }
 
     std::string startScene;
