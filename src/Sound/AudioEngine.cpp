@@ -1,5 +1,7 @@
 #include "AudioEngine.h"
 #include <filesystem>
+#include <mutex>
+#include <utility>
 #include "miniaudio.h"
 #include "Logger/LoggerService.h"
 #include "IO/VFS/VFS.h"
@@ -144,8 +146,6 @@ void Sound::AudioEngine::PlayMusic(const std::string &filepath, const float volu
     if (!m_Engine)
         return;
 
-    StopMusic();
-
     auto *music = new ma_sound();
     ma_result result;
     std::string localBuffer;
@@ -188,29 +188,35 @@ void Sound::AudioEngine::PlayMusic(const std::string &filepath, const float volu
         return;
     }
 
-    ma_sound_set_looping(music, MA_TRUE);
-    ma_sound_set_volume(music, volume);
-    ma_sound_start(music);
-
     {
         std::lock_guard lock(m_Mutex);
+
         m_CurrentMusic = music;
         m_CurrentMusicContext = MemoryAudioContext{.buffer = std::move(localBuffer), .decoder = decoder};
+
+        ma_sound_set_looping(music, MA_TRUE);
+        ma_sound_set_volume(music, volume);
+        ma_sound_start(music);
     }
 }
 
 void Sound::AudioEngine::StopMusic() {
     std::lock_guard lock(m_Mutex);
+    StopMusicUnlocked();
+}
 
+void Sound::AudioEngine::StopMusicUnlocked() {
     if (m_CurrentMusic) {
         ma_sound_stop(m_CurrentMusic);
         ma_sound_uninit(m_CurrentMusic);
         delete m_CurrentMusic;
     }
+
     if (m_CurrentMusicContext.decoder) {
         ma_decoder_uninit(m_CurrentMusicContext.decoder);
         delete m_CurrentMusicContext.decoder;
     }
+
     m_CurrentMusic = nullptr;
     m_CurrentMusicContext.decoder = nullptr;
     m_CurrentMusicContext.buffer.clear();

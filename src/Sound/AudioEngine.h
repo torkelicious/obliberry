@@ -36,6 +36,8 @@ namespace Sound {
 
         bool Init();
 
+        void StopMusicUnlocked();
+
         ma_engine *m_Engine = nullptr;
 
         mutable std::mutex m_Mutex;
