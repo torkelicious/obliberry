@@ -214,6 +214,13 @@ namespace ECS::Systems::ScriptSystem {
     inline void Update(Registry &registry, const Core::EngineContext &ctx, const Collision::BillboardBasis &basis) {
         if (!ctx.scriptPool || !ctx.threadPool)
             return;
+
+        std::vector<EntityID> destroyRoots;
+        registry.ForEach<Components::DestroyTagComponent>([&](const Entity entity, Components::DestroyTagComponent *) { destroyRoots.push_back(static_cast<EntityID>(entity)); });
+        for (const EntityID id : destroyRoots) {
+            registry.RequestDestroy(id);
+        }
+
         constexpr ObSL::Token call_token{.type = ObSL::TokenType::LEFT_PAREN, .lexeme = "(", .line = 0, .column = 0, .start_pos = 0, .end_pos = 0};
         constexpr uint64_t kReloadPollIntervalFrames = 300;
         const bool shouldPollReload = !IO::VFS::IsPackaged() && ctx.frameCount % kReloadPollIntervalFrames == 0;
@@ -228,7 +235,6 @@ namespace ECS::Systems::ScriptSystem {
 
         struct PendingScriptInit {
             EntityID entityId;
-            Components::ScriptComponent *script;
             size_t scriptIndex;
             bool isReload;
         };
@@ -239,18 +245,20 @@ namespace ECS::Systems::ScriptSystem {
             EntityID entityId;
             size_t slotIndex;
         };
-
         static std::vector<ScriptSlotRef> s_AllSlots;
         s_AllSlots.clear();
 
         registry.ForEach<Components::ScriptComponent>([&](const Entity entity, Components::ScriptComponent *script) {
             const auto raw_id = static_cast<EntityID>(entity);
+            if (registry.HasComponent<Components::DestroyTagComponent>(raw_id)) {
+                return;
+            }
             for (size_t i = 0; i < script->slots.size(); i++) {
                 auto &slot = script->slots[i];
                 s_AllSlots.push_back({.entityId = raw_id, .slotIndex = i});
 
                 if (!slot.isInitialized) {
-                    pendingInits.push_back({.entityId = raw_id, .script = script, .scriptIndex = i, .isReload = false});
+                    pendingInits.push_back({.entityId = raw_id, .scriptIndex = i, .isReload = false});
                 }
 
                 try {
@@ -260,7 +268,7 @@ namespace ECS::Systems::ScriptSystem {
                         }
                         if (const std::filesystem::path &resolvedPath = slot.resolvedPath; std::filesystem::exists(resolvedPath)) {
                             if (const auto current_time = std::filesystem::last_write_time(resolvedPath); current_time > slot.lastModified && slot.isInitialized) {
-                                pendingInits.push_back({.entityId = raw_id, .script = script, .scriptIndex = i, .isReload = true});
+                                pendingInits.push_back({.entityId = raw_id, .scriptIndex = i, .isReload = true});
                             }
                         }
                     }
@@ -284,11 +292,10 @@ namespace ECS::Systems::ScriptSystem {
             if (!script->slots[entry.scriptIndex].isInitialized) {
                 InitializeScript(registry, entry.entityId, script, *ctx.scriptPool, entry.scriptIndex);
             } else if (entry.isReload) {
-                const std::string path = script->slots[entry.scriptIndex].scriptPath;
                 script->slots[entry.scriptIndex].isInitialized = false;
                 InitializeScript(registry, entry.entityId, script, *ctx.scriptPool, entry.scriptIndex);
                 if (auto *logger = Logging::LoggerService::Get()) {
-                    logger->log("ScriptSystem", "Hot-reloaded script: " + path, Logging::LogSeverity::Info);
+                    logger->log("ScriptSystem", "Hot-reloaded script: " + script->slots[entry.scriptIndex].scriptPath, Logging::LogSeverity::Info);
                 }
             }
         }
@@ -307,25 +314,17 @@ namespace ECS::Systems::ScriptSystem {
         size_t totalWork = 0;
 
         for (const auto &ref : s_AllSlots) {
-            if (!registry.IsValid(ref.entityId)) {
+            if (!registry.IsValid(ref.entityId) || registry.HasComponent<Components::DestroyTagComponent>(ref.entityId)) { // do not assume even though i prolly can?
                 continue;
             }
-
             auto *script = registry.GetComponent<Components::ScriptComponent>(ref.entityId);
-
             if (!script || ref.slotIndex >= script->slots.size()) {
                 continue;
             }
-
             auto &slot = script->slots[ref.slotIndex];
             if (slot.isInitialized && !slot.on_update_functions.empty() && slot.on_update_functions[0]) {
                 const size_t w = (ref.entityId + ref.slotIndex) % num_workers;
-                s_Buckets[w].push_back({
-                        .func = slot.on_update_functions[w],
-                        .env = slot.instance_envs[w],
-                        .scriptPath = slot.scriptPath,
-                        .hookName = "on_update",
-                });
+                s_Buckets[w].push_back({.func = slot.on_update_functions[w], .env = slot.instance_envs[w], .scriptPath = slot.scriptPath, .hookName = "on_update"});
                 ++totalWork;
             }
         }
@@ -336,7 +335,6 @@ namespace ECS::Systems::ScriptSystem {
             if (const auto script = registry.GetComponent<Components::ScriptComponent>(entity_id)) {
                 for (size_t i = 0; i < script->slots.size(); i++) {
                     auto &slot = script->slots[i];
-                    s_PackagedStringPools.erase({entity_id, i});
                     if (slot.isInitialized && !slot.on_destroy_functions.empty() && slot.on_destroy_functions[0]) {
                         const size_t w = (entity_id + i) % num_workers;
                         s_Buckets[w].push_back({.func = slot.on_destroy_functions[w], .env = slot.instance_envs[w], .scriptPath = slot.scriptPath, .hookName = "on_destroy"});
@@ -346,9 +344,6 @@ namespace ECS::Systems::ScriptSystem {
             }
             destroyTagged.push_back(entity_id);
         });
-
-        for (const EntityID id : destroyTagged)
-            registry.RemoveComponent<Components::DestroyTagComponent>(id);
 
         // Static reuse of arguments
         static std::vector<ObSL::Value> args(1);
@@ -389,6 +384,36 @@ namespace ECS::Systems::ScriptSystem {
 
         // flush deferred registry writes
         cmd_buf.flush(registry);
+
+        for (const EntityID id : destroyTagged) {
+            if (!registry.IsValid(id)) {
+                continue;
+            }
+            const auto *relationship = registry.GetComponent<Components::RelationshipComponent>(id);
+            if (!relationship) {
+                continue;
+            }
+            const auto children = relationship->children;
+            for (const EntityID child : children) {
+                if (registry.IsValid(child)) {
+                    registry.RequestDestroy(child);
+                    registry.Reparent(child, INVALID_ENTITY_ID);
+                }
+            }
+            registry.GetComponent<Components::RelationshipComponent>(id)->children.clear();
+        }
+
+        for (const EntityID id : destroyTagged) {
+            if (registry.IsValid(id)) {
+                registry.DestroyEntity(id);
+            }
+        }
+        for (const EntityID id : destroyTagged) {
+            auto it = s_PackagedStringPools.lower_bound({id, 0});
+            while (it != s_PackagedStringPools.end() && it->first.first == id) {
+                it = s_PackagedStringPools.erase(it);
+            }
+        }
 
         for (size_t w = 0; w < num_workers; ++w)
             ctx.scriptPool->get_worker(w)->clear_frame_context();
@@ -516,7 +541,7 @@ namespace ECS::Systems::ScriptSystem {
         std::vector<CollisionWork> work;
 
         auto qReceiver = [&](const EntityID receiver, const EntityID other, const Collision::CollisionEvent &event) {
-            if (!registry.IsValid(receiver)) {
+            if (!registry.IsValid(receiver) || registry.HasComponent<Components::DestroyTagComponent>(receiver)) {
                 return;
             }
 

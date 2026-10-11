@@ -404,10 +404,10 @@ namespace Scripting {
             auto *commands = worker ? worker->frame_context<ScriptCommandBuffer>() : nullptr;
 
             if (commands) {
-                commands->push([id](ECS::Registry &reg) { reg.DestroyEntity(id); });
+                commands->push([id](ECS::Registry &reg) { reg.RequestDestroy(id); });
             } else {
                 std::unique_lock lock(g_RegistryMutex);
-                reg_ptr->DestroyEntity(id);
+                reg_ptr->RequestDestroy(id);
             }
 
             return std::monostate{};
@@ -732,10 +732,10 @@ void Scripting::EngineLib::register_registry_modules(ObSL::Interpreter &interpre
         auto *commands = worker ? worker->frame_context<ScriptCommandBuffer>() : nullptr;
 
         if (commands) {
-            commands->push([id](ECS::Registry &target) { target.DestroyEntity(id); });
+            commands->push([id](ECS::Registry &target) { target.RequestDestroy(id); });
         } else {
             std::unique_lock lock(g_RegistryMutex);
-            reg->DestroyEntity(id);
+            reg->RequestDestroy(id);
         }
 
         return std::monostate{};

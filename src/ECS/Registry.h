@@ -1,10 +1,12 @@
 #pragma once
 #include "ComponentPool.h"
 #include "Core/Utils/UUID.h"
+#include "ECS/Components/DestroyTagComponent.h"
 #include "Entity.h"
 #include "Types.h"
 #include "ECS/Components/RelationshipComponent.h"
 #include "ECS/Components/TransformComponent.h"
+#include <unordered_set>
 #include <vector>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
@@ -87,6 +89,28 @@ namespace ECS {
             m_LivingEntityIndices[index] = static_cast<uint32_t>(m_LivingEntities.size());
             m_LivingEntities.push_back(newId);
             return newId;
+        }
+
+        void RequestDestroy(const EntityID id) {
+            std::vector<EntityID> pending{id};
+            std::unordered_set<EntityID> visited;
+
+            while (!pending.empty()) {
+                const EntityID current = pending.back();
+                pending.pop_back();
+
+                if (!IsValid(current) || !visited.insert(current).second) {
+                    continue;
+                }
+
+                if (!HasComponent<Components::DestroyTagComponent>(current)) {
+                    AddComponent<Components::DestroyTagComponent>(current);
+                }
+
+                if (const auto *relationship = GetComponent<Components::RelationshipComponent>(current)) {
+                    pending.insert(pending.end(), relationship->children.begin(), relationship->children.end());
+                }
+            }
         }
 
         void DestroyEntity(const EntityID id) {
