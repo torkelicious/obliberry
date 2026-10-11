@@ -10,12 +10,84 @@
 #include "ECS/Systems/Collision/ColliderGeometry.h"
 #include "ECS/Systems/Collision/GJK.h"
 #include "Logger/LoggerService.h"
+#include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
 namespace ECS::Collision {
+
+    namespace {
+        // Broadphase
+        std::vector<std::pair<size_t, size_t>> CollectCandidatePairs(const std::vector<ColliderAABB> &aabbs) {
+            std::vector<std::pair<size_t, size_t>> pairs;
+            const size_t count = aabbs.size();
+            if (count < 2) {
+                return pairs;
+            }
+
+            double cellSize = 0.0;
+            for (const ColliderAABB &aabb : aabbs) {
+                for (int axis = 0; axis < 3; ++axis) {
+                    cellSize = std::max(cellSize, aabb.max[axis] - aabb.min[axis]);
+                }
+            }
+            if (!std::isfinite(cellSize) || cellSize <= 0.0) {
+                cellSize = 1.0; 
+            }
+
+            struct CellHash {
+                size_t operator()(const std::tuple<int64_t, int64_t, int64_t> &cell) const {
+                    const auto [x, y, z] = cell;
+                    size_t h = std::hash<int64_t>{}(x);
+                    h ^= std::hash<int64_t>{}(y) + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
+                    h ^= std::hash<int64_t>{}(z) + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
+                    return h;
+                }
+            };
+
+            std::unordered_map<std::tuple<int64_t, int64_t, int64_t>, std::vector<size_t>, CellHash> grid;
+
+            const auto cellOf = [&cellSize](const double v) { return static_cast<int64_t>(std::floor(v / cellSize)); };
+
+            for (size_t i = 0; i < count; ++i) {
+                const ColliderAABB aabb = aabbs[i];
+                // degenerate geometry
+                for (int axis = 0; axis < 3; ++axis) {
+                    if (!std::isfinite(aabb.min[axis]) || !std::isfinite(aabb.max[axis])) {
+                        aabb.min = glm::dvec3(0.0);
+                        aabb.max = glm::dvec3(0.0);
+                        break;
+                    }
+                }
+
+                const int64_t minX = cellOf(aabb.min[0] - CollisionTolerance);
+                const int64_t minY = cellOf(aabb.min[1] - CollisionTolerance);
+                const int64_t minZ = cellOf(aabb.min[2] - CollisionTolerance);
+                const int64_t maxX = cellOf(aabb.max[0] + CollisionTolerance);
+                const int64_t maxY = cellOf(aabb.max[1] + CollisionTolerance);
+                const int64_t maxZ = cellOf(aabb.max[2] + CollisionTolerance);
+
+                for (int64_t x = minX; x <= maxX; ++x) {
+                    for (int64_t y = minY; y <= maxY; ++y) {
+                        for (int64_t z = minZ; z <= maxZ; ++z) {
+                            for (const size_t other : grid[std::make_tuple(x, y, z)]) {
+                                pairs.emplace_back(std::min(other, i), std::max(other, i));
+                            }
+                            grid[std::make_tuple(x, y, z)].push_back(i);
+                        }
+                    }
+                }
+            }
+
+            std::sort(pairs.begin(), pairs.end());
+            pairs.erase(std::unique(pairs.begin(), pairs.end()), pairs.end());
+            return pairs;
+        }
+    } // namespace
 
     void CollisionWorld::Update(Registry &registry, const BillboardBasis &basis) {
         m_Events.clear();
@@ -42,37 +114,34 @@ namespace ECS::Collision {
         }
 
         std::vector<Collision> nextCollisions;
-        for (size_t i = 0; i < worldColliders.size(); ++i) {
-            for (size_t j = i + 1; j < worldColliders.size(); ++j) {
+        for (const auto &[i, j] : CollectCandidatePairs(aabbs)) {
+            const auto &a = worldColliders[i];
+            const auto &b = worldColliders[j];
 
-                const auto &a = worldColliders[i];
-                const auto &b = worldColliders[j];
-
-                if (!shouldCollide(a.geometry, b.geometry)) {
-                    continue;
-                }
-
-                if (!OverlapsAABB(aabbs[i], aabbs[j])) {
-                    continue;
-                }
-
-                const GJKResult result = IntersectsGJK(a, b);
-
-                ReportIndeterminate(a.entity, b.entity, result == GJKResult::Indeterminate);
-                if (result == GJKResult::Indeterminate) {
-                    const auto previous = m_Previous.find(MakeKey(a.entity, b.entity));
-                    if (previous != m_Previous.end()) {
-                        nextCollisions.push_back(previous->second);
-                    }
-                    continue;
-                }
-
-                if (result == GJKResult::Separated) {
-                    continue;
-                }
-
-                nextCollisions.push_back({.entityA = std::min(a.entity, b.entity), .entityB = std::max(a.entity, b.entity), .isTrigger = a.geometry.isTrigger || b.geometry.isTrigger});
+            if (!shouldCollide(a.geometry, b.geometry)) {
+                continue;
             }
+
+            if (!OverlapsAABB(aabbs[i], aabbs[j])) {
+                continue;
+            }
+
+            const GJKResult result = IntersectsGJK(a, b);
+
+            ReportIndeterminate(a.entity, b.entity, result == GJKResult::Indeterminate);
+            if (result == GJKResult::Indeterminate) {
+                const auto previous = m_Previous.find(MakeKey(a.entity, b.entity));
+                if (previous != m_Previous.end()) {
+                    nextCollisions.push_back(previous->second);
+                }
+                continue;
+            }
+
+            if (result == GJKResult::Separated) {
+                continue;
+            }
+
+            nextCollisions.push_back({.entityA = std::min(a.entity, b.entity), .entityB = std::max(a.entity, b.entity), .isTrigger = a.geometry.isTrigger || b.geometry.isTrigger});
         }
         CollisionMap nextPairs;
         nextPairs.reserve(nextCollisions.size());
