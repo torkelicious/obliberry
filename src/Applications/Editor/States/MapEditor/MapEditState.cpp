@@ -198,8 +198,8 @@ void Editor::States::MapEditState::OnRender() {
             renderer->Submit(m_MapComp->hexMesh, m_MapComp->outlineMat, transform);
         };
 
-        if (m_ToolShape == MapToolShape::RADIUS && m_BrushRadius > 1) {
-            ForEachHexInRing(m_hoveredHex, m_BrushRadius - 1, drawOutline);
+        if (m_ToolShape == MapToolShape::RADIUS) {
+            ForEachHexInRing(m_hoveredHex, std::max(0, m_BrushRadius - 1), drawOutline);
         } else if (m_ToolShape == MapToolShape::RECT) {
             const auto start = m_MapDragging ? m_RectStart : m_hoveredHex;
 
