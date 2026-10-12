@@ -309,6 +309,16 @@ void Editor::States::MapEditState::OnDrawModeToolbar() {
         drawToolBtn("  Select ", MapTool::Select, "Click a tile to inspect and edit its properties.");
     }
 
+    {
+        ImGui::SetNextItemWidth(120.0f);
+        const char *toolShapes[] = {"Radius", "Rectangle"};
+        auto current = static_cast<int>(m_ToolShape);
+
+        if (ImGui::Combo("##ToolShape", &current, toolShapes, IM_ARRAYSIZE(toolShapes))) {
+            m_ToolShape = static_cast<MapToolShape>(current);
+        }
+    }
+
     if (m_ToolShape == MapToolShape::RADIUS) {
         ImGui::SameLine();
         ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
