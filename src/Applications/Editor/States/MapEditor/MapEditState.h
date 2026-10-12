@@ -5,6 +5,7 @@
 #include "ECS/Components/MapStateComponent.h"
 #include "Applications/Editor/UI/Panels/MapEditor/TileEditorPanel.h"
 #include "Map/Hex.h"
+#include "Map/HexCoords.h"
 #include <cstdint>
 #include <functional>
 #include <optional>
@@ -36,8 +37,10 @@ namespace Editor::States {
     private:
         void ApplyToolAt(const Map::HexCoords &hex);
         static void ForEachHexInRing(Map::HexCoords center, int radius, const std::function<void(const Map::HexCoords &)> &callback);
+        static void ForEachHexInRect(const Map::HexCoords &start, const Map::HexCoords &end, const std::function<void(const Map::HexCoords &)> &callback);
         void CommitMapChanges();
         void CapturePreDragState(const Map::HexCoords &hex);
+        void FinishMapDrag();
 
         Map::HexGrid *m_CurrentGrid = nullptr;
         ECS::Components::MapStateComponent *m_MapState = nullptr;
@@ -56,6 +59,9 @@ namespace Editor::States {
         using TileState = std::pair<uint8_t, bool>; // {type, walkable}
         std::unordered_map<Map::HexCoords, std::optional<TileState>, Map::HexCoordsHash> m_PreDragState;
         std::unordered_map<Map::HexCoords, std::optional<TileState>, Map::HexCoordsHash> m_AccumulatedNew;
+
+        Map::HexCoords m_RectStart{};
+        Map::HexCoords m_RectEnd{};
 
         // brush
         MapToolShape m_ToolShape = MapToolShape::RADIUS;

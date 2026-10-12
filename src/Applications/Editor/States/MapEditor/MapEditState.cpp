@@ -1,38 +1,47 @@
 #include "MapEditState.h"
+
 #include "Applications/Editor/States/MapEditor/MapTools.h"
 #include "Map/HexCoords.h"
 #include "Rendering/Renderer.h"
-#include <algorithm>
-#include <filesystem>
 #include "Core/Constants.h"
 #include "Applications/Editor/EditorLayer.h"
 #include "Platform/Input/InputManager.h"
 #include "Core/ResourceManager.h"
 #include "ECS/Systems/MapRenderSystem.h"
 #include "Math/HexMath.h"
-#include <functional>
-#include <imgui.h>
-#include "imgui_internal.h"
 #include "Applications/Editor/Platform/FileDialogs.h"
 #include "Applications/Editor/Commands/EditorCommands.h"
 #include "IO/MapSerialization.h"
 #include "IO/VFS/VFS.h"
 
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <filesystem>
+#include <functional>
+#include <memory>
+#include <ranges>
+#include <string>
+#include <utility>
+
+#include <imgui.h>
+#include "imgui_internal.h"
+
 namespace {
     std::string GetMapsDirectory() {
         const std::string dir = IO::VFS::Resolve(std::string(Core::MAP_PATH)).string();
+
         std::filesystem::create_directories(dir);
         return dir;
     }
 } // namespace
 
-
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "MapEditState"
 
 void Editor::States::MapEditState::OnEnter() {
-
     m_MapState = m_EditorLayer->m_Registry->GetFirst<ECS::Components::MapStateComponent>();
+
     m_MapComp = m_EditorLayer->m_Registry->GetFirst<ECS::Components::MapComponent>();
 
     if (!m_MapComp) {
@@ -41,41 +50,44 @@ void Editor::States::MapEditState::OnEnter() {
     }
 
     m_CurrentGrid = &m_MapComp->grid;
-    m_MapComp->pathToMat->color = {0.0, 0.8, 1.0, 0.50};   // cyan
-    m_MapComp->outlineMat->color = {1.0, 0.85, 0.0, 0.55}; // gold / yellowish
+
+    m_MapComp->pathToMat->color = {0.0, 0.8, 1.0, 0.50};
+    m_MapComp->outlineMat->color = {1.0, 0.85, 0.0, 0.55};
+
     m_selectedTile = m_CurrentGrid->Get(m_selectedHex);
+
     m_TileEditorPanel.SetContext(m_EditorLayer->m_Scene, *m_EditorLayer->m_Context);
+
     m_TileEditorPanel.SetMapComponent(m_MapComp);
+
     m_TileEditorPanel.SetCreateTypeFn([this](const std::shared_ptr<Rendering::Texture> &tex, const glm::vec4 &color) { return GetOrCreateTypeForMaterial(tex, color); });
+
     if (!m_MapComp->typeMats.empty()) {
         m_TileEditorPanel.InitBrushFromFirstType();
     }
+
     m_TileEditorPanel.SetSelectedTile(m_selectedTile);
+
     SetWindowTitle(m_MapComp->mapFilePath);
 }
 
 void Editor::States::MapEditState::OnUpdate(const float dt) {}
 
 void Editor::States::MapEditState::OnHandleInput(const float dt) {
-
     const bool viewportHovered = m_EditorLayer->m_ViewportPanel.IsHovered();
 
     if (!m_EditorLayer->m_Input->HasAnyModifierDown() && m_EditorLayer->m_Input->IsKeyPressed("V")) {
         m_EditorLayer->m_Camera.ToggleViewMode();
     }
 
-    // Reset keyboard pan velocity when not hovering
     float kbPanX = 0.0f;
     float kbPanY = 0.0f;
+
     m_EditorLayer->m_Camera.StopKeyboardPan();
 
     if (!viewportHovered) {
         if (m_EditorLayer->m_Input->IsMouseReleased(0)) {
-            if (m_MapDragging) {
-                CommitMapChanges();
-                m_MapDragging = false;
-            }
-            m_IsDragging = false;
+            FinishMapDrag();
         }
         return;
     }
@@ -83,13 +95,14 @@ void Editor::States::MapEditState::OnHandleInput(const float dt) {
     m_hoveredHex = Math::HexMath::PixelToHex(m_EditorLayer->m_ViewportPanel.MousePosToWorld(m_EditorLayer->m_Camera));
 
     if (!m_MapState || !m_MapComp) {
+        if (m_EditorLayer->m_Input->IsMouseReleased(0)) {
+            FinishMapDrag();
+        }
+
         return;
     }
 
     m_MapState->hasSelection = true;
-    // The component names are misleading: "selectedHex" is actually the hovered hex,
-    // while "pathTo" represents the real clicked selection.
-    m_MapState->selectedHex = m_hoveredHex;
 
     // click &/or drag
 
@@ -98,16 +111,24 @@ void Editor::States::MapEditState::OnHandleInput(const float dt) {
             m_MapDragging = true;
             m_PreDragState.clear();
             m_AccumulatedNew.clear();
+            m_RectStart = m_hoveredHex;
+            m_RectEnd = m_hoveredHex;
         }
-        ApplyToolAt(m_hoveredHex);
+
+        m_RectEnd = m_hoveredHex;
+
+        if (m_ToolShape != MapToolShape::RECT) {
+            ApplyToolAt(m_hoveredHex);
+        }
+
         m_IsDragging = true;
     }
+
     if (m_EditorLayer->m_Input->IsMouseReleased(0)) {
-        if (m_MapDragging) {
-            CommitMapChanges();
-            m_MapDragging = false;
+        if (m_MapDragging && m_ToolShape == MapToolShape::RECT) {
+            m_RectEnd = m_hoveredHex;
         }
-        m_IsDragging = false;
+        FinishMapDrag();
     }
 
     // Scroll zoom
@@ -124,14 +145,18 @@ void Editor::States::MapEditState::OnHandleInput(const float dt) {
     }
 
     if (!m_EditorLayer->m_Input->HasCtrlDown() && !m_EditorLayer->m_Input->HasAltDown()) {
-        if (m_EditorLayer->m_Input->IsKeyDown("W"))
+        if (m_EditorLayer->m_Input->IsKeyDown("W")) {
             kbPanY += 1.0f;
-        if (m_EditorLayer->m_Input->IsKeyDown("S"))
+        }
+        if (m_EditorLayer->m_Input->IsKeyDown("S")) {
             kbPanY -= 1.0f;
-        if (m_EditorLayer->m_Input->IsKeyDown("A"))
+        }
+        if (m_EditorLayer->m_Input->IsKeyDown("A")) {
             kbPanX -= 1.0f;
-        if (m_EditorLayer->m_Input->IsKeyDown("D"))
+        }
+        if (m_EditorLayer->m_Input->IsKeyDown("D")) {
             kbPanX += 1.0f;
+        }
     }
 
     if (kbPanX != 0.0f || kbPanY != 0.0f) {
@@ -143,7 +168,9 @@ void Editor::States::MapEditState::OnHandleInput(const float dt) {
     const float speedMod = m_EditorLayer->m_Input->IsKeyDown("LeftShift") ? 3.0f : 1.0f;
     constexpr float moveAmount = 3.0f;
     const float vpHeight = m_EditorLayer->m_ViewportPanel.GetHeight();
-    m_EditorLayer->m_Camera.KeyboardPan(kbPanX, kbPanY, 15.0f * speedMod * moveAmount * (600.0f / vpHeight));
+    if (vpHeight > 0.0f) {
+        m_EditorLayer->m_Camera.KeyboardPan(kbPanX, kbPanY, 15.0f * speedMod * moveAmount * (600.0f / vpHeight));
+    }
 }
 
 void Editor::States::MapEditState::OnDrawPanels() {}
@@ -160,14 +187,26 @@ void Editor::States::MapEditState::OnRender() {
 
     ECS::Systems::MapRenderSystem::RenderAll(*m_EditorLayer->m_Registry, *m_EditorLayer->m_Context, frustum);
 
-    if (m_MapComp && m_CurrentTool != MapTool::Select && m_BrushRadius > 1 && m_MapComp->hexMesh && m_MapComp->outlineMat) {
-        ForEachHexInRing(m_hoveredHex, m_BrushRadius - 1, [&](const Map::HexCoords &hex) {
+    if (m_MapComp && m_CurrentTool != MapTool::Select && m_MapComp->hexMesh && m_MapComp->outlineMat) {
+        const auto drawOutline = [&](const Map::HexCoords &hex) {
             const auto worldPos = Map::HexGrid::GetWorldPos(hex);
-            Rendering::Transform t;
-            t.SetPosition({worldPos.x, worldPos.y, 0.01f});
-            t.SetScale({1.08f, 1.08f, 1.0f});
-            renderer->Submit(m_MapComp->hexMesh, m_MapComp->outlineMat, t);
-        });
+
+            Rendering::Transform transform;
+            transform.SetPosition({worldPos.x, worldPos.y, 0.01f});
+            transform.SetScale({1.08f, 1.08f, 1.0f});
+
+            renderer->Submit(m_MapComp->hexMesh, m_MapComp->outlineMat, transform);
+        };
+
+        if (m_ToolShape == MapToolShape::RADIUS && m_BrushRadius > 1) {
+            ForEachHexInRing(m_hoveredHex, m_BrushRadius - 1, drawOutline);
+        } else if (m_ToolShape == MapToolShape::RECT) {
+            const auto start = m_MapDragging ? m_RectStart : m_hoveredHex;
+
+            const auto end = m_MapDragging ? m_RectEnd : m_hoveredHex;
+
+            ForEachHexInRect(start, end, drawOutline);
+        }
     }
 
     renderer->SetLightmap(nullptr);
@@ -193,8 +232,9 @@ void Editor::States::MapEditState::OnDrawModeToolbar() {
         if (ImGui::BeginPopup("MapMenuPopup")) {
             if (ImGui::MenuItem("Create New Map", nullptr, false, m_MapComp != nullptr)) {
                 m_EditorLayer->PromptSaveDirtyMap([this] {
-                    if (!m_CurrentGrid || !m_MapComp)
+                    if (!m_CurrentGrid || !m_MapComp) {
                         return;
+                    }
                     m_CurrentGrid->Clear();
                     m_MapComp->typeMats.clear();
                     m_MapComp->mapFilePath.clear();
@@ -218,6 +258,7 @@ void Editor::States::MapEditState::OnDrawModeToolbar() {
                     m_MapComp->mapFilePath = IO::VFS::ToRelative(*path);
                     m_EditorLayer->SaveScene();
                     m_MapComp->mapDirty = false;
+                    SetWindowTitle(m_MapComp->mapFilePath);
                 }
             }
             if (ImGui::MenuItem("Load Map from file", nullptr, false, m_MapComp != nullptr)) {
@@ -241,7 +282,7 @@ void Editor::States::MapEditState::OnDrawModeToolbar() {
         constexpr auto activeCol = ImVec4(0.3f, 0.6f, 1.0f, 0.7f);
         constexpr auto inactiveCol = ImVec4(0.2f, 0.2f, 0.2f, 0.5f);
 
-        auto drawToolBtn = [&](const char *label, const MapTool tool, const char *tip) {
+        const auto drawToolBtn = [&](const char *label, const MapTool tool, const char *tip) {
             if (m_CurrentTool == tool) {
                 ImGui::PushStyleColor(ImGuiCol_Button, activeCol);
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, activeCol);
@@ -303,6 +344,10 @@ void Editor::States::MapEditState::OnSceneLoaded() {
 }
 
 void Editor::States::MapEditState::SaveMap() {
+    if (!m_MapComp) {
+        return;
+    }
+
     if (m_MapComp->mapFilePath.empty()) {
         // no file yet
         const std::string mapsDir = GetMapsDirectory();
@@ -326,6 +371,11 @@ void Editor::States::MapEditState::OnExit() {
     m_MapComp = nullptr;
     m_CurrentGrid = nullptr;
 
+    m_MapDragging = false;
+    m_IsDragging = false;
+    m_PreDragState.clear();
+    m_AccumulatedNew.clear();
+
     m_selectedTile = nullptr;
     m_TileEditorPanel.SetSelectedTile(nullptr);
 
@@ -333,24 +383,42 @@ void Editor::States::MapEditState::OnExit() {
 }
 
 void Editor::States::MapEditState::CapturePreDragState(const Map::HexCoords &hex) {
-    if (!m_CurrentGrid)
+    if (!m_CurrentGrid) {
         return;
-    ForEachHexInRing(hex, m_BrushRadius - 1, [&](const Map::HexCoords &h) {
-        if (!m_PreDragState.contains(h)) {
-            if (const auto *tile = m_CurrentGrid->Get(h)) {
-                m_PreDragState[h] = TileState{tile->type, tile->walkable};
-            } else {
-                m_PreDragState[h] = std::nullopt;
-            }
+    }
+
+    const auto capture = [this](const Map::HexCoords &h) {
+        if (m_PreDragState.contains(h)) {
+            return;
         }
-    });
+
+        if (const auto *tile = m_CurrentGrid->Get(h)) {
+            m_PreDragState[h] = TileState{tile->type, tile->walkable};
+        } else {
+            m_PreDragState[h] = std::nullopt;
+        }
+    };
+
+    switch (m_ToolShape) {
+        case MapToolShape::RADIUS:
+            ForEachHexInRing(hex, m_BrushRadius - 1, capture);
+            break;
+
+        case MapToolShape::RECT:
+            ForEachHexInRect(m_RectStart, hex, capture);
+            break;
+    }
 }
 
 void Editor::States::MapEditState::CommitMapChanges() {
-    if (!m_CurrentGrid || !m_MapComp)
+    if (!m_CurrentGrid || !m_MapComp) {
         return;
-    if (m_PreDragState.empty())
+    }
+
+    if (m_PreDragState.empty() || m_AccumulatedNew.empty()) {
         return;
+    }
+
     std::string mapUUID;
     for (const auto id : m_EditorLayer->m_Registry->GetLivingEntities()) {
         if (m_EditorLayer->m_Registry->GetComponent<ECS::Components::MapComponent>(id) == m_MapComp) {
@@ -364,28 +432,33 @@ void Editor::States::MapEditState::CommitMapChanges() {
     m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::MapChangeTileCommand>(m_PreDragState, m_AccumulatedNew, std::move(mapUUID)), *m_EditorLayer->m_Context);
     m_MapComp->needsMeshUpdate = true;
     m_MapComp->mapDirty = true;
-    if (m_EditorLayer->m_Scene)
-        m_EditorLayer->m_Scene->MarkAsChanged(); // may be causing duplicate dialogs to pop up
+
+    if (m_EditorLayer->m_Scene) {
+        m_EditorLayer->m_Scene->MarkAsChanged();
+    }
 }
 
 void Editor::States::MapEditState::ApplyToolAt(const Map::HexCoords &hex) {
-    if (!m_CurrentGrid || !m_MapComp || !m_MapState)
+    if (!m_CurrentGrid || !m_MapComp || !m_MapState) {
         return;
+    }
+
     m_MapState->hasPathTo = false;
 
-    const auto applyTool = [&](const std::function<void(const Map::HexCoords &h)> &actionFunc) {
+    const auto applyTool = [this, &hex](const std::function<void(const Map::HexCoords &)> &actionFunc) {
         switch (m_ToolShape) {
             case MapToolShape::RADIUS:
                 ForEachHexInRing(hex, m_BrushRadius - 1, actionFunc);
                 break;
+
             case MapToolShape::RECT:
-                // todo: implement
+                ForEachHexInRect(m_RectStart, hex, actionFunc);
                 break;
         }
     };
 
     switch (m_CurrentTool) {
-        case MapTool::Select:
+        case MapTool::Select: {
             m_selectedHex = hex;
             m_MapState->pathTo = hex;
             m_MapState->hasPathTo = true;
@@ -395,6 +468,7 @@ void Editor::States::MapEditState::ApplyToolAt(const Map::HexCoords &hex) {
                 m_TileEditorPanel.CopyBrushFromTile(*m_selectedTile);
             }
             break;
+        }
 
         case MapTool::Paint: {
             const uint8_t brushType = m_TileEditorPanel.GetSourceType();
@@ -418,28 +492,40 @@ void Editor::States::MapEditState::ApplyToolAt(const Map::HexCoords &hex) {
 
             applyTool(paintFunc);
 
-            if (changed)
+            if (changed) {
                 m_MapComp->needsMeshUpdate = true;
+            }
+
             break;
         }
 
         case MapTool::Erase: {
             CapturePreDragState(hex);
 
+            bool changed = false;
+
             const auto eraseFunc = [&](const Map::HexCoords &h) {
-                if (m_CurrentGrid->HasTile(h)) {
-                    if (m_selectedTile && m_selectedHex == h) {
-                        m_selectedTile = nullptr;
-                        m_TileEditorPanel.SetSelectedTile(nullptr);
-                    }
-                    m_CurrentGrid->RemoveTileAt(h);
-                    m_AccumulatedNew[h] = std::nullopt; // erased
+                if (!m_CurrentGrid->HasTile(h)) {
+                    return;
                 }
+
+                if (m_selectedTile && m_selectedHex == h) {
+                    m_selectedTile = nullptr;
+                    m_TileEditorPanel.SetSelectedTile(nullptr);
+                }
+
+                m_CurrentGrid->RemoveTileAt(h);
+                m_AccumulatedNew[h] = std::nullopt;
+
+                changed = true;
             };
 
             applyTool(eraseFunc);
 
-            m_MapComp->needsMeshUpdate = true;
+            if (changed) {
+                m_MapComp->needsMeshUpdate = true;
+            }
+
             break;
         }
     }
@@ -460,8 +546,38 @@ void Editor::States::MapEditState::ForEachHexInRing(const Map::HexCoords center,
     }
 }
 
+void Editor::States::MapEditState::ForEachHexInRect(const Map::HexCoords &start, const Map::HexCoords &end, const std::function<void(const Map::HexCoords &)> &callback) {
+    const int minCol = std::min(start.q, end.q);
+    const int maxCol = std::max(start.q, end.q);
+    const int minRow = std::min(start.r, end.r);
+    const int maxRow = std::max(start.r, end.r);
+
+    for (int row = minRow; row <= maxRow; ++row) {
+        for (int col = minCol; col <= maxCol; ++col) {
+            callback(Map::HexCoords(col, row));
+        }
+    }
+}
+
+void Editor::States::MapEditState::FinishMapDrag() {
+    if (!m_MapDragging) {
+        m_IsDragging = false;
+        return;
+    }
+
+    if (m_ToolShape == MapToolShape::RECT) {
+        ApplyToolAt(m_RectEnd);
+    }
+
+    CommitMapChanges();
+
+    m_MapDragging = false;
+    m_IsDragging = false;
+}
+
 uint8_t Editor::States::MapEditState::GetOrCreateTypeForMaterial(const std::shared_ptr<Rendering::Texture> &tex, const glm::vec4 &color) const {
     auto &typeMats = m_MapComp->typeMats;
+
     for (const auto &[id, mat] : typeMats) {
         if (mat->texture == tex && mat->color == color) {
             return id;
@@ -469,16 +585,19 @@ uint8_t Editor::States::MapEditState::GetOrCreateTypeForMaterial(const std::shar
     }
     // allocate newid
     uint8_t newId = 0;
+
     while (std::ranges::any_of(typeMats, [newId](const auto &p) { return p.first == newId; })) {
-        newId++;
+        ++newId;
     }
 
     const auto shader = !typeMats.empty() ? typeMats.begin()->second->shader : m_EditorLayer->m_Context->resources->Get<Rendering::Shader>("[Engine] Base");
 
     typeMats.emplace_back(newId, std::make_shared<Rendering::Material>(Rendering::Material{.shader = shader, .texture = tex, .color = color}));
     m_MapComp->needsMeshUpdate = true;
-    if (m_EditorLayer->m_Scene)
+    if (m_EditorLayer->m_Scene) {
         m_EditorLayer->m_Scene->MarkAsChanged();
+    }
     return newId;
 }
+
 #pragma pop_macro("LOG_WHO")
