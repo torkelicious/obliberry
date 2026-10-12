@@ -17,7 +17,6 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
-#include <cstdint>
 #include <filesystem>
 #include <functional>
 #include <iterator>
@@ -97,6 +96,7 @@ namespace Editor::States {
         }
 
         ApplyOverlayColors();
+        CreateOverlayMaterials();
 
         m_TileEditorPanel.SetContext(m_EditorLayer->m_Scene, *m_EditorLayer->m_Context);
         m_TileEditorPanel.SetMapComponent(m_MapComp);
@@ -143,6 +143,7 @@ namespace Editor::States {
 
         if (m_MapComp) {
             ApplyOverlayColors();
+            CreateOverlayMaterials();
             m_TileEditorPanel.SetMapComponent(m_MapComp);
             m_TileEditorPanel.SetSelection(&m_Selection);
             if (!m_MapComp->typeMats.empty()) {
@@ -291,9 +292,9 @@ namespace Editor::States {
         }
 
         const float speedMod = input.IsKeyDown("LeftShift") ? 3.0f : 1.0f;
-        constexpr float moveAmount = 3.0f;
         const float vpHeight = m_EditorLayer->m_ViewportPanel.GetHeight();
         if (vpHeight > 0.0f) {
+            constexpr float moveAmount = 3.0f;
             m_EditorLayer->m_Camera.KeyboardPan(kbPanX, kbPanY, 15.0f * speedMod * moveAmount * (600.0f / vpHeight));
         }
     }
@@ -663,9 +664,6 @@ namespace Editor::States {
         CommitMapChanges();
     }
 
-    //
-    // Rendering
-    //
     void MapEditState::ApplyToSelection(const std::optional<uint8_t> type, const std::optional<bool> walkable) {
         if (!m_CurrentGrid || !m_MapComp || m_Selection.empty()) {
             return;
@@ -693,6 +691,10 @@ namespace Editor::States {
 
         CommitMapChanges();
     }
+
+    //
+    // Rendering
+    //
 
     void MapEditState::OnRender() {
         m_EditorLayer->DrawEditorUI();
@@ -898,15 +900,17 @@ namespace Editor::States {
             ImGui::EndDisabled();
         }
     }
+
+    //
+    // Overlay materials
+    //
+
     void MapEditState::CreateOverlayMaterials() {
         constexpr glm::vec4 paintCol = {0.25f, 0.9f, 0.35f, 0.5f};
         constexpr glm::vec4 eraseCol = {1.0f, 0.3f, 0.3f, 0.5f};
         constexpr glm::vec4 selectPreviewCol = {1.0f, 0.85f, 0.0f, 0.55f};
         constexpr glm::vec4 selectedMat = {0.3f, 0.6f, 1.0f, 0.6f};
 
-    //
-    // Saving
-    //
         if (!m_MapComp || !m_MapComp->outlineMat) {
             return;
         }
@@ -921,6 +925,10 @@ namespace Editor::States {
         m_SelectedPreviewMat = make(selectPreviewCol);
         m_SelectedMat = make(selectedMat);
     }
+
+    //
+    // Saving
+    //
 
     void MapEditState::SaveMap() {
         if (!m_MapComp) {
@@ -965,7 +973,7 @@ namespace Editor::States {
 
         // first unused id
         std::array<bool, 256> used{};
-        for (const auto &[id, mat] : typeMats) {
+        for (const auto &id : typeMats | std::views::keys) {
             used[id] = true;
         }
         const auto freeIt = std::ranges::find(used, false);
