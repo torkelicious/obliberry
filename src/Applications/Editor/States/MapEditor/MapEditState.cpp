@@ -101,6 +101,8 @@ namespace Editor::States {
         m_TileEditorPanel.SetContext(m_EditorLayer->m_Scene, *m_EditorLayer->m_Context);
         m_TileEditorPanel.SetMapComponent(m_MapComp);
         m_TileEditorPanel.SetCreateTypeFn([this](const std::shared_ptr<Rendering::Texture> &tex, const glm::vec4 &color) { return GetOrCreateTypeForMaterial(tex, color); });
+        m_TileEditorPanel.SetSelection(&m_Selection);
+        m_TileEditorPanel.SetApplyToSelectionFn([this](const std::optional<uint8_t> type, const std::optional<bool> walkable) { ApplyToSelection(type, walkable); });
 
         if (!m_MapComp->typeMats.empty()) {
             m_TileEditorPanel.InitBrushFromFirstType();
@@ -142,6 +144,7 @@ namespace Editor::States {
         if (m_MapComp) {
             ApplyOverlayColors();
             m_TileEditorPanel.SetMapComponent(m_MapComp);
+            m_TileEditorPanel.SetSelection(&m_Selection);
             if (!m_MapComp->typeMats.empty()) {
                 m_TileEditorPanel.InitBrushFromFirstType();
             }
@@ -237,7 +240,7 @@ namespace Editor::States {
         }
 
         if (input.IsMouseReleased(0) && m_MapDragging) {
-            UpdateMapDrag(m_HoveredHex); // pick up the final position
+            UpdateMapDrag(m_HoveredHex);
             FinishMapDrag();
         }
     }
@@ -616,8 +619,10 @@ namespace Editor::States {
         }
         SyncSelection();
 
-        if (m_PanelTile) {
-            m_TileEditorPanel.CopyBrushFromTile(*m_PanelTile);
+        if (m_PrimaryHex && m_CurrentGrid) {
+            if (const Map::Tile *tile = m_CurrentGrid->Get(*m_PrimaryHex)) {
+                m_TileEditorPanel.CopyBrushFromTile(*tile);
+            }
         }
     }
 
@@ -633,13 +638,6 @@ namespace Editor::States {
         }
         if (!m_PrimaryHex && !m_Selection.empty()) {
             m_PrimaryHex = *m_Selection.begin();
-        }
-
-        Map::Tile *resolved = (m_CurrentGrid && m_PrimaryHex) ? m_CurrentGrid->Get(*m_PrimaryHex) : nullptr;
-        if (resolved != m_PanelTile) {
-            // only push on change: SetSelectedTile resets the panel's edit state
-            m_PanelTile = resolved;
-            m_TileEditorPanel.SetSelectedTile(resolved);
         }
 
         if (m_MapState && m_CurrentTool == MapTool::Select) {
@@ -668,6 +666,33 @@ namespace Editor::States {
     //
     // Rendering
     //
+    void MapEditState::ApplyToSelection(const std::optional<uint8_t> type, const std::optional<bool> walkable) {
+        if (!m_CurrentGrid || !m_MapComp || m_Selection.empty()) {
+            return;
+        }
+
+        m_PreDragState.clear();
+        m_PostDragState.clear();
+
+        for (const auto &hex : m_Selection) {
+            const Map::Tile *tile = m_CurrentGrid->Get(hex);
+            if (!tile) {
+                continue;
+            }
+
+            const uint8_t newType = type.value_or(tile->type);
+            const bool newWalkable = walkable.value_or(tile->walkable);
+            if (newType == tile->type && newWalkable == tile->walkable) {
+                continue;
+            }
+
+            RecordPreState(hex, tile);
+            m_CurrentGrid->EmplaceTile(hex, newType, newWalkable);
+            m_PostDragState[hex] = TileState{newType, newWalkable};
+        }
+
+        CommitMapChanges();
+    }
 
     void MapEditState::OnRender() {
         m_EditorLayer->DrawEditorUI();
@@ -683,24 +708,30 @@ namespace Editor::States {
         ECS::Systems::MapRenderSystem::RenderAll(*m_EditorLayer->m_Registry, *m_EditorLayer->m_Context, frustum);
 
         if (m_MapComp && m_CurrentGrid && m_MapComp->hexMesh && m_MapComp->outlineMat) {
-            const auto submitHex = [&](const Map::HexCoords &hex, const float z) {
+            const auto submitHex = [&](const Map::HexCoords &hex, const float z, const auto &mat) {
+                if (!mat) {
+                    return;
+                }
+
                 const auto worldPos = Map::HexGrid::GetWorldPos(hex);
 
                 Rendering::Transform transform;
                 transform.SetPosition({worldPos.x, worldPos.y, z});
                 transform.SetScale({kOverlayScale, kOverlayScale, 1.0f});
 
-                renderer->Submit(m_MapComp->hexMesh, m_MapComp->outlineMat, transform);
+                renderer->Submit(m_MapComp->hexMesh, mat, transform);
             };
 
             if (m_CurrentTool == MapTool::Select) {
                 for (const auto &hex : m_Selection) {
-                    submitHex(hex, kSelectionZ);
+                    submitHex(hex, kSelectionZ, m_SelectedMat);
                 }
             }
 
-            // shape preview. Brush always shows (it's the cursor), rect/circle only show tiles they'd actually affect for erase/select.
             if (m_EditorLayer->m_ViewportPanel.IsHovered() || m_MapDragging) {
+
+                const auto &material = m_CurrentTool == MapTool::Paint ? m_PaintMat : m_CurrentTool == MapTool::Erase ? m_EraseMat : m_SelectedPreviewMat;
+
                 const bool tilesOnly = IsDragShape() && m_CurrentTool != MapTool::Paint;
                 const auto anchor = m_MapDragging ? m_DragStartHex : m_HoveredHex;
                 const auto cursor = m_MapDragging ? m_DragEndHex : m_HoveredHex;
@@ -709,7 +740,7 @@ namespace Editor::States {
                     if (tilesOnly && !m_CurrentGrid->HasTile(hex)) {
                         return;
                     }
-                    submitHex(hex, kPreviewZ);
+                    submitHex(hex, kPreviewZ, material);
                 });
             }
         }
@@ -867,10 +898,29 @@ namespace Editor::States {
             ImGui::EndDisabled();
         }
     }
+    void MapEditState::CreateOverlayMaterials() {
+        constexpr glm::vec4 paintCol = {0.25f, 0.9f, 0.35f, 0.5f};
+        constexpr glm::vec4 eraseCol = {1.0f, 0.3f, 0.3f, 0.5f};
+        constexpr glm::vec4 selectPreviewCol = {1.0f, 0.85f, 0.0f, 0.55f};
+        constexpr glm::vec4 selectedMat = {0.3f, 0.6f, 1.0f, 0.6f};
 
     //
     // Saving
     //
+        if (!m_MapComp || !m_MapComp->outlineMat) {
+            return;
+        }
+        const auto make = [&](const glm::vec4 &color) {
+            auto mat = std::make_shared<Rendering::Material>(*m_MapComp->outlineMat);
+            mat->color = color;
+            return mat;
+        };
+
+        m_PaintMat = make(paintCol);
+        m_EraseMat = make(eraseCol);
+        m_SelectedPreviewMat = make(selectPreviewCol);
+        m_SelectedMat = make(selectedMat);
+    }
 
     void MapEditState::SaveMap() {
         if (!m_MapComp) {

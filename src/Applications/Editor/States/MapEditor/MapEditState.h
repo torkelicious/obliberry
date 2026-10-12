@@ -41,7 +41,7 @@ namespace Editor::States {
 
     private:
         using HexCallback = std::function<void(const Map::HexCoords &)>;
-        using TileState = std::pair<uint8_t, bool>; // {type, walkable}
+        using TileState = std::pair<uint8_t, bool>;
         using TileStateMap = std::unordered_map<Map::HexCoords, std::optional<TileState>, Map::HexCoordsHash>;
         using HexSet = std::unordered_set<Map::HexCoords, Map::HexCoordsHash>;
 
@@ -56,7 +56,7 @@ namespace Editor::States {
         void ForEachHexInShape(const Map::HexCoords &anchor, const Map::HexCoords &cursor, const HexCallback &callback) const;
 
         [[nodiscard]] bool IsDragShape() const { return m_ToolShape == MapToolShape::RECT || m_ToolShape == MapToolShape::CIRC; }
-        [[nodiscard]] int BrushRings() const { return m_BrushSize - 1; } // size 1 = just the centre hex
+        [[nodiscard]] int BrushRings() const { return m_BrushSize - 1; }
 
         void SetTool(MapTool tool);
         void BeginMapDrag(const Map::HexCoords &hex);
@@ -80,6 +80,7 @@ namespace Editor::States {
         void FinalizeSelection();
         void SyncSelection();
         void EraseSelected();
+        void ApplyToSelection(std::optional<uint8_t> type, std::optional<bool> walkable);
 
         void HandleCameraInput();
         void ResetTransientState();
@@ -92,6 +93,12 @@ namespace Editor::States {
         ECS::Components::MapStateComponent *m_MapState = nullptr;
         ECS::Components::MapComponent *m_MapComp = nullptr;
 
+        std::shared_ptr<Rendering::Material> m_PaintMat;
+        std::shared_ptr<Rendering::Material> m_EraseMat;
+        std::shared_ptr<Rendering::Material> m_SelectedPreviewMat;
+        std::shared_ptr<Rendering::Material> m_SelectedMat;
+        void CreateOverlayMaterials();
+
         MapTool m_CurrentTool = MapTool::Paint;
         MapToolShape m_ToolShape = MapToolShape::RADIALBRUSH;
         int m_BrushSize = 1;
@@ -101,7 +108,6 @@ namespace Editor::States {
         HexSet m_Selection;
         HexSet m_SelectionAtDragStart;
         std::optional<Map::HexCoords> m_PrimaryHex;
-        Map::Tile *m_PanelTile = nullptr;
         SelectMode m_SelectMode = SelectMode::Replace;
 
         // stroke
