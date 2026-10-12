@@ -1,4 +1,6 @@
 #include "MapEditState.h"
+#include "Applications/Editor/States/MapEditor/MapTools.h"
+#include "Map/HexCoords.h"
 #include "Rendering/Renderer.h"
 #include <algorithm>
 #include <filesystem>
@@ -8,6 +10,7 @@
 #include "Core/ResourceManager.h"
 #include "ECS/Systems/MapRenderSystem.h"
 #include "Math/HexMath.h"
+#include <functional>
 #include <imgui.h>
 #include "imgui_internal.h"
 #include "Applications/Editor/Platform/FileDialogs.h"
@@ -265,18 +268,20 @@ void Editor::States::MapEditState::OnDrawModeToolbar() {
         drawToolBtn("  Select ", MapTool::Select, "Click a tile to inspect and edit its properties.");
     }
 
-    ImGui::SameLine();
-    ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
-    ImGui::SameLine();
-    ImGui::Text("Size");
-    ImGui::SameLine();
-    ImGui::SetNextItemWidth(60.0f);
-    int radius = m_BrushRadius;
-    if (ImGui::SliderInt("##Radius", &radius, 1, 5, "%d")) {
-        m_BrushRadius = radius;
-    }
-    if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("Brush radius in hexes. Affects Paint and Erase tools.");
+    if (m_ToolShape == MapToolShape::RADIUS) {
+        ImGui::SameLine();
+        ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
+        ImGui::SameLine();
+        ImGui::Text("Size");
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(60.0f);
+        int radius = m_BrushRadius;
+        if (ImGui::SliderInt("##Radius", &radius, 1, 5, "%d")) {
+            m_BrushRadius = radius;
+        }
+        if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("Brush radius in hexes. Affects Paint and Erase tools.");
+        }
     }
 }
 
@@ -367,6 +372,18 @@ void Editor::States::MapEditState::ApplyToolAt(const Map::HexCoords &hex) {
     if (!m_CurrentGrid || !m_MapComp || !m_MapState)
         return;
     m_MapState->hasPathTo = false;
+
+    const auto applyTool = [&](const std::function<void(const Map::HexCoords &h)> &actionFunc) {
+        switch (m_ToolShape) {
+            case MapToolShape::RADIUS:
+                ForEachHexInRing(hex, m_BrushRadius - 1, actionFunc);
+                break;
+            case MapToolShape::RECT:
+                // todo: implement
+                break;
+        }
+    };
+
     switch (m_CurrentTool) {
         case MapTool::Select:
             m_selectedHex = hex;
@@ -384,9 +401,9 @@ void Editor::States::MapEditState::ApplyToolAt(const Map::HexCoords &hex) {
             const bool brushWalkable = m_TileEditorPanel.GetBrushWalkable();
             CapturePreDragState(hex);
             bool changed = false;
-            ForEachHexInRing(hex, m_BrushRadius - 1, [&](const Map::HexCoords &h) {
+
+            const auto paintFunc = [&](const Map::HexCoords &h) {
                 if (const Map::Tile *existing = m_CurrentGrid->Get(h); existing && existing->type == brushType && existing->walkable == brushWalkable) {
-                    m_AccumulatedNew[h] = TileState{brushType, brushWalkable};
                     return;
                 }
                 if (m_selectedTile && m_selectedHex == h) {
@@ -397,7 +414,10 @@ void Editor::States::MapEditState::ApplyToolAt(const Map::HexCoords &hex) {
                 m_CurrentGrid->EmplaceTile(h, brushType, brushWalkable);
                 m_AccumulatedNew[h] = TileState{brushType, brushWalkable};
                 changed = true;
-            });
+            };
+
+            applyTool(paintFunc);
+
             if (changed)
                 m_MapComp->needsMeshUpdate = true;
             break;
@@ -405,7 +425,8 @@ void Editor::States::MapEditState::ApplyToolAt(const Map::HexCoords &hex) {
 
         case MapTool::Erase: {
             CapturePreDragState(hex);
-            ForEachHexInRing(hex, m_BrushRadius - 1, [&](const Map::HexCoords &h) {
+
+            const auto eraseFunc = [&](const Map::HexCoords &h) {
                 if (m_CurrentGrid->HasTile(h)) {
                     if (m_selectedTile && m_selectedHex == h) {
                         m_selectedTile = nullptr;
@@ -414,7 +435,10 @@ void Editor::States::MapEditState::ApplyToolAt(const Map::HexCoords &hex) {
                     m_CurrentGrid->RemoveTileAt(h);
                     m_AccumulatedNew[h] = std::nullopt; // erased
                 }
-            });
+            };
+
+            applyTool(eraseFunc);
+
             m_MapComp->needsMeshUpdate = true;
             break;
         }

@@ -1,9 +1,11 @@
 #pragma once
 #include "Applications/Editor/States/EditorStateBase.h"
+#include "Applications/Editor/States/MapEditor/MapTools.h"
 #include "ECS/Components/MapComponent.h"
 #include "ECS/Components/MapStateComponent.h"
 #include "Applications/Editor/UI/Panels/MapEditor/TileEditorPanel.h"
 #include "Map/Hex.h"
+#include <cstdint>
 #include <functional>
 #include <optional>
 
@@ -56,6 +58,7 @@ namespace Editor::States {
         std::unordered_map<Map::HexCoords, std::optional<TileState>, Map::HexCoordsHash> m_AccumulatedNew;
 
         // brush
+        MapToolShape m_ToolShape = MapToolShape::RADIUS;
         int m_BrushRadius = 1;
         Map::HexCoords m_lastPaintedHex = {0, 0};
 
