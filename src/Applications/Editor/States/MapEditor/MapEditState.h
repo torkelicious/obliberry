@@ -36,8 +36,9 @@ namespace Editor::States {
 
     private:
         void ApplyToolAt(const Map::HexCoords &hex);
-        static void ForEachHexInRing(Map::HexCoords center, int radius, const std::function<void(const Map::HexCoords &)> &callback);
+        static void ForEachHexWithinRadius(Map::HexCoords center, int radius, const std::function<void(const Map::HexCoords &)> &callback);
         static void ForEachHexInRect(const Map::HexCoords &start, const Map::HexCoords &end, const std::function<void(const Map::HexCoords &)> &callback);
+        static void ForEachHexInCircle(const Map::HexCoords &center, const Map::HexCoords &edge, const std::function<void(const Map::HexCoords &)> &callback);
         void CommitMapChanges();
         void CapturePreDragState(const Map::HexCoords &hex);
         void FinishMapDrag();
@@ -58,13 +59,13 @@ namespace Editor::States {
         bool m_MapDragging = false;
         using TileState = std::pair<uint8_t, bool>; // {type, walkable}
         std::unordered_map<Map::HexCoords, std::optional<TileState>, Map::HexCoordsHash> m_PreDragState;
-        std::unordered_map<Map::HexCoords, std::optional<TileState>, Map::HexCoordsHash> m_AccumulatedNew;
+        std::unordered_map<Map::HexCoords, std::optional<TileState>, Map::HexCoordsHash> m_PostDragState;
 
-        Map::HexCoords m_RectStart{};
-        Map::HexCoords m_RectEnd{};
+        Map::HexCoords m_DragStartHex{};
+        Map::HexCoords m_DragEndHex{};
 
         // brush
-        MapToolShape m_ToolShape = MapToolShape::RADIUS;
+        MapToolShape m_ToolShape = MapToolShape::RADIALBRUSH;
         int m_BrushRadius = 1;
         Map::HexCoords m_lastPaintedHex = {0, 0};
 

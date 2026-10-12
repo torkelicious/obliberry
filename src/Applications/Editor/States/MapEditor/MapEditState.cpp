@@ -16,11 +16,9 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstdint>
 #include <filesystem>
 #include <functional>
 #include <memory>
-#include <ranges>
 #include <string>
 #include <utility>
 
@@ -34,6 +32,7 @@ namespace {
         std::filesystem::create_directories(dir);
         return dir;
     }
+
 } // namespace
 
 #pragma push_macro("LOG_WHO")
@@ -103,6 +102,7 @@ void Editor::States::MapEditState::OnHandleInput(const float dt) {
     }
 
     m_MapState->hasSelection = true;
+    m_MapState->selectedHex = m_hoveredHex;
 
     // click &/or drag
 
@@ -110,14 +110,14 @@ void Editor::States::MapEditState::OnHandleInput(const float dt) {
         if (!m_MapDragging) {
             m_MapDragging = true;
             m_PreDragState.clear();
-            m_AccumulatedNew.clear();
-            m_RectStart = m_hoveredHex;
-            m_RectEnd = m_hoveredHex;
+            m_PostDragState.clear();
+            m_DragStartHex = m_hoveredHex;
+            m_DragEndHex = m_hoveredHex;
         }
 
-        m_RectEnd = m_hoveredHex;
+        m_DragEndHex = m_hoveredHex;
 
-        if (m_ToolShape != MapToolShape::RECT) {
+        if (m_ToolShape != MapToolShape::RECT && m_ToolShape != MapToolShape::CIRC) {
             ApplyToolAt(m_hoveredHex);
         }
 
@@ -125,8 +125,8 @@ void Editor::States::MapEditState::OnHandleInput(const float dt) {
     }
 
     if (m_EditorLayer->m_Input->IsMouseReleased(0)) {
-        if (m_MapDragging && m_ToolShape == MapToolShape::RECT) {
-            m_RectEnd = m_hoveredHex;
+        if (m_MapDragging && (m_ToolShape == MapToolShape::RECT || m_ToolShape == MapToolShape::CIRC)) {
+            m_DragEndHex = m_hoveredHex;
         }
         FinishMapDrag();
     }
@@ -187,7 +187,7 @@ void Editor::States::MapEditState::OnRender() {
 
     ECS::Systems::MapRenderSystem::RenderAll(*m_EditorLayer->m_Registry, *m_EditorLayer->m_Context, frustum);
 
-    if (m_MapComp && m_CurrentTool != MapTool::Select && m_MapComp->hexMesh && m_MapComp->outlineMat) {
+    if ((m_EditorLayer->m_ViewportPanel.IsHovered() || m_MapDragging) && m_MapComp && m_CurrentTool != MapTool::Select && m_MapComp->hexMesh && m_MapComp->outlineMat) {
         const auto drawOutline = [&](const Map::HexCoords &hex) {
             const auto worldPos = Map::HexGrid::GetWorldPos(hex);
 
@@ -198,14 +198,16 @@ void Editor::States::MapEditState::OnRender() {
             renderer->Submit(m_MapComp->hexMesh, m_MapComp->outlineMat, transform);
         };
 
-        if (m_ToolShape == MapToolShape::RADIUS) {
-            ForEachHexInRing(m_hoveredHex, std::max(0, m_BrushRadius - 1), drawOutline);
+        if (m_ToolShape == MapToolShape::RADIALBRUSH) {
+            ForEachHexWithinRadius(m_hoveredHex, std::max(0, m_BrushRadius - 1), drawOutline);
         } else if (m_ToolShape == MapToolShape::RECT) {
-            const auto start = m_MapDragging ? m_RectStart : m_hoveredHex;
-
-            const auto end = m_MapDragging ? m_RectEnd : m_hoveredHex;
-
+            const auto start = m_MapDragging ? m_DragStartHex : m_hoveredHex;
+            const auto end = m_MapDragging ? m_DragEndHex : m_hoveredHex;
             ForEachHexInRect(start, end, drawOutline);
+        } else if (m_ToolShape == MapToolShape::CIRC) {
+            const auto center = m_MapDragging ? m_DragStartHex : m_hoveredHex;
+            const auto edge = m_MapDragging ? m_DragEndHex : m_hoveredHex;
+            ForEachHexInCircle(center, edge, drawOutline);
         }
     }
 
@@ -279,6 +281,23 @@ void Editor::States::MapEditState::OnDrawModeToolbar() {
             ImGui::EndPopup();
         }
 
+
+        {
+            ImGui::Separator();
+            ImGui::Text("Shape: ");
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(120.0f);
+            const char *toolShapes[] = {"Radius Brush", "Rectangle", "Circle"};
+            auto current = static_cast<int>(m_ToolShape);
+
+            if (ImGui::Combo("##ToolShape", &current, toolShapes, IM_ARRAYSIZE(toolShapes))) {
+                m_ToolShape = static_cast<MapToolShape>(current);
+            }
+
+            ImGui::Separator();
+        }
+
+
         constexpr auto activeCol = ImVec4(0.3f, 0.6f, 1.0f, 0.7f);
         constexpr auto inactiveCol = ImVec4(0.2f, 0.2f, 0.2f, 0.5f);
 
@@ -309,17 +328,7 @@ void Editor::States::MapEditState::OnDrawModeToolbar() {
         drawToolBtn("  Select ", MapTool::Select, "Click a tile to inspect and edit its properties.");
     }
 
-    {
-        ImGui::SetNextItemWidth(120.0f);
-        const char *toolShapes[] = {"Radius", "Rectangle"};
-        auto current = static_cast<int>(m_ToolShape);
-
-        if (ImGui::Combo("##ToolShape", &current, toolShapes, IM_ARRAYSIZE(toolShapes))) {
-            m_ToolShape = static_cast<MapToolShape>(current);
-        }
-    }
-
-    if (m_ToolShape == MapToolShape::RADIUS) {
+    if (m_ToolShape == MapToolShape::RADIALBRUSH) {
         ImGui::SameLine();
         ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
         ImGui::SameLine();
@@ -384,7 +393,7 @@ void Editor::States::MapEditState::OnExit() {
     m_MapDragging = false;
     m_IsDragging = false;
     m_PreDragState.clear();
-    m_AccumulatedNew.clear();
+    m_PostDragState.clear();
 
     m_selectedTile = nullptr;
     m_TileEditorPanel.SetSelectedTile(nullptr);
@@ -410,12 +419,15 @@ void Editor::States::MapEditState::CapturePreDragState(const Map::HexCoords &hex
     };
 
     switch (m_ToolShape) {
-        case MapToolShape::RADIUS:
-            ForEachHexInRing(hex, m_BrushRadius - 1, capture);
+        case MapToolShape::RADIALBRUSH:
+            ForEachHexWithinRadius(hex, m_BrushRadius - 1, capture);
             break;
 
         case MapToolShape::RECT:
-            ForEachHexInRect(m_RectStart, hex, capture);
+            ForEachHexInRect(m_DragStartHex, hex, capture);
+            break;
+        case MapToolShape::CIRC:
+            ForEachHexInCircle(m_DragStartHex, hex, capture);
             break;
     }
 }
@@ -425,7 +437,7 @@ void Editor::States::MapEditState::CommitMapChanges() {
         return;
     }
 
-    if (m_PreDragState.empty() || m_AccumulatedNew.empty()) {
+    if (m_PreDragState.empty() || m_PostDragState.empty()) {
         return;
     }
 
@@ -439,7 +451,7 @@ void Editor::States::MapEditState::CommitMapChanges() {
     if (mapUUID.empty()) {
         return;
     }
-    m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::MapChangeTileCommand>(m_PreDragState, m_AccumulatedNew, std::move(mapUUID)), *m_EditorLayer->m_Context);
+    m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::MapChangeTileCommand>(m_PreDragState, m_PostDragState, std::move(mapUUID)), *m_EditorLayer->m_Context);
     m_MapComp->needsMeshUpdate = true;
     m_MapComp->mapDirty = true;
 
@@ -455,14 +467,17 @@ void Editor::States::MapEditState::ApplyToolAt(const Map::HexCoords &hex) {
 
     m_MapState->hasPathTo = false;
 
-    const auto applyTool = [this, &hex](const std::function<void(const Map::HexCoords &)> &actionFunc) {
+    const auto forEachAffectedHex = [this, &hex](const std::function<void(const Map::HexCoords &)> &actionFunc) {
         switch (m_ToolShape) {
-            case MapToolShape::RADIUS:
-                ForEachHexInRing(hex, m_BrushRadius - 1, actionFunc);
+            case MapToolShape::RADIALBRUSH:
+                ForEachHexWithinRadius(hex, m_BrushRadius - 1, actionFunc);
                 break;
 
             case MapToolShape::RECT:
-                ForEachHexInRect(m_RectStart, hex, actionFunc);
+                ForEachHexInRect(m_DragStartHex, hex, actionFunc);
+                break;
+            case MapToolShape::CIRC:
+                ForEachHexInCircle(m_DragStartHex, hex, actionFunc);
                 break;
         }
     };
@@ -496,11 +511,11 @@ void Editor::States::MapEditState::ApplyToolAt(const Map::HexCoords &hex) {
                 }
                 m_CurrentGrid->RemoveTileAt(h);
                 m_CurrentGrid->EmplaceTile(h, brushType, brushWalkable);
-                m_AccumulatedNew[h] = TileState{brushType, brushWalkable};
+                m_PostDragState[h] = TileState{brushType, brushWalkable};
                 changed = true;
             };
 
-            applyTool(paintFunc);
+            forEachAffectedHex(paintFunc);
 
             if (changed) {
                 m_MapComp->needsMeshUpdate = true;
@@ -525,12 +540,12 @@ void Editor::States::MapEditState::ApplyToolAt(const Map::HexCoords &hex) {
                 }
 
                 m_CurrentGrid->RemoveTileAt(h);
-                m_AccumulatedNew[h] = std::nullopt;
+                m_PostDragState[h] = std::nullopt;
 
                 changed = true;
             };
 
-            applyTool(eraseFunc);
+            forEachAffectedHex(eraseFunc);
 
             if (changed) {
                 m_MapComp->needsMeshUpdate = true;
@@ -541,7 +556,7 @@ void Editor::States::MapEditState::ApplyToolAt(const Map::HexCoords &hex) {
     }
 }
 
-void Editor::States::MapEditState::ForEachHexInRing(const Map::HexCoords center, const int radius, const std::function<void(const Map::HexCoords &)> &callback) {
+void Editor::States::MapEditState::ForEachHexWithinRadius(const Map::HexCoords center, const int radius, const std::function<void(const Map::HexCoords &)> &callback) {
     const auto [cx, cy, cz] = Math::HexMath::OddRToCube(center);
 
     for (int dx = -radius; dx <= radius; ++dx) {
@@ -569,14 +584,42 @@ void Editor::States::MapEditState::ForEachHexInRect(const Map::HexCoords &start,
     }
 }
 
+void Editor::States::MapEditState::ForEachHexInCircle(const Map::HexCoords &center, const Map::HexCoords &edge, const std::function<void(const Map::HexCoords &)> &callback) {
+    const auto centerPos = Map::HexGrid::GetWorldPos(center);
+    const auto edgePos = Map::HexGrid::GetWorldPos(edge);
+
+    const float dx = edgePos.x - centerPos.x;
+    const float dy = edgePos.y - centerPos.y;
+    const float radiusSquared = dx * dx + dy * dy;
+    constexpr float hexSize = Core::HEX_SIZE;
+
+    const int colRadius = static_cast<int>(std::ceil(std::sqrt(radiusSquared) / (std::sqrt(3.0f) * hexSize))) + 1;
+
+    const int rowRadius = static_cast<int>(std::ceil(std::sqrt(radiusSquared) / (1.5f * hexSize))) + 1;
+
+    for (int row = center.r - rowRadius; row <= center.r + rowRadius; ++row) {
+        for (int col = center.q - colRadius; col <= center.q + colRadius; ++col) {
+            const Map::HexCoords hex(col, row);
+            const auto worldPos = Map::HexGrid::GetWorldPos(hex);
+
+            const float offsetX = worldPos.x - centerPos.x;
+            const float offsetY = worldPos.y - centerPos.y;
+
+            if (offsetX * offsetX + offsetY * offsetY <= radiusSquared + 1e-4f) {
+                callback(hex);
+            }
+        }
+    }
+}
+
 void Editor::States::MapEditState::FinishMapDrag() {
     if (!m_MapDragging) {
         m_IsDragging = false;
         return;
     }
 
-    if (m_ToolShape == MapToolShape::RECT) {
-        ApplyToolAt(m_RectEnd);
+    if (m_ToolShape == MapToolShape::RECT || m_ToolShape == MapToolShape::CIRC) {
+        ApplyToolAt(m_DragEndHex);
     }
 
     CommitMapChanges();

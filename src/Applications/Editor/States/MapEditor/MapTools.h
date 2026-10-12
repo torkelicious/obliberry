@@ -3,5 +3,5 @@
 
 namespace Editor {
     enum class MapTool : uint8_t { Paint, Erase, Select };
-    enum class MapToolShape : uint8_t { RADIUS, RECT };
+    enum class MapToolShape : uint8_t { RADIALBRUSH, RECT, CIRC };
 } // namespace Editor
