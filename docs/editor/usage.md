@@ -128,24 +128,55 @@ changed while playing is discarded. **Play mode needs the current scene to be sa
 
 Switch the mode dropdown to **Map Edit**. If the scene has no map yet, the editor creates a default MAP entity for you.
 
+### Tools
+
 The toolbar has three tools:
 
-- **Paint** - Left-click to place tiles, drag to paint continuously.
-- **Erase** - Left-click to remove tiles, drag to erase continuously.
-- **Select** - Click a tile to inspect and edit its properties.
+- **Paint** (`B`) - Left-click to place tiles, drag to paint continuously. The preview is green.
+- **Erase** (`E`) - Left-click to remove tiles, drag to erase continuously. The preview is red.
+- **Select** (`Q`) - Click or drag to select tiles. `Shift`+drag adds to the selection, `Ctrl`+drag removes from it.
+  Selected tiles are highlighted blue.
 
-The **Size** slider sets the brush radius in hexes (1 to 5) and affects Paint and Erase. Use the **Tile Editor** panel
-to pick which tile type to paint.
+### Shapes
+
+Next to the tools, three shape buttons control what a click or drag covers. They work with all three tools.
+
+- **Brush** - A round brush that applies continuously while you drag. The **Size** slider (1 to 8) sets how big it is:
+  1 is a single hex, 2 is 7 hexes, 3 is 19, and so on. `Ctrl`+scroll also changes the size.
+- **Rect** - Drag from one corner to the opposite corner. Applied when you release the mouse.
+- **Circle** - Drag from the center outwards. The radius is the distance to the hex you release on. Applied when you
+  release the mouse.
+
+Press `Esc` during a drag to cancel it. Rect and Circle apply nothing, and a Brush stroke is reverted.
+
+### Editing a selection
+
+With the Select tool, the toolbar shows how many tiles are selected, plus **Clear** and **Delete** (erases every selected
+tile). The **Tile Editor** panel edits all selected tiles at once:
+
+- **Type** and **Is Walkable** apply to every selected tile. If the tiles differ, the field shows as mixed until you pick
+  a value.
+- The texture and color editor only appears when all selected tiles share one type. **Override Current Type** changes
+  that type for every tile on the map that uses it. **Save as New Type** creates a new type and assigns it to the
+  selection only.
+
+Switching to Paint or Erase clears the selection. In Paint mode, the Tile Editor panel sets the brush (type, material,
+walkable) instead.
+
+### Map menu
 
 The **Map** menu lets you:
 
 - Start a fresh empty map (prompts to save the current one first)
 - Save the map (`Ctrl+S`)
 - Save the map under a new name
-- Load a `.obmap` file
+- Load a `.obmap` file (prompts to save the current one first)
 
-Map edits are undoable. Maps are stored on a MAP entity in the scene, so the map file path is part of the scene and gets
-saved with it.
+Creating or loading a map clears the undo history.
+
+Map edits are undoable: a brush stroke, a Rect/Circle fill, a Delete, and a bulk type or walkable change are each one
+undo step. Changing a tile type's material (**Override Current Type** or **Update Brush Type**) is not undoable. Maps
+are stored on a MAP entity in the scene, so the map file path is part of the scene and gets saved with it.
 
 ---
 
@@ -168,7 +199,6 @@ required files still stop packaging. See
 
 | Key      | Action                                                         |
 |----------|----------------------------------------------------------------|
-| `Esc`    | Quit the editor (prompts to save if there are unsaved changes) |
 | `Ctrl+S` | Save the scene (or the map in Map Edit mode)                   |
 | `Ctrl+Z` | Undo                                                           |
 | `Ctrl+Y` | Redo                                                           |
@@ -192,14 +222,23 @@ required files still stop packaging. See
 
 ### Map Edit Mode
 
-| Key                       | Action                                         |
-|---------------------------|------------------------------------------------|
-| `V`                       | Toggle isometric / top-down camera             |
-| `W` `A` `S` `D`           | Pan the camera (hold `Shift` for 3× speed)     |
-| Scroll wheel              | Zoom                                           |
-| Middle / right mouse drag | Pan the camera                                 |
-| Left click / drag         | Paint, erase, or select, depending on the tool |
+| Key                       | Action                                                       |
+|---------------------------|--------------------------------------------------------------|
+| `B` / `E` / `Q`           | Paint / Erase / Select tool                                  |
+| `V`                       | Toggle isometric / top-down camera                           |
+| `W` `A` `S` `D`           | Pan the camera (hold `Shift` for 3× speed)                   |
+| Scroll wheel              | Zoom                                                         |
+| `Ctrl` + scroll wheel     | Change brush size (Brush shape)                              |
+| Middle / right mouse drag | Pan the camera                                               |
+| Left click / drag         | Paint, erase, or select, depending on the tool and shape     |
+| `Shift` + left drag       | Select tool: add to the selection                            |
+| `Ctrl` + left drag        | Select tool: remove from the selection                       |
+| `Esc`                     | Cancel the current drag                                      |
+
+> [!NOTE]
+> Tool keys only work while the mouse is over the Scene View. `E` is Erase here but Scale in Edit mode.
 
 > [!NOTE]
 > Camera controls only work while the mouse is over the Scene View, and keyboard input is ignored while you are typing
 > into a text field, so the editor does not steal your keystrokes.
+
