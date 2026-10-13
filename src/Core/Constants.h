@@ -65,4 +65,8 @@ namespace Core {
 
     // lighting
     constexpr int LIGHTMAP_TEXELS_PER_HEX = 2;
+
+    // logger
+    constexpr size_t EDITOR_LOGGER_QSIZE = 1000;
+
 } // namespace Core

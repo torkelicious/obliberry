@@ -2,6 +2,7 @@
 
 #include "ILogger.h"
 #include "Core/Utils/CircularBuffer.h"
+#include <ostream>
 #include <string>
 #include <filesystem>
 #include <mutex>
@@ -58,10 +59,16 @@ namespace Logging {
             cv_.notify_one();
         }
 
+        void SetOutStream(std::ostream &os) { _outstream = std::ref(os); }
+        void SetErrStream(std::ostream &os) { _errstream = std::ref(os); }
+
     private:
         void init() {
             worker_ = std::jthread([this](const std::stop_token &stop_token) { LoggerLoop(stop_token); });
         }
+
+        std::reference_wrapper<std::ostream> _outstream = std::cout;
+        std::reference_wrapper<std::ostream> _errstream = std::cerr;
 
         void LoggerLoop(std::stop_token stop_token) {
             while (true) {
@@ -97,14 +104,14 @@ namespace Logging {
                             break;
                     }
                     std::string ts = getTimestamp(log_item.timestamp);
-                    std::string logfmt = std::format("[{}] {}[{}] {}\n", ts, prefix, log_item.who, log_item.what);
+                    std::string const logfmt = std::format("[{}] {}[{}] {}\n", ts, prefix, log_item.who, log_item.what);
                     if (logfile_.is_open()) {
                         logfile_ << logfmt;
                     }
                     if (log_item.severity == LogSeverity::Error) {
-                        std::cerr << logfmt;
+                        _errstream.get() << logfmt;
                     } else {
-                        std::cout << logfmt;
+                        _outstream.get() << logfmt;
                     }
                 }
 

@@ -1,8 +1,9 @@
 #pragma once
 #include "Applications/Editor/States/Hub/ProjectHistory.h"
+#include "Core/Utils/OsUtils.h"
 #include "EditorContext.h"
 #include <memory>
-#include <sstream>
+#include <string>
 #include "Core/ApplicationLayer.h"
 #include "Platform/Input/InputManager.h"
 #include "Applications/Editor/UI/Panels/Editor/InspectorPanel.h"
@@ -23,6 +24,7 @@
 #include "UI/ConfigWindows/PostProcEditor.h"
 #include "UI/Panels/Editor/UIPanel.h"
 #include "UI/ConfigWindows/ThemeConfigEditor.h"
+#include "UI/Panels/ConsoleLogPanel.h"
 
 namespace Editor {
     namespace States {
@@ -66,7 +68,7 @@ namespace Editor {
         void ReloadCurrentMap() const;
 
     private:
-        static void DrawDockSpace();
+        void DrawDockSpace() const;
 
         void DrawEditorPanels();
 
@@ -149,20 +151,10 @@ namespace Editor {
         // Project History
         ProjectHistory m_ProjectHistory;
 
-        // Logging
-        static constexpr size_t MAX_CONSOLE_LINES = 2000;
-        std::vector<std::string> m_ConsoleLogs;
-        size_t m_PreviousLogCount = 0;
-        std::stringstream m_InterpreterOutput;
+        bool m_HasTTY = Core::Utils::OS::IsAtty(stdout) || Core::Utils::OS::IsAtty(stderr);
 
-        void FlushInterpreterOutput() {
-            std::string line;
-            while (std::getline(m_InterpreterOutput, line)) {
-                m_ConsoleLogs.push_back(std::move(line));
-                if (m_ConsoleLogs.size() > MAX_CONSOLE_LINES)
-                    m_ConsoleLogs.erase(m_ConsoleLogs.begin(), m_ConsoleLogs.end() - MAX_CONSOLE_LINES);
-            }
-            m_InterpreterOutput.clear();
-        }
+
+        UI::ConsoleLogPanel m_InterpreterLogsPanel{"ObSL"};
+        UI::ConsoleLogPanel m_ApplicationLogsPanel{"Logs"};
     };
 } // namespace Editor

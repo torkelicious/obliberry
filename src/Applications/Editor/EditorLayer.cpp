@@ -1,9 +1,11 @@
 #include "EditorLayer.h"
+#include "Core/Constants.h"
 #include "Core/Project.h"
 #include "Core/ResourceManager.h"
 #include "Config/ProjectConfig.h"
 #include "IO/AssetCatalog.h"
 #include "IO/Loaders/AssetLoader.h"
+#include "Logger/Logger.h"
 #include "Logger/LoggerService.h"
 #include "ECS/Entity.h"
 #include "Platform/Error.h"
@@ -18,6 +20,7 @@
 #include <memory>
 #include <string>
 #include <algorithm>
+#include <typeinfo>
 #include "Platform/Input/InputManager.h"
 #include "Platform/Window/Window.h"
 #include "Applications/Editor/Platform/FileDialogs.h"
@@ -113,7 +116,7 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
 
     m_PostProcConfigEditor.SetUndoMgr(&m_UndoManager);
 
-    auto allowCloseWindow = std::make_shared<bool>(false);
+    auto const allowCloseWindow = std::make_shared<bool>(false);
     const auto closeWindowCallback = [this, allowCloseWindow]() {
         if (*allowCloseWindow) {
             *allowCloseWindow = false;
@@ -153,6 +156,17 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
 
     if (m_Context->window) {
         m_Context->window->CloseCallbackFunction = closeWindowCallback;
+    }
+
+    m_HasTTY = Core::Utils::OS::IsAtty(stdout) || Core::Utils::OS::IsAtty(stderr);
+    if (!m_HasTTY) {
+        try {
+            auto &logger = static_cast<Logging::Logger<Core::EDITOR_LOGGER_QSIZE> &>(*m_Context->logger);
+            logger.SetOutStream(m_ApplicationLogsPanel.stream);
+            logger.SetErrStream(m_ApplicationLogsPanel.stream);
+            LOG_INFO(LOG_WHO, "Editor Logs are being outputted to Editor Console.");
+        } catch (const std::bad_cast &) {
+        }
     }
 }
 
@@ -353,7 +367,7 @@ void Editor::EditorLayer::LoadScene(std::string path) {
             }
 
             if (Core::Project::GetActive()) {
-                m_Context->scriptPool->set_stdout(m_InterpreterOutput);
+                m_Context->scriptPool->set_stdout(m_InterpreterLogsPanel.stream);
             }
 
             m_UIPanel.Reset();
@@ -656,7 +670,7 @@ void Editor::EditorLayer::ReloadCurrentMap() const {
     }
 }
 
-void Editor::EditorLayer::DrawDockSpace() {
+void Editor::EditorLayer::DrawDockSpace() const {
     const ImGuiID dockspaceId = ImGui::GetID("EditorDockSpace");
     ImGui::DockSpaceOverViewport(dockspaceId, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
@@ -676,8 +690,9 @@ void Editor::EditorLayer::DrawDockSpace() {
     ImGui::DockBuilderDockWindow("Registry", dock_id_left);
     ImGui::DockBuilderDockWindow("UI Hierarchy", dock_id_left);
     ImGui::DockBuilderDockWindow("Inspector", dock_id_right);
-    ImGui::DockBuilderDockWindow("Console", dock_id_bottom);
+    ImGui::DockBuilderDockWindow(m_InterpreterLogsPanel.name.c_str(), dock_id_bottom);
     ImGui::DockBuilderDockWindow("Project Browser", dock_id_bottom);
+    ImGui::DockBuilderDockWindow(m_ApplicationLogsPanel.name.c_str(), dock_id_bottom);
     ImGui::DockBuilderDockWindow("Scene View", dock_id_center);
 
     ImGui::DockBuilderFinish(dockspaceId);
@@ -702,44 +717,15 @@ void Editor::EditorLayer::DrawEditorPanels() {
 
 
 void Editor::EditorLayer::DrawUtilityWindows() {
-    FlushInterpreterOutput();
 
-    ImGui::Begin("Console");
+    m_InterpreterLogsPanel.Flush();
+    m_InterpreterLogsPanel.Draw(m_EditorContext);
 
-    if (ImGui::Button("Clear")) {
-        m_ConsoleLogs.clear();
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("Copy")) {
-        std::string allText;
-        for (const auto &line : m_ConsoleLogs) {
-            allText += line;
-            allText += '\n';
-        }
-        ImGui::SetClipboardText(allText.c_str());
+    if (!m_HasTTY) {
+        m_ApplicationLogsPanel.Flush();
+        m_ApplicationLogsPanel.Draw(m_EditorContext);
     }
 
-    ImGui::Separator();
-
-    ImGui::PushFont(m_EditorContext.fontset.FindFont(UI::Theme::FontRole::Monospace));
-    ImGui::BeginChild("##console_scroll", ImVec2(-1, -1), ImGuiChildFlags_None, ImGuiWindowFlags_HorizontalScrollbar);
-    {
-        ImGuiListClipper clipper;
-        clipper.Begin(static_cast<int>(m_ConsoleLogs.size()));
-        while (clipper.Step()) {
-            for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; ++i) {
-                ImGui::TextUnformatted(m_ConsoleLogs[static_cast<size_t>(i)].c_str());
-            }
-        }
-    }
-    if (m_ConsoleLogs.size() != m_PreviousLogCount) {
-        ImGui::SetScrollHereY(1.0f);
-        m_PreviousLogCount = m_ConsoleLogs.size();
-    }
-    ImGui::EndChild();
-    ImGui::PopFont();
-
-    ImGui::End();
 
     if (m_CurrentState && m_CurrentState->ShouldDrawProjectBrowser()) {
         m_ProjectBrowserPanel.OnImGuiRender();
@@ -782,7 +768,7 @@ void Editor::EditorLayer::DrawToolbar() {
                 if (const auto dir = Platform::FileDialogs::PickFolder(*m_Context)) {
                     const std::filesystem::path pickedDir(*dir);
 
-                    auto onProceed = [this, pickedDir] {
+                    auto const onProceed = [this, pickedDir] {
                         m_NewProjectDialog.SetDirectory(pickedDir);
                         m_NewProjectDialog.SetTemplates(Core::Project::GetAvailableTemplates());
                         m_NewProjectDialog.SetOnConfirm([this](const std::filesystem::path &pDir, const std::string &name, const std::string &templateId) {

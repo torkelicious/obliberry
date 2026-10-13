@@ -1,6 +1,7 @@
 #include "Core/Application.h"
 #include "Config/ProjectConfig.h"
 #include "Config/GraphicsConfig.h"
+#include "Core/Constants.h"
 #include "Core/Project.h"
 #include "EditorLayer.h"
 #include "Logger/Logger.h"
@@ -9,7 +10,7 @@
 
 int main(const int argc, char *argv[]) {
     Platform::Window::Window::s_ShouldInitNFD = true;
-    Logging::Logger<1000> logger;
+    Logging::Logger<Core::EDITOR_LOGGER_QSIZE> logger;
     Logging::LoggerService::Initialize(&logger);
     LOG_INFO("EditorMain", "Initialized");
 
