@@ -15,6 +15,22 @@ endif ()
 # Compiler / Linker Options Target
 add_library(obliberry_options INTERFACE)
 
+# Extra windows GUI shit
+add_library(obliberry_options_wingui INTERFACE)
+
+if (WIN32)
+    if (MSVC)
+        target_link_options(obliberry_options_wingui INTERFACE
+                "/SUBSYSTEM:WINDOWS"
+                "/ENTRY:mainCRTStartup"
+        )
+    else ()
+        target_link_options(obliberry_options_wingui INTERFACE
+                "-mwindows"
+        )
+    endif ()
+endif ()
+
 # Architecture flags (GCC/Clang on x86 only)
 if ((CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang") AND (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64|i686"))
     target_compile_options(obliberry_options INTERFACE $<$<NOT:$<CONFIG:Debug>>:-march=${ENGINE_ARCH_LEVEL}>)
@@ -28,6 +44,7 @@ if (MSVC)
             /utf-8 # Force UTF-8 encoding
             /EHsc  # exception handling
     )
+
     target_link_options(obliberry_options INTERFACE
             $<$<NOT:$<CONFIG:Debug>>:/OPT:REF>
             $<$<NOT:$<CONFIG:Debug>>:/OPT:ICF>

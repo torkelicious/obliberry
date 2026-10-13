@@ -108,7 +108,7 @@ endif ()
 add_executable(obliberry_runtime
         Applications/Runtime/RuntimeMain.cpp
 )
-target_link_libraries(obliberry_runtime PRIVATE obliberry_engine)
+target_link_libraries(obliberry_runtime PRIVATE obliberry_engine obliberry_options_wingui)
 
 # Editor Executable
 add_executable(obliberry_editor
@@ -155,7 +155,7 @@ add_executable(obliberry_editor
         Applications/Editor/Commands/CustomDataSnapshot.cpp
 )
 
-target_link_libraries(obliberry_editor PRIVATE obliberry_engine)
+target_link_libraries(obliberry_editor PRIVATE obliberry_engine obliberry_options_wingui)
 
 # Unity Build Handling
 if (ENABLE_UNITY_BUILD)
