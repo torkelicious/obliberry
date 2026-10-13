@@ -124,7 +124,7 @@ changed while playing is discarded. **Play mode needs the current scene to be sa
 
 ## Map Edit Mode
 
-![Map Edit mode](img/map-editmode.png?)
+![Map Edit mode](img/map-editmode.png)
 
 Switch the mode dropdown to **Map Edit**. If the scene has no map yet, the editor creates a default MAP entity for you.
 
