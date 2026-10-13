@@ -25,7 +25,7 @@ namespace Platform::Window {
         void SwapBuffers() const;
 
         [[nodiscard]] bool ShouldClose() const { return glfwWindowShouldClose(m_Window); }
-        void Close() const { glfwSetWindowShouldClose(m_Window, true); }
+        void Close() const { glfwSetWindowShouldClose(m_Window, true); } // overrides RequestClose, closes wether or not callbaCK is TRUE or FALSE.
 
         [[nodiscard]] int GetWidth() const { return m_Width.load(std::memory_order_relaxed); }
         [[nodiscard]] int GetHeight() const { return m_Height.load(std::memory_order_relaxed); }
@@ -42,6 +42,7 @@ namespace Platform::Window {
 
         std::function<bool()> CloseCallbackFunction;
 
+        // Close depending on close callback function result.
         void RequestClose();
 
     private:
