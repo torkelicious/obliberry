@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdio>
 #include <filesystem>
 #include <string>
 #include <string_view>
@@ -7,6 +8,8 @@
 #ifdef _WIN32
 #include <Windows.h>
 #include <shellapi.h>
+
+#include <io.h>
 #elif defined(__APPLE__) || defined(__linux__)
 #include <unistd.h>
 #endif
@@ -103,5 +106,14 @@ namespace Core::Utils::OS {
         return OsOpen(urlString.c_str());
 #endif
     }
+
+    inline bool IsAtty(FILE *stream) {
+#ifdef _WIN32
+        return _isatty(_fileno(stream)) != 0;
+#else
+        return isatty(fileno(stream)) != 0;
+#endif
+    }
+
 
 } // namespace Core::Utils::OS
