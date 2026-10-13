@@ -8,7 +8,7 @@ the map, entities, UI, lighting, music, and references to project assets.
 ## What a Scene Contains
 
 | Section              | Description                                                                  |
-|----------------------|------------------------------------------------------------------------------|
+| -------------------- | ---------------------------------------------------------------------------- |
 | **Scene Properties** | Name, background clear color, music, ambient light, lighting enablement      |
 | **Registry**         | All entities and their components (Transform, Mesh, Material, Script, etc.)  |
 | **Map**              | hex-grid map (stored as a `.obmap` file, referenced by the scene)            |
@@ -67,12 +67,12 @@ automatically.
 
 ## Scene Workflow
 
-| Task                          | How                                                                                            |
-|-------------------------------|------------------------------------------------------------------------------------------------|
-| **Start a new level**         | Scene → Create Scene, then Scene → Switch To, then Map Edit mode to paint the grid             |
+| Task                          | How                                                                                                      |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------- |
+| **Start a new level**         | Scene → Create Scene, then Scene → Switch To, then Map Edit mode to paint the grid                       |
 | **Reuse a map across scenes** | In Map Edit mode: Map → Save Map As... → give it a name. Then in the new scene: Map → Load Map from file |
-| **Duplicate a scene**         | Copy the `.json` file in `assets/scenes/`, rename it, then Scene → Switch To                   |
-| **Set the starting scene**    | Edit `project.json` → `start_scene` field (relative to `assets/scenes/`)                       |
+| **Duplicate a scene**         | Copy the `.json` file in `assets/scenes/`, rename it, then Scene → Switch To                             |
+| **Set the starting scene**    | Edit `project.json` → `start_scene` field (relative to `assets/scenes/`)                                 |
 
 ---
 

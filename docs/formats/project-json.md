@@ -19,7 +19,7 @@ scene; `assets.json` maps the resource IDs used by that and other scenes to thei
 ## Fields
 
 | Key              | Type    | Default               | Meaning                                                                                                                       |
-|------------------|---------|-----------------------|-------------------------------------------------------------------------------------------------------------------------------|
+| ---------------- | ------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `UUID`           | string  | `""`                  | Stable project identifier. New projects use a UUID v4. The value separates this project's save directory from other projects. |
 | `window`         | object  | -                     | Window settings container.                                                                                                    |
 | `window.title`   | string  | `"Obliberry Project"` | Window/application title. The runtime uses it directly; the editor shows `"Obliberry: <title>"`.                              |

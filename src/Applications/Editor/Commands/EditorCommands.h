@@ -431,7 +431,8 @@ namespace Editor::Commands {
 
     class SetUIElementScaleCommand final : public UIElementCommand {
     public:
-        SetUIElementScaleCommand(const ::UI::UIElement *target, const glm::vec2 oldScale, const glm::vec2 newScale) : UIElementCommand(target ? target->GetUUID() : std::string{}), m_OldScale(oldScale), m_NewScale(newScale) {}
+        SetUIElementScaleCommand(const ::UI::UIElement *target, const glm::vec2 oldScale, const glm::vec2 newScale)
+            : UIElementCommand(target ? target->GetUUID() : std::string{}), m_OldScale(oldScale), m_NewScale(newScale) {}
 
         void Execute(Core::EngineContext &ctx) override { Apply(ctx, m_NewScale); }
         void Undo(Core::EngineContext &ctx) override { Apply(ctx, m_OldScale); }

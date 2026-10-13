@@ -9,7 +9,7 @@ A tour of the Obliberry editor: the modes, camera controls, panels, and keybind 
 The editor has four states. You start in the Hub, and everything else hangs off it.
 
 | State        | What it is                                                                              |
-|--------------|-----------------------------------------------------------------------------------------|
+| ------------ | --------------------------------------------------------------------------------------- |
 | **Hub**      | The startup screen. Create or open a project.                                           |
 | **Edit**     | Build your scene: entities, transforms, materials, UI. Default after opening a project. |
 | **Play**     | Run the scene and its scripts, like a player would.                                     |
@@ -39,7 +39,7 @@ The Hub is a simple welcome screen with two buttons:
 Camera input only works while the mouse is over the **Scene View**.
 
 | Input                      | Action                                     |
-|----------------------------|--------------------------------------------|
+| -------------------------- | ------------------------------------------ |
 | `W` `A` `S` `D`            | Pan the camera                             |
 | `Shift` + `WASD`           | Pan faster (3×)                            |
 | Scroll wheel               | Zoom in and out                            |
@@ -197,13 +197,13 @@ required files still stop packaging. See
 
 ### Global (any mode)
 
-| Key      | Action                                                         |
-|----------|----------------------------------------------------------------|
-| `Ctrl+S` | Save the scene (or the map in Map Edit mode)                   |
-| `Ctrl+Z` | Undo                                                           |
-| `Ctrl+Y` | Redo                                                           |
-| `F5`     | Enter Play mode, or stop it                                    |
-| `F1`     | Stop Play mode                                                 |
+| Key      | Action                                       |
+| -------- | -------------------------------------------- |
+| `Ctrl+S` | Save the scene (or the map in Map Edit mode) |
+| `Ctrl+Z` | Undo                                         |
+| `Ctrl+Y` | Redo                                         |
+| `F5`     | Enter Play mode, or stop it                  |
+| `F1`     | Stop Play mode                               |
 
 > [!NOTE]
 > Some actions cannot be undone, deleting an entity in the editor currently is not undoable, and some other stuff. but
@@ -212,7 +212,7 @@ required files still stop packaging. See
 ### Edit Mode
 
 | Key                       | Action                                                                    |
-|---------------------------|---------------------------------------------------------------------------|
+| ------------------------- | ------------------------------------------------------------------------- |
 | `V`                       | Toggle isometric / top-down camera                                        |
 | `T` `R` `E`               | Gizmo: translate / rotate / scale (`E` = scale, toolbar button shows `S`) |
 | `W` `A` `S` `D`           | Pan the camera (hold `Shift` for 3× speed)                                |
@@ -222,18 +222,18 @@ required files still stop packaging. See
 
 ### Map Edit Mode
 
-| Key                       | Action                                                       |
-|---------------------------|--------------------------------------------------------------|
-| `B` / `E` / `Q`           | Paint / Erase / Select tool                                  |
-| `V`                       | Toggle isometric / top-down camera                           |
-| `W` `A` `S` `D`           | Pan the camera (hold `Shift` for 3× speed)                   |
-| Scroll wheel              | Zoom                                                         |
-| `Ctrl` + scroll wheel     | Change brush size (Brush shape)                              |
-| Middle / right mouse drag | Pan the camera                                               |
-| Left click / drag         | Paint, erase, or select, depending on the tool and shape     |
-| `Shift` + left drag       | Select tool: add to the selection                            |
-| `Ctrl` + left drag        | Select tool: remove from the selection                       |
-| `Esc`                     | Cancel the current drag                                      |
+| Key                       | Action                                                   |
+| ------------------------- | -------------------------------------------------------- |
+| `B` / `E` / `Q`           | Paint / Erase / Select tool                              |
+| `V`                       | Toggle isometric / top-down camera                       |
+| `W` `A` `S` `D`           | Pan the camera (hold `Shift` for 3× speed)               |
+| Scroll wheel              | Zoom                                                     |
+| `Ctrl` + scroll wheel     | Change brush size (Brush shape)                          |
+| Middle / right mouse drag | Pan the camera                                           |
+| Left click / drag         | Paint, erase, or select, depending on the tool and shape |
+| `Shift` + left drag       | Select tool: add to the selection                        |
+| `Ctrl` + left drag        | Select tool: remove from the selection                   |
+| `Esc`                     | Cancel the current drag                                  |
 
 > [!NOTE]
 > Tool keys only work while the mouse is over the Scene View. `E` is Erase here but Scale in Edit mode.
@@ -241,4 +241,3 @@ required files still stop packaging. See
 > [!NOTE]
 > Camera controls only work while the mouse is over the Scene View, and keyboard input is ignored while you are typing
 > into a text field, so the editor does not steal your keystrokes.
-
