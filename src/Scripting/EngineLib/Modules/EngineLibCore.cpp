@@ -1,3 +1,4 @@
+#include "Logger/LoggerService.h"
 #include "Scripting/EngineLib/EngineLib.h"
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -52,9 +53,13 @@ void Scripting::EngineLib::register_core_modules(ObSL::Interpreter &interpreter)
     }, "Window_SetFullscreen"));
 
     interpreter.get_global_environment()->define("CloseWindow", interpreter.gc.allocate<ObSL::NativeFunction>(0, [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
-        if (ctx && ctx->window && ctx->window->GetNativeWindow()) {
+        if (ctx && ctx->window) {
             std::lock_guard lock(g_WindowMutex);
-            glfwSetWindowShouldClose(ctx->window->GetNativeWindow(), true);
+            if (ctx->isEditorMode) {
+                LOG_INFO("ObSL EngineLib \"CloseWindow\"", "Was called, but will not close the window in EditorMode to save your sanity! :D");
+            } else {
+                ctx->window->Close();
+            }
         }
         return std::monostate{};
     }, "CloseWindow"));
