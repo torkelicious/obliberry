@@ -179,7 +179,7 @@ namespace Editor::States {
     //
 
     void MapEditState::OnHandleInput(const float dt) {
-        auto &input = *m_EditorLayer->m_Input;
+        const auto &input = *m_EditorLayer->m_Input;
 
         const bool mouseDown = input.IsMouseDown(0);
         const bool mousePressed = mouseDown && !m_WasMouseDown;
@@ -247,7 +247,7 @@ namespace Editor::States {
     }
 
     void MapEditState::HandleCameraInput() {
-        auto &input = *m_EditorLayer->m_Input;
+        const auto &input = *m_EditorLayer->m_Input;
 
         // scroll: zoom, or brush size with ctrl held
         if (const auto scrollDelta = static_cast<float>(input.ScrollY()); scrollDelta != 0.0f) {
@@ -387,7 +387,7 @@ namespace Editor::States {
     }
 
     void MapEditState::BeginMapDrag(const Map::HexCoords &hex) {
-        auto &input = *m_EditorLayer->m_Input;
+        const auto &input = *m_EditorLayer->m_Input;
 
         m_MapDragging = true;
         m_PreDragState.clear();

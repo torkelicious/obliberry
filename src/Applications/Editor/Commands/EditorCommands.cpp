@@ -579,7 +579,7 @@ namespace Editor::Commands {
     // Paint / Erase
     MapChangeTileCommand::MapChangeTileCommand(StateMap oldState, StateMap newState, std::string targetUUID) : EntityCommand(std::move(targetUUID)), m_OldState(std::move(oldState)), m_NewState(std::move(newState)) {}
 
-    void MapChangeTileCommand::ApplyStates(Core::EngineContext &ctx, const StateMap &states) {
+    void MapChangeTileCommand::ApplyStates(const Core::EngineContext &ctx, const StateMap &states) {
         const auto entity = ResolveEntity(ctx);
         if (!entity) {
             return;
@@ -741,7 +741,7 @@ namespace Editor::Commands {
 
 
     // AddUIElementCommand
-    AddUIElementCommand::AddUIElementCommand(::UI::UISystem *sys, ::UI::UIElement *parent, UIElementSnapshot snapshot)
+    AddUIElementCommand::AddUIElementCommand(const ::UI::UISystem *sys, const ::UI::UIElement *parent, UIElementSnapshot snapshot)
         : UIElementCommand(snapshot.uuid.empty() ? Core::Utils::UUID::UUIDGenerator::Generate() : snapshot.uuid), m_ParentUUID(sys && sys->Contains(parent) ? parent->GetUUID() : std::string{}),
           m_Snapshot(std::move(snapshot)) {
         m_Snapshot.uuid = m_ElementUUID;
@@ -775,11 +775,11 @@ namespace Editor::Commands {
     }
 
     // RemoveUIElementCommand
-    RemoveUIElementCommand::RemoveUIElementCommand(::UI::UISystem *sys, ::UI::UIElement *parent, const ::UI::UIElement *child)
+    RemoveUIElementCommand::RemoveUIElementCommand(const ::UI::UISystem *sys, const ::UI::UIElement *parent, const ::UI::UIElement *child)
         : m_ParentUUID(sys && parent && sys->Contains(parent) ? parent->GetUUID() : std::string{}), m_Snapshot(SnapshotUIElement(child)) {
         if (parent && child) {
             const auto &siblings = parent->Children;
-            const auto it = std::find(siblings.begin(), siblings.end(), child);
+            const auto it = std::ranges::find(siblings, child);
             if (it != siblings.end()) {
                 m_SiblingIndex = static_cast<size_t>(std::distance(siblings.begin(), it));
             }

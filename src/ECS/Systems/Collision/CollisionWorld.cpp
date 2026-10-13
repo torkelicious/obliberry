@@ -83,8 +83,8 @@ namespace ECS::Collision {
                 }
             }
 
-            std::sort(pairs.begin(), pairs.end());
-            pairs.erase(std::unique(pairs.begin(), pairs.end()), pairs.end());
+            std::ranges::sort(pairs);
+            pairs.erase(std::ranges::unique(pairs).begin(), pairs.end());
             return pairs;
         }
     } // namespace

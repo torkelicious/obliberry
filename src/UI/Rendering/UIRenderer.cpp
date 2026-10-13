@@ -259,7 +259,7 @@ namespace UI {
         return {gameX, gameY};
     }
 
-    void UI::UIRenderer::Shutdown() {
+    void UIRenderer::Shutdown() {
         m_Batches.clear();
 
         for (size_t i = 0; i < 2; ++i) {

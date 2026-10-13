@@ -281,7 +281,7 @@ namespace Editor::Commands {
         [[nodiscard]] std::string_view Name() const noexcept override;
 
     private:
-        void ApplyStates(Core::EngineContext &ctx, const StateMap &states);
+        void ApplyStates(const Core::EngineContext &ctx, const StateMap &states);
         StateMap m_OldState;
         StateMap m_NewState;
     };
@@ -349,7 +349,7 @@ namespace Editor::Commands {
 
     class AddUIElementCommand final : public UIElementCommand {
     public:
-        AddUIElementCommand(::UI::UISystem *sys, ::UI::UIElement *parent, UIElementSnapshot snapshot);
+        AddUIElementCommand(const ::UI::UISystem *sys, const ::UI::UIElement *parent, UIElementSnapshot snapshot);
 
         void Execute(Core::EngineContext &ctx) override;
         void Undo(Core::EngineContext &ctx) override;
@@ -365,7 +365,7 @@ namespace Editor::Commands {
 
     class RemoveUIElementCommand final : public ICommand {
     public:
-        RemoveUIElementCommand(::UI::UISystem *sys, ::UI::UIElement *parent, const ::UI::UIElement *child);
+        RemoveUIElementCommand(const ::UI::UISystem *sys, const ::UI::UIElement *parent, const ::UI::UIElement *child);
         void Execute(Core::EngineContext &ctx) override;
         void Undo(Core::EngineContext &ctx) override;
         [[nodiscard]] std::string_view Name() const noexcept override { return "Remove UI Element"; }
@@ -380,7 +380,7 @@ namespace Editor::Commands {
 
     class SetUIElementNameCommand final : public UIElementCommand {
     public:
-        SetUIElementNameCommand(::UI::UIElement *target, std::string oldName, std::string newName)
+        SetUIElementNameCommand(const ::UI::UIElement *target, std::string oldName, std::string newName)
             : UIElementCommand(target ? target->GetUUID() : std::string{}), m_OldName(std::move(oldName)), m_NewName(std::move(newName)) {}
 
         void Execute(Core::EngineContext &ctx) override { Apply(ctx, m_NewName); }
@@ -388,7 +388,7 @@ namespace Editor::Commands {
         [[nodiscard]] std::string_view Name() const noexcept override { return "Rename UI Element"; }
 
     private:
-        void Apply(Core::EngineContext &ctx, const std::string &name) {
+        void Apply(const Core::EngineContext &ctx, const std::string &name) {
             auto *element = ResolveElement(ctx);
             if (!element) {
                 return;
@@ -406,7 +406,7 @@ namespace Editor::Commands {
 
     class SetUIElementPositionCommand final : public UIElementCommand {
     public:
-        SetUIElementPositionCommand(::UI::UIElement *target, const glm::vec2 oldPos, const glm::vec2 newPos) : UIElementCommand(target ? target->GetUUID() : std::string{}), m_OldPos(oldPos), m_NewPos(newPos) {}
+        SetUIElementPositionCommand(const ::UI::UIElement *target, const glm::vec2 oldPos, const glm::vec2 newPos) : UIElementCommand(target ? target->GetUUID() : std::string{}), m_OldPos(oldPos), m_NewPos(newPos) {}
 
         void Execute(Core::EngineContext &ctx) override { Apply(ctx, m_NewPos); }
 
@@ -415,7 +415,7 @@ namespace Editor::Commands {
         [[nodiscard]] std::string_view Name() const noexcept override { return "Move UI Element"; }
 
     private:
-        void Apply(Core::EngineContext &ctx, const glm::vec2 position) {
+        void Apply(const Core::EngineContext &ctx, const glm::vec2 position) {
             auto *element = ResolveElement(ctx);
             if (!element) {
                 return;
@@ -431,14 +431,14 @@ namespace Editor::Commands {
 
     class SetUIElementScaleCommand final : public UIElementCommand {
     public:
-        SetUIElementScaleCommand(::UI::UIElement *target, const glm::vec2 oldScale, const glm::vec2 newScale) : UIElementCommand(target ? target->GetUUID() : std::string{}), m_OldScale(oldScale), m_NewScale(newScale) {}
+        SetUIElementScaleCommand(const ::UI::UIElement *target, const glm::vec2 oldScale, const glm::vec2 newScale) : UIElementCommand(target ? target->GetUUID() : std::string{}), m_OldScale(oldScale), m_NewScale(newScale) {}
 
         void Execute(Core::EngineContext &ctx) override { Apply(ctx, m_NewScale); }
         void Undo(Core::EngineContext &ctx) override { Apply(ctx, m_OldScale); }
         [[nodiscard]] std::string_view Name() const noexcept override { return "Resize UI Element"; }
 
     private:
-        void Apply(Core::EngineContext &ctx, const glm::vec2 scale) {
+        void Apply(const Core::EngineContext &ctx, const glm::vec2 scale) {
             auto *element = ResolveElement(ctx);
             if (!element) {
                 return;
@@ -454,7 +454,7 @@ namespace Editor::Commands {
 
     class TransformUIElementCommand final : public UIElementCommand {
     public:
-        TransformUIElementCommand(::UI::UIElement *target, const glm::vec2 oldPos, const glm::vec2 newPos, const glm::vec2 oldScale, const glm::vec2 newScale)
+        TransformUIElementCommand(const ::UI::UIElement *target, const glm::vec2 oldPos, const glm::vec2 newPos, const glm::vec2 oldScale, const glm::vec2 newScale)
             : UIElementCommand(target ? target->GetUUID() : std::string{}), m_OldPos(oldPos), m_NewPos(newPos), m_OldScale(oldScale), m_NewScale(newScale) {}
 
         void Execute(Core::EngineContext &ctx) override { Apply(ctx, m_NewPos, m_NewScale); }
@@ -464,7 +464,7 @@ namespace Editor::Commands {
         [[nodiscard]] std::string_view Name() const noexcept override { return "Transform UI Element"; }
 
     private:
-        void Apply(Core::EngineContext &ctx, const glm::vec2 position, const glm::vec2 scale) {
+        void Apply(const Core::EngineContext &ctx, const glm::vec2 position, const glm::vec2 scale) {
             auto *element = ResolveElement(ctx);
             if (!element) {
                 return;
@@ -507,7 +507,7 @@ namespace Editor::Commands {
         [[nodiscard]] std::string_view Name() const noexcept override { return m_FieldName; }
 
     private:
-        void Apply(Core::EngineContext &ctx, const std::vector<uint8_t> &data) {
+        void Apply(const Core::EngineContext &ctx, const std::vector<uint8_t> &data) {
             const auto entity = ResolveEntity(ctx);
             if (!entity) {
                 return;

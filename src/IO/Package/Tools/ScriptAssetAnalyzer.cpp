@@ -227,7 +227,7 @@ namespace IO::Package::Tools {
                 }
             }
 
-            void TrackAssetArgument(const char *type, const ObSL::Expr *arg) {
+            void TrackAssetArgument(const char *type, const ObSL::Expr *arg) const {
                 if (const auto id = TryResolveString(arg)) {
                     Collect(*id);
                 } else {

@@ -809,20 +809,20 @@ void Rendering::QDeleteVertexArray(GLuint arrID) {
     }
 }
 
-void Rendering::QDeleteFrameBuffer(const GLuint framebufferID, const GLuint colorTextureID, const GLuint entityTextureID) {
-    if (framebufferID == 0 && colorTextureID == 0 && entityTextureID == 0) {
+void Rendering::QDeleteFrameBuffer(const GLuint framebufferID, const GLuint colorTexID, const GLuint entityTexID) {
+    if (framebufferID == 0 && colorTexID == 0 && entityTexID == 0) {
         return;
     }
 
-    Renderer::SubmitDeleteTask(Platform::Threading::SmallTask([framebufferID, colorTextureID, entityTextureID] {
+    Renderer::SubmitDeleteTask(Platform::Threading::SmallTask([framebufferID, colorTexID, entityTexID] {
         if (framebufferID != 0) {
             glDeleteFramebuffers(1, &framebufferID);
         }
-        if (colorTextureID != 0) {
-            glDeleteTextures(1, &colorTextureID);
+        if (colorTexID != 0) {
+            glDeleteTextures(1, &colorTexID);
         }
-        if (entityTextureID != 0) {
-            glDeleteTextures(1, &entityTextureID);
+        if (entityTexID != 0) {
+            glDeleteTextures(1, &entityTexID);
         }
     }));
 }

@@ -18,7 +18,7 @@ namespace IO::AssetDependencies {
 
     RequiredAssets CollectDirectRefs(const nlohmann::json &scene);
 
-    bool ResolveDependencies(RequiredAssets &required);
+    bool ResolveDependencies(RequiredAssets &req);
 
-    bool BuildAssetSubset(const RequiredAssets &required, nlohmann::json &subset);
+    bool BuildAssetSubset(const RequiredAssets &req, nlohmann::json &sub);
 } // namespace IO::AssetDependencies
