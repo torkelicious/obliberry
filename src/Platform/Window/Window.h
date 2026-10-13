@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+#include <utility>
 #define GLFW_INCLUDE_NONE
 #include "Config/GraphicsConfig.h"
 #include <GLFW/glfw3.h>
@@ -38,6 +40,10 @@ namespace Platform::Window {
 
         static inline bool s_ShouldInitNFD = false;
 
+        std::function<bool()> CloseCallbackFunction;
+
+        void RequestClose();
+
     private:
         GLFWwindow *m_Window = nullptr;
         Input::InputManager *m_InputManager = nullptr;
@@ -55,6 +61,8 @@ namespace Platform::Window {
         static void MouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
 
         static void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset);
+
+        static void CloseCallback(GLFWwindow *window);
     };
 
 } // namespace Platform::Window

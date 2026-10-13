@@ -112,8 +112,49 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
     m_ThemeConfigEditor.SetUndoMgr(&m_UndoManager);
 
     m_PostProcConfigEditor.SetUndoMgr(&m_UndoManager);
-}
 
+    auto allowCloseWindow = std::make_shared<bool>(false);
+    const auto closeWindowCallback = [this, allowCloseWindow]() {
+        if (*allowCloseWindow) {
+            *allowCloseWindow = false;
+            return true;
+        }
+
+        const bool hasUnsavedChanges = (m_Scene && m_Scene->HasUnsavedChanges()) || (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges());
+
+        if (!hasUnsavedChanges) {
+            return true;
+        }
+
+        m_SaveChangesDialog.SetMessage("Do you want to save before quitting?");
+
+        m_SaveChangesDialog.SetOnSave([this, allowCloseWindow] {
+            if (m_Scene && m_Scene->HasUnsavedChanges()) {
+                SaveScene();
+            }
+
+            if (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges()) {
+                m_ProjectConfigEditor.SaveConfig();
+            }
+
+            *allowCloseWindow = true;
+            m_Context->window->RequestClose();
+            return true;
+        });
+
+        m_SaveChangesDialog.SetOnDiscard([this, allowCloseWindow] {
+            *allowCloseWindow = true;
+            m_Context->window->RequestClose();
+        });
+
+        m_SaveChangesDialog.Open();
+        return false;
+    };
+
+    if (m_Context->window) {
+        m_Context->window->CloseCallbackFunction = closeWindowCallback;
+    }
+}
 
 void Editor::EditorLayer::SetupFontSync(std::atomic<bool> *fontsDirty) { m_EditorContext.fontsDirty = fontsDirty; }
 
@@ -195,25 +236,6 @@ void Editor::EditorLayer::HandleInput(const float dt) {
         return;
 
     // mode-independent hotkeys
-    if (m_Input->IsKeyPressed("Esc")) {
-        if ((m_Scene && m_Scene->HasUnsavedChanges()) || (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges())) {
-            m_SaveChangesDialog.SetMessage("Do you want to save before quitting?");
-            m_SaveChangesDialog.SetOnSave([this] {
-                if (m_Scene && m_Scene->HasUnsavedChanges()) {
-                    SaveScene();
-                }
-                if (Core::Project::GetActive() && Core::Project::GetActive()->HasUnsavedChanges()) {
-                    m_ProjectConfigEditor.SaveConfig();
-                }
-                m_Context->window->Close();
-            });
-            m_SaveChangesDialog.SetOnDiscard([this] { m_Context->window->Close(); });
-            m_SaveChangesDialog.Open();
-        } else {
-            m_Context->window->Close();
-        }
-        return;
-    }
 
     //
     // 2key Modifier Shortcuts

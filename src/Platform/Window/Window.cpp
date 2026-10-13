@@ -111,6 +111,7 @@ bool Platform::Window::Window::Init(const unsigned int width, const unsigned int
     glfwSetMouseButtonCallback(m_Window, MouseButtonCallback);
     glfwSetCursorPosCallback(m_Window, CursorPosCallback);
     glfwSetScrollCallback(m_Window, ScrollCallback);
+    glfwSetWindowCloseCallback(m_Window, CloseCallback);
 
     return true;
 }
@@ -170,6 +171,22 @@ void Platform::Window::Window::ScrollCallback(GLFWwindow *window, const double x
     if (self->m_InputManager) {
         self->m_InputManager->HandleScrollEvent(xoffset, yoffset);
     }
+}
+
+void Platform::Window::Window::CloseCallback(GLFWwindow *window) {
+    auto *self = static_cast<Window *>(glfwGetWindowUserPointer(window));
+    if (!self) {
+        return;
+    }
+    self->RequestClose();
+}
+
+void Platform::Window::Window::RequestClose() {
+    if (!m_Window) {
+        return;
+    }
+    const bool shouldClose = !CloseCallbackFunction || CloseCallbackFunction();
+    glfwSetWindowShouldClose(m_Window, shouldClose ? GLFW_TRUE : GLFW_FALSE);
 }
 
 void Platform::Window::Window::SetFullscreen(const bool fullscreen) const {
