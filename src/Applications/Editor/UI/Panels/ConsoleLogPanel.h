@@ -1,3 +1,5 @@
+#pragma once
+
 #include "Applications/Editor/EditorContext.h"
 #include <cstddef>
 #include <string>
