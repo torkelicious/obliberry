@@ -4,6 +4,8 @@
 #include <cstddef>
 #include <string>
 #include <vector>
+#include <sstream>
+#include <imgui.h>
 
 namespace Editor::UI {
 
