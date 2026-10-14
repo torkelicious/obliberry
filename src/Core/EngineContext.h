@@ -104,6 +104,7 @@ namespace Core {
         float timeScale = 1.0f;
         uint64_t frameCount = 0;
         bool isEditorMode = false;
+        bool isEditorInPlayMode = false;
         // Logging
         Logging::ILogger *logger = nullptr;
 

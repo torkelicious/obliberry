@@ -55,7 +55,7 @@ void Scripting::EngineLib::register_core_modules(ObSL::Interpreter &interpreter)
     interpreter.get_global_environment()->define("CloseWindow", interpreter.gc.allocate<ObSL::NativeFunction>(0, [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
         if (ctx && ctx->window) {
             std::lock_guard lock(g_WindowMutex);
-            if (ctx->isEditorMode) {
+            if (ctx->isEditorInPlayMode) {
                 LOG_INFO("ObSL EngineLib \"CloseWindow\"", "Was called, but will not close the window in EditorMode to save your sanity! :D");
             } else {
                 ctx->window->Close();
