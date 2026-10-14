@@ -56,6 +56,7 @@ namespace Editor::UI {
     class UiStream : public std::ostream {
     public:
         explicit UiStream(std::shared_ptr<Logging::UILogSink> sink) : std::ostream(&buf_), buf_(std::move(sink)) {}
+
     private:
         UIStreamBuf buf_;
     };
