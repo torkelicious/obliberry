@@ -1,10 +1,12 @@
 #pragma once
 #include "Applications/Editor/States/Hub/ProjectHistory.h"
+#include "Applications/Editor/UI/Panels/UiStream.h"
 #include "Core/Utils/OsUtils.h"
 #include "EditorContext.h"
 #include <memory>
 #include <string>
 #include "Core/ApplicationLayer.h"
+#include "Logger/LogSink.h"
 #include "Platform/Input/InputManager.h"
 #include "Applications/Editor/UI/Panels/Editor/InspectorPanel.h"
 #include "UI/Panels/ProjectBrowserPanel.h"
@@ -151,10 +153,9 @@ namespace Editor {
         // Project History
         ProjectHistory m_ProjectHistory;
 
-        bool m_HasTTY = Core::Utils::OS::IsAtty(stdout) || Core::Utils::OS::IsAtty(stderr);
-
-
         UI::ConsoleLogPanel m_InterpreterLogsPanel{"ObSL"};
         UI::ConsoleLogPanel m_ApplicationLogsPanel{"Logs"};
+
+        UI::UiStream InterpreterStream{m_InterpreterLogsPanel.uiSink};
     };
 } // namespace Editor

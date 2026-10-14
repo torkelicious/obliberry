@@ -11,6 +11,10 @@
 int main(const int argc, char *argv[]) {
     Platform::Window::Window::s_ShouldInitNFD = true;
     Logging::Logger<Core::EDITOR_LOGGER_QSIZE> logger;
+
+    auto const consoleSink = std::make_shared<Logging::ConsoleSink>();
+    logger.AddSink(consoleSink);
+
     Logging::LoggerService::Initialize(&logger);
     LOG_INFO("EditorMain", "Initialized");
 

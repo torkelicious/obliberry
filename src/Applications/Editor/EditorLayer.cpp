@@ -158,17 +158,14 @@ void Editor::EditorLayer::Init(Core::EngineContext &ctx) {
         m_Context->window->CloseCallbackFunction = closeWindowCallback;
     }
 
-    m_HasTTY = Core::Utils::OS::IsAtty(stdout) || Core::Utils::OS::IsAtty(stderr);
-    if (!m_HasTTY) {
-        try {
-            auto &logger = static_cast<Logging::Logger<Core::EDITOR_LOGGER_QSIZE> &>(*m_Context->logger);
-            logger.SetOutStream(m_ApplicationLogsPanel.stream);
-            logger.SetErrStream(m_ApplicationLogsPanel.stream);
-            LOG_INFO(LOG_WHO, "Editor Logs are being outputted to Editor Console.");
-        } catch (const std::bad_cast &) {
-        }
+    try {
+        auto &logger = static_cast<Logging::Logger<Core::EDITOR_LOGGER_QSIZE> &>(*m_Context->logger);
+        logger.AddSink(m_ApplicationLogsPanel.uiSink);
+        LOG_INFO(LOG_WHO, "Editor Logs are being outputted to Editor Console.");
+    } catch (const std::bad_cast &) {
     }
 }
+
 
 void Editor::EditorLayer::SetupFontSync(std::atomic<bool> *fontsDirty) { m_EditorContext.fontsDirty = fontsDirty; }
 
@@ -367,7 +364,7 @@ void Editor::EditorLayer::LoadScene(std::string path) {
             }
 
             if (Core::Project::GetActive()) {
-                m_Context->scriptPool->set_stdout(m_InterpreterLogsPanel.stream);
+                m_Context->scriptPool->set_stdout(InterpreterStream);
             }
 
             m_UIPanel.Reset();
@@ -721,10 +718,8 @@ void Editor::EditorLayer::DrawUtilityWindows() {
     m_InterpreterLogsPanel.Flush();
     m_InterpreterLogsPanel.Draw(m_EditorContext);
 
-    if (!m_HasTTY) {
-        m_ApplicationLogsPanel.Flush();
-        m_ApplicationLogsPanel.Draw(m_EditorContext);
-    }
+    m_ApplicationLogsPanel.Flush();
+    m_ApplicationLogsPanel.Draw(m_EditorContext);
 
 
     if (m_CurrentState && m_CurrentState->ShouldDrawProjectBrowser()) {

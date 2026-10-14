@@ -2,6 +2,8 @@
 
 #include "ILogger.h"
 #include "Core/Utils/CircularBuffer.h"
+#include "Logger/ILogSink.h"
+#include <memory>
 #include <ostream>
 #include <string>
 #include <filesystem>
@@ -59,16 +61,17 @@ namespace Logging {
             cv_.notify_one();
         }
 
-        void SetOutStream(std::ostream &os) { _outstream = std::ref(os); }
-        void SetErrStream(std::ostream &os) { _errstream = std::ref(os); }
+        void AddSink(std::shared_ptr<ILogSink> sink) {
+            std::lock_guard lock(mutex_);
+            sinks_.push_back(std::move(sink));
+        }
 
     private:
         void init() {
             worker_ = std::jthread([this](const std::stop_token &stop_token) { LoggerLoop(stop_token); });
         }
 
-        std::reference_wrapper<std::ostream> _outstream = std::cout;
-        std::reference_wrapper<std::ostream> _errstream = std::cerr;
+        std::vector<std::shared_ptr<ILogSink>> sinks_;
 
         void LoggerLoop(std::stop_token stop_token) {
             while (true) {
@@ -108,10 +111,10 @@ namespace Logging {
                     if (logfile_.is_open()) {
                         logfile_ << logfmt;
                     }
-                    if (log_item.severity == LogSeverity::Error) {
-                        _errstream.get() << logfmt;
-                    } else {
-                        _outstream.get() << logfmt;
+
+                    std::lock_guard lock(mutex_);
+                    for (auto const &sink : sinks_) {
+                        sink->Write(log_item.severity, logfmt);
                     }
                 }
 

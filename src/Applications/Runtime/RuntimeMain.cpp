@@ -2,6 +2,7 @@
 #include "Config/ProjectConfig.h"
 #include "Config/GraphicsConfig.h"
 #include "Game/GameLayer.h"
+#include "Logger/LogSink.h"
 #include "Logger/Logger.h"
 #include "Logger/LoggerService.h"
 #include "IO/VFS/VFS.h"
@@ -10,6 +11,8 @@
 int main(const int argc, char *argv[]) {
     Platform::Window::Window::s_ShouldInitNFD = false;
     Logging::Logger<1000> logger;
+    auto const consoleSink = std::make_shared<Logging::ConsoleSink>();
+    logger.AddSink(consoleSink);
     Logging::LoggerService::Initialize(&logger);
     std::filesystem::path targetPackage = "data.obpak";
     std::filesystem::path targetProject = "project.json";

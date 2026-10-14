@@ -1,10 +1,11 @@
 #pragma once
 
 #include "Applications/Editor/EditorContext.h"
+#include "Logger/LogSink.h"
 #include <cstddef>
+#include <memory>
 #include <string>
 #include <vector>
-#include <sstream>
 #include <imgui.h>
 
 namespace Editor::UI {
@@ -15,16 +16,19 @@ namespace Editor::UI {
         std::string name;
         std::vector<std::string> logs;
         size_t previousLogCount = 0;
-        std::stringstream stream;
+
+        // Thread-safe sink buffer shared with the Logger
+        std::shared_ptr<Logging::UILogSink> uiSink = std::make_shared<Logging::UILogSink>();
 
         void Flush() {
-            std::string line;
-            while (std::getline(stream, line)) {
-                logs.push_back(std::move(line));
-                if (logs.size() > MAX_CONSOLE_LINES)
-                    logs.erase(logs.begin(), logs.end() - MAX_CONSOLE_LINES);
+            if (!uiSink)
+                return;
+
+            uiSink->ConsumePending(logs);
+
+            if (logs.size() > MAX_CONSOLE_LINES) {
+                logs.erase(logs.begin(), logs.end() - MAX_CONSOLE_LINES);
             }
-            stream.clear();
         }
 
         void Draw(EditorContext &ctx) {
