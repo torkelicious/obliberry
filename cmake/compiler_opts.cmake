@@ -8,8 +8,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(ENGINE_ARCH_LEVEL "x86-64-v2" CACHE STRING "Target CPU architecture (x86-64-v2, x86-64-v3, native)")
 
 if (WIN32)
-    add_compile_definitions(NOMINMAX)
-    add_compile_definitions(WIN32_LEAN_AND_MEAN)
+    add_compile_definitions(NOMINMAX) # windows.h
+    add_compile_definitions(WIN32_LEAN_AND_MEAN) # windows.h
+    add_compile_options($<$<CXX_COMPILER_ID:MSVC>:/MP>) # msvc paralellism
 endif ()
 
 # Compiler / Linker Options Target
