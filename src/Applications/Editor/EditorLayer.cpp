@@ -576,6 +576,9 @@ void Editor::EditorLayer::ExecutePendingStateTransfer() {
     m_CurrentState->OnEnter();
     m_PendingState = nullptr;
     m_UndoManager.Clear();
+
+    m_InterpreterLogsPanel.logs.clear(); // clear obsl logs on switch
+
 }
 
 void Editor::EditorLayer::PromptSaveDirtyMap(const std::function<void()> &onProceed) {
