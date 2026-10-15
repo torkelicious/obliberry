@@ -687,8 +687,8 @@ void Editor::EditorLayer::DrawDockSpace() const {
     ImGui::DockBuilderDockWindow("Registry", dock_id_left);
     ImGui::DockBuilderDockWindow("UI Hierarchy", dock_id_left);
     ImGui::DockBuilderDockWindow("Inspector", dock_id_right);
-    ImGui::DockBuilderDockWindow(m_InterpreterLogsPanel.name.c_str(), dock_id_bottom);
     ImGui::DockBuilderDockWindow("Project Browser", dock_id_bottom);
+    ImGui::DockBuilderDockWindow(m_InterpreterLogsPanel.name.c_str(), dock_id_bottom);
     ImGui::DockBuilderDockWindow(m_ApplicationLogsPanel.name.c_str(), dock_id_bottom);
     ImGui::DockBuilderDockWindow("Scene View", dock_id_center);
 
@@ -714,17 +714,15 @@ void Editor::EditorLayer::DrawEditorPanels() {
 
 
 void Editor::EditorLayer::DrawUtilityWindows() {
+    if (m_CurrentState && m_CurrentState->ShouldDrawProjectBrowser()) {
+        m_ProjectBrowserPanel.OnImGuiRender();
+    }
 
     m_InterpreterLogsPanel.Flush();
     m_InterpreterLogsPanel.Draw(m_EditorContext);
 
     m_ApplicationLogsPanel.Flush();
     m_ApplicationLogsPanel.Draw(m_EditorContext);
-
-
-    if (m_CurrentState && m_CurrentState->ShouldDrawProjectBrowser()) {
-        m_ProjectBrowserPanel.OnImGuiRender();
-    }
 
     m_CurrentState->OnDrawUtilityWindows();
 

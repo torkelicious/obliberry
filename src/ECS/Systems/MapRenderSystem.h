@@ -104,7 +104,7 @@ namespace ECS::Systems::MapRenderSystem {
                 if (auto matIt = mapComp->findTypeMat(typeId); matIt != mapComp->typeMats.end()) {
                     if (!matIt->second->texture) {
                         if (mapComp->warnedMissingTex.insert(typeId).second)
-                            LOG_WARN("MapRender", "Tile type " + std::to_string(typeId) + " has no texture, tiles will render blank");
+                            LOG_WARN("MapRender", "Tile type " + std::to_string(typeId) + " has no texture, tiles will render with the white fallback");
                     }
                     renderer.SubmitPersistent(mapComp->hexMesh, matIt->second, &transforms);
                 } else {

@@ -114,7 +114,7 @@ namespace IO::SceneIO {
             if (gridJson.contains("types")) {
                 for (auto &gridtypes = gridJson["types"]; auto &typeElement : gridtypes) {
                     uint8_t id = typeElement.value("id", static_cast<uint8_t>(1));
-                    std::string textureId = typeElement.value("texture", "hex_tex");
+                    std::string textureId = typeElement.value("texture", "");
 
                     auto typeTexture = resources.Get<Rendering::Texture>(textureId);
 

@@ -25,12 +25,17 @@
 #include "ECS/Components/MeshComponent.h"
 #include "ECS/Components/ScriptComponent.h"
 #include "IO/VFS/VFS.h"
+#include "IO/AssetCatalog.h"
+#include "IO/AssetDependencies.h"
+#include "Logger/LoggerService.h"
+#include "Rendering/Types/Material.h"
 #include "Rendering/Types/Shader/Shader.h"
 #include "imgui.h"
 #include "ECS/Components/SpriteSheetComponent.h"
 #include "ECS/Systems/Animation/Animation.h"
 
 #include <filesystem>
+#include <nlohmann/json.hpp>
 
 
 //  PointLightWidget
@@ -169,6 +174,29 @@ void Editor::UI::MeshWidget::Draw(const ECS::Entity entity, Core::EngineContext 
 
 //  MaterialWidget
 
+namespace {
+    nlohmann::json MaterialDefinition(const std::string &id, const Rendering::Material &material, Core::ResourceManager &resources) {
+        const std::string shaderId = material.shader ? resources.GetKey(material.shader) : std::string{};
+        const std::string textureId = material.texture ? resources.GetKey(material.texture) : std::string{};
+        return {{"id", id}, {"shader", shaderId}, {"texture", textureId}, {"color", {material.color.r, material.color.g, material.color.b, material.color.a}}};
+    }
+
+    void PersistCatalogMaterial(Core::EngineContext *engineContext, const std::shared_ptr<Rendering::Material> &material) {
+        if (!engineContext || !engineContext->resources || !material)
+            return;
+
+        auto &resources = *engineContext->resources;
+        const std::string id = resources.GetKey<Rendering::Material>(material);
+
+        if (!IO::AssetDependencies::IsCatalogAsset(id))
+            return;
+
+        if (!IO::AssetCatalog::Upsert("materials", MaterialDefinition(id, *material, resources))) {
+            LOG_ERROR("MaterialWidget", "Failed to persist material '" + id + "' to assets.json");
+        }
+    }
+} // namespace
+
 const char *Editor::UI::MaterialWidget::GetName() const { return "Material"; }
 
 void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext, UndoManager *undoManager) {
@@ -189,8 +217,10 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
             {
                 ImGui::PushID("MatColor");
                 ImGui::ColorEdit4("Color", &comp->material->color.x, ImGuiColorEditFlags_NoInputs);
-                if (ImGui::IsItemDeactivatedAfterEdit())
+                if (ImGui::IsItemDeactivatedAfterEdit()) {
+                    PersistCatalogMaterial(engineContext, comp->material);
                     MarkSceneChanged(engineContext);
+                }
                 ImGui::PopID();
             }
 
@@ -200,6 +230,7 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
             if (engineContext && engineContext->resources) {
                 ImGui::PushID("TextureCombo");
                 if (TextureCombo("Texture", engineContext, comp->material->texture)) {
+                    PersistCatalogMaterial(engineContext, comp->material);
                     MarkSceneChanged(engineContext);
                 }
                 ImGui::PopID();
@@ -211,6 +242,7 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
             if (engineContext && engineContext->resources) {
                 ImGui::PushID("ShaderCombo");
                 if (ShaderCombo("Shader", engineContext, comp->material->shader)) {
+                    PersistCatalogMaterial(engineContext, comp->material);
                     MarkSceneChanged(engineContext);
                 }
                 ImGui::PopID();
@@ -244,15 +276,19 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
             if (matComp && matComp->material && engineContext && engineContext->resources) {
                 auto &resources = *engineContext->resources;
                 const std::string origKey = resources.GetKey<Rendering::Material>(matComp->material);
-                std::string newKey = origKey.empty() ? "material_clone" : origKey + "_clone";
-                // ensure unique key
+                const std::string base = IO::AssetDependencies::IsCatalogAsset(origKey) ? origKey : "material";
+                std::string newKey = base + "_clone";
                 int suffix = 1;
-                while (resources.Get<Rendering::Material>(newKey)) {
-                    newKey = (origKey.empty() ? "material_clone" : origKey + "_clone") + "_" + std::to_string(suffix++);
+                while (resources.Get<Rendering::Material>(newKey) || IO::AssetCatalog::Find("materials", newKey)) {
+                    newKey = base + "_clone_" + std::to_string(suffix++);
                 }
-                const auto cloned = resources.Load<Rendering::Material>(newKey, matComp->material->shader, matComp->material->texture, matComp->material->color);
-                matComp->material = cloned;
-                MarkSceneChanged(engineContext);
+
+                if (!IO::AssetCatalog::Upsert("materials", MaterialDefinition(newKey, *matComp->material, resources))) {
+                    LOG_ERROR("MaterialWidget", "Failed to add cloned material '" + newKey + "' to assets.json");
+                } else {
+                    matComp->material = resources.Load<Rendering::Material>(newKey, matComp->material->shader, matComp->material->texture, matComp->material->color);
+                    MarkSceneChanged(engineContext);
+                }
             }
         }
 

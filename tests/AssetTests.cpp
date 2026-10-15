@@ -1,6 +1,7 @@
 #include "TemporaryProject.h"
 #include "Core/ResourceManager.h"
 #include "IO/AssetCatalogFile.h"
+#include "IO/AssetDependencies.h"
 #include "IO/Loaders/SceneAssetLoader.h"
 #include "Rendering/Types/Material.h"
 #include "Rendering/Types/Texture/Texture.h"
@@ -65,4 +66,20 @@ TEST_F(AssetTests, SharedDependencyIsReleasedOnlyAfterTheLastScope) {
     IO::SceneAssetLoader::UnloadStale();
     EXPECT_EQ(resources.Get<Rendering::Material>("test-material-b"), nullptr);
     EXPECT_EQ(resources.Get<Rendering::Texture>("test-shared-texture"), nullptr);
+}
+
+TEST_F(AssetTests, GridTileWithoutTextureRequiresNoTextureDependency) {
+    const nlohmann::json scene{{"grid", {{"mesh_id", "[Engine] Hex"}, {"types", nlohmann::json::array({{{"id", 0}}})}}}};
+
+    const auto required = IO::AssetDependencies::CollectDirectRefs(scene);
+
+    EXPECT_TRUE(required.textures.empty());
+}
+
+TEST_F(AssetTests, GridTileWithTextureCollectsThatTexture) {
+    const nlohmann::json scene{{"grid", {{"types", nlohmann::json::array({{{"id", 0}, {"texture", "hex_atlas"}}})}}}};
+
+    const auto required = IO::AssetDependencies::CollectDirectRefs(scene);
+
+    EXPECT_EQ(required.textures, std::set<std::string>{"hex_atlas"});
 }

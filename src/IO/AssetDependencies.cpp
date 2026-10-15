@@ -95,11 +95,7 @@ namespace IO::AssetDependencies {
         }
 
         for (const auto &type : *types) {
-            if (type.is_object() && !type.contains("texture")) {
-                req.textures.insert("hex_tex");
-            } else {
-                AddField(req.textures, type, "texture");
-            }
+            AddField(req.textures, type, "texture");
         }
     }
 
