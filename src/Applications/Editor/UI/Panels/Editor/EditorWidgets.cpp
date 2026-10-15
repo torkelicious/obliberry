@@ -181,6 +181,42 @@ namespace {
         return {{"id", id}, {"shader", shaderId}, {"texture", textureId}, {"color", {material.color.r, material.color.g, material.color.b, material.color.a}}};
     }
 
+    std::shared_ptr<Rendering::Material> CloneMaterialIntoCatalog(ECS::Components::MaterialComponent &matComp, Core::EngineContext *engineContext) {
+        if (!engineContext || !engineContext->resources || !matComp.material)
+            return nullptr;
+
+        auto &resources = *engineContext->resources;
+        const std::string origKey = resources.GetKey<Rendering::Material>(matComp.material);
+        const std::string base = IO::AssetDependencies::IsCatalogAsset(origKey) ? origKey : "material";
+        std::string newKey = base + "_clone";
+        int suffix = 1;
+        while (resources.Get<Rendering::Material>(newKey) || IO::AssetCatalog::Find("materials", newKey)) {
+            newKey = base + "_clone_" + std::to_string(suffix++);
+        }
+
+        if (!IO::AssetCatalog::Upsert("materials", MaterialDefinition(newKey, *matComp.material, resources))) {
+            LOG_ERROR("MaterialWidget", "Failed to add cloned material '" + newKey + "' to assets.json");
+            return nullptr;
+        }
+
+        matComp.material = resources.Load<Rendering::Material>(newKey, matComp.material->shader, matComp.material->texture, matComp.material->color);
+        return matComp.material;
+    }
+
+    std::shared_ptr<Rendering::Material> EnsureEditableMaterial(ECS::Components::MaterialComponent &matComp, Core::EngineContext *engineContext) {
+        if (!engineContext || !engineContext->resources || !matComp.material)
+            return matComp.material;
+
+        const std::string key = engineContext->resources->GetKey<Rendering::Material>(matComp.material);
+        if (IO::AssetDependencies::IsCatalogAsset(key))
+            return matComp.material;
+
+        if (const auto clone = CloneMaterialIntoCatalog(matComp, engineContext)) {
+            return clone;
+        }
+        return matComp.material;
+    }
+
     void PersistCatalogMaterial(Core::EngineContext *engineContext, const std::shared_ptr<Rendering::Material> &material) {
         if (!engineContext || !engineContext->resources || !material)
             return;
@@ -216,7 +252,11 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
         if (auto *comp = entity.GetComponent<ECS::Components::MaterialComponent>(); comp->material) {
             {
                 ImGui::PushID("MatColor");
-                ImGui::ColorEdit4("Color", &comp->material->color.x, ImGuiColorEditFlags_NoInputs);
+                glm::vec4 color = comp->material->color;
+                if (ImGui::ColorEdit4("Color", &color.x, ImGuiColorEditFlags_NoInputs) && color != comp->material->color) {
+                    EnsureEditableMaterial(*comp, engineContext);
+                    comp->material->color = color;
+                }
                 if (ImGui::IsItemDeactivatedAfterEdit()) {
                     PersistCatalogMaterial(engineContext, comp->material);
                     MarkSceneChanged(engineContext);
@@ -229,7 +269,10 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
 
             if (engineContext && engineContext->resources) {
                 ImGui::PushID("TextureCombo");
-                if (TextureCombo("Texture", engineContext, comp->material->texture)) {
+                std::shared_ptr<Rendering::Texture> texture = comp->material->texture;
+                if (TextureCombo("Texture", engineContext, texture)) {
+                    EnsureEditableMaterial(*comp, engineContext);
+                    comp->material->texture = std::move(texture);
                     PersistCatalogMaterial(engineContext, comp->material);
                     MarkSceneChanged(engineContext);
                 }
@@ -241,7 +284,10 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
 
             if (engineContext && engineContext->resources) {
                 ImGui::PushID("ShaderCombo");
-                if (ShaderCombo("Shader", engineContext, comp->material->shader)) {
+                std::shared_ptr<Rendering::Shader> shader = comp->material->shader;
+                if (ShaderCombo("Shader", engineContext, shader)) {
+                    EnsureEditableMaterial(*comp, engineContext);
+                    comp->material->shader = std::move(shader);
                     PersistCatalogMaterial(engineContext, comp->material);
                     MarkSceneChanged(engineContext);
                 }
@@ -273,22 +319,8 @@ void Editor::UI::MaterialWidget::Draw(const ECS::Entity entity, Core::EngineCont
         const float cloneWidth = ImGui::CalcTextSize("Clone Material").x + ImGui::GetStyle().FramePadding.x * 2;
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (ImGui::GetContentRegionAvail().x - cloneWidth) * 0.5f);
         if (ImGui::Button("Clone Material", ImVec2(cloneWidth, 0))) {
-            if (matComp && matComp->material && engineContext && engineContext->resources) {
-                auto &resources = *engineContext->resources;
-                const std::string origKey = resources.GetKey<Rendering::Material>(matComp->material);
-                const std::string base = IO::AssetDependencies::IsCatalogAsset(origKey) ? origKey : "material";
-                std::string newKey = base + "_clone";
-                int suffix = 1;
-                while (resources.Get<Rendering::Material>(newKey) || IO::AssetCatalog::Find("materials", newKey)) {
-                    newKey = base + "_clone_" + std::to_string(suffix++);
-                }
-
-                if (!IO::AssetCatalog::Upsert("materials", MaterialDefinition(newKey, *matComp->material, resources))) {
-                    LOG_ERROR("MaterialWidget", "Failed to add cloned material '" + newKey + "' to assets.json");
-                } else {
-                    matComp->material = resources.Load<Rendering::Material>(newKey, matComp->material->shader, matComp->material->texture, matComp->material->color);
-                    MarkSceneChanged(engineContext);
-                }
+            if (matComp && CloneMaterialIntoCatalog(*matComp, engineContext)) {
+                MarkSceneChanged(engineContext);
             }
         }
 
