@@ -432,6 +432,7 @@ by element name. Colors are `[r, g, b, a]` arrays, positions/sizes are `[x, y]` 
 | Method                | Args           | Returns        | Description              |
 | --------------------- | -------------- | -------------- | ------------------------ |
 | `GetName()`           | -              | string         | Element name.            |
+| `GetUUID()`           | -              | string         | Element UUID.            |
 | `GetPosition()`       | -              | array `[x, y]` | UI-space position.       |
 | `GetSize()`           | -              | array `[x, y]` | UI-space size.           |
 | `IsVisible()`         | -              | bool           | `VISIBLE` flag.          |
