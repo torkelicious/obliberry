@@ -24,7 +24,7 @@ namespace Editor::UI {
         // Thread-safe sink buffer shared with the Logger
         std::shared_ptr<Logging::UILogSink> uiSink = std::make_shared<Logging::UILogSink>();
 
-        void Clear(){
+        void Clear() {
             logs.clear();
             severity.clear();
         }
@@ -45,9 +45,9 @@ namespace Editor::UI {
             ImGui::Begin(name.c_str());
 
             if (ImGui::Button("Clear")) {
-                logs.clear();
-                severity.clear();
+                Clear();
             }
+
             ImGui::SameLine();
             if (ImGui::Button("Copy")) {
                 std::string allText;
