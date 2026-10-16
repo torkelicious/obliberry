@@ -16,7 +16,7 @@ protected:
     std::vector<std::vector<std::unique_ptr<ObSL::Stmt>>> programs;
     std::ostringstream output;
     std::istringstream input;
-    ObSL::Interpreter interpreter{".", output, input};
+    ObSL::Interpreter interpreter{".", output, output, input};
 
     void Run(const std::string &source) {
         sources.push_back(source);
