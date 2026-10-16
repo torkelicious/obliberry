@@ -158,7 +158,24 @@ namespace ECS::Systems::ScriptSystem {
             }
 
             // run top level code once
-            runtime.get_worker(0)->execute(slot.ast_nodes, slot.instance_envs[0]);
+            // top level execute single threaded during init so registry writes are applied in immediate mode 
+            {
+                auto *topLevelWorker = runtime.get_worker(0);
+                auto *topLevelCommands = topLevelWorker->frame_context<Scripting::ScriptCommandBuffer>();
+
+                struct ImmediateGuard {
+                    Scripting::ScriptCommandBuffer *buf;
+                    ~ImmediateGuard() {
+                        if (buf)
+                            buf->EndImmediate();
+                    }
+                } immediateGuard{topLevelCommands};
+
+                if (topLevelCommands)
+                    topLevelCommands->BeginImmediate(registry);
+
+                topLevelWorker->execute(slot.ast_nodes, slot.instance_envs[0]);
+            }
 
             // Bind hook functions
             auto bind_hook = [&](const char *name, std::vector<ObSL::ObSLCallable *> &target) {

@@ -4,6 +4,10 @@
 
 namespace Scripting {
     void ScriptCommandBuffer::push(SmallFunction<void(ECS::Registry &)> command) {
+        if (m_ImmediateRegistry) {
+            command(*m_ImmediateRegistry);
+            return;
+        }
         std::lock_guard lock(m_Mutex);
         m_Commands.push_back(std::move(command));
     }
@@ -25,6 +29,10 @@ namespace Scripting {
             }
         }
     }
+
+    void ScriptCommandBuffer::BeginImmediate(ECS::Registry &registry) { m_ImmediateRegistry = &registry; }
+
+    void ScriptCommandBuffer::EndImmediate() { m_ImmediateRegistry = nullptr; }
 
     void ScriptCommandBuffer::SetCollisionBasis(const ECS::Collision::BillboardBasis &basis) { m_CollisionBasis = basis; }
 
