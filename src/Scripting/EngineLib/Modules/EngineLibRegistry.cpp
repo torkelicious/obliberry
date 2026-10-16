@@ -68,6 +68,7 @@ namespace Scripting {
 
         obj->fields["id"] = static_cast<double>(id);
         obj->fields["name"] = registry.GetEntityName(id);
+        obj->fields["uuid"] = registry.GetEntityUUID(id);
 
         auto set_name_body = [id, reg_ptr = &registry](const ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
             if (args.empty() || !std::holds_alternative<std::string>(args[0])) {
