@@ -435,15 +435,15 @@ element's name changes or is duplicated. `GetName()` returns the element's name;
 
 ### Global functions
 
-| Function                | Args              | Returns           | Description                                      |
-| ----------------------- | ----------------- | ----------------- | ------------------------------------------------ |
-| `FindUI(name)`          | string            | element or `null` | Looks up an existing element by name.            |
-| `FindUIByUUID(uuid)`    | string            | element or `null` | Looks up an existing element by UUID.            |
-| `CreateUIButton(name)`  | string (optional) | button            | Creates a button (default name `"NewButton"`).   |
-| `CreateUIText(name)`    | string (optional) | text              | Creates a text element (default `"NewText"`).    |
-| `CreateUIRect(name)`    | string (optional) | rect              | Creates a rect element (default `"NewRect"`).    |
-| `CreateUIImage(name)`   | string (optional) | image             | Creates an image element (default `"NewImage"`). |
-| `DestroyUI(name)`       | string            | void              | Removes the element from its parent (by name).   |
+| Function               | Args              | Returns           | Description                                      |
+| ---------------------- | ----------------- | ----------------- | ------------------------------------------------ |
+| `FindUI(name)`         | string            | element or `null` | Looks up an existing element by name.            |
+| `FindUIByUUID(uuid)`   | string            | element or `null` | Looks up an existing element by UUID.            |
+| `CreateUIButton(name)` | string (optional) | button            | Creates a button (default name `"NewButton"`).   |
+| `CreateUIText(name)`   | string (optional) | text              | Creates a text element (default `"NewText"`).    |
+| `CreateUIRect(name)`   | string (optional) | rect              | Creates a rect element (default `"NewRect"`).    |
+| `CreateUIImage(name)`  | string (optional) | image             | Creates an image element (default `"NewImage"`). |
+| `DestroyUI(name)`      | string            | void              | Removes the element from its parent (by name).   |
 
 `CreateUI*` returns a wrapper bound to the new element's UUID. Use `element.GetUUID()` to persist a reference, and
 `FindUIByUUID` to reacquire the wrapper later.
@@ -499,11 +499,11 @@ element's name changes or is duplicated. `GetName()` returns the element's name;
 
 ### Image methods
 
-| Method                 | Args    | Returns              | Description                                                     |
-| ---------------------- | ------- | -------------------- | --------------------------------------------------------------- |
-| `GetColor()`           | -       | array `[r, g, b, a]` | Tint color.                                                     |
-| `SetColor(r, g, b, a)` | numbers | void                 | Sets the tint color.                                            |
-| `GetImage()`           | -       | string               | Texture resource key, or an empty string when none is assigned. |
+| Method                 | Args    | Returns              | Description                                                       |
+| ---------------------- | ------- | -------------------- | ----------------------------------------------------------------- |
+| `GetColor()`           | -       | array `[r, g, b, a]` | Tint color.                                                       |
+| `SetColor(r, g, b, a)` | numbers | void                 | Sets the tint color.                                              |
+| `GetImage()`           | -       | string               | Texture resource key, or an empty string when none is assigned.   |
 | `SetImage(id)`         | string  | void                 | Acquires and assigns a texture from `assets.json` by resource ID. |
 
 ## See also
