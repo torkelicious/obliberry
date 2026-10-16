@@ -22,6 +22,7 @@
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <imgui.h>
 #include <memory>
@@ -695,8 +696,19 @@ void Editor::UI::ProjectBrowserPanel::DrawFileSection(const char *label, const s
                     const auto filePath = directoryPath / filename;
 
                     if (!std::filesystem::exists(filePath)) {
+
+                        const std::string newFileContent = std::format(
+                                R"(// {}
+
+fn on_update(){{
+    
+}}
+
+)",
+                                m_NewScriptBuffer);
+
                         std::ofstream file(filePath);
-                        file << "// " << m_NewScriptBuffer << '\n';
+                        file << newFileContent;
 
                         LOG_INFO(LOG_WHO, "Created script '" + filename + "'");
                     } else {
