@@ -8,7 +8,7 @@
 #include <ObSL/Interpreter.h>
 
 namespace {
-    std::mutex s_InputCameraMutex;
+    std::mutex &s_InputCameraMutex = Scripting::EngineLibMutexes::camera;
 }
 
 void Scripting::EngineLib::register_input_modules(ObSL::Interpreter &interpreter) {

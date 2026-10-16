@@ -75,8 +75,10 @@ fn on_update(dt) {
 }
 ```
 
-Entity objects expose `id` (a number you can pass to functions like `SetPathToHex`) and `name`, plus methods like
-`SetName`, `GetChildren`, `Find`, and `AddCustomComponent`.
+Entity objects expose `id` (a number you can pass to functions like `SetPathToHex`), `name`, and `uuid`, plus methods
+like `SetName`, `GetUUID`, `GetChildren`, `Find`, and `AddCustomComponent`.
+Wrappers are UUID-bound: they resolve the live entity by UUID on each call, so runtime id changes never retarget them.
+Use `FindEntityByUUID(uuid)` to recover a wrapper from a stored UUID.
 See [Registry : entity objects](api-reference.md#entity-objects).
 
 ### `dt` and time
@@ -224,4 +226,5 @@ fn on_update(dt) {
 }
 ```
 
-See the [UI module](api-reference.md#ui-gui) for the full element API.
+See the [UI module](api-reference.md#ui-gui) for the full element API. UI wrappers are UUID-bound; store
+`btn.GetUUID()` to persist a reference and reacquire it later with `FindUIByUUID(uuid)`.

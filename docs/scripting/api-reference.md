@@ -27,6 +27,16 @@ Scripts run in parallel on interpreter workers. The API handles synchronization:
 Most registry setters fall back to a direct write when there is no command buffer. `Transform.TryMoveTo`
 requires an active script command buffer.
 
+### Identity (UUID)
+
+Entity and UI element objects carry a **UUID** that is stable for the lifetime of the object (and, for entities, across
+scene saves). Entity wrappers are **UUID-bound**: their methods resolve the live runtime id from the entity's UUID on
+each call, so a wrapper keeps targeting the right entity even if runtime ids are recycled. Reacquire wrappers after a
+scene change because the registry (and its UUID index) is rebuilt.
+
+UI element methods likewise resolve elements by UUID. The button state queries (`WasClicked` / `IsHovered` / `IsHeld`)
+and the name-based global helpers (`FindUI`, `DestroyUI`) still resolve by name.
+
 ## Script hooks and globals
 
 | Name               | Description                                                                                                              |
@@ -123,6 +133,7 @@ Hex coordinates are **odd-r offset** (pointy-top hexes). See `src/Math/HexMath.h
 | ------------------------- | ----------------- | ---------------- | -------------------------------------------------------------------------------------------- |
 | `GetEntity(id)`           | number            | entity or `null` | Wraps an entity by numeric id.                                                               |
 | `Find(name)`              | string            | entity or `null` | Finds the first entity with the given name.                                                  |
+| `FindEntityByUUID(uuid)`  | string            | entity or `null` | Finds a live entity by its UUID (O(1)).                                                      |
 | `CreateEntity(name)`      | string (optional) | entity           | Creates an empty entity synchronously (default name `"NewEntity"`); add required components. |
 | `Instantiate(prefabPath)` | string            | entity or `null` | Instantiates a prefab (`assets/prefabs/*.json`). `null` on failure.                          |
 | `DestroyEntity(id)`       | number            | void             | Destroys the entity (deferred).                                                              |
@@ -136,17 +147,20 @@ returned.
 
 ## Entity objects
 
-Entity objects are returned by `GetEntity`, `Find`, `CreateEntity`, `Instantiate`, `Map_GetMapEntity`, `GetChildren`,
-`GetParent`, and `this`.
+Entity objects are returned by `GetEntity`, `Find`, `FindEntityByUUID`, `CreateEntity`, `Instantiate`,
+`Map_GetMapEntity`, `GetChildren`, `GetParent`, and `this`.
 
-**Data fields:** `id` (numeric runtime handle), `name` (string snapshot), `uuid` (also snapshot, but should not change).
-Use `GetName()` for the current name.
-Reacquire entity objects after a scene change; runtime handles belong to the current registry.
+**Data fields:** `id` (numeric runtime handle), `name` (string snapshot), `uuid` (string, stable identity).
+Use `GetName()` for the current name and `GetUUID()` for the stable UUID.
+The wrapper is UUID-bound: methods look up the live entity from `uuid` on each call, so runtime id changes (scene
+reload, slot recycling) never retarget an existing wrapper. Reacquire entity objects after a scene change; runtime
+handles belong to the current registry.
 
 | Method                            | Args             | Returns             | Description                                                                                              |
 | --------------------------------- | ---------------- | ------------------- | -------------------------------------------------------------------------------------------------------- |
 | `SetName(name)`                   | string           | void                | Renames the entity.                                                                                      |
 | `GetName()`                       | -                | string              | The entity's name.                                                                                       |
+| `GetUUID()`                       | -                | string              | The entity's stable UUID.                                                                                |
 | `GetComponent(name)`              | string           | component or `null` | Wraps a built-in component (names below).                                                                |
 | `HasComponent(name)`              | string           | bool                | Whether the entity has the built-in component.                                                           |
 | `AddComponent(name)`              | string           | void                | Adds the built-in component if not present.                                                              |
@@ -157,7 +171,7 @@ Reacquire entity objects after a scene change; runtime handles belong to the cur
 | `GetCustomComponent(name)`        | string           | any or `null`       | Reads back custom component data.                                                                        |
 | `GetChildren()`                   | -                | array of entities   | Direct children (hierarchy).                                                                             |
 | `GetParent()`                     | -                | entity or `null`    | The parent entity, if any.                                                                               |
-| `SetParent(parent)`               | number or entity | void                | Reparents under the given entity (accepts an id or an entity object).                                    |
+| `SetParent(parent)`               | number or entity | void                | Reparents under the given entity; an entity object is matched by its UUID, a number is a runtime id.     |
 | `GetChildCount()`                 | -                | number              | Number of direct children.                                                                               |
 | `Find(childName)`                 | string           | entity or `null`    | Finds a direct child by name.                                                                            |
 | `SetPersistent(persistent)`       | bool             | void                | Marks the entity to survive scene loads.                                                                 |
@@ -413,19 +427,26 @@ See [Save-game format](../formats/save-json.md) for the on-disk layout and stora
 
 ## UI (GUI)
 
-The UI module is still **WIP** . Mutations are deferred to the main thread; element lookups return wrapper objects keyed
-by element name. Colors are `[r, g, b, a]` arrays, positions/sizes are `[x, y]` arrays.
+The UI module is still **WIP** . Mutations are deferred to the main thread through `UICommandBuffer`. Element wrappers
+are **UUID-bound**: their methods resolve the element by UUID on each call, so a wrapper stays correct even if the
+element's name changes or is duplicated. `GetName()` returns the element's name; the name-based globals (`FindUI`,
+`DestroyUI`) and the button state queries (`WasClicked` / `IsHovered` / `IsHeld`) still resolve by name. Colors are
+`[r, g, b, a]` arrays, positions/sizes are `[x, y]` arrays.
 
 ### Global functions
 
-| Function               | Args              | Returns           | Description                                      |
-| ---------------------- | ----------------- | ----------------- | ------------------------------------------------ |
-| `FindUI(name)`         | string            | element or `null` | Looks up an existing element by name.            |
-| `CreateUIButton(name)` | string (optional) | button            | Creates a button (default name `"NewButton"`).   |
-| `CreateUIText(name)`   | string (optional) | text              | Creates a text element (default `"NewText"`).    |
-| `CreateUIRect(name)`   | string (optional) | rect              | Creates a rect element (default `"NewRect"`).    |
-| `CreateUIImage(name)`  | string (optional) | image             | Creates an image element (default `"NewImage"`). |
-| `DestroyUI(name)`      | string            | void              | Removes the element from its parent.             |
+| Function                | Args              | Returns           | Description                                      |
+| ----------------------- | ----------------- | ----------------- | ------------------------------------------------ |
+| `FindUI(name)`          | string            | element or `null` | Looks up an existing element by name.            |
+| `FindUIByUUID(uuid)`    | string            | element or `null` | Looks up an existing element by UUID.            |
+| `CreateUIButton(name)`  | string (optional) | button            | Creates a button (default name `"NewButton"`).   |
+| `CreateUIText(name)`    | string (optional) | text              | Creates a text element (default `"NewText"`).    |
+| `CreateUIRect(name)`    | string (optional) | rect              | Creates a rect element (default `"NewRect"`).    |
+| `CreateUIImage(name)`   | string (optional) | image             | Creates an image element (default `"NewImage"`). |
+| `DestroyUI(name)`       | string            | void              | Removes the element from its parent (by name).   |
+
+`CreateUI*` returns a wrapper bound to the new element's UUID. Use `element.GetUUID()` to persist a reference, and
+`FindUIByUUID` to reacquire the wrapper later.
 
 ### Base methods (all element types)
 
@@ -469,12 +490,21 @@ by element name. Colors are `[r, g, b, a]` arrays, positions/sizes are `[x, y]` 
 | `SetColor(r, g, b, a)` | numbers | void                 | Sets color.                                                 |
 | `SetFont(fontName)`    | string  | void                 | Acquires and sets a font from `assets.json` by resource ID. |
 
-### Rect and Image methods
+### Rect methods
 
 | Method                 | Args    | Returns              | Description         |
 | ---------------------- | ------- | -------------------- | ------------------- |
 | `GetColor()`           | -       | array `[r, g, b, a]` | Element color.      |
 | `SetColor(r, g, b, a)` | numbers | void                 | Sets element color. |
+
+### Image methods
+
+| Method                 | Args    | Returns              | Description                                                     |
+| ---------------------- | ------- | -------------------- | --------------------------------------------------------------- |
+| `GetColor()`           | -       | array `[r, g, b, a]` | Tint color.                                                     |
+| `SetColor(r, g, b, a)` | numbers | void                 | Sets the tint color.                                            |
+| `GetImage()`           | -       | string               | Texture resource key, or an empty string when none is assigned. |
+| `SetImage(id)`         | string  | void                 | Acquires and assigns a texture from `assets.json` by resource ID. |
 
 ## See also
 

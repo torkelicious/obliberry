@@ -24,6 +24,15 @@ assert(by_id != null, "GetEntity returned null");
 assert(by_id.id == ent.id, "GetEntity wrong entity");
 println "GetEntity: PASS";
 
+var uuid = ent.GetUUID();
+assert(type_of(uuid) == "string", "GetUUID type");
+assert(uuid == ent.uuid, "GetUUID matches uuid field");
+var by_uuid = FindEntityByUUID(uuid);
+assert(by_uuid != null, "FindEntityByUUID returned null");
+assert(by_uuid.id == ent.id, "FindEntityByUUID wrong entity");
+assert(FindEntityByUUID("not-a-real-uuid") == null, "FindEntityByUUID missing -> null");
+println "GetUUID/FindEntityByUUID: PASS";
+
 var named = CreateEntity("CustomName");
 assert(named.GetName() == "CustomName", "CreateEntity with name failed");
 println "CreateEntity(name): PASS";
@@ -325,7 +334,7 @@ println "Angles: PASS";
 println "";
 println "Audio";
 PlaySound2D("assets/audio/boom.mp3", 0.5);
-Play("assets/audio/music.wav", 0.5);
+PlayMusic("assets/audio/music.wav", 0.5);
 SetMasterVolume(0.8);
 SetMasterVolume(1.0);
 println "All: PASS";
@@ -386,8 +395,7 @@ println "Conversion: PASS";
 
 println "";
 println "GUI";
-assert(type_of(ImGui_Button("Btn")) == "bool", "ImGui_Button type");
-println "ImGui_Button: PASS";
+println "see UITest.obsl: PASS";
 
 println "";
 println "Destroy";

@@ -239,6 +239,7 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
         const Map::HexCoords hex(static_cast<int32_t>(std::get<double>(args[0])), static_cast<int32_t>(std::get<double>(args[1])));
         const auto neighbors = Math::HexMath::GetNeighbors(hex);
         auto *arr = interp->gc.allocate<ObSL::ObSLArray>();
+        EngineLibFactories::GCProtectGuard guard(interp, arr);
         for (const auto &n : neighbors) {
             auto *obj = interp->gc.allocate<ObSL::ObSLObject>();
             obj->fields["q"] = static_cast<double>(n.q);

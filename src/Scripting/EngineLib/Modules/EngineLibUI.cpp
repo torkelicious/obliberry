@@ -45,15 +45,41 @@ namespace Scripting {
         return font;
     }
 
+    static std::shared_ptr<Rendering::Texture> AcquireTextureForScene(const Core::EngineContext *ctx, const std::string_view id) {
+        if (!ctx || !ctx->sceneManager || id.empty()) {
+            return nullptr;
+        }
+
+        auto *scene = ctx->sceneManager->GetCurrentScene();
+        if (!scene) {
+            return nullptr;
+        }
+
+        IO::SceneAssetLoader::SceneAssetScope scope;
+
+        if (!IO::SceneAssetLoader::Acquire(IO::SceneAssetLoader::AssetKind::Texture, id, scope)) {
+            return nullptr;
+        }
+
+        auto texture = Core::ResourceManager::GetInstance().Get<Rendering::Texture>(std::string(id));
+
+        if (!texture) {
+            return nullptr;
+        }
+
+        scene->AddAssetScope(std::move(scope));
+        return texture;
+    }
+
     static void BuildBaseUIFields(ObSL::ObSLObject *obj, ObSL::Interpreter *interp, std::shared_ptr<const std::string> name, std::shared_ptr<const std::string> uuid, Core::EngineContext *ctx) {
         obj->fields["GetName"] = interp->gc.allocate<ObSL::NativeFunction>(0, [name](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value { return *name; }, "GetName");
 
         obj->fields["GetUUID"] = interp->gc.allocate<ObSL::NativeFunction>(0, [uuid](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value { return *uuid; }, "GetUUID");
 
-        obj->fields["GetPosition"] = interp->gc.allocate<ObSL::NativeFunction>(0, [name, ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
+        obj->fields["GetPosition"] = interp->gc.allocate<ObSL::NativeFunction>(0, [uuid, ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
             if (!ctx->uiSystem)
                 return std::monostate{};
-            if (const auto *el = ctx->uiSystem->FindByName(*name)) {
+            if (const auto *el = ctx->uiSystem->FindByUUID(*uuid)) {
                 auto *arr = interp->gc.allocate<ObSL::ObSLArray>();
                 arr->elements.emplace_back(static_cast<double>(el->Rect.Position.x));
                 arr->elements.emplace_back(static_cast<double>(el->Rect.Position.y));
@@ -61,10 +87,10 @@ namespace Scripting {
             }
             return std::monostate{};
         }, "GetPosition");
-        obj->fields["GetSize"] = interp->gc.allocate<ObSL::NativeFunction>(0, [name, ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
+        obj->fields["GetSize"] = interp->gc.allocate<ObSL::NativeFunction>(0, [uuid, ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
             if (!ctx->uiSystem)
                 return std::monostate{};
-            if (const auto *el = ctx->uiSystem->FindByName(*name)) {
+            if (const auto *el = ctx->uiSystem->FindByUUID(*uuid)) {
                 auto *arr = interp->gc.allocate<ObSL::ObSLArray>();
                 arr->elements.emplace_back(static_cast<double>(el->Rect.Scale.x));
                 arr->elements.emplace_back(static_cast<double>(el->Rect.Scale.y));
@@ -72,38 +98,38 @@ namespace Scripting {
             }
             return std::monostate{};
         }, "GetSize");
-        obj->fields["IsVisible"] = interp->gc.allocate<ObSL::NativeFunction>(0, [name, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+        obj->fields["IsVisible"] = interp->gc.allocate<ObSL::NativeFunction>(0, [uuid, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
             if (!ctx->uiSystem)
                 return false;
-            if (const auto *el = ctx->uiSystem->FindByName(*name))
+            if (const auto *el = ctx->uiSystem->FindByUUID(*uuid))
                 return el->HasFlag(UI::UIFlags::VISIBLE);
             return false;
         }, "IsVisible");
 
-        obj->fields["IsEnabled"] = interp->gc.allocate<ObSL::NativeFunction>(0, [name, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+        obj->fields["IsEnabled"] = interp->gc.allocate<ObSL::NativeFunction>(0, [uuid, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
             if (!ctx->uiSystem)
                 return false;
-            if (const auto *el = ctx->uiSystem->FindByName(*name))
+            if (const auto *el = ctx->uiSystem->FindByUUID(*uuid))
                 return el->HasFlag(UI::UIFlags::ENABLED);
             return false;
         }, "IsEnabled");
 
-        obj->fields["IsFocused"] = interp->gc.allocate<ObSL::NativeFunction>(0, [name, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+        obj->fields["IsFocused"] = interp->gc.allocate<ObSL::NativeFunction>(0, [uuid, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
             if (!ctx->uiSystem)
                 return false;
-            if (const auto *el = ctx->uiSystem->FindByName(*name))
+            if (const auto *el = ctx->uiSystem->FindByUUID(*uuid))
                 return el->HasFlag(UI::UIFlags::FOCUSED);
             return false;
         }, "IsFocused");
 
-        obj->fields["SetPosition"] = interp->gc.allocate<ObSL::NativeFunction>(2, [name, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        obj->fields["SetPosition"] = interp->gc.allocate<ObSL::NativeFunction>(2, [uuid, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
             if (!std::holds_alternative<double>(args[0]) || !std::holds_alternative<double>(args[1]))
                 return std::monostate{};
             float x = static_cast<float>(std::get<double>(args[0]));
             float y = static_cast<float>(std::get<double>(args[1]));
             if (ctx->uiCmdBuf) {
-                ctx->uiCmdBuf->push([name, x, y](UI::UISystem &ui) {
-                    if (auto *el = ui.FindByName(*name)) {
+                ctx->uiCmdBuf->push([uuid, x, y](UI::UISystem &ui) {
+                    if (auto *el = ui.FindByUUID(*uuid)) {
                         el->Rect.Position.x = x;
                         el->Rect.Position.y = y;
                     }
@@ -111,14 +137,14 @@ namespace Scripting {
             }
             return std::monostate{};
         }, "SetPosition");
-        obj->fields["SetSize"] = interp->gc.allocate<ObSL::NativeFunction>(2, [name, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        obj->fields["SetSize"] = interp->gc.allocate<ObSL::NativeFunction>(2, [uuid, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
             if (!std::holds_alternative<double>(args[0]) || !std::holds_alternative<double>(args[1]))
                 return std::monostate{};
             float x = static_cast<float>(std::get<double>(args[0]));
             float y = static_cast<float>(std::get<double>(args[1]));
             if (ctx->uiCmdBuf) {
-                ctx->uiCmdBuf->push([name, x, y](UI::UISystem &ui) {
-                    if (auto *el = ui.FindByName(*name)) {
+                ctx->uiCmdBuf->push([uuid, x, y](UI::UISystem &ui) {
+                    if (auto *el = ui.FindByUUID(*uuid)) {
                         el->Rect.Scale.x = x;
                         el->Rect.Scale.y = y;
                     }
@@ -126,15 +152,15 @@ namespace Scripting {
             }
             return std::monostate{};
         }, "SetSize");
-        obj->fields["SetVisible"] = interp->gc.allocate<ObSL::NativeFunction>(1, [name, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        obj->fields["SetVisible"] = interp->gc.allocate<ObSL::NativeFunction>(1, [uuid, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
             bool visible = false;
             if (std::holds_alternative<bool>(args[0]))
                 visible = std::get<bool>(args[0]);
             else if (std::holds_alternative<double>(args[0]))
                 visible = std::get<double>(args[0]) != 0.0;
             if (ctx->uiCmdBuf) {
-                ctx->uiCmdBuf->push([name, visible](UI::UISystem &ui) {
-                    if (auto *el = ui.FindByName(*name)) {
+                ctx->uiCmdBuf->push([uuid, visible](UI::UISystem &ui) {
+                    if (auto *el = ui.FindByUUID(*uuid)) {
                         if (visible)
                             el->AddFlag(UI::UIFlags::VISIBLE);
                         else
@@ -165,19 +191,19 @@ namespace Scripting {
 
         BuildBaseUIFields(obj, interp, namePtr, uuidPtr, ctx);
 
-        obj->fields["GetText"] = interp->gc.allocate<ObSL::NativeFunction>(0, [namePtr, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+        obj->fields["GetText"] = interp->gc.allocate<ObSL::NativeFunction>(0, [uuidPtr, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
             if (!ctx->uiSystem)
                 return std::string{};
-            if (auto *el = ctx->uiSystem->FindByName(*namePtr))
+            if (auto *el = ctx->uiSystem->FindByUUID(*uuidPtr))
                 if (const auto *btn = dynamic_cast<UI::UIButton *>(el))
                     return btn->GetText();
             return std::string{};
         }, "GetText");
 
-        obj->fields["GetTextColor"] = interp->gc.allocate<ObSL::NativeFunction>(0, [namePtr, ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
+        obj->fields["GetTextColor"] = interp->gc.allocate<ObSL::NativeFunction>(0, [uuidPtr, ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
             if (!ctx->uiSystem)
                 return std::monostate{};
-            if (auto *el = ctx->uiSystem->FindByName(*namePtr))
+            if (auto *el = ctx->uiSystem->FindByUUID(*uuidPtr))
                 if (const auto *btn = dynamic_cast<UI::UIButton *>(el)) {
                     auto *arr = interp->gc.allocate<ObSL::ObSLArray>();
                     const auto &c = btn->GetColor();
@@ -190,10 +216,10 @@ namespace Scripting {
             return std::monostate{};
         }, "GetTextColor");
 
-        obj->fields["GetBackgroundColor"] = interp->gc.allocate<ObSL::NativeFunction>(0, [namePtr, ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
+        obj->fields["GetBackgroundColor"] = interp->gc.allocate<ObSL::NativeFunction>(0, [uuidPtr, ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
             if (!ctx->uiSystem)
                 return std::monostate{};
-            if (auto *el = ctx->uiSystem->FindByName(*namePtr))
+            if (auto *el = ctx->uiSystem->FindByUUID(*uuidPtr))
                 if (const auto *btn = dynamic_cast<UI::UIButton *>(el)) {
                     auto *arr = interp->gc.allocate<ObSL::ObSLArray>();
                     const auto &c = btn->GetBackgroundColor();
@@ -224,13 +250,13 @@ namespace Scripting {
             return ctx->uiSystem->GetButtonState(*namePtr) == UI::ButtonState::HELD;
         }, "IsHeld");
 
-        obj->fields["SetText"] = interp->gc.allocate<ObSL::NativeFunction>(1, [namePtr, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        obj->fields["SetText"] = interp->gc.allocate<ObSL::NativeFunction>(1, [uuidPtr, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
             if (!std::holds_alternative<std::string>(args[0]))
                 return std::monostate{};
             auto text = std::get<std::string>(args[0]);
             if (ctx->uiCmdBuf) {
-                ctx->uiCmdBuf->push([namePtr, text](UI::UISystem &ui) {
-                    if (auto *el = ui.FindByName(*namePtr))
+                ctx->uiCmdBuf->push([uuidPtr, text](UI::UISystem &ui) {
+                    if (auto *el = ui.FindByUUID(*uuidPtr))
                         if (auto *btn = dynamic_cast<UI::UIButton *>(el))
                             btn->SetText(text);
                 });
@@ -238,14 +264,14 @@ namespace Scripting {
             return std::monostate{};
         }, "SetText");
 
-        obj->fields["SetTextColor"] = interp->gc.allocate<ObSL::NativeFunction>(4, [namePtr, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        obj->fields["SetTextColor"] = interp->gc.allocate<ObSL::NativeFunction>(4, [uuidPtr, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
             float r = static_cast<float>(std::get<double>(args[0]));
             float g = static_cast<float>(std::get<double>(args[1]));
             float b = static_cast<float>(std::get<double>(args[2]));
             float a = static_cast<float>(std::get<double>(args[3]));
             if (ctx->uiCmdBuf) {
-                ctx->uiCmdBuf->push([namePtr, r, g, b, a](UI::UISystem &ui) {
-                    if (auto *el = ui.FindByName(*namePtr))
+                ctx->uiCmdBuf->push([uuidPtr, r, g, b, a](UI::UISystem &ui) {
+                    if (auto *el = ui.FindByUUID(*uuidPtr))
                         if (auto *btn = dynamic_cast<UI::UIButton *>(el))
                             btn->SetColor({r, g, b, a});
                 });
@@ -253,14 +279,14 @@ namespace Scripting {
             return std::monostate{};
         }, "SetTextColor");
 
-        obj->fields["SetBackgroundColor"] = interp->gc.allocate<ObSL::NativeFunction>(4, [namePtr, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        obj->fields["SetBackgroundColor"] = interp->gc.allocate<ObSL::NativeFunction>(4, [uuidPtr, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
             float r = static_cast<float>(std::get<double>(args[0]));
             float g = static_cast<float>(std::get<double>(args[1]));
             float b = static_cast<float>(std::get<double>(args[2]));
             float a = static_cast<float>(std::get<double>(args[3]));
             if (ctx->uiCmdBuf) {
-                ctx->uiCmdBuf->push([namePtr, r, g, b, a](UI::UISystem &ui) {
-                    if (auto *el = ui.FindByName(*namePtr))
+                ctx->uiCmdBuf->push([uuidPtr, r, g, b, a](UI::UISystem &ui) {
+                    if (auto *el = ui.FindByUUID(*uuidPtr))
                         if (auto *btn = dynamic_cast<UI::UIButton *>(el))
                             btn->SetBackgroundColor({r, g, b, a});
                 });
@@ -268,13 +294,13 @@ namespace Scripting {
             return std::monostate{};
         }, "SetBackgroundColor");
 
-        obj->fields["SetFont"] = interp->gc.allocate<ObSL::NativeFunction>(1, [namePtr, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        obj->fields["SetFont"] = interp->gc.allocate<ObSL::NativeFunction>(1, [uuidPtr, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
             if (!std::holds_alternative<std::string>(args[0]))
                 return std::monostate{};
             auto fontname = std::get<std::string>(args[0]);
             if (ctx->uiCmdBuf) {
-                ctx->uiCmdBuf->push([namePtr, fontname, ctx](UI::UISystem &ui) {
-                    if (auto *el = ui.FindByName(*namePtr)) {
+                ctx->uiCmdBuf->push([uuidPtr, fontname, ctx](UI::UISystem &ui) {
+                    if (auto *el = ui.FindByUUID(*uuidPtr)) {
                         if (auto *btn = dynamic_cast<UI::UIButton *>(el)) {
                             if (auto font = AcquireFontForScene(ctx, fontname)) {
                                 btn->SetFont(std::move(font));
@@ -286,10 +312,10 @@ namespace Scripting {
             return std::monostate{};
         }, "SetFont");
 
-        obj->fields["GetFont"] = interp->gc.allocate<ObSL::NativeFunction>(0, [namePtr, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+        obj->fields["GetFont"] = interp->gc.allocate<ObSL::NativeFunction>(0, [uuidPtr, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
             if (!ctx->uiSystem)
                 return std::string{};
-            if (auto *el = ctx->uiSystem->FindByName(*namePtr))
+            if (auto *el = ctx->uiSystem->FindByUUID(*uuidPtr))
                 if (const auto *btn = dynamic_cast<UI::UIButton *>(el)) {
                     if (const auto font = btn->GetFont()) {
                         return Core::ResourceManager::GetInstance().GetKey(font);
@@ -309,19 +335,19 @@ namespace Scripting {
 
         BuildBaseUIFields(obj, interp, namePtr, uuidPtr, ctx);
 
-        obj->fields["GetText"] = interp->gc.allocate<ObSL::NativeFunction>(0, [namePtr, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+        obj->fields["GetText"] = interp->gc.allocate<ObSL::NativeFunction>(0, [uuidPtr, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
             if (!ctx->uiSystem)
                 return std::string{};
-            if (auto *el = ctx->uiSystem->FindByName(*namePtr))
+            if (auto *el = ctx->uiSystem->FindByUUID(*uuidPtr))
                 if (const auto *txt = dynamic_cast<UI::UIText *>(el))
                     return txt->GetText();
             return std::string{};
         }, "GetText");
 
-        obj->fields["GetColor"] = interp->gc.allocate<ObSL::NativeFunction>(0, [namePtr, ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
+        obj->fields["GetColor"] = interp->gc.allocate<ObSL::NativeFunction>(0, [uuidPtr, ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
             if (!ctx->uiSystem)
                 return std::monostate{};
-            if (auto *el = ctx->uiSystem->FindByName(*namePtr))
+            if (auto *el = ctx->uiSystem->FindByUUID(*uuidPtr))
                 if (const auto *txt = dynamic_cast<UI::UIText *>(el)) {
                     auto *arr = interp->gc.allocate<ObSL::ObSLArray>();
                     const auto &c = txt->GetColor();
@@ -334,13 +360,13 @@ namespace Scripting {
             return std::monostate{};
         }, "GetColor");
 
-        obj->fields["SetText"] = interp->gc.allocate<ObSL::NativeFunction>(1, [namePtr, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        obj->fields["SetText"] = interp->gc.allocate<ObSL::NativeFunction>(1, [uuidPtr, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
             if (!std::holds_alternative<std::string>(args[0]))
                 return std::monostate{};
             auto text = std::get<std::string>(args[0]);
             if (ctx->uiCmdBuf) {
-                ctx->uiCmdBuf->push([namePtr, text](UI::UISystem &ui) {
-                    if (auto *el = ui.FindByName(*namePtr))
+                ctx->uiCmdBuf->push([uuidPtr, text](UI::UISystem &ui) {
+                    if (auto *el = ui.FindByUUID(*uuidPtr))
                         if (auto *txt = dynamic_cast<UI::UIText *>(el))
                             txt->SetText(text);
                 });
@@ -348,14 +374,14 @@ namespace Scripting {
             return std::monostate{};
         }, "SetText");
 
-        obj->fields["SetColor"] = interp->gc.allocate<ObSL::NativeFunction>(4, [namePtr, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        obj->fields["SetColor"] = interp->gc.allocate<ObSL::NativeFunction>(4, [uuidPtr, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
             float r = static_cast<float>(std::get<double>(args[0]));
             float g = static_cast<float>(std::get<double>(args[1]));
             float b = static_cast<float>(std::get<double>(args[2]));
             float a = static_cast<float>(std::get<double>(args[3]));
             if (ctx->uiCmdBuf) {
-                ctx->uiCmdBuf->push([namePtr, r, g, b, a](UI::UISystem &ui) {
-                    if (auto *el = ui.FindByName(*namePtr))
+                ctx->uiCmdBuf->push([uuidPtr, r, g, b, a](UI::UISystem &ui) {
+                    if (auto *el = ui.FindByUUID(*uuidPtr))
                         if (auto *txt = dynamic_cast<UI::UIText *>(el))
                             txt->SetColor({r, g, b, a});
                 });
@@ -363,13 +389,13 @@ namespace Scripting {
             return std::monostate{};
         }, "SetColor");
 
-        obj->fields["SetFont"] = interp->gc.allocate<ObSL::NativeFunction>(1, [namePtr, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        obj->fields["SetFont"] = interp->gc.allocate<ObSL::NativeFunction>(1, [uuidPtr, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
             if (!std::holds_alternative<std::string>(args[0]))
                 return std::monostate{};
             auto fontname = std::get<std::string>(args[0]);
             if (ctx->uiCmdBuf) {
-                ctx->uiCmdBuf->push([namePtr, fontname, ctx](UI::UISystem &ui) {
-                    if (auto *el = ui.FindByName(*namePtr))
+                ctx->uiCmdBuf->push([uuidPtr, fontname, ctx](UI::UISystem &ui) {
+                    if (auto *el = ui.FindByUUID(*uuidPtr))
                         if (auto *txt = dynamic_cast<UI::UIText *>(el)) {
                             if (const auto font = AcquireFontForScene(ctx, fontname)) {
                                 txt->SetFont(font);
@@ -391,10 +417,10 @@ namespace Scripting {
 
         BuildBaseUIFields(obj, interp, namePtr, uuidPtr, ctx);
 
-        obj->fields["GetColor"] = interp->gc.allocate<ObSL::NativeFunction>(0, [namePtr, ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
+        obj->fields["GetColor"] = interp->gc.allocate<ObSL::NativeFunction>(0, [uuidPtr, ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
             if (!ctx->uiSystem)
                 return std::monostate{};
-            if (auto *el = ctx->uiSystem->FindByName(*namePtr))
+            if (auto *el = ctx->uiSystem->FindByUUID(*uuidPtr))
                 if (const auto *rect = dynamic_cast<UI::UIRect *>(el)) {
                     auto *arr = interp->gc.allocate<ObSL::ObSLArray>();
                     const auto &c = rect->GetColor();
@@ -407,14 +433,14 @@ namespace Scripting {
             return std::monostate{};
         }, "GetColor");
 
-        obj->fields["SetColor"] = interp->gc.allocate<ObSL::NativeFunction>(4, [namePtr, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        obj->fields["SetColor"] = interp->gc.allocate<ObSL::NativeFunction>(4, [uuidPtr, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
             float r = static_cast<float>(std::get<double>(args[0]));
             float g = static_cast<float>(std::get<double>(args[1]));
             float b = static_cast<float>(std::get<double>(args[2]));
             float a = static_cast<float>(std::get<double>(args[3]));
             if (ctx->uiCmdBuf) {
-                ctx->uiCmdBuf->push([namePtr, r, g, b, a](UI::UISystem &ui) {
-                    if (auto *el = ui.FindByName(*namePtr))
+                ctx->uiCmdBuf->push([uuidPtr, r, g, b, a](UI::UISystem &ui) {
+                    if (auto *el = ui.FindByUUID(*uuidPtr))
                         if (auto *rect = dynamic_cast<UI::UIRect *>(el))
                             rect->SetColor({r, g, b, a});
                 });
@@ -433,10 +459,10 @@ namespace Scripting {
 
         BuildBaseUIFields(obj, interp, namePtr, uuidPtr, ctx);
 
-        obj->fields["GetColor"] = interp->gc.allocate<ObSL::NativeFunction>(0, [namePtr, ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
+        obj->fields["GetColor"] = interp->gc.allocate<ObSL::NativeFunction>(0, [uuidPtr, ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
             if (!ctx->uiSystem)
                 return std::monostate{};
-            if (auto *el = ctx->uiSystem->FindByName(*namePtr))
+            if (auto *el = ctx->uiSystem->FindByUUID(*uuidPtr))
                 if (const auto *img = dynamic_cast<UI::UIImage *>(el)) {
                     auto *arr = interp->gc.allocate<ObSL::ObSLArray>();
                     const auto &c = img->GetColor();
@@ -449,20 +475,45 @@ namespace Scripting {
             return std::monostate{};
         }, "GetColor");
 
-        obj->fields["SetColor"] = interp->gc.allocate<ObSL::NativeFunction>(4, [namePtr, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        obj->fields["SetColor"] = interp->gc.allocate<ObSL::NativeFunction>(4, [uuidPtr, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
             float r = static_cast<float>(std::get<double>(args[0]));
             float g = static_cast<float>(std::get<double>(args[1]));
             float b = static_cast<float>(std::get<double>(args[2]));
             float a = static_cast<float>(std::get<double>(args[3]));
             if (ctx->uiCmdBuf) {
-                ctx->uiCmdBuf->push([namePtr, r, g, b, a](UI::UISystem &ui) {
-                    if (auto *el = ui.FindByName(*namePtr))
+                ctx->uiCmdBuf->push([uuidPtr, r, g, b, a](UI::UISystem &ui) {
+                    if (auto *el = ui.FindByUUID(*uuidPtr))
                         if (auto *img = dynamic_cast<UI::UIImage *>(el))
                             img->SetColor({r, g, b, a});
                 });
             }
             return std::monostate{};
         }, "SetColor");
+
+        obj->fields["SetImage"] = interp->gc.allocate<ObSL::NativeFunction>(1, [uuidPtr, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+            if (!std::holds_alternative<std::string>(args[0]))
+                return std::monostate{};
+            auto texname = std::get<std::string>(args[0]);
+            if (ctx->uiCmdBuf) {
+                ctx->uiCmdBuf->push([uuidPtr, texname, ctx](UI::UISystem &ui) {
+                    if (auto *el = ui.FindByUUID(*uuidPtr))
+                        if (auto *img = dynamic_cast<UI::UIImage *>(el))
+                            if (auto texture = AcquireTextureForScene(ctx, texname))
+                                img->SetImage(texture);
+                });
+            }
+            return std::monostate{};
+        }, "SetImage");
+
+        obj->fields["GetImage"] = interp->gc.allocate<ObSL::NativeFunction>(0, [uuidPtr, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+            if (!ctx->uiSystem)
+                return std::string{};
+            if (auto *el = ctx->uiSystem->FindByUUID(*uuidPtr))
+                if (const auto *img = dynamic_cast<UI::UIImage *>(el))
+                    if (const auto texture = img->GetImage())
+                        return Core::ResourceManager::GetInstance().GetKey(texture);
+            return std::string{};
+        }, "GetImage");
 
         return obj;
     }

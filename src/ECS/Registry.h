@@ -6,6 +6,7 @@
 #include "Types.h"
 #include "ECS/Components/RelationshipComponent.h"
 #include "ECS/Components/TransformComponent.h"
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 #define GLM_ENABLE_EXPERIMENTAL
@@ -47,6 +48,7 @@ namespace ECS {
         std::vector<uint32_t> m_LivingEntityIndices; // EntityIndex -> m_LivingEntities idx
         std::vector<uint64_t> m_EntitySignatures;    // bitmask of owned components
         std::vector<std::string> m_EntityUUIDs;
+        std::unordered_map<std::string, EntityID> m_EntityUUIDIndex; // uuid -> live entity
 
     public:
         template <typename T> ComponentPool<T> *GetPool() {
@@ -88,6 +90,7 @@ namespace ECS {
             const uint32_t version = m_EntityVersions[index] & (ENTITY_VERSION_MASK >> ENTITY_VERSION_SHIFT);
             const EntityID newId = index | version << ENTITY_VERSION_SHIFT;
 
+            m_EntityUUIDIndex[m_EntityUUIDs[index]] = newId;
             m_EntityStatus[index] = true;
             m_LivingEntityIndices[index] = static_cast<uint32_t>(m_LivingEntities.size());
             m_LivingEntities.push_back(newId);
@@ -159,6 +162,9 @@ namespace ECS {
                 }
 
                 const uint32_t index = GetEntityIndex(current);
+
+                m_EntityUUIDIndex.erase(m_EntityUUIDs[index]);
+                m_EntityUUIDs[index].clear();
 
                 uint64_t signature = m_EntitySignatures[index];
                 uint32_t poolIndex = 0;
@@ -273,13 +279,14 @@ namespace ECS {
                 return false;
             }
 
-            for (const EntityID other : m_LivingEntities) {
-                if (other != id && GetEntityUUID(other) == uuid) {
-                    return false;
-                }
+            if (const auto it = m_EntityUUIDIndex.find(uuid); it != m_EntityUUIDIndex.end() && it->second != id) {
+                return false;
             }
 
-            m_EntityUUIDs[GetEntityIndex(id)] = uuid;
+            const uint32_t index = GetEntityIndex(id);
+            m_EntityUUIDIndex.erase(m_EntityUUIDs[index]);
+            m_EntityUUIDs[index] = uuid;
+            m_EntityUUIDIndex[uuid] = id;
             return true;
         }
 
@@ -288,13 +295,13 @@ namespace ECS {
                 return INVALID_ENTITY_ID;
             }
 
-            for (const EntityID id : m_LivingEntities) {
-                if (GetEntityUUID(id) == uuid) {
-                    return id;
-                }
+            const auto it = m_EntityUUIDIndex.find(uuid);
+
+            if (it == m_EntityUUIDIndex.end()) {
+                return INVALID_ENTITY_ID;
             }
 
-            return INVALID_ENTITY_ID;
+            return IsValid(it->second) ? it->second : INVALID_ENTITY_ID;
         }
 
         [[nodiscard]] bool CanSetParent(const EntityID child, const EntityID newParent) {

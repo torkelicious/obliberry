@@ -5,7 +5,7 @@
 #include <ObSL/Natives.h>
 
 namespace {
-    std::mutex s_CameraMutex;
+    std::mutex &s_CameraMutex = Scripting::EngineLibMutexes::camera;
 }
 
 void Scripting::EngineLib::register_camera_modules(ObSL::Interpreter &interpreter) {

@@ -4,8 +4,13 @@
 #include "ECS/Registry.h"
 #include "Scripting/EngineLib/EntityWrapperCache.h"
 #include <ObSL/StdLib.h>
+#include <mutex>
 
 namespace Scripting {
+    namespace EngineLibMutexes {
+        inline std::mutex camera;
+    }
+
     class EngineLib : public ObSL::Lib {
     public:
         void register_enginelib(ObSL::Interpreter &interpreter, ECS::Registry &registry, Core::EngineContext &ctx) {

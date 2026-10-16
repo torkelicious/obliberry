@@ -61,6 +61,7 @@ void Scripting::EngineLib::register_time_modules(ObSL::Interpreter &interpreter)
             ScriptCommandBuffer buf;
             ECS::Collision::BillboardBasis basis;
             if (ctx && ctx->camera) {
+                std::lock_guard cameraLock(Scripting::EngineLibMutexes::camera);
                 basis.right = ctx->camera->GetRightVector();
                 basis.up = ctx->camera->GetUpVector();
             }

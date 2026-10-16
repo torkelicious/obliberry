@@ -81,7 +81,9 @@ and [Scripting : API Reference](scripting/api-reference.md) for notes per module
 - **Registry** : owns entity pools (`ComponentPool<T>`, dense arrays) with a fixed cap on component types (
   `MAX_COMPONENT_TYPES`) and a maximum entity count. Entity handles are _versioned_ (
   `index | version << ENTITY_VERSION_SHIFT`) so stale handles don't alias new entities. Each live entity also has a
-  generated UUID stored separately by the registry for serialization and persistent scene transitions.
+  generated UUID stored separately by the registry for serialization and persistent scene transitions. The registry
+  keeps a `uuid -> entity` index so `FindEntityByUUID` is O(1); the index is updated on create, `SetEntityUUID`, and
+  destroy.
   `ForEach<Primary, Rest...>`
   iterates entities that have all listed components.
 - **Entity** : a lightweight handle wrapper (`{EntityID, Registry*}`) with
