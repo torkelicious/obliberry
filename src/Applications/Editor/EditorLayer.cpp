@@ -365,8 +365,8 @@ void Editor::EditorLayer::LoadScene(std::string path) {
             }
 
             if (Core::Project::GetActive()) {
-                m_Context->scriptPool->set_stdout(InterpreterOutStream );
-                m_Context->scriptPool->set_stderr(InterpreterErrStream );
+                m_Context->scriptPool->set_stdout(InterpreterOutStream);
+                m_Context->scriptPool->set_stderr(InterpreterErrStream);
             }
 
             m_UIPanel.Reset();
@@ -578,9 +578,6 @@ void Editor::EditorLayer::ExecutePendingStateTransfer() {
     m_CurrentState->OnEnter();
     m_PendingState = nullptr;
     m_UndoManager.Clear();
-
-    m_InterpreterLogsPanel.Clear();
-    // clear obsl logs on switch
 }
 
 void Editor::EditorLayer::PromptSaveDirtyMap(const std::function<void()> &onProceed) {

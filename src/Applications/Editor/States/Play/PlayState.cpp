@@ -16,6 +16,8 @@ void Editor::States::PlayState::OnEnter() {
     LOG_INFO(LOG_WHO, "Entering Play Mode");
     m_EntryScenePath = m_EditorLayer->m_CurrentScenePath;
     m_EditorLayer->LoadScene(m_EditorLayer->m_CurrentScenePath);
+
+    m_EditorLayer->m_InterpreterLogsPanel.Clear(); 
 }
 
 void Editor::States::PlayState::OnExit() {
