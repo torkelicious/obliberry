@@ -158,7 +158,7 @@ namespace ECS::Systems::ScriptSystem {
             }
 
             // run top level code once
-            // top level execute single threaded during init so registry writes are applied in immediate mode 
+            // top level execute single threaded during init so registry writes are applied in immediate mode
             {
                 auto *topLevelWorker = runtime.get_worker(0);
                 auto *topLevelCommands = topLevelWorker->frame_context<Scripting::ScriptCommandBuffer>();
