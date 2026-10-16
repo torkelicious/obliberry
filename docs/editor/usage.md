@@ -216,6 +216,7 @@ required files still stop packaging. See
 | `V`                       | Toggle isometric / top-down camera                                        |
 | `T` `R` `E`               | Gizmo: translate / rotate / scale (`E` = scale, toolbar button shows `S`) |
 | `W` `A` `S` `D`           | Pan the camera (hold `Shift` for 3× speed)                                |
+| `F`                       | Focus/Unfocus Camera onto selected entity                                 |
 | Scroll wheel              | Zoom                                                                      |
 | Middle / right mouse drag | Pan the camera                                                            |
 | Left click                | Select an entity in the Scene View                                        |
