@@ -5,6 +5,7 @@
 #include "Config/ProjectConfig.h"
 #include "IO/AssetCatalog.h"
 #include "IO/Loaders/AssetLoader.h"
+#include "Logger/ILogger.h"
 #include "Logger/Logger.h"
 #include "Logger/LoggerService.h"
 #include "ECS/Entity.h"
@@ -364,7 +365,8 @@ void Editor::EditorLayer::LoadScene(std::string path) {
             }
 
             if (Core::Project::GetActive()) {
-                m_Context->scriptPool->set_stdout(InterpreterStream);
+                m_Context->scriptPool->set_stdout(InterpreterOutStream );
+                m_Context->scriptPool->set_stderr(InterpreterErrStream );
             }
 
             m_UIPanel.Reset();
@@ -577,8 +579,8 @@ void Editor::EditorLayer::ExecutePendingStateTransfer() {
     m_PendingState = nullptr;
     m_UndoManager.Clear();
 
-    m_InterpreterLogsPanel.logs.clear(); // clear obsl logs on switch
-
+    m_InterpreterLogsPanel.Clear();
+    // clear obsl logs on switch
 }
 
 void Editor::EditorLayer::PromptSaveDirtyMap(const std::function<void()> &onProceed) {

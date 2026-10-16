@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Logger/ILogger.h"
 #include "Logger/LogSink.h"
 #include <memory>
 #include <ostream>
@@ -8,9 +9,11 @@ namespace Editor::UI {
 
     class UIStreamBuf : public std::streambuf {
     public:
-        explicit UIStreamBuf(std::shared_ptr<Logging::UILogSink> sink) : sink_(std::move(sink)) {}
+        explicit UIStreamBuf(std::shared_ptr<Logging::UILogSink> sink, Logging::LogSeverity severity = Logging::LogSeverity::Info) : sink_(std::move(sink)), _severity(severity) {}
 
     protected:
+        Logging::LogSeverity _severity = Logging::LogSeverity::Info;
+
         int_type overflow(int_type ch) override {
             if (ch != traits_type::eof()) {
                 char const c = static_cast<char>(ch);
@@ -44,7 +47,7 @@ namespace Editor::UI {
     private:
         void FlushLine() {
             if (sink_) {
-                sink_->Write(Logging::LogSeverity::Info, lineBuffer_ + "\n");
+                sink_->Write(_severity, lineBuffer_ + "\n");
             }
             lineBuffer_.clear();
         }
@@ -55,7 +58,7 @@ namespace Editor::UI {
 
     class UiStream : public std::ostream {
     public:
-        explicit UiStream(std::shared_ptr<Logging::UILogSink> sink) : std::ostream(&buf_), buf_(std::move(sink)) {}
+        explicit UiStream(std::shared_ptr<Logging::UILogSink> sink, Logging::LogSeverity severity = Logging::LogSeverity::Info) : std::ostream(&buf_), buf_(std::move(sink), severity) {}
 
     private:
         UIStreamBuf buf_;

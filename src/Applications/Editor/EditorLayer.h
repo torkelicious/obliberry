@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 #include "Core/ApplicationLayer.h"
+#include "Logger/ILogger.h"
 #include "Logger/LogSink.h"
 #include "Platform/Input/InputManager.h"
 #include "Applications/Editor/UI/Panels/Editor/InspectorPanel.h"
@@ -156,6 +157,7 @@ namespace Editor {
         UI::ConsoleLogPanel m_InterpreterLogsPanel{"ObSL"};
         UI::ConsoleLogPanel m_ApplicationLogsPanel{"Logs"};
 
-        UI::UiStream InterpreterStream{m_InterpreterLogsPanel.uiSink};
+        UI::UiStream InterpreterOutStream{m_InterpreterLogsPanel.uiSink, Logging::LogSeverity::Info};
+        UI::UiStream InterpreterErrStream{m_InterpreterLogsPanel.uiSink, Logging::LogSeverity::Error};
     };
 } // namespace Editor
