@@ -493,6 +493,15 @@ void Scripting::EngineLib::register_gui_modules(ObSL::Interpreter &interpreter) 
         return std::monostate{};
     }, "FindUI"));
 
+    interpreter.get_global_environment()->define("FindUIByUUID", interpreter.gc.allocate<ObSL::NativeFunction>(1, [ctx = m_ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        if (!std::holds_alternative<std::string>(args[0]) || !ctx->uiSystem)
+            return std::monostate{};
+        const auto uuid = std::get<std::string>(args[0]);
+        if (auto *el = ctx->uiSystem->FindByUUID(uuid))
+            return WrapExistingElement(interp, el, ctx);
+        return std::monostate{};
+    }, "FindUIByUUID"));
+
     interpreter.get_global_environment()->define("CreateUIButton", interpreter.gc.allocate<ObSL::NativeFunction>(1, [ctx = m_ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
         std::string name = "NewButton";
         if (std::holds_alternative<std::string>(args[0]))
