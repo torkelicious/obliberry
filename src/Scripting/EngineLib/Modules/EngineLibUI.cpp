@@ -1,6 +1,8 @@
 #include "Core/EngineContext.h"
 #include "Core/ResourceManager.h"
+#include "Core/Utils/UUID.h"
 #include "IO/Loaders/SceneAssetLoader.h"
+#include "ObSL/Natives.h"
 #include "Scenes/SceneManager.h"
 #include "Scripting/EngineLib/EngineLib.h"
 #include "Scripting/EngineLib/UICommandBuffer.h"
@@ -43,8 +45,10 @@ namespace Scripting {
         return font;
     }
 
-    static void BuildBaseUIFields(ObSL::ObSLObject *obj, ObSL::Interpreter *interp, std::shared_ptr<const std::string> name, Core::EngineContext *ctx) {
+    static void BuildBaseUIFields(ObSL::ObSLObject *obj, ObSL::Interpreter *interp, std::shared_ptr<const std::string> name, std::shared_ptr<const std::string> uuid, Core::EngineContext *ctx) {
         obj->fields["GetName"] = interp->gc.allocate<ObSL::NativeFunction>(0, [name](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value { return *name; }, "GetName");
+
+        obj->fields["GetUUID"] = interp->gc.allocate<ObSL::NativeFunction>(0, [uuid](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value { return *uuid; }, "GetUUID");
 
         obj->fields["GetPosition"] = interp->gc.allocate<ObSL::NativeFunction>(0, [name, ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
             if (!ctx->uiSystem)
@@ -140,14 +144,26 @@ namespace Scripting {
             }
             return std::monostate{};
         }, "SetVisible");
+        obj->fields["Destroy"] = interp->gc.allocate<ObSL::NativeFunction>(0, [uuid, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+            if (ctx->uiCmdBuf) {
+                ctx->uiCmdBuf->push([uuid](UI::UISystem &ui) {
+                    if (auto *el = ui.FindByUUID(*uuid)) {
+                        if (el->Parent)
+                            ui.RemoveChild(el->Parent, el);
+                    }
+                });
+            }
+            return std::monostate{};
+        }, "Destroy");
     }
 
-    static ObSL::ObSLObject *CreateUIButtonObject(ObSL::Interpreter *interp, const std::string &name, Core::EngineContext *ctx) {
+    static ObSL::ObSLObject *CreateUIButtonObject(ObSL::Interpreter *interp, const std::string &name, const std::string &uuid, Core::EngineContext *ctx) {
         auto *obj = interp->gc.allocate<ObSL::ObSLObject>();
         EngineLibFactories::GCProtectGuard guard(interp, obj);
         auto namePtr = std::make_shared<const std::string>(name);
+        auto uuidPtr = std::make_shared<const std::string>(uuid);
 
-        BuildBaseUIFields(obj, interp, namePtr, ctx);
+        BuildBaseUIFields(obj, interp, namePtr, uuidPtr, ctx);
 
         obj->fields["GetText"] = interp->gc.allocate<ObSL::NativeFunction>(0, [namePtr, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
             if (!ctx->uiSystem)
@@ -285,12 +301,13 @@ namespace Scripting {
         return obj;
     }
 
-    static ObSL::ObSLObject *CreateUITextObject(ObSL::Interpreter *interp, const std::string &name, Core::EngineContext *ctx) {
+    static ObSL::ObSLObject *CreateUITextObject(ObSL::Interpreter *interp, const std::string &name, const std::string &uuid, Core::EngineContext *ctx) {
         auto *obj = interp->gc.allocate<ObSL::ObSLObject>();
         EngineLibFactories::GCProtectGuard guard(interp, obj);
         auto namePtr = std::make_shared<const std::string>(name);
+        auto uuidPtr = std::make_shared<const std::string>(uuid);
 
-        BuildBaseUIFields(obj, interp, namePtr, ctx);
+        BuildBaseUIFields(obj, interp, namePtr, uuidPtr, ctx);
 
         obj->fields["GetText"] = interp->gc.allocate<ObSL::NativeFunction>(0, [namePtr, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
             if (!ctx->uiSystem)
@@ -366,12 +383,13 @@ namespace Scripting {
         return obj;
     }
 
-    static ObSL::ObSLObject *CreateUIRectObject(ObSL::Interpreter *interp, const std::string &name, Core::EngineContext *ctx) {
+    static ObSL::ObSLObject *CreateUIRectObject(ObSL::Interpreter *interp, const std::string &name, const std::string &uuid, Core::EngineContext *ctx) {
         auto *obj = interp->gc.allocate<ObSL::ObSLObject>();
         EngineLibFactories::GCProtectGuard guard(interp, obj);
         auto namePtr = std::make_shared<const std::string>(name);
+        auto uuidPtr = std::make_shared<const std::string>(uuid);
 
-        BuildBaseUIFields(obj, interp, namePtr, ctx);
+        BuildBaseUIFields(obj, interp, namePtr, uuidPtr, ctx);
 
         obj->fields["GetColor"] = interp->gc.allocate<ObSL::NativeFunction>(0, [namePtr, ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
             if (!ctx->uiSystem)
@@ -407,12 +425,13 @@ namespace Scripting {
         return obj;
     }
 
-    static ObSL::ObSLObject *CreateUIImageObject(ObSL::Interpreter *interp, const std::string &name, Core::EngineContext *ctx) {
+    static ObSL::ObSLObject *CreateUIImageObject(ObSL::Interpreter *interp, const std::string &name, const std::string &uuid, Core::EngineContext *ctx) {
         auto *obj = interp->gc.allocate<ObSL::ObSLObject>();
         EngineLibFactories::GCProtectGuard guard(interp, obj);
         auto namePtr = std::make_shared<const std::string>(name);
+        auto uuidPtr = std::make_shared<const std::string>(uuid);
 
-        BuildBaseUIFields(obj, interp, namePtr, ctx);
+        BuildBaseUIFields(obj, interp, namePtr, uuidPtr, ctx);
 
         obj->fields["GetColor"] = interp->gc.allocate<ObSL::NativeFunction>(0, [namePtr, ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
             if (!ctx->uiSystem)
@@ -450,14 +469,15 @@ namespace Scripting {
 
     static ObSL::ObSLObject *WrapExistingElement(ObSL::Interpreter *interp, UI::UIElement *el, Core::EngineContext *ctx) {
         const std::string &name = el->Name;
+        const std::string uuid = el->GetUUID();
         if (dynamic_cast<UI::UIButton *>(el))
-            return CreateUIButtonObject(interp, name, ctx);
+            return CreateUIButtonObject(interp, name, uuid, ctx);
         if (dynamic_cast<UI::UIText *>(el))
-            return CreateUITextObject(interp, name, ctx);
+            return CreateUITextObject(interp, name, uuid, ctx);
         if (dynamic_cast<UI::UIRect *>(el))
-            return CreateUIRectObject(interp, name, ctx);
+            return CreateUIRectObject(interp, name, uuid, ctx);
         if (dynamic_cast<UI::UIImage *>(el))
-            return CreateUIImageObject(interp, name, ctx);
+            return CreateUIImageObject(interp, name, uuid, ctx);
         return nullptr;
     }
 
@@ -477,56 +497,60 @@ void Scripting::EngineLib::register_gui_modules(ObSL::Interpreter &interpreter) 
         std::string name = "NewButton";
         if (std::holds_alternative<std::string>(args[0]))
             name = std::get<std::string>(args[0]);
+        const std::string uuid = Core::Utils::UUID::UUIDGenerator::Generate();
         if (ctx->uiCmdBuf) {
-            ctx->uiCmdBuf->push([name](UI::UISystem &ui) {
+            ctx->uiCmdBuf->push([name, uuid](UI::UISystem &ui) {
                 auto btn = std::make_unique<UI::UIButton>();
                 btn->Name = name;
-                ui.AddChild(ui.GetRoot(), std::move(btn));
+                ui.AddChild(ui.GetRoot(), std::move(btn), uuid);
             });
         }
-        return CreateUIButtonObject(interp, name, ctx);
+        return CreateUIButtonObject(interp, name, uuid, ctx);
     }, "CreateUIButton"));
 
     interpreter.get_global_environment()->define("CreateUIText", interpreter.gc.allocate<ObSL::NativeFunction>(1, [ctx = m_ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
         std::string name = "NewText";
         if (std::holds_alternative<std::string>(args[0]))
             name = std::get<std::string>(args[0]);
+        const std::string uuid = Core::Utils::UUID::UUIDGenerator::Generate();
         if (ctx->uiCmdBuf) {
-            ctx->uiCmdBuf->push([name](UI::UISystem &ui) {
+            ctx->uiCmdBuf->push([name, uuid](UI::UISystem &ui) {
                 auto txt = std::make_unique<UI::UIText>();
                 txt->Name = name;
-                ui.AddChild(ui.GetRoot(), std::move(txt));
+                ui.AddChild(ui.GetRoot(), std::move(txt), uuid);
             });
         }
-        return CreateUITextObject(interp, name, ctx);
+        return CreateUITextObject(interp, name, uuid, ctx);
     }, "CreateUIText"));
 
     interpreter.get_global_environment()->define("CreateUIRect", interpreter.gc.allocate<ObSL::NativeFunction>(1, [ctx = m_ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
         std::string name = "NewRect";
         if (std::holds_alternative<std::string>(args[0]))
             name = std::get<std::string>(args[0]);
+        const std::string uuid = Core::Utils::UUID::UUIDGenerator::Generate();
         if (ctx->uiCmdBuf) {
-            ctx->uiCmdBuf->push([name](UI::UISystem &ui) {
+            ctx->uiCmdBuf->push([name, uuid](UI::UISystem &ui) {
                 auto rect = std::make_unique<UI::UIRect>();
                 rect->Name = name;
-                ui.AddChild(ui.GetRoot(), std::move(rect));
+                ui.AddChild(ui.GetRoot(), std::move(rect), uuid);
             });
         }
-        return CreateUIRectObject(interp, name, ctx);
+        return CreateUIRectObject(interp, name, uuid, ctx);
     }, "CreateUIRect"));
 
     interpreter.get_global_environment()->define("CreateUIImage", interpreter.gc.allocate<ObSL::NativeFunction>(1, [ctx = m_ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
         std::string name = "NewImage";
         if (std::holds_alternative<std::string>(args[0]))
             name = std::get<std::string>(args[0]);
+        const std::string uuid = Core::Utils::UUID::UUIDGenerator::Generate();
         if (ctx->uiCmdBuf) {
-            ctx->uiCmdBuf->push([name](UI::UISystem &ui) {
+            ctx->uiCmdBuf->push([name, uuid](UI::UISystem &ui) {
                 auto img = std::make_unique<UI::UIImage>();
                 img->Name = name;
-                ui.AddChild(ui.GetRoot(), std::move(img));
+                ui.AddChild(ui.GetRoot(), std::move(img), uuid);
             });
         }
-        return CreateUIImageObject(interp, name, ctx);
+        return CreateUIImageObject(interp, name, uuid, ctx);
     }, "CreateUIImage"));
 
     // Destroy via name
