@@ -81,5 +81,8 @@ namespace Editor::States {
 
         // animator
         UI::SpriteAnimationPanel m_SpriteAnimationPanel;
+
+        void FocusAtEntity();
+        bool m_WasLastFocusAtOnEntity = false;
     };
 } // namespace Editor::States

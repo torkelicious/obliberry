@@ -1,6 +1,8 @@
 #pragma once
 #include "Rendering/Types/Camera.h"
+#include "glm/ext/vector_float3.hpp"
 #include <algorithm>
+#include <cstdlib>
 
 namespace Editor {
     enum class CameraViewMode : uint8_t { Isometric, TopDown };
@@ -22,6 +24,7 @@ namespace Editor {
         }
 
         void Pan(const float deltaX, const float deltaY, const float speedMultiplier = 1.0f) {
+            m_FocusActive = false;
             const glm::vec3 right = GetRightVector();
             const glm::vec3 up = GetUpVector();
             const float speed = speedMultiplier / Zoom;
@@ -29,6 +32,7 @@ namespace Editor {
         }
 
         void KeyboardPan(const float deltaX, const float deltaY, const float speedMultiplier = 1.0f) {
+            m_FocusActive = false;
             const glm::vec3 right = GetRightVector();
             const glm::vec3 up = GetUpVector();
             const float speed = speedMultiplier / Zoom;
@@ -39,10 +43,25 @@ namespace Editor {
 
         void UpdateSmooth(const float dt) {
             const float smoothFactor = 1.0f - std::pow(0.005f, dt * 10.0f);
-            m_Velocity = glm::mix(m_Velocity, m_TargetVelocity, smoothFactor);
-            Position += m_Velocity * dt;
+
+            if (m_FocusActive) {
+                Position = glm::mix(Position, m_FocusPosition, smoothFactor);
+
+                m_Velocity = glm::vec3(0.0f);
+
+                if (glm::length(Position - m_FocusPosition) < 0.001f) {
+                    Position = m_FocusPosition;
+                    m_FocusActive = false;
+                }
+            } else {
+                m_Velocity = glm::mix(m_Velocity, m_TargetVelocity, smoothFactor);
+
+                Position += m_Velocity * dt;
+            }
+
             if (m_SmoothZoomActive) {
                 Zoom = glm::mix(Zoom, m_SmoothZoomTarget, smoothFactor);
+
                 if (std::abs(Zoom - m_SmoothZoomTarget) < 0.0001f) {
                     Zoom = m_SmoothZoomTarget;
                     m_SmoothZoomActive = false;
@@ -66,11 +85,44 @@ namespace Editor {
         }
 
         void RestoreState() {
+            m_FocusActive = false;
+            m_Velocity = glm::vec3(0.0f);
+            m_TargetVelocity = glm::vec3(0.0f);
+
             Position = m_SavedPosition;
             Zoom = m_SavedZoom;
             m_SmoothZoomTarget = m_SavedZoom;
             m_SmoothZoomActive = false;
             SetRotation(m_SavedAngleX, m_SavedAngleZ);
+        }
+
+        void FocusAt(const glm::vec3 worldPosition, const float targetZoom) {
+            const glm::mat4 &rotation = GetRotation();
+
+            const float a = rotation[0][0];
+            const float b = rotation[1][0];
+            const float c = rotation[0][1];
+            const float d = rotation[1][1];
+
+            const float rhsX = rotation[2][0] * worldPosition.z;
+            const float rhsY = rotation[2][1] * worldPosition.z;
+
+            const float determinant = a * d - b * c;
+
+            m_FocusPosition = {worldPosition.x, worldPosition.y, Position.z};
+
+            if (std::abs(determinant) > 1e-6f) {
+                m_FocusPosition.x += (rhsX * d - b * rhsY) / determinant;
+                m_FocusPosition.y += (a * rhsY - rhsX * c) / determinant;
+            }
+
+            m_Velocity = glm::vec3(0.0f);
+            m_TargetVelocity = glm::vec3(0.0f);
+
+            m_FocusActive = true;
+
+            m_SmoothZoomTarget = std::clamp(targetZoom, 0.1f, 50.0f);
+            m_SmoothZoomActive = true;
         }
 
     private:
@@ -84,5 +136,8 @@ namespace Editor {
         float m_SavedZoom = 1.5f;
         float m_SavedAngleX = 55.0f;
         float m_SavedAngleZ = 45.0f;
+
+        glm::vec3 m_FocusPosition{0.0f};
+        bool m_FocusActive = false;
     };
 } // namespace Editor

@@ -1,5 +1,7 @@
 #include "EditState.h"
 #include "ECS/Components/ColliderComponent.h"
+#include "ECS/Components/TransformComponent.h"
+#include "ECS/Entity.h"
 #include "ECS/Systems/Collision/ColliderGizmo.h"
 #include "ECS/Systems/HierarchySystem.h"
 #include "ECS/Systems/LightingSystem.h"
@@ -10,6 +12,8 @@
 #include "Applications/Editor/Commands/EditorCommands.h"
 #include "ECS/Systems/ParticleSystem.h"
 #include "UI/UIGizmo.h"
+#include "glm/ext/matrix_float4x4.hpp"
+#include "glm/ext/vector_float3.hpp"
 #include "imgui.h"
 #include "ECS/Systems/Animation/SpriteAnimationSystem.h"
 
@@ -62,6 +66,7 @@ void Editor::States::EditState::OnUpdate(const float dt) {
         if (const auto eID = static_cast<ECS::EntityID>(clickedID); m_EditorLayer->m_Registry->IsValid(eID)) {
             const ECS::Entity selectedEntity(eID, m_EditorLayer->m_Registry);
             m_EditorLayer->m_RegistryPanel.SetSelectedEntity(selectedEntity);
+            m_WasLastFocusAtOnEntity = false;
         }
     } else if (m_EditorLayer->m_ViewportPanel.HadEmptyClick()) {
         m_EditorLayer->m_RegistryPanel.SetSelectedEntity(ECS::Entity{});
@@ -83,6 +88,16 @@ void Editor::States::EditState::OnHandleInput(const float dt) {
     if (m_ColliderDragHandle >= 0) {
         m_EditorLayer->m_Camera.StopKeyboardPan();
         return;
+    }
+
+    if (!m_EditorLayer->m_Input->HasAnyModifierDown() && m_EditorLayer->m_Input->IsKeyPressed("F")) {
+        if (!m_WasLastFocusAtOnEntity) {
+            FocusAtEntity();
+            m_WasLastFocusAtOnEntity = true;
+        } else {
+            m_EditorLayer->m_Camera.FocusAt(glm::vec3(0.0f), 1.5f);
+            m_WasLastFocusAtOnEntity = false;
+        }
     }
 
     if (ImGui::GetIO().WantCaptureKeyboard)
@@ -143,12 +158,12 @@ void Editor::States::EditState::OnHandleInput(const float dt) {
         const float length = std::sqrt(kbPanX * kbPanX + kbPanY * kbPanY);
         kbPanX /= length;
         kbPanY /= length;
-    }
 
-    const float speedMod = m_EditorLayer->m_Input->IsKeyDown("LeftShift") ? 3.0f : 1.0f;
-    constexpr float moveAmount = 3.0f;
-    const float vpHeight = m_EditorLayer->m_ViewportPanel.GetHeight();
-    m_EditorLayer->m_Camera.KeyboardPan(kbPanX, kbPanY, 15.0f * speedMod * moveAmount * (600.0f / vpHeight));
+        const float speedMod = m_EditorLayer->m_Input->IsKeyDown("LeftShift") ? 3.0f : 1.0f;
+        constexpr float moveAmount = 3.0f;
+        const float vpHeight = m_EditorLayer->m_ViewportPanel.GetHeight();
+        m_EditorLayer->m_Camera.KeyboardPan(kbPanX, kbPanY, 15.0f * speedMod * moveAmount * (600.0f / vpHeight));
+    }
 }
 
 void Editor::States::EditState::OnDrawPanels() {
@@ -587,4 +602,34 @@ void Editor::States::EditState::Collider_DrawGizmoForSelected() {
     ImGui::Begin("Scene View");
     ColliderGizmo::Draw(ImGui::GetWindowDrawList(), world, vp, viewDirection, boundsMin, boundsMax, m_ColliderDragHandle >= 0 ? m_ColliderDragHandle : m_ColliderHoveredHandle);
     ImGui::End();
+}
+
+void Editor::States::EditState::FocusAtEntity() {
+    const ECS::Entity selected = m_EditorLayer->m_RegistryPanel.GetSelectedEntity();
+
+    if (selected && selected.HasComponent<ECS::Components::TransformComponent>()) {
+        const float w = m_EditorLayer->m_ViewportPanel.GetWidth();
+        const float h = m_EditorLayer->m_ViewportPanel.GetHeight();
+
+        if (w > 0.0f & h > 0.0f) {
+            auto &camera = m_EditorLayer->m_Camera;
+            const auto &worldTransform = selected.GetComponent<ECS::Components::TransformComponent>()->worldTransform;
+
+            const glm::mat4 objectToView = camera.GetRotation() * worldTransform.GetMatrix();
+
+            const float halfWidth = 0.5f * (std::abs(objectToView[0][0]) + std::abs(objectToView[1][0]) + std::abs(objectToView[2][0]));
+            const float halfHeight = 0.5f * (std::abs(objectToView[0][1]) + std::abs(objectToView[1][1]) + std::abs(objectToView[2][1]));
+
+            const float aspect = w / h;
+
+            const float halfExtentToFit = std::max(halfHeight, halfWidth / aspect);
+
+            constexpr float fillFraction = 0.70f;
+            constexpr float minExtent = 0.001f;
+
+            const float targetZoom = std::clamp(10.0f * fillFraction / std::max(halfExtentToFit, minExtent), 0.1f, 50.0f);
+
+            camera.FocusAt(worldTransform.GetPosition(), targetZoom);
+        }
+    }
 }
