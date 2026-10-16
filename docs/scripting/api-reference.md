@@ -139,7 +139,8 @@ returned.
 Entity objects are returned by `GetEntity`, `Find`, `CreateEntity`, `Instantiate`, `Map_GetMapEntity`, `GetChildren`,
 `GetParent`, and `this`.
 
-**Data fields:** `id` (numeric runtime handle), `name` (string snapshot). Use `GetName()` for the current name.
+**Data fields:** `id` (numeric runtime handle), `name` (string snapshot), `uuid` (also snapshot, but should not change).
+Use `GetName()` for the current name.
 Reacquire entity objects after a scene change; runtime handles belong to the current registry.
 
 | Method                            | Args             | Returns             | Description                                                                                              |
@@ -439,6 +440,7 @@ by element name. Colors are `[r, g, b, a]` arrays, positions/sizes are `[x, y]` 
 | `SetPosition(x, y)`   | numbers        | void           | Sets position.           |
 | `SetSize(x, y)`       | numbers        | void           | Sets size.               |
 | `SetVisible(visible)` | bool or number | void           | Sets the `VISIBLE` flag. |
+| `Destroy()`           | -              | void           | Destroys the UI element. |
 
 ### Button methods
 
