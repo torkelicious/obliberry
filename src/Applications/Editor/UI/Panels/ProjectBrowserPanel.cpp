@@ -700,7 +700,7 @@ void Editor::UI::ProjectBrowserPanel::DrawFileSection(const char *label, const s
                         const std::string newFileContent = std::format(
                                 R"(// {}
 
-fn on_update(){{
+fn on_update(dt){{
     
 }}
 
