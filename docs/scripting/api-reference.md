@@ -462,6 +462,7 @@ element's name changes or is duplicated. `GetName()` returns the element's name;
 | `SetPosition(x, y)`   | numbers        | void           | Sets position.           |
 | `SetSize(x, y)`       | numbers        | void           | Sets size.               |
 | `SetVisible(visible)` | bool or number | void           | Sets the `VISIBLE` flag. |
+| `SetParent(parent)`   | element, string, or `null` | void | Reparents the element under another element (by object or UUID); `null`/empty moves it to the root. |
 | `Destroy()`           | -              | void           | Destroys the UI element. |
 
 ### Button methods

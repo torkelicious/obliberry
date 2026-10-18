@@ -3,6 +3,7 @@
 #include "Core/Utils/UUID.h"
 #include "IO/Loaders/SceneAssetLoader.h"
 #include "ObSL/Natives.h"
+#include "ObSL/Parser/ast.h"
 #include "Scenes/SceneManager.h"
 #include "Scripting/EngineLib/EngineLib.h"
 #include "Scripting/EngineLib/UICommandBuffer.h"
@@ -16,6 +17,7 @@
 #include <ObSL/Interpreter.h>
 #include <memory>
 #include <string_view>
+#include <vector>
 
 namespace Scripting {
 
@@ -75,6 +77,9 @@ namespace Scripting {
         obj->fields["GetName"] = interp->gc.allocate<ObSL::NativeFunction>(0, [name](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value { return *name; }, "GetName");
 
         obj->fields["GetUUID"] = interp->gc.allocate<ObSL::NativeFunction>(0, [uuid](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value { return *uuid; }, "GetUUID");
+
+        // raw field mirrors entity wrappers so methods can accept another UI object as an argument
+        obj->fields["uuid"] = *uuid;
 
         obj->fields["GetPosition"] = interp->gc.allocate<ObSL::NativeFunction>(0, [uuid, ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
             if (!ctx->uiSystem)
@@ -181,6 +186,36 @@ namespace Scripting {
             }
             return std::monostate{};
         }, "Destroy");
+
+        obj->fields["SetParent"] = interp->gc.allocate<ObSL::NativeFunction>(1, [uuid, ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+            std::string parentUuid;
+
+            if (!args.empty()) {
+                if (std::holds_alternative<std::string>(args[0])) {
+                    parentUuid = std::get<std::string>(args[0]);
+                } else if (std::holds_alternative<ObSL::ObSLObject *>(args[0])) {
+                    if (const auto *parentObj = std::get<ObSL::ObSLObject *>(args[0])) {
+                        if (const auto it = parentObj->fields.find("uuid"); it != parentObj->fields.end() && std::holds_alternative<std::string>(it->second))
+                            parentUuid = std::get<std::string>(it->second);
+                    }
+                }
+            }
+            if (ctx->uiCmdBuf) {
+                ctx->uiCmdBuf->push([uuid, parentUuid = std::move(parentUuid)](UI::UISystem &ui) {
+                    auto *child = ui.FindByUUID(*uuid);
+                    if (!child)
+                        return;
+
+                    // empty argument detaches to the root
+                    UI::UIElement *parent = parentUuid.empty() ? ui.GetRoot() : ui.FindByUUID(parentUuid);
+                    if (!parent)
+                        return;
+
+                    ui.Reparent(child, parent);
+                });
+            }
+            return std::monostate{};
+        }, "SetParent");
     }
 
     static ObSL::ObSLObject *CreateUIButtonObject(ObSL::Interpreter *interp, const std::string &name, const std::string &uuid, Core::EngineContext *ctx) {

@@ -40,6 +40,8 @@ namespace UI {
 
         void RemoveChild(UIElement *parent, UIElement *child);
 
+        void Reparent(UIElement *child, UIElement *newParent);
+
         [[nodiscard]] bool Contains(const UIElement *element) const;
 
         void Clear();

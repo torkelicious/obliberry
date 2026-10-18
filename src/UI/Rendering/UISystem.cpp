@@ -114,6 +114,48 @@ namespace UI {
         std::erase_if(m_OwnedElements, [child](const std::unique_ptr<UIElement> &ptr) { return ptr.get() == child; });
     }
 
+    void UISystem::Reparent(UIElement *child, UIElement *newParent) {
+        if (!child || child == m_Root.get())
+            return;
+
+        if (!newParent)
+            newParent = m_Root.get();
+
+        if (child == newParent || child->Parent == newParent)
+            return;
+
+        if (!Contains(child) || !Contains(newParent))
+            return;
+
+        // moving a node under one of its own descendants would create a cycle
+        for (UIElement *ancestor = newParent; ancestor; ancestor = ancestor->Parent) {
+            if (ancestor == child)
+                return;
+        }
+
+        // keep ownership; RemoveChild would destroy the element
+        std::unique_ptr<UIElement> owned;
+        for (auto it = m_OwnedElements.begin(); it != m_OwnedElements.end(); ++it) {
+            if (it->get() == child) {
+                owned = std::move(*it);
+                m_OwnedElements.erase(it);
+                break;
+            }
+        }
+
+        if (!owned)
+            return;
+
+        if (child->Parent)
+            std::erase(child->Parent->Children, child);
+
+        child->Parent = newParent;
+        child->SetInputMgr(m_Input);
+        newParent->Children.push_back(child);
+
+        m_OwnedElements.push_back(std::move(owned));
+    }
+
     bool UISystem::Contains(const UIElement *element) const {
         if (!element)
             return false;
