@@ -208,7 +208,7 @@ namespace Editor::Commands {
 
                             auto &interpreter = runtime->get_worker(0)->GetInterpreter();
 
-                            ObSL::GCProtectScope protection(&interpreter);
+                            ObSL::GCProtectScope const protection(&interpreter);
 
                             const auto values = RestoreCustomDataSnapshot(*saved.customData, interpreter, protection);
 

@@ -93,7 +93,7 @@ namespace Editor::Commands {
         nodes.reserve(snapshot.nodes.size());
 
         for (const auto &node : snapshot.nodes) {
-            ObSL::Value value = std::visit([&](const auto &saved) -> ObSL::Value {
+            ObSL::Value const value = std::visit([&](const auto &saved) -> ObSL::Value {
                 using T = std::decay_t<decltype(saved)>;
                 if constexpr (std::is_same_v<T, CustomDataArray>) {
                     return interpreter.gc.allocate<ObSL::ObSLArray>();
