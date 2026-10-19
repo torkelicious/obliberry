@@ -118,9 +118,9 @@ namespace Core {
         IO::VFS::MountProject(project->m_ProjectFilepath.string());
         project->m_Config = Config::ProjectConfig::Deserialize("project.json");
 
-        if (project->m_Config.UUID.empty()) {
+        if (project->m_Config.UUID.IsNil()) {
             project->m_Config.UUID = Utils::UUID::UUIDGenerator::Generate();
-            LOG_INFO(LOG_WHO, "Generated UUID for legacy project: " + project->m_Config.UUID);
+            LOG_INFO(LOG_WHO, "Generated UUID for legacy project: " + project->m_Config.UUID.ToString());
             if (!project->Save()) {
                 LOG_ERROR(LOG_WHO, "Could not save generated project UUID");
                 return nullptr;
