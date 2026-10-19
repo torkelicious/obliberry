@@ -24,6 +24,7 @@
 #include "Scripting/EngineLib/EntityWrapperCache.h"
 #include "Scripting/EngineLib/EngineLibFactories.h"
 #include "Platform/Threading/ThreadPool.h"
+#include "Scripting/EngineLib/ScriptProperties.h"
 
 namespace ECS::Systems::ScriptSystem {
 
@@ -174,6 +175,7 @@ namespace ECS::Systems::ScriptSystem {
                 if (topLevelCommands)
                     topLevelCommands->BeginImmediate(registry);
 
+                const Scripting::ScriptPropertyScope propertyScope(&slot.properties);
                 topLevelWorker->execute(slot.ast_nodes, slot.instance_envs[0]);
             }
 

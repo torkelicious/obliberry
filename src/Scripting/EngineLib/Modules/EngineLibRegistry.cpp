@@ -1,3 +1,7 @@
+#include "ECS/Types.h"
+#include "ObSL/Interpreter.h"
+#include "ObSL/Natives.h"
+#include "ObSL/Parser/ast.h"
 #include "Scripting/EngineLib/EngineLib.h"
 #include "Scripting/EngineLib/EngineLibFactories.h"
 #include "Scripting/EngineLib/EntityWrapperCache.h"
@@ -20,6 +24,8 @@
 #include "ECS/Components/SpriteSheetComponent.h"
 #include "ECS/Components/TransformComponent.h"
 #include "IO/Loaders/PrefabManager.h"
+#include "Scripting/EngineLib/ScriptProperties.h"
+#include "nlohmann/json_fwd.hpp"
 #include <ObSL/ScriptWorker.h>
 #include <memory>
 #include <mutex>
@@ -757,6 +763,36 @@ void Scripting::EngineLib::register_registry_modules(ObSL::Interpreter &interpre
 
         return CreateEntityObjectLocked(interp, *reg, id);
     }, "FindEntityByUUID"));
+
+
+    interpreter.get_global_environment()->define("PropEntity", interpreter.gc.allocate<ObSL::NativeFunction>(1, [reg = m_registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        if (args.empty() || !std::holds_alternative<std::string>(args[0])) {
+            return std::monostate{};
+        }
+        const PropertyMap *props = CurrentInitProps();
+        if (!props) {
+            return std::monostate{};
+        }
+
+        const auto it = props->find(std::get<std::string>(args[0]));
+        if (it == props->end() || !it->second.is_string()) {
+            return std::monostate{};
+        }
+
+        const auto uuid = Core::UUID::FromString(it->second.get<std::string>());
+        if (!uuid) {
+            return std::monostate{};
+        }
+
+        std::shared_lock lock(g_RegistryMutex);
+
+        const ECS::EntityID id = reg->FindEntityByUUID(*uuid);
+        if (id == ECS::INVALID_ENTITY_ID) {
+            return std::monostate{};
+        }
+
+        return CreateEntityObjectLocked(interp, *reg, id);
+    }, "PropEntity"));
 
     interpreter.get_global_environment()->define("CreateEntity", interpreter.gc.allocate<ObSL::NativeFunction>(1, [reg = m_registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
         std::string name = "NewEntity";

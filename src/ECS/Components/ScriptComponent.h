@@ -1,14 +1,18 @@
 #pragma once
 
+#include "nlohmann/json_fwd.hpp"
 #include <ObSL/Environment.h>
 #include <ObSL/Parser.h>
 #include <filesystem>
+#include <map>
 #include <memory>
+#include <string>
 
 namespace ECS::Components {
     struct ScriptSlot {
         bool isInitialized = false;
         std::string scriptPath;
+        std::map<std::string, nlohmann::json> properties;
         std::filesystem::path resolvedPath;
         std::vector<std::shared_ptr<ObSL::Environment>> instance_envs;
         // hooks
