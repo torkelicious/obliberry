@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/Utils/UUID.h"
+#include "Core/UUID.h"
 
 
 #include <cstdint>
@@ -13,7 +13,8 @@ namespace Config {
     enum class SaveLocation : std::uint8_t { DataHome = 0, Portable = 1 };
 
     struct ProjectConfig {
-        Core::Utils::UUID::uuid UUID;
+        Core::UUID UUID;
+
         std::string Title = "Obliberry Project";
         std::string startScenePath;
 

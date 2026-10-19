@@ -1,6 +1,6 @@
 #include "Core/EngineContext.h"
 #include "Core/ResourceManager.h"
-#include "Core/Utils/UUID.h"
+#include "../src/Core/UUID.h"
 #include "ECS/Components/ColliderComponent.h"
 #include "ECS/Components/MovementComponent.h"
 #include "ECS/Components/PersistentTagComponent.h"
@@ -253,7 +253,7 @@ TEST_F(SceneTests, SameNameWithDifferentUUIDsRemainsDistinct) {
 
     ASSERT_NE(destinationUUID, persistentUUID);
 
-    destinationCopy["uuid"] = destinationUUID;
+    destinationCopy["UUID"] = destinationUUID;
     destinationCopy["components"]["TransformComponent"]["position"] = {20.0f, 0.0f, 0.0f};
 
     ASSERT_NO_FATAL_FAILURE(WriteScene("b.json", nlohmann::json::array({destinationCopy})));

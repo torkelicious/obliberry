@@ -23,7 +23,7 @@
 #include "UI/Rendering/UISystem.h"
 #include "Rendering/Types/Texture/Texture.h"
 #include "UI/Text/Font.h"
-#include "Core/Utils/UUID.h"
+#include "../../../Core/UUID.h"
 
 namespace Editor::Commands {
 

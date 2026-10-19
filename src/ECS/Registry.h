@@ -1,6 +1,6 @@
 #pragma once
 #include "ComponentPool.h"
-#include "Core/Utils/UUID.h"
+#include "../Core/UUID.h"
 #include "ECS/Components/DestroyTagComponent.h"
 #include "Entity.h"
 #include "Types.h"
@@ -48,8 +48,8 @@ namespace ECS {
         std::array<IPool *, MAX_COMPONENT_TYPES> m_PoolCache{};
         std::vector<uint32_t> m_LivingEntityIndices; // EntityIndex -> m_LivingEntities idx
         std::vector<uint64_t> m_EntitySignatures;    // bitmask of owned components
-        std::vector<Core::Utils::UUID::uuid> m_EntityUUIDs;
-        std::unordered_map<Core::Utils::UUID::uuid, EntityID> m_EntityUUIDIndex; // uuid -> live entity
+        std::vector<Core::UUID> m_EntityUUIDs;
+        std::unordered_map<Core::UUID, EntityID> m_EntityUUIDIndex; // UUID -> live entity
 
     public:
         template <typename T> ComponentPool<T> *GetPool() {
@@ -84,7 +84,7 @@ namespace ECS {
             }
 
             const uint32_t index = m_AvailableEntities.front();
-            m_EntityUUIDs[index] = Core::Utils::UUID::UUIDGenerator::Generate();
+            m_EntityUUIDs[index] = Core::UUIDGenerator::Generate();
             m_AvailableEntities.pop();
 
 
@@ -165,7 +165,7 @@ namespace ECS {
                 const uint32_t index = GetEntityIndex(current);
 
                 m_EntityUUIDIndex.erase(m_EntityUUIDs[index]);
-                m_EntityUUIDs[index] = Core::Utils::UUID::uuid{};
+                m_EntityUUIDs[index] = Core::UUID{};
 
                 uint64_t signature = m_EntitySignatures[index];
                 uint32_t poolIndex = 0;
@@ -270,9 +270,9 @@ namespace ECS {
         }
 
 
-        [[nodiscard]] const Core::Utils::UUID::uuid &GetEntityUUID(const EntityID id) const { return IsValid(id) ? m_EntityUUIDs[GetEntityIndex(id)] : Core::Utils::UUID::uuid{}; }
+        [[nodiscard]] const Core::UUID &GetEntityUUID(const EntityID id) const { return IsValid(id) ? m_EntityUUIDs[GetEntityIndex(id)] : Core::UUID{}; }
 
-        [[nodiscard]] bool SetEntityUUID(const EntityID id, const Core::Utils::UUID::uuid &uuid) {
+        [[nodiscard]] bool SetEntityUUID(const EntityID id, const Core::UUID &uuid) {
             if (!IsValid(id) || uuid.IsNil()) {
                 return false;
             }
@@ -288,7 +288,7 @@ namespace ECS {
             return true;
         }
 
-        [[nodiscard]] EntityID FindEntityByUUID(const Core::Utils::UUID::uuid &uuid) const {
+        [[nodiscard]] EntityID FindEntityByUUID(const Core::UUID &uuid) const {
             if (uuid.IsNil()) {
                 return INVALID_ENTITY_ID;
             }

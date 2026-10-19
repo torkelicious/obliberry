@@ -14,7 +14,7 @@ namespace {
         Config::ProjectConfig config;
 
         if (const auto id = document.find("UUID"); id != document.end() && id->is_string()) {
-            config.UUID = Core::Utils::UUID::uuid::FromString(id->get<std::string>()).value();
+            config.UUID = Core::UUID::FromString(id->get<std::string>()).value();
         }
 
         if (const auto window = document.find("window"); window != document.end() && window->is_object()) {

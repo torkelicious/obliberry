@@ -62,7 +62,7 @@ namespace Scripting {
             if (auto *hit = cache->Find(registry, id, EntityWrapperCache::Kind::Entity, [&] { return registry.IsValid(id); })) {
                 hit->fields["id"] = static_cast<double>(id);
                 hit->fields["name"] = registry.GetEntityName(id);
-                hit->fields["uuid"] = uuidStr;
+                hit->fields["UUID"] = uuidStr;
                 return hit;
             }
         }
@@ -70,12 +70,12 @@ namespace Scripting {
         auto *obj = interpreter->gc.allocate<ObSL::ObSLObject>();
         EngineLibFactories::GCProtectGuard guard(interpreter, obj);
 
-        // wrapper identity is the entity's uuid; the entity id is resolved from it on every call
+        // wrapper identity is the entity's UUID; the entity id is resolved from it on every call
         auto uuid = std::make_shared<const std::string>(uuidStr);
 
         obj->fields["id"] = static_cast<double>(id);
         obj->fields["name"] = registry.GetEntityName(id);
-        obj->fields["uuid"] = uuidStr;
+        obj->fields["UUID"] = uuidStr;
 
         auto set_name_body = [uuid, reg_ptr = &registry](const ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
             if (args.empty() || !std::holds_alternative<std::string>(args[0])) {
@@ -578,7 +578,7 @@ namespace Scripting {
                     auto *parent = std::get<ObSL::ObSLObject *>(args[0]);
 
                     if (parent) {
-                        if (const auto it = parent->fields.find("uuid"); it != parent->fields.end() && std::holds_alternative<std::string>(it->second)) {
+                        if (const auto it = parent->fields.find("UUID"); it != parent->fields.end() && std::holds_alternative<std::string>(it->second)) {
                             parentUuid = std::get<std::string>(it->second);
                         } else if (const auto it = parent->fields.find("id"); it != parent->fields.end() && std::holds_alternative<double>(it->second)) {
                             parentId = static_cast<ECS::EntityID>(std::get<double>(it->second));

@@ -1,4 +1,4 @@
-#include "Core/Utils/UUID.h"
+#include "../src/Core/UUID.h"
 #include "Core/Utils/PathUtils.h"
 #include "Config/ProjectConfig.h"
 #include "SaveData/SaveGameData.h"
@@ -744,7 +744,7 @@ TEST(SaveDirectoryTests, DifferentProjectUUIDsProduceSeparateDirectories) {
 }
 
 TEST(SaveDirectoryTests, InvalidProjectUUIDsAreRejected) {
-    const std::vector<std::string> invalidUUIDs{"", "not-a-uuid", "../outside", "01234567-89ab-4cde-8fab-0123456789a", "01234567-89ab-4cde-8fab-0123456789ab0", "01234567_89ab-4cde-8fab-0123456789ab",
+    const std::vector<std::string> invalidUUIDs{"", "not-a-UUID", "../outside", "01234567-89ab-4cde-8fab-0123456789a", "01234567-89ab-4cde-8fab-0123456789ab0", "01234567_89ab-4cde-8fab-0123456789ab",
             "01234567-89ab-4cde-8fab-0123456789ag", "01234567-89ab-3cde-8fab-0123456789ab", "01234567-89ab-4cde-7fab-0123456789ab", "01234567-89ab-4cde-cfab-0123456789ab"};
 
     for (const auto location : saveLocations) {

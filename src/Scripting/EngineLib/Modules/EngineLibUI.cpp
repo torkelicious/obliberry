@@ -1,6 +1,6 @@
 #include "Core/EngineContext.h"
 #include "Core/ResourceManager.h"
-#include "Core/Utils/UUID.h"
+#include "../../../Core/UUID.h"
 #include "IO/Loaders/SceneAssetLoader.h"
 #include "ObSL/Natives.h"
 #include "ObSL/Parser/ast.h"
@@ -79,7 +79,7 @@ namespace Scripting {
         obj->fields["GetUUID"] = interp->gc.allocate<ObSL::NativeFunction>(0, [uuid](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value { return *uuid; }, "GetUUID");
 
         // raw field mirrors entity wrappers so methods can accept another UI object as an argument
-        obj->fields["uuid"] = *uuid;
+        obj->fields["UUID"] = *uuid;
 
         obj->fields["GetPosition"] = interp->gc.allocate<ObSL::NativeFunction>(0, [uuid, ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
             if (!ctx->uiSystem)
@@ -195,7 +195,7 @@ namespace Scripting {
                     parentUuid = std::get<std::string>(args[0]);
                 } else if (std::holds_alternative<ObSL::ObSLObject *>(args[0])) {
                     if (const auto *parentObj = std::get<ObSL::ObSLObject *>(args[0])) {
-                        if (const auto it = parentObj->fields.find("uuid"); it != parentObj->fields.end() && std::holds_alternative<std::string>(it->second))
+                        if (const auto it = parentObj->fields.find("UUID"); it != parentObj->fields.end() && std::holds_alternative<std::string>(it->second))
                             parentUuid = std::get<std::string>(it->second);
                     }
                 }

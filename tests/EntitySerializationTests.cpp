@@ -10,7 +10,7 @@
 #include "IO/Loaders/EntityFactory.h"
 #include "TestingUtils.h"
 #include "nlohmann/json.hpp"
-#include "Core/Utils/UUID.h"
+#include "../src/Core/UUID.h"
 #include "ECS/Components/BillboardTagComponent.h"
 #include "ECS/Components/DirectionalTextureComponent.h"
 #include "ECS/Components/MaterialComponent.h"
@@ -184,7 +184,7 @@ TEST_F(EntitySerializationTests, PreserveUUIDRestoresSavedIdentity) {
     EXPECT_EQ(GetUUID(loaded), savedUUID);
 }
 
-// non-preserved should not keep uuid
+// non-preserved should not keep UUID
 TEST_F(EntitySerializationTests, WithoutPreserveKeepsNewIdentity) {
     auto source = CreateEntity(sourceRegistry);
     const auto data = Serialize(source);
@@ -456,7 +456,7 @@ TEST_F(EntitySerializationTests, InvalidOrMissingUUIDKeepsGeneratedIdentity) {
         auto loaded = CreateEntity(destinationRegistry);
         const auto original = GetUUID(loaded);
 
-        const nlohmann::json data{{"uuid", uuid}, {"components", {{"MovementComponent", {{"autoMove", true}}}}}};
+        const nlohmann::json data{{"UUID", uuid}, {"components", {{"MovementComponent", {{"autoMove", true}}}}}};
 
         ASSERT_NO_THROW(IO::EntityFactory::DeserializeEntity(loaded, data, resources, true));
 

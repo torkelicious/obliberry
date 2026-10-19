@@ -2,6 +2,8 @@
 
 #include <cerrno>
 #include <cstddef>
+#include <cstdint>
+#include <optional>
 #include <stdexcept>
 #include <system_error>
 
@@ -14,7 +16,7 @@
 #include <sys/random.h>
 #endif
 
-namespace Core::Utils::UUID {
+namespace Core {
 
     namespace {
 
@@ -35,7 +37,7 @@ namespace Core::Utils::UUID {
 
     } // namespace
 
-    std::optional<uuid> uuid::FromString(std::string_view txt) noexcept {
+    std::optional<UUID> UUID::FromString(std::string_view txt) noexcept {
         if (txt.size() != 36 || txt[8] != '-' || txt[13] != '-' || txt[18] != '-' || txt[23] != '-') {
             return std::nullopt;
         }
@@ -65,7 +67,7 @@ namespace Core::Utils::UUID {
         return FromBytes(bytes);
     }
 
-    std::string uuid::ToString() const {
+    std::string UUID::ToString() const {
         constexpr char hex[] = "0123456789abcdef";
         std::string txt;
         txt.reserve(36);
@@ -81,15 +83,15 @@ namespace Core::Utils::UUID {
         return txt;
     }
 
-    uuid UUIDGenerator::Generate() {
-        uuid::UUIDBytes bytes = RandomBytes16();
+    UUID UUIDGenerator::Generate() {
+        UUID::UUIDBytes bytes = RandomBytes16();
         bytes[6] = static_cast<std::uint8_t>((bytes[6] & 0x0FU) | 0x40U);
         bytes[8] = static_cast<std::uint8_t>((bytes[8] & 0x3FU) | 0x80U);
-        return uuid::FromBytes(bytes);
+        return UUID::FromBytes(bytes);
     }
 
-    uuid::UUIDBytes UUIDGenerator::RandomBytes16() {
-        uuid::UUIDBytes bytes{};
+    UUID::UUIDBytes UUIDGenerator::RandomBytes16() {
+        UUID::UUIDBytes bytes{};
 #ifdef _WIN32
         const NTSTATUS status = BCryptGenRandom(nullptr, bytes.data(), static_cast<ULONG>(bytes.size()), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
         if (!BCRYPT_SUCCESS(status)) {
@@ -119,4 +121,4 @@ namespace Core::Utils::UUID {
         return bytes;
     }
 
-} // namespace Core::Utils::UUID
+} // namespace Core

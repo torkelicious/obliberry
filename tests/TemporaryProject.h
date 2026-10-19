@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/Utils/UUID.h"
+#include "../src/Core/UUID.h"
 #include "IO/AssetCatalog.h"
 #include "IO/Loaders/SceneAssetLoader.h"
 #include "IO/VFS/VFS.h"

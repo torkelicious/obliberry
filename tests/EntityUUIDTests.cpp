@@ -20,7 +20,7 @@ TEST(EntityUUIDTests, NewEntityDistinctNonEmptyUUID) {
     EXPECT_NE(firstUUID, secondUUID);
 }
 
-// an already existing uuid should not be allowed to be assigned to another
+// an already existing UUID should not be allowed to be assigned to another
 TEST(EntityUUIDTests, DuplicateAssignmentPreservesOriginalUUID) {
     ECS::Registry registry;
 
