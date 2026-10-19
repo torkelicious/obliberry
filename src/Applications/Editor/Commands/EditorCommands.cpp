@@ -493,7 +493,8 @@ namespace Editor::Commands {
 
     std::string_view AddScriptCommand::Name() const noexcept { return "Add script"; }
 
-    SetScriptPropertyCommand::SetScriptPropertyCommand(Core::UUID targetUUID, const std::size_t slotIndex, std::string scriptPath, std::string name, std::optional<nlohmann::json> oldValue, std::optional<nlohmann::json> newValue)
+    SetScriptPropertyCommand::SetScriptPropertyCommand(
+            Core::UUID targetUUID, const std::size_t slotIndex, std::string scriptPath, std::string name, std::optional<nlohmann::json> oldValue, std::optional<nlohmann::json> newValue)
         : EntityCommand(targetUUID), m_SlotIndex(slotIndex), m_ScriptPath(std::move(scriptPath)), m_Name(std::move(name)), m_Old(std::move(oldValue)), m_New(std::move(newValue)) {}
 
     std::optional<std::size_t> SetScriptPropertyCommand::ResolveSlot(const ECS::Components::ScriptComponent &scripts) const {
