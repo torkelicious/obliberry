@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cfloat>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <string>
 #include <type_traits>
@@ -30,6 +31,8 @@
 #include "Logger/LoggerService.h"
 #include "Rendering/Types/Material.h"
 #include "Rendering/Types/Shader/Shader.h"
+#include "Scripting/EngineLib/ScriptProperties.h"
+#include "UI/Rendering/UISystem.h"
 #include "imgui.h"
 #include "ECS/Components/SpriteSheetComponent.h"
 #include "ECS/Systems/Animation/Animation.h"
@@ -494,13 +497,213 @@ void Editor::UI::MapStateWidget::Draw(const ECS::Entity entity, Core::EngineCont
 
 //  ScriptWidget
 
+
+// props
+namespace Editor::UI {
+    namespace {
+        // declarations found in a scripts source
+        const std::vector<Scripting::ScriptPropertyDecl> &GetScriptDecls(const std::string &scriptPath) {
+            struct CacheEntry {
+                bool loaded = false;
+                double lastCheck = -1.0;
+                std::filesystem::file_time_type stamp{};
+                std::vector<Scripting::ScriptPropertyDecl> decls;
+            };
+            static std::unordered_map<std::string, CacheEntry> s_Cache;
+
+            CacheEntry &entry = s_Cache[scriptPath];
+            const double now = ImGui::GetTime();
+            if (entry.loaded && entry.lastCheck >= 0.0 && now - entry.lastCheck < 1.0) {
+                return entry.decls;
+            }
+            entry.lastCheck = now;
+
+            std::error_code ec;
+            const auto stamp = std::filesystem::last_write_time(IO::VFS::Resolve(scriptPath), ec);
+            if (entry.loaded && !ec && stamp == entry.stamp) {
+                return entry.decls;
+            }
+
+            entry.stamp = ec ? std::filesystem::file_time_type{} : stamp;
+            entry.loaded = true;
+            entry.decls.clear();
+            if (const auto source = IO::VFS::ReadVirtual(scriptPath)) {
+                entry.decls = Scripting::ScanScriptProperties(*source);
+            }
+            return entry.decls;
+        }
+
+        std::optional<nlohmann::json> StoredOrNull(const ECS::Components::ScriptSlot &slot, const std::string &name) {
+            const auto it = slot.properties.find(name);
+            if (it == slot.properties.end()) {
+                return std::nullopt;
+            }
+            return it->second;
+        }
+
+        void DrawScriptProperties(const ECS::Entity entity, ECS::Components::ScriptSlot &slot, const std::size_t slotIndex, Core::EngineContext *engineContext, UndoManager *undoManager) {
+            if (!engineContext || !undoManager) {
+                return;
+            }
+
+            const auto &decls = GetScriptDecls(slot.scriptPath);
+            if (decls.empty()) {
+                return;
+            }
+
+            ECS::Registry *registry = entity.GetRegistry();
+            const Core::UUID entityUUID = registry->GetEntityUUID(static_cast<ECS::EntityID>(entity));
+
+            auto commit = [&](const std::string &name, std::optional<nlohmann::json> oldValue, std::optional<nlohmann::json> newValue) {
+                undoManager->Execute(std::make_unique<Commands::SetScriptPropertyCommand>(entityUUID, slotIndex, name, std::move(oldValue), std::move(newValue)), *engineContext);
+                MarkSceneChanged(engineContext);
+            };
+
+            static std::optional<nlohmann::json> s_EditStart;
+
+            ImGui::Indent();
+            for (const auto &decl : decls) {
+                ImGui::PushID(decl.name.c_str());
+
+                switch (decl.type) {
+                    case Scripting::ScriptPropertyType::Number: {
+                        const std::optional<nlohmann::json> before = StoredOrNull(slot, decl.name);
+                        float value = static_cast<float>((before && before->is_number()) ? before->get<double>() : decl.defaultValue.get<double>());
+                        if (ImGui::DragFloat(decl.name.c_str(), &value, 0.05f)) {
+                            slot.properties[decl.name] = static_cast<double>(value); // live while dragging
+                        }
+                        if (ImGui::IsItemActivated()) {
+                            s_EditStart = before;
+                        }
+                        if (ImGui::IsItemDeactivatedAfterEdit()) {
+                            commit(decl.name, s_EditStart, nlohmann::json(static_cast<double>(value)));
+                        }
+                        break;
+                    }
+                    case Scripting::ScriptPropertyType::Bool: {
+                        const std::optional<nlohmann::json> before = StoredOrNull(slot, decl.name);
+                        bool value = (before && before->is_boolean()) ? before->get<bool>() : decl.defaultValue.get<bool>();
+                        if (ImGui::Checkbox(decl.name.c_str(), &value)) {
+                            commit(decl.name, before, nlohmann::json(value));
+                        }
+                        break;
+                    }
+                    case Scripting::ScriptPropertyType::String: {
+                        const std::optional<nlohmann::json> before = StoredOrNull(slot, decl.name);
+                        const std::string current = (before && before->is_string()) ? before->get<std::string>() : decl.defaultValue.get<std::string>();
+                        char buffer[256] = {};
+                        std::snprintf(buffer, sizeof(buffer), "%s", current.c_str());
+                        if (ImGui::InputText(decl.name.c_str(), buffer, sizeof(buffer))) {
+                            slot.properties[decl.name] = std::string(buffer); // live while typing
+                        }
+                        if (ImGui::IsItemActivated()) {
+                            s_EditStart = before;
+                        }
+                        if (ImGui::IsItemDeactivatedAfterEdit()) {
+                            commit(decl.name, s_EditStart, nlohmann::json(std::string(buffer)));
+                        }
+                        break;
+                    }
+                    case Scripting::ScriptPropertyType::Entity: {
+                        const std::optional<nlohmann::json> before = StoredOrNull(slot, decl.name);
+                        const bool hasValue = before && before->is_string();
+                        const std::string storedUuid = hasValue ? before->get<std::string>() : std::string();
+
+                        std::string preview = "None";
+                        if (hasValue) {
+                            preview = "(missing)";
+                            if (const auto uuid = Core::UUID::FromString(storedUuid)) {
+                                if (const ECS::EntityID id = registry->FindEntityByUUID(*uuid); id != ECS::INVALID_ENTITY_ID) {
+                                    preview = registry->GetEntityName(id);
+                                }
+                            }
+                        }
+
+                        if (ImGui::BeginCombo(decl.name.c_str(), preview.c_str())) {
+                            if (ImGui::Selectable("None", !hasValue) && hasValue) {
+                                commit(decl.name, before, std::nullopt);
+                            }
+                            for (const ECS::EntityID id : registry->GetLivingEntities()) {
+                                const std::string uuidText = registry->GetEntityUUID(id).ToString();
+                                const bool selected = hasValue && storedUuid == uuidText;
+                                ImGui::PushID(uuidText.c_str());
+                                if (ImGui::Selectable(registry->GetEntityName(id).c_str(), selected) && !selected) {
+                                    commit(decl.name, before, nlohmann::json(uuidText));
+                                }
+                                ImGui::PopID();
+                            }
+                            ImGui::EndCombo();
+                        }
+                        break;
+                    }
+                    case Scripting::ScriptPropertyType::UIElement: {
+                        if (!engineContext->uiSystem) {
+                            ImGui::TextDisabled("%s (UI system unavailable)", decl.name.c_str());
+                            break;
+                        }
+
+                        const std::optional<nlohmann::json> before = StoredOrNull(slot, decl.name);
+                        const bool hasValue = before && before->is_string();
+                        const std::string storedUuid = hasValue ? before->get<std::string>() : std::string();
+
+                        std::string preview = "None";
+                        if (hasValue) {
+                            preview = "(missing)";
+                            if (const auto uuid = Core::UUID::FromString(storedUuid)) {
+                                if (const ::UI::UIElement *element = engineContext->uiSystem->FindByUUID(*uuid)) {
+                                    preview = element->Name;
+                                }
+                            }
+                        }
+
+                        if (ImGui::BeginCombo(decl.name.c_str(), preview.c_str())) {
+                            if (ImGui::Selectable("None", !hasValue) && hasValue) {
+                                commit(decl.name, before, std::nullopt);
+                            }
+
+                            std::function<void(const ::UI::UIElement *, int)> drawElement = [&](const ::UI::UIElement *element, const int depth) {
+                                const std::string uuidText = element->GetUUID().ToString();
+                                const bool selected = hasValue && storedUuid == uuidText;
+                                const std::string label = std::string(static_cast<size_t>(depth) * 2, ' ') + element->Name;
+
+                                ImGui::PushID(uuidText.c_str());
+                                if (ImGui::Selectable(label.c_str(), selected) && !selected) {
+                                    commit(decl.name, before, nlohmann::json(uuidText));
+                                }
+                                ImGui::PopID();
+
+                                for (const ::UI::UIElement *child : element->Children) {
+                                    drawElement(child, depth + 1);
+                                }
+                            };
+
+                            if (const ::UI::UIElement *root = engineContext->uiSystem->GetRoot()) {
+                                for (const ::UI::UIElement *child : root->Children) {
+                                    drawElement(child, 0);
+                                }
+                            }
+
+                            ImGui::EndCombo();
+                        }
+                        break;
+                    }
+                }
+
+                ImGui::PopID();
+            }
+            ImGui::Unindent();
+        }
+    } // namespace
+} // namespace Editor::UI
+
+
 const char *Editor::UI::ScriptWidget::GetName() const { return "Scripts"; }
 
 void Editor::UI::ScriptWidget::Draw(const ECS::Entity entity, Core::EngineContext *engineContext, UndoManager *undoManager) {
     if (!entity.HasComponent<ECS::Components::ScriptComponent>())
         return;
     if (ImGui::CollapsingHeader(GetName())) {
-        const auto *comp = entity.GetComponent<ECS::Components::ScriptComponent>();
+        auto *comp = entity.GetComponent<ECS::Components::ScriptComponent>();
 
         for (size_t i = 0; i < comp->slots.size(); i++) {
             ImGui::PushID(static_cast<int>(i));
@@ -512,6 +715,7 @@ void Editor::UI::ScriptWidget::Draw(const ECS::Entity entity, Core::EngineContex
                 ImGui::PopID();
                 break;
             }
+            DrawScriptProperties(entity, comp->slots[i], i, engineContext, undoManager);
             ImGui::PopID();
         }
 
