@@ -1,6 +1,6 @@
 #pragma once
 
-#include "nlohmann/json_fwd.hpp"
+#include "nlohmann/json.hpp"
 #include <ObSL/Environment.h>
 #include <ObSL/Parser.h>
 #include <filesystem>
