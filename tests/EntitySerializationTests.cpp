@@ -328,10 +328,11 @@ TEST_F(EntitySerializationTests, ScriptPropertiesRoundtripPerSlot) {
     script.slots[1].properties["Target"] = std::string("6f0c9c37-1f6a-4b6e-9e5a-2a6c3e2b2f2a");
 
     const auto data = Serialize(src);
-    ASSERT_TRUE(data.contains("ScriptComponent"));
-    ASSERT_TRUE(data["ScriptComponent"].contains("scriptProperties"));
-    ASSERT_TRUE(data["ScriptComponent"]["scriptProperties"].is_array());
-    ASSERT_EQ(data["ScriptComponent"]["scriptProperties"].size(), 2u);
+    ASSERT_TRUE(data.contains("components"));
+    ASSERT_TRUE(data["components"].contains("ScriptComponent"));
+    ASSERT_TRUE(data["components"]["ScriptComponent"].contains("scriptProperties"));
+    ASSERT_TRUE(data["components"]["ScriptComponent"]["scriptProperties"].is_array());
+    ASSERT_EQ(data["components"]["ScriptComponent"]["scriptProperties"].size(), 2u);
 
     auto loaded = Load(nlohmann::json::parse(data.dump()));
     const auto *actual = loaded.GetComponent<ECS::Components::ScriptComponent>();
@@ -351,11 +352,13 @@ TEST_F(EntitySerializationTests, ScriptWithoutPropertiesOmitsPropertyArray) {
     script.slots.emplace_back().scriptPath = "scripts/plain.obsl";
 
     const auto data = Serialize(src);
-    ASSERT_TRUE(data.contains("ScriptComponent"));
-    EXPECT_FALSE(data["ScriptComponent"].contains("scriptProperties"));
+    ASSERT_TRUE(data.contains("components"));
+    ASSERT_TRUE(data["components"].contains("ScriptComponent"));
+    EXPECT_FALSE(data["components"]["ScriptComponent"].contains("scriptProperties"));
 }
 
-TEST_F(EntitySerializationTests, ParticleConfigurationRoundtrip) {    const nlohmann::json expected{{"maxParticles", 123}, {"emitRate", 12.5f}, {"lifetimeMin", 0.25f}, {"lifetimeMax", 3.0f}, {"velocityMin", {-2.0f, 1.0f, -3.0f}}, {"velocityMax", {4.0f, 5.0f, 6.0f}},
+TEST_F(EntitySerializationTests, ParticleConfigurationRoundtrip) {
+    const nlohmann::json expected{{"maxParticles", 123}, {"emitRate", 12.5f}, {"lifetimeMin", 0.25f}, {"lifetimeMax", 3.0f}, {"velocityMin", {-2.0f, 1.0f, -3.0f}}, {"velocityMax", {4.0f, 5.0f, 6.0f}},
             {"gravity", {0.0f, -9.5f, 1.0f}}, {"sizeStartMin", 0.125f}, {"sizeStartMax", 0.75f}, {"sizeEndMin", 0.25f}, {"sizeEndMax", 1.5f}, {"rotationSpeedMin", -2.0f}, {"rotationSpeedMax", 4.0f},
             {"colorStart", {0.25f, 0.5f, 0.75f, 1.0f}}, {"colorEnd", {1.0f, 0.75f, 0.5f, 0.25f}}, {"isBillboard", true}, {"blendMode", 1}, {"renderOrder", 7}, {"shape", 2}};
 

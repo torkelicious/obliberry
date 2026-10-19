@@ -413,4 +413,35 @@ TEST_P(ScriptLifecycleTests, PackagedAstRetainsStringsUntilDestroyCallbackComple
     EXPECT_FALSE(ECS::Systems::ScriptSystem::s_PackagedStringPools.contains({id, 0}));
 }
 
+TEST_P(ScriptLifecycleTests, PropReadsSlotPropertiesDuringInitialization) {
+    ASSERT_NO_FATAL_FAILURE(Write("assets/scripts/props.obsl", "var speed = Prop(\"Speed\", 1.5);\n"
+                                                               "var enabled = Prop(\"Enabled\", false);\n"
+                                                               "var title = Prop(\"Title\", \"Fallback\");\n"
+                                                               "var missing = Prop(\"Missing\", 9.0);\n"
+                                                               "var mismatched = Prop(\"Mismatched\", 1.0);\n"
+                                                               "fn on_update(dt) { }\n"));
+
+    const auto id = Registry().CreateEntity();
+    auto &slot = Registry().AddComponent<ECS::Components::ScriptComponent>(id).slots.emplace_back();
+    slot.scriptPath = "assets/scripts/props.obsl";
+    slot.properties["Speed"] = 4.25;
+    slot.properties["Enabled"] = true;
+    slot.properties["Title"] = std::string("Stored");
+    slot.properties["Mismatched"] = std::string("not a number");
+
+    Update();
+
+    const auto *scripts = Registry().GetComponent<ECS::Components::ScriptComponent>(id);
+    ASSERT_NE(scripts, nullptr);
+    ASSERT_TRUE(scripts->slots[0].isInitialized);
+    ASSERT_FALSE(scripts->slots[0].instance_envs.empty());
+
+    auto &env = scripts->slots[0].instance_envs[0];
+    EXPECT_EQ(env->get("speed"), ObSL::Value{4.25});
+    EXPECT_EQ(env->get("enabled"), ObSL::Value{true});
+    EXPECT_EQ(env->get("title"), ObSL::Value{std::string{"Stored"}});
+    EXPECT_EQ(env->get("missing"), ObSL::Value{9.0});
+    EXPECT_EQ(env->get("mismatched"), ObSL::Value{1.0});
+}
+
 INSTANTIATE_TEST_SUITE_P(WorkerCounts, ScriptLifecycleTests, testing::Values(size_t{1}, size_t{2}), [](const testing::TestParamInfo<size_t> &info) { return "Workers" + std::to_string(info.param); });

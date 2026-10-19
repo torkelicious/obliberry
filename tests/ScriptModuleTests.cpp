@@ -78,14 +78,13 @@ TEST_F(ScriptModuleTests, ReinitializedRuntimeCanImportFromVfsAgain) {
 }
 
 TEST_F(ScriptModuleTests, ScanScriptPropertiesFindsTypedDeclarations) {
-    const std::string source =
-            "var speed = Prop(\"Speed\", 2.5);\n"
-            "var enabled = Prop(\"Enabled\", true);\n"
-            "var title = Prop(\"Title\", \"Hello\");\n"
-            "var target = PropEntity(\"Target\");\n"
-            "var panel = PropUI(\"Panel\");\n"
-            "// Prop(\"Commented\", 1);\n"
-            "var ignored = NotProp(\"Nope\", 1);\n";
+    const std::string source = "var speed = Prop(\"Speed\", 2.5);\n"
+                               "var enabled = Prop(\"Enabled\", true);\n"
+                               "var title = Prop(\"Title\", \"Hello\");\n"
+                               "var target = PropEntity(\"Target\");\n"
+                               "var panel = PropUI(\"Panel\");\n"
+                               "// Prop(\"Commented\", 1);\n"
+                               "var ignored = NotProp(\"Nope\", 1);\n";
 
     const auto decls = Scripting::ScanScriptProperties(source);
     ASSERT_EQ(decls.size(), 5u);
@@ -110,29 +109,8 @@ TEST_F(ScriptModuleTests, ScanScriptPropertiesFindsTypedDeclarations) {
     EXPECT_EQ(decls[4].type, Scripting::ScriptPropertyType::UIElement);
 }
 
-TEST_F(ScriptModuleTests, PropUsesStoredValuesAndFallsBackForMissingOrMismatchedValues) {
-    Scripting::PropertyMap props;
-    props["Speed"] = 4.25;
-    props["Enabled"] = true;
-    props["Title"] = std::string("Stored");
-    props["Mismatched"] = std::string("not a number");
-
-    {
-        Scripting::ScriptPropertyScope scope(&props);
-        ASSERT_NO_THROW(Run("var speed = Prop(\"Speed\", 1.5); var enabled = Prop(\"Enabled\", false); var title = Prop(\"Title\", \"Fallback\"); "
-                                "var missing = Prop(\"Missing\", 9.0); var mismatched = Prop(\"Mismatched\", 1.0);"));
-    }
-
-    EXPECT_EQ(Interpreter().get_global_environment()->get("speed"), ObSL::Value{4.25});
-    EXPECT_EQ(Interpreter().get_global_environment()->get("enabled"), ObSL::Value{true});
-    EXPECT_EQ(Interpreter().get_global_environment()->get("title"), ObSL::Value{std::string{"Stored"}});
-    EXPECT_EQ(Interpreter().get_global_environment()->get("missing"), ObSL::Value{9.0});
-    EXPECT_EQ(Interpreter().get_global_environment()->get("mismatched"), ObSL::Value{1.0});
-}
-
-TEST_F(ScriptModuleTests, PropWithoutScopeReturnsFallbackAndScopeRestoresPrevious) {
-    ASSERT_NO_THROW(Run("var outside = Prop(\"Speed\", 3.5);"));
-    EXPECT_EQ(Interpreter().get_global_environment()->get("outside"), ObSL::Value{3.5});
+TEST_F(ScriptModuleTests, PropertyScopesNestAndRestorePreviousScope) {
+    EXPECT_EQ(Scripting::CurrentInitProps(), nullptr);
 
     Scripting::PropertyMap outer;
     outer["Speed"] = 1.0;
