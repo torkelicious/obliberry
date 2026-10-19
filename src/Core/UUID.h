@@ -13,7 +13,7 @@
 
 namespace Core {
 
-    // UUID value type, confusing namespacing but whatever.
+    // UUID value type
     class UUID {
     public:
         using UUIDBytes = std::array<std::uint8_t, 16>;
