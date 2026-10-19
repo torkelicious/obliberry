@@ -69,12 +69,12 @@ void Scripting::EngineLib::register_core_modules(ObSL::Interpreter &interpreter)
     interpreter.get_global_environment()->define("Prop", interpreter.gc.allocate<ObSL::NativeFunction>(2, [](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
         const ObSL::Value &fallback = args[1];
         const PropertyMap *props = CurrentInitProps();
-        if (!props) {
+        if (!props || !std::holds_alternative<std::string>(args[0])) {
             return fallback;
         }
 
         const auto it = props->find(std::get<std::string>(args[0]));
-        if (it != props->end()) {
+        if (it == props->end()) {
             return fallback;
         }
 

@@ -671,7 +671,7 @@ void Scripting::EngineLib::register_gui_modules(ObSL::Interpreter &interpreter) 
             return std::monostate{};
         }
         const PropertyMap *props = CurrentInitProps();
-        if (!props) {
+        if (!props || !ctx || !ctx->uiSystem) {
             return std::monostate{};
         }
 

@@ -541,6 +541,15 @@ namespace Editor::UI {
             return it->second;
         }
 
+        int ResizeInputStringCallback(ImGuiInputTextCallbackData *data) {
+            if (data->EventFlag == ImGuiInputTextFlags_CallbackResize) {
+                auto *text = static_cast<std::string *>(data->UserData);
+                text->resize(static_cast<size_t>(data->BufTextLen));
+                data->Buf = text->data();
+            }
+            return 0;
+        }
+
         void DrawScriptProperties(const ECS::Entity entity, ECS::Components::ScriptSlot &slot, const std::size_t slotIndex, Core::EngineContext *engineContext, UndoManager *undoManager) {
             if (!engineContext || !undoManager) {
                 return;
@@ -590,17 +599,15 @@ namespace Editor::UI {
                     }
                     case Scripting::ScriptPropertyType::String: {
                         const std::optional<nlohmann::json> before = StoredOrNull(slot, decl.name);
-                        const std::string current = (before && before->is_string()) ? before->get<std::string>() : decl.defaultValue.get<std::string>();
-                        char buffer[256] = {};
-                        std::snprintf(buffer, sizeof(buffer), "%s", current.c_str());
-                        if (ImGui::InputText(decl.name.c_str(), buffer, sizeof(buffer))) {
-                            slot.properties[decl.name] = std::string(buffer); // live while typing
+                        std::string value = (before && before->is_string()) ? before->get<std::string>() : decl.defaultValue.get<std::string>();
+                        if (ImGui::InputText(decl.name.c_str(), value.data(), value.capacity() + 1, ImGuiInputTextFlags_CallbackResize, ResizeInputStringCallback, &value)) {
+                            slot.properties[decl.name] = value; // while typing
                         }
                         if (ImGui::IsItemActivated()) {
                             s_EditStart = before;
                         }
                         if (ImGui::IsItemDeactivatedAfterEdit()) {
-                            commit(decl.name, s_EditStart, nlohmann::json(std::string(buffer)));
+                            commit(decl.name, s_EditStart, nlohmann::json(value));
                         }
                         break;
                     }
