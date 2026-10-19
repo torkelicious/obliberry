@@ -43,14 +43,14 @@ var speed = Prop("Speed", 2.5);            // number
 var enabled = Prop("Enabled", true);       // bool
 var title = Prop("Title", "Hello");        // string
 var target = PropEntity("Target");         // entity reference
-var panel = PropUI("Panel");               // UI element reference
+var panel = PropUI("Rect");                // UI element reference
 ```
 
-| Function                     | Stored value                | Inspector widget   |
-| ---------------------------- | --------------------------- | ------------------ |
-| `Prop(name, default)`        | number, bool, or string      | Drag / checkbox / text |
-| `PropEntity(name)`           | entity UUID (or absent)      | Entity picker      |
-| `PropUI(name)`               | UI element UUID (or absent)  | UI element picker  |
+| Function              | Stored value                | Inspector widget       |
+| --------------------- | --------------------------- | ---------------------- |
+| `Prop(name, default)` | number, bool, or string     | Drag / checkbox / text |
+| `PropEntity(name)`    | entity UUID (or absent)     | Entity picker          |
+| `PropUI(name)`        | UI element UUID (or absent) | UI element picker      |
 
 The Inspector lists the declared properties under the entity's **Scripts** section; each script slot has its own
 values. Unset properties use the literal default from the source. When the stored value is missing, has the wrong
