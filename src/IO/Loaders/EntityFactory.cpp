@@ -433,7 +433,7 @@ void IO::EntityFactory::RegisterSerializers() {
                     for (const auto &slot : scriptComp->slots) {
                         nlohmann::json slotProps = nlohmann::json::object();
 
-                        for (const auto [key, value] : slot.properties) {
+                        for (const auto &[key, value] : slot.properties) {
                             slotProps[key] = value;
                         }
 
