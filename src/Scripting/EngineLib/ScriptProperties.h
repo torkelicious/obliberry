@@ -21,6 +21,7 @@ namespace Scripting {
         std::string name;
         ScriptPropertyType type = ScriptPropertyType::Number;
         nlohmann::json defaultValue;
+        bool hasDefaultValue = false;
     };
 
     namespace detail {
@@ -45,6 +46,13 @@ namespace Scripting {
             }
             if (text.size() >= 2 && text.front() == '"' && text.back() == '"') {
                 type = ScriptPropertyType::String;
+                try {
+                    if (const auto parsed = nlohmann::json::parse(text); parsed.is_string()) {
+                        out = parsed;
+                        return true;
+                    }
+                } catch (const nlohmann::json::exception &) {
+                }
                 out = text.substr(1, text.size() - 2);
                 return true;
             }
@@ -58,25 +66,31 @@ namespace Scripting {
             }
             return false;
         }
+
+        inline ScriptPropertyType InferExpressionType(const std::string &raw) {
+            const std::string text = Trim(raw);
+            if (!text.empty() && text.front() == '"') {
+                return ScriptPropertyType::String;
+            }
+            if (text == "true" || text == "false") {
+                return ScriptPropertyType::Bool;
+            }
+            return ScriptPropertyType::Number;
+        }
     } // namespace detail
 
     inline std::vector<ScriptPropertyDecl> ScanScriptProperties(const std::string &src) {
         // i hate this
-        static const std::regex pattern(R"re(^\s*var\s+([A-Za-z_]\w*)\s*=\s*(Prop|PropEntity|PropUI)\s*\(\s*"([^"]+)"\s*(?:,\s*(.+?))?\s*\)\s*;)re");
+        static const std::regex pattern(R"re(^var\s+([A-Za-z_]\w*)\s*=\s*(Prop|PropEntity|PropUI)\s*\(\s*"([^"]+)"\s*(?:,\s*(.+?))?\s*\)\s*;\s*(?://.*)?$)re");
+        static const std::regex startPattern(R"re(^var\s+[A-Za-z_]\w*\s*=\s*(?:Prop|PropEntity|PropUI)\s*\()re");
+        static const std::regex completePattern(R"re(;\s*(?://.*)?$)re");
 
         std::vector<ScriptPropertyDecl> result;
         std::istringstream stream(src);
         std::string line;
+        std::string statement;
 
-        while (std::getline(stream, line)) {
-            if (!line.empty() && line.back() == '\r') {
-                line.pop_back();
-            }
-            std::smatch m;
-            if (!std::regex_search(line, m, pattern)) {
-                continue;
-            }
-
+        const auto addDecl = [&result](const std::smatch &m) {
             ScriptPropertyDecl decl;
             decl.varName = m[1].str();
             decl.name = m[3].str();
@@ -85,21 +99,51 @@ namespace Scripting {
                 decl.type = ScriptPropertyType::Entity;
             } else if (m[2].str() == "PropUI") {
                 decl.type = ScriptPropertyType::UIElement;
-            } else if (!m[4].matched || !detail::ParseLiteral(m[4].str(), decl.type, decl.defaultValue)) {
-                continue;
+            } else if (!m[4].matched) {
+                return;
+            } else if (detail::ParseLiteral(m[4].str(), decl.type, decl.defaultValue)) {
+                decl.hasDefaultValue = true;
+            } else {
+                decl.type = detail::InferExpressionType(m[4].str());
             }
 
-            bool duplicate = false;
             for (const auto &existing : result) {
                 if (existing.name == decl.name) {
-                    duplicate = true;
-                    break;
+                    return;
+                }
+            }
+            result.push_back(std::move(decl));
+        };
+
+        while (std::getline(stream, line)) {
+            if (!line.empty() && line.back() == '\r') {
+                line.pop_back();
+            }
+            const std::string trimmed = detail::Trim(line);
+
+            if (statement.empty()) {
+                if (!std::regex_search(trimmed, startPattern)) {
+                    continue;
+                }
+                statement = trimmed;
+            } else {
+                if (std::regex_search(trimmed, startPattern)) {
+                    statement = trimmed;
+                } else if (!trimmed.empty()) {
+                    statement += " ";
+                    statement += trimmed;
                 }
             }
 
-            if (!duplicate) {
-                result.push_back(std::move(decl));
+            if (!std::regex_search(statement, completePattern)) {
+                continue;
             }
+
+            std::smatch m;
+            if (std::regex_match(statement, m, pattern)) {
+                addDecl(m);
+            }
+            statement.clear();
         }
         return result;
     }
