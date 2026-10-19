@@ -16,40 +16,80 @@
 
 namespace Core::Utils::UUID {
 
-    std::string UUIDGenerator::Generate() {
-        UUIDBytes bytes = RandomBytes16();
+    namespace {
 
-        // UUID v4
-        bytes[6] = static_cast<std::uint8_t>((bytes[6] & 0x0fU) | 0x40U);
+        constexpr std::uint8_t InvalidHex = 0xFF;
 
-        // RFC 4122
-        bytes[8] = static_cast<std::uint8_t>((bytes[8] & 0x3fU) | 0x80U);
-
-        return Format(bytes);
-    }
-
-    std::string UUIDGenerator::Format(const UUIDBytes &bytes) {
-        constexpr char hex[] = "0123456789abcdef";
-
-        std::string uuid;
-        uuid.reserve(36);
-
-        for (std::size_t i = 0; i < bytes.size(); ++i) {
-            // 4-2-2-2-6, producing 8-4-4-4-12
-            if (i == 4 || i == 6 || i == 8 || i == 10) {
-                uuid.push_back('-');
+        constexpr std::uint8_t HexValue(const char c) noexcept {
+            if (c >= '0' && c <= '9') {
+                return static_cast<std::uint8_t>(c - '0');
             }
-            const std::uint8_t byte = bytes[i];
-
-            uuid.push_back(hex[(byte >> 4U) & 0x0fU]);
-            uuid.push_back(hex[byte & 0x0fU]);
+            if (c >= 'a' && c <= 'f') {
+                return static_cast<std::uint8_t>(c - 'a' + 0x0A);
+            }
+            if (c >= 'A' && c <= 'F') {
+                return static_cast<std::uint8_t>(c - 'A' + 0x0A);
+            }
+            return InvalidHex;
         }
 
-        return uuid;
+    } // namespace
+
+    std::optional<uuid> uuid::FromString(std::string_view txt) noexcept {
+        if (txt.size() != 36 || txt[8] != '-' || txt[13] != '-' || txt[18] != '-' || txt[23] != '-') {
+            return std::nullopt;
+        }
+
+        UUIDBytes bytes{};
+        std::size_t byte_idx = 0;
+        bool high = true;
+
+        for (std::size_t i = 0; i < txt.size(); ++i) {
+            if (i == 8 || i == 13 || i == 18 || i == 23) {
+                continue;
+            }
+
+            const std::uint8_t value = HexValue(txt[i]);
+            if (value == InvalidHex) {
+                return std::nullopt;
+            }
+
+            if (high) {
+                bytes[byte_idx] = static_cast<std::uint8_t>(value << 4U);
+            } else {
+                bytes[byte_idx] |= value;
+                ++byte_idx;
+            }
+            high = !high;
+        }
+        return FromBytes(bytes);
     }
 
-    UUIDGenerator::UUIDBytes UUIDGenerator::RandomBytes16() {
-        UUIDBytes bytes{};
+    std::string uuid::ToString() const {
+        constexpr char hex[] = "0123456789abcdef";
+        std::string txt;
+        txt.reserve(36);
+
+        for (std::size_t i = 0; i < bytes_.size(); ++i) {
+            if (i == 4 || i == 6 || i == 8 || i == 10) {
+                txt.push_back('-');
+            }
+            const std::uint8_t byte = bytes_[i];
+            txt.push_back(hex[(byte >> 4U) & 0x0FU]);
+            txt.push_back(hex[byte & 0x0FU]);
+        }
+        return txt;
+    }
+
+    uuid UUIDGenerator::Generate() {
+        uuid::UUIDBytes bytes = RandomBytes16();
+        bytes[6] = static_cast<std::uint8_t>((bytes[6] & 0x0FU) | 0x40U);
+        bytes[8] = static_cast<std::uint8_t>((bytes[8] & 0x3FU) | 0x80U);
+        return uuid::FromBytes(bytes);
+    }
+
+    uuid::UUIDBytes UUIDGenerator::RandomBytes16() {
+        uuid::UUIDBytes bytes{};
 #ifdef _WIN32
         const NTSTATUS status = BCryptGenRandom(nullptr, bytes.data(), static_cast<ULONG>(bytes.size()), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
         if (!BCRYPT_SUCCESS(status)) {
