@@ -38,6 +38,7 @@
 #include "ECS/Systems/Animation/Animation.h"
 
 #include <filesystem>
+#include <map>
 #include <nlohmann/json.hpp>
 
 
@@ -502,9 +503,15 @@ void Editor::UI::MapStateWidget::Draw(const ECS::Entity entity, Core::EngineCont
 namespace Editor::UI {
     namespace {
         // declarations found in a scripts source
-        const std::vector<Scripting::ScriptPropertyDecl> &GetScriptDecls(const std::string &scriptPath) {
+        struct ScriptDecls {
+            const std::vector<Scripting::ScriptPropertyDecl> *decls = nullptr;
+            bool sourceReadable = false;
+        };
+
+        ScriptDecls GetScriptDecls(const std::string &scriptPath) {
             struct CacheEntry {
                 bool loaded = false;
+                bool sourceReadable = false;
                 double lastCheck = -1.0;
                 std::filesystem::file_time_type stamp{};
                 std::vector<Scripting::ScriptPropertyDecl> decls;
@@ -514,23 +521,25 @@ namespace Editor::UI {
             CacheEntry &entry = s_Cache[scriptPath];
             const double now = ImGui::GetTime();
             if (entry.loaded && entry.lastCheck >= 0.0 && now - entry.lastCheck < 1.0) {
-                return entry.decls;
+                return {&entry.decls, entry.sourceReadable};
             }
             entry.lastCheck = now;
 
             std::error_code ec;
             const auto stamp = std::filesystem::last_write_time(IO::VFS::Resolve(scriptPath), ec);
             if (entry.loaded && !ec && stamp == entry.stamp) {
-                return entry.decls;
+                return {&entry.decls, entry.sourceReadable};
             }
 
             entry.stamp = ec ? std::filesystem::file_time_type{} : stamp;
             entry.loaded = true;
+            entry.sourceReadable = false;
             entry.decls.clear();
             if (const auto source = IO::VFS::ReadVirtual(scriptPath)) {
+                entry.sourceReadable = true;
                 entry.decls = Scripting::ScanScriptProperties(*source);
             }
-            return entry.decls;
+            return {&entry.decls, entry.sourceReadable};
         }
 
         std::optional<nlohmann::json> StoredOrNull(const ECS::Components::ScriptSlot &slot, const std::string &name) {
@@ -555,18 +564,48 @@ namespace Editor::UI {
                 return;
             }
 
-            const auto &decls = GetScriptDecls(slot.scriptPath);
-            if (decls.empty()) {
+            const auto [declsPtr, sourceReadable] = GetScriptDecls(slot.scriptPath);
+            if (!sourceReadable || !declsPtr) {
                 return;
             }
+            const auto &decls = *declsPtr;
 
             ECS::Registry *registry = entity.GetRegistry();
             const Core::UUID entityUUID = registry->GetEntityUUID(static_cast<ECS::EntityID>(entity));
+            const std::string scriptPath = slot.scriptPath;
 
-            auto commit = [&](const std::string &name, std::optional<nlohmann::json> oldValue, std::optional<nlohmann::json> newValue) {
-                undoManager->Execute(std::make_unique<Commands::SetScriptPropertyCommand>(entityUUID, slotIndex, name, std::move(oldValue), std::move(newValue)), *engineContext);
-                MarkSceneChanged(engineContext);
+            auto commit = [&](const std::string &name, const std::optional<nlohmann::json> &oldValue, std::optional<nlohmann::json> newValue) {
+                const bool applied = undoManager->Execute(std::make_unique<Commands::SetScriptPropertyCommand>(entityUUID, slotIndex, scriptPath, name, oldValue, std::move(newValue)), *engineContext);
+                if (applied) {
+                    MarkSceneChanged(engineContext);
+                }
+                return applied;
             };
+
+            auto revertLiveEdit = [&](const std::string &name, const std::optional<nlohmann::json> &oldValue) {
+                if (oldValue) {
+                    slot.properties[name] = *oldValue;
+                } else {
+                    slot.properties.erase(name);
+                }
+            };
+
+            {
+                std::map<std::string, nlohmann::json> stale;
+                for (const auto &[name, value] : slot.properties) {
+                    const bool declared = std::ranges::any_of(decls, [&](const auto &decl) { return decl.name == name; });
+                    if (!declared) {
+                        stale[name] = value;
+                    }
+                }
+                if (!stale.empty()) {
+                    undoManager->Execute(std::make_unique<Commands::PruneScriptPropertiesCommand>(entityUUID, slotIndex, scriptPath, std::move(stale)), *engineContext);
+                }
+            }
+
+            if (decls.empty()) {
+                return;
+            }
 
             static std::optional<nlohmann::json> s_EditStart;
 
@@ -577,7 +616,7 @@ namespace Editor::UI {
                 switch (decl.type) {
                     case Scripting::ScriptPropertyType::Number: {
                         const std::optional<nlohmann::json> before = StoredOrNull(slot, decl.name);
-                        float value = static_cast<float>((before && before->is_number()) ? before->get<double>() : decl.defaultValue.get<double>());
+                        float value = static_cast<float>((before && before->is_number()) ? before->get<double>() : (decl.hasDefaultValue && decl.defaultValue.is_number() ? decl.defaultValue.get<double>() : 0.0));
                         if (ImGui::DragFloat(decl.name.c_str(), &value, 0.05f)) {
                             slot.properties[decl.name] = static_cast<double>(value); // live while dragging
                         }
@@ -585,13 +624,15 @@ namespace Editor::UI {
                             s_EditStart = before;
                         }
                         if (ImGui::IsItemDeactivatedAfterEdit()) {
-                            commit(decl.name, s_EditStart, nlohmann::json(static_cast<double>(value)));
+                            if (!commit(decl.name, s_EditStart, nlohmann::json(static_cast<double>(value)))) {
+                                revertLiveEdit(decl.name, s_EditStart);
+                            }
                         }
                         break;
                     }
                     case Scripting::ScriptPropertyType::Bool: {
                         const std::optional<nlohmann::json> before = StoredOrNull(slot, decl.name);
-                        bool value = (before && before->is_boolean()) ? before->get<bool>() : decl.defaultValue.get<bool>();
+                        bool value = (before && before->is_boolean()) ? before->get<bool>() : (decl.hasDefaultValue && decl.defaultValue.is_boolean() && decl.defaultValue.get<bool>());
                         if (ImGui::Checkbox(decl.name.c_str(), &value)) {
                             commit(decl.name, before, nlohmann::json(value));
                         }
@@ -599,7 +640,7 @@ namespace Editor::UI {
                     }
                     case Scripting::ScriptPropertyType::String: {
                         const std::optional<nlohmann::json> before = StoredOrNull(slot, decl.name);
-                        std::string value = (before && before->is_string()) ? before->get<std::string>() : decl.defaultValue.get<std::string>();
+                        std::string value = (before && before->is_string()) ? before->get<std::string>() : (decl.hasDefaultValue && decl.defaultValue.is_string() ? decl.defaultValue.get<std::string>() : std::string{});
                         if (ImGui::InputText(decl.name.c_str(), value.data(), value.capacity() + 1, ImGuiInputTextFlags_CallbackResize, ResizeInputStringCallback, &value)) {
                             slot.properties[decl.name] = value; // while typing
                         }
@@ -607,7 +648,9 @@ namespace Editor::UI {
                             s_EditStart = before;
                         }
                         if (ImGui::IsItemDeactivatedAfterEdit()) {
-                            commit(decl.name, s_EditStart, nlohmann::json(value));
+                            if (!commit(decl.name, s_EditStart, nlohmann::json(value))) {
+                                revertLiveEdit(decl.name, s_EditStart);
+                            }
                         }
                         break;
                     }
