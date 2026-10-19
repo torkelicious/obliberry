@@ -41,9 +41,7 @@ protected:
     }
 
     ECS::Registry &Registry() { return scenes.GetCurrentScene()->GetRegistry(); }
-    ECS::EntityID Find(const Core::UUID &uuid) {
-        return Registry().FindEntityByUUID(uuid);
-    }
+    ECS::EntityID Find(const Core::UUID &uuid) { return Registry().FindEntityByUUID(uuid); }
 };
 
 TEST_F(EditorCommandTests, TransformExecuteUndoRedoRestoresValues) {

@@ -737,8 +737,7 @@ namespace Editor::Commands {
 
     // AddUIElementCommand
     AddUIElementCommand::AddUIElementCommand(const ::UI::UISystem *sys, const ::UI::UIElement *parent, UIElementSnapshot snapshot)
-        : UIElementCommand(snapshot.uuid.IsNil() ? Core::UUIDGenerator::Generate() : snapshot.uuid), m_ParentUUID(sys && sys->Contains(parent) ? parent->GetUUID() : Core::UUID{}),
-          m_Snapshot(std::move(snapshot)) {
+        : UIElementCommand(snapshot.uuid.IsNil() ? Core::UUIDGenerator::Generate() : snapshot.uuid), m_ParentUUID(sys && sys->Contains(parent) ? parent->GetUUID() : Core::UUID{}), m_Snapshot(std::move(snapshot)) {
         m_Snapshot.uuid = m_ElementUUID;
     }
 

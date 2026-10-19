@@ -756,8 +756,8 @@ TEST(SaveDirectoryTests, DifferentProjectUUIDsProduceSeparateDirectories) {
 
 TEST(SaveDirectoryTests, MalformedUUIDTextIsRejectedBeforeReachingTheDirectoryBuilder) {
     // Strings that cannot be parsed never become a UUID, so they can never reach the filesystem.
-    const std::vector<std::string> malformed{"", "not-a-UUID", "../outside", "01234567-89ab-4cde-8fab-0123456789a", "01234567-89ab-4cde-8fab-0123456789ab0", "01234567_89ab-4cde-8fab-0123456789ab",
-            "01234567-89ab-4cde-8fab-0123456789ag"};
+    const std::vector<std::string> malformed{
+            "", "not-a-UUID", "../outside", "01234567-89ab-4cde-8fab-0123456789a", "01234567-89ab-4cde-8fab-0123456789ab0", "01234567_89ab-4cde-8fab-0123456789ab", "01234567-89ab-4cde-8fab-0123456789ag"};
 
     for (const auto &uuid : malformed) {
         SCOPED_TRACE(testing::Message() << "UUID: " << uuid);
