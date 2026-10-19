@@ -4,6 +4,7 @@
 #include <compare>
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <functional>
 #include <optional>
 #include <ostream>
@@ -64,3 +65,9 @@ template <> struct std::hash<Core::Utils::UUID::uuid> {
         return static_cast<std::size_t>(hash);
     }
 };
+
+template <> struct std::formatter<Core::Utils::UUID::uuid> : std::formatter<std::string_view> {
+    auto format(const Core::Utils::UUID::uuid &value, std::format_context &ctx) const { return std::formatter<std::string_view>::format(value.ToString(), ctx); }
+};
+
+// for testing
