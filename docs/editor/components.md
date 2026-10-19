@@ -157,11 +157,16 @@ and [collider serialization](../formats/scene-json.md#collidercomponent) for sav
 
 Attaches ObSL scripts to the entity. Scripts define custom logic.
 
-| UI Field        | Type           | Notes                                              |
-| --------------- | -------------- | -------------------------------------------------- |
-| **Script list** | Bullet list    | Each attached script path with a **Remove** button |
-| **Add Script**  | FileCombo      | Pick a `.obsl` file from `assets/scripts/`         |
-| **Total count** | Read-only text | Number of attached scripts                         |
+| UI Field        | Type               | Notes                                                                                                                                                                              |
+| --------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Script list** | Bullet list        | Each attached script path with a **Remove** button                                                                                                                                 |
+| **Properties**  | Per-script widgets | Values declared with `Prop` / `PropEntity` / `PropUI` in the script source. Numbers use a drag field, bools a checkbox, strings a text field, and entity / UI references a picker. |
+| **Add Script**  | FileCombo          | Pick a `.obsl` file from `assets/scripts/`                                                                                                                                         |
+| **Total count** | Read-only text     | Number of attached scripts                                                                                                                                                         |
+
+Properties are stored per script slot in the scene file. Removing a declaration and reopening the Inspector removes
+the now-stale stored value (undoable). See
+[Script properties](../scripting/getting-started.md#script-properties) for declaration syntax.
 
 ---
 

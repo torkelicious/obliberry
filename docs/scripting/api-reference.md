@@ -61,6 +61,19 @@ There is no `dt` global use `get_dt()` (time-scaled) or `GetRawDt()` (unscaled) 
 | `Window_SetFullscreen(fullscreen)` | `bool` or `number` | void    | Enter/leave fullscreen (number: non-zero = true).       |
 | `CloseWindow()`                    | -                  | void    | Requests the window to close.                           |
 
+### Script properties
+
+These are intended for top-level (initialization) code. The active property map belongs to the script slot being
+initialized, and is cleared afterwards, so calls from hooks return the fallback.
+
+| Function               | Args              | Returns                 | Description                                                                                                               |
+| ---------------------- | ----------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `Prop(name, fallback)` | `string`, literal | number/bool/string      | Stored value when its type matches `fallback`; otherwise `fallback`.                                                      |
+| `PropEntity(name)`     | `string`          | entity object or `null` | Entity referenced by the stored UUID, or `null` when unset, malformed, or missing.                                        |
+| `PropUI(name)`         | `string`          | UI object or `null`     | UI element referenced by the stored UUID, or `null` when unset, malformed, missing, or when the UI system is unavailable. |
+
+See [Script properties](getting-started.md#script-properties) for declaring them in the editor.
+
 ## Audio
 
 | Function                    | Args                             | Returns | Description                                      |
@@ -450,20 +463,20 @@ element's name changes or is duplicated. `GetName()` returns the element's name;
 
 ### Base methods (all element types)
 
-| Method                | Args           | Returns        | Description              |
-| --------------------- | -------------- | -------------- | ------------------------ |
-| `GetName()`           | -              | string         | Element name.            |
-| `GetUUID()`           | -              | string         | Element UUID.            |
-| `GetPosition()`       | -              | array `[x, y]` | UI-space position.       |
-| `GetSize()`           | -              | array `[x, y]` | UI-space size.           |
-| `IsVisible()`         | -              | bool           | `VISIBLE` flag.          |
-| `IsEnabled()`         | -              | bool           | `ENABLED` flag.          |
-| `IsFocused()`         | -              | bool           | `FOCUSED` flag.          |
-| `SetPosition(x, y)`   | numbers        | void           | Sets position.           |
-| `SetSize(x, y)`       | numbers        | void           | Sets size.               |
-| `SetVisible(visible)` | bool or number | void           | Sets the `VISIBLE` flag. |
-| `SetParent(parent)`   | element, string, or `null` | void | Reparents the element under another element (by object or UUID); `null`/empty moves it to the root. |
-| `Destroy()`           | -              | void           | Destroys the UI element. |
+| Method                | Args                       | Returns        | Description                                                                                         |
+| --------------------- | -------------------------- | -------------- | --------------------------------------------------------------------------------------------------- |
+| `GetName()`           | -                          | string         | Element name.                                                                                       |
+| `GetUUID()`           | -                          | string         | Element UUID.                                                                                       |
+| `GetPosition()`       | -                          | array `[x, y]` | UI-space position.                                                                                  |
+| `GetSize()`           | -                          | array `[x, y]` | UI-space size.                                                                                      |
+| `IsVisible()`         | -                          | bool           | `VISIBLE` flag.                                                                                     |
+| `IsEnabled()`         | -                          | bool           | `ENABLED` flag.                                                                                     |
+| `IsFocused()`         | -                          | bool           | `FOCUSED` flag.                                                                                     |
+| `SetPosition(x, y)`   | numbers                    | void           | Sets position.                                                                                      |
+| `SetSize(x, y)`       | numbers                    | void           | Sets size.                                                                                          |
+| `SetVisible(visible)` | bool or number             | void           | Sets the `VISIBLE` flag.                                                                            |
+| `SetParent(parent)`   | element, string, or `null` | void           | Reparents the element under another element (by object or UUID); `null`/empty moves it to the root. |
+| `Destroy()`           | -                          | void           | Destroys the UI element.                                                                            |
 
 ### Button methods
 

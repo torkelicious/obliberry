@@ -33,6 +33,46 @@ entities through the `ScriptComponent` in the editor via the Inspector, or by ha
 An entity can have multiple scripts (the scene format also accepts a `scriptPaths` array). Each script on each entity
 gets its own instance.
 
+## Script properties
+
+Scripts can declare **properties**: values that are edited in the Inspector and stored per entity in the scene file.
+Declare them at the top level with `Prop`, `PropEntity`, or `PropUI`:
+
+```obsl
+var speed = Prop("Speed", 2.5);            // number
+var enabled = Prop("Enabled", true);       // bool
+var title = Prop("Title", "Hello");        // string
+var target = PropEntity("Target");         // entity reference
+var panel = PropUI("Panel");               // UI element reference
+```
+
+| Function                     | Stored value                | Inspector widget   |
+| ---------------------------- | --------------------------- | ------------------ |
+| `Prop(name, default)`        | number, bool, or string      | Drag / checkbox / text |
+| `PropEntity(name)`           | entity UUID (or absent)      | Entity picker      |
+| `PropUI(name)`               | UI element UUID (or absent)  | UI element picker  |
+
+The Inspector lists the declared properties under the entity's **Scripts** section; each script slot has its own
+values. Unset properties use the literal default from the source. When the stored value is missing, has the wrong
+type, or the referenced entity/UI element no longer exists, the function returns the default (`Prop`) or `null`
+(`PropEntity` / `PropUI`).
+
+Properties are read during **initialization only** (the top-level run, including after a hot reload). Store the result
+in a regular variable and use that inside hooks:
+
+```obsl
+var speed = Prop("Speed", 2.5);
+
+fn on_update(dt) {
+    // speed already holds the configured value
+}
+```
+
+Values are saved as `scriptProperties` in the scene file (see
+[scene-json](../formats/scene-json.md#components)). The declaration scanner supports declarations spanning multiple
+lines and string escapes. Defaults that are expressions (for example `Prop("Damage", base * 2)`) are still exposed in
+the Inspector, but the default shown for an unset value is the type's zero value until you set it once.
+
 ## The script lifecycle
 
 A script attached to an entity runs like this:
