@@ -85,8 +85,8 @@ namespace {
         // UUID deduplication
         std::unordered_set<Core::UUID> uuids;
         for (const auto &[data, parentBatchIndex] : batch) {
-            if (const auto it = data.find("UUID"); it != data.end() && it->is_string()) {
-                if (const auto &uuid = Core::UUID::FromString(it->get_ref<const std::string &>()); !uuid->IsNil() && uuid.has_value()) {
+            if (const auto it = data.find("uuid"); it != data.end() && it->is_string()) {
+                if (const auto uuid = Core::UUID::FromString(it->get_ref<const std::string &>()); uuid && !uuid->IsNil()) {
                     uuids.insert(*uuid);
                 }
             }

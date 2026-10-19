@@ -7,7 +7,7 @@ class ConfigurationTests : public TemporaryProject {};
 
 TEST_F(ConfigurationTests, ProjectConfigurationRoundtrip) {
     Config::ProjectConfig expected;
-    expected.UUID = Core::Utils::UUID::UUIDGenerator::Generate();
+    expected.UUID = Core::UUIDGenerator::Generate();
     expected.Title = "Test Project";
     expected.startScenePath = "assets/scenes/start.json";
     expected.useSaves = true;
@@ -19,6 +19,17 @@ TEST_F(ConfigurationTests, ProjectConfigurationRoundtrip) {
     EXPECT_EQ(actual.startScenePath, expected.startScenePath);
     EXPECT_EQ(actual.useSaves, expected.useSaves);
     EXPECT_EQ(actual.saveLocation, expected.saveLocation);
+}
+
+TEST_F(ConfigurationTests, MalformedProjectUUIDLoadsAsNilInsteadOfThrowing) {
+    for (const auto &malformed : std::vector<std::string>{"", "not-a-UUID", "../outside", "01234567-89ab-4cde-8fab-0123456789a"}) {
+        SCOPED_TRACE(malformed);
+        ASSERT_NO_FATAL_FAILURE(WriteJson("project.json", {{"UUID", malformed}}));
+        Config::ProjectConfig loaded;
+        ASSERT_NO_THROW(loaded = Config::ProjectConfig::Deserialize());
+        // nil lets Project::Load regenerate and persist a real UUID
+        EXPECT_TRUE(loaded.UUID.IsNil());
+    }
 }
 
 TEST_F(ConfigurationTests, ProjectDefaultsAndInvalidSaveLocations) {

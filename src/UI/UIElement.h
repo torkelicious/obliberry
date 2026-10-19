@@ -24,7 +24,7 @@ namespace UI {
         UIElement *Parent = nullptr;
         std::vector<UIElement *> Children;
         RectTransform Rect{.Position = {0.0f, 0.0f}, .Scale = {0.0f, 0.0f}};
-        [[nodiscard]] const Core::Utils::UUID::uuid &GetUUID() const noexcept { return m_UUID; }
+        [[nodiscard]] const Core::UUID &GetUUID() const noexcept { return m_UUID; }
 
         virtual void Update() {}
 
@@ -46,7 +46,7 @@ namespace UI {
 
     private:
         friend class UISystem;
-        Core::Utils::UUID::uuid m_UUID = Core::Utils::UUID::UUIDGenerator::Generate();
+        Core::UUID m_UUID = Core::UUIDGenerator::Generate();
     };
 
 } // namespace UI

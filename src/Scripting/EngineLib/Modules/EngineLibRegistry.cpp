@@ -56,13 +56,13 @@ namespace Scripting {
             return nullptr;
         }
 
-        const std::string uuidStr = registry.GetEntityUUID(id);
+        const Core::UUID entityUUID = registry.GetEntityUUID(id);
 
         if (auto *cache = EntityWrapperCache::Get(interpreter)) {
             if (auto *hit = cache->Find(registry, id, EntityWrapperCache::Kind::Entity, [&] { return registry.IsValid(id); })) {
                 hit->fields["id"] = static_cast<double>(id);
                 hit->fields["name"] = registry.GetEntityName(id);
-                hit->fields["UUID"] = uuidStr;
+                hit->fields["uuid"] = entityUUID.ToString();
                 return hit;
             }
         }
@@ -71,11 +71,11 @@ namespace Scripting {
         EngineLibFactories::GCProtectGuard guard(interpreter, obj);
 
         // wrapper identity is the entity's UUID; the entity id is resolved from it on every call
-        auto uuid = std::make_shared<const std::string>(uuidStr);
+        const Core::UUID uuid = entityUUID;
 
         obj->fields["id"] = static_cast<double>(id);
         obj->fields["name"] = registry.GetEntityName(id);
-        obj->fields["UUID"] = uuidStr;
+        obj->fields["uuid"] = uuid.ToString();
 
         auto set_name_body = [uuid, reg_ptr = &registry](const ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
             if (args.empty() || !std::holds_alternative<std::string>(args[0])) {
@@ -85,7 +85,7 @@ namespace Scripting {
             auto name = std::get<std::string>(args[0]);
 
             auto apply = [uuid, name = std::move(name)](ECS::Registry &reg) {
-                const ECS::EntityID id = reg.FindEntityByUUID(*uuid);
+                const ECS::EntityID id = reg.FindEntityByUUID(uuid);
 
                 if (id == ECS::INVALID_ENTITY_ID) {
                     return;
@@ -110,7 +110,7 @@ namespace Scripting {
         auto get_name_body = [uuid, &registry](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
             std::shared_lock lock(g_RegistryMutex);
 
-            const ECS::EntityID id = registry.FindEntityByUUID(*uuid);
+            const ECS::EntityID id = registry.FindEntityByUUID(uuid);
 
             if (id == ECS::INVALID_ENTITY_ID) {
                 return std::monostate{};
@@ -126,7 +126,7 @@ namespace Scripting {
 
             std::shared_lock lock(g_RegistryMutex);
 
-            const ECS::EntityID id = registry.FindEntityByUUID(*uuid);
+            const ECS::EntityID id = registry.FindEntityByUUID(uuid);
 
             if (id == ECS::INVALID_ENTITY_ID) {
                 return std::monostate{};
@@ -193,7 +193,7 @@ namespace Scripting {
             auto apply = [uuid, name](ECS::Registry &reg) {
                 using namespace ECS::Components;
 
-                const ECS::EntityID id = reg.FindEntityByUUID(*uuid);
+                const ECS::EntityID id = reg.FindEntityByUUID(uuid);
 
                 if (id == ECS::INVALID_ENTITY_ID) {
                     return;
@@ -272,7 +272,7 @@ namespace Scripting {
 
             std::shared_lock lock(g_RegistryMutex);
 
-            const ECS::EntityID id = registry.FindEntityByUUID(*uuid);
+            const ECS::EntityID id = registry.FindEntityByUUID(uuid);
 
             if (id == ECS::INVALID_ENTITY_ID) {
                 return false;
@@ -327,7 +327,7 @@ namespace Scripting {
             auto apply = [uuid, name](ECS::Registry &reg) {
                 using namespace ECS::Components;
 
-                const ECS::EntityID id = reg.FindEntityByUUID(*uuid);
+                const ECS::EntityID id = reg.FindEntityByUUID(uuid);
 
                 if (id == ECS::INVALID_ENTITY_ID) {
                     return;
@@ -376,7 +376,7 @@ namespace Scripting {
 
             std::shared_lock lock(g_RegistryMutex);
 
-            const ECS::EntityID id = registry.FindEntityByUUID(*uuid);
+            const ECS::EntityID id = registry.FindEntityByUUID(uuid);
 
             if (id == ECS::INVALID_ENTITY_ID) {
                 return std::monostate{};
@@ -427,13 +427,13 @@ namespace Scripting {
 
             if (commands) {
                 commands->push([uuid](ECS::Registry &reg) {
-                    const ECS::EntityID id = reg.FindEntityByUUID(*uuid);
+                    const ECS::EntityID id = reg.FindEntityByUUID(uuid);
                     if (id != ECS::INVALID_ENTITY_ID)
                         reg.RequestDestroy(id);
                 });
             } else {
                 std::unique_lock lock(g_RegistryMutex);
-                const ECS::EntityID id = reg_ptr->FindEntityByUUID(*uuid);
+                const ECS::EntityID id = reg_ptr->FindEntityByUUID(uuid);
                 if (id != ECS::INVALID_ENTITY_ID)
                     reg_ptr->RequestDestroy(id);
             }
@@ -450,7 +450,7 @@ namespace Scripting {
             auto root = ECS::Components::CustomDataComponent::ProtectValue(*interp, args[1]);
 
             auto apply = [uuid, compName = std::move(compName), root = std::move(root)](ECS::Registry &reg) {
-                const ECS::EntityID id = reg.FindEntityByUUID(*uuid);
+                const ECS::EntityID id = reg.FindEntityByUUID(uuid);
 
                 if (id == ECS::INVALID_ENTITY_ID) {
                     return;
@@ -485,7 +485,7 @@ namespace Scripting {
 
             std::shared_lock lock(g_RegistryMutex);
 
-            const ECS::EntityID id = registry.FindEntityByUUID(*uuid);
+            const ECS::EntityID id = registry.FindEntityByUUID(uuid);
 
             if (id == ECS::INVALID_ENTITY_ID) {
                 return std::monostate{};
@@ -506,7 +506,7 @@ namespace Scripting {
             const bool shouldPersist = std::get<bool>(args[0]);
 
             auto apply = [uuid, shouldPersist](ECS::Registry &reg) {
-                const ECS::EntityID id = reg.FindEntityByUUID(*uuid);
+                const ECS::EntityID id = reg.FindEntityByUUID(uuid);
 
                 if (id == ECS::INVALID_ENTITY_ID) {
                     return;
@@ -535,7 +535,7 @@ namespace Scripting {
         auto is_persistent_body = [uuid, &registry](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
             std::shared_lock lock(g_RegistryMutex);
 
-            const ECS::EntityID id = registry.FindEntityByUUID(*uuid);
+            const ECS::EntityID id = registry.FindEntityByUUID(uuid);
 
             if (id == ECS::INVALID_ENTITY_ID) {
                 return false;
@@ -546,13 +546,13 @@ namespace Scripting {
 
         auto get_children_body = [uuid, &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
             std::shared_lock lock(g_RegistryMutex);
-            return ChildrenAsArray(interp, registry, registry.FindEntityByUUID(*uuid));
+            return ChildrenAsArray(interp, registry, registry.FindEntityByUUID(uuid));
         };
 
         auto get_parent_body = [uuid, &registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
             std::shared_lock lock(g_RegistryMutex);
 
-            const ECS::EntityID id = registry.FindEntityByUUID(*uuid);
+            const ECS::EntityID id = registry.FindEntityByUUID(uuid);
 
             if (id == ECS::INVALID_ENTITY_ID) {
                 return std::monostate{};
@@ -569,7 +569,7 @@ namespace Scripting {
 
         auto set_parent_body = [uuid, reg_ptr = &registry](const ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
             ECS::EntityID parentId = ECS::INVALID_ENTITY_ID;
-            std::string parentUuid;
+            Core::UUID parentUuid;
 
             if (!args.empty()) {
                 if (std::holds_alternative<double>(args[0])) {
@@ -578,8 +578,10 @@ namespace Scripting {
                     auto *parent = std::get<ObSL::ObSLObject *>(args[0]);
 
                     if (parent) {
-                        if (const auto it = parent->fields.find("UUID"); it != parent->fields.end() && std::holds_alternative<std::string>(it->second)) {
-                            parentUuid = std::get<std::string>(it->second);
+                        if (const auto it = parent->fields.find("uuid"); it != parent->fields.end() && std::holds_alternative<std::string>(it->second)) {
+                            if (const auto parsed = Core::UUID::FromString(std::get<std::string>(it->second))) {
+                                parentUuid = *parsed;
+                            }
                         } else if (const auto it = parent->fields.find("id"); it != parent->fields.end() && std::holds_alternative<double>(it->second)) {
                             parentId = static_cast<ECS::EntityID>(std::get<double>(it->second));
                         }
@@ -587,8 +589,8 @@ namespace Scripting {
                 }
             }
 
-            auto apply = [uuid, parentId, parentUuid = std::move(parentUuid)](ECS::Registry &reg) {
-                const ECS::EntityID id = reg.FindEntityByUUID(*uuid);
+            auto apply = [uuid, parentId, parentUuid](ECS::Registry &reg) {
+                const ECS::EntityID id = reg.FindEntityByUUID(uuid);
 
                 if (id == ECS::INVALID_ENTITY_ID) {
                     return;
@@ -596,7 +598,7 @@ namespace Scripting {
 
                 ECS::EntityID target = parentId;
 
-                if (!parentUuid.empty()) {
+                if (!parentUuid.IsNil()) {
                     target = reg.FindEntityByUUID(parentUuid);
                 }
 
@@ -619,7 +621,7 @@ namespace Scripting {
         auto get_child_count_body = [uuid, &registry](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
             std::shared_lock lock(g_RegistryMutex);
 
-            const ECS::EntityID id = registry.FindEntityByUUID(*uuid);
+            const ECS::EntityID id = registry.FindEntityByUUID(uuid);
 
             if (id == ECS::INVALID_ENTITY_ID) {
                 return 0.0;
@@ -642,7 +644,7 @@ namespace Scripting {
             const auto &childName = std::get<std::string>(args[0]);
             std::shared_lock lock(g_RegistryMutex);
 
-            const ECS::EntityID id = registry.FindEntityByUUID(*uuid);
+            const ECS::EntityID id = registry.FindEntityByUUID(uuid);
 
             if (id == ECS::INVALID_ENTITY_ID) {
                 return std::monostate{};
@@ -665,7 +667,7 @@ namespace Scripting {
 
         obj->fields["SetName"] = interpreter->gc.allocate<ObSL::NativeFunction>(1, std::move(set_name_body), "SetName");
         obj->fields["GetName"] = interpreter->gc.allocate<ObSL::NativeFunction>(0, std::move(get_name_body), "GetName");
-        obj->fields["GetUUID"] = interpreter->gc.allocate<ObSL::NativeFunction>(0, [uuid](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value { return *uuid; }, "GetUUID");
+        obj->fields["GetUUID"] = interpreter->gc.allocate<ObSL::NativeFunction>(0, [uuid](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value { return uuid.ToString(); }, "GetUUID");
         obj->fields["GetComponent"] = interpreter->gc.allocate<ObSL::NativeFunction>(1, std::move(get_comp_body), "GetComponent");
         obj->fields["HasComponent"] = interpreter->gc.allocate<ObSL::NativeFunction>(1, std::move(has_comp_body), "HasComponent");
         obj->fields["AddComponent"] = interpreter->gc.allocate<ObSL::NativeFunction>(1, std::move(add_comp_body), "AddComponent");
@@ -738,10 +740,16 @@ void Scripting::EngineLib::register_registry_modules(ObSL::Interpreter &interpre
             return std::monostate{};
         }
 
-        const auto &uuid = std::get<std::string>(args[0]);
+        const auto &uuidText = std::get<std::string>(args[0]);
+        const auto uuid = Core::UUID::FromString(uuidText);
+
+        if (!uuid) {
+            return std::monostate{};
+        }
+
         std::shared_lock lock(g_RegistryMutex);
 
-        const ECS::EntityID id = reg->FindEntityByUUID(uuid);
+        const ECS::EntityID id = reg->FindEntityByUUID(*uuid);
 
         if (id == ECS::INVALID_ENTITY_ID) {
             return std::monostate{};

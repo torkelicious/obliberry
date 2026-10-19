@@ -63,7 +63,7 @@ namespace UI {
         return nullptr;
     }
 
-    UIElement *UISystem::AddChild(UIElement *parent, std::unique_ptr<UIElement> element, Core::Utils::UUID::uuid uuid, const size_t insertIndex) {
+    UIElement *UISystem::AddChild(UIElement *parent, std::unique_ptr<UIElement> element, Core::UUID uuid, const size_t insertIndex) {
         if (!Contains(parent) || !element) {
             return nullptr;
         }
@@ -232,12 +232,12 @@ namespace UI {
         return it != m_NameIndex.end() ? it->second : nullptr;
     }
 
-    UIElement *UISystem::FindByUUID(const Core::Utils::UUID::uuid &uuid) {
+    UIElement *UISystem::FindByUUID(const Core::UUID &uuid) {
         const auto it = m_UUIDIndex.find(uuid);
         return it != m_UUIDIndex.end() ? it->second : nullptr;
     }
 
-    const UIElement *UISystem::FindByUUID(const Core::Utils::UUID::uuid &uuid) const {
+    const UIElement *UISystem::FindByUUID(const Core::UUID &uuid) const {
         const auto it = m_UUIDIndex.find(uuid);
         return it != m_UUIDIndex.end() ? it->second : nullptr;
     }

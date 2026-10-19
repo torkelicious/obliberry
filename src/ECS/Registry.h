@@ -270,7 +270,7 @@ namespace ECS {
         }
 
 
-        [[nodiscard]] const Core::UUID &GetEntityUUID(const EntityID id) const { return IsValid(id) ? m_EntityUUIDs[GetEntityIndex(id)] : Core::UUID{}; }
+        [[nodiscard]] Core::UUID GetEntityUUID(const EntityID id) const { return IsValid(id) ? m_EntityUUIDs[GetEntityIndex(id)] : Core::UUID{}; }
 
         [[nodiscard]] bool SetEntityUUID(const EntityID id, const Core::UUID &uuid) {
             if (!IsValid(id) || uuid.IsNil()) {

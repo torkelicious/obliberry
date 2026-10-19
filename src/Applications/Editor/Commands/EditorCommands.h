@@ -30,13 +30,13 @@ namespace Editor::Commands {
     // Entity IDs change when deletion is undone; commands retain the UUID instead.
     class EntityCommand : public ICommand {
     public:
-        explicit EntityCommand(std::string targetUUID) : m_EntityUUID(std::move(targetUUID)) {}
+        explicit EntityCommand(Core::UUID targetUUID) : m_EntityUUID(targetUUID) {}
         [[nodiscard]] bool Succeeded() const noexcept override { return m_Succeeded; }
 
     protected:
         [[nodiscard]] ECS::Entity ResolveEntity(const Core::EngineContext &ctx);
         void Complete(const Core::EngineContext &ctx);
-        std::string m_EntityUUID;
+        Core::UUID m_EntityUUID;
         bool m_Succeeded = false;
     };
 
@@ -66,7 +66,7 @@ namespace Editor::Commands {
         // i could make this a unified transform command
         // but transforms are much larger than just the vec3's they hold sooo...
         // optimization ig :DDDD
-        TranslateEntityCommand(std::string targetUUID, glm::vec3 oldPos, glm::vec3 newPos);
+        TranslateEntityCommand(Core::UUID targetUUID, glm::vec3 oldPos, glm::vec3 newPos);
         void Execute(Core::EngineContext &ctx) override;
         void Undo(Core::EngineContext &ctx) override;
         [[nodiscard]] std::string_view Name() const noexcept override;
@@ -82,7 +82,7 @@ namespace Editor::Commands {
 
     class RotateEntityCommand final : public EntityCommand {
     public:
-        RotateEntityCommand(std::string targetUUID, glm::vec3 oldRot, glm::vec3 newRot);
+        RotateEntityCommand(Core::UUID targetUUID, glm::vec3 oldRot, glm::vec3 newRot);
         void Execute(Core::EngineContext &ctx) override;
         void Undo(Core::EngineContext &ctx) override;
         [[nodiscard]] std::string_view Name() const noexcept override;
@@ -98,7 +98,7 @@ namespace Editor::Commands {
 
     class ScaleEntityCommand final : public EntityCommand {
     public:
-        ScaleEntityCommand(std::string targetUUID, glm::vec3 oldScale, glm::vec3 newScale);
+        ScaleEntityCommand(Core::UUID targetUUID, glm::vec3 oldScale, glm::vec3 newScale);
         void Execute(Core::EngineContext &ctx) override;
         void Undo(Core::EngineContext &ctx) override;
         [[nodiscard]] std::string_view Name() const noexcept override;
@@ -115,7 +115,7 @@ namespace Editor::Commands {
     // Rename Entity
     class SetNameCommand final : public EntityCommand {
     public:
-        SetNameCommand(std::string targetUUID, std::string oldName, std::string newName);
+        SetNameCommand(Core::UUID targetUUID, std::string oldName, std::string newName);
         void Execute(Core::EngineContext &ctx) override;
         void Undo(Core::EngineContext &ctx) override;
         [[nodiscard]] std::string_view Name() const noexcept override;
@@ -133,7 +133,7 @@ namespace Editor::Commands {
     // Remove Component
     template <typename T> class RemoveComponentCommand final : public EntityCommand {
     public:
-        RemoveComponentCommand(std::string targetUUID, const T &componentData) : EntityCommand(std::move(targetUUID)), m_OldData(componentData) {}
+        RemoveComponentCommand(Core::UUID targetUUID, const T &componentData) : EntityCommand(targetUUID), m_OldData(componentData) {}
         void Execute(Core::EngineContext &ctx) override {
             const auto entity = ResolveEntity(ctx);
             if (!entity || !entity.template HasComponent<T>()) {
@@ -159,7 +159,7 @@ namespace Editor::Commands {
     // Add Component
     template <typename T> class AddComponentCommand final : public EntityCommand {
     public:
-        AddComponentCommand(std::string targetUUID, const T &componentData) : EntityCommand(std::move(targetUUID)), m_Data(componentData) {}
+        AddComponentCommand(Core::UUID targetUUID, const T &componentData) : EntityCommand(targetUUID), m_Data(componentData) {}
         void Execute(Core::EngineContext &ctx) override {
             auto entity = ResolveEntity(ctx);
             if (!entity || entity.template HasComponent<T>()) {
@@ -186,7 +186,7 @@ namespace Editor::Commands {
     // SCRIPT COMPONENT HAS ITS OWN HANDLER:
     class RemoveScriptCommand : public EntityCommand {
     public:
-        RemoveScriptCommand(std::string targetUUID, int index);
+        RemoveScriptCommand(Core::UUID targetUUID, int index);
         void Execute(Core::EngineContext &ctx) override;
         void Undo(Core::EngineContext &ctx) override;
         [[nodiscard]] std::string_view Name() const noexcept override;
@@ -204,7 +204,7 @@ namespace Editor::Commands {
 
     class AddScriptCommand : public EntityCommand {
     public:
-        AddScriptCommand(std::string targetUUID, const std::string &script_path);
+        AddScriptCommand(Core::UUID targetUUID, const std::string &script_path);
         void Execute(Core::EngineContext &ctx) override;
         void Undo(Core::EngineContext &ctx) override;
         [[nodiscard]] std::string_view Name() const noexcept override;
@@ -236,7 +236,7 @@ namespace Editor::Commands {
     //  Maybe use some sort of "shadow delete" idk
     class DeleteEntityCommand final : public EntityCommand {
     public:
-        explicit DeleteEntityCommand(std::string targetUUID);
+        explicit DeleteEntityCommand(Core::UUID targetUUID);
         ~DeleteEntityCommand() override;
         void Execute(Core::EngineContext &ctx) override;
         void Undo(Core::EngineContext &ctx) override;
@@ -275,7 +275,7 @@ namespace Editor::Commands {
         using TileState = std::pair<uint8_t, bool>; // {type, walkable}
         using StateMap = std::unordered_map<Map::HexCoords, std::optional<TileState>, Map::HexCoordsHash>;
 
-        MapChangeTileCommand(StateMap oldState, StateMap newState, std::string targetUUID);
+        MapChangeTileCommand(StateMap oldState, StateMap newState, Core::UUID targetUUID);
         void Execute(Core::EngineContext &ctx) override;
         void Undo(Core::EngineContext &ctx) override;
         [[nodiscard]] std::string_view Name() const noexcept override;
@@ -310,7 +310,7 @@ namespace Editor::Commands {
     struct UIElementSnapshot {
         enum Type : uint8_t { RECT, TEXT, BUTTON, IMAGE };
         Type type = RECT;
-        std::string uuid = Core::Utils::UUID::UUIDGenerator::Generate();
+        Core::UUID uuid = Core::UUIDGenerator::Generate();
         std::string name;
         glm::vec2 position{0.0f};
         glm::vec2 scale{0.0f};
@@ -334,7 +334,7 @@ namespace Editor::Commands {
 
     class UIElementCommand : public ICommand {
     public:
-        explicit UIElementCommand(std::string targetUUID) : m_ElementUUID(std::move(targetUUID)) {}
+        explicit UIElementCommand(Core::UUID targetUUID) : m_ElementUUID(targetUUID) {}
 
         [[nodiscard]] bool Succeeded() const noexcept override { return m_Succeeded; }
 
@@ -342,7 +342,7 @@ namespace Editor::Commands {
         [[nodiscard]] ::UI::UIElement *ResolveElement(const Core::EngineContext &ctx);
         void Complete(const Core::EngineContext &ctx);
 
-        std::string m_ElementUUID;
+        Core::UUID m_ElementUUID;
         bool m_Succeeded = false;
     };
 
@@ -359,7 +359,7 @@ namespace Editor::Commands {
         [[nodiscard]] ::UI::UIElement *GetCreated(const Core::EngineContext &ctx) const { return ctx.uiSystem ? ctx.uiSystem->FindByUUID(m_ElementUUID) : nullptr; }
 
     private:
-        std::string m_ParentUUID;
+        Core::UUID m_ParentUUID;
         UIElementSnapshot m_Snapshot;
     };
 
@@ -373,7 +373,7 @@ namespace Editor::Commands {
     private:
         static void RestoreSubtree(::UI::UISystem *ui, ::UI::UIElement *parent, const UIElementSnapshot &snap, size_t insertIndex);
 
-        std::string m_ParentUUID;
+        Core::UUID m_ParentUUID;
         UIElementSnapshot m_Snapshot;
         size_t m_SiblingIndex = 0;
     };
@@ -381,7 +381,7 @@ namespace Editor::Commands {
     class SetUIElementNameCommand final : public UIElementCommand {
     public:
         SetUIElementNameCommand(const ::UI::UIElement *target, std::string oldName, std::string newName)
-            : UIElementCommand(target ? target->GetUUID() : std::string{}), m_OldName(std::move(oldName)), m_NewName(std::move(newName)) {}
+            : UIElementCommand(target ? target->GetUUID() : Core::UUID{}), m_OldName(std::move(oldName)), m_NewName(std::move(newName)) {}
 
         void Execute(Core::EngineContext &ctx) override { Apply(ctx, m_NewName); }
         void Undo(Core::EngineContext &ctx) override { Apply(ctx, m_OldName); }
@@ -406,7 +406,7 @@ namespace Editor::Commands {
 
     class SetUIElementPositionCommand final : public UIElementCommand {
     public:
-        SetUIElementPositionCommand(const ::UI::UIElement *target, const glm::vec2 oldPos, const glm::vec2 newPos) : UIElementCommand(target ? target->GetUUID() : std::string{}), m_OldPos(oldPos), m_NewPos(newPos) {}
+        SetUIElementPositionCommand(const ::UI::UIElement *target, const glm::vec2 oldPos, const glm::vec2 newPos) : UIElementCommand(target ? target->GetUUID() : Core::UUID{}), m_OldPos(oldPos), m_NewPos(newPos) {}
 
         void Execute(Core::EngineContext &ctx) override { Apply(ctx, m_NewPos); }
 
@@ -432,7 +432,7 @@ namespace Editor::Commands {
     class SetUIElementScaleCommand final : public UIElementCommand {
     public:
         SetUIElementScaleCommand(const ::UI::UIElement *target, const glm::vec2 oldScale, const glm::vec2 newScale)
-            : UIElementCommand(target ? target->GetUUID() : std::string{}), m_OldScale(oldScale), m_NewScale(newScale) {}
+            : UIElementCommand(target ? target->GetUUID() : Core::UUID{}), m_OldScale(oldScale), m_NewScale(newScale) {}
 
         void Execute(Core::EngineContext &ctx) override { Apply(ctx, m_NewScale); }
         void Undo(Core::EngineContext &ctx) override { Apply(ctx, m_OldScale); }
@@ -456,7 +456,7 @@ namespace Editor::Commands {
     class TransformUIElementCommand final : public UIElementCommand {
     public:
         TransformUIElementCommand(const ::UI::UIElement *target, const glm::vec2 oldPos, const glm::vec2 newPos, const glm::vec2 oldScale, const glm::vec2 newScale)
-            : UIElementCommand(target ? target->GetUUID() : std::string{}), m_OldPos(oldPos), m_NewPos(newPos), m_OldScale(oldScale), m_NewScale(newScale) {}
+            : UIElementCommand(target ? target->GetUUID() : Core::UUID{}), m_OldPos(oldPos), m_NewPos(newPos), m_OldScale(oldScale), m_NewScale(newScale) {}
 
         void Execute(Core::EngineContext &ctx) override { Apply(ctx, m_NewPos, m_NewScale); }
 
@@ -490,8 +490,8 @@ namespace Editor::Commands {
     // Used by AutoComponentWidget to make generic field edits (DragFloat, DragInt, etc.) undoable.
     template <typename T> class ModifyComponentFieldCommand final : public EntityCommand {
     public:
-        ModifyComponentFieldCommand(std::string targetUUID, const size_t offset, const size_t fieldSize, const void *oldData, const void *newData, std::string fieldName)
-            : EntityCommand(std::move(targetUUID)), m_Offset(offset), m_FieldSize(fieldSize), m_FieldName(std::move(fieldName)) {
+        ModifyComponentFieldCommand(Core::UUID targetUUID, const size_t offset, const size_t fieldSize, const void *oldData, const void *newData, std::string fieldName)
+            : EntityCommand(targetUUID), m_Offset(offset), m_FieldSize(fieldSize), m_FieldName(std::move(fieldName)) {
             if (!oldData || !newData || offset > sizeof(T) || fieldSize > sizeof(T) - offset) {
                 throw std::invalid_argument("Invalid component field range");
             }
@@ -567,7 +567,7 @@ namespace Editor::Commands {
 
     class PasteEntityCommand final : public EntityCommand {
     public:
-        explicit PasteEntityCommand(nlohmann::json data, std::string parentUUID = {});
+        explicit PasteEntityCommand(nlohmann::json data, Core::UUID parentUUID = {});
         ~PasteEntityCommand() override;
 
         void Execute(Core::EngineContext &ctx) override;
@@ -575,11 +575,11 @@ namespace Editor::Commands {
         [[nodiscard]] std::string_view Name() const noexcept override { return "Paste entity"; }
 
         [[nodiscard]] ECS::EntityID GetCreated() const { return m_Created; }
-        [[nodiscard]] const std::string &GetCreatedUUID() const { return m_EntityUUID; }
+        [[nodiscard]] const Core::UUID &GetCreatedUUID() const { return m_EntityUUID; }
 
     private:
         nlohmann::json m_Data;
-        std::string m_ParentUUID;
+        Core::UUID m_ParentUUID;
         ECS::EntityID m_Created = ECS::INVALID_ENTITY_ID;
         std::unique_ptr<EntitySubtreeSnapshot> m_Snapshot;
     };

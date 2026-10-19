@@ -14,7 +14,11 @@ namespace {
         Config::ProjectConfig config;
 
         if (const auto id = document.find("UUID"); id != document.end() && id->is_string()) {
-            config.UUID = Core::UUID::FromString(id->get<std::string>()).value();
+            if (const auto parsed = Core::UUID::FromString(id->get<std::string>())) {
+                config.UUID = *parsed;
+            } else {
+                LOG_WARN(LOG_WHO, "Malformed project UUID in project config; ignoring.");
+            }
         }
 
         if (const auto window = document.find("window"); window != document.end() && window->is_object()) {

@@ -1,6 +1,7 @@
 #pragma once
 #include "Applications/Editor/States/EditorStateBase.h"
 #include "Applications/Editor/States/MapEditor/MapTools.h"
+#include "Core/UUID.h"
 #include "ECS/Components/MapComponent.h"
 #include "ECS/Components/MapStateComponent.h"
 #include "Applications/Editor/UI/Panels/MapEditor/TileEditorPanel.h"
@@ -74,7 +75,7 @@ namespace Editor::States {
 
         void RecordPreState(const Map::HexCoords &hex, const Map::Tile *existing);
         void CommitMapChanges();
-        [[nodiscard]] std::string FindMapEntityUUID() const;
+        [[nodiscard]] Core::UUID FindMapEntityUUID() const;
 
         void ClearSelection();
         void FinalizeSelection();

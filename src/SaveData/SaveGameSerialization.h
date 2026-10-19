@@ -1,15 +1,15 @@
 #pragma once
 
 #include "Config/ProjectConfig.h"
+#include "Core/UUID.h"
 #include "SaveData/SaveGameData.h"
 
 #include <filesystem>
 #include <optional>
-#include <string_view>
 
 namespace Saves::IO {
 
-    [[nodiscard]] std::optional<std::filesystem::path> GenerateSaveDirectory(std::string_view uuid, Config::SaveLocation location);
+    [[nodiscard]] std::optional<std::filesystem::path> GenerateSaveDirectory(const Core::UUID &uuid, Config::SaveLocation location);
 
     bool WriteAtomic(const std::filesystem::path &path, const SaveData &data);
 

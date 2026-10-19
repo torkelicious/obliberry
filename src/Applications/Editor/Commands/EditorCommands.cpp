@@ -39,16 +39,11 @@
 namespace Editor::Commands {
 
     namespace {
-        ECS::EntityID FindUUID(const ECS::Registry &registry, const std::string &uuid) {
-            if (uuid.empty()) {
+        ECS::EntityID FindUUID(const ECS::Registry &registry, const Core::UUID &uuid) {
+            if (uuid.IsNil()) {
                 return ECS::INVALID_ENTITY_ID;
             }
-            for (const auto id : registry.GetLivingEntities()) {
-                if (registry.GetEntityUUID(id) == uuid) {
-                    return id;
-                }
-            }
-            return ECS::INVALID_ENTITY_ID;
+            return registry.FindEntityByUUID(uuid);
         }
 
         struct ScriptSlotSnapshot {
@@ -78,9 +73,9 @@ namespace Editor::Commands {
         }
 
         struct SavedEntity {
-            std::string uuid;
+            Core::UUID uuid;
             std::string name;
-            std::string parentUUID;
+            Core::UUID parentUUID;
             std::size_t siblingIndex = 0;
             bool hadRelationship = false;
             std::optional<CustomDataSnapshot> customData;
@@ -129,7 +124,7 @@ namespace Editor::Commands {
                     if (relationship->parent != ECS::INVALID_ENTITY_ID) {
                         saved.parentUUID = registry.GetEntityUUID(relationship->parent);
                         const auto *parent = registry.GetComponent<ECS::Components::RelationshipComponent>(relationship->parent);
-                        if (saved.parentUUID.empty() || !parent) {
+                        if (saved.parentUUID.IsNil() || !parent) {
                             throw std::runtime_error("Entity has an invalid parent");
                         }
                         const auto it = std::ranges::find(parent->children, id);
@@ -160,16 +155,16 @@ namespace Editor::Commands {
             if (snapshot.entities.size() > ECS::MAX_ENTITIES - 1 - registry.GetLivingEntities().size()) {
                 throw std::runtime_error("Not enough free entity slots to restore subtree");
             }
-            std::unordered_set<std::string> uuids;
+            std::unordered_set<Core::UUID> uuids;
             nlohmann::json references = {{"entities", nlohmann::json::array()}};
             for (const auto &saved : snapshot.entities) {
-                if (saved.uuid.empty() || !uuids.insert(saved.uuid).second || FindUUID(registry, saved.uuid) != ECS::INVALID_ENTITY_ID) {
+                if (saved.uuid.IsNil() || !uuids.insert(saved.uuid).second || FindUUID(registry, saved.uuid) != ECS::INVALID_ENTITY_ID) {
                     throw std::runtime_error("Restored entity UUID already exists");
                 }
                 references["entities"].push_back(saved.assetReferences);
             }
             for (const auto &saved : snapshot.entities) {
-                if (!saved.parentUUID.empty() && !uuids.contains(saved.parentUUID) && FindUUID(registry, saved.parentUUID) == ECS::INVALID_ENTITY_ID) {
+                if (!saved.parentUUID.IsNil() && !uuids.contains(saved.parentUUID) && FindUUID(registry, saved.parentUUID) == ECS::INVALID_ENTITY_ID) {
                     throw std::runtime_error("Restored entity's parent no longer exists");
                 }
             }
@@ -241,7 +236,7 @@ namespace Editor::Commands {
                 }
                 for (std::size_t i = 0; i < snapshot.entities.size(); ++i) {
                     const auto &saved = snapshot.entities[i];
-                    if (saved.parentUUID.empty()) {
+                    if (saved.parentUUID.IsNil()) {
                         continue;
                     }
                     const auto parent = FindUUID(registry, saved.parentUUID);
@@ -282,7 +277,7 @@ namespace Editor::Commands {
     //
 
     // Move Transform
-    TranslateEntityCommand::TranslateEntityCommand(std::string targetUUID, const glm::vec3 oldPos, const glm::vec3 newPos) : EntityCommand(std::move(targetUUID)), m_OldPos(oldPos), m_NewPos(newPos) {}
+    TranslateEntityCommand::TranslateEntityCommand(Core::UUID targetUUID, const glm::vec3 oldPos, const glm::vec3 newPos) : EntityCommand(targetUUID), m_OldPos(oldPos), m_NewPos(newPos) {}
 
     void TranslateEntityCommand::Execute(Core::EngineContext &ctx) {
         const auto entity = ResolveEntity(ctx);
@@ -309,7 +304,7 @@ namespace Editor::Commands {
     std::string_view TranslateEntityCommand::Name() const noexcept { return "Move entity"; }
 
     // Rotate Transform
-    RotateEntityCommand::RotateEntityCommand(std::string targetUUID, const glm::vec3 oldRot, const glm::vec3 newRot) : EntityCommand(std::move(targetUUID)), m_OldRot(oldRot), m_NewRot(newRot) {}
+    RotateEntityCommand::RotateEntityCommand(Core::UUID targetUUID, const glm::vec3 oldRot, const glm::vec3 newRot) : EntityCommand(targetUUID), m_OldRot(oldRot), m_NewRot(newRot) {}
 
     void RotateEntityCommand::Execute(Core::EngineContext &ctx) {
         const auto entity = ResolveEntity(ctx);
@@ -336,7 +331,7 @@ namespace Editor::Commands {
     std::string_view RotateEntityCommand::Name() const noexcept { return "Rotate entity"; }
 
     // Scale Transform
-    ScaleEntityCommand::ScaleEntityCommand(std::string targetUUID, const glm::vec3 oldScale, const glm::vec3 newScale) : EntityCommand(std::move(targetUUID)), m_OldScale(oldScale), m_NewScale(newScale) {}
+    ScaleEntityCommand::ScaleEntityCommand(Core::UUID targetUUID, const glm::vec3 oldScale, const glm::vec3 newScale) : EntityCommand(targetUUID), m_OldScale(oldScale), m_NewScale(newScale) {}
 
     void ScaleEntityCommand::Execute(Core::EngineContext &ctx) {
         const auto entity = ResolveEntity(ctx);
@@ -366,7 +361,7 @@ namespace Editor::Commands {
     // Rename Entity
     //
 
-    SetNameCommand::SetNameCommand(std::string targetUUID, std::string oldName, std::string newName) : EntityCommand(std::move(targetUUID)), m_OldName(std::move(oldName)), m_NewName(std::move(newName)) {}
+    SetNameCommand::SetNameCommand(Core::UUID targetUUID, std::string oldName, std::string newName) : EntityCommand(targetUUID), m_OldName(std::move(oldName)), m_NewName(std::move(newName)) {}
 
     void SetNameCommand::Execute(Core::EngineContext &ctx) {
         const auto entity = ResolveEntity(ctx);
@@ -393,7 +388,7 @@ namespace Editor::Commands {
     //
 
     // Remove script
-    RemoveScriptCommand::RemoveScriptCommand(std::string targetUUID, const int index) : EntityCommand(std::move(targetUUID)), m_Index(index) {}
+    RemoveScriptCommand::RemoveScriptCommand(Core::UUID targetUUID, const int index) : EntityCommand(targetUUID), m_Index(index) {}
 
     void RemoveScriptCommand::Execute(Core::EngineContext &ctx) {
         const auto entity = ResolveEntity(ctx);
@@ -445,7 +440,7 @@ namespace Editor::Commands {
     std::string_view RemoveScriptCommand::Name() const noexcept { return "Remove Script"; }
 
     // Add script
-    AddScriptCommand::AddScriptCommand(std::string targetUUID, const std::string &script_path) : EntityCommand(std::move(targetUUID)), m_PendingPath(script_path) {}
+    AddScriptCommand::AddScriptCommand(Core::UUID targetUUID, const std::string &script_path) : EntityCommand(targetUUID), m_PendingPath(script_path) {}
 
     void AddScriptCommand::Execute(Core::EngineContext &ctx) {
         auto entity = ResolveEntity(ctx);
@@ -491,7 +486,7 @@ namespace Editor::Commands {
 
     std::string_view AddScriptCommand::Name() const noexcept { return "Add script"; }
 
-    DeleteEntityCommand::DeleteEntityCommand(std::string targetUUID) : EntityCommand(std::move(targetUUID)) {}
+    DeleteEntityCommand::DeleteEntityCommand(Core::UUID targetUUID) : EntityCommand(targetUUID) {}
     DeleteEntityCommand::~DeleteEntityCommand() = default;
 
     void DeleteEntityCommand::Execute(Core::EngineContext &ctx) {
@@ -577,7 +572,7 @@ namespace Editor::Commands {
     //
 
     // Paint / Erase
-    MapChangeTileCommand::MapChangeTileCommand(StateMap oldState, StateMap newState, std::string targetUUID) : EntityCommand(std::move(targetUUID)), m_OldState(std::move(oldState)), m_NewState(std::move(newState)) {}
+    MapChangeTileCommand::MapChangeTileCommand(StateMap oldState, StateMap newState, Core::UUID targetUUID) : EntityCommand(targetUUID), m_OldState(std::move(oldState)), m_NewState(std::move(newState)) {}
 
     void MapChangeTileCommand::ApplyStates(const Core::EngineContext &ctx, const StateMap &states) {
         const auto entity = ResolveEntity(ctx);
@@ -742,7 +737,7 @@ namespace Editor::Commands {
 
     // AddUIElementCommand
     AddUIElementCommand::AddUIElementCommand(const ::UI::UISystem *sys, const ::UI::UIElement *parent, UIElementSnapshot snapshot)
-        : UIElementCommand(snapshot.uuid.empty() ? Core::Utils::UUID::UUIDGenerator::Generate() : snapshot.uuid), m_ParentUUID(sys && sys->Contains(parent) ? parent->GetUUID() : std::string{}),
+        : UIElementCommand(snapshot.uuid.IsNil() ? Core::UUIDGenerator::Generate() : snapshot.uuid), m_ParentUUID(sys && sys->Contains(parent) ? parent->GetUUID() : Core::UUID{}),
           m_Snapshot(std::move(snapshot)) {
         m_Snapshot.uuid = m_ElementUUID;
     }
@@ -776,7 +771,7 @@ namespace Editor::Commands {
 
     // RemoveUIElementCommand
     RemoveUIElementCommand::RemoveUIElementCommand(const ::UI::UISystem *sys, const ::UI::UIElement *parent, const ::UI::UIElement *child)
-        : m_ParentUUID(sys && parent && sys->Contains(parent) ? parent->GetUUID() : std::string{}), m_Snapshot(SnapshotUIElement(child)) {
+        : m_ParentUUID(sys && parent && sys->Contains(parent) ? parent->GetUUID() : Core::UUID{}), m_Snapshot(SnapshotUIElement(child)) {
         if (parent && child) {
             const auto &siblings = parent->Children;
             const auto it = std::ranges::find(siblings, child);
@@ -879,7 +874,7 @@ namespace Editor::Commands {
     // Clipboard
     //
 
-    PasteEntityCommand::PasteEntityCommand(nlohmann::json data, std::string parentUUID) : EntityCommand(Core::Utils::UUID::UUIDGenerator::Generate()), m_Data(std::move(data)), m_ParentUUID(std::move(parentUUID)) {}
+    PasteEntityCommand::PasteEntityCommand(nlohmann::json data, Core::UUID parentUUID) : EntityCommand(Core::UUIDGenerator::Generate()), m_Data(std::move(data)), m_ParentUUID(parentUUID) {}
     PasteEntityCommand::~PasteEntityCommand() = default;
 
     void PasteEntityCommand::Execute(Core::EngineContext &ctx) {
@@ -897,7 +892,7 @@ namespace Editor::Commands {
 
         auto &registry = scene->GetRegistry();
         const auto parent = FindUUID(registry, m_ParentUUID);
-        if (!m_ParentUUID.empty() && parent == ECS::INVALID_ENTITY_ID) {
+        if (!m_ParentUUID.IsNil() && parent == ECS::INVALID_ENTITY_ID) {
             return;
         }
         const bool tree = m_Data.contains("entities");

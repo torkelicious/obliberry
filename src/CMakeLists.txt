@@ -84,8 +84,8 @@ add_library(obliberry_engine STATIC
         # Save Data
         SaveData/SaveGameSerialization.cpp
         SaveData/SaveGameManager.cpp
-        Core/Utils/UUID.cpp
-        Core/Utils/UUID.h
+        Core/UUID.cpp
+        Core/UUID.h
 )
 
 target_include_directories(obliberry_engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
