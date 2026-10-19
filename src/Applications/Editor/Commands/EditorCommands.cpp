@@ -493,8 +493,20 @@ namespace Editor::Commands {
 
     std::string_view AddScriptCommand::Name() const noexcept { return "Add script"; }
 
-    SetScriptPropertyCommand::SetScriptPropertyCommand(Core::UUID targetUUID, const std::size_t slotIndex, std::string name, std::optional<nlohmann::json> oldValue, std::optional<nlohmann::json> newValue)
-        : EntityCommand(targetUUID), m_SlotIndex(slotIndex), m_Name(std::move(name)), m_Old(std::move(oldValue)), m_New(std::move(newValue)) {}
+    SetScriptPropertyCommand::SetScriptPropertyCommand(Core::UUID targetUUID, const std::size_t slotIndex, std::string scriptPath, std::string name, std::optional<nlohmann::json> oldValue, std::optional<nlohmann::json> newValue)
+        : EntityCommand(targetUUID), m_SlotIndex(slotIndex), m_ScriptPath(std::move(scriptPath)), m_Name(std::move(name)), m_Old(std::move(oldValue)), m_New(std::move(newValue)) {}
+
+    std::optional<std::size_t> SetScriptPropertyCommand::ResolveSlot(const ECS::Components::ScriptComponent &scripts) const {
+        if (m_SlotIndex < scripts.slots.size() && scripts.slots[m_SlotIndex].scriptPath == m_ScriptPath) {
+            return m_SlotIndex;
+        }
+        for (std::size_t i = 0; i < scripts.slots.size(); ++i) {
+            if (scripts.slots[i].scriptPath == m_ScriptPath) {
+                return i;
+            }
+        }
+        return std::nullopt;
+    }
 
     void SetScriptPropertyCommand::Apply(Core::EngineContext &ctx, const std::optional<nlohmann::json> &value) {
         const auto entity = ResolveEntity(ctx);
@@ -502,10 +514,14 @@ namespace Editor::Commands {
             return;
         }
         auto *scripts = entity.GetComponent<ECS::Components::ScriptComponent>();
-        if (!scripts || m_SlotIndex >= scripts->slots.size()) {
+        if (!scripts) {
             return;
         }
-        auto &properties = scripts->slots[m_SlotIndex].properties;
+        const auto slotIndex = ResolveSlot(*scripts);
+        if (!slotIndex) {
+            return;
+        }
+        auto &properties = scripts->slots[*slotIndex].properties;
         if (value) {
             properties[m_Name] = *value;
         } else {
@@ -519,6 +535,53 @@ namespace Editor::Commands {
     void SetScriptPropertyCommand::Undo(Core::EngineContext &ctx) { Apply(ctx, m_Old); }
 
     std::string_view SetScriptPropertyCommand::Name() const noexcept { return "Change script property"; }
+
+    PruneScriptPropertiesCommand::PruneScriptPropertiesCommand(Core::UUID targetUUID, const std::size_t slotIndex, std::string scriptPath, std::map<std::string, nlohmann::json> staleValues)
+        : EntityCommand(targetUUID), m_SlotIndex(slotIndex), m_ScriptPath(std::move(scriptPath)), m_StaleValues(std::move(staleValues)) {}
+
+    std::optional<std::size_t> PruneScriptPropertiesCommand::ResolveSlot(const ECS::Components::ScriptComponent &scripts) const {
+        if (m_SlotIndex < scripts.slots.size() && scripts.slots[m_SlotIndex].scriptPath == m_ScriptPath) {
+            return m_SlotIndex;
+        }
+        for (std::size_t i = 0; i < scripts.slots.size(); ++i) {
+            if (scripts.slots[i].scriptPath == m_ScriptPath) {
+                return i;
+            }
+        }
+        return std::nullopt;
+    }
+
+    void PruneScriptPropertiesCommand::Apply(Core::EngineContext &ctx, const bool remove) {
+        const auto entity = ResolveEntity(ctx);
+        if (!entity) {
+            return;
+        }
+        auto *scripts = entity.GetComponent<ECS::Components::ScriptComponent>();
+        if (!scripts) {
+            return;
+        }
+        const auto slotIndex = ResolveSlot(*scripts);
+        if (!slotIndex) {
+            return;
+        }
+        auto &properties = scripts->slots[*slotIndex].properties;
+        if (remove) {
+            for (const auto &name : m_StaleValues | std::views::keys) {
+                properties.erase(name);
+            }
+        } else {
+            for (const auto &[name, value] : m_StaleValues) {
+                properties[name] = value;
+            }
+        }
+        Complete(ctx);
+    }
+
+    void PruneScriptPropertiesCommand::Execute(Core::EngineContext &ctx) { Apply(ctx, true); }
+
+    void PruneScriptPropertiesCommand::Undo(Core::EngineContext &ctx) { Apply(ctx, false); }
+
+    std::string_view PruneScriptPropertiesCommand::Name() const noexcept { return "Remove stale script properties"; }
 
 
     DeleteEntityCommand::DeleteEntityCommand(Core::UUID targetUUID) : EntityCommand(targetUUID) {}
