@@ -199,6 +199,7 @@ namespace Editor::Commands {
         std::filesystem::path m_SavedResolvedPath;
         std::string m_SavedSourceCode;
         std::filesystem::file_time_type m_SavedLastModified;
+        std::map<std::string, nlohmann::json> m_SavedProperties;
     };
 
 
@@ -214,6 +215,21 @@ namespace Editor::Commands {
         std::size_t m_Index = 0;
         bool m_Captured = false;
         bool m_ComponentCreated = false;
+    };
+
+    class SetScriptPropertyCommand : public EntityCommand {
+    public:
+        SetScriptPropertyCommand(Core::UUID targetUUID, std::size_t slotIndex, std::string name, std::optional<nlohmann::json> oldValue, std::optional<nlohmann::json> newValue);
+        void Execute(Core::EngineContext &ctx) override;
+        void Undo(Core::EngineContext &ctx) override;
+        [[nodiscard]] std::string_view Name() const noexcept override;
+
+    private:
+        void Apply(Core::EngineContext &ctx, const std::optional<nlohmann::json> &value);
+        std::size_t m_SlotIndex;
+        std::string m_Name;
+        std::optional<nlohmann::json> m_Old;
+        std::optional<nlohmann::json> m_New;
     };
 
     // Scene Config

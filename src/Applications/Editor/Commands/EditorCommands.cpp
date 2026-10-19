@@ -30,8 +30,11 @@
 #include "ECS/Components/CustomDataComponent.h"
 #include "ECS/Components/DestroyTagComponent.h"
 #include "IO/Loaders/SceneAssetLoader.h"
+#include "nlohmann/json_fwd.hpp"
 #include <algorithm>
 #include <limits>
+#include <map>
+#include <string>
 #include <tuple>
 #include <unordered_set>
 #include <stdexcept>
@@ -51,6 +54,7 @@ namespace Editor::Commands {
             std::filesystem::path resolvedPath;
             std::string source;
             std::filesystem::file_time_type lastModified;
+            std::map<std::string, nlohmann::json> properties;
         };
 
         // Copy editor state and resource ownership, without retaining script runtime pointers.
@@ -113,7 +117,7 @@ namespace Editor::Commands {
                 if (const auto *scripts = registry.GetComponent<ECS::Components::ScriptComponent>(id)) {
                     saved.scripts.emplace();
                     for (const auto &slot : scripts->slots) {
-                        saved.scripts->push_back({.path = slot.scriptPath, .resolvedPath = slot.resolvedPath, .source = slot.source_code, .lastModified = slot.lastModified});
+                        saved.scripts->push_back({.path = slot.scriptPath, .resolvedPath = slot.resolvedPath, .source = slot.source_code, .lastModified = slot.lastModified, .properties = slot.properties});
                     }
                 }
 
@@ -221,6 +225,7 @@ namespace Editor::Commands {
                             restored.resolvedPath = slot.resolvedPath;
                             restored.source_code = slot.source;
                             restored.lastModified = slot.lastModified;
+                            restored.properties = slot.properties;
                             scripts.slots.push_back(std::move(restored));
                         }
                     }
@@ -405,6 +410,7 @@ namespace Editor::Commands {
         m_SavedResolvedPath = slot.resolvedPath;
         m_SavedSourceCode = slot.source_code;
         m_SavedLastModified = slot.lastModified;
+        m_SavedProperties = slot.properties;
         scripts->slots.erase(scripts->slots.begin() + m_Index);
         m_ComponentRemoved = scripts->slots.empty();
         if (m_ComponentRemoved) {
@@ -433,6 +439,7 @@ namespace Editor::Commands {
         slot.resolvedPath = m_SavedResolvedPath;
         slot.source_code = m_SavedSourceCode;
         slot.lastModified = m_SavedLastModified;
+        slot.properties = m_SavedProperties;
         scripts->slots.insert(scripts->slots.begin() + m_Index, std::move(slot));
         Complete(ctx);
     }
@@ -485,6 +492,34 @@ namespace Editor::Commands {
     }
 
     std::string_view AddScriptCommand::Name() const noexcept { return "Add script"; }
+
+    SetScriptPropertyCommand::SetScriptPropertyCommand(Core::UUID targetUUID, const std::size_t slotIndex, std::string name, std::optional<nlohmann::json> oldValue, std::optional<nlohmann::json> newValue)
+        : EntityCommand(targetUUID), m_SlotIndex(slotIndex), m_Name(std::move(name)), m_Old(std::move(oldValue)), m_New(std::move(newValue)) {}
+
+    void SetScriptPropertyCommand::Apply(Core::EngineContext &ctx, const std::optional<nlohmann::json> &value) {
+        const auto entity = ResolveEntity(ctx);
+        if (!entity) {
+            return;
+        }
+        auto *scripts = entity.GetComponent<ECS::Components::ScriptComponent>();
+        if (!scripts || m_SlotIndex >= scripts->slots.size()) {
+            return;
+        }
+        auto &properties = scripts->slots[m_SlotIndex].properties;
+        if (value) {
+            properties[m_Name] = *value;
+        } else {
+            properties.erase(m_Name);
+        }
+        Complete(ctx);
+    }
+
+    void SetScriptPropertyCommand::Execute(Core::EngineContext &ctx) { Apply(ctx, m_New); }
+
+    void SetScriptPropertyCommand::Undo(Core::EngineContext &ctx) { Apply(ctx, m_Old); }
+
+    std::string_view SetScriptPropertyCommand::Name() const noexcept { return "Change script property"; }
+
 
     DeleteEntityCommand::DeleteEntityCommand(Core::UUID targetUUID) : EntityCommand(targetUUID) {}
     DeleteEntityCommand::~DeleteEntityCommand() = default;
