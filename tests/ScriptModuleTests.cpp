@@ -110,15 +110,14 @@ TEST_F(ScriptModuleTests, ScanScriptPropertiesFindsTypedDeclarations) {
 }
 
 TEST_F(ScriptModuleTests, ScanScriptPropertiesHandlesMultiLineAndExpressionDefaults) {
-    const std::string source =
-            "var speed = Prop(\n"
-            "    \"Speed\",\n"
-            "    2.5\n"
-            ");\n"
-            "var computed = Prop(\"Computed\", 1 + 2);\n"
-            "var escaped = Prop(\"Escaped\", \"a\\\"b\");\n"
-            "var missingDefault = Prop(\"MissingDefault\");\n"
-            "fn helper() { Prop(\"NotADecl\", 1); }\n";
+    const std::string source = "var speed = Prop(\n"
+                               "    \"Speed\",\n"
+                               "    2.5\n"
+                               ");\n"
+                               "var computed = Prop(\"Computed\", 1 + 2);\n"
+                               "var escaped = Prop(\"Escaped\", \"a\\\"b\");\n"
+                               "var missingDefault = Prop(\"MissingDefault\");\n"
+                               "fn helper() { Prop(\"NotADecl\", 1); }\n";
 
     const auto decls = Scripting::ScanScriptProperties(source);
     ASSERT_EQ(decls.size(), 3u);
