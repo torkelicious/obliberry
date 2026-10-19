@@ -1,9 +1,9 @@
 #pragma once
 
 #include "nlohmann/json.hpp"
-#include <atomic>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <istream>
 #include <map>
 #include <regex>
@@ -69,7 +69,7 @@ namespace Scripting {
         std::string line;
 
         while (std::getline(stream, line)) {
-            if (line.empty() && line.back() == '\r') {
+            if (!line.empty() && line.back() == '\r') {
                 line.pop_back();
             }
             std::smatch m;
@@ -104,15 +104,18 @@ namespace Scripting {
         return result;
     }
 
-    inline std::atomic<const PropertyMap *> g_InitProperties{nullptr};
+    inline thread_local const PropertyMap *g_InitProperties = nullptr;
 
-    inline const PropertyMap *CurrentInitProps() { return g_InitProperties.load(std::memory_order::acquire); }
+    inline const PropertyMap *CurrentInitProps() { return g_InitProperties; }
 
     struct ScriptPropertyScope {
-        explicit ScriptPropertyScope(const PropertyMap *p) { g_InitProperties.store(p, std::memory_order_release); }
-        ~ScriptPropertyScope() { g_InitProperties.store(nullptr, std::memory_order_release); }
+        explicit ScriptPropertyScope(const PropertyMap *p) : m_Previous(g_InitProperties) { g_InitProperties = p; }
+        ~ScriptPropertyScope() { g_InitProperties = m_Previous; }
         ScriptPropertyScope(const ScriptPropertyScope &) = delete;
         ScriptPropertyScope &operator=(const ScriptPropertyScope &) = delete;
+
+    private:
+        const PropertyMap *m_Previous;
     };
 
 
