@@ -213,16 +213,18 @@ namespace {
 
 namespace Saves::IO {
 
-    // <DataHome>/obliberry/<project uuid>/saves
+    // <DataHome>/obliberry/<project UUID>/saves
     // or:
-    // <executable directory>/obliberry/<project uuid>/saves
-    std::optional<std::filesystem::path> GenerateSaveDirectory(const std::string_view uuid, const Config::SaveLocation location) {
-        if (!IsValidUUID(uuid)) {
+    // <executable directory>/obliberry/<project UUID>/saves
+    std::optional<std::filesystem::path> GenerateSaveDirectory(const Core::UUID &uuid, const Config::SaveLocation location) {
+        const std::string uuidString = uuid.ToString();
+
+        if (!IsValidUUID(uuidString)) {
             LOG_ERROR(LOG_WHO, "Invalid project UUID");
             return std::nullopt;
         }
 
-        const std::filesystem::path projectId{std::string(uuid)};
+        const std::filesystem::path projectId{uuidString};
 
         try {
             std::filesystem::path saveHome;

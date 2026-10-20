@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/Utils/UUID.h"
+#include "../src/Core/UUID.h"
 #include "IO/AssetCatalog.h"
 #include "IO/Loaders/SceneAssetLoader.h"
 #include "IO/VFS/VFS.h"
@@ -19,7 +19,7 @@ protected:
     void SetUp() override {
         IO::AssetCatalog::Close();
         IO::VFS::UnmountProject();
-        directory = std::filesystem::temp_directory_path() / ("obliberry-test-" + Core::Utils::UUID::UUIDGenerator::Generate());
+        directory = std::filesystem::temp_directory_path() / ("obliberry-test-" + Core::UUIDGenerator::Generate().ToString());
         ASSERT_TRUE(std::filesystem::create_directory(directory));
         ownsDirectory = true;
         IO::VFS::MountProject(directory / "project.json");

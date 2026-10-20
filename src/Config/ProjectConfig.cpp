@@ -14,7 +14,11 @@ namespace {
         Config::ProjectConfig config;
 
         if (const auto id = document.find("UUID"); id != document.end() && id->is_string()) {
-            config.UUID = id->get<std::string>();
+            if (const auto parsed = Core::UUID::FromString(id->get<std::string>())) {
+                config.UUID = *parsed;
+            } else {
+                LOG_WARN(LOG_WHO, "Malformed project UUID in project config; ignoring.");
+            }
         }
 
         if (const auto window = document.find("window"); window != document.end() && window->is_object()) {
@@ -93,7 +97,7 @@ namespace Config {
     bool ProjectConfig::Serialize(const ProjectConfig &conf, const std::string &filepath) {
         try {
             nlohmann::json j;
-            j["UUID"] = conf.UUID;
+            j["UUID"] = conf.UUID.ToString();
             j["window"]["title"] = conf.Title;
             j["start_scene"] = conf.startScenePath;
             j["saves"]["enabled"] = conf.useSaves;

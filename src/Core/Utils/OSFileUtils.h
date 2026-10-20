@@ -9,7 +9,7 @@
 #include <thread>
 #include <utility>
 
-#include "Core/Utils/UUID.h"
+#include "Core/UUID.h"
 #include "Logger/LoggerService.h"
 
 #ifdef _WIN32
@@ -28,7 +28,7 @@ namespace Core::Utils::OSFile {
         try {
             std::filesystem::path candidate = tempDir.empty() ? path : tempDir / path.filename();
 
-            candidate += "." + UUID::UUIDGenerator::Generate() + ".tmp";
+            candidate += "." + UUIDGenerator::Generate().ToString() + ".tmp";
             temp = std::move(candidate);
 
             std::ofstream file;

@@ -41,14 +41,7 @@ protected:
     }
 
     ECS::Registry &Registry() { return scenes.GetCurrentScene()->GetRegistry(); }
-    ECS::EntityID Find(const std::string &uuid) {
-        for (const auto id : Registry().GetLivingEntities()) {
-            if (Registry().GetEntityUUID(id) == uuid) {
-                return id;
-            }
-        }
-        return ECS::INVALID_ENTITY_ID;
-    }
+    ECS::EntityID Find(const Core::UUID &uuid) { return Registry().FindEntityByUUID(uuid); }
 };
 
 TEST_F(EditorCommandTests, TransformExecuteUndoRedoRestoresValues) {
@@ -427,7 +420,7 @@ TEST_F(EditorCommandTests, FailedNewCommandPreservesRedo) {
     undo.Execute(std::make_unique<Editor::Commands::TranslateEntityCommand>(Registry().GetEntityUUID(id), glm::vec3(0), glm::vec3(2)), context);
     undo.Undo(context);
     ASSERT_TRUE(undo.CanRedo());
-    undo.Execute(std::make_unique<Editor::Commands::DeleteEntityCommand>("missing-uuid"), context);
+    undo.Execute(std::make_unique<Editor::Commands::DeleteEntityCommand>(Core::UUID::FromString("99999999-9999-4999-8999-999999999999").value()), context);
     EXPECT_TRUE(undo.CanRedo());
     EXPECT_FALSE(undo.CanUndo());
     undo.Redo(context);
@@ -512,12 +505,18 @@ TEST_F(EditorCommandTests, RemoveUIElementRestoresSubtreeOrderAndUuids) {
     UI::UISystem ui(nullptr, nullptr);
     context.uiSystem = &ui;
 
+    const auto siblingAUUID = Core::UUID::FromString("11111111-1111-4111-8111-111111111111").value();
+    const auto parentUUID = Core::UUID::FromString("22222222-2222-4222-8222-222222222222").value();
+    const auto siblingBUUID = Core::UUID::FromString("33333333-3333-4333-8333-333333333333").value();
+    const auto childXUUID = Core::UUID::FromString("44444444-4444-4444-8444-444444444444").value();
+    const auto childYUUID = Core::UUID::FromString("55555555-5555-4555-8555-555555555555").value();
+
     auto *root = ui.GetRoot();
-    auto *siblingA = ui.AddChild(root, std::make_unique<UI::UIRect>(), "uuid-siblingA");
-    auto *parent = ui.AddChild(root, std::make_unique<UI::UIRect>(), "uuid-parent");
-    auto *siblingB = ui.AddChild(root, std::make_unique<UI::UIRect>(), "uuid-siblingB");
-    auto *childX = ui.AddChild(parent, std::make_unique<UI::UIRect>(), "uuid-childX");
-    auto *childY = ui.AddChild(parent, std::make_unique<UI::UIRect>(), "uuid-childY");
+    auto *siblingA = ui.AddChild(root, std::make_unique<UI::UIRect>(), siblingAUUID);
+    auto *parent = ui.AddChild(root, std::make_unique<UI::UIRect>(), parentUUID);
+    auto *siblingB = ui.AddChild(root, std::make_unique<UI::UIRect>(), siblingBUUID);
+    auto *childX = ui.AddChild(parent, std::make_unique<UI::UIRect>(), childXUUID);
+    auto *childY = ui.AddChild(parent, std::make_unique<UI::UIRect>(), childYUUID);
     ASSERT_TRUE(siblingA && parent && siblingB && childX && childY);
     parent->Name = "Panel";
     childX->Name = "ChildX";
@@ -525,29 +524,29 @@ TEST_F(EditorCommandTests, RemoveUIElementRestoresSubtreeOrderAndUuids) {
 
     const size_t originalIndex = 1;
     ASSERT_EQ(root->Children.size(), 3u);
-    ASSERT_EQ(root->Children[originalIndex]->GetUUID(), "uuid-parent");
+    ASSERT_EQ(root->Children[originalIndex]->GetUUID(), parentUUID);
 
     undo.Execute(std::make_unique<Editor::Commands::RemoveUIElementCommand>(&ui, root, parent), context);
 
-    EXPECT_EQ(ui.FindByUUID("uuid-parent"), nullptr);
-    EXPECT_EQ(ui.FindByUUID("uuid-childX"), nullptr);
-    EXPECT_EQ(ui.FindByUUID("uuid-childY"), nullptr);
+    EXPECT_EQ(ui.FindByUUID(parentUUID), nullptr);
+    EXPECT_EQ(ui.FindByUUID(childXUUID), nullptr);
+    EXPECT_EQ(ui.FindByUUID(childYUUID), nullptr);
     EXPECT_EQ(root->Children.size(), 2u);
     EXPECT_EQ(ui.FindByName("Panel"), nullptr);
 
     undo.Undo(context);
-    auto *restoredParent = ui.FindByUUID("uuid-parent");
+    auto *restoredParent = ui.FindByUUID(parentUUID);
     ASSERT_NE(restoredParent, nullptr);
     EXPECT_EQ(ui.FindByName("Panel"), restoredParent);
     ASSERT_EQ(root->Children.size(), 3u);
     EXPECT_EQ(root->Children[originalIndex], restoredParent);
     ASSERT_EQ(restoredParent->Children.size(), 2u);
-    EXPECT_EQ(restoredParent->Children[0]->GetUUID(), "uuid-childX");
-    EXPECT_EQ(restoredParent->Children[1]->GetUUID(), "uuid-childY");
+    EXPECT_EQ(restoredParent->Children[0]->GetUUID(), childXUUID);
+    EXPECT_EQ(restoredParent->Children[1]->GetUUID(), childYUUID);
     EXPECT_EQ(ui.FindByName("ChildX"), restoredParent->Children[0]);
 
     undo.Redo(context);
-    EXPECT_EQ(ui.FindByUUID("uuid-parent"), nullptr);
-    EXPECT_EQ(ui.FindByUUID("uuid-childX"), nullptr);
+    EXPECT_EQ(ui.FindByUUID(parentUUID), nullptr);
+    EXPECT_EQ(ui.FindByUUID(childXUUID), nullptr);
     EXPECT_EQ(root->Children.size(), 2u);
 }

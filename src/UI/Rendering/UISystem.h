@@ -36,7 +36,7 @@ namespace UI {
         [[nodiscard]] UIElement *GetRoot() { return m_Root.get(); }
         [[nodiscard]] const UIElement *GetRoot() const { return m_Root.get(); }
 
-        UIElement *AddChild(UIElement *parent, std::unique_ptr<UIElement> element, std::string uuid = {}, size_t insertIndex = std::numeric_limits<size_t>::max());
+        UIElement *AddChild(UIElement *parent, std::unique_ptr<UIElement> element, Core::UUID uuid = {}, size_t insertIndex = std::numeric_limits<size_t>::max());
 
         void RemoveChild(UIElement *parent, UIElement *child);
 
@@ -52,8 +52,8 @@ namespace UI {
 
         [[nodiscard]] UIElement *FindByName(const std::string &name);
         [[nodiscard]] const UIElement *FindByName(const std::string &name) const;
-        [[nodiscard]] UIElement *FindByUUID(const std::string &uuid);
-        [[nodiscard]] const UIElement *FindByUUID(const std::string &uuid) const;
+        [[nodiscard]] UIElement *FindByUUID(const Core::UUID &uuid);
+        [[nodiscard]] const UIElement *FindByUUID(const Core::UUID &uuid) const;
 
         void OnElementRenamed(UIElement *element, const std::string &oldName);
 
@@ -83,7 +83,7 @@ namespace UI {
 
         // name -> element
         std::unordered_map<std::string, UIElement *> m_NameIndex;
-        std::unordered_map<std::string, UIElement *> m_UUIDIndex;
+        std::unordered_map<Core::UUID, UIElement *> m_UUIDIndex;
     };
 
 } // namespace UI

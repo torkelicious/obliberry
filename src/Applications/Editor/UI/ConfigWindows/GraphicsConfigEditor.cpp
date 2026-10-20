@@ -14,7 +14,7 @@ namespace Editor::UI {
         m_SampleLabelPtrs.clear();
         for (const uint8_t s : Config::GraphicsCapabilities::s_SupportedSampleCounts)
             m_SampleLabels.push_back(std::to_string(s));
-        for (auto  const&label : m_SampleLabels)
+        for (auto const &label : m_SampleLabels)
             m_SampleLabelPtrs.push_back(label.c_str());
 
         m_LocalConfig.AASamples = Config::GraphicsConfig::SnapToValidSampleCount(m_LocalConfig.AASamples, Config::GraphicsCapabilities::s_SupportedSampleCounts);

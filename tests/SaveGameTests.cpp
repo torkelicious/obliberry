@@ -1,4 +1,4 @@
-#include "Core/Utils/UUID.h"
+#include "../src/Core/UUID.h"
 #include "Core/Utils/PathUtils.h"
 #include "Config/ProjectConfig.h"
 #include "SaveData/SaveGameData.h"
@@ -33,7 +33,7 @@ protected:
     const Values expectedValues = {{"IntegerValue", std::int64_t{99}}, {"StringValue", std::string{"thisIsMyString"}}, {"BooleanValue", false}, {"DoubleValue", 37.5}};
 
     void SetUp() override {
-        directory = std::filesystem::temp_directory_path() / ("obliberry-save-test-" + Core::Utils::UUID::UUIDGenerator::Generate());
+        directory = std::filesystem::temp_directory_path() / ("obliberry-save-test-" + Core::UUIDGenerator::Generate().ToString());
 
         ASSERT_TRUE(std::filesystem::create_directory(directory));
         ownsDirectory = true;
@@ -698,16 +698,23 @@ TEST_F(SaveGameTests, FailedWritePreservesFileAndUnsavedValues) {
 }
 
 namespace {
-    constexpr const char *firstProjectUUID = "01234567-89ab-4cde-8fab-0123456789ab";
-    constexpr const char *secondProjectUUID = "89abcdef-0123-4567-89ab-cdef01234567";
+    constexpr const char *firstProjectUUIDText = "01234567-89ab-4cde-8fab-0123456789ab";
+    constexpr const char *secondProjectUUIDText = "89abcdef-0123-4567-89ab-cdef01234567";
 
     constexpr std::array saveLocations{Config::SaveLocation::DataHome, Config::SaveLocation::Portable};
+
+    Core::UUID ParseUUID(const char *text) {
+        const auto parsed = Core::UUID::FromString(text);
+        EXPECT_TRUE(parsed.has_value()) << text;
+        return parsed.value_or(Core::UUID{});
+    }
 } // namespace
 
 TEST(SaveDirectoryTests, DataHomeLocationUsesProjectUUID) {
-    const auto expected = Core::PathUtils::GetDataHome() / "obliberry" / firstProjectUUID / "saves";
+    const auto uuid = ParseUUID(firstProjectUUIDText);
+    const auto expected = Core::PathUtils::GetDataHome() / "obliberry" / uuid.ToString() / "saves";
 
-    const auto actual = Saves::IO::GenerateSaveDirectory(firstProjectUUID, Config::SaveLocation::DataHome);
+    const auto actual = Saves::IO::GenerateSaveDirectory(uuid, Config::SaveLocation::DataHome);
 
     ASSERT_TRUE(actual.has_value());
     EXPECT_EQ(*actual, expected);
@@ -715,9 +722,10 @@ TEST(SaveDirectoryTests, DataHomeLocationUsesProjectUUID) {
 }
 
 TEST(SaveDirectoryTests, PortableLocationUsesExecutableDirectory) {
-    const auto expected = Core::PathUtils::GetExecutableDirectory() / "obliberry" / firstProjectUUID / "saves";
+    const auto uuid = ParseUUID(firstProjectUUIDText);
+    const auto expected = Core::PathUtils::GetExecutableDirectory() / "obliberry" / uuid.ToString() / "saves";
 
-    const auto actual = Saves::IO::GenerateSaveDirectory(firstProjectUUID, Config::SaveLocation::Portable);
+    const auto actual = Saves::IO::GenerateSaveDirectory(uuid, Config::SaveLocation::Portable);
 
     ASSERT_TRUE(actual.has_value());
     EXPECT_EQ(*actual, expected);
@@ -725,12 +733,15 @@ TEST(SaveDirectoryTests, PortableLocationUsesExecutableDirectory) {
 }
 
 TEST(SaveDirectoryTests, DifferentProjectUUIDsProduceSeparateDirectories) {
+    const auto firstUUID = ParseUUID(firstProjectUUIDText);
+    const auto secondUUID = ParseUUID(secondProjectUUIDText);
+
     for (const auto location : saveLocations) {
         SCOPED_TRACE(static_cast<unsigned>(location));
 
-        const auto first = Saves::IO::GenerateSaveDirectory(firstProjectUUID, location);
-        const auto second = Saves::IO::GenerateSaveDirectory(secondProjectUUID, location);
-        const auto repeated = Saves::IO::GenerateSaveDirectory(firstProjectUUID, location);
+        const auto first = Saves::IO::GenerateSaveDirectory(firstUUID, location);
+        const auto second = Saves::IO::GenerateSaveDirectory(secondUUID, location);
+        const auto repeated = Saves::IO::GenerateSaveDirectory(firstUUID, location);
 
         ASSERT_TRUE(first.has_value());
         ASSERT_TRUE(second.has_value());
@@ -738,21 +749,35 @@ TEST(SaveDirectoryTests, DifferentProjectUUIDsProduceSeparateDirectories) {
 
         EXPECT_NE(*first, *second);
         EXPECT_EQ(*first, *repeated);
-        EXPECT_EQ(first->parent_path().filename(), std::filesystem::path{firstProjectUUID});
-        EXPECT_EQ(second->parent_path().filename(), std::filesystem::path{secondProjectUUID});
+        EXPECT_EQ(first->parent_path().filename(), std::filesystem::path{firstUUID.ToString()});
+        EXPECT_EQ(second->parent_path().filename(), std::filesystem::path{secondUUID.ToString()});
     }
 }
 
-TEST(SaveDirectoryTests, InvalidProjectUUIDsAreRejected) {
-    const std::vector<std::string> invalidUUIDs{"", "not-a-uuid", "../outside", "01234567-89ab-4cde-8fab-0123456789a", "01234567-89ab-4cde-8fab-0123456789ab0", "01234567_89ab-4cde-8fab-0123456789ab",
-            "01234567-89ab-4cde-8fab-0123456789ag", "01234567-89ab-3cde-8fab-0123456789ab", "01234567-89ab-4cde-7fab-0123456789ab", "01234567-89ab-4cde-cfab-0123456789ab"};
+TEST(SaveDirectoryTests, MalformedUUIDTextIsRejectedBeforeReachingTheDirectoryBuilder) {
+    // Strings that cannot be parsed never become a UUID, so they can never reach the filesystem.
+    const std::vector<std::string> malformed{
+            "", "not-a-UUID", "../outside", "01234567-89ab-4cde-8fab-0123456789a", "01234567-89ab-4cde-8fab-0123456789ab0", "01234567_89ab-4cde-8fab-0123456789ab", "01234567-89ab-4cde-8fab-0123456789ag"};
+
+    for (const auto &uuid : malformed) {
+        SCOPED_TRACE(testing::Message() << "UUID: " << uuid);
+        EXPECT_FALSE(Core::UUID::FromString(uuid).has_value());
+    }
+}
+
+TEST(SaveDirectoryTests, NonV4UUIDsAreRejectedByTheDirectoryBuilder) {
+    // These parse as UUIDs but are not RFC 4122 v4 values.
+    const std::vector<std::string> nonV4{"01234567-89ab-3cde-8fab-0123456789ab", "01234567-89ab-4cde-7fab-0123456789ab", "01234567-89ab-4cde-cfab-0123456789ab"};
 
     for (const auto location : saveLocations) {
-        for (const auto &uuid : invalidUUIDs) {
-            SCOPED_TRACE(testing::Message() << "Location: " << static_cast<unsigned>(location) << ", UUID: " << uuid);
+        for (const auto &uuidText : nonV4) {
+            SCOPED_TRACE(testing::Message() << "Location: " << static_cast<unsigned>(location) << ", UUID: " << uuidText);
+
+            const auto uuid = Core::UUID::FromString(uuidText);
+            ASSERT_TRUE(uuid.has_value());
 
             std::optional<std::filesystem::path> actual;
-            ASSERT_NO_THROW(actual = Saves::IO::GenerateSaveDirectory(uuid, location));
+            ASSERT_NO_THROW(actual = Saves::IO::GenerateSaveDirectory(*uuid, location));
             EXPECT_FALSE(actual.has_value());
         }
     }
@@ -763,24 +788,26 @@ TEST(SaveDirectoryTests, ValidUUIDVariantsAndUppercaseAreAccepted) {
             "01234567-89AB-4CDE-AFAB-0123456789AB", "01234567-89AB-4CDE-BFAB-0123456789AB"};
 
     for (const auto location : saveLocations) {
-        for (const char *uuid : validUUIDs) {
-            SCOPED_TRACE(testing::Message() << "Location: " << static_cast<unsigned>(location) << ", UUID: " << uuid);
+        for (const char *uuidText : validUUIDs) {
+            SCOPED_TRACE(testing::Message() << "Location: " << static_cast<unsigned>(location) << ", UUID: " << uuidText);
 
+            const auto uuid = ParseUUID(uuidText);
             const auto actual = Saves::IO::GenerateSaveDirectory(uuid, location);
             ASSERT_TRUE(actual.has_value());
-            EXPECT_EQ(actual->parent_path().filename(), std::filesystem::path{uuid});
+            EXPECT_EQ(actual->parent_path().filename(), std::filesystem::path{uuid.ToString()});
             EXPECT_EQ(actual->filename(), std::filesystem::path{"saves"});
         }
     }
 }
 
 TEST(SaveDirectoryTests, InvalidSaveLocationsAreRejected) {
+    const auto uuid = ParseUUID(firstProjectUUIDText);
     for (const unsigned value : {2u, 255u}) {
         SCOPED_TRACE(value);
         const auto location = static_cast<Config::SaveLocation>(value);
 
         std::optional<std::filesystem::path> actual;
-        ASSERT_NO_THROW(actual = Saves::IO::GenerateSaveDirectory(firstProjectUUID, location));
+        ASSERT_NO_THROW(actual = Saves::IO::GenerateSaveDirectory(uuid, location));
         EXPECT_FALSE(actual.has_value());
     }
 }

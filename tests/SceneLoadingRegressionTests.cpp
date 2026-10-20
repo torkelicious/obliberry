@@ -23,7 +23,7 @@ protected:
     Scenes::Scene *original = nullptr;
     UI::UIElement *originalUi = nullptr;
     ECS::EntityID originalEntity = ECS::INVALID_ENTITY_ID;
-    std::string originalUuid;
+    Core::UUID originalUuid;
 
     static nlohmann::json Document(const nlohmann::json &entities = nlohmann::json::array()) {
         return {{"properties", {{"lighting", false}}}, {"entities", entities}, {"PostProcessing", nlohmann::json::array()}, {"ui", {{"elements", {{{"type", "Rect"}, {"name", "Original UI"}}}}}}};

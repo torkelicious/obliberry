@@ -10,7 +10,7 @@
 #include "IO/Loaders/EntityFactory.h"
 #include "TestingUtils.h"
 #include "nlohmann/json.hpp"
-#include "Core/Utils/UUID.h"
+#include "../src/Core/UUID.h"
 #include "ECS/Components/BillboardTagComponent.h"
 #include "ECS/Components/DirectionalTextureComponent.h"
 #include "ECS/Components/MaterialComponent.h"
@@ -61,10 +61,10 @@ protected:
         return data;
     }
 
-    std::string GetUUID(const ECS::Entity &entity) { return entity.GetRegistry()->GetEntityUUID(static_cast<ECS::EntityID>(entity)); }
+    Core::UUID GetUUID(const ECS::Entity &entity) { return entity.GetRegistry()->GetEntityUUID(static_cast<ECS::EntityID>(entity)); }
 
     template <typename T> std::string RegisterAsset(const std::shared_ptr<T> &asset) {
-        const auto key = "serialization-test-" + Core::Utils::UUID::UUIDGenerator::Generate();
+        const auto key = "serialization-test-" + Core::UUIDGenerator::Generate().ToString();
         resources.Register(key, asset);
         assetCleanup.emplace_back([this, key]() { resources.Unload<T>(key); });
         return key;
@@ -174,7 +174,7 @@ TEST_F(EntitySerializationTests, ComponentRoundtrip) {
 // preserved uuids should be restored
 TEST_F(EntitySerializationTests, PreserveUUIDRestoresSavedIdentity) {
     auto source = CreateEntity(sourceRegistry);
-    const std::string savedUUID = GetUUID(source);
+    const Core::UUID savedUUID = GetUUID(source);
     const auto data = Serialize(source);
 
     auto loaded = CreateEntity(destinationRegistry);
@@ -184,13 +184,13 @@ TEST_F(EntitySerializationTests, PreserveUUIDRestoresSavedIdentity) {
     EXPECT_EQ(GetUUID(loaded), savedUUID);
 }
 
-// non-preserved should not keep uuid
+// non-preserved should not keep UUID
 TEST_F(EntitySerializationTests, WithoutPreserveKeepsNewIdentity) {
     auto source = CreateEntity(sourceRegistry);
     const auto data = Serialize(source);
 
     auto loaded = CreateEntity(destinationRegistry);
-    const std::string generatedUUID = GetUUID(loaded);
+    const Core::UUID generatedUUID = GetUUID(loaded);
 
     ASSERT_NE(generatedUUID, GetUUID(source));
 
@@ -232,7 +232,7 @@ TEST_F(EntitySerializationTests, MalformedColliderKeepsTransformValid) {
 TEST_F(EntitySerializationTests, DuplicateUUIDKeepsGeneratedIdentity) {
     auto source = CreateEntity(sourceRegistry);
     const auto data = Serialize(source);
-    const std::string savedUUID = GetUUID(source);
+    const Core::UUID savedUUID = GetUUID(source);
 
     auto first = CreateEntity(destinationRegistry);
 
@@ -241,7 +241,7 @@ TEST_F(EntitySerializationTests, DuplicateUUIDKeepsGeneratedIdentity) {
     ASSERT_EQ(GetUUID(first), savedUUID);
 
     auto second = CreateEntity(destinationRegistry);
-    const std::string secondOriginalUUID = GetUUID(second);
+    const Core::UUID secondOriginalUUID = GetUUID(second);
 
     IO::EntityFactory::DeserializeEntity(second, data, resources, true);
 
@@ -456,7 +456,7 @@ TEST_F(EntitySerializationTests, InvalidOrMissingUUIDKeepsGeneratedIdentity) {
         auto loaded = CreateEntity(destinationRegistry);
         const auto original = GetUUID(loaded);
 
-        const nlohmann::json data{{"uuid", uuid}, {"components", {{"MovementComponent", {{"autoMove", true}}}}}};
+        const nlohmann::json data{{"UUID", uuid}, {"components", {{"MovementComponent", {{"autoMove", true}}}}}};
 
         ASSERT_NO_THROW(IO::EntityFactory::DeserializeEntity(loaded, data, resources, true));
 
@@ -669,7 +669,7 @@ TEST_F(EntitySerializationTests, MissingAnimationOrClipLeavesSafeEmptyPose) {
     auto animation = CreateAnimation(CreateTexture());
     const auto key = RegisterAsset(animation);
 
-    const auto missingKey = "missing-animation-" + Core::Utils::UUID::UUIDGenerator::Generate();
+    const auto missingKey = "missing-animation-" + Core::UUIDGenerator::Generate().ToString();
 
     const std::vector<nlohmann::json> cases{nlohmann::json::object(), {{"animation_id", missingKey}, {"initial_clip", "idle"}}, {{"animation_id", key}, {"initial_clip", "missing-clip"}}, {{"animation_id", key}}};
 

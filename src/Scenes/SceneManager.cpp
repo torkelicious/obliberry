@@ -82,14 +82,12 @@ namespace {
         if (!scene || batch.empty())
             return;
 
-        // uuid deduplication
-        std::unordered_set<std::string> uuids;
-        for (const auto &item : batch) {
-            const auto it = item.data.find("uuid");
-            if (it != item.data.end() && it->is_string()) {
-                const auto &uuid = it->get_ref<const std::string &>();
-                if (!uuid.empty()) {
-                    uuids.insert(uuid);
+        // UUID deduplication
+        std::unordered_set<Core::UUID> uuids;
+        for (const auto &[data, parentBatchIndex] : batch) {
+            if (const auto it = data.find("uuid"); it != data.end() && it->is_string()) {
+                if (const auto uuid = Core::UUID::FromString(it->get_ref<const std::string &>()); uuid && !uuid->IsNil()) {
+                    uuids.insert(*uuid);
                 }
             }
         }

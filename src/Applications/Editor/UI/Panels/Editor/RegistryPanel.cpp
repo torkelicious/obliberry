@@ -279,9 +279,9 @@ bool Editor::UI::RegistryPanel::OnPaste(const Clipboard &clipboard) {
             parent = rel->parent;
     }
 
-    const auto parentUUID = m_SceneContext ? m_SceneContext->GetRegistry().GetEntityUUID(parent) : std::string{};
+    const Core::UUID parentUUID = m_SceneContext ? m_SceneContext->GetRegistry().GetEntityUUID(parent) : Core::UUID{};
     auto cmd = std::make_unique<Commands::PasteEntityCommand>(clipboard.payload, parentUUID);
-    const std::string createdUUID = cmd->GetCreatedUUID();
+    const Core::UUID createdUUID = cmd->GetCreatedUUID();
     if (m_UndoManager) {
         m_UndoManager->Execute(std::move(cmd), *m_EngineContext);
     } else {

@@ -553,7 +553,7 @@ namespace Editor::States {
     // Undo
     //
 
-    std::string MapEditState::FindMapEntityUUID() const {
+    Core::UUID MapEditState::FindMapEntityUUID() const {
         for (const auto id : m_EditorLayer->m_Registry->GetLivingEntities()) {
             if (m_EditorLayer->m_Registry->GetComponent<ECS::Components::MapComponent>(id) == m_MapComp) {
                 return m_EditorLayer->m_Registry->GetEntityUUID(id);
@@ -592,13 +592,13 @@ namespace Editor::States {
             m_EditorLayer->m_Scene->MarkAsChanged();
         }
 
-        std::string mapUUID = FindMapEntityUUID();
-        if (mapUUID.empty()) {
+        Core::UUID mapUUID = FindMapEntityUUID();
+        if (mapUUID.IsNil()) {
             LOG_ERROR(LOG_WHO, "Map entity not found, edit applied but not undoable");
             return;
         }
 
-        m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::MapChangeTileCommand>(std::move(oldState), std::move(newState), std::move(mapUUID)), *m_EditorLayer->m_Context);
+        m_EditorLayer->m_UndoManager.Execute(std::make_unique<Commands::MapChangeTileCommand>(std::move(oldState), std::move(newState), mapUUID), *m_EditorLayer->m_Context);
     }
 
     //

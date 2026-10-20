@@ -13,7 +13,7 @@
 #include "SaveData/SaveGameSerialization.h"
 #include "imgui.h"
 #include "Applications/Editor/Commands/EditorCommands.h"
-#include "Core/Utils/UUID.h"
+#include "../../../../Core/UUID.h"
 
 
 #pragma push_macro("LOG_WHO")
@@ -25,7 +25,7 @@ namespace Editor::UI {
             m_LocalConfig = *m_Context->projectConfig;
 
             m_IdDialog.SetOnConfirm([this] {
-                m_LocalConfig.UUID = Core::Utils::UUID::UUIDGenerator::Generate();
+                m_LocalConfig.UUID = Core::UUIDGenerator::Generate();
                 if (const auto proj = Core::Project::GetActive()) {
                     proj->MarkAsChanged();
                 }
@@ -59,7 +59,7 @@ namespace Editor::UI {
 
         ImGui::Begin("Project Properties", &isOpen);
 
-        ImGui::TextDisabled("UUID: %s", m_LocalConfig.UUID.c_str());
+        ImGui::TextDisabled("UUID: %s", m_LocalConfig.UUID.ToString().c_str());
         ImGui::SameLine();
         if (ImGui::SmallButton("Regenerate")) {
             m_IdDialog.Open();

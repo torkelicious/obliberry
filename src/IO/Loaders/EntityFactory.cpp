@@ -548,11 +548,12 @@ void IO::EntityFactory::DeserializeEntity(ECS::Entity &entity, const nlohmann::j
         if (it != entityData.end()) {
             if (!it->is_string() || it->get_ref<const std::string &>().empty()) {
                 LOG_WARN(LOG_WHO, "Invalid entity UUID: keeping generated UUID.");
-            } else {
-                const bool accepted = entity.GetRegistry()->SetEntityUUID(static_cast<ECS::EntityID>(entity), it->get_ref<const std::string &>());
-                if (!accepted) {
+            } else if (const auto parsed = Core::UUID::FromString(it->get_ref<const std::string &>())) {
+                if (!entity.GetRegistry()->SetEntityUUID(static_cast<ECS::EntityID>(entity), *parsed)) {
                     LOG_WARN(LOG_WHO, "Entity UUID rejected: keeping generated UUID.");
                 }
+            } else {
+                LOG_WARN(LOG_WHO, "Malformed entity UUID: keeping generated UUID.");
             }
         }
     }
@@ -605,6 +606,6 @@ void IO::EntityFactory::SerializeEntity(ECS::Entity &entity, nlohmann::json &out
     if (!componentsData.empty()) {
         outEntityData["components"] = componentsData;
     }
-    outEntityData["uuid"] = entity.GetRegistry()->GetEntityUUID(static_cast<ECS::EntityID>(entity));
+    outEntityData["uuid"] = entity.GetRegistry()->GetEntityUUID(static_cast<ECS::EntityID>(entity)).ToString();
 }
 #pragma pop_macro("LOG_WHO")

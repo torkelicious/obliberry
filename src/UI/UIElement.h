@@ -1,7 +1,7 @@
 #pragma once
 #include "RectTransform.h"
 #include "Platform/Input/InputManager.h"
-#include "Core/Utils/UUID.h"
+#include "../Core/UUID.h"
 #include <string>
 #include <vector>
 
@@ -24,7 +24,7 @@ namespace UI {
         UIElement *Parent = nullptr;
         std::vector<UIElement *> Children;
         RectTransform Rect{.Position = {0.0f, 0.0f}, .Scale = {0.0f, 0.0f}};
-        [[nodiscard]] const std::string &GetUUID() const noexcept { return m_UUID; }
+        [[nodiscard]] const Core::UUID &GetUUID() const noexcept { return m_UUID; }
 
         virtual void Update() {}
 
@@ -46,7 +46,7 @@ namespace UI {
 
     private:
         friend class UISystem;
-        std::string m_UUID = Core::Utils::UUID::UUIDGenerator::Generate();
+        Core::UUID m_UUID = Core::UUIDGenerator::Generate();
     };
 
 } // namespace UI

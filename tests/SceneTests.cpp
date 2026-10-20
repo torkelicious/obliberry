@@ -1,6 +1,6 @@
 #include "Core/EngineContext.h"
 #include "Core/ResourceManager.h"
-#include "Core/Utils/UUID.h"
+#include "../src/Core/UUID.h"
 #include "ECS/Components/ColliderComponent.h"
 #include "ECS/Components/MovementComponent.h"
 #include "ECS/Components/PersistentTagComponent.h"
@@ -41,7 +41,7 @@ protected:
         IO::EntityFactory::RegisterSerializers();
         IO::EntityFactory::RegisterDeserializers();
 
-        directory = std::filesystem::temp_directory_path() / ("obliberry-scene-test-" + Core::Utils::UUID::UUIDGenerator::Generate());
+        directory = std::filesystem::temp_directory_path() / ("obliberry-scene-test-" + Core::UUIDGenerator::Generate().ToString());
 
         ASSERT_TRUE(std::filesystem::create_directory(directory));
         ownsDirectory = true;
@@ -101,9 +101,9 @@ protected:
         return entity;
     }
 
-    std::string UUID(const ECS::Entity &entity) { return entity.GetRegistry()->GetEntityUUID(static_cast<ECS::EntityID>(entity)); }
+    Core::UUID UUID(const ECS::Entity &entity) { return entity.GetRegistry()->GetEntityUUID(static_cast<ECS::EntityID>(entity)); }
 
-    ECS::EntityID FindUUID(const std::string &uuid) {
+    ECS::EntityID FindUUID(const Core::UUID &uuid) {
         auto &registry = Registry();
 
         for (const auto id : registry.GetLivingEntities()) {
@@ -115,7 +115,7 @@ protected:
         return ECS::INVALID_ENTITY_ID;
     }
 
-    std::size_t CountUUID(const std::string &uuid) {
+    std::size_t CountUUID(const Core::UUID &uuid) {
         std::size_t count = 0;
         auto &registry = Registry();
 
@@ -249,11 +249,11 @@ TEST_F(SceneTests, SameNameWithDifferentUUIDsRemainsDistinct) {
     const auto persistentUUID = UUID(persistent);
 
     auto destinationCopy = Serialize(persistent);
-    const auto destinationUUID = Core::Utils::UUID::UUIDGenerator::Generate();
+    const auto destinationUUID = Core::UUIDGenerator::Generate();
 
     ASSERT_NE(destinationUUID, persistentUUID);
 
-    destinationCopy["uuid"] = destinationUUID;
+    destinationCopy["uuid"] = destinationUUID.ToString();
     destinationCopy["components"]["TransformComponent"]["position"] = {20.0f, 0.0f, 0.0f};
 
     ASSERT_NO_FATAL_FAILURE(WriteScene("b.json", nlohmann::json::array({destinationCopy})));

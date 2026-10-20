@@ -12,23 +12,23 @@ TEST(EntityUUIDTests, NewEntityDistinctNonEmptyUUID) {
     const ECS::EntityID first = registry.CreateEntity();
     const ECS::EntityID second = registry.CreateEntity();
 
-    const std::string firstUUID = registry.GetEntityUUID(first);
-    const std::string secondUUID = registry.GetEntityUUID(second);
+    const Core::UUID firstUUID = registry.GetEntityUUID(first);
+    const Core::UUID secondUUID = registry.GetEntityUUID(second);
 
-    EXPECT_FALSE(firstUUID.empty());
-    EXPECT_FALSE(secondUUID.empty());
+    EXPECT_FALSE(firstUUID.IsNil());
+    EXPECT_FALSE(secondUUID.IsNil());
     EXPECT_NE(firstUUID, secondUUID);
 }
 
-// an already existing uuid should not be allowed to be assigned to another
+// an already existing UUID should not be allowed to be assigned to another
 TEST(EntityUUIDTests, DuplicateAssignmentPreservesOriginalUUID) {
     ECS::Registry registry;
 
     const ECS::EntityID first = registry.CreateEntity();
     const ECS::EntityID second = registry.CreateEntity();
 
-    const std::string firstUUID = registry.GetEntityUUID(first);
-    const std::string secondUUID = registry.GetEntityUUID(second);
+    const Core::UUID firstUUID = registry.GetEntityUUID(first);
+    const Core::UUID secondUUID = registry.GetEntityUUID(second);
 
     const bool accepted = registry.SetEntityUUID(second, firstUUID);
     EXPECT_FALSE(accepted);
@@ -41,8 +41,8 @@ TEST(EntityUUIDTests, EmptyAssignmentPreservesUUID) {
     ECS::Registry registry;
 
     const ECS::EntityID entity = registry.CreateEntity();
-    const std::string originalUUID = registry.GetEntityUUID(entity);
-    const bool accepted = registry.SetEntityUUID(entity, "");
+    const Core::UUID originalUUID = registry.GetEntityUUID(entity);
+    const bool accepted = registry.SetEntityUUID(entity, Core::UUID{});
 
     EXPECT_FALSE(accepted);
     EXPECT_EQ(registry.GetEntityUUID(entity), originalUUID);
@@ -53,7 +53,7 @@ TEST(EntityUUIDTests, AssigningOwnUUIDSucceeds) {
     ECS::Registry registry;
 
     const ECS::EntityID entity = registry.CreateEntity();
-    const std::string originalUUID = registry.GetEntityUUID(entity);
+    const Core::UUID originalUUID = registry.GetEntityUUID(entity);
 
     const bool accepted = registry.SetEntityUUID(entity, originalUUID);
 
@@ -66,7 +66,7 @@ TEST(EntityUUIDTests, DestroyedHandleRejectsAssignment) {
     ECS::Registry registry;
 
     const ECS::EntityID entity = registry.CreateEntity();
-    const std::string originalUUID = registry.GetEntityUUID(entity);
+    const Core::UUID originalUUID = registry.GetEntityUUID(entity);
 
     registry.DestroyEntity(entity);
 
@@ -80,9 +80,9 @@ TEST(EntityUUIDTests, UniqueAssignmentUpdatesOnlySelectedEntity) {
     const auto first = registry.CreateEntity();
     const auto second = registry.CreateEntity();
 
-    const std::string firstOriginalUUID = registry.GetEntityUUID(first);
-    const std::string secondOriginalUUID = registry.GetEntityUUID(second);
-    const std::string assignedUUID = Core::Utils::UUID::UUIDGenerator::Generate();
+    const Core::UUID firstOriginalUUID = registry.GetEntityUUID(first);
+    const Core::UUID secondOriginalUUID = registry.GetEntityUUID(second);
+    const Core::UUID assignedUUID = Core::UUIDGenerator::Generate();
 
     ASSERT_NE(assignedUUID, firstOriginalUUID);
     ASSERT_NE(assignedUUID, secondOriginalUUID);
@@ -100,7 +100,7 @@ TEST(EntityUUIDTests, RecycledSlotGetsNewUUID) {
     ECS::Registry registry;
 
     const auto original = registry.CreateEntity();
-    const std::string originalUUID = registry.GetEntityUUID(original);
+    const Core::UUID originalUUID = registry.GetEntityUUID(original);
 
     while (registry.GetLivingEntities().size() < ECS::MAX_ENTITIES - 1) {
         registry.CreateEntity();
@@ -113,17 +113,17 @@ TEST(EntityUUIDTests, RecycledSlotGetsNewUUID) {
 
     ASSERT_EQ(ECS::GetEntityIndex(original), ECS::GetEntityIndex(replacement));
 
-    const std::string replacementUUID = registry.GetEntityUUID(replacement);
+    const Core::UUID replacementUUID = registry.GetEntityUUID(replacement);
 
-    EXPECT_FALSE(replacementUUID.empty());
+    EXPECT_FALSE(replacementUUID.IsNil());
     EXPECT_NE(replacementUUID, originalUUID);
 
-    EXPECT_TRUE(registry.GetEntityUUID(original).empty());
+    EXPECT_TRUE(registry.GetEntityUUID(original).IsNil());
 }
 
 // generated uuids should use expected format
 TEST(EntityUUIDTests, GeneratedUUIDHasVersion4Format) {
-    const std::string uuid = Core::Utils::UUID::UUIDGenerator::Generate();
+    const std::string uuid = Core::UUIDGenerator::Generate().ToString();
 
     ASSERT_EQ(uuid.size(), 36u);
 
