@@ -17,7 +17,6 @@
 #include "UI/Text/Font.h"
 #include "UI/UIElement.h"
 #include <ObSL/Interpreter.h>
-#include "Scripting/EngineLib/RuntimeIdGenerator.h"
 
 #include <cstdint>
 #include <functional>
@@ -83,8 +82,6 @@ namespace Scripting {
     }
 
     static void BuildBaseUIFields(ObSL::ObSLObject *obj, ObSL::Interpreter *interp, std::shared_ptr<const std::string> name, Core::UUID uuid, Core::EngineContext *ctx) {
-        obj->identity = RuntimeIdGenerator::Generate();
-
         obj->fields["GetName"] = interp->gc.allocate<ObSL::NativeFunction>(0, [name](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value { return *name; }, "GetName");
 
         obj->fields["GetUUID"] = interp->gc.allocate<ObSL::NativeFunction>(0, [uuid](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value { return uuid.ToString(); }, "GetUUID");
@@ -241,6 +238,7 @@ namespace Scripting {
 
     static ObSL::ObSLObject *CreateUIButtonObject(ObSL::Interpreter *interp, const std::string &name, Core::UUID uuid, Core::EngineContext *ctx) {
         auto *obj = interp->gc.allocate<ObSL::ObSLObject>();
+        obj->identity = Scripting::Identity::ForUI(uuid);
         EngineLibFactories::GCProtectGuard guard(interp, obj);
         auto namePtr = std::make_shared<const std::string>(name);
         const Core::UUID uuidPtr = uuid;
@@ -385,6 +383,7 @@ namespace Scripting {
 
     static ObSL::ObSLObject *CreateUITextObject(ObSL::Interpreter *interp, const std::string &name, Core::UUID uuid, Core::EngineContext *ctx) {
         auto *obj = interp->gc.allocate<ObSL::ObSLObject>();
+        obj->identity = Scripting::Identity::ForUI(uuid);
         EngineLibFactories::GCProtectGuard guard(interp, obj);
         auto namePtr = std::make_shared<const std::string>(name);
         const Core::UUID uuidPtr = uuid;
@@ -467,6 +466,7 @@ namespace Scripting {
 
     static ObSL::ObSLObject *CreateUIRectObject(ObSL::Interpreter *interp, const std::string &name, Core::UUID uuid, Core::EngineContext *ctx) {
         auto *obj = interp->gc.allocate<ObSL::ObSLObject>();
+        obj->identity = Scripting::Identity::ForUI(uuid);
         EngineLibFactories::GCProtectGuard guard(interp, obj);
         auto namePtr = std::make_shared<const std::string>(name);
         const Core::UUID uuidPtr = uuid;
@@ -509,6 +509,7 @@ namespace Scripting {
 
     static ObSL::ObSLObject *CreateUIImageObject(ObSL::Interpreter *interp, const std::string &name, Core::UUID uuid, Core::EngineContext *ctx) {
         auto *obj = interp->gc.allocate<ObSL::ObSLObject>();
+        obj->identity = Scripting::Identity::ForUI(uuid);
         EngineLibFactories::GCProtectGuard guard(interp, obj);
         auto namePtr = std::make_shared<const std::string>(name);
         const Core::UUID uuidPtr = uuid;
