@@ -29,7 +29,7 @@ namespace IO::UISerializer {
         j["rect"]["scale"] = {element->Rect.Scale.x, element->Rect.Scale.y};
     }
 
-    static void SerializeFlags(json &j, const UI::UIElement *element) { j["flags"] = element->HasFlag(UI::VISIBLE) | (element->HasFlag(UI::ENABLED) ? 2 : 0); }
+    static void SerializeFlags(json &j, const UI::UIElement *element) { j["flags"] = (element->HasFlag(UI::VISIBLE) ? 1 : 0) | (element->HasFlag(UI::ENABLED) ? 2 : 0); }
 
     static void SerializeColor(json &j, const char *key, const glm::vec4 &color) { j[key] = {color.r, color.g, color.b, color.a}; }
 
