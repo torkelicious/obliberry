@@ -1,6 +1,6 @@
 #include "Core/EngineContext.h"
 #include "Core/ResourceManager.h"
-#include "../../../Core/UUID.h"
+#include "Core/UUID.h"
 #include "IO/Loaders/SceneAssetLoader.h"
 #include "ObSL/Natives.h"
 #include "ObSL/Parser/ast.h"
@@ -17,6 +17,10 @@
 #include "UI/Text/Font.h"
 #include "UI/UIElement.h"
 #include <ObSL/Interpreter.h>
+#include "Scripting/EngineLib/RuntimeIdGenerator.h"
+
+#include <cstdint>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <shared_mutex>
@@ -79,6 +83,8 @@ namespace Scripting {
     }
 
     static void BuildBaseUIFields(ObSL::ObSLObject *obj, ObSL::Interpreter *interp, std::shared_ptr<const std::string> name, Core::UUID uuid, Core::EngineContext *ctx) {
+        obj->identity = RuntimeIdGenerator::Generate();
+
         obj->fields["GetName"] = interp->gc.allocate<ObSL::NativeFunction>(0, [name](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value { return *name; }, "GetName");
 
         obj->fields["GetUUID"] = interp->gc.allocate<ObSL::NativeFunction>(0, [uuid](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value { return uuid.ToString(); }, "GetUUID");
