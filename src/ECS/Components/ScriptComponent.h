@@ -10,6 +10,12 @@
 
 namespace ECS::Components {
     struct ScriptSlot {
+        ScriptSlot() = default;
+        ScriptSlot(ScriptSlot &&) noexcept = default;
+        ScriptSlot &operator=(ScriptSlot &&) noexcept = default;
+        ScriptSlot(const ScriptSlot &) = delete;
+        ScriptSlot &operator=(const ScriptSlot &) = delete;
+
         bool isInitialized = false;
         std::string scriptPath;
         std::map<std::string, nlohmann::json> properties;
