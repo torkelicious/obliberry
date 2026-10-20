@@ -29,3 +29,4 @@ compile_commands.json
 .directory
 /.vscode
 /NewerDemo
+*.lock
