@@ -27,6 +27,7 @@
 #include "Scripting/EngineLib/ScriptProperties.h"
 #include "nlohmann/json_fwd.hpp"
 #include <ObSL/ScriptWorker.h>
+#include <cstdint>
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
@@ -75,6 +76,7 @@ namespace Scripting {
 
         auto *obj = interpreter->gc.allocate<ObSL::ObSLObject>();
         EngineLibFactories::GCProtectGuard guard(interpreter, obj);
+        obj->identity = static_cast<uint64_t>(id);
 
         // wrapper identity is the entity's UUID; the entity id is resolved from it on every call
         const Core::UUID uuid = entityUUID;
