@@ -15,6 +15,15 @@
 namespace IO::UISerializer {
     using json = nlohmann::json;
 
+    static Core::UUID ReadUUID(const json &j) {
+        if (const auto it = j.find("uuid"); it != j.end() && it->is_string()) {
+            if (const auto parsed = Core::UUID::FromString(it->get<std::string>())) {
+                return *parsed;
+            }
+        }
+        return {};
+    }
+
     static void SerializeRect(json &j, const UI::UIElement *element) {
         j["rect"]["position"] = {element->Rect.Position.x, element->Rect.Position.y};
         j["rect"]["scale"] = {element->Rect.Scale.x, element->Rect.Scale.y};
@@ -26,6 +35,7 @@ namespace IO::UISerializer {
 
     void SerializeElement(nlohmann::json &out, const UI::UIElement *element, Core::ResourceManager &resources) {
         out["name"] = element->Name;
+        out["uuid"] = element->GetUUID().ToString();
         SerializeRect(out, element);
         SerializeFlags(out, element);
 
@@ -187,7 +197,7 @@ namespace IO::UISerializer {
         return element;
     }
 
-    static void DeserializeChildren(const json &j, UI::UIElement *parent, UI::UISystem &uiSystem, Core::ResourceManager &resources) {
+    static void DeserializeChildren(const json &j, UI::UIElement *parent, UI::UISystem &uiSystem, Core::ResourceManager &resources, const bool restoreUUIDs = false) {
         if (!j.contains("children"))
             return;
 
@@ -202,10 +212,13 @@ namespace IO::UISerializer {
             if (!element)
                 continue;
 
-            UI::UIElement *raw = uiSystem.AddChild(parent, std::move(element));
+            UI::UIElement *raw = uiSystem.AddChild(parent, std::move(element), restoreUUIDs ? ReadUUID(childJson) : Core::UUID{});
+            if (!raw) {
+                continue;
+            }
 
             // recurse for nested children
-            DeserializeChildren(childJson, raw, uiSystem, resources);
+            DeserializeChildren(childJson, raw, uiSystem, resources, restoreUUIDs);
         }
     }
 
@@ -263,8 +276,12 @@ namespace IO::UISerializer {
             if (!element)
                 continue;
 
-            UI::UIElement *raw = uiSystem.AddChild(root, std::move(element));
-            DeserializeChildren(elementJson, raw, uiSystem, resources);
+            UI::UIElement *raw = uiSystem.AddChild(root, std::move(element), ReadUUID(elementJson));
+
+            if (!raw)
+                continue;
+
+            DeserializeChildren(elementJson, raw, uiSystem, resources, true);
         }
 
         return true;

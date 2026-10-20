@@ -593,13 +593,16 @@ namespace Editor::UI {
             {
                 std::map<std::string, nlohmann::json> stale;
                 for (const auto &[name, value] : slot.properties) {
-                    const bool declared = std::ranges::any_of(decls, [&](const auto &decl) { return decl.name == name; });
-                    if (!declared) {
+                    if (!std::ranges::any_of(decls, [&](const auto &d) { return d.name == name; }))
                         stale[name] = value;
-                    }
                 }
                 if (!stale.empty()) {
-                    undoManager->Execute(std::make_unique<Commands::PruneScriptPropertiesCommand>(entityUUID, slotIndex, scriptPath, std::move(stale)), *engineContext);
+                    ImGui::TextDisabled("%zu unused value(s) saved", stale.size());
+                    ImGui::SameLine();
+                    if (ImGui::SmallButton("Clear##unused")) {
+                        undoManager->Execute(std::make_unique<Commands::PruneScriptPropertiesCommand>(entityUUID, slotIndex, scriptPath, std::move(stale)), *engineContext);
+                        MarkSceneChanged(engineContext);
+                    }
                 }
             }
 
