@@ -497,7 +497,7 @@ TEST_F(EntitySerializationTests, InvalidOrMissingUUIDKeepsGeneratedIdentity) {
         auto loaded = CreateEntity(destinationRegistry);
         const auto original = GetUUID(loaded);
 
-        const nlohmann::json data{{"UUID", uuid}, {"components", {{"MovementComponent", {{"autoMove", true}}}}}};
+        const nlohmann::json data{{"uuid", uuid}, {"components", {{"MovementComponent", {{"autoMove", true}}}}}};
 
         ASSERT_NO_THROW(IO::EntityFactory::DeserializeEntity(loaded, data, resources, true));
 
