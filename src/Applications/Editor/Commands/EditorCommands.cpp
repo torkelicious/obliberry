@@ -49,6 +49,18 @@ namespace Editor::Commands {
             return registry.FindEntityByUUID(uuid);
         }
 
+        std::optional<std::size_t> ResolveScriptSlot(const ECS::Components::ScriptComponent &scripts, const std::size_t slotIndex, const std::string &scriptPath) {
+            if (slotIndex < scripts.slots.size() && scripts.slots[slotIndex].scriptPath == scriptPath) {
+                return slotIndex;
+            }
+            for (std::size_t i = 0; i < scripts.slots.size(); ++i) {
+                if (scripts.slots[i].scriptPath == scriptPath) {
+                    return i;
+                }
+            }
+            return std::nullopt;
+        }
+
         struct ScriptSlotSnapshot {
             std::string path;
             std::filesystem::path resolvedPath;
@@ -497,17 +509,7 @@ namespace Editor::Commands {
             Core::UUID targetUUID, const std::size_t slotIndex, std::string scriptPath, std::string name, std::optional<nlohmann::json> oldValue, std::optional<nlohmann::json> newValue)
         : EntityCommand(targetUUID), m_SlotIndex(slotIndex), m_ScriptPath(std::move(scriptPath)), m_Name(std::move(name)), m_Old(std::move(oldValue)), m_New(std::move(newValue)) {}
 
-    std::optional<std::size_t> SetScriptPropertyCommand::ResolveSlot(const ECS::Components::ScriptComponent &scripts) const {
-        if (m_SlotIndex < scripts.slots.size() && scripts.slots[m_SlotIndex].scriptPath == m_ScriptPath) {
-            return m_SlotIndex;
-        }
-        for (std::size_t i = 0; i < scripts.slots.size(); ++i) {
-            if (scripts.slots[i].scriptPath == m_ScriptPath) {
-                return i;
-            }
-        }
-        return std::nullopt;
-    }
+    std::optional<std::size_t> SetScriptPropertyCommand::ResolveSlot(const ECS::Components::ScriptComponent &scripts) const { return ResolveScriptSlot(scripts, m_SlotIndex, m_ScriptPath); }
 
     void SetScriptPropertyCommand::Apply(Core::EngineContext &ctx, const std::optional<nlohmann::json> &value) {
         const auto entity = ResolveEntity(ctx);
@@ -540,17 +542,7 @@ namespace Editor::Commands {
     PruneScriptPropertiesCommand::PruneScriptPropertiesCommand(Core::UUID targetUUID, const std::size_t slotIndex, std::string scriptPath, std::map<std::string, nlohmann::json> staleValues)
         : EntityCommand(targetUUID), m_SlotIndex(slotIndex), m_ScriptPath(std::move(scriptPath)), m_StaleValues(std::move(staleValues)) {}
 
-    std::optional<std::size_t> PruneScriptPropertiesCommand::ResolveSlot(const ECS::Components::ScriptComponent &scripts) const {
-        if (m_SlotIndex < scripts.slots.size() && scripts.slots[m_SlotIndex].scriptPath == m_ScriptPath) {
-            return m_SlotIndex;
-        }
-        for (std::size_t i = 0; i < scripts.slots.size(); ++i) {
-            if (scripts.slots[i].scriptPath == m_ScriptPath) {
-                return i;
-            }
-        }
-        return std::nullopt;
-    }
+    std::optional<std::size_t> PruneScriptPropertiesCommand::ResolveSlot(const ECS::Components::ScriptComponent &scripts) const { return ResolveScriptSlot(scripts, m_SlotIndex, m_ScriptPath); }
 
     void PruneScriptPropertiesCommand::Apply(Core::EngineContext &ctx, const bool remove) {
         const auto entity = ResolveEntity(ctx);

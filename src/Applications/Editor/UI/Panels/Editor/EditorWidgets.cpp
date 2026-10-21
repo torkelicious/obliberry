@@ -559,7 +559,13 @@ namespace Editor::UI {
             return 0;
         }
 
-        void DrawScriptProperties(const ECS::Entity entity, ECS::Components::ScriptSlot &slot, const std::size_t slotIndex, Core::EngineContext *engineContext, UndoManager *undoManager) {
+        void DrawScriptProperties(const ECS::Entity entity, ECS::Components::ScriptSlot &slot, const std::size_t slotIndex, Core::EngineContext *engineContext, UndoManager *undoManager,
+                std::optional<nlohmann::json> &editStart, ImGuiID &editStartKey) {
+            auto captureEditStart = [&editStartKey, &editStart](const std::optional<nlohmann::json> &oldValue, const std::string &name) {
+                editStartKey = ImGui::GetID(name.c_str());
+                editStart = oldValue;
+            };
+            auto takeEditStart = [&editStartKey, &editStart](const std::string &name) -> const std::optional<nlohmann::json> * { return editStartKey == ImGui::GetID(name.c_str()) ? &editStart : nullptr; };
             if (!engineContext || !undoManager) {
                 return;
             }
@@ -600,8 +606,9 @@ namespace Editor::UI {
                     ImGui::TextDisabled("%zu unused value(s) saved", stale.size());
                     ImGui::SameLine();
                     if (ImGui::SmallButton("Clear##unused")) {
-                        undoManager->Execute(std::make_unique<Commands::PruneScriptPropertiesCommand>(entityUUID, slotIndex, scriptPath, std::move(stale)), *engineContext);
-                        MarkSceneChanged(engineContext);
+                        if (undoManager->Execute(std::make_unique<Commands::PruneScriptPropertiesCommand>(entityUUID, slotIndex, scriptPath, std::move(stale)), *engineContext)) {
+                            MarkSceneChanged(engineContext);
+                        }
                     }
                 }
             }
@@ -610,7 +617,6 @@ namespace Editor::UI {
                 return;
             }
 
-            static std::optional<nlohmann::json> s_EditStart;
             ImGui::SeparatorText("Script Properties");
             ImGui::Indent();
             for (const auto &decl : decls) {
@@ -624,11 +630,12 @@ namespace Editor::UI {
                             slot.properties[decl.name] = static_cast<double>(value); // live while dragging
                         }
                         if (ImGui::IsItemActivated()) {
-                            s_EditStart = before;
+                            captureEditStart(before, decl.name);
                         }
                         if (ImGui::IsItemDeactivatedAfterEdit()) {
-                            if (!commit(decl.name, s_EditStart, nlohmann::json(static_cast<double>(value)))) {
-                                revertLiveEdit(decl.name, s_EditStart);
+                            const std::optional<nlohmann::json> *previous = takeEditStart(decl.name);
+                            if (!commit(decl.name, previous ? *previous : std::nullopt, nlohmann::json(static_cast<double>(value)))) {
+                                revertLiveEdit(decl.name, previous ? *previous : std::nullopt);
                             }
                         }
                         break;
@@ -648,11 +655,12 @@ namespace Editor::UI {
                             slot.properties[decl.name] = value; // while typing
                         }
                         if (ImGui::IsItemActivated()) {
-                            s_EditStart = before;
+                            captureEditStart(before, decl.name);
                         }
                         if (ImGui::IsItemDeactivatedAfterEdit()) {
-                            if (!commit(decl.name, s_EditStart, nlohmann::json(value))) {
-                                revertLiveEdit(decl.name, s_EditStart);
+                            const std::optional<nlohmann::json> *previous = takeEditStart(decl.name);
+                            if (!commit(decl.name, previous ? *previous : std::nullopt, nlohmann::json(value))) {
+                                revertLiveEdit(decl.name, previous ? *previous : std::nullopt);
                             }
                         }
                         break;
@@ -770,8 +778,13 @@ void Editor::UI::ScriptWidget::Draw(const ECS::Entity entity, Core::EngineContex
                 ImGui::PopID();
                 break;
             }
-            DrawScriptProperties(entity, comp->slots[i], i, engineContext, undoManager);
+            DrawScriptProperties(entity, comp->slots[i], i, engineContext, undoManager, scriptEditStart, scriptEditStartKey);
             ImGui::PopID();
+        }
+
+        comp = entity.GetComponent<ECS::Components::ScriptComponent>();
+        if (!comp) {
+            return;
         }
 
         ImGui::Separator();
@@ -790,7 +803,9 @@ void Editor::UI::ScriptWidget::Draw(const ECS::Entity entity, Core::EngineContex
 
         // total count
         // ImGui::SameLine();
-        ImGui::TextDisabled("Total: %zu script(s)", comp->slots.size());
+        if (const auto *current = entity.GetComponent<ECS::Components::ScriptComponent>()) {
+            ImGui::TextDisabled("Total: %zu script(s)", current->slots.size());
+        }
     }
 }
 
