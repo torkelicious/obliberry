@@ -238,7 +238,8 @@ namespace Scripting {
 
     static ObSL::ObSLObject *CreateUIButtonObject(ObSL::Interpreter *interp, const std::string &name, Core::UUID uuid, Core::EngineContext *ctx) {
         auto *obj = interp->gc.allocate<ObSL::ObSLObject>();
-        obj->identity = Scripting::Identity::ForUI(uuid);
+        obj->identity = Identity::ForUI(uuid);
+        obj->readonly = true;
         EngineLibFactories::GCProtectGuard guard(interp, obj);
         auto namePtr = std::make_shared<const std::string>(name);
         const Core::UUID uuidPtr = uuid;
@@ -383,7 +384,8 @@ namespace Scripting {
 
     static ObSL::ObSLObject *CreateUITextObject(ObSL::Interpreter *interp, const std::string &name, Core::UUID uuid, Core::EngineContext *ctx) {
         auto *obj = interp->gc.allocate<ObSL::ObSLObject>();
-        obj->identity = Scripting::Identity::ForUI(uuid);
+        obj->identity = Identity::ForUI(uuid);
+        obj->readonly = true;
         EngineLibFactories::GCProtectGuard guard(interp, obj);
         auto namePtr = std::make_shared<const std::string>(name);
         const Core::UUID uuidPtr = uuid;
@@ -466,7 +468,8 @@ namespace Scripting {
 
     static ObSL::ObSLObject *CreateUIRectObject(ObSL::Interpreter *interp, const std::string &name, Core::UUID uuid, Core::EngineContext *ctx) {
         auto *obj = interp->gc.allocate<ObSL::ObSLObject>();
-        obj->identity = Scripting::Identity::ForUI(uuid);
+        obj->identity = Identity::ForUI(uuid);
+        obj->readonly = true;
         EngineLibFactories::GCProtectGuard guard(interp, obj);
         auto namePtr = std::make_shared<const std::string>(name);
         const Core::UUID uuidPtr = uuid;
@@ -509,7 +512,8 @@ namespace Scripting {
 
     static ObSL::ObSLObject *CreateUIImageObject(ObSL::Interpreter *interp, const std::string &name, Core::UUID uuid, Core::EngineContext *ctx) {
         auto *obj = interp->gc.allocate<ObSL::ObSLObject>();
-        obj->identity = Scripting::Identity::ForUI(uuid);
+        obj->identity = Identity::ForUI(uuid);
+        obj->readonly = true;
         EngineLibFactories::GCProtectGuard guard(interp, obj);
         auto namePtr = std::make_shared<const std::string>(name);
         const Core::UUID uuidPtr = uuid;
