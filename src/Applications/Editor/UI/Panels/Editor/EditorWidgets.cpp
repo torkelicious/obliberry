@@ -611,7 +611,7 @@ namespace Editor::UI {
             }
 
             static std::optional<nlohmann::json> s_EditStart;
-
+            ImGui::SeparatorText("Script Properties");
             ImGui::Indent();
             for (const auto &decl : decls) {
                 ImGui::PushID(decl.name.c_str());
@@ -745,6 +745,7 @@ namespace Editor::UI {
                 ImGui::PopID();
             }
             ImGui::Unindent();
+            ImGui::Separator();
         }
     } // namespace
 } // namespace Editor::UI
@@ -760,8 +761,9 @@ void Editor::UI::ScriptWidget::Draw(const ECS::Entity entity, Core::EngineContex
 
         for (size_t i = 0; i < comp->slots.size(); i++) {
             ImGui::PushID(static_cast<int>(i));
-            ImGui::BulletText("%s", comp->slots[i].scriptPath.c_str());
-            // ImGui::SameLine();
+            std::string filename = std::filesystem::path(comp->slots[i].scriptPath).filename().string();
+            ImGui::BulletText("%s", filename.c_str());
+            ImGui::SameLine();
             if (ImGui::SmallButton("Remove ##Script")) {
                 undoManager->Execute(std::make_unique<Commands::RemoveScriptCommand>(entity.GetRegistry()->GetEntityUUID(static_cast<ECS::EntityID>(entity)), static_cast<int>(i)), *engineContext);
                 MarkSceneChanged(engineContext);
@@ -787,7 +789,7 @@ void Editor::UI::ScriptWidget::Draw(const ECS::Entity entity, Core::EngineContex
         }
 
         // total count
-        ImGui::SameLine();
+        // ImGui::SameLine();
         ImGui::TextDisabled("Total: %zu script(s)", comp->slots.size());
     }
 }
