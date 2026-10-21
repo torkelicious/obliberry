@@ -177,7 +177,7 @@ namespace Rendering::PostProcessing {
             if (auto parsed = UniformValueFromJson(value)) {
                 out[name] = *parsed;
             } else {
-                LOG_WARN(LOG_WHO, "Skipping uniform '" + name + "' on '" += shaderKey + "': unsupported value type");
+                LOG_WARN(LOG_WHO, "Skipping uniform '" + name + "' on '" + shaderKey + "': unsupported value type");
             }
         }
     }

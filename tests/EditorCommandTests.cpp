@@ -550,3 +550,102 @@ TEST_F(EditorCommandTests, RemoveUIElementRestoresSubtreeOrderAndUuids) {
     EXPECT_EQ(ui.FindByUUID(childXUUID), nullptr);
     EXPECT_EQ(root->Children.size(), 2u);
 }
+
+TEST_F(EditorCommandTests, SetScriptPropertyUndoRedoKeepsPreviousValue) {
+    const auto id = Registry().CreateEntity();
+    const auto uuid = Registry().GetEntityUUID(id);
+    auto &slot = Registry().AddComponent<ECS::Components::ScriptComponent>(id).slots.emplace_back();
+    slot.scriptPath = "props.obsl";
+    slot.properties["Speed"] = 1.0;
+
+    const auto speedOf = [&]() -> nlohmann::json {
+        const auto *scripts = Registry().GetComponent<ECS::Components::ScriptComponent>(id);
+        const auto it = scripts->slots[0].properties.find("Speed");
+        return it == scripts->slots[0].properties.end() ? nlohmann::json() : it->second;
+    };
+
+    undo.Execute(std::make_unique<Editor::Commands::SetScriptPropertyCommand>(uuid, 0, "props.obsl", "Speed", nlohmann::json(1.0), nlohmann::json(2.5)), context);
+    EXPECT_EQ(speedOf(), nlohmann::json(2.5));
+
+    undo.Undo(context);
+    EXPECT_EQ(speedOf(), nlohmann::json(1.0));
+
+    undo.Redo(context);
+    EXPECT_EQ(speedOf(), nlohmann::json(2.5));
+
+    undo.Execute(std::make_unique<Editor::Commands::SetScriptPropertyCommand>(uuid, 0, "props.obsl", "Speed", nlohmann::json(2.5), std::nullopt), context);
+    EXPECT_TRUE(speedOf().is_null());
+
+    undo.Undo(context);
+    EXPECT_EQ(speedOf(), nlohmann::json(2.5));
+}
+
+TEST_F(EditorCommandTests, RemoveScriptRestoresStoredProperties) {
+    const auto id = Registry().CreateEntity();
+    const auto uuid = Registry().GetEntityUUID(id);
+    auto &slot = Registry().AddComponent<ECS::Components::ScriptComponent>(id).slots.emplace_back();
+    slot.scriptPath = "props.obsl";
+    slot.properties["Speed"] = 3.0;
+    slot.properties["Title"] = std::string("kept");
+
+    undo.Execute(std::make_unique<Editor::Commands::RemoveScriptCommand>(uuid, 0), context);
+    EXPECT_FALSE(Registry().HasComponent<ECS::Components::ScriptComponent>(id));
+
+    undo.Undo(context);
+    const auto *scripts = Registry().GetComponent<ECS::Components::ScriptComponent>(id);
+    ASSERT_NE(scripts, nullptr);
+    ASSERT_EQ(scripts->slots.size(), 1u);
+    EXPECT_EQ(scripts->slots[0].properties.at("Speed"), nlohmann::json(3.0));
+    EXPECT_EQ(scripts->slots[0].properties.at("Title"), nlohmann::json("kept"));
+}
+
+TEST_F(EditorCommandTests, SetScriptPropertyFollowsScriptPathWhenSlotsReorder) {
+    const auto id = Registry().CreateEntity();
+    const auto uuid = Registry().GetEntityUUID(id);
+    auto &scripts = Registry().AddComponent<ECS::Components::ScriptComponent>(id);
+    scripts.slots.resize(2);
+    scripts.slots[0].scriptPath = "first.obsl";
+    scripts.slots[1].scriptPath = "second.obsl";
+    scripts.slots[1].properties["Speed"] = 1.0;
+
+    auto command = std::make_unique<Editor::Commands::SetScriptPropertyCommand>(uuid, 1, "second.obsl", "Speed", nlohmann::json(1.0), nlohmann::json(2.5));
+    scripts.slots.erase(scripts.slots.begin());
+
+    ASSERT_TRUE(undo.Execute(std::move(command), context));
+    const auto *result = Registry().GetComponent<ECS::Components::ScriptComponent>(id);
+    ASSERT_NE(result, nullptr);
+    ASSERT_EQ(result->slots.size(), 1u);
+    EXPECT_EQ(result->slots[0].scriptPath, "second.obsl");
+    EXPECT_EQ(result->slots[0].properties.at("Speed"), nlohmann::json(2.5));
+}
+
+TEST_F(EditorCommandTests, SetScriptPropertyOnMissingEntityIsRejected) {
+    auto command = std::make_unique<Editor::Commands::SetScriptPropertyCommand>(Core::UUIDGenerator::Generate(), 0, "props.obsl", "Speed", std::nullopt, nlohmann::json(2.5));
+    EXPECT_FALSE(undo.Execute(std::move(command), context));
+    EXPECT_FALSE(undo.CanUndo());
+}
+
+TEST_F(EditorCommandTests, PruneScriptPropertiesRemovesAndRestoresStaleValues) {
+    const auto id = Registry().CreateEntity();
+    const auto uuid = Registry().GetEntityUUID(id);
+    auto &slot = Registry().AddComponent<ECS::Components::ScriptComponent>(id).slots.emplace_back();
+    slot.scriptPath = "props.obsl";
+    slot.properties["Speed"] = 2.0;
+    slot.properties["OldName"] = std::string("stale");
+    slot.properties["Other"] = 7.0;
+
+    std::map<std::string, nlohmann::json> stale;
+    stale["OldName"] = slot.properties["OldName"];
+    stale["Other"] = slot.properties["Other"];
+
+    undo.Execute(std::make_unique<Editor::Commands::PruneScriptPropertiesCommand>(uuid, 0, "props.obsl", std::move(stale)), context);
+    const auto *scripts = Registry().GetComponent<ECS::Components::ScriptComponent>(id);
+    ASSERT_NE(scripts, nullptr);
+    EXPECT_EQ(scripts->slots[0].properties.size(), 1u);
+    EXPECT_EQ(scripts->slots[0].properties.at("Speed"), nlohmann::json(2.0));
+
+    undo.Undo(context);
+    scripts = Registry().GetComponent<ECS::Components::ScriptComponent>(id);
+    EXPECT_EQ(scripts->slots[0].properties.at("OldName"), nlohmann::json("stale"));
+    EXPECT_EQ(scripts->slots[0].properties.at("Other"), nlohmann::json(7.0));
+}

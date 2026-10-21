@@ -1,6 +1,7 @@
 #include "TemporaryProject.h"
 #include "ECS/Systems/ScriptSystem.h"
 #include "IO/Package/Container.h"
+#include "Scripting/EngineLib/ScriptProperties.h"
 #include <ObSL/ASTSerializer.h>
 #include <deque>
 #include <memory>
@@ -74,4 +75,81 @@ TEST_F(ScriptModuleTests, ReinitializedRuntimeCanImportFromVfsAgain) {
     RestartRuntime();
     ASSERT_NO_THROW(Run("using \"helper.obsl\"; var answer = helper.Value();"));
     EXPECT_EQ(Interpreter().get_global_environment()->get("answer"), ObSL::Value{42.0});
+}
+
+TEST_F(ScriptModuleTests, ScanScriptPropertiesFindsTypedDeclarations) {
+    const std::string source = "var speed = Prop(\"Speed\", 2.5);\n"
+                               "var enabled = Prop(\"Enabled\", true);\n"
+                               "var title = Prop(\"Title\", \"Hello\");\n"
+                               "var target = PropEntity(\"Target\");\n"
+                               "var panel = PropUI(\"Panel\");\n"
+                               "// Prop(\"Commented\", 1);\n"
+                               "var ignored = NotProp(\"Nope\", 1);\n";
+
+    const auto decls = Scripting::ScanScriptProperties(source);
+    ASSERT_EQ(decls.size(), 5u);
+
+    EXPECT_EQ(decls[0].varName, "speed");
+    EXPECT_EQ(decls[0].name, "Speed");
+    EXPECT_EQ(decls[0].type, Scripting::ScriptPropertyType::Number);
+    EXPECT_EQ(decls[0].defaultValue, nlohmann::json(2.5));
+
+    EXPECT_EQ(decls[1].name, "Enabled");
+    EXPECT_EQ(decls[1].type, Scripting::ScriptPropertyType::Bool);
+    EXPECT_EQ(decls[1].defaultValue, nlohmann::json(true));
+
+    EXPECT_EQ(decls[2].name, "Title");
+    EXPECT_EQ(decls[2].type, Scripting::ScriptPropertyType::String);
+    EXPECT_EQ(decls[2].defaultValue, nlohmann::json("Hello"));
+
+    EXPECT_EQ(decls[3].name, "Target");
+    EXPECT_EQ(decls[3].type, Scripting::ScriptPropertyType::Entity);
+
+    EXPECT_EQ(decls[4].name, "Panel");
+    EXPECT_EQ(decls[4].type, Scripting::ScriptPropertyType::UIElement);
+}
+
+TEST_F(ScriptModuleTests, ScanScriptPropertiesHandlesMultiLineAndExpressionDefaults) {
+    const std::string source = "var speed = Prop(\n"
+                               "    \"Speed\",\n"
+                               "    2.5\n"
+                               ");\n"
+                               "var computed = Prop(\"Computed\", 1 + 2);\n"
+                               "var escaped = Prop(\"Escaped\", \"a\\\"b\");\n"
+                               "var missingDefault = Prop(\"MissingDefault\");\n"
+                               "fn helper() { Prop(\"NotADecl\", 1); }\n";
+
+    const auto decls = Scripting::ScanScriptProperties(source);
+    ASSERT_EQ(decls.size(), 3u);
+
+    EXPECT_EQ(decls[0].name, "Speed");
+    EXPECT_EQ(decls[0].type, Scripting::ScriptPropertyType::Number);
+    EXPECT_TRUE(decls[0].hasDefaultValue);
+    EXPECT_EQ(decls[0].defaultValue, nlohmann::json(2.5));
+
+    EXPECT_EQ(decls[1].name, "Computed");
+    EXPECT_EQ(decls[1].type, Scripting::ScriptPropertyType::Number);
+    EXPECT_FALSE(decls[1].hasDefaultValue);
+
+    EXPECT_EQ(decls[2].name, "Escaped");
+    EXPECT_EQ(decls[2].type, Scripting::ScriptPropertyType::String);
+    EXPECT_TRUE(decls[2].hasDefaultValue);
+    EXPECT_EQ(decls[2].defaultValue, nlohmann::json("a\"b"));
+}
+
+TEST_F(ScriptModuleTests, PropertyScopesNestAndRestorePreviousScope) {
+    EXPECT_EQ(Scripting::CurrentInitProps(), nullptr);
+
+    Scripting::PropertyMap outer;
+    outer["Speed"] = 1.0;
+    Scripting::PropertyMap inner;
+    inner["Speed"] = 2.0;
+
+    Scripting::ScriptPropertyScope outerScope(&outer);
+    EXPECT_EQ(Scripting::CurrentInitProps(), &outer);
+    {
+        Scripting::ScriptPropertyScope innerScope(&inner);
+        EXPECT_EQ(Scripting::CurrentInitProps(), &inner);
+    }
+    EXPECT_EQ(Scripting::CurrentInitProps(), &outer);
 }

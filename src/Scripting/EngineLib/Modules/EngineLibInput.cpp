@@ -70,6 +70,7 @@ void Scripting::EngineLib::register_input_modules(ObSL::Interpreter &interpreter
 
     interpreter.get_global_environment()->define("Input_GetMouseWorldPos", interpreter.gc.allocate<ObSL::NativeFunction>(0, [ctx = m_ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
         auto *obj = interp->gc.allocate<ObSL::ObSLObject>();
+        obj->readonly = true;
         if (ctx && ctx->input && ctx->camera && ctx->window) {
             std::lock_guard lock(s_InputCameraMutex);
             float w = static_cast<float>(ctx->window->GetWidth());

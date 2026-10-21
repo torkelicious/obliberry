@@ -27,12 +27,13 @@ namespace Editor::Commands {
 
     UndoManager::~UndoManager() = default;
 
-    void UndoManager::Execute(std::unique_ptr<ICommand> command, Core::EngineContext &ctx) {
+    bool UndoManager::Execute(std::unique_ptr<ICommand> command, Core::EngineContext &ctx) {
         if (!command || !ApplyCommand(*command, ctx, false)) {
-            return;
+            return false;
         }
         PushUndo(std::move(command));
         m_redo.clear();
+        return true;
     }
 
     void UndoManager::Undo(Core::EngineContext &ctx) {

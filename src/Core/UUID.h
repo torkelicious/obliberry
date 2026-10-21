@@ -69,5 +69,3 @@ template <> struct std::hash<Core::UUID> {
 template <> struct std::formatter<Core::UUID> : std::formatter<std::string_view> {
     auto format(const Core::UUID &value, std::format_context &ctx) const { return std::formatter<std::string_view>::format(value.ToString(), ctx); }
 };
-
-// for testing

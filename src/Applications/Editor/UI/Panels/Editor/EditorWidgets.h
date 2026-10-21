@@ -17,6 +17,7 @@
 
 #include "Applications/Editor/Commands/UndoManager.h"
 #include "Applications/Editor/Commands/EditorCommands.h"
+#include <optional>
 
 inline void MarkSceneChanged(const Core::EngineContext *ctx) {
     if (ctx && ctx->sceneManager) {
@@ -218,6 +219,9 @@ namespace Editor::UI {
         [[nodiscard]] const char *GetName() const override;
 
         void Draw(ECS::Entity entity, Core::EngineContext *engineContext = nullptr, UndoManager *undoManager = nullptr) override;
+
+        std::optional<nlohmann::json> scriptEditStart;
+        ImGuiID scriptEditStartKey = 0;
     };
 
     struct CustomDataWidget : IComponentWidget {

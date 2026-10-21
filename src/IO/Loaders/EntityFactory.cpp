@@ -21,6 +21,8 @@
 #include "ECS/Components/ParticleEmitterComponent.h"
 #include "Rendering/Types/Texture/Texture.h"
 #include "nlohmann/json_fwd.hpp"
+#include <algorithm>
+#include <utility>
 
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "EntityFactory"
@@ -197,6 +199,18 @@ void IO::EntityFactory::RegisterDeserializers() {
         scriptComp.slots.resize(paths.size());
         for (size_t i = 0; i < paths.size(); ++i) {
             scriptComp.slots[i].scriptPath = std::move(paths[i]);
+        }
+
+        if (data.contains("scriptProperties") && data["scriptProperties"].is_array()) {
+            const auto &allProps = data["scriptProperties"];
+            for (size_t i = 0; i < allProps.size() && i < scriptComp.slots.size(); ++i) {
+                if (!allProps[i].is_object()) {
+                    continue;
+                }
+                for (const auto &[key, value] : allProps[i].items()) {
+                    scriptComp.slots[i].properties[key] = value;
+                }
+            }
         }
     };
 
@@ -410,16 +424,36 @@ void IO::EntityFactory::RegisterSerializers() {
     // SCRIPT COMPONENT
     s_Serializers["ScriptComponent"] = [](const ECS::Entity &entity, nlohmann::json &data, Core::ResourceManager &) {
         if (entity.HasComponent<ECS::Components::ScriptComponent>()) {
-            if (const auto *scriptComp = entity.GetComponent<ECS::Components::ScriptComponent>(); scriptComp->slots.size() == 1) {
-                // Single script
-                data["ScriptComponent"]["scriptPath"] = scriptComp->slots[0].scriptPath;
-            } else if (scriptComp->slots.size() > 1) {
-                // Multiple scripts
-                nlohmann::json scriptPathsArray = nlohmann::json::array();
-                for (const auto &slot : scriptComp->slots) {
-                    scriptPathsArray.push_back(slot.scriptPath);
+            if (const auto *scriptComp = entity.GetComponent<ECS::Components::ScriptComponent>()) {
+
+                const bool anyProps = std::ranges::any_of(scriptComp->slots, [](const auto &slot) { return !slot.properties.empty(); });
+                if (anyProps) {
+                    nlohmann::json allProps = nlohmann::json::array();
+
+                    for (const auto &slot : scriptComp->slots) {
+                        nlohmann::json slotProps = nlohmann::json::object();
+
+                        for (const auto &[key, value] : slot.properties) {
+                            slotProps[key] = value;
+                        }
+
+                        allProps.push_back(std::move(slotProps));
+                    }
+
+                    data["ScriptComponent"]["scriptProperties"] = std::move(allProps);
                 }
-                data["ScriptComponent"]["scriptPaths"] = scriptPathsArray;
+
+                if (scriptComp->slots.size() == 1) {
+                    // Single script
+                    data["ScriptComponent"]["scriptPath"] = scriptComp->slots[0].scriptPath;
+                } else if (scriptComp->slots.size() > 1) {
+                    // Multiple scripts
+                    nlohmann::json scriptPathsArray = nlohmann::json::array();
+                    for (const auto &slot : scriptComp->slots) {
+                        scriptPathsArray.push_back(slot.scriptPath);
+                    }
+                    data["ScriptComponent"]["scriptPaths"] = scriptPathsArray;
+                }
             }
         }
     };

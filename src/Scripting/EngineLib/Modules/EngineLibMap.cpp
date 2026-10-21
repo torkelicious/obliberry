@@ -18,6 +18,7 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
     // HEX MATH
     interpreter.get_global_environment()->define("Math_WorldToHex", interpreter.gc.allocate<ObSL::NativeFunction>(2, [](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
         auto *obj = interp->gc.allocate<ObSL::ObSLObject>();
+        obj->readonly = true;
         if (args.size() < 2 || !std::holds_alternative<double>(args[0]) || !std::holds_alternative<double>(args[1])) {
             obj->fields["q"] = 0.0;
             obj->fields["r"] = 0.0;
@@ -38,6 +39,7 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
     interpreter.get_global_environment()->define("GetSelectedHex", interpreter.gc.allocate<ObSL::NativeFunction>(0, [reg = m_registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &) -> ObSL::Value {
         std::shared_lock lock(g_RegistryMutex);
         auto *obj = interp->gc.allocate<ObSL::ObSLObject>();
+        obj->readonly = true;
         obj->fields["hasSelection"] = false;
         obj->fields["q"] = 0.0;
         obj->fields["r"] = 0.0;
@@ -244,6 +246,7 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
             auto *obj = interp->gc.allocate<ObSL::ObSLObject>();
             obj->fields["q"] = static_cast<double>(n.q);
             obj->fields["r"] = static_cast<double>(n.r);
+            obj->readonly = true;
             arr->elements.emplace_back(obj);
         }
         return arr;
@@ -251,6 +254,7 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
 
     interpreter.get_global_environment()->define("Hex_HexToWorld", interpreter.gc.allocate<ObSL::NativeFunction>(2, [](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
         auto *obj = interp->gc.allocate<ObSL::ObSLObject>();
+        obj->readonly = true;
         if (args.size() < 2 || !std::holds_alternative<double>(args[0]) || !std::holds_alternative<double>(args[1])) {
             obj->fields["x"] = 0.0;
             obj->fields["y"] = 0.0;
@@ -319,7 +323,7 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
             return std::monostate{};
         }
 
-        const auto *obj = std::get<ObSL::ObSLObject *>(args[0]);
+        auto *obj = std::get<ObSL::ObSLObject *>(args[0]);
         const double type = std::get<double>(args[1]);
 
         if (!obj->fields.contains("q") || !obj->fields.contains("r")) {

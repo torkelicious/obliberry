@@ -30,8 +30,11 @@
 #include "ECS/Components/CustomDataComponent.h"
 #include "ECS/Components/DestroyTagComponent.h"
 #include "IO/Loaders/SceneAssetLoader.h"
+#include "nlohmann/json_fwd.hpp"
 #include <algorithm>
 #include <limits>
+#include <map>
+#include <string>
 #include <tuple>
 #include <unordered_set>
 #include <stdexcept>
@@ -46,11 +49,24 @@ namespace Editor::Commands {
             return registry.FindEntityByUUID(uuid);
         }
 
+        std::optional<std::size_t> ResolveScriptSlot(const ECS::Components::ScriptComponent &scripts, const std::size_t slotIndex, const std::string &scriptPath) {
+            if (slotIndex < scripts.slots.size() && scripts.slots[slotIndex].scriptPath == scriptPath) {
+                return slotIndex;
+            }
+            for (std::size_t i = 0; i < scripts.slots.size(); ++i) {
+                if (scripts.slots[i].scriptPath == scriptPath) {
+                    return i;
+                }
+            }
+            return std::nullopt;
+        }
+
         struct ScriptSlotSnapshot {
             std::string path;
             std::filesystem::path resolvedPath;
             std::string source;
             std::filesystem::file_time_type lastModified;
+            std::map<std::string, nlohmann::json> properties;
         };
 
         // Copy editor state and resource ownership, without retaining script runtime pointers.
@@ -113,7 +129,7 @@ namespace Editor::Commands {
                 if (const auto *scripts = registry.GetComponent<ECS::Components::ScriptComponent>(id)) {
                     saved.scripts.emplace();
                     for (const auto &slot : scripts->slots) {
-                        saved.scripts->push_back({.path = slot.scriptPath, .resolvedPath = slot.resolvedPath, .source = slot.source_code, .lastModified = slot.lastModified});
+                        saved.scripts->push_back({.path = slot.scriptPath, .resolvedPath = slot.resolvedPath, .source = slot.source_code, .lastModified = slot.lastModified, .properties = slot.properties});
                     }
                 }
 
@@ -221,6 +237,7 @@ namespace Editor::Commands {
                             restored.resolvedPath = slot.resolvedPath;
                             restored.source_code = slot.source;
                             restored.lastModified = slot.lastModified;
+                            restored.properties = slot.properties;
                             scripts.slots.push_back(std::move(restored));
                         }
                     }
@@ -405,6 +422,7 @@ namespace Editor::Commands {
         m_SavedResolvedPath = slot.resolvedPath;
         m_SavedSourceCode = slot.source_code;
         m_SavedLastModified = slot.lastModified;
+        m_SavedProperties = slot.properties;
         scripts->slots.erase(scripts->slots.begin() + m_Index);
         m_ComponentRemoved = scripts->slots.empty();
         if (m_ComponentRemoved) {
@@ -433,6 +451,7 @@ namespace Editor::Commands {
         slot.resolvedPath = m_SavedResolvedPath;
         slot.source_code = m_SavedSourceCode;
         slot.lastModified = m_SavedLastModified;
+        slot.properties = m_SavedProperties;
         scripts->slots.insert(scripts->slots.begin() + m_Index, std::move(slot));
         Complete(ctx);
     }
@@ -485,6 +504,78 @@ namespace Editor::Commands {
     }
 
     std::string_view AddScriptCommand::Name() const noexcept { return "Add script"; }
+
+    SetScriptPropertyCommand::SetScriptPropertyCommand(
+            Core::UUID targetUUID, const std::size_t slotIndex, std::string scriptPath, std::string name, std::optional<nlohmann::json> oldValue, std::optional<nlohmann::json> newValue)
+        : EntityCommand(targetUUID), m_SlotIndex(slotIndex), m_ScriptPath(std::move(scriptPath)), m_Name(std::move(name)), m_Old(std::move(oldValue)), m_New(std::move(newValue)) {}
+
+    std::optional<std::size_t> SetScriptPropertyCommand::ResolveSlot(const ECS::Components::ScriptComponent &scripts) const { return ResolveScriptSlot(scripts, m_SlotIndex, m_ScriptPath); }
+
+    void SetScriptPropertyCommand::Apply(Core::EngineContext &ctx, const std::optional<nlohmann::json> &value) {
+        const auto entity = ResolveEntity(ctx);
+        if (!entity) {
+            return;
+        }
+        auto *scripts = entity.GetComponent<ECS::Components::ScriptComponent>();
+        if (!scripts) {
+            return;
+        }
+        const auto slotIndex = ResolveSlot(*scripts);
+        if (!slotIndex) {
+            return;
+        }
+        auto &properties = scripts->slots[*slotIndex].properties;
+        if (value) {
+            properties[m_Name] = *value;
+        } else {
+            properties.erase(m_Name);
+        }
+        Complete(ctx);
+    }
+
+    void SetScriptPropertyCommand::Execute(Core::EngineContext &ctx) { Apply(ctx, m_New); }
+
+    void SetScriptPropertyCommand::Undo(Core::EngineContext &ctx) { Apply(ctx, m_Old); }
+
+    std::string_view SetScriptPropertyCommand::Name() const noexcept { return "Change script property"; }
+
+    PruneScriptPropertiesCommand::PruneScriptPropertiesCommand(Core::UUID targetUUID, const std::size_t slotIndex, std::string scriptPath, std::map<std::string, nlohmann::json> staleValues)
+        : EntityCommand(targetUUID), m_SlotIndex(slotIndex), m_ScriptPath(std::move(scriptPath)), m_StaleValues(std::move(staleValues)) {}
+
+    std::optional<std::size_t> PruneScriptPropertiesCommand::ResolveSlot(const ECS::Components::ScriptComponent &scripts) const { return ResolveScriptSlot(scripts, m_SlotIndex, m_ScriptPath); }
+
+    void PruneScriptPropertiesCommand::Apply(Core::EngineContext &ctx, const bool remove) {
+        const auto entity = ResolveEntity(ctx);
+        if (!entity) {
+            return;
+        }
+        auto *scripts = entity.GetComponent<ECS::Components::ScriptComponent>();
+        if (!scripts) {
+            return;
+        }
+        const auto slotIndex = ResolveSlot(*scripts);
+        if (!slotIndex) {
+            return;
+        }
+        auto &properties = scripts->slots[*slotIndex].properties;
+        if (remove) {
+            for (const auto &name : m_StaleValues | std::views::keys) {
+                properties.erase(name);
+            }
+        } else {
+            for (const auto &[name, value] : m_StaleValues) {
+                properties[name] = value;
+            }
+        }
+        Complete(ctx);
+    }
+
+    void PruneScriptPropertiesCommand::Execute(Core::EngineContext &ctx) { Apply(ctx, true); }
+
+    void PruneScriptPropertiesCommand::Undo(Core::EngineContext &ctx) { Apply(ctx, false); }
+
+    std::string_view PruneScriptPropertiesCommand::Name() const noexcept { return "Remove stale script properties"; }
+
 
     DeleteEntityCommand::DeleteEntityCommand(Core::UUID targetUUID) : EntityCommand(targetUUID) {}
     DeleteEntityCommand::~DeleteEntityCommand() = default;

@@ -1,5 +1,6 @@
 #include "Logger/LoggerService.h"
 #include "Scripting/EngineLib/EngineLib.h"
+#include "Scripting/EngineLib/ScriptProperties.h"
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <mutex>
@@ -63,4 +64,31 @@ void Scripting::EngineLib::register_core_modules(ObSL::Interpreter &interpreter)
         }
         return std::monostate{};
     }, "CloseWindow"));
+
+
+    interpreter.get_global_environment()->define("Prop", interpreter.gc.allocate<ObSL::NativeFunction>(2, [](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        const ObSL::Value &fallback = args[1];
+        const PropertyMap *props = CurrentInitProps();
+        if (!props || !std::holds_alternative<std::string>(args[0])) {
+            return fallback;
+        }
+
+        const auto it = props->find(std::get<std::string>(args[0]));
+        if (it == props->end()) {
+            return fallback;
+        }
+
+        const nlohmann::json &stored = it->second;
+
+        if (std::holds_alternative<double>(fallback) && stored.is_number()) {
+            return stored.get<double>();
+        }
+        if (std::holds_alternative<bool>(fallback) && stored.is_boolean()) {
+            return stored.get<bool>();
+        }
+        if (std::holds_alternative<std::string>(fallback) && stored.is_string()) {
+            return stored.get<std::string>();
+        }
+        return fallback;
+    }, "Prop"));
 }

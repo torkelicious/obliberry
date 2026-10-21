@@ -16,7 +16,7 @@ namespace Editor::Commands {
         UndoManager(const UndoManager &) = delete;
         UndoManager &operator=(const UndoManager &) = delete;
 
-        void Execute(std::unique_ptr<ICommand> command, Core::EngineContext &ctx);
+        bool Execute(std::unique_ptr<ICommand> command, Core::EngineContext &ctx);
 
         void Undo(Core::EngineContext &ctx);
         void Redo(Core::EngineContext &ctx);

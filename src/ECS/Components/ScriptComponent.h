@@ -1,14 +1,24 @@
 #pragma once
 
+#include "nlohmann/json.hpp"
 #include <ObSL/Environment.h>
 #include <ObSL/Parser.h>
 #include <filesystem>
+#include <map>
 #include <memory>
+#include <string>
 
 namespace ECS::Components {
     struct ScriptSlot {
+        ScriptSlot() = default;
+        ScriptSlot(ScriptSlot &&) noexcept = default;
+        ScriptSlot &operator=(ScriptSlot &&) noexcept = default;
+        ScriptSlot(const ScriptSlot &) = delete;
+        ScriptSlot &operator=(const ScriptSlot &) = delete;
+
         bool isInitialized = false;
         std::string scriptPath;
+        std::map<std::string, nlohmann::json> properties;
         std::filesystem::path resolvedPath;
         std::vector<std::shared_ptr<ObSL::Environment>> instance_envs;
         // hooks

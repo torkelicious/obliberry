@@ -1,11 +1,12 @@
 #include "Core/EngineContext.h"
 #include "Core/ResourceManager.h"
-#include "../../../Core/UUID.h"
+#include "Core/UUID.h"
 #include "IO/Loaders/SceneAssetLoader.h"
 #include "ObSL/Natives.h"
 #include "ObSL/Parser/ast.h"
 #include "Scenes/SceneManager.h"
 #include "Scripting/EngineLib/EngineLib.h"
+#include "Scripting/EngineLib/ScriptProperties.h"
 #include "Scripting/EngineLib/UICommandBuffer.h"
 #include "Scripting/EngineLib/EngineLibFactories.h"
 #include "UI/Rendering/UISystem.h"
@@ -14,10 +15,16 @@
 #include "UI/Elements/UIRect.h"
 #include "UI/Elements/UIImage.h"
 #include "UI/Text/Font.h"
+#include "UI/UIElement.h"
 #include <ObSL/Interpreter.h>
+
+#include <cstdint>
+#include <functional>
 #include <memory>
 #include <optional>
+#include <shared_mutex>
 #include <string_view>
+#include <variant>
 #include <vector>
 
 namespace Scripting {
@@ -231,6 +238,8 @@ namespace Scripting {
 
     static ObSL::ObSLObject *CreateUIButtonObject(ObSL::Interpreter *interp, const std::string &name, Core::UUID uuid, Core::EngineContext *ctx) {
         auto *obj = interp->gc.allocate<ObSL::ObSLObject>();
+        obj->identity = Identity::ForUI(uuid);
+        obj->readonly = true;
         EngineLibFactories::GCProtectGuard guard(interp, obj);
         auto namePtr = std::make_shared<const std::string>(name);
         const Core::UUID uuidPtr = uuid;
@@ -375,6 +384,8 @@ namespace Scripting {
 
     static ObSL::ObSLObject *CreateUITextObject(ObSL::Interpreter *interp, const std::string &name, Core::UUID uuid, Core::EngineContext *ctx) {
         auto *obj = interp->gc.allocate<ObSL::ObSLObject>();
+        obj->identity = Identity::ForUI(uuid);
+        obj->readonly = true;
         EngineLibFactories::GCProtectGuard guard(interp, obj);
         auto namePtr = std::make_shared<const std::string>(name);
         const Core::UUID uuidPtr = uuid;
@@ -457,6 +468,8 @@ namespace Scripting {
 
     static ObSL::ObSLObject *CreateUIRectObject(ObSL::Interpreter *interp, const std::string &name, Core::UUID uuid, Core::EngineContext *ctx) {
         auto *obj = interp->gc.allocate<ObSL::ObSLObject>();
+        obj->identity = Identity::ForUI(uuid);
+        obj->readonly = true;
         EngineLibFactories::GCProtectGuard guard(interp, obj);
         auto namePtr = std::make_shared<const std::string>(name);
         const Core::UUID uuidPtr = uuid;
@@ -499,6 +512,8 @@ namespace Scripting {
 
     static ObSL::ObSLObject *CreateUIImageObject(ObSL::Interpreter *interp, const std::string &name, Core::UUID uuid, Core::EngineContext *ctx) {
         auto *obj = interp->gc.allocate<ObSL::ObSLObject>();
+        obj->identity = Identity::ForUI(uuid);
+        obj->readonly = true;
         EngineLibFactories::GCProtectGuard guard(interp, obj);
         auto namePtr = std::make_shared<const std::string>(name);
         const Core::UUID uuidPtr = uuid;
@@ -660,6 +675,47 @@ void Scripting::EngineLib::register_gui_modules(ObSL::Interpreter &interpreter) 
         }
         return CreateUIImageObject(interp, name, uuid, ctx);
     }, "CreateUIImage"));
+
+
+    interpreter.get_global_environment()->define("PropUI", interpreter.gc.allocate<ObSL::NativeFunction>(1, [ctx = m_ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        if (args.empty() || !std::holds_alternative<std::string>(args[0])) {
+            return std::monostate{};
+        }
+        const PropertyMap *props = CurrentInitProps();
+        if (!props || !ctx || !ctx->uiSystem) {
+            return std::monostate{};
+        }
+
+        const auto it = props->find(std::get<std::string>(args[0]));
+        if (it == props->end() || !it->second.is_string()) {
+            return std::monostate{};
+        }
+
+        const auto uuid = Core::UUID::FromString(it->second.get<std::string>());
+        if (!uuid) {
+            return std::monostate{};
+        }
+
+        const UI::UIElement *el = ctx->uiSystem->FindByUUID(*uuid);
+        if (!el) {
+            return std::monostate{};
+        }
+
+        if (dynamic_cast<const UI::UIRect *>(el)) {
+            return CreateUIRectObject(interp, el->Name, *uuid, ctx);
+        }
+        if (dynamic_cast<const UI::UIImage *>(el)) {
+            return CreateUIImageObject(interp, el->Name, *uuid, ctx);
+        }
+        if (dynamic_cast<const UI::UIText *>(el)) {
+            return CreateUITextObject(interp, el->Name, *uuid, ctx);
+        }
+        if (dynamic_cast<const UI::UIButton *>(el)) {
+            return CreateUIButtonObject(interp, el->Name, *uuid, ctx);
+        } else {
+            return std::monostate{};
+        }
+    }, "PropUI"));
 
     // Destroy via name
     interpreter.get_global_environment()->define("DestroyUI", interpreter.gc.allocate<ObSL::NativeFunction>(1, [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {

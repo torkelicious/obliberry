@@ -199,6 +199,7 @@ namespace Editor::Commands {
         std::filesystem::path m_SavedResolvedPath;
         std::string m_SavedSourceCode;
         std::filesystem::file_time_type m_SavedLastModified;
+        std::map<std::string, nlohmann::json> m_SavedProperties;
     };
 
 
@@ -214,6 +215,38 @@ namespace Editor::Commands {
         std::size_t m_Index = 0;
         bool m_Captured = false;
         bool m_ComponentCreated = false;
+    };
+
+    class SetScriptPropertyCommand : public EntityCommand {
+    public:
+        SetScriptPropertyCommand(Core::UUID targetUUID, std::size_t slotIndex, std::string scriptPath, std::string name, std::optional<nlohmann::json> oldValue, std::optional<nlohmann::json> newValue);
+        void Execute(Core::EngineContext &ctx) override;
+        void Undo(Core::EngineContext &ctx) override;
+        [[nodiscard]] std::string_view Name() const noexcept override;
+
+    private:
+        void Apply(Core::EngineContext &ctx, const std::optional<nlohmann::json> &value);
+        [[nodiscard]] std::optional<std::size_t> ResolveSlot(const ECS::Components::ScriptComponent &scripts) const;
+        std::size_t m_SlotIndex;
+        std::string m_ScriptPath;
+        std::string m_Name;
+        std::optional<nlohmann::json> m_Old;
+        std::optional<nlohmann::json> m_New;
+    };
+
+    class PruneScriptPropertiesCommand : public EntityCommand {
+    public:
+        PruneScriptPropertiesCommand(Core::UUID targetUUID, std::size_t slotIndex, std::string scriptPath, std::map<std::string, nlohmann::json> staleValues);
+        void Execute(Core::EngineContext &ctx) override;
+        void Undo(Core::EngineContext &ctx) override;
+        [[nodiscard]] std::string_view Name() const noexcept override;
+
+    private:
+        void Apply(Core::EngineContext &ctx, bool remove);
+        [[nodiscard]] std::optional<std::size_t> ResolveSlot(const ECS::Components::ScriptComponent &scripts) const;
+        std::size_t m_SlotIndex;
+        std::string m_ScriptPath;
+        std::map<std::string, nlohmann::json> m_StaleValues;
     };
 
     // Scene Config

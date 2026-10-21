@@ -316,6 +316,47 @@ TEST_F(EntitySerializationTests, ScriptPathsRoundtripInOrder) {
     }
 }
 
+TEST_F(EntitySerializationTests, ScriptPropertiesRoundtripPerSlot) {
+    auto src = CreateEntity(sourceRegistry);
+    auto &script = src.AddComponent<ECS::Components::ScriptComponent>();
+    script.slots.resize(2);
+    script.slots[0].scriptPath = "scripts/first.obsl";
+    script.slots[0].properties["Speed"] = 2.5;
+    script.slots[0].properties["Title"] = std::string("hello");
+    script.slots[0].properties["Enabled"] = true;
+    script.slots[1].scriptPath = "scripts/second.obsl";
+    script.slots[1].properties["Target"] = std::string("6f0c9c37-1f6a-4b6e-9e5a-2a6c3e2b2f2a");
+
+    const auto data = Serialize(src);
+    ASSERT_TRUE(data.contains("components"));
+    ASSERT_TRUE(data["components"].contains("ScriptComponent"));
+    ASSERT_TRUE(data["components"]["ScriptComponent"].contains("scriptProperties"));
+    ASSERT_TRUE(data["components"]["ScriptComponent"]["scriptProperties"].is_array());
+    ASSERT_EQ(data["components"]["ScriptComponent"]["scriptProperties"].size(), 2u);
+
+    auto loaded = Load(nlohmann::json::parse(data.dump()));
+    const auto *actual = loaded.GetComponent<ECS::Components::ScriptComponent>();
+    ASSERT_NE(actual, nullptr);
+    ASSERT_EQ(actual->slots.size(), 2u);
+
+    EXPECT_EQ(actual->slots[0].properties.at("Speed"), nlohmann::json(2.5));
+    EXPECT_EQ(actual->slots[0].properties.at("Title"), nlohmann::json("hello"));
+    EXPECT_EQ(actual->slots[0].properties.at("Enabled"), nlohmann::json(true));
+    EXPECT_TRUE(actual->slots[1].properties.at("Target").is_string());
+    EXPECT_EQ(actual->slots[1].properties.at("Target").get<std::string>(), "6f0c9c37-1f6a-4b6e-9e5a-2a6c3e2b2f2a");
+}
+
+TEST_F(EntitySerializationTests, ScriptWithoutPropertiesOmitsPropertyArray) {
+    auto src = CreateEntity(sourceRegistry);
+    auto &script = src.AddComponent<ECS::Components::ScriptComponent>();
+    script.slots.emplace_back().scriptPath = "scripts/plain.obsl";
+
+    const auto data = Serialize(src);
+    ASSERT_TRUE(data.contains("components"));
+    ASSERT_TRUE(data["components"].contains("ScriptComponent"));
+    EXPECT_FALSE(data["components"]["ScriptComponent"].contains("scriptProperties"));
+}
+
 TEST_F(EntitySerializationTests, ParticleConfigurationRoundtrip) {
     const nlohmann::json expected{{"maxParticles", 123}, {"emitRate", 12.5f}, {"lifetimeMin", 0.25f}, {"lifetimeMax", 3.0f}, {"velocityMin", {-2.0f, 1.0f, -3.0f}}, {"velocityMax", {4.0f, 5.0f, 6.0f}},
             {"gravity", {0.0f, -9.5f, 1.0f}}, {"sizeStartMin", 0.125f}, {"sizeStartMax", 0.75f}, {"sizeEndMin", 0.25f}, {"sizeEndMax", 1.5f}, {"rotationSpeedMin", -2.0f}, {"rotationSpeedMax", 4.0f},
@@ -456,7 +497,7 @@ TEST_F(EntitySerializationTests, InvalidOrMissingUUIDKeepsGeneratedIdentity) {
         auto loaded = CreateEntity(destinationRegistry);
         const auto original = GetUUID(loaded);
 
-        const nlohmann::json data{{"UUID", uuid}, {"components", {{"MovementComponent", {{"autoMove", true}}}}}};
+        const nlohmann::json data{{"uuid", uuid}, {"components", {{"MovementComponent", {{"autoMove", true}}}}}};
 
         ASSERT_NO_THROW(IO::EntityFactory::DeserializeEntity(loaded, data, resources, true));
 
