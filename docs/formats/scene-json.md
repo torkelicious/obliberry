@@ -272,6 +272,7 @@ events or solid blocking. See [Collider settings](../editor/components.md#collid
 | Key             | Type            | Meaning                                                              |
 | --------------- | --------------- | -------------------------------------------------------------------- |
 | `name`          | string          | Element name (load default `"Unnamed"`).                             |
+| `uuid`          | string, optional | Element UUID, written on save. A valid UUID is restored on load (scripts resolve `PropUI` references through it); missing, empty, or malformed values keep the freshly generated UUID, and a UUID that duplicates an already-loaded element skips that element. |
 | `type`          | string          | `"Text"`, `"Button"`, `"Image"`, `"Rect"`, or `"Element"` (default). |
 | `rect.position` | `[x, y]` floats | UI-space position.                                                   |
 | `rect.scale`    | `[x, y]` floats | UI-space size.                                                       |

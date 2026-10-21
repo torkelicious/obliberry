@@ -164,8 +164,8 @@ Attaches ObSL scripts to the entity. Scripts define custom logic.
 | **Add Script**  | FileCombo          | Pick a `.obsl` file from `assets/scripts/`                                                                                                                                         |
 | **Total count** | Read-only text     | Number of attached scripts                                                                                                                                                         |
 
-Properties are stored per script slot in the scene file. Removing a declaration and reopening the Inspector removes
-the now-stale stored value (undoable). See
+Properties are stored per script slot in the scene file. When a stored value no longer matches any declared
+property, it is shown as unused in the Inspector next to a **Clear** button that removes it (undoable). See
 [Script properties](../scripting/getting-started.md#script-properties) for declaration syntax.
 
 ---
