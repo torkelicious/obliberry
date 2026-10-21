@@ -1,10 +1,9 @@
 #pragma once
 
 #include "nlohmann/json.hpp"
-#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
-#include <istream>
+#include <sstream>
 #include <map>
 #include <regex>
 #include <string>
