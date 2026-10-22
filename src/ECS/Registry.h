@@ -3,6 +3,7 @@
 #include "../Core/UUID.h"
 #include "ECS/Components/DestroyTagComponent.h"
 #include "Entity.h"
+#include "Math/GLMUtils.h"
 #include "Types.h"
 #include "ECS/Components/RelationshipComponent.h"
 #include "ECS/Components/TransformComponent.h"
@@ -392,6 +393,10 @@ namespace ECS {
                     childTrans->transform.SetScale(scale);
                 }
             }
+            // tmp for tesitng
+            assert(Math::GLMUtils::VecIsFinite(childTrans->transform.GetPosition()));
+            assert(Math::GLMUtils::VecIsFinite(childTrans->transform.GetRotation()));
+            assert(Math::GLMUtils::VecIsFinite(childTrans->transform.GetScale()));
         }
 
         void SetParentDirect(const EntityID child, const EntityID newParent) {
