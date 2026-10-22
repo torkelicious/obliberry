@@ -75,7 +75,7 @@ namespace Editor::States::EntityGizmoDetail {
             return std::nullopt;
         }
 
-        return LocalizedPose{position, rotationAngles, scale};
+        return LocalizedPose{.position = position, .rotation = rotationAngles, .scale = scale};
     }
 } // namespace Editor::States::EntityGizmoDetail
 
@@ -681,7 +681,7 @@ void Editor::States::EditState::Collider_DrawGizmoForSelected() {
     ImGui::End();
 }
 
-void Editor::States::EditState::FocusAtEntity() {
+void Editor::States::EditState::FocusAtEntity() const {
     const ECS::Entity selected = m_EditorLayer->m_RegistryPanel.GetSelectedEntity();
 
     if (selected && selected.HasComponent<ECS::Components::TransformComponent>()) {
