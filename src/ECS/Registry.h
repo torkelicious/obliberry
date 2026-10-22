@@ -393,10 +393,6 @@ namespace ECS {
                     childTrans->transform.SetScale(scale);
                 }
             }
-            // tmp for tesitng
-            assert(Math::GLMUtils::VecIsFinite(childTrans->transform.GetPosition()));
-            assert(Math::GLMUtils::VecIsFinite(childTrans->transform.GetRotation()));
-            assert(Math::GLMUtils::VecIsFinite(childTrans->transform.GetScale()));
         }
 
         void SetParentDirect(const EntityID child, const EntityID newParent) {
