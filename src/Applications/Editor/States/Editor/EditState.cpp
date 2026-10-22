@@ -370,7 +370,11 @@ void Editor::States::EditState::EntityGizmoTranslate(Rendering::Transform &local
         actualMode = ImGuizmo::LOCAL;
     }
 
-    ImGuizmo::Manipulate(glm::value_ptr(gizmoViewMatrix), glm::value_ptr(projMatrix), mCurrentGizmoOperation, actualMode, glm::value_ptr(gizmoMatrix), glm::value_ptr(deltaMatrix));
+    const ImGuizmo::OPERATION gizmoOperation = mCurrentGizmoOperation == ImGuizmo::ROTATE
+            ? ImGuizmo::ROTATE_X | ImGuizmo::ROTATE_Y | ImGuizmo::ROTATE_Z
+            : mCurrentGizmoOperation;
+
+    ImGuizmo::Manipulate(glm::value_ptr(gizmoViewMatrix), glm::value_ptr(projMatrix), gizmoOperation, actualMode, glm::value_ptr(gizmoMatrix), glm::value_ptr(deltaMatrix));
 
     if (ImGuizmo::IsUsing()) {
         if (!Math::GLMUtils::MatIsFinite(deltaMatrix)) {
