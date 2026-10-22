@@ -363,16 +363,23 @@ namespace ECS {
                 if (childTrans) {
                     auto *parentTrans = GetComponent<Components::TransformComponent>(newParent);
                     const glm::mat4 parentWorld = parentTrans ? parentTrans->worldTransform.GetMatrix() : glm::mat4(1.0f);
-                    const glm::mat4 localRelative = glm::inverse(parentWorld) * worldBefore;
-                    glm::vec3 pos, scale, skew;
-                    glm::quat rot;
-                    glm::vec4 perspective;
-                    glm::decompose(localRelative, scale, rot, pos, skew, perspective);
-                    childTrans->transform.SetPosition(pos);
-                    glm::vec3 rotationAngles;
-                    glm::extractEulerAngleXYZ(glm::mat4_cast(rot), rotationAngles.x, rotationAngles.y, rotationAngles.z);
-                    childTrans->transform.SetRotation(rotationAngles);
-                    childTrans->transform.SetScale(scale);
+
+                    const float parentDeterminant = std::abs(glm::determinant(parentWorld));
+                    if (parentDeterminant > 1e-12f) {
+                        const glm::mat4 localRelative = glm::inverse(parentWorld) * worldBefore;
+                        glm::vec3 pos, scale, skew;
+                        glm::quat rot;
+                        glm::vec4 perspective;
+                        const bool decomposed = glm::decompose(localRelative, scale, rot, pos, skew, perspective) && Math::GLMUtils::VecIsFinite(pos) && Math::GLMUtils::VecIsFinite(scale) && std::isfinite(rot.x) &&
+                                                std::isfinite(rot.y) && std::isfinite(rot.z) && std::isfinite(rot.w);
+                        if (decomposed) {
+                            childTrans->transform.SetPosition(pos);
+                            glm::vec3 rotationAngles;
+                            glm::extractEulerAngleXYZ(glm::mat4_cast(rot), rotationAngles.x, rotationAngles.y, rotationAngles.z);
+                            childTrans->transform.SetRotation(rotationAngles);
+                            childTrans->transform.SetScale(scale);
+                        }
+                    }
                 }
             } else {
                 childRel->parent = INVALID_ENTITY_ID;
@@ -380,17 +387,19 @@ namespace ECS {
 
                 // world becomes local
                 if (childTrans) {
-                    auto pos = glm::vec3(worldBefore[3]);
-                    glm::vec3 scale;
+                    glm::vec3 pos = glm::vec3(worldBefore[3]);
+                    glm::vec3 scale, skew;
                     glm::quat rot;
-                    glm::vec3 skew;
                     glm::vec4 perspective;
-                    glm::decompose(worldBefore, scale, rot, pos, skew, perspective);
-                    childTrans->transform.SetPosition(pos);
-                    glm::vec3 rotationAngles;
-                    glm::extractEulerAngleXYZ(glm::mat4_cast(rot), rotationAngles.x, rotationAngles.y, rotationAngles.z);
-                    childTrans->transform.SetRotation(rotationAngles);
-                    childTrans->transform.SetScale(scale);
+                    const bool decomposed = glm::decompose(worldBefore, scale, rot, pos, skew, perspective) && Math::GLMUtils::VecIsFinite(pos) && Math::GLMUtils::VecIsFinite(scale) && std::isfinite(rot.x) &&
+                                            std::isfinite(rot.y) && std::isfinite(rot.z) && std::isfinite(rot.w);
+                    if (decomposed) {
+                        childTrans->transform.SetPosition(pos);
+                        glm::vec3 rotationAngles;
+                        glm::extractEulerAngleXYZ(glm::mat4_cast(rot), rotationAngles.x, rotationAngles.y, rotationAngles.z);
+                        childTrans->transform.SetRotation(rotationAngles);
+                        childTrans->transform.SetScale(scale);
+                    }
                 }
             }
         }

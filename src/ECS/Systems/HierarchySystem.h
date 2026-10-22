@@ -3,6 +3,7 @@
 #include "ECS/Components/RelationshipComponent.h"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Registry.h"
+#include <cmath>
 #include <queue>
 
 namespace ECS::Systems::HierarchySystem {
@@ -55,7 +56,12 @@ namespace ECS::Systems::HierarchySystem {
                 glm::vec3 position, scale, skew;
                 glm::quat rotation;
                 glm::vec4 perspective;
-                glm::decompose(worldMatrix, scale, rotation, position, skew, perspective);
+                // only propagate sane results,
+                const bool decomposed = glm::decompose(worldMatrix, scale, rotation, position, skew, perspective) && Math::GLMUtils::VecIsFinite(position) && Math::GLMUtils::VecIsFinite(scale) &&
+                                        std::isfinite(rotation.x) && std::isfinite(rotation.y) && std::isfinite(rotation.z) && std::isfinite(rotation.w);
+                if (!decomposed) {
+                    continue;
+                }
 
                 childTc->worldTransform.SetPosition(position);
                 glm::vec3 rotationAngles;

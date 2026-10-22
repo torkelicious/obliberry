@@ -1,5 +1,6 @@
 #include "EditState.h"
 #include "ECS/Components/ColliderComponent.h"
+#include "ECS/Components/RelationshipComponent.h"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Entity.h"
 #include "ECS/Systems/Collision/ColliderGizmo.h"
@@ -7,6 +8,7 @@
 #include "ECS/Systems/LightingSystem.h"
 #include "Applications/Editor/EditorLayer.h"
 #include "Platform/Input/InputManager.h"
+#include <cmath>
 #include <glm/gtc/type_ptr.hpp>
 #include "ECS/Components/BillboardTagComponent.h"
 #include "Applications/Editor/Commands/EditorCommands.h"
@@ -329,7 +331,20 @@ void Editor::States::EditState::EntityGizmoTranslate(Rendering::Transform &local
 
         if (mCurrentGizmoOperation == ImGuizmo::TRANSLATE) {
             const auto deltaPos = glm::vec3(deltaMatrix[3]);
-            localTransform.SetPosition(localTransform.GetPosition() + deltaPos);
+            // when applied to the local position; convert it into the parents space first.
+            glm::vec3 dLocal = deltaPos;
+            if (const ECS::Entity selectedEntity = m_EditorLayer->m_RegistryPanel.GetSelectedEntity()) {
+                if (const auto *rel = selectedEntity.GetComponent<ECS::Components::RelationshipComponent>(); rel && rel->parent != ECS::INVALID_ENTITY_ID && m_EditorLayer->m_Registry->IsValid(rel->parent)) {
+                    if (const auto *parentTc = m_EditorLayer->m_Registry->GetComponent<ECS::Components::TransformComponent>(rel->parent); parentTc) {
+                        const glm::mat3 parentLinear(parentTc->worldTransform.GetMatrix());
+                        const float parentDeterminant = glm::determinant(parentLinear);
+                        if (std::abs(parentDeterminant) > 1e-12f) {
+                            dLocal = glm::inverse(parentLinear) * deltaPos;
+                        }
+                    }
+                }
+            }
+            localTransform.SetPosition(localTransform.GetPosition() + dLocal);
         } else if (mCurrentGizmoOperation == ImGuizmo::ROTATE) {
             float deltaTranslation[3], deltaRotation[3], deltaScale[3];
             ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(deltaMatrix), deltaTranslation, deltaRotation, deltaScale);
