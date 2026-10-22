@@ -38,7 +38,7 @@ namespace Editor::States {
 
     private:
         void Entity_DrawGizmoForSelected() const; // entities
-        void EntityGizmoTranslate(Rendering::Transform &localTransform, Rendering::Transform &worldTransform, bool isBillboard);
+        void EntityGizmoTranslate(Rendering::Transform &localTransform, Rendering::Transform &worldTransform, const glm::mat4 &parentWorldMatrix, bool isBillboard);
 
         void UI_DrawGizmoForSelected() const; // UI system
         void UI_HandleGizmoInput();

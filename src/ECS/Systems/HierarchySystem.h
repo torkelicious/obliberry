@@ -19,7 +19,7 @@ namespace ECS::Systems::HierarchySystem {
             auto *tc = tcPool->Get(id);
 
             // if it has no relationship / no parent. it is a root node.
-            if (const auto *rel = relPool->Get(id); !rel || rel->parent == INVALID_ENTITY_ID) {
+            if (const auto *rel = relPool->Get(id); !rel || rel->parent == INVALID_ENTITY_ID || !registry.IsValid(rel->parent)) {
                 const auto &local = tc->transform;
                 tc->worldTransform.SetPosition(local.GetPosition());
                 tc->worldTransform.SetRotation(local.GetRotation());
@@ -33,19 +33,32 @@ namespace ECS::Systems::HierarchySystem {
             }
         }
 
+        for (const EntityID id : relPool->GetDenseEntities()) {
+            if (tcPool->Get(id)) {
+                continue;
+            }
+
+            if (const auto *rel = relPool->Get(id); rel && rel->parent == INVALID_ENTITY_ID && !rel->children.empty()) {
+                queue.push(id);
+            }
+        }
+
         while (!queue.empty()) {
             const EntityID parentId = queue.front();
             queue.pop();
 
-            const auto *parentTc = tcPool->Get(parentId);
             const auto *parentRel = relPool->Get(parentId);
-
-            if (!parentTc || !parentRel)
+            if (!parentRel)
                 continue;
 
-            const glm::mat4 &parentWorldMatrix = parentTc->worldTransform.GetMatrix();
+            const auto *parentTc = tcPool->Get(parentId);
+            const glm::mat4 parentWorldMatrix = parentTc ? parentTc->worldTransform.GetMatrix() : glm::mat4(1.0f);
 
             for (const EntityID childId : parentRel->children) {
+                if (const auto *childRel = relPool->Get(childId); childRel && !childRel->children.empty()) {
+                    queue.push(childId);
+                }
+
                 auto *childTc = tcPool->Get(childId);
                 if (!childTc)
                     continue;
@@ -69,11 +82,6 @@ namespace ECS::Systems::HierarchySystem {
                 childTc->worldTransform.SetRotation(rotationAngles);
                 childTc->worldTransform.SetScale(scale);
                 childTc->worldTransform.SetCustomMatrix(worldMatrix);
-
-                // queue this child if it also has children of its own
-                if (const auto *childRel = relPool->Get(childId); childRel && !childRel->children.empty()) {
-                    queue.push(childId);
-                }
             }
         }
     }

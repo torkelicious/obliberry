@@ -9,6 +9,7 @@
 #include "Applications/Editor/EditorLayer.h"
 #include "Platform/Input/InputManager.h"
 #include <cmath>
+#include <optional>
 #include <glm/gtc/type_ptr.hpp>
 #include "ECS/Components/BillboardTagComponent.h"
 #include "Applications/Editor/Commands/EditorCommands.h"
@@ -23,6 +24,60 @@ namespace Editor::States {
     ImGuizmo::OPERATION EditState::mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
     ImGuizmo::MODE EditState::mCurrentGizmoMode = ImGuizmo::WORLD;
 } // namespace Editor::States
+
+namespace Editor::States::EntityGizmoDetail {
+    inline glm::mat4 GetEntityParentWorldMatrix(const ECS::Entity &entity) {
+        if (!entity) {
+            return {1.0f};
+        }
+
+        const auto *rel = entity.GetComponent<ECS::Components::RelationshipComponent>();
+        if (!rel || rel->parent == ECS::INVALID_ENTITY_ID) {
+            return {1.0f};
+        }
+
+        auto *registry = entity.GetRegistry();
+        if (!registry || !registry->IsValid(rel->parent)) {
+            return {1.0f};
+        }
+
+        if (const auto *parentTc = registry->GetComponent<ECS::Components::TransformComponent>(rel->parent); parentTc) {
+            return parentTc->worldTransform.GetMatrix();
+        }
+
+        return {1.0f};
+    }
+
+    struct LocalizedPose {
+        glm::vec3 position;
+        glm::vec3 rotation;
+        glm::vec3 scale;
+    };
+
+    inline std::optional<LocalizedPose> WorldPoseToParentLocal(const glm::mat4 &worldMatrix, const glm::mat4 &parentWorld) {
+        if (std::abs(glm::determinant(parentWorld)) <= 1e-12f) {
+            return std::nullopt;
+        }
+
+        const glm::mat4 localMatrix = glm::inverse(parentWorld) * worldMatrix;
+
+        glm::vec3 position, scale, skew;
+        glm::quat rotation;
+        glm::vec4 perspective;
+        if (!glm::decompose(localMatrix, scale, rotation, position, skew, perspective)) {
+            return std::nullopt;
+        }
+
+        glm::vec3 rotationAngles;
+        glm::extractEulerAngleXYZ(glm::mat4_cast(rotation), rotationAngles.x, rotationAngles.y, rotationAngles.z);
+
+        if (!Math::GLMUtils::VecIsFinite(position) || !Math::GLMUtils::VecIsFinite(scale) || !Math::GLMUtils::VecIsFinite(rotationAngles)) {
+            return std::nullopt;
+        }
+
+        return LocalizedPose{position, rotationAngles, scale};
+    }
+} // namespace Editor::States::EntityGizmoDetail
 
 void Editor::States::EditState::OnEnter() {
     if (!m_EditorLayer || !m_EditorLayer->m_Context->projectConfig)
@@ -277,10 +332,11 @@ void Editor::States::EditState::Entity_DrawGizmoForSelected() const {
         drawList->AddText(ImVec2(badgeMin.x + padding, badgeMin.y + padding), IM_COL32(255, 255, 255, 255), warningText);
         ImGui::End();
     }
-    const_cast<EditState *>(this)->EntityGizmoTranslate(t, worldT, isBillboard);
+    const glm::mat4 parentWorldMatrix = EntityGizmoDetail::GetEntityParentWorldMatrix(selectedEntity);
+    const_cast<EditState *>(this)->EntityGizmoTranslate(t, worldT, parentWorldMatrix, isBillboard);
 }
 
-void Editor::States::EditState::EntityGizmoTranslate(Rendering::Transform &localTransform, Rendering::Transform &worldTransform, bool isBillboard) {
+void Editor::States::EditState::EntityGizmoTranslate(Rendering::Transform &localTransform, Rendering::Transform &worldTransform, const glm::mat4 &parentWorldMatrix, bool isBillboard) {
     const auto &camera = m_EditorLayer->m_Camera;
     const float aspect = m_EditorLayer->m_ViewportPanel.GetWidth() / m_EditorLayer->m_ViewportPanel.GetHeight();
 
@@ -317,6 +373,14 @@ void Editor::States::EditState::EntityGizmoTranslate(Rendering::Transform &local
     ImGuizmo::Manipulate(glm::value_ptr(gizmoViewMatrix), glm::value_ptr(projMatrix), mCurrentGizmoOperation, actualMode, glm::value_ptr(gizmoMatrix), glm::value_ptr(deltaMatrix));
 
     if (ImGuizmo::IsUsing()) {
+        if (!Math::GLMUtils::MatIsFinite(deltaMatrix)) {
+            return;
+        }
+
+        if (isBillboard && mCurrentGizmoOperation == ImGuizmo::ROTATE) {
+            return;
+        }
+
         // just started dragging
         if (!m_GizmoDragging) {
             m_GizmoDragging = true;
@@ -331,27 +395,22 @@ void Editor::States::EditState::EntityGizmoTranslate(Rendering::Transform &local
 
         if (mCurrentGizmoOperation == ImGuizmo::TRANSLATE) {
             const auto deltaPos = glm::vec3(deltaMatrix[3]);
-            // when applied to the local position; convert it into the parents space first.
             glm::vec3 dLocal = deltaPos;
-            if (const ECS::Entity selectedEntity = m_EditorLayer->m_RegistryPanel.GetSelectedEntity()) {
-                if (const auto *rel = selectedEntity.GetComponent<ECS::Components::RelationshipComponent>(); rel && rel->parent != ECS::INVALID_ENTITY_ID && m_EditorLayer->m_Registry->IsValid(rel->parent)) {
-                    if (const auto *parentTc = m_EditorLayer->m_Registry->GetComponent<ECS::Components::TransformComponent>(rel->parent); parentTc) {
-                        const glm::mat3 parentLinear(parentTc->worldTransform.GetMatrix());
-                        const float parentDeterminant = glm::determinant(parentLinear);
-                        if (std::abs(parentDeterminant) > 1e-12f) {
-                            dLocal = glm::inverse(parentLinear) * deltaPos;
-                        }
-                    }
-                }
+            const glm::mat3 parentLinear(parentWorldMatrix);
+            if (std::abs(glm::determinant(parentLinear)) > 1e-12f) {
+                dLocal = glm::inverse(parentLinear) * deltaPos;
             }
             localTransform.SetPosition(localTransform.GetPosition() + dLocal);
         } else if (mCurrentGizmoOperation == ImGuizmo::ROTATE) {
             float deltaTranslation[3], deltaRotation[3], deltaScale[3];
             ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(deltaMatrix), deltaTranslation, deltaRotation, deltaScale);
+            const glm::quat deltaQuat(glm::radians(glm::vec3(deltaRotation[0], deltaRotation[1], deltaRotation[2])));
 
-            glm::vec3 currentRot = localTransform.GetRotation();
-            glm::vec3 dRot = glm::radians(glm::vec3(deltaRotation[0], deltaRotation[1], deltaRotation[2]));
-            localTransform.SetRotation(currentRot + dRot);
+            const glm::mat4 rotatedWorldMatrix = mCurrentGizmoMode == ImGuizmo::LOCAL ? worldTransform.GetMatrix() * glm::mat4_cast(deltaQuat) : glm::mat4_cast(deltaQuat) * worldTransform.GetMatrix();
+
+            if (const auto localPose = EntityGizmoDetail::WorldPoseToParentLocal(rotatedWorldMatrix, parentWorldMatrix)) {
+                localTransform.SetRotation(localPose->rotation);
+            }
         } else if (mCurrentGizmoOperation == ImGuizmo::SCALE) {
             if (isBillboard) {
                 float scaleX = glm::length(glm::vec3(gizmoMatrix[0]));
@@ -362,10 +421,13 @@ void Editor::States::EditState::EntityGizmoTranslate(Rendering::Transform &local
             } else {
                 float deltaTranslation[3], deltaRotation[3], deltaScale[3];
                 ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(deltaMatrix), deltaTranslation, deltaRotation, deltaScale);
+                const auto dScale = glm::vec3(deltaScale[0], deltaScale[1], deltaScale[2]);
 
-                glm::vec3 currentScale = localTransform.GetScale();
-                auto dScale = glm::vec3(deltaScale[0], deltaScale[1], deltaScale[2]);
-                localTransform.SetScale(currentScale * dScale);
+                const glm::mat4 scaledWorldMatrix = glm::scale(worldTransform.GetMatrix(), dScale);
+
+                if (const auto localPose = EntityGizmoDetail::WorldPoseToParentLocal(scaledWorldMatrix, parentWorldMatrix)) {
+                    localTransform.SetScale(localPose->scale);
+                }
             }
         }
     } else {

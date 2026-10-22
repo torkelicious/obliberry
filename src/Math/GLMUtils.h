@@ -40,6 +40,15 @@ namespace Math::GLMUtils {
         return true;
     }
 
+    template <GlmFloatMat T> bool MatIsFinite(const T &mat) {
+        for (glm::length_t c = 0; c < mat.length(); ++c) {
+            if (!VecIsFinite(mat[c])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     template <GlmVec T> void ClampVecPositive(T &vec) {
         using Scalar = typename T::value_type;
 
