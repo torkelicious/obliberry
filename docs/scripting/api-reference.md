@@ -378,7 +378,7 @@ Looping clips repeat. Non-looping clips stop on their final frame.
 | `GetTimeScale()`      | -                | number         | Current time scale (default `1.0`).                                                                                                                                               |
 | `SetTimeScale(scale)` | number           | bool           | Sets the time scale, clamped to ≥ 0. `true` on success.                                                                                                                           |
 | `GetRawDt()`          | -                | number         | Raw (unscaled) delta time; see also `get_dt()` (scaled).                                                                                                                          |
-| `SetTimeout(fn, ms)`  | callable, number | bool or `null` | Calls `fn()` after `ms` milliseconds. Runs on the main thread with a command buffer so registry mutations work. Returns `true` when scheduled, `null` for invalid argument types. |
+| `SetTimeout(fn, ms, ...)` | callable, number, any | bool or `null` | Calls `fn(...)` after `ms` milliseconds, forwarding any extra arguments. Runs on the main thread with a command buffer so registry mutations work. Returns `true` when scheduled, `null` for invalid argument types. |
 
 ## Save data
 
