@@ -2,6 +2,7 @@
 
 #include <exception>
 #include <filesystem>
+#include <unordered_set>
 #include <variant>
 #include <vector>
 #include <map>
@@ -716,9 +717,8 @@ namespace ECS::Systems::ScriptSystem {
     }
 
 
-    inline void DispatchScriptMessages(Registry &registry, const Core::EngineContext &ctx) {
-        auto pending = Scripting::ScriptMessages::Take();
-        if (pending.empty() || !ctx.scriptPool) {
+    inline void DispatchScriptMessages(Registry &registry, const Core::EngineContext &ctx, const Collision::BillboardBasis &basis) {
+        if (!ctx.scriptPool) {
             return;
         }
 
@@ -727,7 +727,13 @@ namespace ECS::Systems::ScriptSystem {
             return;
         }
 
+        auto pending = Scripting::ScriptMessages::Take();
+        if (pending.empty()) {
+            return;
+        }
+
         Scripting::ScriptCommandBuffer cmds;
+        cmds.SetCollisionBasis(basis);
         for (size_t w = 0; w < wcount; ++w) {
             ctx.scriptPool->get_worker(w)->set_frame_context(&cmds);
         }
@@ -746,6 +752,9 @@ namespace ECS::Systems::ScriptSystem {
 
 
         constexpr ObSL::Token callToken{.type = ObSL::TokenType::LEFT_PAREN, .lexeme = "(", .line = 0, .column = 0, .start_pos = 0, .end_pos = 0};
+
+        // warn once per script path when an on_message hook cannot receive (name, value)
+        static std::unordered_set<std::string> s_ArityWarned;
 
         auto deliver = [&](const EntityID receiver, const Scripting::ScriptMessages::Message &msg) {
             if (!registry.IsValid(receiver) || registry.HasComponent<Components::DestroyTagComponent>(receiver)) {
@@ -774,9 +783,19 @@ namespace ECS::Systems::ScriptSystem {
                 }
 
                 auto &interp = ctx.scriptPool->get_worker(workerIdx)->GetInterpreter();
+                const std::vector<ObSL::Value> args{msg.name, msg.value};
+
                 try {
+                    if (args.size() < static_cast<size_t>(func->min_arity())) {
+                        if (!s_ArityWarned.contains(s_path)) {
+                            s_ArityWarned.insert(s_path);
+                            if (auto *logger = Logging::LoggerService::Get())
+                                logger->log("ScriptSystem", "on_message hooks receive (name, value); skipping '" + s_path + "' which expects at least " + std::to_string(func->min_arity()) + " arguments",
+                                        Logging::LogSeverity::Warn);
+                        }
+                        continue;
+                    }
                     interp.set_current_environment(env);
-                    const std::vector<ObSL::Value> args{msg.name, msg.value};
                     func->call(&interp, args, callToken);
                 } catch (const std::exception &e) {
                     if (auto *logger = Logging::LoggerService::Get()) {

@@ -43,6 +43,7 @@ and the name-based global helpers (`FindUI`, `DestroyUI`) still resolve by name.
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------ |
 | `this`             | The entity the script is attached to (an [entity object](#entity-objects)). Bound per script instance by `ScriptSystem`. |
 | `fn on_update(dt)` | Optional. Called every frame with the raw (unscaled) delta time in seconds.                                              |
+| `fn on_message(name, value)` | Optional. Called when the script's entity receives a [message](#script-messaging) targeted at it or receives a broadcast. |
 | `fn on_destroy()`  | Optional. Called when the entity is marked for destruction (`DestroyTagComponent`).                                      |
 | `fn on_exit()`     | Optional. Called when the scene exits.                                                                                   |
 | _(top-level code)_ | Runs once when the script is loaded.                                                                                     |
@@ -150,6 +151,8 @@ Hex coordinates are **odd-r offset** (pointy-top hexes). See `src/Math/HexMath.h
 | `CreateEntity(name)`      | string (optional) | entity           | Creates an empty entity synchronously (default name `"NewEntity"`); add required components. |
 | `Instantiate(prefabPath)` | string            | entity or `null` | Instantiates a prefab (`assets/prefabs/*.json`). `null` on failure.                          |
 | `DestroyEntity(id)`       | number            | void             | Destroys the entity (deferred).                                                              |
+| `Send(target, name, value)` | entity, string, any | bool         | Queues a message for one script entity, delivered later in the frame. `true` when accepted.   |
+| `Broadcast(name, value)`    | string, any     | bool             | Queues a message for every script entity, delivered later in the frame. `true` when accepted. |
 
 `Instantiate` acquires the prefab's catalog assets and their dependencies before creating the entity, and retains
 them in the current scene. They do not need to be loaded beforehand; missing required assets cause `null` to be
@@ -157,6 +160,32 @@ returned.
 
 `DestroyEntity` and `entity.Destroy()` also remove children. To run `on_destroy` before deletion, use
 `entity.AddComponent("DestroyTag")` instead.
+
+### Script messaging
+
+Scripts can message each other within the current scene. `Send` targets one entity (by its wrapper object or
+any object carrying a `uuid` string field); `Broadcast` reaches every script entity. Messages are queued
+immediately and delivered on the main thread near the end of the frame, after the script and collision passes —
+handlers never run mid-frame. Messages queued during delivery itself (for example from a deferred `SetTimeout`
+callback) arrive the following frame. Pending messages are discarded when a new scene is loaded.
+
+Only primitive payloads are supported: `null`, `bool`, `number`, `string`. Passing anything else (such as an
+entity or array) returns `false` from `Send`/`Broadcast` and no message is queued.
+
+The receiving script declares an `on_message` hook; it fires once per script slot of the receiving entity:
+
+```obsl
+// sender
+var target = Find("Door");
+if (target != null) { Send(target, "open", "left"); }
+Broadcast("alarm", true);
+
+// receiver
+fn on_message(name, value) {
+    if (name != "open") { return; }
+    ...
+}
+```
 
 ## Entity objects
 
