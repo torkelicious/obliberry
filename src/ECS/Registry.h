@@ -321,6 +321,35 @@ namespace ECS {
             return true;
         }
 
+        static void ApplyLocalFromWorld(Rendering::Transform &transform, const glm::mat4 &localMatrix) {
+            if (!Math::GLMUtils::MatIsFinite(localMatrix)) {
+                return;
+            }
+
+            transform.ClearCustomMatrix();
+            glm::vec3 pos, scale, skew;
+            glm::quat rot;
+            glm::vec4 perspective;
+            const bool decomposed = glm::decompose(localMatrix, scale, rot, pos, skew, perspective) && Math::GLMUtils::VecIsFinite(pos) && Math::GLMUtils::VecIsFinite(scale) && std::isfinite(rot.x) &&
+                                    std::isfinite(rot.y) && std::isfinite(rot.z) && std::isfinite(rot.w);
+
+            if (decomposed) {
+                transform.SetPosition(pos);
+                glm::vec3 rotationAngles;
+                glm::extractEulerAngleXYZ(glm::mat4_cast(rot), rotationAngles.x, rotationAngles.y, rotationAngles.z);
+                transform.SetRotation(rotationAngles);
+                transform.SetScale(scale);
+            } else {
+                transform.SetPosition(Math::GLMUtils::MatrixPosition(localMatrix));
+                transform.SetRotation(glm::vec3(0.0f));
+                transform.SetScale(Math::GLMUtils::MatrixScale(localMatrix));
+            }
+
+            if (!decomposed || Math::GLMUtils::MatrixHasShear(localMatrix)) {
+                transform.SetCustomMatrix(localMatrix);
+            }
+        }
+
         void Reparent(const EntityID child, const EntityID newParent) {
 
             // must not be descenednt of child either
@@ -366,19 +395,7 @@ namespace ECS {
 
                     const float parentDeterminant = std::abs(glm::determinant(parentWorld));
                     if (parentDeterminant > 1e-12f) {
-                        const glm::mat4 localRelative = glm::inverse(parentWorld) * worldBefore;
-                        glm::vec3 pos, scale, skew;
-                        glm::quat rot;
-                        glm::vec4 perspective;
-                        const bool decomposed = glm::decompose(localRelative, scale, rot, pos, skew, perspective) && Math::GLMUtils::VecIsFinite(pos) && Math::GLMUtils::VecIsFinite(scale) && std::isfinite(rot.x) &&
-                                                std::isfinite(rot.y) && std::isfinite(rot.z) && std::isfinite(rot.w);
-                        if (decomposed) {
-                            childTrans->transform.SetPosition(pos);
-                            glm::vec3 rotationAngles;
-                            glm::extractEulerAngleXYZ(glm::mat4_cast(rot), rotationAngles.x, rotationAngles.y, rotationAngles.z);
-                            childTrans->transform.SetRotation(rotationAngles);
-                            childTrans->transform.SetScale(scale);
-                        }
+                        ApplyLocalFromWorld(childTrans->transform, glm::inverse(parentWorld) * worldBefore);
                     }
                 }
             } else {
@@ -387,19 +404,7 @@ namespace ECS {
 
                 // world becomes local
                 if (childTrans) {
-                    glm::vec3 pos = glm::vec3(worldBefore[3]);
-                    glm::vec3 scale, skew;
-                    glm::quat rot;
-                    glm::vec4 perspective;
-                    const bool decomposed = glm::decompose(worldBefore, scale, rot, pos, skew, perspective) && Math::GLMUtils::VecIsFinite(pos) && Math::GLMUtils::VecIsFinite(scale) && std::isfinite(rot.x) &&
-                                            std::isfinite(rot.y) && std::isfinite(rot.z) && std::isfinite(rot.w);
-                    if (decomposed) {
-                        childTrans->transform.SetPosition(pos);
-                        glm::vec3 rotationAngles;
-                        glm::extractEulerAngleXYZ(glm::mat4_cast(rot), rotationAngles.x, rotationAngles.y, rotationAngles.z);
-                        childTrans->transform.SetRotation(rotationAngles);
-                        childTrans->transform.SetScale(scale);
-                    }
+                    ApplyLocalFromWorld(childTrans->transform, worldBefore);
                 }
             }
         }
