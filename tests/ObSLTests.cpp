@@ -128,3 +128,53 @@ TEST_F(ObSLTests, InvalidIndicesAndRuntimeTypesReportErrorsAndRecover) {
     ASSERT_NO_THROW(Run("var recovered = array[0] + array[1];"));
     ExpectNumber("recovered", 30);
 }
+
+TEST_F(ObSLTests, NativeFunctionVariadicArityForwardsArguments) {
+    interpreter.get_global_environment()->define("forward", interpreter.gc.allocate<ObSL::NativeFunction>(2, std::nullopt, [this](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        if (args.size() < 2 || !std::holds_alternative<ObSL::ObSLCallable *>(args[0]) || !std::holds_alternative<double>(args[1]))
+            return std::monostate{};
+
+        auto *fn = std::get<ObSL::ObSLCallable *>(args[0]);
+        const std::vector<ObSL::Value> extra(args.begin() + 2, args.end());
+
+        std::vector<ObSL::GCObject *> rooted;
+        for (const auto &val : extra) {
+            ObSL::GCObject *obj = nullptr;
+            if (auto *p = std::get_if<ObSL::ObSLCallable *>(&val))
+                obj = *p;
+            else if (auto *p = std::get_if<ObSL::ObSLArray *>(&val))
+                obj = *p;
+            else if (auto *p = std::get_if<ObSL::ObSLObject *>(&val))
+                obj = *p;
+            if (obj) {
+                interp->gc.add_root(obj);
+                rooted.push_back(obj);
+            }
+        }
+        interp->gc.add_root(fn);
+
+        constexpr ObSL::Token call_token{.type = ObSL::TokenType::LEFT_PAREN, .lexeme = "(", .line = 0, .column = 0, .start_pos = 0, .end_pos = 0};
+        if (extra.size() >= static_cast<size_t>(fn->min_arity()) && extra.size() <= static_cast<size_t>(fn->arity()))
+            fn->call(interp, extra, call_token);
+
+        interp->gc.remove_root(fn);
+        for (auto *obj : rooted)
+            interp->gc.remove_root(obj);
+        return true;
+    }, "forward"));
+
+    ASSERT_NO_THROW(Run(R"obsl(
+        var sum = 0;
+        fn add(a, b, c) { sum = sum + a + b + c; }
+        forward(add, 50, 1, 2, 3);
+    )obsl"));
+    ExpectNumber("sum", 6);
+
+    ASSERT_NO_THROW(Run("forward(add, 50);"));
+    ExpectNumber("sum", 6);
+
+    EXPECT_THROW(Run("forward(add);"), ObSL::RuntimeError);
+
+    ObSL::NativeFunction *exact = interpreter.gc.allocate<ObSL::NativeFunction>(1, [](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value { return args[0]; }, "exact");
+    EXPECT_THROW(exact->call(&interpreter, {ObSL::Value{1.0}, ObSL::Value{2.0}}, ObSL::Token{ObSL::TokenType::UNKNOWN_, "", 0, 0, 0, 0}), ObSL::RuntimeError);
+}
