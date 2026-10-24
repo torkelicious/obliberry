@@ -12,6 +12,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/dependencies/nativefiledialog_extended.cmake)
 
 # ObSL Scripting Language
 set(OBSL_BUILD_RUNTIME OFF CACHE BOOL "" FORCE)
+set(OBSL_BUILD_FORMATTER OFF CACHE BOOL "" FORCE)
 add_subdirectory(external/obsl)
 
 add_library(obliberry_deps INTERFACE)
