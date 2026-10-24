@@ -1,4 +1,5 @@
 #include "Logger/LoggerService.h"
+#include "ObSL/Parser/ast.h"
 #include "Platform/Timeout.h"
 #include "Rendering/Types/Camera.h"
 #include "Scripting/EngineLib/EngineLib.h"
@@ -6,6 +7,7 @@
 #include <mutex>
 #include <ObSL/Interpreter.h>
 #include <ObSL/ScriptWorker.h>
+#include <optional>
 
 namespace {
     std::mutex s_TimeMutex;
@@ -42,8 +44,8 @@ void Scripting::EngineLib::register_time_modules(ObSL::Interpreter &interpreter)
 
 
     // this a lil janky
-    interpreter.get_global_environment()->define("SetTimeout", interpreter.gc.allocate<ObSL::NativeFunction>(2,
-                                                                       // func, ms
+    interpreter.get_global_environment()->define("SetTimeout", interpreter.gc.allocate<ObSL::NativeFunction>(2, std::nullopt,
+                                                                       // func, ms, arguments forwarded to func
                                                                        [reg = m_registry, ctx = m_ctx](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
         if (args.size() < 2 || !std::holds_alternative<ObSL::ObSLCallable *>(args[0]) || !std::holds_alternative<double>(args[1]))
             return std::monostate{};
@@ -51,10 +53,29 @@ void Scripting::EngineLib::register_time_modules(ObSL::Interpreter &interpreter)
         auto *fn = std::get<ObSL::ObSLCallable *>(args[0]);
         const auto ms = std::chrono::milliseconds(static_cast<long long>(std::get<double>(args[1])));
 
+        // extra arguments to forward to the callback
+        const std::vector<ObSL::Value> extra(args.begin() + 2, args.end());
+
+        // heap objects inside values must stay alive until the timer fires
+        std::vector<ObSL::GCObject *> rooted_args;
+        for (const auto &val : extra) {
+            ObSL::GCObject *obj = nullptr;
+            if (auto *p = std::get_if<ObSL::ObSLCallable *>(&val))
+                obj = *p;
+            else if (auto *p = std::get_if<ObSL::ObSLArray *>(&val))
+                obj = *p;
+            else if (auto *p = std::get_if<ObSL::ObSLObject *>(&val))
+                obj = *p;
+            if (obj) {
+                interp->gc.add_root(obj);
+                rooted_args.push_back(obj);
+            }
+        }
+
         // keep fn alive until timer fires
         interp->gc.add_root(fn);
 
-        auto call = [interp, fn, reg, ctx] {
+        auto call = [interp, fn, reg, ctx, extra, rooted_args] {
             auto *worker = static_cast<ObSL::ScriptWorker *>(interp->user_data);
 
             // give the deferred code a command buffer
@@ -69,7 +90,13 @@ void Scripting::EngineLib::register_time_modules(ObSL::Interpreter &interpreter)
             worker->set_frame_context(&buf);
             try {
                 constexpr ObSL::Token call_token{.type = ObSL::TokenType::LEFT_PAREN, .lexeme = "(", .line = 0, .column = 0, .start_pos = 0, .end_pos = 0};
-                fn->call(interp, {}, call_token);
+                if (extra.size() < static_cast<size_t>(fn->min_arity()) || extra.size() > static_cast<size_t>(fn->arity())) {
+                    if (auto *logger = Logging::LoggerService::Get())
+                        logger->log(
+                                "EngineLib", std::format("SetTimeout callback arity mismatch: expected between {} and {} arguments but got {}.", fn->min_arity(), fn->arity(), extra.size()), Logging::LogSeverity::Error);
+                } else {
+                    fn->call(interp, extra, call_token);
+                }
             } catch (const std::exception &e) {
                 if (auto *logger = Logging::LoggerService::Get())
                     logger->log("EngineLib", "SetTimeout callback error: " + std::string(e.what()), Logging::LogSeverity::Error);
@@ -81,6 +108,8 @@ void Scripting::EngineLib::register_time_modules(ObSL::Interpreter &interpreter)
 
             // release after the callback
             interp->gc.remove_root(fn);
+            for (auto *obj : rooted_args)
+                interp->gc.remove_root(obj);
         };
 
         Platform::Time::setTimeout(ms, Platform::Threading::SmallTask(std::move(call)));
