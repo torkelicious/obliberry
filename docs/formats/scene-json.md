@@ -10,6 +10,9 @@ IDs referenced by the scene from the project [asset catalog](assets-json.md) →
 When saving: entities with a `MapComponent` are **not** written as entities (they become the `grid` section), floats are
 rounded to 3 decimals (`RoundJsonFloats`), and the file is written with 4-space indentation.
 
+Geometry keys (`position`, `rotation`, `scale`, `offset`, `size`, `matrix`) are **exempt** from that rounding and keep
+full `float` precision.
+
 > **Packaged builds:** inside a `.obpak`, scene files are stored as **msgpack-encoded** JSON blobs (`BinaryJSON`
 > entries) and decoded on load.
 
@@ -147,7 +150,7 @@ Unknown components and components that fail deserialization are logged and skipp
 
 | Component key                 | Fields                                                                                                                                                                                                                                                                                                                                                                                                        |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `TransformComponent`          | `position`, `rotation`, `scale` - `[x, y, z]` float arrays (local coordinates; Euler rotation in radians).                                                                                                                                                                                                                                                                                                    |
+| `TransformComponent`          | `position`, `rotation`, `scale` - `[x, y, z]` float arrays (local coordinates; Euler rotation in radians). Optional `matrix` - 16 column-major floats overriding TRS.                                                                                                                                                                                                                                               |
 | `MovementComponent`           | `timePerStep` - float; `autoMove` - bool (default `false`). (Runtime movement state is intentionally not saved.)                                                                                                                                                                                                                                                                                              |
 | `MeshComponent`               | `mesh_id` - mesh resource id.                                                                                                                                                                                                                                                                                                                                                                                 |
 | `MaterialComponent`           | `material_id` - material resource id.                                                                                                                                                                                                                                                                                                                                                                         |

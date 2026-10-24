@@ -108,6 +108,19 @@ namespace Editor::Commands {
         glm::vec3 m_NewScale;
     };
 
+    class TransformEntityCommand final : public EntityCommand {
+    public:
+        TransformEntityCommand(Core::UUID targetUUID, const Rendering::Transform &before, const Rendering::Transform &after);
+        void Execute(Core::EngineContext &ctx) override;
+        void Undo(Core::EngineContext &ctx) override;
+        [[nodiscard]] std::string_view Name() const noexcept override { return "Transform entity"; }
+
+    private:
+        void Apply(Core::EngineContext &ctx, const Rendering::Transform &pose);
+        Rendering::Transform m_Before;
+        Rendering::Transform m_After;
+    };
+
     // = = = = = //
     // Entity   //
     // = = = = = //

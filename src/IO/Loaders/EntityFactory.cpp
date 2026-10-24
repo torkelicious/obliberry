@@ -9,6 +9,7 @@
 #include "ECS/Systems/Animation/Types.h"
 #include "ECS/Types.h"
 #include "Logger/LoggerService.h"
+#include "Math/GLMUtils.h"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Components/MovementComponent.h"
 #include "ECS/Components/MeshComponent.h"
@@ -67,6 +68,20 @@ void IO::EntityFactory::RegisterDeserializers() {
         if (data.contains("scale")) {
             auto s = readArray<float, 3>(data, "scale", {1.f, 1.f, 1.f});
             tc.transform.SetScale({s[0], s[1], s[2]});
+        }
+        if (data.contains("matrix")) {
+            const auto m = readArray<float, 16>(data, "matrix", {});
+            glm::mat4 matrix(1.0f);
+            for (int col = 0; col < 4; ++col) {
+                for (int row = 0; row < 4; ++row) {
+                    matrix[col][row] = m[col * 4 + row];
+                }
+            }
+            if (Math::GLMUtils::MatIsFinite(matrix)) {
+                tc.transform.SetCustomMatrix(matrix);
+            } else {
+                LOG_WARN(LOG_WHO, "Ignoring non-finite transform matrix; falling back to position/rotation/scale.");
+            }
         }
         entity.AddComponent<ECS::Components::TransformComponent>(tc);
     };
@@ -353,6 +368,16 @@ void IO::EntityFactory::RegisterSerializers() {
             data["TransformComponent"]["position"] = {pos.x, pos.y, pos.z};
             data["TransformComponent"]["rotation"] = {rot.x, rot.y, rot.z};
             data["TransformComponent"]["scale"] = {scale.x, scale.y, scale.z};
+
+            if (tc->transform.UsesCustomMatrix()) {
+                const glm::mat4 &m = tc->transform.GetMatrix();
+                auto &matrixJson = data["TransformComponent"]["matrix"] = nlohmann::json::array();
+                for (int col = 0; col < 4; ++col) {
+                    for (int row = 0; row < 4; ++row) {
+                        matrixJson.push_back(m[col][row]);
+                    }
+                }
+            }
         }
     };
 

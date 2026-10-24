@@ -328,9 +328,7 @@ namespace IO::SceneIO {
                 }
             }
 
-            if (!entityJson.empty()) {
-                j["entities"].push_back(entityJson);
-            }
+            j["entities"].push_back(entityJson);
         }
 
         RoundJsonFloats(j, 3);

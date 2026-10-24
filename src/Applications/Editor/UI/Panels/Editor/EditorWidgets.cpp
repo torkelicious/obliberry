@@ -19,6 +19,7 @@
 #include "Core/EngineContext.h"
 #include "Core/ResourceManager.h"
 #include "ECS/Components/BillboardTagComponent.h"
+#include "Math/GLMUtils.h"
 #include "ECS/Components/CustomDataComponent.h"
 #include "ECS/Components/DirectionalTextureComponent.h"
 #include "ECS/Components/MapStateComponent.h"
@@ -56,6 +57,15 @@ Editor::UI::PointLightWidget::PointLightWidget() : AutoComponentWidget("Point Li
 Editor::UI::TransformWidget::TransformWidget() : AutoComponentWidget("Transform") {}
 
 void Editor::UI::TransformWidget::DrawExtras(const ECS::Entity entity, ECS::Components::TransformComponent *component, Core::EngineContext *engineContext, UndoManager *undoManager) {
+    const bool localShear = Math::GLMUtils::MatrixHasShear(component->transform.GetMatrix());
+    if (localShear || Math::GLMUtils::MatrixHasShear(component->worldTransform.GetMatrix())) {
+        ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), localShear ? " Local transform contains shear" : " World transform contains shear");
+        if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("%s", localShear ? "An exact matrix preserves this pose.\nRotation and scale describe its TRS part; edits retain the shear."
+                                               : "The local fields are exact, but parent scaling introduces world shear.\nUse a unit or uniformly scaled parent to avoid this.");
+        }
+    }
+
     auto pos = component->transform.GetPosition();
     static glm::vec3 s_DragStartPos;
     if (ImGui::DragFloat3("Position", &pos.x, 0.1f)) {

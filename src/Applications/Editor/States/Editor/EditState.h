@@ -3,6 +3,7 @@
 #include "ECS/Components/ColliderComponent.h"
 #include "ECS/Systems/Collision/ColliderGeometry.h"
 #include "Rendering/Types/Transform.h"
+#include "Core/UUID.h"
 #include "UI/UIGizmo.h"
 #include <glm/glm.hpp>
 #include <imgui.h>
@@ -37,8 +38,9 @@ namespace Editor::States {
         static bool IsMeshCreatorOpen() { return s_ShowMeshCreator; }
 
     private:
-        void Entity_DrawGizmoForSelected() const; // entities
+        void Entity_DrawGizmoForSelected(); // entities
         void EntityGizmoTranslate(Rendering::Transform &localTransform, Rendering::Transform &worldTransform, const glm::mat4 &parentWorldMatrix, bool isBillboard);
+        void FinishEntityGizmoDrag();
 
         void UI_DrawGizmoForSelected() const; // UI system
         void UI_HandleGizmoInput();
@@ -63,9 +65,9 @@ namespace Editor::States {
         static ImGuizmo::MODE mCurrentGizmoMode;
 
         bool m_GizmoDragging = false;
-        glm::vec3 m_GizmoStartPos{0.0f};
-        glm::vec3 m_GizmoStartRot{0.0f};
-        glm::vec3 m_GizmoStartScale{1.0f};
+        Rendering::Transform m_GizmoStartTransform;
+        Core::UUID m_GizmoEntityUUID;
+        ImGuizmo::OPERATION m_GizmoStartOperation = ImGuizmo::TRANSLATE;
 
         // UI gizmo dragging
         ::UI::HandleType m_UIDragHandle = ::UI::HandleType::None;

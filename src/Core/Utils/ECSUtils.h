@@ -114,7 +114,7 @@ namespace ECS::Utils {
             return INVALID_ENTITY_ID;
 
         if (parentOverride != INVALID_ENTITY_ID && reg->IsValid(parentOverride))
-            reg->Reparent(rootId, parentOverride);
+            reg->SetParentDirect(rootId, parentOverride);
 
         return rootId;
     }

@@ -4,6 +4,7 @@
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Types.h"
 #include "Math/Billboard.h"
+#include "Math/GLMUtils.h"
 #include "glm/geometric.hpp"
 #include "glm/matrix.hpp"
 
@@ -29,8 +30,8 @@ namespace ECS::Collision {
     inline WorldCollider BuildWorldCollider(const EntityID entity, const Components::ColliderComponent &collider, const Components::TransformComponent &transform, const BillboardBasis &basis) {
         glm::mat4 frame = transform.worldTransform.GetMatrix();
         if (collider.orientation == Components::ColliderOrientation::Billboard) {
-            const auto &position = transform.worldTransform.GetPosition();
-            const auto &scale = transform.worldTransform.GetScale();
+            const glm::vec3 position = Math::GLMUtils::MatrixPosition(frame);
+            const glm::vec3 scale = Math::GLMUtils::MatrixScale(frame);
 
             frame = Math::MakeBillboardMatrix(position, scale.x, scale.y, basis.right, basis.up);
             frame[2] *= scale.z;

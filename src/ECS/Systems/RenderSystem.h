@@ -9,6 +9,7 @@
 #include "ECS/Types.h"
 #include "Math/Billboard.h"
 #include "Math/Frustum.h"
+#include "Math/GLMUtils.h"
 #include "Rendering/Renderer.h"
 #include "Rendering/Types/Camera.h"
 
@@ -26,8 +27,9 @@ namespace ECS::Systems::RenderSystem {
             if (!transComp)
                 return;
 
-            const glm::vec3 &pos = transComp->worldTransform.GetPosition();
-            const glm::vec3 &scale = transComp->worldTransform.GetScale();
+            const glm::mat4 &worldMatrix = transComp->worldTransform.GetMatrix();
+            const glm::vec3 pos = Math::GLMUtils::MatrixPosition(worldMatrix);
+            const glm::vec3 scale = Math::GLMUtils::MatrixScale(worldMatrix);
 
             const float meshRadius = meshComp->mesh->GetBoundingRadius();
             const float maxScale = std::max({scale.x, scale.y, scale.z, 1.0f});
@@ -56,8 +58,7 @@ namespace ECS::Systems::RenderSystem {
             const auto entityInt = static_cast<int32_t>(static_cast<EntityID>(entity));
             Rendering::Transform renderTransform = transComp->worldTransform;
             if (camera && entity.HasComponent<Components::BillboardTagComponent>()) {
-                const auto scale = transComp->worldTransform.GetScale();
-                glm::mat4 billboard = Math::MakeBillboardMatrix(transComp->worldTransform.GetPosition(), scale.x, scale.y, camera->GetRightVector(), camera->GetUpVector());
+                glm::mat4 billboard = Math::MakeBillboardMatrix(pos, scale.x, scale.y, camera->GetRightVector(), camera->GetUpVector());
                 billboard[2] *= scale.z;
                 renderTransform.SetCustomMatrix(billboard);
             }

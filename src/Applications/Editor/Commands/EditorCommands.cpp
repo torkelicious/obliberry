@@ -374,6 +374,21 @@ namespace Editor::Commands {
 
     std::string_view ScaleEntityCommand::Name() const noexcept { return "Scale entity"; }
 
+    TransformEntityCommand::TransformEntityCommand(Core::UUID targetUUID, const Rendering::Transform &before, const Rendering::Transform &after)
+        : EntityCommand(targetUUID), m_Before(before), m_After(after) {}
+
+    void TransformEntityCommand::Apply(Core::EngineContext &ctx, const Rendering::Transform &pose) {
+        const auto entity = ResolveEntity(ctx);
+        if (!entity) return;
+        if (auto *transform = entity.GetComponent<ECS::Components::TransformComponent>()) {
+            transform->transform = pose;
+            Complete(ctx);
+        }
+    }
+
+    void TransformEntityCommand::Execute(Core::EngineContext &ctx) { Apply(ctx, m_After); }
+    void TransformEntityCommand::Undo(Core::EngineContext &ctx) { Apply(ctx, m_Before); }
+
     //
     // Rename Entity
     //
@@ -1046,7 +1061,7 @@ namespace Editor::Commands {
                 }
             }
             if (parent != ECS::INVALID_ENTITY_ID) {
-                registry.Reparent(created[rootIndex], parent);
+                registry.SetParentDirect(created[rootIndex], parent);
             }
             auto snapshot = CaptureSubtree(registry, created[rootIndex], *ctx.resources);
             scene->AddAssetScope(std::move(assets));

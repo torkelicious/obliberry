@@ -57,4 +57,25 @@ namespace Math::GLMUtils {
         }
     }
 
+    inline glm::vec3 MatrixScale(const glm::mat4 &matrix) { return {glm::length(glm::vec3(matrix[0])), glm::length(glm::vec3(matrix[1])), glm::length(glm::vec3(matrix[2]))}; }
+
+    inline glm::vec3 MatrixPosition(const glm::mat4 &matrix) { return glm::vec3(matrix[3]); }
+
+    inline bool MatrixHasShear(const glm::mat4 &matrix, const float tolerance = 1e-4f) {
+        const glm::vec3 scale = MatrixScale(matrix);
+        if (scale.x <= tolerance || scale.y <= tolerance || scale.z <= tolerance) {
+            return false;
+        }
+
+        const glm::vec3 x = glm::vec3(matrix[0]) / scale.x;
+        const glm::vec3 y = glm::vec3(matrix[1]) / scale.y;
+        const glm::vec3 z = glm::vec3(matrix[2]) / scale.z;
+
+        return std::abs(glm::dot(x, y)) > tolerance || std::abs(glm::dot(x, z)) > tolerance || std::abs(glm::dot(y, z)) > tolerance;
+    }
+
+    inline bool IsNonUniformScale(const glm::vec3 &scale, const float tolerance = 1e-4f) {
+        return std::abs(scale.x - scale.y) > tolerance || std::abs(scale.x - scale.z) > tolerance || std::abs(scale.y - scale.z) > tolerance;
+    }
+
 } // namespace Math::GLMUtils

@@ -66,21 +66,29 @@ namespace ECS::Systems::HierarchySystem {
                 const glm::mat4 localMatrix = childTc->transform.GetMatrix();
                 const glm::mat4 worldMatrix = parentWorldMatrix * localMatrix;
 
-                glm::vec3 position, scale, skew;
-                glm::quat rotation;
-                glm::vec4 perspective;
-                // only propagate sane results,
-                const bool decomposed = glm::decompose(worldMatrix, scale, rotation, position, skew, perspective) && Math::GLMUtils::VecIsFinite(position) && Math::GLMUtils::VecIsFinite(scale) &&
-                                        std::isfinite(rotation.x) && std::isfinite(rotation.y) && std::isfinite(rotation.z) && std::isfinite(rotation.w);
-                if (!decomposed) {
+                if (!Math::GLMUtils::MatIsFinite(worldMatrix)) {
                     continue;
                 }
 
-                childTc->worldTransform.SetPosition(position);
-                glm::vec3 rotationAngles;
-                glm::extractEulerAngleXYZ(glm::mat4_cast(rotation), rotationAngles.x, rotationAngles.y, rotationAngles.z);
-                childTc->worldTransform.SetRotation(rotationAngles);
-                childTc->worldTransform.SetScale(scale);
+                glm::vec3 position, scale, skew;
+                glm::quat rotation;
+                glm::vec4 perspective;
+                const bool decomposed = glm::decompose(worldMatrix, scale, rotation, position, skew, perspective) && Math::GLMUtils::VecIsFinite(position) && Math::GLMUtils::VecIsFinite(scale) &&
+                                        std::isfinite(rotation.x) && std::isfinite(rotation.y) && std::isfinite(rotation.z) && std::isfinite(rotation.w);
+
+                if (decomposed) {
+                    childTc->worldTransform.SetPosition(position);
+                    glm::vec3 rotationAngles;
+                    glm::extractEulerAngleXYZ(glm::mat4_cast(rotation), rotationAngles.x, rotationAngles.y, rotationAngles.z);
+                    childTc->worldTransform.SetRotation(rotationAngles);
+                    childTc->worldTransform.SetScale(scale);
+                } else {
+                    // Finite singular matrices are still usable.
+                    childTc->worldTransform.SetPosition(Math::GLMUtils::MatrixPosition(worldMatrix));
+                    childTc->worldTransform.SetRotation(glm::vec3(0.0f));
+                    childTc->worldTransform.SetScale(Math::GLMUtils::MatrixScale(worldMatrix));
+                }
+
                 childTc->worldTransform.SetCustomMatrix(worldMatrix);
             }
         }
