@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <vector>
 #include "Map/HexCoords.h"
 
@@ -13,5 +14,6 @@ namespace ECS::Components {
         float idleTimer = 0.0f;
         bool isMoving = false;
         bool autoMove = false;
+        uint32_t replanAttempts = 0;
     };
 } // namespace ECS::Components

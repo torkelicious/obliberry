@@ -127,13 +127,17 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
 
                 const Map::HexCoords startHex = Math::HexMath::PixelToHex({trans->transform.GetPosition().x, trans->transform.GetPosition().y});
 
+                std::unordered_set<Map::HexCoords, Map::HexCoordsHash> occupied;
+                ECS::Systems::MovementSystem::CollectOccupiedHexes(reg, occupied, id);
+
+                Map::HexCoords finalHex = targetHex;
                 move->currentPath.clear();
-                mapComp->grid.FindPath(startHex, targetHex, move->currentPath);
+                mapComp->grid.FindPath(startHex, targetHex, move->currentPath, &occupied, &finalHex);
                 move->currentPathIndex = 0;
 
                 if (!move->currentPath.empty()) {
                     if (auto *state = reg.GetFirst<ECS::Components::MapStateComponent>()) {
-                        state->pathTo = targetHex;
+                        state->pathTo = finalHex;
                         state->hasPathTo = true;
                     }
                     const ECS::Entity entity(id, &reg);
@@ -155,13 +159,17 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
 
             const Map::HexCoords startHex = Math::HexMath::PixelToHex({trans->transform.GetPosition().x, trans->transform.GetPosition().y});
 
+            std::unordered_set<Map::HexCoords, Map::HexCoordsHash> occupied;
+            ECS::Systems::MovementSystem::CollectOccupiedHexes(*reg, occupied, id);
+
+            Map::HexCoords finalHex = targetHex;
             move->currentPath.clear();
-            mapComp->grid.FindPath(startHex, targetHex, move->currentPath);
+            mapComp->grid.FindPath(startHex, targetHex, move->currentPath, &occupied, &finalHex);
             move->currentPathIndex = 0;
 
             if (!move->currentPath.empty()) {
                 if (auto *state = reg->GetFirst<ECS::Components::MapStateComponent>()) {
-                    state->pathTo = targetHex;
+                    state->pathTo = finalHex;
                     state->hasPathTo = true;
                 }
                 const ECS::Entity entity(id, reg);

@@ -1,9 +1,11 @@
 #pragma once
 
 
+#include <cstdint>
 #include <glm/glm.hpp>
 #include <array>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include <queue>
 #include <algorithm>
@@ -83,11 +85,50 @@ namespace Map {
             }
         }
 
+        bool FindNearestFreeHex(const HexCoords &origin, const std::unordered_set<HexCoords, HexCoordsHash> &blocked, HexCoords &out, const int32_t maxRadius = 4) const {
+            std::vector<HexCoords> ring{origin};
+            std::unordered_set<HexCoords, HexCoordsHash> visited{origin};
+
+            for (int32_t radius = 1; radius <= maxRadius; ++radius) {
+                std::vector<HexCoords> next;
+                for (const auto &hex : ring) {
+                    for (const auto &neighbor : Math::HexMath::GetNeighbors(hex)) {
+                        if (!visited.insert(neighbor).second)
+                            continue;
+
+                        if (const Tile *tile = Get(neighbor); tile && tile->walkable && !blocked.contains(neighbor)) {
+                            out = neighbor;
+                            return true;
+                        }
+                        next.push_back(neighbor);
+                    }
+                }
+                ring = std::move(next);
+            }
+            return false;
+        }
+
         static glm::vec2 GetWorldPos(const HexCoords &pos, const float size = Core::HEX_SIZE) { return Math::HexMath::HexToWorld(pos, size); }
+
 
         // Performs A* Pathfinding from a start tile to a goal tile
         // Populates an ordered sequence of HexCoords from start to finish
-        void FindPath(const HexCoords start, const HexCoords goal, std::vector<HexCoords> &outPath) const {
+
+        void FindPath(const HexCoords start, const HexCoords goal, std::vector<HexCoords> &outPath) const { FindPath(start, goal, outPath, nullptr, nullptr); }
+
+        void FindPath(const HexCoords start, HexCoords requestedGoal, std::vector<HexCoords> &outPath, const std::unordered_set<HexCoords, HexCoordsHash> *blocked, HexCoords *outActualGoal = nullptr) const {
+            HexCoords goal = requestedGoal;
+
+            if (blocked && blocked->contains(goal)) {
+                HexCoords substitute;
+                if (!FindNearestFreeHex(goal, *blocked, substitute))
+                    return;
+                goal = substitute;
+            }
+
+            if (outActualGoal)
+                *outActualGoal = goal;
+
             outPath.clear();
 
             if (const Tile *startTile = Get(start); !startTile || !startTile->walkable)
@@ -165,11 +206,15 @@ namespace Map {
                     if (const Tile *tile = Get(neighbor); !tile || !tile->walkable)
                         continue;
 
+                    if (blocked && blocked->contains(neighbor))
+                        continue;
+
                     auto [nbIt, inserted] = records.try_emplace(neighbor, NodeRecord{.parent = current, .gScore = Core::P_INFINITY, .fScore = Core::P_INFINITY, .isClosed = false});
 
                     auto &[parent, gScore, fScore, isClosed] = nbIt->second;
-                    if (isClosed)
+                    if (isClosed) {
                         continue;
+                    }
 
                     // flat weight move cost calculation
                     if (const int tentativeG = currentRecord.gScore + 1; tentativeG < gScore) {
