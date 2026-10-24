@@ -98,8 +98,7 @@ namespace IO::Package::Tools {
                     "map_value", "len", "to_lower", "to_upper", "starts_with", "contains", "substring", "trim", "replace", "regex_match", "regex_search", "regex_replace", "regex_find_all", "type_of", "has_field",
                     "get_fields", "get_arity",
 
-                    "Prop", "PropEntity", "PropUI", "Send", "Broadcast"
-            };
+                    "Prop", "PropEntity", "PropUI", "Send", "Broadcast"};
 
             return names.contains(name);
         }

@@ -325,9 +325,11 @@ void Editor::States::EditState::Entity_DrawGizmoForSelected() {
 }
 
 void Editor::States::EditState::FinishEntityGizmoDrag() {
-    if (!m_GizmoDragging) return;
+    if (!m_GizmoDragging)
+        return;
     m_GizmoDragging = false;
-    if (!m_EditorLayer || !m_EditorLayer->m_Registry || !m_EditorLayer->m_Context) return;
+    if (!m_EditorLayer || !m_EditorLayer->m_Registry || !m_EditorLayer->m_Context)
+        return;
     const auto id = m_EditorLayer->m_Registry->FindEntityByUUID(m_GizmoEntityUUID);
     const auto *component = m_EditorLayer->m_Registry->GetComponent<ECS::Components::TransformComponent>(id);
     if (component && component->transform.GetMatrix() != m_GizmoStartTransform.GetMatrix()) {
@@ -372,13 +374,12 @@ void Editor::States::EditState::EntityGizmoTranslate(Rendering::Transform &local
         actualMode = ImGuizmo::LOCAL;
     }
 
-    const ImGuizmo::OPERATION gizmoOperation = mCurrentGizmoOperation == ImGuizmo::ROTATE
-            ? ImGuizmo::ROTATE_X | ImGuizmo::ROTATE_Y | ImGuizmo::ROTATE_Z
-            : mCurrentGizmoOperation;
+    const ImGuizmo::OPERATION gizmoOperation = mCurrentGizmoOperation == ImGuizmo::ROTATE ? ImGuizmo::ROTATE_X | ImGuizmo::ROTATE_Y | ImGuizmo::ROTATE_Z : mCurrentGizmoOperation;
 
     ImGuizmo::Manipulate(glm::value_ptr(gizmoViewMatrix), glm::value_ptr(projMatrix), gizmoOperation, actualMode, glm::value_ptr(gizmoMatrix));
 
-    if (isBillboard && mCurrentGizmoOperation == ImGuizmo::ROTATE) return;
+    if (isBillboard && mCurrentGizmoOperation == ImGuizmo::ROTATE)
+        return;
     const bool usingGizmo = ImGuizmo::IsUsing();
     if (!m_GizmoDragging && (usingGizmo || before != gizmoMatrix)) {
         const auto selected = m_EditorLayer->m_RegistryPanel.GetSelectedEntity();
@@ -388,9 +389,11 @@ void Editor::States::EditState::EntityGizmoTranslate(Rendering::Transform &local
         m_GizmoStartOperation = mCurrentGizmoOperation;
     }
     if (m_GizmoDragging && EntityGizmoDetail::ApplyWorldGizmo(localTransform, before, gizmoMatrix, parentWorldMatrix, isBillboard)) {
-        if (auto *scene = m_EditorLayer->m_Scene) scene->MarkAsChanged();
+        if (auto *scene = m_EditorLayer->m_Scene)
+            scene->MarkAsChanged();
     }
-    if (!usingGizmo) FinishEntityGizmoDrag();
+    if (!usingGizmo)
+        FinishEntityGizmoDrag();
 }
 
 
