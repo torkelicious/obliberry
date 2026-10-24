@@ -96,8 +96,9 @@ namespace IO::Package::Tools {
 
                     "assert", "throw", "to_string", "to_fixed", "to_num", "sqrt", "pow", "random", "min", "max", "clamp", "floor", "ceil", "round", "abs", "sin", "cos", "tan", "atan2", "pi", "rad", "deg", "lerp",
                     "map_value", "len", "to_lower", "to_upper", "starts_with", "contains", "substring", "trim", "replace", "regex_match", "regex_search", "regex_replace", "regex_find_all", "type_of", "has_field",
-                    "get_fields", "get_arity"
+                    "get_fields", "get_arity",
 
+                    "Prop", "PropEntity", "PropUI", "Send", "Broadcast"
             };
 
             return names.contains(name);

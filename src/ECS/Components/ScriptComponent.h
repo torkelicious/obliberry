@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ObSL/Parser/ast.h"
 #include "nlohmann/json.hpp"
 #include <ObSL/Environment.h>
 #include <ObSL/Parser.h>
@@ -7,6 +8,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace ECS::Components {
     struct ScriptSlot {
@@ -33,6 +35,8 @@ namespace ECS::Components {
         std::vector<ObSL::ObSLCallable *> on_trigger_enter_functions;
         std::vector<ObSL::ObSLCallable *> on_trigger_stay_functions;
         std::vector<ObSL::ObSLCallable *> on_trigger_exit_functions;
+        // message hooks
+        std::vector<ObSL::ObSLCallable *> on_message_functions;
         // serialization / loading
         std::string source_code;
         std::vector<std::unique_ptr<ObSL::Stmt>> ast_nodes;

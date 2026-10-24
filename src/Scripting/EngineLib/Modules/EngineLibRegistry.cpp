@@ -24,6 +24,7 @@
 #include "ECS/Components/SpriteSheetComponent.h"
 #include "ECS/Components/TransformComponent.h"
 #include "IO/Loaders/PrefabManager.h"
+#include "Scripting/EngineLib/ScriptMessages.h"
 #include "Scripting/EngineLib/ScriptProperties.h"
 #include "nlohmann/json_fwd.hpp"
 #include <ObSL/ScriptWorker.h>
@@ -796,6 +797,38 @@ void Scripting::EngineLib::register_registry_modules(ObSL::Interpreter &interpre
 
         return CreateEntityObjectLocked(interp, *reg, id);
     }, "PropEntity"));
+
+    interpreter.get_global_environment()->define("Send", interpreter.gc.allocate<ObSL::NativeFunction>(3, [](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        if (!std::holds_alternative<ObSL::ObSLObject *>(args[0]) || !std::holds_alternative<std::string>(args[1]) || !ScriptMessages::IsPrimitive(args[2])) {
+            return false;
+        }
+
+        const auto *target = std::get<ObSL::ObSLObject *>(args[0]);
+        if (!target) {
+            return false;
+        }
+
+        const auto it = target->fields.find("uuid");
+        if (it == target->fields.end() || !std::holds_alternative<std::string>(it->second)) {
+            return false;
+        }
+
+        const auto uuid = Core::UUID::FromString(std::get<std::string>(it->second));
+        if (!uuid) {
+            return false;
+        }
+
+        ScriptMessages::Push({.broadcast = false, .target = *uuid, .name = std::get<std::string>(args[1]), .value = args[2]});
+        return true;
+    }, "Send"));
+
+    interpreter.get_global_environment()->define("Broadcast", interpreter.gc.allocate<ObSL::NativeFunction>(2, [](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        if (!std::holds_alternative<std::string>(args[0]) || !ScriptMessages::IsPrimitive(args[1])) {
+            return false;
+        }
+        ScriptMessages::Push({.broadcast = true, .name = std::get<std::string>(args[0]), .value = args[1]});
+        return true;
+    }, "Broadcast"));
 
     interpreter.get_global_environment()->define("CreateEntity", interpreter.gc.allocate<ObSL::NativeFunction>(1, [reg = m_registry](ObSL::Interpreter *interp, const std::vector<ObSL::Value> &args) -> ObSL::Value {
         std::string name = "NewEntity";

@@ -87,6 +87,7 @@ void Scenes::Scene::Update(const float dt) {
     ECS::Systems::HierarchySystem::Propagate(m_Registry); // movement and scrips might change transforms!
     m_CollisionWorld.Update(m_Registry, basis);
     ECS::Systems::ScriptSystem::DispatchCollisionEvents(m_Registry, *m_Context, m_CollisionWorld.GetEvents(), basis);
+    ECS::Systems::ScriptSystem::DispatchScriptMessages(m_Registry, *m_Context); // events
 
     // ui
     m_UICmdBuf.flush(m_UISystem);

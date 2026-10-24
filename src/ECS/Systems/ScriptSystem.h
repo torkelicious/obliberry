@@ -1,5 +1,6 @@
 #pragma once
 
+#include <exception>
 #include <filesystem>
 #include <variant>
 #include <vector>
@@ -20,10 +21,12 @@
 #include <ObSL/Parser.h>
 #include <ObSL/ASTDeserializer.h>
 #include "ObSL/Parser/ast.h"
+#include "ObSL/Tokens.h"
 #include "Scripting/EngineLib/ScriptCommandBuffer.h"
 #include "Scripting/EngineLib/EntityWrapperCache.h"
 #include "Scripting/EngineLib/EngineLibFactories.h"
 #include "Platform/Threading/ThreadPool.h"
+#include "Scripting/EngineLib/ScriptMessages.h"
 #include "Scripting/EngineLib/ScriptProperties.h"
 
 namespace ECS::Systems::ScriptSystem {
@@ -122,7 +125,7 @@ namespace ECS::Systems::ScriptSystem {
 
             {
                 const std::vector hooks = {slot.on_update_functions, slot.on_destroy_functions, slot.on_exit_functions, slot.on_collision_enter_functions, slot.on_collision_stay_functions,
-                        slot.on_collision_exit_functions, slot.on_trigger_enter_functions, slot.on_trigger_stay_functions, slot.on_trigger_exit_functions};
+                        slot.on_collision_exit_functions, slot.on_trigger_enter_functions, slot.on_trigger_stay_functions, slot.on_trigger_exit_functions, slot.on_message_functions};
 
                 for (const auto &hook : hooks) {
                     remove_roots(hook);
@@ -144,6 +147,8 @@ namespace ECS::Systems::ScriptSystem {
             slot.on_trigger_enter_functions.assign(num_workers, nullptr);
             slot.on_trigger_stay_functions.assign(num_workers, nullptr);
             slot.on_trigger_exit_functions.assign(num_workers, nullptr);
+            // msg hooks
+            slot.on_message_functions.assign(num_workers, nullptr);
 
 
             // per worker env with entity wrappers
@@ -207,10 +212,12 @@ namespace ECS::Systems::ScriptSystem {
                 }
             };
 
+            // basic
             bind_hook("on_update", slot.on_update_functions);
             bind_hook("on_destroy", slot.on_destroy_functions);
             bind_hook("on_exit", slot.on_exit_functions);
 
+            // colliders
             bind_hook("on_collision_enter", slot.on_collision_enter_functions);
             bind_hook("on_collision_stay", slot.on_collision_stay_functions);
             bind_hook("on_collision_exit", slot.on_collision_exit_functions);
@@ -218,6 +225,9 @@ namespace ECS::Systems::ScriptSystem {
             bind_hook("on_trigger_enter", slot.on_trigger_enter_functions);
             bind_hook("on_trigger_stay", slot.on_trigger_stay_functions);
             bind_hook("on_trigger_exit", slot.on_trigger_exit_functions);
+
+            // messages
+            bind_hook("on_message", slot.on_message_functions);
 
 
             slot.isInitialized = true;
@@ -703,6 +713,92 @@ namespace ECS::Systems::ScriptSystem {
             }
         }
         commands.flush(registry);
+    }
+
+
+    inline void DispatchScriptMessages(Registry &registry, const Core::EngineContext &ctx) {
+        auto pending = Scripting::ScriptMessages::Take();
+        if (pending.empty() || !ctx.scriptPool) {
+            return;
+        }
+
+        const size_t wcount = ctx.scriptPool->worker_count();
+        if (wcount == 0) {
+            return;
+        }
+
+        Scripting::ScriptCommandBuffer cmds;
+        for (size_t w = 0; w < wcount; ++w) {
+            ctx.scriptPool->get_worker(w)->set_frame_context(&cmds);
+        }
+
+        struct ContextCleanup {
+            const Core::EngineContext &ctx;
+            size_t count;
+
+            ~ContextCleanup() {
+                for (size_t w = 0; w < count; ++w) {
+                    ctx.scriptPool->get_worker(w)->clear_frame_context();
+                }
+            }
+        };
+        ContextCleanup cleanup{.ctx = ctx, .count = wcount};
+
+
+        constexpr ObSL::Token callToken{.type = ObSL::TokenType::LEFT_PAREN, .lexeme = "(", .line = 0, .column = 0, .start_pos = 0, .end_pos = 0};
+
+        auto deliver = [&](const EntityID receiver, const Scripting::ScriptMessages::Message &msg) {
+            if (!registry.IsValid(receiver) || registry.HasComponent<Components::DestroyTagComponent>(receiver)) {
+                return;
+            }
+
+            const auto *scripts = registry.GetComponent<Components::ScriptComponent>(receiver);
+            if (!scripts) {
+                return;
+            }
+
+            for (size_t i = 0; i < scripts->slots.size(); ++i) {
+                const auto &slot = scripts->slots[i];
+                const size_t workerIdx = (receiver + i) % wcount;
+
+                if (!slot.isInitialized || workerIdx >= slot.on_message_functions.size() || workerIdx >= slot.instance_envs.size()) {
+                    continue;
+                }
+
+                auto *func = slot.on_message_functions[workerIdx];
+                auto env = slot.instance_envs[workerIdx];
+                const std::string s_path = slot.scriptPath;
+
+                if (!func || !env) {
+                    continue;
+                }
+
+                auto &interp = ctx.scriptPool->get_worker(workerIdx)->GetInterpreter();
+                try {
+                    interp.set_current_environment(env);
+                    const std::vector<ObSL::Value> args{msg.name, msg.value};
+                    func->call(&interp, args, callToken);
+                } catch (const std::exception &e) {
+                    if (auto *logger = Logging::LoggerService::Get()) {
+                        logger->log("ScriptSystem", "on_message failed (" + s_path + "): " + e.what(), Logging::LogSeverity::Error);
+                    }
+                }
+            }
+        };
+
+        for (const auto &msg : pending) {
+            if (!msg.broadcast) {
+                deliver(registry.FindEntityByUUID(msg.target), msg);
+                continue;
+            }
+
+            std::vector<EntityID> receivers;
+            registry.ForEach<Components::ScriptComponent>([&](const Entity entity, Components::ScriptComponent *) { receivers.push_back(static_cast<EntityID>(entity)); });
+            for (const EntityID receiver : receivers) {
+                deliver(receiver, msg);
+            }
+        }
+        cmds.flush(registry);
     }
 
 

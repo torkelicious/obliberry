@@ -15,6 +15,7 @@
 #include "Platform/Timeout.h"
 #include "ECS/Components/PersistentTagComponent.h"
 #include "IO/Loaders/EntityFactory.h"
+#include "Scripting/EngineLib/ScriptMessages.h"
 #include <ObSL/ScriptRuntime.h>
 #include <algorithm>
 #include <exception>
@@ -279,6 +280,8 @@ namespace Scenes {
         if (!newScene || !m_Context || !m_Context->resources) {
             return false;
         }
+
+        Scripting::ScriptMessages::Clear();
 
         std::vector<MigratedEntity> migrationBatch;
 
