@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cerrno>
+#include <filesystem>
 #include <fstream>
 #include <iosfwd>
 #include <nlohmann/json.hpp>
@@ -68,10 +70,14 @@ namespace IO {
             }
 
             const auto resolved = VFS::Resolve(filepath);
+
+            std::filesystem::create_directories(resolved.parent_path());
+
             std::ofstream out(resolved);
             if (!out) {
+                const int err = errno;
                 if (auto *logger = Logging::LoggerService::Get()) {
-                    logger->log("PrefabManager", "Failed to save prefab to: " + filepath, Logging::LogSeverity::Error);
+                    logger->log("PrefabManager", "Failed to save prefab to: " + filepath + " (" + std::strerror(err) + ")", Logging::LogSeverity::Error);
                 }
                 return false;
             }
