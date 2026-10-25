@@ -113,7 +113,7 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
         auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
         auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
         if (cmd_buf) {
-            cmd_buf->push([id, q, r](ECS::Registry &reg) {
+            cmd_buf->push([id, q, r, cmd_buf](ECS::Registry &reg) {
                 const Map::HexCoords targetHex{q, r};
 
                 auto *move = reg.GetComponent<ECS::Components::MovementComponent>(id);
@@ -128,7 +128,7 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
                 const Map::HexCoords startHex = Math::HexMath::PixelToHex({trans->transform.GetPosition().x, trans->transform.GetPosition().y});
 
                 std::unordered_set<Map::HexCoords, Map::HexCoordsHash> occupied;
-                ECS::Systems::MovementSystem::CollectOccupiedHexes(reg, occupied, id);
+                ECS::Systems::MovementSystem::CollectOccupiedHexes(reg, occupied, cmd_buf->GetCollisionBasis(), id);
 
                 Map::HexCoords finalHex = targetHex;
                 move->currentPath.clear();
@@ -160,7 +160,7 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
             const Map::HexCoords startHex = Math::HexMath::PixelToHex({trans->transform.GetPosition().x, trans->transform.GetPosition().y});
 
             std::unordered_set<Map::HexCoords, Map::HexCoordsHash> occupied;
-            ECS::Systems::MovementSystem::CollectOccupiedHexes(*reg, occupied, id);
+            ECS::Systems::MovementSystem::CollectOccupiedHexes(*reg, occupied, ECS::Collision::BillboardBasis{}, id);
 
             Map::HexCoords finalHex = targetHex;
             move->currentPath.clear();

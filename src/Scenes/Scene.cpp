@@ -80,7 +80,7 @@ void Scenes::Scene::Update(const float dt) {
     }
 
     ECS::Systems::PlayerControlSystem::Update(m_Registry, *m_Context);
-    ECS::Systems::AISystem::Update(m_Registry, dt);
+    ECS::Systems::AISystem::Update(m_Registry, dt,basis);
     ECS::Systems::MovementSystem::Update(m_Registry, dt, basis);
     ECS::Systems::ScriptSystem::Update(m_Registry, *m_Context, basis);
 

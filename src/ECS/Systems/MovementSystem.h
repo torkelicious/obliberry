@@ -1,6 +1,8 @@
 #pragma once
 
 
+#include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <unordered_set>
@@ -27,6 +29,7 @@ namespace ECS::Systems::MovementSystem {
         moveComp->isMoving = false;
         moveComp->currentPathIndex = 0;
         moveComp->stepTimer = 0.0f;
+        moveComp->replanAttempts = 0;
         moveComp->currentPath.clear();
     }
 
@@ -42,15 +45,15 @@ namespace ECS::Systems::MovementSystem {
 
         moveComp->currentPathIndex = 0;
         moveComp->stepTimer = 0.0f;
+        moveComp->replanAttempts = 0;
         moveComp->isMoving = true;
     }
 
 
-    inline void CollectOccupiedHexes(Registry &registry, std::unordered_set<Map::HexCoords, Map::HexCoordsHash> &out, const EntityID ignore = INVALID_ENTITY_ID) noexcept {
+    inline void CollectOccupiedHexes(Registry &registry, std::unordered_set<Map::HexCoords, Map::HexCoordsHash> &out, const Collision::BillboardBasis &basis, const EntityID ignore = INVALID_ENTITY_ID) noexcept {
         out.clear();
 
         static constexpr float CLEARANCE = 0.5f * Core::SQRT_3 * Core::HEX_SIZE;
-        const Collision::BillboardBasis basis{};
 
         registry.ForEach<Components::ColliderComponent, Components::TransformComponent>([&](const Entity otherEnt, const Components::ColliderComponent *col, const Components::TransformComponent *trans) {
             const EntityID otherId = static_cast<EntityID>(otherEnt);
@@ -65,10 +68,13 @@ namespace ECS::Systems::MovementSystem {
             const Map::HexCoords center = Math::HexMath::PixelToHex({static_cast<float>(blockerCenter.x), static_cast<float>(blockerCenter.y)});
             out.insert(center);
 
+            const double halfExtent = std::max(bounds.max.x - bounds.min.x, bounds.max.y - bounds.min.y) * 0.5;
+            const int rings = std::clamp(static_cast<int>(std::ceil(halfExtent + CLEARANCE) / CLEARANCE), 2, 40);
+
             std::vector<Map::HexCoords> ring{center};
             std::unordered_set<Map::HexCoords, Map::HexCoordsHash> visited{center};
 
-            for (int i = 0; i < 2; ++i) {
+            for (int i = 0; i < rings; ++i) {
                 std::vector<Map::HexCoords> next;
                 for (const auto &hex : ring) {
                     for (const auto &neighbor : Math::HexMath::GetNeighbors(hex)) {
@@ -87,7 +93,9 @@ namespace ECS::Systems::MovementSystem {
     }
 
 
-    inline void ReplanAroundBlocker(Registry &registry, const Components::MapComponent &map, const Entity entity, Components::MovementComponent *moveComp, const Map::HexCoords blockedHex) noexcept {
+    inline void ReplanAroundBlocker(
+            Registry &registry, const Components::MapComponent &map, const Entity entity, Components::MovementComponent *moveComp, const Map::HexCoords blockedHex, const Collision::BillboardBasis &basis) noexcept {
+
         constexpr uint32_t MAX_REPLANS = 3;
 
         if (++moveComp->replanAttempts > MAX_REPLANS) {
@@ -106,7 +114,7 @@ namespace ECS::Systems::MovementSystem {
         const Map::HexCoords goal = moveComp->currentPath.back();
 
         std::unordered_set<Map::HexCoords, Map::HexCoordsHash> blocked;
-        CollectOccupiedHexes(registry, blocked, static_cast<EntityID>(entity));
+        CollectOccupiedHexes(registry, blocked, basis, static_cast<EntityID>(entity));
         blocked.insert(blockedHex);
 
         std::vector<Map::HexCoords> newPath;
@@ -164,7 +172,7 @@ namespace ECS::Systems::MovementSystem {
                 // would be no op
                 if (glm::dot(targetPos - currPos, targetPos - currPos) > 1e-12f) {
                     if (!Collision::TryMoveTo(registry, entID, targetPos, basis)) {
-                        ReplanAroundBlocker(registry, *map, entity, moveComp, targetHex);
+                        ReplanAroundBlocker(registry, *map, entity, moveComp, targetHex, basis);
                         return;
                     }
                     moveComp->replanAttempts = 0;

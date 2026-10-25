@@ -10,11 +10,14 @@
 #include "ECS/Systems/MovementSystem.h"
 #include "ECS/Systems/DirectionalAnimationSystem.h"
 #include "Map/HexCoords.h"
+#include "MovementSystem.h"
 #include <random>
 #include <unordered_set>
 
 namespace ECS::Systems::AISystem {
-    inline void Update(Registry &registry, const float dt) noexcept {
+
+    inline void Update(Registry &registry, const float dt, const Collision::BillboardBasis &basis) noexcept {
+
         const Components::MapComponent *map = registry.GetFirst<Components::MapComponent>();
         if (!map)
             return;
@@ -26,8 +29,10 @@ namespace ECS::Systems::AISystem {
         std::uniform_int_distribution<size_t> dist(0, map->grid.walkableTiles.size() - 1);
         std::uniform_real_distribution timeDist(1.0f, 3.0f);
 
-        std::unordered_set<Map::HexCoords, Map::HexCoordsHash> occupied;
-        MovementSystem::CollectOccupiedHexes(registry, occupied);
+        /*
+           std::unordered_set<Map::HexCoords, Map::HexCoordsHash> occupied;
+           MovementSystem::CollectOccupiedHexes(registry, occupied);
+        */
 
         registry.ForEach<Components::MovementComponent, Components::TransformComponent, Components::MaterialComponent>(
                 [&](const Entity entity, Components::MovementComponent *move, const Components::TransformComponent *trans, const Components::MaterialComponent *mat) {
@@ -52,6 +57,8 @@ namespace ECS::Systems::AISystem {
                     if (valid) {
                         const glm::vec3 pos3 = trans->worldTransform.GetPosition();
                         const Map::HexCoords startHex = Math::HexMath::PixelToHex({pos3.x, pos3.y});
+                        std::unordered_set<Map::HexCoords, Map::HexCoordsHash> occupied;
+                        MovementSystem::CollectOccupiedHexes(registry, occupied, basis);
 
                         map->grid.FindPath(startHex, target, move->currentPath, &occupied);
 

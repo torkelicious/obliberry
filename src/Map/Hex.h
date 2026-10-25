@@ -117,6 +117,7 @@ namespace Map {
         void FindPath(const HexCoords start, const HexCoords goal, std::vector<HexCoords> &outPath) const { FindPath(start, goal, outPath, nullptr, nullptr); }
 
         void FindPath(const HexCoords start, HexCoords requestedGoal, std::vector<HexCoords> &outPath, const std::unordered_set<HexCoords, HexCoordsHash> *blocked, HexCoords *outActualGoal = nullptr) const {
+            outPath.clear();
             HexCoords goal = requestedGoal;
 
             if (blocked && blocked->contains(goal)) {
