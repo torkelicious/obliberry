@@ -448,7 +448,7 @@ void IO::EntityFactory::RegisterSerializers() {
             data["PointLightComponent"]["color"] = {plc->color.x, plc->color.y, plc->color.z};
             data["PointLightComponent"]["radius"] = plc->radius;
             data["PointLightComponent"]["intensity"] = plc->intensity;
-            data["PointLightcomponent"]["enabled"] = plc->enabled;
+            data["PointLightComponent"]["enabled"] = plc->enabled;
         }
     };
 
