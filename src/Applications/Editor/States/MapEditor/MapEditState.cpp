@@ -1,6 +1,7 @@
 #include "MapEditState.h"
 
 #include "Applications/Editor/States/MapEditor/MapTools.h"
+#include "ECS/Components/PointLightComponent.h"
 #include "Map/HexCoords.h"
 #include "Rendering/Renderer.h"
 #include "Core/Constants.h"
@@ -132,6 +133,7 @@ namespace Editor::States {
         m_PostDragState.clear();
 
         m_EditorLayer->m_Registry->ForEach<ECS::Components::MapStateComponent>([&](ECS::Entity, ECS::Components::MapStateComponent *state) { state->hasSelection = false; });
+        m_EditorLayer->m_Registry->ForEach<ECS::Components::PointLightComponent>([&](ECS::Entity, ECS::Components::PointLightComponent *light) { light->dirty = true; });
     }
 
     void MapEditState::OnSceneLoaded() {

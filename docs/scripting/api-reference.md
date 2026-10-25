@@ -39,14 +39,14 @@ and the name-based global helpers (`FindUI`, `DestroyUI`) still resolve by name.
 
 ## Script hooks and globals
 
-| Name               | Description                                                                                                              |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| `this`             | The entity the script is attached to (an [entity object](#entity-objects)). Bound per script instance by `ScriptSystem`. |
-| `fn on_update(dt)` | Optional. Called every frame with the raw (unscaled) delta time in seconds.                                              |
+| Name                         | Description                                                                                                               |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `this`                       | The entity the script is attached to (an [entity object](#entity-objects)). Bound per script instance by `ScriptSystem`.  |
+| `fn on_update(dt)`           | Optional. Called every frame with the raw (unscaled) delta time in seconds.                                               |
 | `fn on_message(name, value)` | Optional. Called when the script's entity receives a [message](#script-messaging) targeted at it or receives a broadcast. |
-| `fn on_destroy()`  | Optional. Called when the entity is marked for destruction (`DestroyTagComponent`).                                      |
-| `fn on_exit()`     | Optional. Called when the scene exits.                                                                                   |
-| _(top-level code)_ | Runs once when the script is loaded.                                                                                     |
+| `fn on_destroy()`            | Optional. Called when the entity is marked for destruction (`DestroyTagComponent`).                                       |
+| `fn on_exit()`               | Optional. Called when the scene exits.                                                                                    |
+| _(top-level code)_           | Runs once when the script is loaded.                                                                                      |
 
 There is no `dt` global use `get_dt()` (time-scaled) or `GetRawDt()` (unscaled) outside `on_update`.
 
@@ -143,16 +143,16 @@ Hex coordinates are **odd-r offset** (pointy-top hexes). See `src/Math/HexMath.h
 
 ## Registry global functions
 
-| Function                  | Args              | Returns          | Description                                                                                  |
-| ------------------------- | ----------------- | ---------------- | -------------------------------------------------------------------------------------------- |
-| `GetEntity(id)`           | number            | entity or `null` | Wraps an entity by numeric id.                                                               |
-| `Find(name)`              | string            | entity or `null` | Finds the first entity with the given name.                                                  |
-| `FindEntityByUUID(uuid)`  | string            | entity or `null` | Finds a live entity by its UUID (O(1)).                                                      |
-| `CreateEntity(name)`      | string (optional) | entity           | Creates an empty entity synchronously (default name `"NewEntity"`); add required components. |
-| `Instantiate(prefabPath)` | string            | entity or `null` | Instantiates a prefab (`assets/prefabs/*.json`). `null` on failure.                          |
-| `DestroyEntity(id)`       | number            | void             | Destroys the entity (deferred).                                                              |
-| `Send(target, name, value)` | entity, string, any | bool         | Queues a message for one script entity, delivered later in the frame. `true` when accepted.   |
-| `Broadcast(name, value)`    | string, any     | bool             | Queues a message for every script entity, delivered later in the frame. `true` when accepted. |
+| Function                    | Args                | Returns          | Description                                                                                   |
+| --------------------------- | ------------------- | ---------------- | --------------------------------------------------------------------------------------------- |
+| `GetEntity(id)`             | number              | entity or `null` | Wraps an entity by numeric id.                                                                |
+| `Find(name)`                | string              | entity or `null` | Finds the first entity with the given name.                                                   |
+| `FindEntityByUUID(uuid)`    | string              | entity or `null` | Finds a live entity by its UUID (O(1)).                                                       |
+| `CreateEntity(name)`        | string (optional)   | entity           | Creates an empty entity synchronously (default name `"NewEntity"`); add required components.  |
+| `Instantiate(prefabPath)`   | string              | entity or `null` | Instantiates a prefab (`assets/prefabs/*.json`). `null` on failure.                           |
+| `DestroyEntity(id)`         | number              | void             | Destroys the entity (deferred).                                                               |
+| `Send(target, name, value)` | entity, string, any | bool             | Queues a message for one script entity, delivered later in the frame. `true` when accepted.   |
+| `Broadcast(name, value)`    | string, any         | bool             | Queues a message for every script entity, delivered later in the frame. `true` when accepted. |
 
 `Instantiate` acquires the prefab's catalog assets and their dependencies before creating the entity, and retains
 them in the current scene. They do not need to be loaded beforehand; missing required assets cause `null` to be
@@ -277,11 +277,12 @@ bypass solid blocking. Invalid arguments are ignored.
 
 **PointLight**
 
-| Method                    | Args    | Returns | Description           |
-| ------------------------- | ------- | ------- | --------------------- |
-| `SetColor(r, g, b)`       | numbers | void    | Sets light color.     |
-| `SetIntensity(intensity)` | number  | void    | Sets light intensity. |
-| `SetRadius(radius)`       | number  | void    | Sets light radius.    |
+| Method                    | Args    | Returns | Description                             |
+| ------------------------- | ------- | ------- | --------------------------------------- |
+| `SetColor(r, g, b)`       | numbers | void    | Sets light color.                       |
+| `SetIntensity(intensity)` | number  | void    | Sets light intensity.                   |
+| `SetRadius(radius)`       | number  | void    | Sets light radius.                      |
+| `SetEnabled(bool)`        | bool    | void    | Toggles if light is enabled / emmiting. |
 
 **Movement**
 
@@ -401,12 +402,12 @@ Looping clips repeat. Non-looping clips stop on their final frame.
 
 ## Time
 
-| Function              | Args             | Returns        | Description                                                                                                                                                                       |
-| --------------------- | ---------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GetFrameCount()`     | -                | number         | Frames elapsed since the engine started.                                                                                                                                          |
-| `GetTimeScale()`      | -                | number         | Current time scale (default `1.0`).                                                                                                                                               |
-| `SetTimeScale(scale)` | number           | bool           | Sets the time scale, clamped to ≥ 0. `true` on success.                                                                                                                           |
-| `GetRawDt()`          | -                | number         | Raw (unscaled) delta time; see also `get_dt()` (scaled).                                                                                                                          |
+| Function                  | Args                  | Returns        | Description                                                                                                                                                                                                          |
+| ------------------------- | --------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GetFrameCount()`         | -                     | number         | Frames elapsed since the engine started.                                                                                                                                                                             |
+| `GetTimeScale()`          | -                     | number         | Current time scale (default `1.0`).                                                                                                                                                                                  |
+| `SetTimeScale(scale)`     | number                | bool           | Sets the time scale, clamped to ≥ 0. `true` on success.                                                                                                                                                              |
+| `GetRawDt()`              | -                     | number         | Raw (unscaled) delta time; see also `get_dt()` (scaled).                                                                                                                                                             |
 | `SetTimeout(fn, ms, ...)` | callable, number, any | bool or `null` | Calls `fn(...)` after `ms` milliseconds, forwarding any extra arguments. Runs on the main thread with a command buffer so registry mutations work. Returns `true` when scheduled, `null` for invalid argument types. |
 
 ## Save data

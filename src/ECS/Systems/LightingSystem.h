@@ -113,7 +113,7 @@ namespace ECS::Systems::LightingSystem {
         for (const EntityID id : lightPool->GetDenseEntities()) {
             auto *light = lightPool->Get(id);
             const auto *transform = transformPool ? transformPool->Get(id) : nullptr;
-            if (!light || !transform || light->intensity <= 0.0f)
+            if (!light || !transform || light->intensity <= 0.0f || !light->enabled)
                 continue;
 
             const glm::vec3 pos = transform->worldTransform.GetPosition();

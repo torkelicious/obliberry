@@ -201,11 +201,12 @@ Presets save emitter settings. Active state and live particles are not saved.
 
 A dynamic point light that affects the lighting system.
 
-| UI Field      | Type         | Notes              |
-| ------------- | ------------ | ------------------ |
-| **Color**     | Color3 (RGB) | Light color        |
-| **Radius**    | Float        | World-space radius |
-| **Intensity** | Float        | Light intensity    |
+| UI Field      | Type         | Notes                           |
+| ------------- | ------------ | ------------------------------- |
+| **Color**     | Color3 (RGB) | Light color                     |
+| **Radius**    | Float        | World-space radius              |
+| **Intensity** | Float        | Light intensity                 |
+| **Enabled**   | bool         | Is the light enabled / emmiting |
 
 **Requires:** `TransformComponent`
 

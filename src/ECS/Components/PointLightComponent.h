@@ -8,6 +8,7 @@ namespace ECS::Components {
         float radius = 3.5f; // world space radius
         float intensity = 1.0f;
         bool dirty = true;
+        bool enabled = true;
 
         void SetIntensity(const float v) {
             intensity = v;

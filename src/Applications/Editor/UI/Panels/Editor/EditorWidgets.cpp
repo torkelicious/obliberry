@@ -50,6 +50,7 @@ Editor::UI::PointLightWidget::PointLightWidget() : AutoComponentWidget("Point Li
     m_Fields.push_back({.Name = "Radius", .Type = FieldType::Float, .Offset = offsetof(ECS::Components::PointLightComponent, radius)});
     m_Fields.push_back({.Name = "Intensity", .Type = FieldType::Float, .Offset = offsetof(ECS::Components::PointLightComponent, intensity)});
     m_DirtyOffset = offsetof(ECS::Components::PointLightComponent, dirty);
+    m_Fields.push_back({.Name = "Enabled", .Type = FieldType::Bool, .Offset = offsetof(ECS::Components::PointLightComponent, enabled)});
 }
 
 //  TransformWidget
