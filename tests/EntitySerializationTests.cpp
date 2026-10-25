@@ -360,7 +360,7 @@ TEST_F(EntitySerializationTests, ScriptWithoutPropertiesOmitsPropertyArray) {
 TEST_F(EntitySerializationTests, ParticleConfigurationRoundtrip) {
     const nlohmann::json expected{{"maxParticles", 123}, {"emitRate", 12.5f}, {"lifetimeMin", 0.25f}, {"lifetimeMax", 3.0f}, {"velocityMin", {-2.0f, 1.0f, -3.0f}}, {"velocityMax", {4.0f, 5.0f, 6.0f}},
             {"gravity", {0.0f, -9.5f, 1.0f}}, {"sizeStartMin", 0.125f}, {"sizeStartMax", 0.75f}, {"sizeEndMin", 0.25f}, {"sizeEndMax", 1.5f}, {"rotationSpeedMin", -2.0f}, {"rotationSpeedMax", 4.0f},
-            {"colorStart", {0.25f, 0.5f, 0.75f, 1.0f}}, {"colorEnd", {1.0f, 0.75f, 0.5f, 0.25f}}, {"isBillboard", true}, {"blendMode", 1}, {"renderOrder", 7}, {"shape", 2}};
+            {"colorStart", {0.25f, 0.5f, 0.75f, 1.0f}}, {"colorEnd", {1.0f, 0.75f, 0.5f, 0.25f}}, {"isBillboard", true}, {"blendMode", 1}, {"renderOrder", 7}, {"shape", 2}, {"active", false}};
 
     auto source = Load({{"components", {{"ParticleEmitterComponent", expected}}}});
 
@@ -371,7 +371,6 @@ TEST_F(EntitySerializationTests, ParticleConfigurationRoundtrip) {
     emitter->emitterIndex = 5;
     emitter->aliveCount = 12;
     emitter->emitAccumulator = 0.5f;
-    emitter->active = false;
     emitter->isDirty = false;
 
     const auto saved = Serialize(source);
@@ -389,7 +388,7 @@ TEST_F(EntitySerializationTests, ParticleConfigurationRoundtrip) {
     EXPECT_EQ(actual->emitterIndex, -1);
     EXPECT_EQ(actual->aliveCount, 0);
     EXPECT_FLOAT_EQ(actual->emitAccumulator, 0.0f);
-    EXPECT_TRUE(actual->active);
+    EXPECT_FALSE(actual->active);
     EXPECT_TRUE(actual->isDirty);
 }
 

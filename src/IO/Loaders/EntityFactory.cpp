@@ -286,6 +286,8 @@ void IO::EntityFactory::RegisterDeserializers() {
             ec.renderOrder = data["renderOrder"].get<int>();
         if (data.contains("shape"))
             ec.shape = data["shape"].get<int>();
+        if (data.contains("active"))
+            ec.active = data["active"].get<bool>();
         if (data.contains("material_id")) {
             const std::string matID = data["material_id"].get<std::string>();
             ec.material = resources.Get<Rendering::Material>(matID);
@@ -506,6 +508,7 @@ void IO::EntityFactory::RegisterSerializers() {
             data["ParticleEmitterComponent"]["blendMode"] = ec->blendMode;
             data["ParticleEmitterComponent"]["renderOrder"] = ec->renderOrder;
             data["ParticleEmitterComponent"]["shape"] = ec->shape;
+            data["ParticleEmitterComponent"]["active"] = ec->active;
             if (ec->material) {
                 if (std::string id = resources.GetKey<Rendering::Material>(ec->material); !id.empty()) {
                     data["ParticleEmitterComponent"]["material_id"] = id;

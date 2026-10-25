@@ -62,6 +62,8 @@ namespace IO {
             ec.renderOrder = data["renderOrder"].get<int>();
         if (data.contains("shape"))
             ec.shape = data["shape"].get<int>();
+        if (data.contains("active"))
+            ec.active = data["active"].get<bool>();
         if (data.contains("material_id")) {
             const std::string materialID = data["material_id"].get<std::string>();
             SceneAssetLoader::SceneAssetScope scope;
@@ -98,6 +100,7 @@ namespace IO {
         data["blendMode"] = ec.blendMode;
         data["renderOrder"] = ec.renderOrder;
         data["shape"] = ec.shape;
+        data["active"] = ec.active;
         if (ec.material) {
             if (std::string id = Core::ResourceManager::GetInstance().GetKey<Rendering::Material>(ec.material); !id.empty()) {
                 data["material_id"] = id;

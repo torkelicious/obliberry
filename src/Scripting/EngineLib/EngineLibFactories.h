@@ -308,9 +308,32 @@ namespace Scripting {
                 return std::monostate{};
             };
 
+
+            auto set_enabled = [id, reg_ptr = &registry](const ObSL::Interpreter *interpreter, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+                if (!args.empty() && std::holds_alternative<bool>(args[0])) {
+                    auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
+                    bool enabled = std::get<bool>(args[0]);
+                    auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
+                    if (cmd_buf) {
+                        cmd_buf->push([id, enabled](ECS::Registry &reg) {
+                            if (auto *comp = reg.GetComponent<ECS::Components::PointLightComponent>(id)) {
+                                comp->enabled = enabled;
+                            }
+                        });
+                    } else if (reg_ptr) {
+                        std::unique_lock lock(g_RegistryMutex);
+                        if (auto *comp = reg_ptr->GetComponent<ECS::Components::PointLightComponent>(id)) {
+                            comp->enabled = enabled;
+                        }
+                    }
+                }
+                return std::monostate{};
+            };
+
             obj->fields["SetColor"] = interpreter->gc.allocate<ObSL::NativeFunction>(3, std::move(set_color), "SetColor");
             obj->fields["SetIntensity"] = interpreter->gc.allocate<ObSL::NativeFunction>(1, std::move(set_intensity), "SetIntensity");
             obj->fields["SetRadius"] = interpreter->gc.allocate<ObSL::NativeFunction>(1, std::move(set_radius), "SetRadius");
+            obj->fields["SetEnabled"] = interpreter->gc.allocate<ObSL::NativeFunction>(1, std::move(set_enabled), "SetEnabled");
 
             StoreCachedComponent(interpreter, registry, id, EntityWrapperCache::Kind::PointLight, obj);
 
