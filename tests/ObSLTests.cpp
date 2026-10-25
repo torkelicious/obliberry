@@ -222,3 +222,20 @@ TEST_F(ObSLTests, ForeachKeepsTheIterableAliveUnderGCPressure) {
     )obsl"));
     ExpectNumber("total", 18000);
 }
+
+// values held in a call env that is suspended by a nested call must survive gc from the nested call
+TEST_F(ObSLTests, SuspendedCallEnvSurvivesGCFromNestedCall) {
+    ASSERT_NO_THROW(Run(R"obsl(
+        fn churn() {
+            for (var i = 0; i < 8000; i++) { var junk = [i, i + 1]; }
+            return 0;
+        }
+        fn outer() {
+            var kept = [1, 2, 3];
+            churn();
+            return kept[1];
+        }
+        var value = outer();
+    )obsl"));
+    ExpectNumber("value", 2);
+}
