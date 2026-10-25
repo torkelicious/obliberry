@@ -9,6 +9,7 @@
 #include "Logger/Logger.h"
 #include "Logger/LoggerService.h"
 #include "ECS/Entity.h"
+#include "Math/HexMath.h"
 #include "Platform/Error.h"
 #include "SaveData/SaveGameManager.h"
 #include "SaveData/SaveGameSerialization.h"
@@ -1067,6 +1068,13 @@ void Editor::EditorLayer::DrawToolbar() {
                 });
             }
         }
+
+        {
+            const auto HoveredHex = Math::HexMath::PixelToHex(m_ViewportPanel.MousePosToWorld(m_Camera));
+            ImGui::Separator();
+            ImGui::Text("Hovered Hex: Q:%d:R:%d", HoveredHex.q, HoveredHex.r);
+        }
+
         ImGui::EndMainMenuBar();
     }
 }
