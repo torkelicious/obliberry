@@ -101,10 +101,11 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
 
     // PATHFINDING & OVERLAYS
     interpreter.get_global_environment()->define(
-            "SetPathToHex", interpreter.gc.allocate<ObSL::NativeFunction>(3, [reg = m_registry](const ObSL::Interpreter *interpreter, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+            "SetPathToHex", interpreter.gc.allocate<ObSL::NativeFunction>(3, 4, [reg = m_registry](const ObSL::Interpreter *interpreter, const std::vector<ObSL::Value> &args) -> ObSL::Value {
         if (args.size() < 3 || !std::holds_alternative<double>(args[0]) || !std::holds_alternative<double>(args[1]) || !std::holds_alternative<double>(args[2])) {
             return false;
         }
+        const bool highlight = args.size() > 3 && std::holds_alternative<bool>(args[3]) && std::get<bool>(args[3]);
 
         const auto id = static_cast<ECS::EntityID>(std::get<double>(args[0]));
         const int q = static_cast<int>(std::get<double>(args[1]));
@@ -113,7 +114,7 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
         auto *worker = static_cast<ObSL::ScriptWorker *>(interpreter->user_data);
         auto *cmd_buf = worker->frame_context<ScriptCommandBuffer>();
         if (cmd_buf) {
-            cmd_buf->push([id, q, r, cmd_buf](ECS::Registry &reg) {
+            cmd_buf->push([id, q, r, highlight, cmd_buf](ECS::Registry &reg) {
                 const Map::HexCoords targetHex{q, r};
 
                 auto *move = reg.GetComponent<ECS::Components::MovementComponent>(id);
@@ -139,6 +140,7 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
                     if (auto *state = reg.GetFirst<ECS::Components::MapStateComponent>()) {
                         state->pathTo = finalHex;
                         state->hasPathTo = true;
+                        state->pathHighlight = highlight;
                     }
                     const ECS::Entity entity(id, &reg);
                     ECS::Systems::MovementSystem::StartPath(entity);
@@ -171,6 +173,7 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
                 if (auto *state = reg->GetFirst<ECS::Components::MapStateComponent>()) {
                     state->pathTo = finalHex;
                     state->hasPathTo = true;
+                    state->pathHighlight = highlight;
                 }
                 const ECS::Entity entity(id, reg);
                 ECS::Systems::MovementSystem::StartPath(entity);

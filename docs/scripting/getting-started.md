@@ -175,6 +175,7 @@ fn on_update(dt) {
 - `SetPathToHex(entityId, q, r)` runs A\* pathfinding on the map grid from the entity's current hex toward `(q, r)`,
   stores the path, and starts the `MovementSystem` walking the entity along it.
 - The engine draws a path overlay on the map (`hasPathTo`), which is why the script clears it once movement finished.
+  Pass `false` as optional 4th argument to `SetPathToHex` (e.g. for enemy pathfinding) to move without drawing the overlay.
 
 ## Camera controls
 

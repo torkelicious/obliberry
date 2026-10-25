@@ -8,6 +8,7 @@ namespace ECS::Components {
         Map::HexCoords pathTo;
         bool hasSelection = false;
         bool hasPathTo = false;
+        bool pathHighlight = true; // draw pathTo overlay in MapRenderSystem
         // note: both can be true at once
     };
 } // namespace ECS::Components

@@ -129,7 +129,7 @@ namespace ECS::Systems::MapRenderSystem {
                 renderer.Submit(mapComp->hexMesh, mapComp->outlineMat, t);
             }
 
-            if (stateComp->hasPathTo) {
+            if (stateComp->hasPathTo && stateComp->pathHighlight) {
                 const glm::vec2 worldPos = Map::HexGrid::GetWorldPos(stateComp->pathTo);
                 Rendering::Transform t;
                 t.SetPosition({worldPos.x, worldPos.y, 0.01f});
