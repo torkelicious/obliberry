@@ -178,3 +178,47 @@ TEST_F(ObSLTests, NativeFunctionVariadicArityForwardsArguments) {
     ObSL::NativeFunction *exact = interpreter.gc.allocate<ObSL::NativeFunction>(1, [](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value { return args[0]; }, "exact");
     EXPECT_THROW(exact->call(&interpreter, {ObSL::Value{1.0}, ObSL::Value{2.0}}, ObSL::Token{ObSL::TokenType::UNKNOWN_, "", 0, 0, 0, 0}), ObSL::RuntimeError);
 }
+
+// Repeatedly allocates so the collector keeps firing while the tested expression runs.
+TEST_F(ObSLTests, ArrayMethodBindingsKeepTheArrayAliveUnderGCPressure) {
+    ASSERT_NO_THROW(Run(R"obsl(
+        var pusher = null;
+        var popper = null;
+        {
+            var arr = [41];
+            pusher = arr.push;
+            popper = arr.pop;
+        }
+        var sum = 0;
+        for (var i = 0; i < 6000; i++) { sum = sum + [i, i + 1][1]; }
+        pusher(42);
+        var value = popper() + popper();
+    )obsl"));
+    ExpectNumber("value", 83);
+    ExpectNumber("sum", 18003000);
+}
+
+TEST_F(ObSLTests, StructInstanceSurvivesGCWhileDefaultsAreEvaluated) {
+    ASSERT_NO_THROW(Run(R"obsl(
+        struct Holder { val = [7, 11, 13]; }
+        var sum = 0;
+        for (var i = 0; i < 6000; i++) {
+            var h = Holder();
+            sum = sum + h.val[1];
+        }
+    )obsl"));
+    ExpectNumber("sum", 66000);
+}
+
+TEST_F(ObSLTests, ForeachKeepsTheIterableAliveUnderGCPressure) {
+    ASSERT_NO_THROW(Run(R"obsl(
+        var total = 0;
+        for (var i = 0; i < 6000; i++) {
+            foreach (x in [i, i + 1, i + 2]) {
+                var junk = [x, x];
+                total = total + 1;
+            }
+        }
+    )obsl"));
+    ExpectNumber("total", 18000);
+}
