@@ -75,9 +75,9 @@ namespace IO {
 
             std::ofstream out(resolved);
             if (!out) {
-                const int err = errno;
+                // const int err = errno;
                 if (auto *logger = Logging::LoggerService::Get()) {
-                    logger->log("PrefabManager", "Failed to save prefab to: " + filepath + " (" + std::strerror(err) + ")", Logging::LogSeverity::Error);
+                    logger->log("PrefabManager", "Failed to save prefab to: " + filepath /* + " (" + std::strerror(err) + ")" */, Logging::LogSeverity::Error);
                 }
                 return false;
             }
