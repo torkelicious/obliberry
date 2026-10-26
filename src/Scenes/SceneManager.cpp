@@ -304,6 +304,8 @@ namespace Scenes {
             return false;
         }
 
+        Scripting::ScriptMessages::Clear();
+
         auto previousScene = std::move(m_CurrentScene);
 
         if (previousScene) {
