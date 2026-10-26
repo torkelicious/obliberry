@@ -177,7 +177,7 @@ the blocked hex (up to a small retry budget) instead of being cancelled. Path pl
 (`MovementSystem::CollectOccupiedHexes`), and an occupied goal hex is substituted with the nearest
 free hex. A walk still cancels when there is no route within the retry budget or when the map tile
 itself became unwalkable. Movement and overlap detection use the same camera
-basis for billboard colliders..
+basis for billboard colliders.
 
 This is a destination occupancy check, not a swept test along the path. It checks the moving entity's
 own collider; missing, trigger, or invalid colliders bypass blocking. Direct Transform position changes
