@@ -105,7 +105,7 @@ void Scripting::EngineLib::register_map_modules(ObSL::Interpreter &interpreter) 
         if (args.size() < 3 || !std::holds_alternative<double>(args[0]) || !std::holds_alternative<double>(args[1]) || !std::holds_alternative<double>(args[2])) {
             return false;
         }
-        const bool highlight = args.size() > 3 && std::holds_alternative<bool>(args[3]) && std::get<bool>(args[3]);
+        const bool highlight = args.size() <= 3 || (std::holds_alternative<bool>(args[3]) && std::get<bool>(args[3]));
 
         const auto id = static_cast<ECS::EntityID>(std::get<double>(args[0]));
         const int q = static_cast<int>(std::get<double>(args[1]));
