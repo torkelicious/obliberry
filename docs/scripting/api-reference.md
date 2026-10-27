@@ -79,7 +79,7 @@ See [Script properties](getting-started.md#script-properties) for declaring them
 
 | Function                    | Args                             | Returns | Description                                      |
 | --------------------------- | -------------------------------- | ------- | ------------------------------------------------ |
-| `PlaySound2D(path, volume)` | `path: string`, `volume: number` | void    | Plays a one-shot 2D sound at `volume` (0.0-1.0). |
+| `PlaySound2D(path, volume, [persist])` | `path: string`, `volume: number`, optional `persist: bool` | void | Plays a one-shot 2D sound at `volume` (0.0-1.0). Optional `persist` (default `false`) marks the sound to survive scene changes: it keeps playing through the switch and stops only when it ends. |
 | `PlayMusic(path, volume)`   | `path: string`, `volume: number` | void    | Starts looping music playback.                   |
 | `StopMusic()`               | -                                | void    | Stops the currently playing music.               |
 | `SetMasterVolume(volume)`   | `volume: number`                 | void    | Sets the global master volume.                   |

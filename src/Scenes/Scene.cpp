@@ -144,7 +144,9 @@ void Scenes::Scene::OnExit() {
         m_Context->renderer->GetPostProcessor().Effects().clear();
     }
 
-    m_Context->audioEngine->StopAll();
+    if (m_Context->audioEngine) {
+        m_Context->audioEngine->StopAll(true);
+    }
 
     m_Context->uiSystem = nullptr;
     m_Context->uiCmdBuf = nullptr;

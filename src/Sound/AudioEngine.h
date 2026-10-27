@@ -1,16 +1,46 @@
 #pragma once
 
+#include "miniaudio.h"
 #include <string>
 #include <memory>
 #include <mutex>
 #include <vector>
-#include <unordered_map>
 
 struct ma_engine;
-struct ma_sound;
-struct ma_decoder;
 
 namespace Sound {
+
+    struct SoundInstance {
+        ma_sound sound{};
+        ma_decoder *decoder = nullptr;
+        std::string buffer;
+        bool persistent = false;
+
+        SoundInstance() = default;
+        ~SoundInstance() {
+            ma_sound_uninit(&sound);
+            if (decoder) {
+                ma_decoder_uninit(decoder);
+                delete decoder;
+            }
+        }
+
+        SoundInstance(const SoundInstance &) = delete;
+        SoundInstance &operator=(const SoundInstance &) = delete;
+
+        void Start() { ma_sound_start(&sound); }
+
+        void Stop() { ma_sound_stop(&sound); }
+
+        void SetVolume(float volume) { ma_sound_set_volume(&sound, volume); }
+
+        void SetLooping(bool looping) { ma_sound_set_looping(&sound, looping ? MA_TRUE : MA_FALSE); }
+
+        [[nodiscard]] bool IsPlaying() const { return ma_sound_is_playing(&sound) == MA_TRUE; }
+
+        [[nodiscard]] bool AtEnd() const { return ma_sound_at_end(&sound) == MA_TRUE; }
+    };
+
     class AudioEngine {
     public:
         static std::unique_ptr<AudioEngine> Create();
@@ -23,7 +53,7 @@ namespace Sound {
 
         void Update();
 
-        void PlaySound2D(const std::string &filepath, float volume = 1.0f);
+        void PlaySound2D(const std::string &filepath, float volume = 1.0f, bool persist = false);
 
         void PlayMusic(const std::string &filepath, float volume = 1.0f);
 
@@ -31,11 +61,11 @@ namespace Sound {
 
         void SetMasterVolume(float volume) const;
 
-        void StopAll();
+        void StopAll(bool respectPersist = false);
 
-        void StopAllSfx();
+        void StopAllSfx(bool respectPersist = false);
 
-        void StopSound(ma_sound *sound);
+        void StopSound(SoundInstance *sound);
 
     private:
         AudioEngine();
@@ -48,15 +78,7 @@ namespace Sound {
 
         mutable std::mutex m_Mutex;
 
-        ma_sound *m_CurrentMusic = nullptr;
-        std::vector<ma_sound *> m_ActiveSounds;
-
-        struct MemoryAudioContext {
-            std::string buffer;
-            ma_decoder *decoder = nullptr;
-        };
-
-        MemoryAudioContext m_CurrentMusicContext;
-        std::unordered_map<ma_sound *, MemoryAudioContext> m_SoundContexts;
+        std::unique_ptr<SoundInstance> m_CurrentMusic;
+        std::vector<std::unique_ptr<SoundInstance>> m_ActiveSounds;
     };
 } // namespace Sound

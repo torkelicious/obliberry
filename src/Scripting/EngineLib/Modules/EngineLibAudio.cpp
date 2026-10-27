@@ -3,12 +3,13 @@
 #include "Sound/AudioEngine.h"
 
 void Scripting::EngineLib::register_audio_modules(ObSL::Interpreter &interpreter) {
-    interpreter.get_global_environment()->define("PlaySound2D", interpreter.gc.allocate<ObSL::NativeFunction>(2, [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
-        if (ctx && ctx->audioEngine && args.size() >= 2) {
+    interpreter.get_global_environment()->define("PlaySound2D", interpreter.gc.allocate<ObSL::NativeFunction>(2, 3, [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
+        if (ctx && ctx->audioEngine) {
             if (std::holds_alternative<std::string>(args[0]) && std::holds_alternative<double>(args[1])) {
                 const std::string path = std::get<std::string>(args[0]);
                 const auto volume = static_cast<float>(std::get<double>(args[1]));
-                ctx->audioEngine->PlaySound2D(path, volume);
+                const bool persist = args.size() >= 3 && std::holds_alternative<bool>(args[2]) && std::get<bool>(args[2]);
+                ctx->audioEngine->PlaySound2D(path, volume, persist);
             }
         }
         return std::monostate{};

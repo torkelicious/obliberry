@@ -5,7 +5,6 @@
 #include <mutex>
 #include <utility>
 
-#include "Core/Utils/ContainerUtils.h"
 #include "IO/VFS/VFS.h"
 #include "Logger/LoggerService.h"
 #include "miniaudio.h"
@@ -46,16 +45,7 @@ Sound::AudioEngine::~AudioEngine() {
     StopMusic();
 
     std::lock_guard lock(m_Mutex);
-    for (ma_sound *sound : m_ActiveSounds) {
-        ma_sound_uninit(sound);
-        if (const auto it = m_SoundContexts.find(sound); it != m_SoundContexts.end()) {
-            ma_decoder_uninit(it->second.decoder);
-            delete it->second.decoder;
-        }
-        delete sound;
-    }
     m_ActiveSounds.clear();
-    m_SoundContexts.clear();
 
     if (m_Engine) {
         ma_engine_uninit(m_Engine);
@@ -70,17 +60,8 @@ void Sound::AudioEngine::Update() {
 
     std::lock_guard lock(m_Mutex);
     for (auto it = m_ActiveSounds.begin(); it != m_ActiveSounds.end();) {
-        ma_sound *sound = *it;
-        if (ma_sound_at_end(sound) || !ma_sound_is_playing(sound)) {
-            ma_sound_uninit(sound);
-
-            if (const auto ctxIt = m_SoundContexts.find(sound); ctxIt != m_SoundContexts.end()) {
-                ma_decoder_uninit(ctxIt->second.decoder);
-                delete ctxIt->second.decoder;
-                m_SoundContexts.erase(ctxIt);
-            }
-
-            delete sound;
+        const SoundInstance &sfx = **it;
+        if (sfx.AtEnd() || !sfx.IsPlaying()) {
             it = m_ActiveSounds.erase(it);
         } else {
             ++it;
@@ -88,123 +69,106 @@ void Sound::AudioEngine::Update() {
     }
 }
 
-void Sound::AudioEngine::PlaySound2D(const std::string &filepath, const float volume) {
+void Sound::AudioEngine::PlaySound2D(const std::string &filepath, const float volume, const bool persist) {
     if (!m_Engine)
         return;
 
-    auto *sfx = new ma_sound();
-    ma_result result;
-
-    std::string localBuffer;
-    ma_decoder *decoder = nullptr;
+    auto sfx = std::make_unique<SoundInstance>();
+    sfx->persistent = persist;
 
     if (IO::VFS::IsPackaged()) {
         auto rawData = IO::VFS::ReadVirtual(filepath);
         if (!rawData.has_value()) {
             LOG_ERROR(LOG_WHO, "Sound not found in VFS: " + filepath);
-            delete sfx;
             return;
         }
 
-        localBuffer = std::move(rawData.value());
-
-        decoder = new ma_decoder();
+        sfx->decoder = new ma_decoder();
         const ma_decoder_config decoderConfig = ma_decoder_config_init(ma_format_unknown, 0, 0);
 
-        result = ma_decoder_init_memory(localBuffer.data(), localBuffer.size(), &decoderConfig, decoder);
+        ma_result result = ma_decoder_init_memory(rawData->data(), rawData->size(), &decoderConfig, sfx->decoder);
         if (result != MA_SUCCESS) {
             LOG_ERROR(LOG_WHO, "Failed to decode memory for: " + filepath);
-            delete decoder;
-            delete sfx;
+            delete sfx->decoder;
+            sfx->decoder = nullptr;
             return;
         }
 
-        result = ma_sound_init_from_data_source(m_Engine, decoder, 0, nullptr, sfx);
+        result = ma_sound_init_from_data_source(m_Engine, sfx->decoder, 0, nullptr, &sfx->sound);
+        if (result != MA_SUCCESS) {
+            LOG_ERROR(LOG_WHO, "Failed to initialize sound effect: " + filepath);
+            return;
+        }
+
+        sfx->buffer = std::move(*rawData);
     } else {
         const std::filesystem::path absolutePath = IO::VFS::Resolve(filepath);
-        result = ma_sound_init_from_file(m_Engine, absolutePath.string().c_str(), 0, nullptr, nullptr, sfx);
-    }
 
-    if (result != MA_SUCCESS) {
-        LOG_ERROR(LOG_WHO, "Failed to initialize sound effect: " + filepath);
-        if (decoder) {
-            ma_decoder_uninit(decoder);
-            delete decoder;
+        const ma_result result = ma_sound_init_from_file(m_Engine, absolutePath.string().c_str(), 0, nullptr, nullptr, &sfx->sound);
+        if (result != MA_SUCCESS) {
+            LOG_ERROR(LOG_WHO, "Failed to initialize sound effect: " + filepath);
+            return;
         }
-        delete sfx;
-        return;
     }
 
-    ma_sound_set_volume(sfx, volume);
-    ma_sound_start(sfx);
+    sfx->SetVolume(volume);
+    sfx->Start();
 
-    {
-        std::lock_guard lock(m_Mutex);
-        if (decoder) {
-            m_SoundContexts[sfx] = MemoryAudioContext{.buffer = std::move(localBuffer), .decoder = decoder};
-        }
-        m_ActiveSounds.push_back(sfx);
-    }
+    std::lock_guard lock(m_Mutex);
+    m_ActiveSounds.push_back(std::move(sfx));
 }
 
 void Sound::AudioEngine::PlayMusic(const std::string &filepath, const float volume) {
     if (!m_Engine)
         return;
 
-    auto *music = new ma_sound();
-    ma_result result;
-    std::string localBuffer;
-    ma_decoder *decoder = nullptr;
+    auto music = std::make_unique<SoundInstance>();
 
     if (IO::VFS::IsPackaged()) {
         auto rawData = IO::VFS::ReadVirtual(filepath);
         if (!rawData.has_value()) {
             LOG_ERROR(LOG_WHO, "Music not found in VFS: " + filepath);
-            delete music;
             return;
         }
 
-        localBuffer = std::move(rawData.value());
-
-        decoder = new ma_decoder();
+        music->decoder = new ma_decoder();
         const ma_decoder_config decoderConfig = ma_decoder_config_init(ma_format_unknown, 0, 0);
 
-        result = ma_decoder_init_memory(localBuffer.data(), localBuffer.size(), &decoderConfig, decoder);
+        ma_result result = ma_decoder_init_memory(rawData->data(), rawData->size(), &decoderConfig, music->decoder);
         if (result != MA_SUCCESS) {
             LOG_ERROR(LOG_WHO, "Failed to decode music memory: " + filepath);
-            delete decoder;
-            delete music;
+            delete music->decoder;
+            music->decoder = nullptr;
             return;
         }
 
-        result = ma_sound_init_from_data_source(m_Engine, decoder, MA_SOUND_FLAG_STREAM, nullptr, music);
+        result = ma_sound_init_from_data_source(m_Engine, music->decoder, MA_SOUND_FLAG_STREAM, nullptr, &music->sound);
+        if (result != MA_SUCCESS) {
+            LOG_ERROR(LOG_WHO, "Failed to initialize music: " + filepath);
+            return;
+        }
+
+        music->buffer = std::move(*rawData);
     } else {
         const std::filesystem::path absolutePath = IO::VFS::Resolve(filepath);
-        result = ma_sound_init_from_file(m_Engine, absolutePath.string().c_str(), MA_SOUND_FLAG_STREAM, nullptr, nullptr, music);
-    }
 
-    if (result != MA_SUCCESS) {
-        LOG_ERROR(LOG_WHO, "Failed to initialize music: " + filepath);
-        if (decoder) {
-            ma_decoder_uninit(decoder);
-            delete decoder;
+        const ma_result result = ma_sound_init_from_file(m_Engine, absolutePath.string().c_str(), MA_SOUND_FLAG_STREAM, nullptr, nullptr, &music->sound);
+        if (result != MA_SUCCESS) {
+            LOG_ERROR(LOG_WHO, "Failed to initialize music: " + filepath);
+            return;
         }
-        delete music;
-        return;
     }
 
-    ma_sound_set_looping(music, MA_TRUE);
-    ma_sound_set_volume(music, volume);
+    music->SetLooping(true);
+    music->SetVolume(volume);
 
     {
         std::lock_guard lock(m_Mutex);
 
         StopMusicUnlocked();
 
-        m_CurrentMusic = music;
-        m_CurrentMusicContext = MemoryAudioContext{.buffer = std::move(localBuffer), .decoder = decoder};
-
-        ma_sound_start(music);
+        m_CurrentMusic = std::move(music);
+        m_CurrentMusic->Start();
     }
 }
 
@@ -213,22 +177,7 @@ void Sound::AudioEngine::StopMusic() {
     StopMusicUnlocked();
 }
 
-void Sound::AudioEngine::StopMusicUnlocked() {
-    if (m_CurrentMusic) {
-        ma_sound_stop(m_CurrentMusic);
-        ma_sound_uninit(m_CurrentMusic);
-        delete m_CurrentMusic;
-    }
-
-    if (m_CurrentMusicContext.decoder) {
-        ma_decoder_uninit(m_CurrentMusicContext.decoder);
-        delete m_CurrentMusicContext.decoder;
-    }
-
-    m_CurrentMusic = nullptr;
-    m_CurrentMusicContext.decoder = nullptr;
-    m_CurrentMusicContext.buffer.clear();
-}
+void Sound::AudioEngine::StopMusicUnlocked() { m_CurrentMusic.reset(); }
 
 void Sound::AudioEngine::SetMasterVolume(const float volume) const {
     if (!m_Engine)
@@ -236,51 +185,35 @@ void Sound::AudioEngine::SetMasterVolume(const float volume) const {
     ma_engine_set_volume(m_Engine, volume);
 }
 
-void Sound::AudioEngine::StopAll() {
+void Sound::AudioEngine::StopAll(bool respectPersist) {
     StopMusic();
-    StopAllSfx();
+    StopAllSfx(respectPersist);
 }
 
-void Sound::AudioEngine::StopAllSfx() {
+void Sound::AudioEngine::StopAllSfx(bool respectPersist) {
     std::lock_guard lock(m_Mutex);
 
-    for (ma_sound *sfx : m_ActiveSounds) {
-        ma_sound_stop(sfx);
-        ma_sound_uninit(sfx);
-
-        if (const auto it = m_SoundContexts.find(sfx); it != m_SoundContexts.end()) {
-            ma_decoder_uninit(it->second.decoder);
-            delete it->second.decoder;
-            m_SoundContexts.erase(it);
-        }
-
-        delete sfx;
+    if (!respectPersist) {
+        m_ActiveSounds.clear();
+        return;
     }
 
-    m_ActiveSounds.clear();
+    std::erase_if(m_ActiveSounds, [](const std::unique_ptr<SoundInstance> &sfx) {
+        return !sfx->persistent;
+    });
 }
 
-void Sound::AudioEngine::StopSound(ma_sound *sound) {
+void Sound::AudioEngine::StopSound(SoundInstance *sound) {
     if (!sound)
         return;
 
     std::lock_guard lock(m_Mutex);
 
-    const auto it = std::find(m_ActiveSounds.begin(), m_ActiveSounds.end(), sound);
+    const auto it = std::find_if(m_ActiveSounds.begin(), m_ActiveSounds.end(), [sound](const std::unique_ptr<SoundInstance> &instance) { return instance.get() == sound; });
 
     if (it == m_ActiveSounds.end())
         return;
 
-    ma_sound_stop(sound);
-    ma_sound_uninit(sound);
-
-    if (const auto ctxIt = m_SoundContexts.find(sound); ctxIt != m_SoundContexts.end()) {
-        ma_decoder_uninit(ctxIt->second.decoder);
-        delete ctxIt->second.decoder;
-        m_SoundContexts.erase(ctxIt);
-    }
-
-    delete sound;
     m_ActiveSounds.erase(it);
 }
 
