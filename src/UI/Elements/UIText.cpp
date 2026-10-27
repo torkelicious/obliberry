@@ -51,7 +51,7 @@ namespace UI {
     // stuff here :)
     //
 
-    void UIText::Update() {}
+    void UIText::Update(glm::vec2 /*finalPos*/) {}
 
     void UIText::Draw(UIRenderer *renderer, const glm::vec2 finalPos) {
         if (!renderer || !m_Font || m_Text.empty())

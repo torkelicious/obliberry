@@ -26,7 +26,7 @@ namespace UI {
         RectTransform Rect{.Position = {0.0f, 0.0f}, .Scale = {0.0f, 0.0f}};
         [[nodiscard]] const Core::UUID &GetUUID() const noexcept { return m_UUID; }
 
-        virtual void Update() {}
+        virtual void Update(glm::vec2 finalPos) {}
 
         virtual void Draw(UIRenderer * /*renderer*/, glm::vec2 /*finalPos*/) {}
 

@@ -18,7 +18,7 @@ public:
     return m_Image;
   }
 
-  void Update() override;
+  void Update(glm::vec2 /*finalPos*/) override;
   void Draw(UIRenderer *renderer, glm::vec2 finalPos) override;
 
 private:

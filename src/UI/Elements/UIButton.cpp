@@ -6,13 +6,13 @@
 
 namespace UI {
 
-    void UIButton::Update() {
+    void UIButton::Update(glm::vec2 finalPos) {
         if (!m_Input) {
             m_ButtonState = ButtonState::NONE;
             return;
         }
 
-        if (IsPointInsideRect(m_GameMousePos, Rect)) {
+        if (IsPointInsideRect(m_GameMousePos, {.Position = finalPos, .Scale = Rect.Scale})) {
             if (m_Input->IsMousePressed(0)) {
                 m_ButtonState = ButtonState::CLICKED;
             } else if (m_Input->IsMouseDown(0)) {

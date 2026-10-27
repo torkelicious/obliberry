@@ -3,7 +3,7 @@
 
 namespace UI {
 
-    void UIImage::Update() {
+    void UIImage::Update(glm::vec2 /*finalPos*/) {
         // TODO
     }
 

@@ -41,7 +41,7 @@ namespace UI {
         [[nodiscard]] const glm::vec4 &GetHoveredBackgroundColor() const { return m_HoveredBackgroundColor; }
         [[nodiscard]] ButtonState GetButtonState() const { return m_ButtonState; }
 
-        void Update() override;
+        void Update(glm::vec2 finalPos) override;
         void Draw(UIRenderer *renderer, glm::vec2 finalPos) override;
 
     private:

@@ -5,15 +5,16 @@
 
 namespace UI {
 
-    static void UpdateRecursive(UIElement *element, const float dt, const glm::vec2 &gameMousePos, const bool interactive) {
+    static void UpdateRecursive(UIElement *element, const float dt, const glm::vec2 &gameMousePos, const bool interactive, const glm::vec2 accumulatedPos) {
         if (!element || !element->HasFlag(VISIBLE) || !element->HasFlag(ENABLED))
             return;
 
+        const glm::vec2 finalPos = accumulatedPos + element->Rect.Position;
         element->SetGameMousePos(interactive ? gameMousePos : glm::vec2(-1e6f));
-        element->Update();
+        element->Update(finalPos);
 
         for (auto *child : element->Children) {
-            UpdateRecursive(child, dt, gameMousePos, interactive);
+            UpdateRecursive(child, dt, gameMousePos, interactive, finalPos);
         }
     }
 
@@ -22,7 +23,7 @@ namespace UI {
         if (m_Renderer && m_Input) {
             gameMouse = m_Renderer->WindowToGameCoords(static_cast<float>(m_Input->MousePosX()), static_cast<float>(m_Input->MousePosY()));
         }
-        UpdateRecursive(m_Root.get(), dt, gameMouse, interactive);
+        UpdateRecursive(m_Root.get(), dt, gameMouse, interactive, {0.0f, 0.0f});
     }
 
     void UISystem::Render() { RenderRecursive(m_Root.get(), {0.0f, 0.0f}); }

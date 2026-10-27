@@ -23,7 +23,7 @@ namespace UI {
         // (skips glyphs with zero size , e.g. spaces)
         [[nodiscard]] size_t GetQuadCount() const;
 
-        void Update() override;
+        void Update(glm::vec2 /*finalPos*/) override;
         void Draw(UIRenderer *renderer, glm::vec2 finalPos) override;
 
     private:
