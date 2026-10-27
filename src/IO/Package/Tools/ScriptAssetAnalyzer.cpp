@@ -51,7 +51,7 @@ namespace IO::Package::Tools {
                 case ExprType::Binary: {
                     const auto *node = static_cast<const BinaryExpr *>(expression);
 
-                    if (node->oprt_type != TokenType::PLUS) {
+                    if (node->operator_token.type != TokenType::PLUS) {
                         return std::nullopt;
                     }
 
