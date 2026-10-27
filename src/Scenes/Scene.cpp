@@ -80,7 +80,7 @@ void Scenes::Scene::Update(const float dt) {
     }
 
     ECS::Systems::PlayerControlSystem::Update(m_Registry, *m_Context);
-    ECS::Systems::AISystem::Update(m_Registry, dt,basis);
+    ECS::Systems::AISystem::Update(m_Registry, dt, basis);
     ECS::Systems::MovementSystem::Update(m_Registry, dt, basis);
     ECS::Systems::ScriptSystem::Update(m_Registry, *m_Context, basis);
 
@@ -143,6 +143,8 @@ void Scenes::Scene::OnExit() {
     if (m_Context->renderer) {
         m_Context->renderer->GetPostProcessor().Effects().clear();
     }
+
+    m_Context->audioEngine->StopAll();
 
     m_Context->uiSystem = nullptr;
     m_Context->uiCmdBuf = nullptr;

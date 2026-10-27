@@ -1,10 +1,14 @@
 #include "AudioEngine.h"
+
+#include <algorithm>
 #include <filesystem>
 #include <mutex>
 #include <utility>
-#include "miniaudio.h"
-#include "Logger/LoggerService.h"
+
+#include "Core/Utils/ContainerUtils.h"
 #include "IO/VFS/VFS.h"
+#include "Logger/LoggerService.h"
+#include "miniaudio.h"
 
 #pragma push_macro("LOG_WHO")
 #define LOG_WHO "AudioEngine"
@@ -66,7 +70,8 @@ void Sound::AudioEngine::Update() {
 
     std::lock_guard lock(m_Mutex);
     for (auto it = m_ActiveSounds.begin(); it != m_ActiveSounds.end();) {
-        if (ma_sound *sound = *it; ma_sound_at_end(sound) || !ma_sound_is_playing(sound)) {
+        ma_sound *sound = *it;
+        if (ma_sound_at_end(sound) || !ma_sound_is_playing(sound)) {
             ma_sound_uninit(sound);
 
             if (const auto ctxIt = m_SoundContexts.find(sound); ctxIt != m_SoundContexts.end()) {
@@ -230,4 +235,53 @@ void Sound::AudioEngine::SetMasterVolume(const float volume) const {
         return;
     ma_engine_set_volume(m_Engine, volume);
 }
+
+void Sound::AudioEngine::StopAll() {
+    StopMusic();
+    StopAllSfx();
+}
+
+void Sound::AudioEngine::StopAllSfx() {
+    std::lock_guard lock(m_Mutex);
+
+    for (ma_sound *sfx : m_ActiveSounds) {
+        ma_sound_stop(sfx);
+        ma_sound_uninit(sfx);
+
+        if (const auto it = m_SoundContexts.find(sfx); it != m_SoundContexts.end()) {
+            ma_decoder_uninit(it->second.decoder);
+            delete it->second.decoder;
+            m_SoundContexts.erase(it);
+        }
+
+        delete sfx;
+    }
+
+    m_ActiveSounds.clear();
+}
+
+void Sound::AudioEngine::StopSound(ma_sound *sound) {
+    if (!sound)
+        return;
+
+    std::lock_guard lock(m_Mutex);
+
+    const auto it = std::find(m_ActiveSounds.begin(), m_ActiveSounds.end(), sound);
+
+    if (it == m_ActiveSounds.end())
+        return;
+
+    ma_sound_stop(sound);
+    ma_sound_uninit(sound);
+
+    if (const auto ctxIt = m_SoundContexts.find(sound); ctxIt != m_SoundContexts.end()) {
+        ma_decoder_uninit(ctxIt->second.decoder);
+        delete ctxIt->second.decoder;
+        m_SoundContexts.erase(ctxIt);
+    }
+
+    delete sound;
+    m_ActiveSounds.erase(it);
+}
+
 #pragma pop_macro("LOG_WHO")

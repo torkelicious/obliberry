@@ -31,6 +31,12 @@ namespace Sound {
 
         void SetMasterVolume(float volume) const;
 
+        void StopAll();
+
+        void StopAllSfx();
+
+        void StopSound(ma_sound *sound);
+
     private:
         AudioEngine();
 
