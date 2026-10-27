@@ -138,8 +138,18 @@ namespace Editor::UI {
             return entries;
         }
 
+        // extension may be a comma-separated list 
+        std::vector<std::string> extensions;
+        for (std::string part = extension; !part.empty();) {
+            const auto comma = part.find(',');
+            extensions.push_back(part.substr(0, comma));
+            part = comma == std::string::npos ? std::string() : part.substr(comma + 1);
+        }
+
         for (const auto &entry : std::filesystem::directory_iterator(resolved)) {
-            if (!entry.is_regular_file() || entry.path().extension() != extension) {
+            const std::string fileExtension = entry.path().extension().string();
+
+            if (!entry.is_regular_file() || std::ranges::find(extensions, fileExtension) == extensions.end()) {
                 continue;
             }
 
@@ -202,6 +212,11 @@ namespace Editor::UI {
 
         if (ImGui::CollapsingHeader("Animations"))
             DrawAnimationSelection();
+
+        
+        if (ImGui::CollapsingHeader("Audio")) {
+            DrawFileSection("Audio", std::string(Core::AUDIO_PATH), ".mp3,.wav", "mp3,wav", "Audio Files");
+        }
 
         if (ImGui::CollapsingHeader("Scripts")) {
             DrawFileSection("Scripts", std::string(Core::SCRIPT_PATH), std::string(Core::SCRIPT_FILE_EXTENSION), "obsl,txt", "Script Files");
