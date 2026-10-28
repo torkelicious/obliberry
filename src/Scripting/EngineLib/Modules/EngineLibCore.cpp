@@ -1,6 +1,8 @@
 #include "Logger/LoggerService.h"
+#include "ObSL/Natives.h"
 #include "Scripting/EngineLib/EngineLib.h"
 #include "Scripting/EngineLib/ScriptProperties.h"
+#include <variant>
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <mutex>
@@ -64,6 +66,14 @@ void Scripting::EngineLib::register_core_modules(ObSL::Interpreter &interpreter)
         }
         return std::monostate{};
     }, "CloseWindow"));
+
+
+    interpreter.get_global_environment()->define("IsEditor", interpreter.gc.allocate<ObSL::NativeFunction>(0, [ctx = m_ctx](ObSL::Interpreter *, const std::vector<ObSL::Value> &) -> ObSL::Value {
+        if (ctx) {
+            return ctx->isEditorMode || ctx->isEditorInPlayMode;
+        }
+        return std::monostate{};
+    }, "IsEditor"));
 
 
     interpreter.get_global_environment()->define("Prop", interpreter.gc.allocate<ObSL::NativeFunction>(2, [](ObSL::Interpreter *, const std::vector<ObSL::Value> &args) -> ObSL::Value {
