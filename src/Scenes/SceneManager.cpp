@@ -316,7 +316,8 @@ namespace Scenes {
             Platform::Time::invalidateGeneration();
 
             m_Context->scriptPool->shutdown();
-            m_Context->scriptPool->init("assets/scripts");
+            // packaged scripts have project-relative import paths
+            m_Context->scriptPool->init(IO::VFS::IsPackaged() ? "." : "assets/scripts");
             ECS::Systems::ScriptSystem::SetupScriptRuntime(*m_Context->scriptPool);
         }
 

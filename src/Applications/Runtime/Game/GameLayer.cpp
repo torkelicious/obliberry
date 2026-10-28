@@ -29,7 +29,7 @@ void Game::GameLayer::Init(Core::EngineContext &ctx) {
 
     if (m_Context->scriptPool) {
         m_Context->scriptPool->shutdown();
-        m_Context->scriptPool->init("assets/scripts");
+        m_Context->scriptPool->init(IO::VFS::IsPackaged() ? "." : "assets/scripts");
         ECS::Systems::ScriptSystem::SetupScriptRuntime(*m_Context->scriptPool);
     }
 
