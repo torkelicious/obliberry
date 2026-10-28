@@ -1,0 +1,771 @@
+{
+  "PostProcessing": [
+    {
+      "enabled": false,
+      "shader": "[Engine_PP] Grayscale",
+      "uniforms": {
+        "u_Strength": 1.0
+      }
+    },
+    {
+      "enabled": true,
+      "shader": "[Engine_PP] BrightPass",
+      "uniforms": {
+        "u_SoftKnee": 0.5,
+        "u_Threshold": 0.800000011920929
+      }
+    },
+    {
+      "enabled": true,
+      "passUniforms": [
+        {
+          "u_Horizontal": 1
+        },
+        {
+          "u_Horizontal": 0
+        }
+      ],
+      "passes": 2,
+      "shader": "[Engine_PP] GaussianBlur"
+    },
+    {
+      "enabled": true,
+      "shader": "[Engine_PP] BloomComposite",
+      "uniforms": {
+        "u_Strength": 1.0
+      },
+      "wantsSceneTexture": true
+    },
+    {
+      "enabled": false,
+      "shader": "[Engine_PP] CRT",
+      "uniforms": {
+        "u_Aberration": 0.0020000000949949026,
+        "u_Curvature": 0.05000000074505806,
+        "u_Flicker": 0.5,
+        "u_Glow": 0.25,
+        "u_Mask": 0.25,
+        "u_Noise": 0.029999999329447746,
+        "u_Scanline": 0.699999988079071,
+        "u_Vignette": 0.15000000596046448
+      }
+    },
+    {
+      "enabled": true,
+      "shader": "[Engine_PP] FilmGrain",
+      "uniforms": {
+        "u_GrainAmount": 0.04699999839067459,
+        "u_GrainSize": 0.5630000233650208
+      }
+    },
+    {
+      "enabled": false,
+      "shader": "[Engine_PP] ColorGrading",
+      "uniforms": {
+        "u_ColorBalance": [0.0, 0.0, 0.0],
+        "u_Contrast": 1.0,
+        "u_Exposure": 0.0,
+        "u_Gain": [1.0, 1.0, 1.0],
+        "u_Gamma": [1.0, 1.0, 1.0],
+        "u_HighlightWheel": [0.0, 0.0, 0.0],
+        "u_Lift": [0.0, 0.0, 0.0],
+        "u_MidtoneWheel": [0.0, 0.0, 0.0],
+        "u_Pivot": 0.5,
+        "u_Saturation": 1.0,
+        "u_ShadowWheel": [0.0, 0.0, 0.0]
+      }
+    },
+    {
+      "enabled": false,
+      "shader": "[Engine_PP] Vingette",
+      "uniforms": {
+        "u_Alpha": 0.800000011920929,
+        "u_InnerRadius": 0.25,
+        "u_OuterRadius": 0.699999988079071,
+        "u_UseAspect": 1
+      }
+    }
+  ],
+  "entities": [
+    {
+      "components": {
+        "BillboardTagComponent": {},
+        "ColliderComponent": {
+          "height": 1.0,
+          "isTrigger": false,
+          "layer": 0,
+          "mask": 4294967295,
+          "offset": [
+            -0.024000000208616257, 0.06199999898672104, -0.03500000014901161
+          ],
+          "orientation": "Entity",
+          "radius": 0.18799999356269836,
+          "shape": "Circle",
+          "size": [1.0, 1.0, 1.0],
+          "version": 2
+        },
+        "MaterialComponent": {
+          "material_id": "material_clone_2"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "TransformComponent": {
+          "position": [-12.343000411987305, 2.1389999389648438, 0.0],
+          "rotation": [0.0, 0.0, 0.0],
+          "scale": [7.339000225067139, 7.339000225067139, 7.339000225067139]
+        }
+      },
+      "name": "tree",
+      "uuid": "2640d587-77ae-4fb4-b062-9d432436a5ca"
+    },
+    {
+      "components": {
+        "MaterialComponent": {
+          "material_id": "material_clone_6"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "TransformComponent": {
+          "position": [0.0, 0.0, 0.0],
+          "rotation": [0.0, 0.0, 0.0],
+          "scale": [10.0, 15.0, 1.0]
+        }
+      },
+      "name": "Gate Panel",
+      "parent": 7,
+      "uuid": "e8c1d1e6-d085-4efa-91c5-cf63ca6dfb29"
+    },
+    {
+      "components": {
+        "BillboardTagComponent": {},
+        "ColliderComponent": {
+          "height": 1.0,
+          "isTrigger": false,
+          "layer": 0,
+          "mask": 4294967295,
+          "offset": [-0.006000000052154064, 0.03799999877810478, 0.0],
+          "orientation": "Entity",
+          "radius": 0.1860000044107437,
+          "shape": "Circle",
+          "size": [1.0, 1.0, 1.0],
+          "version": 2
+        },
+        "MaterialComponent": {
+          "material_id": "material_clone_2"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "TransformComponent": {
+          "position": [10.027000427246094, 2.7790000438690186, 0.0],
+          "rotation": [0.0, 0.0, 0.0],
+          "scale": [8.843000411987305, 8.842000007629395, 8.843000411987305]
+        }
+      },
+      "name": "tree",
+      "uuid": "cfdc8598-5fc3-4973-b471-04c7244701e7"
+    },
+    {
+      "components": {
+        "BillboardTagComponent": {},
+        "ColliderComponent": {
+          "height": 1.0,
+          "isTrigger": false,
+          "layer": 0,
+          "mask": 4294967295,
+          "offset": [
+            -0.014999999664723873, 0.05900000035762787, -0.029999999329447746
+          ],
+          "orientation": "Entity",
+          "radius": 0.2329999953508377,
+          "shape": "Circle",
+          "size": [1.0, 1.0, 1.0],
+          "version": 2
+        },
+        "MaterialComponent": {
+          "material_id": "material_clone_2"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "TransformComponent": {
+          "position": [-0.7570000290870667, -8.593000411987305, 0.0],
+          "rotation": [0.0, 0.0, 0.0],
+          "scale": [7.339000225067139, 7.339000225067139, 7.339000225067139]
+        }
+      },
+      "name": "tree",
+      "uuid": "2d085b63-ba48-4283-b765-6f175355e4b6"
+    },
+    {
+      "components": {
+        "BillboardTagComponent": {},
+        "ColliderComponent": {
+          "height": 1.0,
+          "isTrigger": false,
+          "layer": 0,
+          "mask": 4294967295,
+          "offset": [0.0, -0.1979999989271164, 0.0],
+          "orientation": "Billboard",
+          "radius": 0.5,
+          "shape": "Box",
+          "size": [1.0, 0.6039999723434448, 1.0],
+          "version": 2
+        },
+        "MaterialComponent": {
+          "material_id": "material_clone_4"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "MovementComponent": {
+          "autoMove": false,
+          "timePerStep": 0.15000000596046448
+        },
+        "PointLightComponent": {
+          "color": [1.0, 0.972000002861023, 0.7850000262260437],
+          "enabled": true,
+          "intensity": 1.7999999523162842,
+          "radius": 3.4000000953674316
+        },
+        "ScriptComponent": {
+          "scriptPath": "assets/scripts/CarFinale.obsl",
+          "scriptProperties": [
+            {
+              "drive_delay_seconds": 2.0,
+              "engine_sound": "assets/audio/car.mp3",
+              "exit_q": -35.0,
+              "exit_r": 12.0,
+              "seconds_per_step": 0.15000000596046448,
+              "smoke_emmiter_ent": "04b6ea92-307e-48f0-9140-368ff1ce0429"
+            }
+          ]
+        },
+        "TransformComponent": {
+          "position": [12.067000389099121, -12.300000190734863, 0.0],
+          "rotation": [0.0, 0.0, 0.0],
+          "scale": [3.0880000591278076, 3.0880000591278076, 1.0]
+        }
+      },
+      "name": "Car",
+      "uuid": "c609df45-aa6b-4b76-bd95-e80faab1d76d"
+    },
+    {
+      "components": {
+        "BillboardTagComponent": {},
+        "ColliderComponent": {
+          "height": 1.0,
+          "isTrigger": true,
+          "layer": 0,
+          "mask": 4294967295,
+          "offset": [
+            0.8697852492332458, 0.22492839395999908, -0.1979999989271164
+          ],
+          "orientation": "Entity",
+          "radius": 0.7129999995231628,
+          "shape": "Rectangle",
+          "size": [3.4271836280822754, 1.6707611083984375, 1.0],
+          "version": 2
+        },
+        "MaterialComponent": {
+          "material_id": "material_clone_5"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "ScriptComponent": {
+          "scriptPath": "assets/scripts/QuestGiver.obsl",
+          "scriptProperties": [
+            {
+              "accept_button": "18fa3d50-066e-4eba-9b08-642f9865706c",
+              "dialog_panel": "8c1b89bd-ec3f-412e-b8b2-9f1883a270ae",
+              "dialog_text": "237f5813-c74f-4cbc-8ad1-a838e2569c6c",
+              "player": "c8ddf2b8-9f08-4743-a45b-fc9e43252395"
+            }
+          ]
+        },
+        "TransformComponent": {
+          "position": [9.793000221252441, -12.02299976348877, 0.0],
+          "rotation": [0.0, 0.0, 0.0],
+          "scale": [1.0, 2.0, 1.0]
+        }
+      },
+      "name": "Quest_Man",
+      "uuid": "4062c7ff-cad3-41e4-a86d-989b756d1401"
+    },
+    {
+      "components": {
+        "BillboardTagComponent": {},
+        "ParticleEmitterComponent": {
+          "active": false,
+          "blendMode": 0,
+          "colorEnd": [
+            0.3580000102519989, 0.3580000102519989, 0.3580000102519989,
+            0.878000020980835
+          ],
+          "colorStart": [
+            0.7559999823570251, 0.7559999823570251, 0.7559999823570251,
+            0.8270000219345093
+          ],
+          "emitRate": 50.0,
+          "gravity": [
+            0.30000001192092896, 0.4000000059604645, 0.30000001192092896
+          ],
+          "isBillboard": true,
+          "lifetimeMax": 2.049999952316284,
+          "lifetimeMin": 0.5,
+          "material_id": "ParticleShader",
+          "maxParticles": 256,
+          "renderOrder": 1,
+          "rotationSpeedMax": 5.599999904632568,
+          "rotationSpeedMin": 1.0,
+          "shape": 1,
+          "sizeEndMax": 0.0,
+          "sizeEndMin": 0.0,
+          "sizeStartMax": 0.20000000298023224,
+          "sizeStartMin": 0.20000000298023224,
+          "velocityMax": [1.0, -2.0, 2.0],
+          "velocityMin": [
+            -0.10000000149011612, -0.800000011920929, -0.10000000149011612
+          ]
+        },
+        "TransformComponent": {
+          "position": [0.5699999928474426, -0.14499999582767487, 0.0],
+          "rotation": [-0.0, 0.0, -0.0],
+          "scale": [0.3240000009536743, 0.3240000009536743, 1.0]
+        }
+      },
+      "name": "SmokeParticles",
+      "parent": 4,
+      "uuid": "04b6ea92-307e-48f0-9140-368ff1ce0429"
+    },
+    {
+      "components": {
+        "ColliderComponent": {
+          "height": 1.0,
+          "isTrigger": true,
+          "layer": 0,
+          "mask": 4294967295,
+          "offset": [1.6500000953674316, 0.0, 2.25],
+          "orientation": "Entity",
+          "radius": 0.5,
+          "shape": "Box",
+          "size": [15.0, 15.0, 5.0],
+          "version": 2
+        },
+        "ScriptComponent": {
+          "scriptPath": "assets/scripts/Door.obsl",
+          "scriptProperties": [
+            {
+              "target_scene": "assets/scenes/junkyard.json",
+              "who": "c8ddf2b8-9f08-4743-a45b-fc9e43252395"
+            }
+          ]
+        },
+        "TransformComponent": {
+          "position": [34.444000244140625, 8.215999603271484, 0.0],
+          "rotation": [
+            1.6239999532699585, -1.3359999656677246, 1.621999979019165
+          ],
+          "scale": [1.0, 1.0, 1.0]
+        }
+      },
+      "name": "Gate",
+      "uuid": "7f1e0cdc-77d5-44de-ab30-db6f5878d465"
+    },
+    {
+      "components": {
+        "MaterialComponent": {
+          "material_id": "material_clone_6"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "TransformComponent": {
+          "position": [
+            -0.1899999976158142, -7.005000114440918, -16.027999877929688
+          ],
+          "rotation": [
+            -1.5588529109954834, 0.01349862664937973, 1.5828324556350708
+          ],
+          "scale": [31.857608795166016, 10.619756698608398, 1.0048778057098389]
+        }
+      },
+      "parent": 7,
+      "uuid": "5a3a7378-2674-48b4-b96c-9203bd1b0374"
+    },
+    {
+      "components": {
+        "MaterialComponent": {
+          "material_id": "material_clone_6"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "TransformComponent": {
+          "position": [
+            -0.1899999976158142, 7.994999885559082, -16.027999877929688
+          ],
+          "rotation": [
+            -1.5588529109954834, 0.01349862664937973, 1.5828324556350708
+          ],
+          "scale": [31.857608795166016, 10.619756698608398, 1.0048778057098389]
+        }
+      },
+      "parent": 7,
+      "uuid": "339d1128-fbcb-4939-bc6e-b74068a9dff1"
+    },
+    {
+      "components": {
+        "BillboardTagComponent": {},
+        "ColliderComponent": {
+          "height": 1.0,
+          "isTrigger": false,
+          "layer": 0,
+          "mask": 4294967295,
+          "offset": [-0.006000000052154064, 0.03799999877810478, 0.0],
+          "orientation": "Entity",
+          "radius": 0.1860000044107437,
+          "shape": "Circle",
+          "size": [1.0, 1.0, 1.0],
+          "version": 2
+        },
+        "MaterialComponent": {
+          "material_id": "material_clone_2"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "TransformComponent": {
+          "position": [26.634000778198242, 16.940000534057617, 0.0],
+          "rotation": [0.0, 0.0, 0.0],
+          "scale": [8.843000411987305, 6.2210001945495605, 8.843000411987305]
+        }
+      },
+      "name": "tree",
+      "uuid": "9a7a899f-2e0f-4ca6-b36d-1f02722274f1"
+    },
+    {
+      "components": {
+        "BillboardTagComponent": {},
+        "MaterialComponent": {
+          "material_id": "material_clone_7"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "TransformComponent": {
+          "position": [
+            0.3505362868309021, 3.985464096069336, 3.749802827835083
+          ],
+          "rotation": [0.0, 0.0, 0.0],
+          "scale": [2.4804494380950928, 2.5796706676483154, 0.999999463558197]
+        }
+      },
+      "parent": 7,
+      "uuid": "91ceb831-242f-4bc8-8814-5b9d9a3e7808"
+    },
+    {
+      "components": {
+        "MaterialComponent": {
+          "material_id": "material_clone_10"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Hex"
+        },
+        "PointLightComponent": {
+          "color": [1.0, 1.0, 1.0],
+          "enabled": true,
+          "intensity": 0.8999999761581421,
+          "radius": 3.0
+        },
+        "TransformComponent": {
+          "position": [
+            0.17308244109153748, -1.308712363243103, 0.5045680403709412
+          ],
+          "rotation": [0.0, 0.0, 0.0],
+          "scale": [11.0, 12.0, 1.0]
+        }
+      },
+      "parent": 7,
+      "uuid": "d7ab0365-5817-4915-aa4e-1c86ef027d0f"
+    },
+    {
+      "components": {
+        "BillboardTagComponent": {},
+        "ColliderComponent": {
+          "height": 1.0,
+          "isTrigger": false,
+          "layer": 0,
+          "mask": 4294967295,
+          "offset": [-0.006000000052154064, 0.03799999877810478, 0.0],
+          "orientation": "Entity",
+          "radius": 0.1860000044107437,
+          "shape": "Circle",
+          "size": [1.0, 1.0, 1.0],
+          "version": 2
+        },
+        "MaterialComponent": {
+          "material_id": "material_clone_2"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "TransformComponent": {
+          "position": [30.952999114990234, -10.572999954223633, 0.0],
+          "rotation": [0.0, 0.0, 0.0],
+          "scale": [8.843000411987305, 8.842000007629395, 8.843000411987305]
+        }
+      },
+      "name": "tree",
+      "uuid": "09202440-e30e-4b6e-af59-a821bee4a2ae"
+    },
+    {
+      "components": {
+        "BillboardTagComponent": {},
+        "ColliderComponent": {
+          "height": 1.0,
+          "isTrigger": false,
+          "layer": 0,
+          "mask": 4294967295,
+          "offset": [-0.006000000052154064, 0.03799999877810478, 0.0],
+          "orientation": "Entity",
+          "radius": 0.1860000044107437,
+          "shape": "Circle",
+          "size": [1.0, 1.0, 1.0],
+          "version": 2
+        },
+        "MaterialComponent": {
+          "material_id": "material_clone_2"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "TransformComponent": {
+          "position": [35.5629997253418, -16.10700035095215, 0.0],
+          "rotation": [0.0, 0.0, 0.0],
+          "scale": [8.04699993133545, 8.045999526977539, 8.04699993133545]
+        }
+      },
+      "name": "tree",
+      "uuid": "93fca0fc-57ee-450d-bd4e-a18ecf824ca7"
+    },
+    {
+      "components": {
+        "BillboardTagComponent": {},
+        "ColliderComponent": {
+          "height": 1.0,
+          "isTrigger": false,
+          "layer": 0,
+          "mask": 4294967295,
+          "offset": [-0.006000000052154064, 0.03799999877810478, 0.0],
+          "orientation": "Entity",
+          "radius": 0.1860000044107437,
+          "shape": "Circle",
+          "size": [1.0, 1.0, 1.0],
+          "version": 2
+        },
+        "MaterialComponent": {
+          "material_id": "material_clone_2"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "TransformComponent": {
+          "position": [30.952999114990234, -15.97599983215332, 0.0],
+          "rotation": [0.0, 0.0, 0.0],
+          "scale": [8.843000411987305, 8.842000007629395, 8.843000411987305]
+        }
+      },
+      "name": "tree",
+      "uuid": "e47658b1-15c8-4ef0-a552-cd14ebca4f79"
+    },
+    {
+      "components": {
+        "BillboardTagComponent": {},
+        "ColliderComponent": {
+          "height": 1.0,
+          "isTrigger": false,
+          "layer": 0,
+          "mask": 4294967295,
+          "offset": [-0.006000000052154064, 0.03799999877810478, 0.0],
+          "orientation": "Entity",
+          "radius": 0.1860000044107437,
+          "shape": "Circle",
+          "size": [1.0, 1.0, 1.0],
+          "version": 2
+        },
+        "MaterialComponent": {
+          "material_id": "material_clone_2"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "TransformComponent": {
+          "position": [30.952999114990234, 15.109999656677246, 0.0],
+          "rotation": [0.0, 0.0, 0.0],
+          "scale": [8.843000411987305, 8.842000007629395, 8.843000411987305]
+        }
+      },
+      "name": "tree",
+      "uuid": "8f0a79c8-0dbe-4d41-8ce6-53699701ec00"
+    },
+    {
+      "components": {
+        "BillboardTagComponent": {},
+        "ColliderComponent": {
+          "height": 1.0,
+          "isTrigger": false,
+          "layer": 0,
+          "mask": 4294967295,
+          "offset": [-0.006000000052154064, 0.03799999877810478, 0.0],
+          "orientation": "Entity",
+          "radius": 0.1860000044107437,
+          "shape": "Circle",
+          "size": [1.0, 1.0, 1.0],
+          "version": 2
+        },
+        "MaterialComponent": {
+          "material_id": "material_clone_2"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "TransformComponent": {
+          "position": [26.634000778198242, 11.465999603271484, 0.0],
+          "rotation": [0.0, 0.0, 0.0],
+          "scale": [8.843000411987305, 8.842000007629395, 8.843000411987305]
+        }
+      },
+      "name": "tree",
+      "uuid": "331f6a0a-1586-4d48-9e73-196b6a98b0fc"
+    },
+    {
+      "components": {
+        "MaterialComponent": {
+          "material_id": "material_clone_6"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "TransformComponent": {
+          "position": [
+            0.18322966992855072, 4.649308204650879, -23.818065643310547
+          ],
+          "rotation": [
+            -3.097750186920166, 1.5584123134613037, 3.109858512878418
+          ],
+          "scale": [36.71900177001953, 16.600000381469727, 0.9999999403953552]
+        }
+      },
+      "parent": 7,
+      "uuid": "1eebe835-f049-47e6-a31c-9c4c02d9133c"
+    },
+    {
+      "components": {
+        "BillboardTagComponent": {},
+        "ColliderComponent": {
+          "height": 1.0,
+          "isTrigger": false,
+          "layer": 0,
+          "mask": 4294967295,
+          "offset": [
+            0.050999999046325684, -0.17499999701976776, -0.6399999856948853
+          ],
+          "orientation": "Billboard",
+          "radius": 0.296999990940094,
+          "shape": "Box",
+          "size": [1.1770000457763672, 0.6039999723434448, 2.2799999713897705],
+          "version": 2
+        },
+        "MaterialComponent": {
+          "material_id": "material_clone_9"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "MovementComponent": {
+          "autoMove": false,
+          "timePerStep": 0.15000000596046448
+        },
+        "PointLightComponent": {
+          "color": [1.0, 0.9620000123977661, 0.8579999804496765],
+          "enabled": true,
+          "intensity": 0.5,
+          "radius": 5.0
+        },
+        "ScriptComponent": {
+          "scriptPaths": [
+            "assets/scripts/PlayerMovement.obsl",
+            "assets/scripts/Player.obsl"
+          ],
+          "scriptProperties": [
+            {},
+            {
+              "Debug": true,
+              "Target Q": 30.0,
+              "Target R": 2.0
+            }
+          ]
+        },
+        "TransformComponent": {
+          "position": [0.0, 0.0, 0.0],
+          "rotation": [0.0, 0.0, 0.0],
+          "scale": [1.0, 2.0, 1.0]
+        }
+      },
+      "name": "Player",
+      "uuid": "c8ddf2b8-9f08-4743-a45b-fc9e43252395"
+    },
+    {
+      "components": {
+        "ScriptComponent": {
+          "scriptPaths": [
+            "assets/scripts/HUD.obsl",
+            "assets/scripts/WinScreen.obsl",
+            "assets/scripts/SaveManager.obsl"
+          ],
+          "scriptProperties": [
+            {
+              "hud_text": "acf34fd1-4e7c-4896-abaf-2a9cd1df9a37"
+            },
+            {
+              "delay (s)": 1.5
+            },
+            {}
+          ]
+        }
+      },
+      "name": "GameManager",
+      "uuid": "6aa7cf31-7a68-44b9-85a8-33ffb0fb4587"
+    }
+  ],
+  "grid": {
+    "map_file": "assets/maps/map1.obmap",
+    "mesh_id": "[Engine] Hex",
+    "types": [
+      {
+        "id": 0,
+        "texture": "HexGrass"
+      },
+      {
+        "id": 1,
+        "texture": "HexDirt"
+      }
+    ]
+  },
+  "properties": {
+    "ambient_light": 0.20000000298023224,
+    "background_music": "assets/audio/forrest_ambient.mp3",
+    "clear_color": [
+      0.06800000369548798, 0.11999999731779099, 0.18799999356269836, 1.0
+    ],
+    "lighting": true,
+    "name": "Empty"
+  },
+  "ui": {
+    "elements": []
+  }
+}

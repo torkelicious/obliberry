@@ -1,0 +1,37 @@
+using "Utils.obsl" as utils;
+
+var tQ = Prop("Target Q", 0);
+var tR = Prop("Target R", 0);
+
+// returning from other scene via door
+if (save_get("used_door") == true && contains(GetCurrentScenePath(), "default.json")) {
+    save_set("used_door", false);
+    var transf = this.GetComponent("Transform");
+    if (transf != null) {
+        var pos = Hex_HexToWorld(tQ, tR);
+        var cur = transf.GetPosition();
+        transf.SetPosition(pos.x, pos.y, cur[2]);
+    }
+}
+
+//
+// debug testing stuff
+//
+
+fn debug() {
+    if (Input_IsKeyPressed("E")) {
+        utils.delete_all_saves();
+        save_clear();
+        save_new();
+        LoadScene("assets/scenes/default.json");
+        println "reset";
+    }
+
+    if (Input_IsKeyPressed("W")) {
+        save_set("quest", "done");
+        Broadcast("quest_done", 0);
+        println "broadcast/set: quest_done";
+    }
+}
+
+fn on_update(dt) { if (IsEditor()) { debug(); } }

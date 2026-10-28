@@ -1,0 +1,65 @@
+var headlights = Prop("headlight_intensity", 1.5);
+var exhaust_rate = Prop("exhaust_rate", 30);
+var delay = Prop("drive_delay_seconds", 2.5);
+var exit_q = Prop("exit_q", 0);
+var exit_r = Prop("exit_r", 0);
+var step_time = Prop("seconds_per_step", 0.5);
+var engine_sfx = Prop("engine_sound", "");
+var smoke_entity = PropEntity("smoke_emmiter_ent");
+
+var started = false;
+var driving = false;
+var timer = 0;
+var drive_grace = 0;
+
+var light = this.GetComponent("PointLight");
+var move = this.GetComponent("Movement");
+
+if (light != null) { light.SetEnabled(false); }
+
+fn start() {
+    if (started) { return; }
+
+    started = true;
+    timer = 0;
+
+    var light = this.GetComponent("PointLight");
+    if (light != null) {
+        light.SetEnabled(true);
+        light.SetIntensity(headlights);
+    }
+
+    if (smoke_entity != null) {
+        var smoke = smoke_entity.GetComponent("ParticleEmitter");
+        if (smoke != null) {
+            smoke.SetEmitRate(exhaust_rate);
+            smoke.SetActive(true);
+        }
+    }
+
+    if (engine_sfx != "") { PlaySound2D(engine_sfx, 0.8); }
+}
+
+fn on_message(name, value) { if (name == "quest_done") { start(); } }
+
+fn on_update(dt) {
+    if (driving) {
+        if (drive_grace > 0) {
+            drive_grace -= dt;
+        } else if (move != null and !move.GetIsMoving()) {
+            this.Destroy();
+        }
+    }
+    if (started == false or driving) { return; }
+
+    timer += dt;
+
+    if (timer >= delay) {
+        driving = true;
+        drive_grace = 0.5;
+
+        if (move != null and step_time > 0) { move.SetTimePerStep(step_time); }
+
+        SetPathToHex(this.id, exit_q, exit_r);
+    }
+}

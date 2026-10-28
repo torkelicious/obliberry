@@ -1,0 +1,726 @@
+{
+  "PostProcessing": [
+    {
+      "enabled": false,
+      "shader": "[Engine_PP] Grayscale",
+      "uniforms": {
+        "u_Strength": 1.0
+      }
+    },
+    {
+      "enabled": true,
+      "shader": "[Engine_PP] BrightPass",
+      "uniforms": {
+        "u_SoftKnee": 0.5,
+        "u_Threshold": 0.800000011920929
+      }
+    },
+    {
+      "enabled": true,
+      "passUniforms": [
+        {
+          "u_Horizontal": 1
+        },
+        {
+          "u_Horizontal": 0
+        }
+      ],
+      "passes": 2,
+      "shader": "[Engine_PP] GaussianBlur"
+    },
+    {
+      "enabled": true,
+      "shader": "[Engine_PP] BloomComposite",
+      "uniforms": {
+        "u_Strength": 1.0
+      },
+      "wantsSceneTexture": true
+    },
+    {
+      "enabled": false,
+      "shader": "[Engine_PP] CRT",
+      "uniforms": {
+        "u_Aberration": 0.0020000000949949026,
+        "u_Curvature": 0.05000000074505806,
+        "u_Flicker": 0.5,
+        "u_Glow": 0.25,
+        "u_Mask": 0.25,
+        "u_Noise": 0.029999999329447746,
+        "u_Scanline": 0.699999988079071,
+        "u_Vignette": 0.15000000596046448
+      }
+    },
+    {
+      "enabled": true,
+      "shader": "[Engine_PP] FilmGrain",
+      "uniforms": {
+        "u_GrainAmount": 0.054999999701976776,
+        "u_GrainSize": 1.0
+      }
+    },
+    {
+      "enabled": false,
+      "shader": "[Engine_PP] ColorGrading",
+      "uniforms": {
+        "u_ColorBalance": [0.0, 0.0, 0.0],
+        "u_Contrast": 1.0,
+        "u_Exposure": 0.0,
+        "u_Gain": [1.0, 1.0, 1.0],
+        "u_Gamma": [1.0, 1.0, 1.0],
+        "u_HighlightWheel": [0.0, 0.0, 0.0],
+        "u_Lift": [0.0, 0.0, 0.0],
+        "u_MidtoneWheel": [0.0, 0.0, 0.0],
+        "u_Pivot": 0.5,
+        "u_Saturation": 1.0,
+        "u_ShadowWheel": [0.0, 0.0, 0.0]
+      }
+    },
+    {
+      "enabled": true,
+      "shader": "[Engine_PP] Vingette",
+      "uniforms": {
+        "u_Alpha": 0.36500000953674316,
+        "u_InnerRadius": 0.25,
+        "u_OuterRadius": 0.699999988079071,
+        "u_UseAspect": 1
+      }
+    }
+  ],
+  "entities": [
+    {
+      "components": {
+        "BillboardTagComponent": {},
+        "ColliderComponent": {
+          "height": 1.0,
+          "isTrigger": false,
+          "layer": 0,
+          "mask": 4294967295,
+          "offset": [
+            0.050999999046325684, -0.17499999701976776, -0.6399999856948853
+          ],
+          "orientation": "Billboard",
+          "radius": 0.296999990940094,
+          "shape": "Box",
+          "size": [1.1770000457763672, 0.6039999723434448, 2.2799999713897705],
+          "version": 2
+        },
+        "MaterialComponent": {
+          "material_id": "material_clone_9"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "MovementComponent": {
+          "autoMove": false,
+          "timePerStep": 0.15000000596046448
+        },
+        "PointLightComponent": {
+          "color": [1.0, 0.9620000123977661, 0.8579999804496765],
+          "enabled": true,
+          "intensity": 0.5,
+          "radius": 5.0
+        },
+        "ScriptComponent": {
+          "scriptPaths": [
+            "assets/scripts/PlayerMovement.obsl",
+            "assets/scripts/Player.obsl"
+          ],
+          "scriptProperties": [
+            {},
+            {
+              "Debug": true
+            }
+          ]
+        },
+        "TransformComponent": {
+          "position": [
+            -4.140987873077393, -3.360166549682617, -0.16827964782714844
+          ],
+          "rotation": [0.0, 0.0, 0.0],
+          "scale": [1.0, 2.0, 1.0]
+        }
+      },
+      "name": "Player",
+      "uuid": "9fd4bc80-916c-48ed-ace2-ec7487c93f66"
+    },
+    {
+      "components": {
+        "ColliderComponent": {
+          "height": 1.0,
+          "isTrigger": true,
+          "layer": 0,
+          "mask": 4294967295,
+          "offset": [0.0, 0.0, 0.0],
+          "orientation": "Entity",
+          "radius": 0.5,
+          "shape": "Box",
+          "size": [1.0, 1.0, 1.0],
+          "version": 2
+        },
+        "MaterialComponent": {
+          "material_id": "material_clone_11"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "ScriptComponent": {
+          "scriptPath": "assets/scripts/Door.obsl",
+          "scriptProperties": [
+            {
+              "target_scene": "assets/scenes/default.json",
+              "who": "9fd4bc80-916c-48ed-ace2-ec7487c93f66"
+            }
+          ]
+        },
+        "TransformComponent": {
+          "position": [-27.51249885559082, -2.0758056640625, 0.0],
+          "rotation": [-0.0, 0.0, -0.0],
+          "scale": [37.86268997192383, 13.823347091674805, 1.0]
+        }
+      },
+      "name": "gate_back",
+      "uuid": "64224c75-317a-43ec-918b-980bfa62357c"
+    },
+    {
+      "components": {
+        "BillboardTagComponent": {},
+        "ColliderComponent": {
+          "height": 1.0,
+          "isTrigger": true,
+          "layer": 0,
+          "mask": 4294967295,
+          "offset": [0.0, 0.0, 0.0],
+          "orientation": "Entity",
+          "radius": 0.9129999876022339,
+          "shape": "Circle",
+          "size": [1.0, 1.0, 1.0],
+          "version": 2
+        },
+        "MaterialComponent": {
+          "material_id": "material_clone_12"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "PointLightComponent": {
+          "color": [1.0, 1.0, 1.0],
+          "enabled": true,
+          "intensity": 0.4000000059604645,
+          "radius": 2.0999999046325684
+        },
+        "ScriptComponent": {
+          "scriptPath": "assets/scripts/FuelCan.obsl",
+          "scriptProperties": [
+            {
+              "player": "9fd4bc80-916c-48ed-ace2-ec7487c93f66"
+            }
+          ]
+        },
+        "TransformComponent": {
+          "position": [13.644920349121094, 5.226165294647217, 0.0],
+          "rotation": [0.0, 0.0, 0.0],
+          "scale": [1.0, 1.0, 1.0]
+        }
+      },
+      "name": "gas_can1",
+      "uuid": "09ad9b8a-09c9-4760-b897-4890455739e9"
+    },
+    {
+      "components": {
+        "BillboardTagComponent": {},
+        "ColliderComponent": {
+          "height": 1.0,
+          "isTrigger": true,
+          "layer": 0,
+          "mask": 4294967295,
+          "offset": [0.0, 0.0, 0.0],
+          "orientation": "Entity",
+          "radius": 0.9129999876022339,
+          "shape": "Circle",
+          "size": [1.0, 1.0, 1.0],
+          "version": 2
+        },
+        "MaterialComponent": {
+          "material_id": "material_clone_12"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "PointLightComponent": {
+          "color": [1.0, 1.0, 1.0],
+          "enabled": true,
+          "intensity": 0.4000000059604645,
+          "radius": 2.0999999046325684
+        },
+        "ScriptComponent": {
+          "scriptPath": "assets/scripts/FuelCan.obsl",
+          "scriptProperties": [
+            {
+              "can_id": "can2",
+              "player": "9fd4bc80-916c-48ed-ace2-ec7487c93f66"
+            }
+          ]
+        },
+        "TransformComponent": {
+          "position": [19.24254608154297, -23.568805694580078, 0.0],
+          "rotation": [0.0, 0.0, 0.0],
+          "scale": [1.0, 1.0, 1.0]
+        }
+      },
+      "name": "gas_can2",
+      "uuid": "44c57470-3024-4802-9eea-2a564f51cd7d"
+    },
+    {
+      "components": {
+        "BillboardTagComponent": {},
+        "ColliderComponent": {
+          "height": 1.0,
+          "isTrigger": true,
+          "layer": 0,
+          "mask": 4294967295,
+          "offset": [0.0, 0.0, 0.0],
+          "orientation": "Entity",
+          "radius": 0.9129999876022339,
+          "shape": "Circle",
+          "size": [1.0, 1.0, 1.0],
+          "version": 2
+        },
+        "MaterialComponent": {
+          "material_id": "material_clone_12"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "PointLightComponent": {
+          "color": [1.0, 1.0, 1.0],
+          "enabled": true,
+          "intensity": 0.4000000059604645,
+          "radius": 2.0999999046325684
+        },
+        "ScriptComponent": {
+          "scriptPath": "assets/scripts/FuelCan.obsl",
+          "scriptProperties": [
+            {
+              "can_id": "can3",
+              "player": "9fd4bc80-916c-48ed-ace2-ec7487c93f66"
+            }
+          ]
+        },
+        "TransformComponent": {
+          "position": [33.743446350097656, 6.309925079345703, 0.0],
+          "rotation": [0.0, 0.0, 0.0],
+          "scale": [1.0, 1.0, 1.0]
+        }
+      },
+      "name": "gas_can3",
+      "uuid": "93c42c26-4ab0-48fc-9b54-17c75ce106fb"
+    },
+    {
+      "components": {
+        "BillboardTagComponent": {},
+        "MaterialComponent": {
+          "material_id": "material_clone_13"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "ParticleEmitterComponent": {
+          "active": true,
+          "blendMode": 0,
+          "colorEnd": [
+            0.7490000128746033, 0.15000000596046448, 0.0, 0.753000020980835
+          ],
+          "colorStart": [1.0, 0.800000011920929, 0.20000000298023224, 1.0],
+          "emitRate": 50.0,
+          "gravity": [0.0, -1.2000000476837158, 1.899999976158142],
+          "isBillboard": true,
+          "lifetimeMax": 3.299999952316284,
+          "lifetimeMin": 0.5,
+          "material_id": "ParticleShader",
+          "maxParticles": 256,
+          "renderOrder": 0,
+          "rotationSpeedMax": 5.0,
+          "rotationSpeedMin": -5.0,
+          "shape": 2,
+          "sizeEndMax": 0.03999999910593033,
+          "sizeEndMin": 0.0,
+          "sizeStartMax": 0.75,
+          "sizeStartMin": 0.4399999976158142,
+          "velocityMax": [1.0, 0.5, 2.5999999046325684],
+          "velocityMin": [-1.0, -0.5, 1.600000023841858]
+        },
+        "PointLightComponent": {
+          "color": [0.8379999995231628, 0.5149999856948853, 0.0],
+          "enabled": true,
+          "intensity": 2.5,
+          "radius": 1.7000000476837158
+        },
+        "ScriptComponent": {
+          "scriptPath": "assets/scripts/LightFlicker.obsl",
+          "scriptProperties": [
+            {
+              "flicker": 1.0,
+              "speed": 5.0
+            }
+          ]
+        },
+        "TransformComponent": {
+          "position": [21.790998458862305, -4.741332054138184, 0.0],
+          "rotation": [0.0, 0.0, 0.0],
+          "scale": [2.17799973487854, 2.177999973297119, 2.177999496459961]
+        }
+      },
+      "name": "burning_trash",
+      "uuid": "3d0df761-e875-48ac-bc3d-ce209e566c9c"
+    },
+    {
+      "components": {
+        "BillboardTagComponent": {},
+        "MaterialComponent": {
+          "material_id": "material_clone_13"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "TransformComponent": {
+          "position": [25.546051025390625, 12.566976547241211, 0.0],
+          "rotation": [0.0, 0.0, 0.0],
+          "scale": [2.17799973487854, 1.4990092515945435, 2.177999496459961]
+        }
+      },
+      "name": "junk",
+      "uuid": "735930dd-22ed-484b-87a7-2b4b36417e37"
+    },
+    {
+      "components": {
+        "BillboardTagComponent": {},
+        "MaterialComponent": {
+          "material_id": "material_clone_13"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "TransformComponent": {
+          "position": [35.96961975097656, -11.27450180053711, 0.0],
+          "rotation": [0.0, 0.0, 0.0],
+          "scale": [2.17799973487854, 1.4990092515945435, 2.177999496459961]
+        }
+      },
+      "name": "junk",
+      "uuid": "a660aebf-f196-4b8f-b58d-4d3bfc5214d9"
+    },
+    {
+      "components": {
+        "BillboardTagComponent": {},
+        "MaterialComponent": {
+          "material_id": "material_clone_13"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "TransformComponent": {
+          "position": [-1.9369630813598633, 14.111124038696289, 0.0],
+          "rotation": [0.0, 0.0, 0.0],
+          "scale": [2.17799973487854, 1.4990092515945435, 2.177999496459961]
+        }
+      },
+      "name": "junk",
+      "uuid": "ebd6e9d4-8cef-43a5-bbc1-52ca64cbeba8"
+    },
+    {
+      "components": {
+        "BillboardTagComponent": {},
+        "MaterialComponent": {
+          "material_id": "material_clone_13"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "TransformComponent": {
+          "position": [-0.45825672149658203, -23.022775650024414, 0.0],
+          "rotation": [0.0, 0.0, 0.0],
+          "scale": [2.17799973487854, 1.4990092515945435, 2.177999496459961]
+        }
+      },
+      "name": "junk",
+      "uuid": "68ada145-99a3-41a4-a9aa-0de683f1a492"
+    },
+    {
+      "components": {
+        "BillboardTagComponent": {},
+        "ColliderComponent": {
+          "height": 1.0,
+          "isTrigger": true,
+          "layer": 0,
+          "mask": 4294967295,
+          "offset": [0.016780901700258255, -0.029050221666693687, 0.0],
+          "orientation": "Billboard",
+          "radius": 0.5,
+          "shape": "Box",
+          "size": [0.7494915127754211, 0.7338303923606873, 1.0],
+          "version": 2
+        },
+        "MaterialComponent": {
+          "material_id": "material_clone_14"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "MovementComponent": {
+          "autoMove": false,
+          "timePerStep": 0.15000000596046448
+        },
+        "ParticleEmitterComponent": {
+          "active": true,
+          "blendMode": 0,
+          "colorEnd": [
+            0.9409999847412109, 0.9409999847412109, 0.9409999847412109, 0.0
+          ],
+          "colorStart": [1.0, 1.0, 1.0, 0.4429999887943268],
+          "emitRate": 50.0,
+          "gravity": [1.0, 1.0, 1.0],
+          "isBillboard": false,
+          "lifetimeMax": 1.5,
+          "lifetimeMin": 0.5,
+          "material_id": "ParticleShader",
+          "maxParticles": 256,
+          "renderOrder": 0,
+          "rotationSpeedMax": 0.5,
+          "rotationSpeedMin": 0.0,
+          "shape": 2,
+          "sizeEndMax": 0.0,
+          "sizeEndMin": 0.0,
+          "sizeStartMax": 0.20000000298023224,
+          "sizeStartMin": 0.20000000298023224,
+          "velocityMax": [0.5, 0.5, 0.5],
+          "velocityMin": [0.0, 0.0, 0.0]
+        },
+        "PointLightComponent": {
+          "color": [
+            0.06599999964237213, 0.06599999964237213, 0.06599999964237213
+          ],
+          "enabled": true,
+          "intensity": 2.5,
+          "radius": 0.8999999761581421
+        },
+        "ScriptComponent": {
+          "scriptPath": "assets/scripts/Enemy.obsl",
+          "scriptProperties": [
+            {
+              "penalty_seconds": 5.0,
+              "respawn_scene": "assets/scenes/default.json",
+              "target": "9fd4bc80-916c-48ed-ace2-ec7487c93f66"
+            }
+          ]
+        },
+        "TransformComponent": {
+          "position": [0.28397655487060547, -25.053234100341797, 0.0],
+          "rotation": [0.0, 0.0, 0.0],
+          "scale": [1.0, 1.0, 1.0]
+        }
+      },
+      "name": "ghost",
+      "uuid": "bef0e635-0e0a-4f83-b8df-c32dace862eb"
+    },
+    {
+      "components": {
+        "ScriptComponent": {
+          "scriptPaths": [
+            "assets/scripts/HUD.obsl",
+            "assets/scripts/WinScreen.obsl",
+            "assets/scripts/SaveManager.obsl"
+          ],
+          "scriptProperties": [
+            {
+              "hud_text": "73e9a1d3-bfdb-4762-b2c3-5bb134541056"
+            },
+            {},
+            {}
+          ]
+        }
+      },
+      "name": "GameManager",
+      "uuid": "bf49b51d-8ca6-463d-9108-88c13ab0229c"
+    },
+    {
+      "components": {
+        "BillboardTagComponent": {},
+        "ColliderComponent": {
+          "height": 1.0,
+          "isTrigger": true,
+          "layer": 0,
+          "mask": 4294967295,
+          "offset": [0.016780901700258255, -0.029050221666693687, 0.0],
+          "orientation": "Billboard",
+          "radius": 0.5,
+          "shape": "Box",
+          "size": [0.7494915127754211, 0.7338303923606873, 1.0],
+          "version": 2
+        },
+        "MaterialComponent": {
+          "material_id": "material_clone_14"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "MovementComponent": {
+          "autoMove": false,
+          "timePerStep": 0.15000000596046448
+        },
+        "ParticleEmitterComponent": {
+          "active": true,
+          "blendMode": 0,
+          "colorEnd": [
+            0.9409999847412109, 0.9409999847412109, 0.9409999847412109, 0.0
+          ],
+          "colorStart": [1.0, 1.0, 1.0, 0.4429999887943268],
+          "emitRate": 50.0,
+          "gravity": [1.0, 1.0, 1.0],
+          "isBillboard": false,
+          "lifetimeMax": 1.5,
+          "lifetimeMin": 0.5,
+          "material_id": "ParticleShader",
+          "maxParticles": 256,
+          "renderOrder": 0,
+          "rotationSpeedMax": 0.5,
+          "rotationSpeedMin": 0.0,
+          "shape": 2,
+          "sizeEndMax": 0.0,
+          "sizeEndMin": 0.0,
+          "sizeStartMax": 0.20000000298023224,
+          "sizeStartMin": 0.20000000298023224,
+          "velocityMax": [0.5, 0.5, 0.5],
+          "velocityMin": [0.0, 0.0, 0.0]
+        },
+        "PointLightComponent": {
+          "color": [
+            0.06599999964237213, 0.06599999964237213, 0.06599999964237213
+          ],
+          "enabled": true,
+          "intensity": 2.5,
+          "radius": 0.8999999761581421
+        },
+        "ScriptComponent": {
+          "scriptPath": "assets/scripts/Enemy.obsl",
+          "scriptProperties": [
+            {
+              "penalty_seconds": 5.0,
+              "respawn_scene": "assets/scenes/default.json",
+              "target": "9fd4bc80-916c-48ed-ace2-ec7487c93f66"
+            }
+          ]
+        },
+        "TransformComponent": {
+          "position": [19.010608673095703, 11.275410652160645, 0.0],
+          "rotation": [0.0, 0.0, 0.0],
+          "scale": [1.0, 1.0, 1.0]
+        }
+      },
+      "name": "ghost",
+      "uuid": "540799cb-4234-4573-a7eb-649bccce1d1e"
+    },
+    {
+      "components": {
+        "BillboardTagComponent": {},
+        "ColliderComponent": {
+          "height": 1.0,
+          "isTrigger": true,
+          "layer": 0,
+          "mask": 4294967295,
+          "offset": [0.016780901700258255, -0.029050221666693687, 0.0],
+          "orientation": "Billboard",
+          "radius": 0.5,
+          "shape": "Box",
+          "size": [0.7494915127754211, 0.7338303923606873, 1.0],
+          "version": 2
+        },
+        "MaterialComponent": {
+          "material_id": "material_clone_14"
+        },
+        "MeshComponent": {
+          "mesh_id": "[Engine] Quad"
+        },
+        "MovementComponent": {
+          "autoMove": false,
+          "timePerStep": 0.15000000596046448
+        },
+        "ParticleEmitterComponent": {
+          "active": true,
+          "blendMode": 0,
+          "colorEnd": [
+            0.9409999847412109, 0.9409999847412109, 0.9409999847412109, 0.0
+          ],
+          "colorStart": [1.0, 1.0, 1.0, 0.4429999887943268],
+          "emitRate": 50.0,
+          "gravity": [1.0, 1.0, 1.0],
+          "isBillboard": false,
+          "lifetimeMax": 1.5,
+          "lifetimeMin": 0.5,
+          "material_id": "ParticleShader",
+          "maxParticles": 256,
+          "renderOrder": 0,
+          "rotationSpeedMax": 0.5,
+          "rotationSpeedMin": 0.0,
+          "shape": 2,
+          "sizeEndMax": 0.0,
+          "sizeEndMin": 0.0,
+          "sizeStartMax": 0.20000000298023224,
+          "sizeStartMin": 0.20000000298023224,
+          "velocityMax": [0.5, 0.5, 0.5],
+          "velocityMin": [0.0, 0.0, 0.0]
+        },
+        "PointLightComponent": {
+          "color": [
+            0.06599999964237213, 0.06599999964237213, 0.06599999964237213
+          ],
+          "enabled": true,
+          "intensity": 2.5,
+          "radius": 0.8999999761581421
+        },
+        "ScriptComponent": {
+          "scriptPath": "assets/scripts/Enemy.obsl",
+          "scriptProperties": [
+            {
+              "penalty_seconds": 5.0,
+              "respawn_scene": "assets/scenes/default.json",
+              "target": "9fd4bc80-916c-48ed-ace2-ec7487c93f66"
+            }
+          ]
+        },
+        "TransformComponent": {
+          "position": [35.910606384277344, -7.858120918273926, 0.0],
+          "rotation": [0.0, 0.0, 0.0],
+          "scale": [1.0, 1.0, 1.0]
+        }
+      },
+      "name": "ghost",
+      "uuid": "5314a48b-7403-447d-817d-63464fcebcb2"
+    }
+  ],
+  "grid": {
+    "map_file": "assets/maps/junkyard.obmap",
+    "mesh_id": "[Engine] Hex",
+    "types": [
+      {
+        "id": 0,
+        "texture": "HexDirt"
+      },
+      {
+        "id": 1,
+        "texture": "HexSand"
+      }
+    ]
+  },
+  "properties": {
+    "ambient_light": 0.2919999957084656,
+    "background_music": "assets/audio/junkyard_wind.mp3",
+    "clear_color": [
+      0.10000000149011612, 0.10000000149011612, 0.10000000149011612, 1.0
+    ],
+    "lighting": true,
+    "name": "junkyard"
+  },
+  "ui": {
+    "elements": []
+  }
+}

@@ -1,0 +1,48 @@
+using "Utils.obsl" as utils;
+
+var fuel_needed = Prop("fuel_needed", 3);
+
+var hud_text = null;
+var visible = false;
+var last_line = "";
+
+fn build_ui() {
+    hud_text = FindUI("hud_text");
+    if (hud_text == null) { hud_text = utils.make_label("hud_text", 24, 20, 460, 32, null); }
+    hud_text.SetVisible(false);
+}
+build_ui();
+
+fn on_update(dt) {
+    if (hud_text == null) { return; }
+
+    if (save_get("quest") != "active") {
+        if (visible) {
+            visible = false;
+            hud_text.SetVisible(false);
+        }
+        return;
+    }
+
+    var elapsed = save_get("elapsed");
+    if (elapsed == null) { elapsed = 0; }
+    elapsed += dt;
+    save_set("elapsed", elapsed);
+
+    var fuel = save_get("fuel");
+    if (fuel == null) { fuel = 0; }
+    var needed = save_get("fuel_needed");
+    if (needed == null) { needed = fuel_needed; }
+
+    if (visible == false) {
+        visible = true;
+        hud_text.SetVisible(true);
+    }
+
+    var line = "Fuel " + to_string(fuel) + "/" + to_string(needed) + "    " +
+        utils.fmt_time(elapsed);
+    if (line != last_line) {
+        last_line = line;
+        hud_text.SetText(line);
+    }
+}

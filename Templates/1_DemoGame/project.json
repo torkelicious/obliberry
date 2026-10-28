@@ -1,0 +1,10 @@
+{
+  "saves": {
+    "enabled": true,
+    "location": 1
+  },
+  "start_scene": "assets/scenes/default.json",
+  "window": {
+    "title": "DemoGame"
+  }
+}

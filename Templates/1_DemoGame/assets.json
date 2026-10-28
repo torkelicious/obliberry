@@ -1,0 +1,187 @@
+{
+  "assets": {
+    "animation_sets": [],
+    "fonts": [
+      {
+        "id": "OpenSans-Regular",
+        "path": "assets/fonts/OpenSans-Regular.ttf",
+        "sdf": false,
+        "size": 48,
+        "spread": 8
+      }
+    ],
+    "materials": [
+      {
+        "color": [1.0, 1.0, 1.0, 1.0],
+        "id": "ParticleShader",
+        "shader": "[Engine] Particle",
+        "texture": ""
+      },
+      {
+        "color": [1.0, 1.0, 1.0, 1.0],
+        "id": "material_clone",
+        "shader": "[Engine] Base",
+        "texture": "chest_texture"
+      },
+      {
+        "color": [1.0, 1.0, 1.0, 1.0],
+        "id": "material_clone_1",
+        "shader": "[Engine] Base",
+        "texture": "key_texture"
+      },
+      {
+        "color": [
+          0.08910888433456421, 0.08910888433456421, 0.08910888433456421, 1.0
+        ],
+        "id": "material_clone_10",
+        "shader": "[Engine] Base",
+        "texture": ""
+      },
+      {
+        "color": [
+          0.3762376308441162, 0.18843232095241547, 0.09312812238931656, 1.0
+        ],
+        "id": "material_clone_11",
+        "shader": "[Engine] Base",
+        "texture": "rust"
+      },
+      {
+        "color": [1.0, 1.0, 1.0, 1.0],
+        "id": "material_clone_12",
+        "shader": "[Engine] Base",
+        "texture": "fuelcan"
+      },
+      {
+        "color": [1.0, 1.0, 1.0, 1.0],
+        "id": "material_clone_13",
+        "shader": "[Engine] Base",
+        "texture": "junk"
+      },
+      {
+        "color": [1.0, 1.0, 1.0, 0.5882353186607361],
+        "id": "material_clone_14",
+        "shader": "[Engine] Base",
+        "texture": "ghost"
+      },
+      {
+        "color": [1.0, 1.0, 1.0, 1.0],
+        "id": "material_clone_2",
+        "shader": "[Engine] Base",
+        "texture": "tree_texture"
+      },
+      {
+        "color": [1.0, 1.0, 1.0, 1.0],
+        "id": "material_clone_3",
+        "shader": "[Engine] Base",
+        "texture": "happy_man"
+      },
+      {
+        "color": [1.0, 1.0, 1.0, 1.0],
+        "id": "material_clone_4",
+        "shader": "[Engine] Base",
+        "texture": "car"
+      },
+      {
+        "color": [1.0, 1.0, 1.0, 1.0],
+        "id": "material_clone_5",
+        "shader": "[Engine] Base",
+        "texture": "sad_man"
+      },
+      {
+        "color": [1.0, 1.0, 1.0, 1.0],
+        "id": "material_clone_6",
+        "shader": "[Engine] Base",
+        "texture": "rust"
+      },
+      {
+        "color": [1.0, 1.0, 1.0, 1.0],
+        "id": "material_clone_7",
+        "shader": "[Engine] Base",
+        "texture": "junk_sign"
+      },
+      {
+        "color": [
+          0.0429043173789978, 0.0429043173789978, 0.0429043173789978, 1.0
+        ],
+        "id": "material_clone_8",
+        "shader": "[Engine] Base",
+        "texture": ""
+      },
+      {
+        "color": [1.0, 1.0, 1.0, 1.0],
+        "id": "material_clone_9",
+        "shader": "[Engine] Base",
+        "texture": "player"
+      }
+    ],
+    "meshes": [],
+    "shaders": [],
+    "textures": [
+      {
+        "id": "HexDirt",
+        "path": "assets/textures/HexDirt.png"
+      },
+      {
+        "id": "HexGrass",
+        "path": "assets/textures/HexGrass.png"
+      },
+      {
+        "id": "HexSand",
+        "path": "assets/textures/HexSand.png"
+      },
+      {
+        "id": "HexWater",
+        "path": "assets/textures/HexWater.png"
+      },
+      {
+        "id": "car",
+        "path": "assets/textures/car.png"
+      },
+      {
+        "id": "chest_texture",
+        "path": "assets/textures/chest_texture.png"
+      },
+      {
+        "id": "fuelcan",
+        "path": "assets/textures/fuelcan.png"
+      },
+      {
+        "id": "ghost",
+        "path": "assets/textures/ghost.png"
+      },
+      {
+        "id": "happy_man",
+        "path": "assets/textures/happy_man.png"
+      },
+      {
+        "id": "junk",
+        "path": "assets/textures/junk.png"
+      },
+      {
+        "id": "junk_sign",
+        "path": "assets/textures/junk_sign.png"
+      },
+      {
+        "id": "key_texture",
+        "path": "assets/textures/key_texture.png"
+      },
+      {
+        "id": "player",
+        "path": "assets/textures/player.png"
+      },
+      {
+        "id": "rust",
+        "path": "assets/textures/rust.png"
+      },
+      {
+        "id": "sad_man",
+        "path": "assets/textures/sad_man.png"
+      },
+      {
+        "id": "tree_texture",
+        "path": "assets/textures/tree_texture.png"
+      }
+    ]
+  },
+  "version": 1
+}

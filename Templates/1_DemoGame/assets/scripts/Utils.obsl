@@ -1,0 +1,139 @@
+using "Utils.obsl" as utils;
+
+var player = PropEntity("player");
+var fuel_needed = Prop("fuel_needed", 3);
+
+var intro_text = Prop(
+    "intro_text",
+    "The tank is bone dry. There should be {n} fuel cans somewhere in the scrapyard."
+);
+var accepted_text = Prop(
+    "accepted_text",
+    "The scrapyard is through the west. Stay out of the dark."
+);
+var reminder_text = Prop("reminder_text", "Still need {n} more fuel can(s).");
+var done_text = Prop("done_text", "That should do it. Time to leave...");
+var after_text = Prop("after_text", "The engine is running.. yippie!");
+
+var panel = null;
+var message = null;
+var accept_btn = null;
+
+var talking = false;
+var closing = false;
+var close_timer = 0;
+var move_blocked = false;
+
+fn build_ui() {
+    panel = FindUI("dialog_panel");
+    if (panel == null) {
+        panel = utils.make_panel("dialog_panel", utils.center_x(680), 510, 680, 180, null);
+        message = utils.make_label("dialog_text", 28, 20, 624, 90, panel);
+        accept_btn = utils.make_button("accept_button", "Accept", 28, 118, 190, 44, panel);
+    } else {
+        message = FindUI("dialog_text");
+        accept_btn = FindUI("accept_button");
+    }
+    panel.SetVisible(false);
+}
+build_ui();
+
+fn set_move_blocked(blocked) {
+    if (blocked == move_blocked) { return; }
+    move_blocked = blocked;
+    Send(player, "toggle_move", !blocked);
+}
+
+fn show(text, can_accept) {
+    talking = true;
+    if (panel != null) { panel.SetVisible(true); }
+    if (message != null) { message.SetText(text); }
+    if (accept_btn != null) { accept_btn.SetVisible(can_accept); }
+}
+
+fn hide() {
+    talking = false;
+    move_blocked = false;
+    if (panel != null) { panel.SetVisible(false); }
+    if (accept_btn != null) { accept_btn.SetVisible(false); }
+    Send(player, "toggle_move", true);
+}
+
+fn finish() {
+    var elapsed = save_get("elapsed");
+    if (elapsed == null) { elapsed = 0; }
+
+    var best = save_get("best");
+    var is_new_best = true;
+    if (best != null) { if (elapsed >= best) { is_new_best = false; } }
+    if (is_new_best) { save_set("best", elapsed); }
+
+    save_set("last", elapsed);
+    save_set("quest", "done");
+    Broadcast("quest_done", elapsed);
+    Broadcast("serialize", null);
+    show(done_text, false);
+}
+
+fn talk() {
+    var quest = save_get("quest");
+    var fuel = save_get("fuel");
+    if (fuel == null) { fuel = 0; }
+    if (quest == "active") {
+        if (fuel >= fuel_needed) {
+            finish();
+        } else {
+            show(utils.fill(reminder_text, fuel_needed - fuel), false);
+        }
+    } else if (quest == "done") {
+        show(after_text, false);
+    } else {
+        show(utils.fill(intro_text, fuel_needed), true);
+    }
+}
+
+fn on_trigger_enter(other) {
+    if (other == null or player == null) { return; }
+    if (other == player) { talk(); }
+}
+
+fn on_trigger_exit(other) {
+    if (other == null or player == null) { return; }
+    if (other == player) { hide(); }
+}
+
+fn on_message(name, value) {
+    if (name == "quest_done") {
+        closing = true;
+        close_timer = 0.8;
+    }
+}
+
+fn on_update(dt) {
+    if (closing) {
+        close_timer -= dt;
+        if (close_timer <= 0) {
+            hide();
+            this.Destroy();
+        }
+        return;
+    }
+
+    if (talking) {
+        var block = false;
+        if (accept_btn != null and accept_btn.IsVisible()) {
+            block = accept_btn.IsHovered() or accept_btn.IsHeld() or accept_btn.WasClicked();
+        }
+        set_move_blocked(block);
+    }
+
+    if (talking and accept_btn != null and accept_btn.WasClicked()) {
+        save_set("quest", "active");
+        save_set("fuel", 0);
+        save_set("fuel_needed", fuel_needed);
+        save_set("elapsed", 0);
+        save_set("cans", "");
+        show(accepted_text, false);
+        Broadcast("serialize", null);
+    }
+}

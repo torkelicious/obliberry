@@ -1,0 +1,13 @@
+{
+  "components": {
+    "ScriptComponent": {
+      "scriptPaths": [
+        "assets/scripts/HUD.obsl",
+        "assets/scripts/WinScreen.obsl",
+        "assets/scripts/Music.obsl"
+      ]
+    }
+  },
+  "name": "GameManager",
+  "uuid": "39d63c32-9186-4a31-9c83-583a455ff126"
+}

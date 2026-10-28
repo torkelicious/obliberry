@@ -1,0 +1,70 @@
+using "Utils.obsl" as utils;
+
+var outpost = Prop("outpost_scene", "assets/scenes/default.json");
+var win_title = Prop("win_title", "Engine running!");
+var delay = Prop("delay (s)", 2);
+
+var panel = null;
+var result_text = null;
+var again_btn = null;
+var shown = false;
+var wait = -1;
+
+fn build_ui() {
+    panel = FindUI("win_panel");
+    if (panel == null) {
+        panel = utils.make_panel(
+            "win_panel",
+            utils.center_x(520),
+            utils.center_y(240),
+            520,
+            240,
+            null
+        );
+        result_text = utils.make_label("win_text", 30, 30, 460, 110, panel);
+        again_btn = utils.make_button("again_button", "Restart", 175, 155, 170, 48, panel);
+    } else {
+        result_text = FindUI("win_text");
+        again_btn = FindUI("again_button");
+    }
+    panel.SetVisible(false);
+}
+
+fn show_result() {
+    if (shown) { return; }
+    build_ui();
+    shown = true;
+    if (result_text != null) {
+        result_text.SetText(win_title + "   Time " + utils.fmt_time(save_get("last")) + "   Best " +
+            utils.fmt_time(save_get("best")));
+    }
+    if (panel != null) { panel.SetVisible(true); }
+}
+
+if (save_get("quest") == "done") { show_result(); }
+
+fn on_message(name, value) { if (name == "quest_done" and shown == false) { wait = delay; } }
+
+fn restart() {
+    save_remove("quest");
+    save_remove("fuel");
+    save_remove("fuel_needed");
+    save_remove("elapsed");
+    save_remove("cans");
+    save_remove("last");
+    Broadcast("serialize", null);
+    LoadScene(outpost);
+}
+
+fn on_update(dt) {
+    if (wait >= 0) {
+        wait -= dt;
+        if (wait <= 0) {
+            wait = -1;
+            show_result();
+        }
+        return;
+    }
+
+    if (shown and again_btn != null and again_btn.WasClicked()) { restart(); }
+}

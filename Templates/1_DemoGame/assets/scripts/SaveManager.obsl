@@ -1,0 +1,12 @@
+using "Utils.obsl" as utils;
+
+var continue_game = Prop("continue_game", true);
+
+if (continue_game and !save_has("quest")) {
+    var latest = utils.latest_save();
+    if (latest != null) { save_load(latest.filename); }
+}
+
+fn serialize() { if (!save_write()) { save_create("Demo"); } }
+
+fn on_message(name, value) { if (name == "serialize") { serialize(); } }

@@ -1,0 +1,38 @@
+var target = PropEntity("target");
+var respawn = Prop("respawn_scene", "assets/scenes/junkyard.json");
+var chase_range = Prop("chase_range", 6);
+var repath_every = Prop("repath_seconds", 0.5);
+var penalty = Prop("penalty_seconds", 15);
+var timer = 0;
+
+fn hex_of(ent) {
+    var tf = ent.GetComponent("Transform");
+    if (tf == null) { return null; }
+    var worldpos = tf.GetPosition();
+    return Math_WorldToHex(worldpos[0], worldpos[1]);
+}
+
+fn on_update(dt) {
+    if (target == null) { return; }
+    timer += dt;
+    if (timer < repath_every) { return; }
+    timer = 0;
+
+    var ch = hex_of(this);
+    var th = hex_of(target);
+    if (ch != null and th != null and Hex_Distance(ch.q, ch.r, th.q, th.r) <= chase_range) {
+        SetPathToHex(this.id, th.q, th.r, false);
+    }
+}
+
+fn on_trigger_enter(other) {
+    if (other == null or target == null) { return; }
+    if (other != target) { return; }
+
+    if (save_get("quest") == "active") {
+        var elapsed = save_get("elapsed");
+        if (elapsed == null) { elapsed = 0; }
+        save_set("elapsed", elapsed + penalty);
+    }
+    LoadScene(respawn);
+}

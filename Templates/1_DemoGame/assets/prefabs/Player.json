@@ -1,0 +1,55 @@
+{
+  "components": {
+    "BillboardTagComponent": {},
+    "ColliderComponent": {
+      "height": 1.0,
+      "isTrigger": false,
+      "layer": 0,
+      "mask": 4294967295,
+      "offset": [
+        0.050999999046325684, -0.17499999701976776, -0.6399999856948853
+      ],
+      "orientation": "Billboard",
+      "radius": 0.296999990940094,
+      "shape": "Box",
+      "size": [1.1770000457763672, 0.6039999723434448, 2.2799999713897705],
+      "version": 2
+    },
+    "MaterialComponent": {
+      "material_id": "material_clone_9"
+    },
+    "MeshComponent": {
+      "mesh_id": "[Engine] Quad"
+    },
+    "MovementComponent": {
+      "autoMove": false,
+      "timePerStep": 0.15000000596046448
+    },
+    "PointLightComponent": {
+      "color": [1.0, 0.9620000123977661, 0.8579999804496765],
+      "intensity": 0.5,
+      "radius": 5.0
+    },
+    "ScriptComponent": {
+      "scriptPaths": [
+        "assets/scripts/PlayerMovement.obsl",
+        "assets/scripts/HUD.obsl",
+        "assets/scripts/Player.obsl"
+      ],
+      "scriptProperties": [
+        {},
+        {
+          "hud_text": "acf34fd1-4e7c-4896-abaf-2a9cd1df9a37"
+        },
+        {}
+      ]
+    },
+    "TransformComponent": {
+      "position": [0.0, 0.0, 0.0],
+      "rotation": [0.0, 0.0, 0.0],
+      "scale": [1.0, 2.0, 1.0]
+    }
+  },
+  "name": "Player",
+  "uuid": "bbb9ff4d-9980-4f76-8d4a-d649b7e754cc"
+}
