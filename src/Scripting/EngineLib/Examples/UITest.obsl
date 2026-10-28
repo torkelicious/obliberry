@@ -1,2 +1,0 @@
-var btn = CreateUIButton("newbtn");
-btn.SetText("RAAAH");
