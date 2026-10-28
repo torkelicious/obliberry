@@ -1,38 +1,37 @@
-var target = PropEntity("target");
-var respawn = Prop("respawn_scene", "assets/scenes/junkyard.json");
-var chase_range = Prop("chase_range", 6);
-var repath_every = Prop("repath_seconds", 0.5);
-var penalty = Prop("penalty_seconds", 15);
-var timer = 0;
+var player = PropEntity("player");
+var can_id = Prop("can_id", "can1");
+var pickup_sfx = Prop("pickup_sound", "assets/audio/item_pickup.mp3");
+var key = ";" + can_id + ";";
+var checked = false;
 
-fn hex_of(ent) {
-    var tf = ent.GetComponent("Transform");
-    if (tf == null) { return null; }
-    var worldpos = tf.GetPosition();
-    return Math_WorldToHex(worldpos[0], worldpos[1]);
+fn already_taken() {
+    var taken = save_get("cans");
+    if (taken == null) { return false; }
+    return contains(taken, key);
 }
 
 fn on_update(dt) {
-    if (target == null) { return; }
-    timer += dt;
-    if (timer < repath_every) { return; }
-    timer = 0;
-
-    var ch = hex_of(this);
-    var th = hex_of(target);
-    if (ch != null and th != null and Hex_Distance(ch.q, ch.r, th.q, th.r) <= chase_range) {
-        SetPathToHex(this.id, th.q, th.r, false);
-    }
+    if (checked) { return; }
+    checked = true;
+    if (already_taken()) { this.Destroy(); }
 }
 
 fn on_trigger_enter(other) {
-    if (other == null or target == null) { return; }
-    if (other != target) { return; }
+    if (other == null or player == null) { return; }
+    if (other != player) { return; }
+    if (save_get("quest") != "active") { return; }
+    if (already_taken()) { return; }
 
-    if (save_get("quest") == "active") {
-        var elapsed = save_get("elapsed");
-        if (elapsed == null) { elapsed = 0; }
-        save_set("elapsed", elapsed + penalty);
-    }
-    LoadScene(respawn);
+    var fuel = save_get("fuel");
+    if (fuel == null) { fuel = 0; }
+    save_set("fuel", fuel + 1);
+
+    var taken = save_get("cans");
+    if (taken == null) { taken = ""; }
+    save_set("cans", taken + key);
+
+    Broadcast("serialize", null);
+
+    if (pickup_sfx != "") { PlaySound2D(pickup_sfx, 0.8); }
+    this.Destroy();
 }

@@ -10,23 +10,3 @@ fn on_trigger_enter(other) {
         LoadScene(target);
     }
 }
-
-if (Input_IsMousePressed(0)) {
-    var selection = GetSelectedHex();
-    if (selection.hasSelection) { SetPathToHex(this.id, selection.q, selection.r, true); }
-}
-
-if (movement != null) { if (movement.GetIsMoving() == false) { ClearPathTarget(); } }
-
-fn camera_follow() {
-    var tf = this.GetComponent("Transform");
-    if (tf == null) { return; }
-    var pos = tf.GetPosition();
-    Camera_SetPosition(pos[0], pos[1], pos[2]);
-    Camera_SetZoom(1.5);
-}
-
-fn on_update(dt) {
-    move();
-    camera_follow();
-}

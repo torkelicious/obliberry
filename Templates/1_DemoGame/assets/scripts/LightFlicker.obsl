@@ -1,32 +1,12 @@
-var who = PropEntity("who");  // who as in who is allowed to enter door
-var target = Prop("target_scene", "assets/scenes/junkyard.json");
-var sfx = Prop("door_sound", "assets/audio/door_metal.mp3");
-
-fn on_trigger_enter(other) {
-    if (other == null or who == null) { return; }
-    if (other == who) {
-        if (sfx != "") { PlaySound2D(sfx, 0.8, true); }
-        save_set("used_door", true);
-        LoadScene(target);
-    }
-}
-
-if (Input_IsMousePressed(0)) {
-    var selection = GetSelectedHex();
-    if (selection.hasSelection) { SetPathToHex(this.id, selection.q, selection.r, true); }
-}
-
-if (movement != null) { if (movement.GetIsMoving() == false) { ClearPathTarget(); } }
-
-fn camera_follow() {
-    var tf = this.GetComponent("Transform");
-    if (tf == null) { return; }
-    var pos = tf.GetPosition();
-    Camera_SetPosition(pos[0], pos[1], pos[2]);
-    Camera_SetZoom(1.5);
-}
+var base = Prop("base_intensity", 1.0);
+var amount = Prop("flicker", 0.12);
+var speed = Prop("speed", 9.0);
+var t = 0;
 
 fn on_update(dt) {
-    move();
-    camera_follow();
+    var l = this.GetComponent("PointLight");
+    if (l == null) { return; }
+    t += dt;
+
+    l.SetIntensity(base + sin(t * speed) * amount + (random() - 0.5) * amount * 0.5);
 }
