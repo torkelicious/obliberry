@@ -1,115 +1,140 @@
-// EngineLib Integration Test
-// Tests all exposed EngineLib APIs
+//
+// EngineLib & ObSL API reference / examples
+// This is a showcase, not plug-and-play code.
+// It will fail if the referenced assets/entities are missing :)
+//
 
-println "EngineLib Integration Test";
-println "";
-println "Core & Entity API";
+// The code below will run one-time when the Script loads (i.e when the entity it's attached to is loaded in)
 
-var ent = CreateEntity("TestRunner");
-assert(ent != null, "CreateEntity returned null");
-assert(has_field(ent, "id"), "Entity missing 'id' field");
-println "id=" + to_string(ent.id);
+// Scene Management
+// LoadScene("assets/scenes/level1.json");
+var scene = GetCurrentScenePath();
+println "Current scene: " + scene;
 
-ent.SetName("RenamedTest");
-assert(ent.GetName() == "RenamedTest", "SetName/GetName failed");
-println "SetName/GetName: PASS";
+// Entity Creation
+var ent = CreateEntity("TestEntity");
+// var prefab = Instantiate("assets/prefabs/enemy.json"); // prefabs are stored as JSON files.
 
-var found = Find("RenamedTest");
-assert(found != null, "Find returned null");
-assert(found.id == ent.id, "Find wrong entity");
-println "Find: PASS";
+// Entity Lookups
+var found_ent = Find("TestEntity");
+var ent_by_id = GetEntity(ent.id);
 
-var by_id = GetEntity(ent.id);
-assert(by_id != null, "GetEntity returned null");
-assert(by_id.id == ent.id, "GetEntity wrong entity");
-println "GetEntity: PASS";
+// Entity Methods
+ent.SetName("RenamedTestEntity");
 
-var uuid = ent.GetUUID();
-assert(type_of(uuid) == "string", "GetUUID type");
-assert(uuid == ent.uuid, "GetUUID matches uuid field");
-var by_uuid = FindEntityByUUID(uuid);
-assert(by_uuid != null, "FindEntityByUUID returned null");
-assert(by_uuid.id == ent.id, "FindEntityByUUID wrong entity");
-assert(FindEntityByUUID("not-a-real-uuid") == null, "FindEntityByUUID missing -> null");
-println "GetUUID/FindEntityByUUID: PASS";
-
-var named = CreateEntity("CustomName");
-assert(named.GetName() == "CustomName", "CreateEntity with name failed");
-println "CreateEntity(name): PASS";
-
-assert(ent.HasComponent("Transform") == false, "Fresh entity should not have Transform");
-println "HasComponent(false): PASS";
-
-var comps = ent.GetComponents();
-assert(type_of(comps) == "array", "GetComponents type");
-assert(comps.len == 0, "Fresh entity should have 0 components");
-println "GetComponents (empty, len=" + to_string(comps.len) + "): PASS";
-
-println "";
-println "Hierarchy (Parent/Child)";
-
-var parent = CreateEntity("Parent");
-var child1 = CreateEntity("Child1");
-var child2 = CreateEntity("Child2");
-
-assert(parent.GetParent() == null, "Fresh entity has no parent");
-assert(parent.GetChildCount() == 0.0, "Fresh entity has 0 children");
-assert(child1.GetParent() == null, "Fresh child1 has no parent");
-println "Fresh state: PASS";
-
-child1.SetParent(parent);
-assert(child1.GetParent() != null, "child1.GetParent() after reparent");
-assert(child1.GetParent().id == parent.id, "child1 parent id matches");
-assert(parent.GetChildCount() == 1.0, "Parent has 1 child after reparent");
-println "SetParent(entity): PASS";
-
-var kids = parent.GetChildren();
-assert(type_of(kids) == "array", "GetChildren type");
-assert(kids.len == 1, "GetChildren len==1");
-assert(kids[0].id == child1.id, "GetChildren[0] id match");
-println "GetChildren: PASS";
-
-child2.SetParent(parent);
-assert(parent.GetChildCount() == 2.0, "Parent has 2 children");
-var kids2 = parent.GetChildren();
-assert(kids2.len == 2, "GetChildren len==2");
-println "Multiple children: PASS";
-
-var found_child = parent.Find("Child1");
-assert(found_child != null, "Find Child1");
-assert(found_child.id == child1.id, "Find Child1 id match");
-var not_found = parent.Find("NonExistent");
-assert(not_found == null, "Find nonexistent -> null");
-println "Find(name): PASS";
-
-child2.SetParent(0);
-assert(child2.GetParent() == null, "Detached child has no parent");
-assert(parent.GetChildCount() == 1.0, "Parent has 1 child after detach");
-println "SetParent(0) detach: PASS";
-
-var orphan = CreateEntity("Orphan");
-orphan.SetParent(parent);
-assert(parent.GetChildCount() == 2.0, "Parent has 2 (child1+orphan)");
-
-var newParent = CreateEntity("NewParent");
-orphan.SetParent(newParent);
-assert(orphan.GetParent().id == newParent.id, "Orphan moved to NewParent");
-assert(parent.GetChildCount() == 1.0, "Old parent lost child");
-assert(newParent.GetChildCount() == 1.0, "New parent has 1 child");
-println "Reparent between parents: PASS";
-
-var cascade_parent = CreateEntity("CascadeParent");
-var cascade_child = CreateEntity("CascadeChild");
-cascade_child.SetParent(cascade_parent);
-assert(cascade_parent.GetChildCount() == 1.0, "Cascade parent has 1 child");
-cascade_parent.Destroy();
-println "Cascade destroy: PASS";
-
-println "";
-println "Component CRUD";
-
+// Native Components (built-into the engine)
 ent.AddComponent("Transform");
 ent.AddComponent("PointLight");
+ent.AddComponent("DirectionalTexture");
+ent.AddComponent("Movement");
+ent.AddComponent("MapState");
+ent.AddComponent("DestroyTag");
+ent.AddComponent("BillboardTag");
+
+// Custom Script Data Component (Persists and avoids GC cleanup)
+var custom_data = Object();
+custom_data.hp = 100;
+ent.AddCustomComponent("Stats", custom_data);
+var stats = ent.GetCustomComponent("Stats");
+
+// Component Interactions
+var tf = ent.GetComponent("Transform");
+if (tf != null) {
+    tf.SetPosition(100.0, 50.0, 0.0);
+    var pos = tf.GetPosition();  // returns ObSLArray: [x, y, z]
+}
+
+var light = ent.GetComponent("PointLight");
+if (light != null) {
+    light.SetColor(1.0, 0.0, 0.0);
+    light.SetIntensity(2.0);
+    light.SetRadius(150.0);
+}
+
+var dirTex = ent.GetComponent("DirectionalTexture");
+if (dirTex != null) { dirTex.SetIndex(2); }
+
+var moveComp = ent.GetComponent("Movement");
+if (moveComp != null) {
+    moveComp.SetTimePerStep(0.05);  // seconds per hex step (default 0.15)
+    var is_moving = moveComp.GetIsMoving();  // returns bool
+}
+
+var mapState = ent.GetComponent("MapState");
+if (mapState != null) {
+    var selected = mapState.GetSelectedHex();  // returns array: [q, r]
+    var pathTarget = mapState.GetPathToHex();  // returns array: [q, r]
+}
+
+// Audio System (Global)
+// PlayMusic("assets/audio/bgm.wav", 0.5);
+
+// Code below will be ran everyframe (i.e Scene.Update() in engine src)
+fn on_update(dt) {
+
+    // Global delta time fetcher for when you need it outside of on_update
+    // var global_dt = get_dt();
+
+    // Core Window Management
+    if (Input_IsKeyDown("Esc")) { CloseWindow(); }
+
+    // Input Handling
+    if (Input_IsKeyPressed("Space")) {
+        PlaySound2D("assets/audio/jump.wav", 0.8);  // play jump sound at 0.8/1.0 volume when space is pressed
+    }
+
+    if (Input_IsMousePressed(0)) {
+        var mouse = Input_GetMouseWorldPos();  // returns ObSLObject: {x, y}
+    }
+
+    // Hex Map System
+    if (Input_IsKeyPressed("Enter")) {
+        var hex = GetSelectedHex();  // returns ObSLObject: {hasSelection, q, r}
+        if (hex.hasSelection) { SetPathToHex(this.id, hex.q, hex.r); }
+    }
+
+    if (Input_IsKeyPressed("C")) {
+        ClearSelectionOverlay();
+        ClearPathTarget();
+    }
+
+    // Camera System
+    var moveX = 0.0;
+    var moveY = 0.0;
+
+    if (Input_IsKeyDown("W")) { moveY = moveY - 1.0; }
+    if (Input_IsKeyDown("S")) { moveY = moveY + 1.0; }
+    if (Input_IsKeyDown("A")) { moveX = moveX - 1.0; }
+    if (Input_IsKeyDown("D")) { moveX = moveX + 1.0; }
+
+    if (moveX != 0.0 and moveY != 0.0) {
+        moveX = moveX * 0.7071;
+        moveY = moveY * 0.7071;
+    }
+
+    // Camera_PanScreenSpace handles zoom scaling and isometric axis correction
+    Camera_PanScreenSpace(moveX * 15.0 * dt, moveY * 15.0 * dt);
+
+    // Alternatively raw world space translation
+    // Camera_Move(moveX * 150.0 * dt, moveY * 150.0 * dt, 0.0);
+
+    if (Input_IsKeyPressed("Z")) {
+        Camera_SetZoom(1.5);
+        Camera_SetPosition(0.0, 0.0, 0.0);
+    }
+
+    if (Input_IsMousePressed(2)) {
+        var cam_pos = Camera_GetPosition();  // returns ObSLObject: {x, y, z}
+        var zoom = Camera_GetZoom();  // returns number (double)
+    }
+
+    // Scene Loading
+    if (Input_IsKeyPressed("M")) {
+        StopMusic();
+        // LoadScene("assets/scenes/menu.json");
+    }
+}
+;
 ent.AddComponent("Movement");
 ent.AddComponent("MapState");
 ent.AddComponent("BillboardTag");
