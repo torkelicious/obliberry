@@ -17,8 +17,8 @@ They come with the editor, runtime, tools, and project templates. Unzip and run 
 ### [How to use the editor](docs/editor/usage.md)
 
 Want a look at something made with the engine? There is also a prebuilt Demo project at the
-[demo release](https://github.com/torkelicious/obliberry/releases/tag/demo): download the version for your OS and run
-the `DemoProject` executable.
+[demo release](https://github.com/torkelicious/obliberry/releases/tag/demo_0.0.9): download the version for your OS and run
+the `DemoGame` executable.
 
 To build the engine from source instead, see the [build instructions](docs/build.md).
 
