@@ -12,13 +12,9 @@ fn on_update(dt) {
         var selection = GetSelectedHex();
         if (selection.hasSelection) {
             SetPathToHex(this.id, selection.q, selection.r);
-           // PlaySound2D("assets/audio/boom.mp3", 0.8);
+            // PlaySound2D("assets/audio/boom.mp3", 0.8);
         }
     }
 
-    if (movement != null) {
-        if (movement.GetIsMoving() == false) {
-            ClearPathTarget();
-        }
-    }
+    if (movement != null) { if (movement.GetIsMoving() == false) { ClearPathTarget(); } }
 }

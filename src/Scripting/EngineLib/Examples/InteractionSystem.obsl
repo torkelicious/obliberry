@@ -8,9 +8,7 @@ var EDGE_MARGIN = 20.0;
 
 fn on_update(dt) {
 
-    if (Input_IsKeyDown("Esc")) {
-        CloseWindow();
-    }
+    if (Input_IsKeyDown("Esc")) { CloseWindow(); }
 
     var scroll_y = Input_GetScrollY();
     if (scroll_y != 0.0) {
@@ -36,15 +34,15 @@ fn on_update(dt) {
     var mouse_x = Input_GetMouseX();
     var mouse_y = Input_GetMouseY();
 
-    if (mouse_x <= EDGE_MARGIN)            { pan_x = pan_x - 1.0; }
+    if (mouse_x <= EDGE_MARGIN) { pan_x = pan_x - 1.0; }
     if (mouse_x >= window_w - EDGE_MARGIN) { pan_x = pan_x + 1.0; }
-    if (mouse_y <= EDGE_MARGIN)            { pan_y = pan_y + 1.0; }
+    if (mouse_y <= EDGE_MARGIN) { pan_y = pan_y + 1.0; }
     if (mouse_y >= window_h - EDGE_MARGIN) { pan_y = pan_y - 1.0; }
 
     if (pan_x != 0.0 and pan_y != 0.0) {
-        if (pan_x > 1.0)  { pan_x = 1.0; }
+        if (pan_x > 1.0) { pan_x = 1.0; }
         if (pan_x < -1.0) { pan_x = -1.0; }
-        if (pan_y > 1.0)  { pan_y = 1.0; }
+        if (pan_y > 1.0) { pan_y = 1.0; }
         if (pan_y < -1.0) { pan_y = -1.0; }
 
         pan_x = pan_x * 0.7071;

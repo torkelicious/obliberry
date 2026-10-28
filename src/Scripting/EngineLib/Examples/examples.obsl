@@ -41,7 +41,7 @@ var stats = ent.GetCustomComponent("Stats");
 var tf = ent.GetComponent("Transform");
 if (tf != null) {
     tf.SetPosition(100.0, 50.0, 0.0);
-    var pos = tf.GetPosition(); // returns ObSLArray: [x, y, z]
+    var pos = tf.GetPosition();  // returns ObSLArray: [x, y, z]
 }
 
 var light = ent.GetComponent("PointLight");
@@ -52,25 +52,22 @@ if (light != null) {
 }
 
 var dirTex = ent.GetComponent("DirectionalTexture");
-if (dirTex != null) {
-    dirTex.SetIndex(2);
-}
+if (dirTex != null) { dirTex.SetIndex(2); }
 
 var moveComp = ent.GetComponent("Movement");
 if (moveComp != null) {
-    moveComp.SetTimePerStep(0.05); // seconds per hex step (default 0.15)
-    var is_moving = moveComp.GetIsMoving(); // returns bool
+    moveComp.SetTimePerStep(0.05);  // seconds per hex step (default 0.15)
+    var is_moving = moveComp.GetIsMoving();  // returns bool
 }
 
 var mapState = ent.GetComponent("MapState");
 if (mapState != null) {
-    var selected = mapState.GetSelectedHex(); // returns array: [q, r]
-    var pathTarget = mapState.GetPathToHex(); // returns array: [q, r]
+    var selected = mapState.GetSelectedHex();  // returns array: [q, r]
+    var pathTarget = mapState.GetPathToHex();  // returns array: [q, r]
 }
 
 // Audio System (Global)
 // PlayMusic("assets/audio/bgm.wav", 0.5);
-
 
 // Code below will be ran everyframe (i.e Scene.Update() in engine src)
 fn on_update(dt) {
@@ -79,25 +76,21 @@ fn on_update(dt) {
     // var global_dt = get_dt();
 
     // Core Window Management
-    if (Input_IsKeyDown("Esc")) {
-        CloseWindow();
-    }
+    if (Input_IsKeyDown("Esc")) { CloseWindow(); }
 
     // Input Handling
     if (Input_IsKeyPressed("Space")) {
-        PlaySound2D("assets/audio/jump.wav", 0.8); // play jump sound at 0.8/1.0 volume when space is pressed
+        PlaySound2D("assets/audio/jump.wav", 0.8);  // play jump sound at 0.8/1.0 volume when space is pressed
     }
 
     if (Input_IsMousePressed(0)) {
-        var mouse = Input_GetMouseWorldPos(); // returns ObSLObject: {x, y}
+        var mouse = Input_GetMouseWorldPos();  // returns ObSLObject: {x, y}
     }
 
     // Hex Map System
     if (Input_IsKeyPressed("Enter")) {
-        var hex = GetSelectedHex(); // returns ObSLObject: {hasSelection, q, r}
-        if (hex.hasSelection) {
-            SetPathToHex(this.id, hex.q, hex.r);
-        }
+        var hex = GetSelectedHex();  // returns ObSLObject: {hasSelection, q, r}
+        if (hex.hasSelection) { SetPathToHex(this.id, hex.q, hex.r); }
     }
 
     if (Input_IsKeyPressed("C")) {
@@ -131,8 +124,8 @@ fn on_update(dt) {
     }
 
     if (Input_IsMousePressed(2)) {
-        var cam_pos = Camera_GetPosition(); // returns ObSLObject: {x, y, z}
-        var zoom = Camera_GetZoom();        // returns number (double)
+        var cam_pos = Camera_GetPosition();  // returns ObSLObject: {x, y, z}
+        var zoom = Camera_GetZoom();  // returns number (double)
     }
 
     // Scene Loading

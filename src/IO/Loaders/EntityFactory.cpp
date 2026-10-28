@@ -193,7 +193,7 @@ void IO::EntityFactory::RegisterDeserializers() {
         if (data.contains("intensity")) {
             plc.SetIntensity(data["intensity"].get<float>());
         }
-        if(data.contains("enabled")){
+        if (data.contains("enabled")) {
             plc.enabled = data["enabled"].get<bool>();
         }
         entity.AddComponent<ECS::Components::PointLightComponent>(plc);

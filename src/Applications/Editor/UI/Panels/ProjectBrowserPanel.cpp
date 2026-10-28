@@ -138,7 +138,7 @@ namespace Editor::UI {
             return entries;
         }
 
-        // extension may be a comma-separated list 
+        // extension may be a comma-separated list
         std::vector<std::string> extensions;
         for (std::string part = extension; !part.empty();) {
             const auto comma = part.find(',');
@@ -213,7 +213,7 @@ namespace Editor::UI {
         if (ImGui::CollapsingHeader("Animations"))
             DrawAnimationSelection();
 
-        
+
         if (ImGui::CollapsingHeader("Audio")) {
             DrawFileSection("Audio", std::string(Core::AUDIO_PATH), ".mp3,.wav", "mp3,wav", "Audio Files");
         }

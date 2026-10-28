@@ -413,15 +413,9 @@ println "ALL SECTIONS PASSED";
 
 fn on_update(dt) {
     var fc = GetFrameCount();
-    if (fc % 60.0 == 0.0) {
-        println "[tick] frame=" + to_string(fc) + " dt=" + to_string(dt);
-    }
+    if (fc % 60.0 == 0.0) { println "[tick] frame=" + to_string(fc) + " dt=" + to_string(dt); }
 }
 
-fn on_destroy(dt) {
-    println "[on_destroy] frame=" + to_string(GetFrameCount());
-}
+fn on_destroy(dt) { println "[on_destroy] frame=" + to_string(GetFrameCount()); }
 
-fn on_exit(dt) {
-    println "[on_exit] Total frames: " + to_string(GetFrameCount());
-}
+fn on_exit(dt) { println "[on_exit] Total frames: " + to_string(GetFrameCount()); }

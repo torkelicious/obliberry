@@ -198,9 +198,7 @@ void Sound::AudioEngine::StopAllSfx(bool respectPersist) {
         return;
     }
 
-    std::erase_if(m_ActiveSounds, [](const std::unique_ptr<SoundInstance> &sfx) {
-        return !sfx->persistent;
-    });
+    std::erase_if(m_ActiveSounds, [](const std::unique_ptr<SoundInstance> &sfx) { return !sfx->persistent; });
 }
 
 void Sound::AudioEngine::StopSound(SoundInstance *sound) {

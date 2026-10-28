@@ -54,13 +54,13 @@ There is no `dt` global use `get_dt()` (time-scaled) or `GetRawDt()` (unscaled) 
 
 ## Core & Window
 
-| Function                           | Args               | Returns | Description                                                  |
-| ---------------------------------- | ------------------ | ------- | ------------------------------------------------------------ |
-| `get_dt()`                         | -                  | number  | Time-scaled frame delta time (`deltaTime * timeScale`).      |
-| `Window_GetWidth()`                | -                  | number  | Current window width in pixels.                              |
-| `Window_GetHeight()`               | -                  | number  | Current window height in pixels.                             |
-| `Window_SetFullscreen(fullscreen)` | `bool` or `number` | void    | Enter/leave fullscreen (number: non-zero = true).            |
-| `CloseWindow()`                    | -                  | void    | Requests the window to close.                                |
+| Function                           | Args               | Returns | Description                                                   |
+| ---------------------------------- | ------------------ | ------- | ------------------------------------------------------------- |
+| `get_dt()`                         | -                  | number  | Time-scaled frame delta time (`deltaTime * timeScale`).       |
+| `Window_GetWidth()`                | -                  | number  | Current window width in pixels.                               |
+| `Window_GetHeight()`               | -                  | number  | Current window height in pixels.                              |
+| `Window_SetFullscreen(fullscreen)` | `bool` or `number` | void    | Enter/leave fullscreen (number: non-zero = true).             |
+| `CloseWindow()`                    | -                  | void    | Requests the window to close.                                 |
 | `IsEditor()`                       | -                  | bool    | Returns if the context is in editor mode or editor play mode. |
 
 ### Script properties
