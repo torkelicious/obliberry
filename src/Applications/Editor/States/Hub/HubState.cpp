@@ -159,30 +159,23 @@ namespace Editor::States {
         ImGui::Begin("HubDockHost", nullptr, hostFlags);
         ImGui::PopStyleVar(3);
 
-        // submit the DockSpace
         const ImGuiID dockspaceId = ImGui::GetID("HubDockSpace");
         constexpr ImGuiDockNodeFlags dockspaceFlags = ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_AutoHideTabBar;
-        ImGui::DockSpace(dockspaceId, ImVec2(0.0f, 0.0f), dockspaceFlags);
 
-        {
-            static bool layoutInitialized = false;
-            if (!layoutInitialized) {
-                layoutInitialized = true;
-                if (ImGui::DockBuilderGetNode(dockspaceId) == nullptr) {
-                    ImGui::DockBuilderRemoveNode(dockspaceId);
-                    ImGui::DockBuilderAddNode(dockspaceId, ImGuiDockNodeFlags_PassthruCentralNode | static_cast<ImGuiDockNodeFlags>(ImGuiDockNodeFlags_DockSpace));
-                    ImGui::DockBuilderSetNodeSize(dockspaceId, viewport->WorkSize);
+        if (ImGui::DockBuilderGetNode(dockspaceId) == nullptr) {
+            ImGui::DockBuilderAddNode(dockspaceId, dockspaceFlags | static_cast<ImGuiDockNodeFlags>(ImGuiDockNodeFlags_DockSpace));
+            ImGui::DockBuilderSetNodeSize(dockspaceId, viewport->WorkSize);
 
-                    ImGuiID leftId, rightId;
-                    ImGui::DockBuilderSplitNode(dockspaceId, ImGuiDir_Left, 0.28f, &leftId, &rightId);
+            ImGuiID leftId, rightId;
+            ImGui::DockBuilderSplitNode(dockspaceId, ImGuiDir_Left, 0.5f, &leftId, &rightId);
 
-                    ImGui::DockBuilderDockWindow("Actions", leftId);
-                    ImGui::DockBuilderDockWindow("Recent Projects", rightId);
+            ImGui::DockBuilderDockWindow("Actions", leftId);
+            ImGui::DockBuilderDockWindow("Recent Projects", rightId);
 
-                    ImGui::DockBuilderFinish(dockspaceId);
-                }
-            }
+            ImGui::DockBuilderFinish(dockspaceId);
         }
+
+        ImGui::DockSpace(dockspaceId, ImVec2(0.0f, 0.0f), dockspaceFlags);
 
         ImGui::Begin("Actions");
         ImGui::Spacing();
