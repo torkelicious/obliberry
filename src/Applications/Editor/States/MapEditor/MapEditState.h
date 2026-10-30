@@ -123,5 +123,7 @@ namespace Editor::States {
 
         // ui
         UI::TileEditorPanel m_TileEditorPanel;
+
+        bool m_RenderScene = false;
     };
 } // namespace Editor::States

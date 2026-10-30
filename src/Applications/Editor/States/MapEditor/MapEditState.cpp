@@ -14,6 +14,7 @@
 #include "Applications/Editor/Commands/EditorCommands.h"
 #include "IO/MapSerialization.h"
 #include "IO/VFS/VFS.h"
+#include "ECS/Systems/RenderSystem.h"
 
 #include <algorithm>
 #include <array>
@@ -711,6 +712,12 @@ namespace Editor::States {
 
         ECS::Systems::MapRenderSystem::RenderAll(*m_EditorLayer->m_Registry, *m_EditorLayer->m_Context, frustum);
 
+        if (m_RenderScene) {
+            const Math::Frustum::FrustumPlanes frustum3D = Math::Frustum::FrustumPlanes::FromVP(vp);
+            ECS::Systems::RenderSystem::Render(*m_EditorLayer->m_Registry, *m_EditorLayer->m_Context->renderer, frustum3D, &m_EditorLayer->m_Camera);
+        }
+
+
         if (m_MapComp && m_CurrentGrid && m_MapComp->hexMesh && m_MapComp->outlineMat) {
             const auto submitHex = [&](const Map::HexCoords &hex, const float z, const auto &mat) {
                 if (!mat) {
@@ -760,6 +767,8 @@ namespace Editor::States {
         DrawMapMenu();
         ToolbarSeparator();
         DrawToolControls();
+        ToolbarSeparator();
+        ImGui::Checkbox("Render Scene", &m_RenderScene);
     }
 
     void MapEditState::DrawMapMenu() {
